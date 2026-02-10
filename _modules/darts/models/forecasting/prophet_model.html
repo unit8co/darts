@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.39.0" />
+  <meta name="docsearch:version" content="0.40.0" />
   </head>
   
   
@@ -511,13 +511,9 @@
 <span class="sd">            ..</span>
 <span class="sd">        country_holidays</span>
 <span class="sd">            An optional country code, for which holidays can be taken into account by Prophet.</span>
+<span class="sd">            See `holidays package &lt;https://holidays.readthedocs.io/en/latest/#available-countries&gt;`__ for available</span>
+<span class="sd">            country codes.</span>
 
-<span class="sd">            See: https://github.com/dr-prodigy/python-holidays</span>
-
-<span class="sd">            In addition to those countries, Prophet includes holidays for these</span>
-<span class="sd">            countries: Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN),</span>
-<span class="sd">            Thailand (TH), Philippines (PH), Turkey (TU), Pakistan (PK), Bangladesh (BD),</span>
-<span class="sd">            Egypt (EG), China (CN), and Russia (RU).</span>
 <span class="sd">        cap</span>
 <span class="sd">            Parameter specifying the maximum carrying capacity when predicting with logistic growth.</span>
 <span class="sd">            Mandatory when `growth = &#39;logistic&#39;`, otherwise ignored.</span>
@@ -1061,7 +1057,7 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        freq</span>
-<span class="sd">            frequency string of the underlying TimeSeries&#39;s time index (pd.DateTimeIndex.freq_str)</span>
+<span class="sd">            frequency string of the underlying TimeSeries&#39;s time index (pd.DatetimeIndex.freqstr).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># this regex extracts all digits from `freq`: exp: &#39;30S&#39; -&gt; 30</span>
@@ -1074,37 +1070,36 @@
 
         <span class="n">seconds_per_day</span> <span class="o">=</span> <span class="mi">86400</span>
         <span class="n">days</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">if</span> <span class="n">freq</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;BA&quot;</span><span class="p">,</span> <span class="s2">&quot;Y&quot;</span><span class="p">,</span> <span class="s2">&quot;BY&quot;</span><span class="p">,</span> <span class="s2">&quot;RE&quot;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">freq</span><span class="o">.</span><span class="n">startswith</span><span class="p">((</span>
-            <span class="s2">&quot;A&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;BA&quot;</span><span class="p">,</span>
+        <span class="k">if</span> <span class="n">freq</span><span class="o">.</span><span class="n">startswith</span><span class="p">((</span>
             <span class="s2">&quot;Y&quot;</span><span class="p">,</span>
             <span class="s2">&quot;BY&quot;</span><span class="p">,</span>
             <span class="s2">&quot;RE&quot;</span><span class="p">,</span>
         <span class="p">)):</span>  <span class="c1"># year</span>
             <span class="n">days</span> <span class="o">=</span> <span class="mf">365.25</span>
-        <span class="k">elif</span> <span class="n">freq</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;Q&quot;</span><span class="p">,</span> <span class="s2">&quot;BQ&quot;</span><span class="p">,</span> <span class="s2">&quot;REQ&quot;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">freq</span><span class="o">.</span><span class="n">startswith</span><span class="p">((</span>
+        <span class="k">elif</span> <span class="n">freq</span><span class="o">.</span><span class="n">startswith</span><span class="p">((</span>
             <span class="s2">&quot;Q&quot;</span><span class="p">,</span>
             <span class="s2">&quot;BQ&quot;</span><span class="p">,</span>
             <span class="s2">&quot;REQ&quot;</span><span class="p">,</span>
         <span class="p">)):</span>  <span class="c1"># quarter</span>
             <span class="n">days</span> <span class="o">=</span> <span class="mi">3</span> <span class="o">*</span> <span class="mf">30.4375</span>
-        <span class="k">elif</span> <span class="n">freq</span> <span class="ow">in</span> <span class="p">[</span>
+        <span class="k">elif</span> <span class="n">freq</span><span class="o">.</span><span class="n">startswith</span><span class="p">((</span>
             <span class="s2">&quot;M&quot;</span><span class="p">,</span>
             <span class="s2">&quot;BM&quot;</span><span class="p">,</span>
             <span class="s2">&quot;CBM&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;SM&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;LWOM&quot;</span><span class="p">,</span>
             <span class="s2">&quot;WOM&quot;</span><span class="p">,</span>
-        <span class="p">]</span> <span class="ow">or</span> <span class="n">freq</span><span class="o">.</span><span class="n">startswith</span><span class="p">((</span><span class="s2">&quot;M&quot;</span><span class="p">,</span> <span class="s2">&quot;BME&quot;</span><span class="p">,</span> <span class="s2">&quot;BS&quot;</span><span class="p">,</span> <span class="s2">&quot;CBM&quot;</span><span class="p">,</span> <span class="s2">&quot;SM&quot;</span><span class="p">,</span> <span class="s2">&quot;LWOM&quot;</span><span class="p">,</span> <span class="s2">&quot;WOM&quot;</span><span class="p">)):</span>  <span class="c1"># month</span>
+            <span class="s2">&quot;LWOM&quot;</span><span class="p">,</span>
+        <span class="p">)):</span>  <span class="c1"># month</span>
             <span class="n">days</span> <span class="o">=</span> <span class="mf">30.4375</span>
-        <span class="k">elif</span> <span class="n">freq</span> <span class="o">==</span> <span class="s2">&quot;W&quot;</span> <span class="ow">or</span> <span class="n">freq</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;W-&quot;</span><span class="p">):</span>  <span class="c1"># week</span>
+        <span class="k">elif</span> <span class="n">freq</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;SM&quot;</span><span class="p">):</span>  <span class="c1"># semi-month</span>
+            <span class="n">days</span> <span class="o">=</span> <span class="mf">30.4375</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="k">elif</span> <span class="n">freq</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;W&quot;</span><span class="p">):</span>  <span class="c1"># week</span>
             <span class="n">days</span> <span class="o">=</span> <span class="mf">7.0</span>
         <span class="k">elif</span> <span class="n">freq</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">]:</span>  <span class="c1"># business day</span>
             <span class="n">days</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">*</span> <span class="mi">7</span> <span class="o">/</span> <span class="mi">5</span>
         <span class="k">elif</span> <span class="n">freq</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;D&quot;</span><span class="p">]:</span>  <span class="c1"># day</span>
             <span class="n">days</span> <span class="o">=</span> <span class="mf">1.0</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># all freqs higher than &quot;D&quot; are lower case in pandas &gt;= 2.2.0</span>
+            <span class="c1"># all freqs higher than &quot;D&quot; are lower case</span>
             <span class="n">freq_lower</span> <span class="o">=</span> <span class="n">freq</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">freq_lower</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;h&quot;</span><span class="p">,</span> <span class="s2">&quot;bh&quot;</span><span class="p">,</span> <span class="s2">&quot;cbh&quot;</span><span class="p">]:</span>  <span class="c1"># hour</span>
                 <span class="n">days</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">24</span>
@@ -1180,7 +1175,7 @@
 
   <p class="copyright">
     
-      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      © Copyright 2020 - 2026, Unit8 SA (Apache 2.0 License).
       <br/>
     
   </p>

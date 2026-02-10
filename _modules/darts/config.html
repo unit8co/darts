@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.39.0" />
+  <meta name="docsearch:version" content="0.40.0" />
   </head>
   
   
@@ -434,9 +434,9 @@
 <span class="sd">**Plotting Options**</span>
 
 <span class="sd">- ``plotting.use_darts_style`` : bool (default: False)</span>
-<span class="sd">    Whether to apply Darts&#39; custom matplotlib plotting style. When True, Darts will configure</span>
-<span class="sd">    matplotlib with a custom style optimized for time series visualization. When False, matplotlib&#39;s</span>
-<span class="sd">    default or user-configured style will be used. Changes to this option take effect immediately.</span>
+<span class="sd">    Whether to apply Darts&#39; custom plotting style to both matplotlib and plotly. When True, Darts will</span>
+<span class="sd">    configure both backends with a custom style optimized for time series visualization. When False,</span>
+<span class="sd">    the default or user-configured styles will be used. Changes to this option take effect immediately.</span>
 
 <span class="sd">Examples</span>
 <span class="sd">========</span>
@@ -461,6 +461,17 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># Darts color palette used for both matplotlib and plotly plotting</span>
+<span class="n">_DARTS_COLORS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;#000000&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;#003dfd&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;#b512b8&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;#11a9ba&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;#0d780f&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;#f77f07&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;#ba0f0f&quot;</span><span class="p">,</span>
+<span class="p">]</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">_Option</span><span class="p">:</span>
@@ -529,10 +540,9 @@
         <span class="n">plotting_use_darts_style</span> <span class="o">=</span> <span class="n">_Option</span><span class="p">(</span>
             <span class="n">key</span><span class="o">=</span><span class="s2">&quot;plotting.use_darts_style&quot;</span><span class="p">,</span>
             <span class="n">default_value</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to apply Darts&#39; custom matplotlib plotting style. &quot;</span>
-            <span class="s2">&quot;When True, Darts will configure matplotlib with a custom style optimized for &quot;</span>
-            <span class="s2">&quot;time series visualization. When False, matplotlib&#39;s default or user-configured &quot;</span>
-            <span class="s2">&quot;style will be used.&quot;</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to apply Darts&#39; custom plotting style to both matplotlib and plotly. &quot;</span>
+            <span class="s2">&quot;When True, Darts will configure both backends with a custom style optimized for &quot;</span>
+            <span class="s2">&quot;time series visualization. When False, the default or user-configured styles will be used.&quot;</span><span class="p">,</span>
             <span class="n">validator</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_validate_bool</span><span class="p">,</span>
             <span class="n">callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_plotting_style_change</span><span class="p">,</span>
         <span class="p">)</span>
@@ -546,7 +556,10 @@
             <span class="p">]</span>
         <span class="p">}</span>
         <span class="c1"># remember if user applied Darts style</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_mpl_style_applied</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_darts_plotting_style_applied</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="c1"># store original templates to restore later</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_original_plotly_template</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_original_mpl_params</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_validate_positive_int</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
@@ -562,43 +575,101 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_on_plotting_style_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Callback for when plotting.use_darts_style changes.&quot;&quot;&quot;</span>
+        <span class="c1"># matplotlib</span>
         <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mpl</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">cycler</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">value</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mpl_style_applied</span><span class="p">:</span>
-            <span class="c1"># restore default options</span>
-            <span class="n">mpl</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">mpl</span><span class="o">.</span><span class="n">rcParamsDefault</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_mpl_style_applied</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">value</span><span class="p">:</span>
+            <span class="c1"># store current matplotlib params before applying darts style</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_darts_plotting_style_applied</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_original_mpl_params</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
-        <span class="c1"># apply Darts plotting style</span>
-        <span class="n">colors</span> <span class="o">=</span> <span class="n">cycler</span><span class="p">(</span>
-            <span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="s2">&quot;003DFD&quot;</span><span class="p">,</span> <span class="s2">&quot;b512b8&quot;</span><span class="p">,</span> <span class="s2">&quot;11a9ba&quot;</span><span class="p">,</span> <span class="s2">&quot;0d780f&quot;</span><span class="p">,</span> <span class="s2">&quot;f77f07&quot;</span><span class="p">,</span> <span class="s2">&quot;ba0f0f&quot;</span><span class="p">]</span>
-        <span class="p">)</span>
+            <span class="c1"># apply Darts plotting style to matplotlib</span>
+            <span class="n">colors</span> <span class="o">=</span> <span class="n">cycler</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="n">_DARTS_COLORS</span><span class="p">)</span>
+            <span class="n">u8plots_mplstyle</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;font.family&quot;</span><span class="p">:</span> <span class="s2">&quot;sans serif&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;axes.edgecolor&quot;</span><span class="p">:</span> <span class="s2">&quot;black&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;axes.grid&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s2">&quot;axes.labelcolor&quot;</span><span class="p">:</span> <span class="s2">&quot;#333333&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;axes.labelweight&quot;</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span>
+                <span class="s2">&quot;axes.linewidth&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s2">&quot;axes.prop_cycle&quot;</span><span class="p">:</span> <span class="n">colors</span><span class="p">,</span>
+                <span class="s2">&quot;axes.spines.top&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;axes.spines.right&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;axes.spines.bottom&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;axes.spines.left&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;grid.color&quot;</span><span class="p">:</span> <span class="s2">&quot;#dedede&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;legend.frameon&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;lines.linewidth&quot;</span><span class="p">:</span> <span class="mf">1.3</span><span class="p">,</span>
+                <span class="s2">&quot;xtick.color&quot;</span><span class="p">:</span> <span class="s2">&quot;#333333&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;xtick.labelsize&quot;</span><span class="p">:</span> <span class="s2">&quot;small&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;ytick.color&quot;</span><span class="p">:</span> <span class="s2">&quot;#333333&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;ytick.labelsize&quot;</span><span class="p">:</span> <span class="s2">&quot;small&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;xtick.bottom&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="n">mpl</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">u8plots_mplstyle</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># restore previous matplotlib options</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_original_mpl_params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">mpl</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_original_mpl_params</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_original_mpl_params</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="n">u8plots_mplstyle</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;font.family&quot;</span><span class="p">:</span> <span class="s2">&quot;sans serif&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;axes.edgecolor&quot;</span><span class="p">:</span> <span class="s2">&quot;black&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;axes.grid&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;axes.labelcolor&quot;</span><span class="p">:</span> <span class="s2">&quot;#333333&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;axes.labelweight&quot;</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span>
-            <span class="s2">&quot;axes.linewidth&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-            <span class="s2">&quot;axes.prop_cycle&quot;</span><span class="p">:</span> <span class="n">colors</span><span class="p">,</span>
-            <span class="s2">&quot;axes.spines.top&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="s2">&quot;axes.spines.right&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="s2">&quot;axes.spines.bottom&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="s2">&quot;axes.spines.left&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="s2">&quot;grid.color&quot;</span><span class="p">:</span> <span class="s2">&quot;#dedede&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;legend.frameon&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="s2">&quot;lines.linewidth&quot;</span><span class="p">:</span> <span class="mf">1.3</span><span class="p">,</span>
-            <span class="s2">&quot;xtick.color&quot;</span><span class="p">:</span> <span class="s2">&quot;#333333&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;xtick.labelsize&quot;</span><span class="p">:</span> <span class="s2">&quot;small&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ytick.color&quot;</span><span class="p">:</span> <span class="s2">&quot;#333333&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ytick.labelsize&quot;</span><span class="p">:</span> <span class="s2">&quot;small&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;xtick.bottom&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="p">}</span>
-        <span class="n">mpl</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">u8plots_mplstyle</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_mpl_style_applied</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="c1"># plotly</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">plotly.graph_objects</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">go</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">plotly.io</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pio</span>
+
+            <span class="k">if</span> <span class="n">value</span><span class="p">:</span>
+                <span class="c1"># store existing default to restore later</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_darts_plotting_style_applied</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_original_plotly_template</span> <span class="o">=</span> <span class="n">pio</span><span class="o">.</span><span class="n">templates</span><span class="o">.</span><span class="n">default</span>
+
+                <span class="c1"># assign the darts plotly template directly</span>
+                <span class="n">pio</span><span class="o">.</span><span class="n">templates</span><span class="o">.</span><span class="n">default</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+                    <span class="n">layout</span><span class="o">=</span><span class="n">go</span><span class="o">.</span><span class="n">Layout</span><span class="p">(</span>
+                        <span class="n">font</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Arial, sans-serif&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">),</span>
+                        <span class="n">paper_bgcolor</span><span class="o">=</span><span class="s2">&quot;white&quot;</span><span class="p">,</span>
+                        <span class="n">plot_bgcolor</span><span class="o">=</span><span class="s2">&quot;white&quot;</span><span class="p">,</span>
+                        <span class="n">colorway</span><span class="o">=</span><span class="n">_DARTS_COLORS</span><span class="p">,</span>
+                        <span class="n">showlegend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">legend</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+                            <span class="n">bgcolor</span><span class="o">=</span><span class="s2">&quot;rgba(255, 255, 255, 0.8)&quot;</span><span class="p">,</span>
+                            <span class="n">x</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                            <span class="n">y</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                            <span class="n">yanchor</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span>
+                            <span class="n">xanchor</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">,</span>
+                            <span class="n">font</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">14</span><span class="p">),</span>
+                            <span class="n">borderwidth</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                        <span class="p">),</span>
+                        <span class="n">xaxis</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+                            <span class="n">showline</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">linecolor</span><span class="o">=</span><span class="s2">&quot;#dedede&quot;</span><span class="p">,</span>
+                            <span class="n">showgrid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                            <span class="n">title</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">font</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">)),</span>
+                        <span class="p">),</span>
+                        <span class="n">yaxis</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+                            <span class="n">showline</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                            <span class="n">showgrid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">gridcolor</span><span class="o">=</span><span class="s2">&quot;#dedede&quot;</span><span class="p">,</span>
+                            <span class="n">gridwidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                            <span class="n">zeroline</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">zerolinecolor</span><span class="o">=</span><span class="s2">&quot;#dedede&quot;</span><span class="p">,</span>
+                        <span class="p">),</span>
+                        <span class="n">margin</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">l</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">50</span><span class="p">),</span>
+                    <span class="p">),</span>
+                    <span class="n">data</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">scatter</span><span class="o">=</span><span class="p">[</span><span class="n">go</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">line</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mi">3</span><span class="p">))]),</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># restore the previous default</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_original_plotly_template</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">pio</span><span class="o">.</span><span class="n">templates</span><span class="o">.</span><span class="n">default</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_original_plotly_template</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_original_plotly_template</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="c1"># plotly not available, skip plotly configuration</span>
+            <span class="k">pass</span>
+
+        <span class="c1"># update the state tracker</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_darts_plotting_style_applied</span> <span class="o">=</span> <span class="n">value</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_find_option</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">check_unique</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">_Option</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Find options matching a pattern (supports both exact match and prefix match).&quot;&quot;&quot;</span>
@@ -914,7 +985,7 @@
 
   <p class="copyright">
     
-      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      © Copyright 2020 - 2026, Unit8 SA (Apache 2.0 License).
       <br/>
     
   </p>

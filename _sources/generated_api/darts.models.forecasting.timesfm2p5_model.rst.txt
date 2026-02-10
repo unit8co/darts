@@ -1,0 +1,3 @@
+.. automodule:: darts.models.forecasting.timesfm2p5_model
+   :members:
+   :undoc-members:

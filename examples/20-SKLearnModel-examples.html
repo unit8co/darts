@@ -61,7 +61,7 @@
     <link rel="prev" title="Hyper-parameters Optimization for Electricity Load Forecasting" href="17-hyperparameter-optimization.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.39.0" />
+  <meta name="docsearch:version" content="0.40.0" />
   </head>
   
   
@@ -647,7 +647,7 @@ n===t._wrapperState.initialValue&&(e.value=n)}});t.exports=l},function(t,e,n){"u
 <span class="n">ts_energy</span> <span class="o">=</span> <span class="n">ts_energy</span><span class="p">[</span><span class="n">start_date</span><span class="p">:</span><span class="n">end_date</span><span class="p">]</span>
 
 <span class="c1"># resample to hourly frequency</span>
-<span class="n">ts_energy</span> <span class="o">=</span> <span class="n">ts_energy</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="s2">&quot;H&quot;</span><span class="p">)</span>
+<span class="n">ts_energy</span> <span class="o">=</span> <span class="n">ts_energy</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">)</span>
 
 <span class="c1"># extract temperature, solar irradiation and rain duration</span>
 <span class="n">ts_weather</span> <span class="o">=</span> <span class="n">ts_energy</span><span class="p">[[</span><span class="s2">&quot;T [°C]&quot;</span><span class="p">,</span> <span class="s2">&quot;StrGlo [W/m2]&quot;</span><span class="p">,</span> <span class="s2">&quot;RainDur [min]&quot;</span><span class="p">]]</span>
@@ -1465,7 +1465,7 @@ CatboostModel MAPE: 2.373275454432286
 
   <p class="copyright">
     
-      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      © Copyright 2020 - 2026, Unit8 SA (Apache 2.0 License).
       <br/>
     
   </p>

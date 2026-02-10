@@ -58,7 +58,7 @@
     <link rel="prev" title="Model selection utilities" href="darts.utils.model_selection.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.39.0" />
+  <meta name="docsearch:version" content="0.40.0" />
   </head>
   
   
@@ -587,6 +587,7 @@
 
 
 
+
 <li class="toctree-l2"><a class="reference internal" href="darts.metrics.utils.html">Metric Utils</a></li>
 
 
@@ -692,6 +693,8 @@
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tide_model.html">Time-series Dense Encoder (TiDE)</a></li>
 
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.timesfm2p5_model.html">TimesFM 2.5</a></li>
+
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.transformer_model.html">Transformer Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">Time-Series Mixer (TSMixer)</a></li>
@@ -779,6 +782,7 @@
 
 
 
+
 <li class="toctree-l2"><a class="reference internal" href="darts.utils.timeseries_generation.html">Utils for TimeSeries generation</a></li>
 
 
@@ -806,6 +810,7 @@
 
 
 
+
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.config.html">Configuration</a></li>
@@ -815,6 +820,7 @@
 
 
 <li class="toctree-l1"><a class="reference internal" href="darts.timeseries.html">Timeseries</a></li>
+
 
 
 
@@ -1156,6 +1162,47 @@ be interpolated.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="darts.utils.statistics.plot_tolerance_curve">
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_tolerance_curve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_tolerance_curve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_tolerance_curve" title="Link to this definition">#</a></dt>
+<dd><p>Plots the Tolerance Curve for evaluating forecast alignment.</p>
+<p>The tolerance curve shows, for each tolerance level (as a percentage of the actual series range),
+what fraction of prediction points fall within that tolerance.</p>
+<p>For multivariate series, one curve is plotted per component.</p>
+<p>The Area Under Tolerance Curve (AUTC) can be computed using <a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.autc" title="darts.metrics.metrics.autc"><code class="xref py py-func docutils literal notranslate"><span class="pre">autc()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>actual_series</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]</span>) – The (sequence of) actual series.</p></li>
+<li><p><strong>pred_series</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]</span>) – The (sequence of) predicted series.</p></li>
+<li><p><strong>intersect</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – For time series that are overlapping in time without having the same time index, setting <cite>True</cite>
+will consider the values only over their common time interval (intersection in time).</p></li>
+<li><p><strong>min_tolerance</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The minimum tolerance level as a fraction of the series half-range. Default is 0.0 (0%).</p></li>
+<li><p><strong>max_tolerance</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The maximum tolerance level as a fraction of the series half-range. Default is 1.0 (100%).</p></li>
+<li><p><strong>step</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The step size between tolerance levels. Default is 0.01 (1%).
+For example, with defaults, tolerances are [0.0, 0.01, 0.02, …, 1.0].</p></li>
+<li><p><strong>q</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.</p></li>
+<li><p><strong>n_jobs</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
+passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Optionally, whether to print operations progress.</p></li>
+<li><p><strong>fig_size</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – The size of the figure to be displayed.</p></li>
+<li><p><strong>axis</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>]</span>) – Optionally, an axis object to plot on.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.autc" title="darts.metrics.metrics.autc"><code class="xref py py-func docutils literal notranslate"><span class="pre">autc()</span></code></a></dt><dd><p>Compute the Area Under Tolerance Curve as a single score.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.remove_from_series">
 <span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">remove_from_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_from_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.remove_from_series" title="Link to this definition">#</a></dt>
 <dd><p>Removes the TimeSeries <cite>other</cite> from the TimeSeries <cite>ts</cite> as specified by <cite>model</cite>.
@@ -1442,6 +1489,7 @@ p_value_threshold_adfuller = 0.01 and p_value_threshold_kpss = 0.1).</p>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.plot_hist"><code class="docutils literal notranslate"><span class="pre">plot_hist()</span></code></a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.plot_pacf"><code class="docutils literal notranslate"><span class="pre">plot_pacf()</span></code></a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.plot_residuals_analysis"><code class="docutils literal notranslate"><span class="pre">plot_residuals_analysis()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.plot_tolerance_curve"><code class="docutils literal notranslate"><span class="pre">plot_tolerance_curve()</span></code></a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.remove_from_series"><code class="docutils literal notranslate"><span class="pre">remove_from_series()</span></code></a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.remove_seasonality"><code class="docutils literal notranslate"><span class="pre">remove_seasonality()</span></code></a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.remove_trend"><code class="docutils literal notranslate"><span class="pre">remove_trend()</span></code></a></li>
@@ -1486,7 +1534,7 @@ p_value_threshold_adfuller = 0.01 and p_value_threshold_kpss = 0.1).</p>
 
   <p class="copyright">
     
-      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      © Copyright 2020 - 2026, Unit8 SA (Apache 2.0 License).
       <br/>
     
   </p>

@@ -1,0 +1,1124 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>darts.models.forecasting.timesfm2p5_model &#8212; darts  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/darts/models/forecasting/timesfm2p5_model';</script>
+    <link rel="icon" href="../../../../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.40.0" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../../../../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">darts.models.forecasting.timesfm2p5_model</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for darts.models.forecasting.timesfm2p5_model</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">TimesFM 2.5</span>
+<span class="sd">-----------</span>
+
+<span class="sd">TimesFM 2.5 can be used the same way as other foundation models (e.g. Chronos2), with the exception</span>
+<span class="sd">that it does not support any type of covariates.</span>
+
+<span class="sd">For detailed examples and tutorials, check out the Chronos2 notebook:</span>
+
+<span class="sd">* `Chronos-2 Foundation Model Examples</span>
+<span class="sd">  &lt;https://unit8co.github.io/darts/examples/25-Chronos-2-examples.html&gt;`__</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.components.huggingface_connector</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceConnector</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.components.timesfm2p5_submodels</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_ResidualBlock</span><span class="p">,</span>
+    <span class="n">_ResidualBlockConfig</span><span class="p">,</span>
+    <span class="n">_revin</span><span class="p">,</span>
+    <span class="n">_StackedTransformersConfig</span><span class="p">,</span>
+    <span class="n">_Transformer</span><span class="p">,</span>
+    <span class="n">_TransformerConfig</span><span class="p">,</span>
+    <span class="n">_update_running_stats</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.foundation_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">FoundationModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.pl_forecasting_module</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PLForecastingModule</span><span class="p">,</span>
+    <span class="n">io_processor</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.data.torch_datasets.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PLModuleInput</span><span class="p">,</span> <span class="n">TorchTrainingSample</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_TimesFM2p5_200M_Definition</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Framework-agnostic config of TimesFM 2.5.&quot;&quot;&quot;</span>
+
+    <span class="n">context_limit</span> <span class="o">=</span> <span class="mi">16384</span>
+    <span class="n">input_patch_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span>
+    <span class="n">output_patch_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span>
+    <span class="n">quantiles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span>
+        <span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">tokenizer</span><span class="p">:</span> <span class="n">_ResidualBlockConfig</span> <span class="o">=</span> <span class="n">_ResidualBlockConfig</span><span class="p">(</span>
+        <span class="n">input_dims</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+        <span class="n">hidden_dims</span><span class="o">=</span><span class="mi">1280</span><span class="p">,</span>
+        <span class="n">output_dims</span><span class="o">=</span><span class="mi">1280</span><span class="p">,</span>
+        <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">activation</span><span class="o">=</span><span class="s2">&quot;swish&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">stacked_transformers</span><span class="p">:</span> <span class="n">_StackedTransformersConfig</span> <span class="o">=</span> <span class="n">_StackedTransformersConfig</span><span class="p">(</span>
+        <span class="n">num_layers</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+        <span class="n">transformer</span><span class="o">=</span><span class="n">_TransformerConfig</span><span class="p">(</span>
+            <span class="n">model_dims</span><span class="o">=</span><span class="mi">1280</span><span class="p">,</span>
+            <span class="n">hidden_dims</span><span class="o">=</span><span class="mi">1280</span><span class="p">,</span>
+            <span class="n">num_heads</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+            <span class="n">attention_norm</span><span class="o">=</span><span class="s2">&quot;rms&quot;</span><span class="p">,</span>
+            <span class="n">feedforward_norm</span><span class="o">=</span><span class="s2">&quot;rms&quot;</span><span class="p">,</span>
+            <span class="n">qk_norm</span><span class="o">=</span><span class="s2">&quot;rms&quot;</span><span class="p">,</span>
+            <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">use_rotary_position_embeddings</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">ff_activation</span><span class="o">=</span><span class="s2">&quot;swish&quot;</span><span class="p">,</span>
+            <span class="n">fuse_qkv</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">output_projection_point</span><span class="p">:</span> <span class="n">_ResidualBlockConfig</span> <span class="o">=</span> <span class="n">_ResidualBlockConfig</span><span class="p">(</span>
+        <span class="n">input_dims</span><span class="o">=</span><span class="mi">1280</span><span class="p">,</span>
+        <span class="n">hidden_dims</span><span class="o">=</span><span class="mi">1280</span><span class="p">,</span>
+        <span class="n">output_dims</span><span class="o">=</span><span class="mi">1280</span><span class="p">,</span>
+        <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">activation</span><span class="o">=</span><span class="s2">&quot;swish&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">output_projection_quantiles</span><span class="p">:</span> <span class="n">_ResidualBlockConfig</span> <span class="o">=</span> <span class="n">_ResidualBlockConfig</span><span class="p">(</span>
+        <span class="n">input_dims</span><span class="o">=</span><span class="mi">1280</span><span class="p">,</span>
+        <span class="n">hidden_dims</span><span class="o">=</span><span class="mi">1280</span><span class="p">,</span>
+        <span class="n">output_dims</span><span class="o">=</span><span class="mi">10240</span><span class="p">,</span>
+        <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">activation</span><span class="o">=</span><span class="s2">&quot;swish&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_TimesFM2p5Module</span><span class="p">(</span><span class="n">PLForecastingModule</span><span class="p">):</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">_TimesFM2p5_200M_Definition</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;PyTorch module implementing the TimesFM 2.5 model, ported from</span>
+<span class="sd">        `google-research/timesfm &lt;https://github.com/google-research/timesfm/&gt;`_ and</span>
+<span class="sd">        adapted for Darts :class:`PLForecastingModule` interface.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`</span>
+<span class="sd">            base class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># default model parameters (config.json is ignored)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_patch_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">input_patch_len</span>  <span class="c1"># 32</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_patch_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">output_patch_len</span>  <span class="c1"># 128</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">stacked_transformers</span><span class="o">.</span><span class="n">num_layers</span>  <span class="c1"># 20</span>
+        <span class="c1"># see below `user_quantile_indices` for explanation of +1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_quantiles_plus_one</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">quantiles</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>  <span class="c1"># 10</span>
+
+        <span class="c1"># padding length for input target series to make its length a multiple of</span>
+        <span class="c1"># input_patch_len (32).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pad_len</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_patch_len</span>
+
+        <span class="c1"># define model submodules</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">_ResidualBlock</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stacked_xf</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span>
+            <span class="n">_Transformer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">stacked_transformers</span><span class="o">.</span><span class="n">transformer</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span><span class="p">)</span>
+        <span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_projection_point</span> <span class="o">=</span> <span class="n">_ResidualBlock</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">output_projection_point</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_projection_quantiles</span> <span class="o">=</span> <span class="n">_ResidualBlock</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">output_projection_quantiles</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">future_slice</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_shift</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_shift</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="c1"># gather indices of user-specified quantiles</span>
+        <span class="n">user_quantiles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">quantiles</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">QuantileRegression</span><span class="p">)</span>
+            <span class="k">else</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="c1"># The original quantile outputs contain mean + quantiles (0.1 to 0.9),</span>
+        <span class="c1"># but the mean is not being used even in deterministic setting.</span>
+        <span class="c1"># Instead, the median (0.5 quantile) is used as the deterministic output.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">user_quantile_indices</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">quantiles</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">user_quantiles</span>
+        <span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">inputs</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">masks</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Original forward pass of the TimesFM 2.5 model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        inputs</span>
+<span class="sd">            Input tensor of shape (batch_size, num_input_patches, input_patch_len).</span>
+<span class="sd">        masks</span>
+<span class="sd">            Mask tensor of shape (batch_size, num_input_patches, input_patch_len),</span>
+<span class="sd">            where True indicates a missing value.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        torch.Tensor</span>
+<span class="sd">            Quantile predictions of shape `(batch_size, output_patch_len * num_quantiles_plus_one)`.</span>
+<span class="sd">            The last dimension contains the (unused) mean followed by nine quantile predictions (0.1 to 0.9).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># See comments in `forward()` for explanation of dimension notations.</span>
+        <span class="c1"># `inputs`, `masks`: (B * C, Q, I)</span>
+        <span class="c1"># `tokenizer_inputs`: (B * C, Q, I * 2)</span>
+        <span class="n">tokenizer_inputs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">inputs</span><span class="p">,</span> <span class="n">masks</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">inputs</span><span class="o">.</span><span class="n">dtype</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># tokenization</span>
+        <span class="c1"># `output_embeddings`: (B * C, Q, D)</span>
+        <span class="n">output_embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">(</span><span class="n">tokenizer_inputs</span><span class="p">)</span>
+
+        <span class="c1"># stacked transformer layers</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">layer</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stacked_xf</span><span class="p">):</span>
+            <span class="c1"># -&gt; (B * C, Q, D)</span>
+            <span class="n">output_embeddings</span> <span class="o">=</span> <span class="n">layer</span><span class="p">(</span><span class="n">output_embeddings</span><span class="p">,</span> <span class="n">masks</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># use only the last patch embeddings</span>
+        <span class="c1"># `last_embeddings`: (B * C, D)</span>
+        <span class="n">last_embeddings</span> <span class="o">=</span> <span class="n">output_embeddings</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+
+        <span class="c1"># output projections</span>
+        <span class="c1"># `output_ts`: (B * C, O * W)</span>
+        <span class="n">output_ts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_projection_point</span><span class="p">(</span><span class="n">last_embeddings</span><span class="p">)</span>
+        <span class="c1"># output_quantile_spread = self.output_projection_quantiles(last_embeddings)</span>
+
+        <span class="k">return</span> <span class="n">output_ts</span>
+
+    <span class="c1"># TODO: fine-tuning support</span>
+    <span class="nd">@io_processor</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">:</span> <span class="n">PLModuleInput</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;TimesFM 2.5 model forward pass.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x_in</span>
+<span class="sd">            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`</span>
+<span class="sd">            is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        torch.Tensor</span>
+<span class="sd">            the output tensor in the shape of `(n_samples, n_time_steps, n_targets, n_quantiles)` for</span>
+<span class="sd">            probabilistic forecasts, or `(n_samples, n_time_steps, n_targets, 1)` for</span>
+<span class="sd">            deterministic forecasts (median only).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># B: batch size</span>
+        <span class="c1"># L: input chunk length</span>
+        <span class="c1"># T: output chunk length</span>
+        <span class="c1"># I = 32: input patch length</span>
+        <span class="c1"># O = 128: output patch length</span>
+        <span class="c1"># P: minimum left-pad length such that (P+L) is divisible by I</span>
+        <span class="c1"># Z = P + L: padded input chunk length</span>
+        <span class="c1"># Q = Z / I: patches for the input chunk</span>
+        <span class="c1"># W = 10: quantiles + 1 (mean + 9 quantiles)</span>
+        <span class="c1"># C: target components</span>
+        <span class="c1"># D: hidden dimensions</span>
+        <span class="c1"># N: likelihood quantiles (user-specified)</span>
+
+        <span class="c1"># `x_past`: (B, L, C)</span>
+        <span class="n">x_past</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">x_in</span>
+
+        <span class="c1"># TimesFM 2.5 is a univariate model and its inputs does not have a variable dimension,</span>
+        <span class="c1"># so here we reshape `x_past` to (B * C, L)</span>
+        <span class="n">x_past</span> <span class="o">=</span> <span class="n">x_past</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">)</span>
+
+        <span class="c1"># We assume there are no missing values in x_past, so strip_leading_nans() and</span>
+        <span class="c1"># linear_interpolation() are not needed here.</span>
+
+        <span class="c1"># left-pad x_past with NaNs to make its length a multiple of input_patch_len (32)</span>
+        <span class="c1"># `x_past` -&gt; (B * C, Z)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad_len</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">x_past</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">x_past</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pad_len</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">value</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">))</span>
+
+        <span class="c1"># create mask for x_past</span>
+        <span class="c1"># `x_mask`: (B * C, Z)</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">x_past</span><span class="p">)</span>
+
+        <span class="c1"># divide x_past and mask into patches of size input_patch_len (32)</span>
+        <span class="c1"># -&gt; (B * C, Q, I)</span>
+        <span class="n">patched_x_past</span> <span class="o">=</span> <span class="n">x_past</span><span class="o">.</span><span class="n">unfold</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_patch_len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_patch_len</span><span class="p">)</span>
+        <span class="n">patched_mask</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">unfold</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_patch_len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_patch_len</span><span class="p">)</span>
+        <span class="c1"># determine batch size and number of input patches after patching</span>
+        <span class="n">batch_comp_size</span><span class="p">,</span> <span class="n">num_input_patches</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">patched_x_past</span><span class="o">.</span><span class="n">shape</span>
+
+        <span class="c1"># running stats of mean (mu) and stddev (sigma) for each input patch</span>
+        <span class="c1"># `n`, `mu`, `sigma`: (B * C,)</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">batch_comp_size</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">patched_x_past</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">batch_comp_size</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">patched_x_past</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">sigma</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">batch_comp_size</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">patched_x_past</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">patch_mu</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">patch_sigma</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_input_patches</span><span class="p">):</span>
+            <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span><span class="p">),</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_update_running_stats</span><span class="p">(</span>
+                <span class="n">n</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">patched_x_past</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">patched_mask</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="n">patch_mu</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span>
+            <span class="n">patch_sigma</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span>
+        <span class="c1"># `context_mu`, `context_sigma`: (B * C, Q)</span>
+        <span class="n">context_mu</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">patch_mu</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">context_sigma</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">patch_sigma</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># normalize inputs and apply mask</span>
+        <span class="c1"># `normed_inputs`: (B * C, Q, I)</span>
+        <span class="n">normed_inputs</span> <span class="o">=</span> <span class="n">_revin</span><span class="p">(</span><span class="n">patched_x_past</span><span class="p">,</span> <span class="n">context_mu</span><span class="p">,</span> <span class="n">context_sigma</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">normed_inputs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">patched_mask</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">normed_inputs</span><span class="p">)</span>
+
+        <span class="c1"># forward pass</span>
+        <span class="c1"># `normed_outputs`: (B * C, O * W)</span>
+        <span class="n">normed_outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward</span><span class="p">(</span><span class="n">normed_inputs</span><span class="p">,</span> <span class="n">patched_mask</span><span class="p">)</span>
+
+        <span class="c1"># inverse normalization</span>
+        <span class="c1"># `renormed_outputs`: (B * C, O * W)</span>
+        <span class="n">renormed_outputs</span> <span class="o">=</span> <span class="n">_revin</span><span class="p">(</span><span class="n">normed_outputs</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># -&gt; (B, C, O, W)</span>
+        <span class="n">renormed_outputs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+            <span class="n">renormed_outputs</span><span class="p">,</span>
+            <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_targets</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_patch_len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_quantiles_plus_one</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="c1"># -&gt; (B, O, C, W)</span>
+        <span class="n">renormed_outputs</span> <span class="o">=</span> <span class="n">renormed_outputs</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+        <span class="c1"># truncate to output_chunk_length</span>
+        <span class="c1"># -&gt; (B, T, C, W)</span>
+        <span class="n">renormed_outputs</span> <span class="o">=</span> <span class="n">renormed_outputs</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_slice</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+
+        <span class="c1"># select only user-specified quantiles or median if deterministic</span>
+        <span class="c1"># -&gt; (B, T, C, N)</span>
+        <span class="n">renormed_outputs</span> <span class="o">=</span> <span class="n">renormed_outputs</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">user_quantile_indices</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">renormed_outputs</span>
+
+
+<div class="viewcode-block" id="TimesFM2p5Model">
+<a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.timesfm2p5_model.html#darts.models.forecasting.timesfm2p5_model.TimesFM2p5Model">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TimesFM2p5Model</span><span class="p">(</span><span class="n">FoundationModel</span><span class="p">):</span>
+    <span class="c1"># Fine-tuning is turned off for now pending proper fine-tuning support</span>
+    <span class="c1"># and configuration.</span>
+    <span class="n">_allows_finetuning</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">QuantileRegression</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">hub_model_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;google/timesfm-2.5-200m-pytorch&quot;</span><span class="p">,</span>
+        <span class="n">hub_model_revision</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1d952420fba87f3c6dee4f240de0f1a0fbc790e3&quot;</span><span class="p">,</span>
+        <span class="n">local_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;TimesFM 2.5 Model for zero-shot forecasting.</span>
+
+<span class="sd">        This is an implementation of Google&#39;s TimesFM 2.5 model, ported from</span>
+<span class="sd">        `google-research/timesfm &lt;https://github.com/google-research/timesfm&gt;`_ with adaptations to use the Darts API.</span>
+<span class="sd">        It is an updated version of the original TimesFM model [1]_, [2]_, with a larger context length (16,384 vs 512)</span>
+<span class="sd">        and better predictive accuracy.</span>
+
+<span class="sd">        This model supports either univariate or multivariate time series, but does not support covariates.</span>
+<span class="sd">        For multivariate time series, the model is applied independently to each component.</span>
+
+<span class="sd">        Using this model will automatically download and cache the pre-trained model from HuggingFace Hub</span>
+<span class="sd">        (`google/timesfm-2.5-200m-pytorch &lt;https://huggingface.co/google/timesfm-2.5-200m-pytorch/tree/main&gt;`_).</span>
+<span class="sd">        Alternatively, you can specify a local directory containing the model config and weights using the ``local_dir``</span>
+<span class="sd">        parameter.</span>
+
+<span class="sd">        By default, this model is deterministic and outputs only the median (0.5 quantile). To enable probabilistic</span>
+<span class="sd">        forecasts, pass a :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the</span>
+<span class="sd">        ``likelihood`` parameter. The quantiles used must be a subset of those used during TimesFM 2.5 pre-training, see</span>
+<span class="sd">        below for details. It is recommended to call :func:`predict()` with ``predict_likelihood_parameters=True``</span>
+<span class="sd">        or ``num_samples &gt;&gt; 1`` to get meaningful results.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            Number of time steps in the past to take as a model input (per chunk). Applies to the target</span>
+<span class="sd">            series, and past and/or future covariates (if the model supports it).</span>
+<span class="sd">            For TimesFM 2.5, `input_chunk_length + output_chunk_length + output_chunk_shift` must be less than or equal</span>
+<span class="sd">            to 16,384.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values</span>
+<span class="sd">            from future covariates to use as a model input (if the model supports future covariates). It is not the same</span>
+<span class="sd">            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated</span>
+<span class="sd">            using either a one-shot- or autoregressive forecast. Setting `n &lt;= output_chunk_length` prevents</span>
+<span class="sd">            auto-regression. This is useful when the covariates don&#39;t extend far enough into the future, or to prohibit</span>
+<span class="sd">            the model from using future values of past and / or future covariates for prediction (depending on the</span>
+<span class="sd">            model&#39;s covariate support).</span>
+<span class="sd">            For TimesFM 2.5, `output_chunk_length + output_chunk_shift` must be less than or equal to 128.</span>
+<span class="sd">        output_chunk_shift</span>
+<span class="sd">            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the</span>
+<span class="sd">            input chunk end). This will create a gap between the input and output. If the model supports</span>
+<span class="sd">            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start</span>
+<span class="sd">            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model</span>
+<span class="sd">            cannot generate autoregressive predictions (`n &gt; output_chunk_length`).</span>
+<span class="sd">        likelihood</span>
+<span class="sd">            The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of</span>
+<span class="sd">            :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. If using ``QuantileRegression``,</span>
+<span class="sd">            the quantiles must be a subset of those used during TimesFM 2.5 pre-training:</span>
+<span class="sd">            [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].</span>
+<span class="sd">            Default: ``None``, which will make TimesFM 2.5 deterministic (median quantile only).</span>
+<span class="sd">        hub_model_name</span>
+<span class="sd">            The model ID on HuggingFace Hub. Default: ``&quot;google/timesfm-2.5-200m-pytorch&quot;``.</span>
+<span class="sd">        hub_model_revision</span>
+<span class="sd">            The model version to use. This can be a branch name, tag name, or commit hash. Default is</span>
+<span class="sd">            ``1d952420fba87f3c6dee4f240de0f1a0fbc790e3``, which will use the October 2, 2025 release of TimesFM 2.5.</span>
+<span class="sd">        local_dir</span>
+<span class="sd">            Optional local directory to load the pre-downloaded model. If specified and the directory is empty, the</span>
+<span class="sd">            model will be downloaded from HuggingFace Hub and saved to this directory. Default is ``None``, which will</span>
+<span class="sd">            use a cache directory managed by ``huggingface_hub`` instead. Note that this is different from the</span>
+<span class="sd">            ``work_dir`` parameter used for saving model checkpoints during fine-tuning.</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and</span>
+<span class="sd">            Darts&#39; :class:`TorchForecastingModel`.</span>
+
+<span class="sd">        loss_fn</span>
+<span class="sd">            PyTorch loss function used for fine-tuning a deterministic TimesFM 2.5 model. Ignored for probabilistic</span>
+<span class="sd">            TimesFM 2.5 when ``likelihood`` is specified. Default: ``nn.MSELoss()``.</span>
+<span class="sd">        torch_metrics</span>
+<span class="sd">            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found</span>
+<span class="sd">            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.</span>
+<span class="sd">        optimizer_cls</span>
+<span class="sd">            The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.</span>
+<span class="sd">        optimizer_kwargs</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{&#39;lr&#39;: 1e-3}``</span>
+<span class="sd">            for specifying a learning rate). Otherwise, the default values of the selected ``optimizer_cls``</span>
+<span class="sd">            will be used. Default: ``None``.</span>
+<span class="sd">        lr_scheduler_cls</span>
+<span class="sd">            Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds</span>
+<span class="sd">            to using a constant learning rate. Default: ``None``.</span>
+<span class="sd">        lr_scheduler_kwargs</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.</span>
+<span class="sd">        use_reversible_instance_norm</span>
+<span class="sd">            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [3]_.</span>
+<span class="sd">            It is only applied to the features of the target series and not the covariates.</span>
+<span class="sd">        batch_size</span>
+<span class="sd">            Number of time series (input and output sequences) used in each training pass. Default: ``32``.</span>
+<span class="sd">        n_epochs</span>
+<span class="sd">            Number of epochs over which to train the model. Default: ``100``.</span>
+<span class="sd">        model_name</span>
+<span class="sd">            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,</span>
+<span class="sd">            defaults to the following string ``&quot;YYYY-mm-dd_HH_MM_SS_torch_model_run_PID&quot;``, where the initial part</span>
+<span class="sd">            of the name is formatted with the local date and time, while PID is the processed ID (preventing models</span>
+<span class="sd">            spawned at the same time by different processes to share the same model_name). E.g.,</span>
+<span class="sd">            ``&quot;2021-06-14_09_53_32_torch_model_run_44607&quot;``.</span>
+<span class="sd">        work_dir</span>
+<span class="sd">            Path of the working directory, where to save checkpoints and Tensorboard summaries.</span>
+<span class="sd">            Default: current working directory.</span>
+<span class="sd">        log_tensorboard</span>
+<span class="sd">            If set, use Tensorboard to log the different parameters. The logs will be located in:</span>
+<span class="sd">            ``&quot;{work_dir}/darts_logs/{model_name}/logs/&quot;``. Default: ``False``.</span>
+<span class="sd">        nr_epochs_val_period</span>
+<span class="sd">            Number of epochs to wait before evaluating the validation loss (if a validation</span>
+<span class="sd">            ``TimeSeries`` is passed to the :func:`fit()` method). Default: ``1``.</span>
+<span class="sd">        force_reset</span>
+<span class="sd">            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will</span>
+<span class="sd">            be discarded). Default: ``False``.</span>
+<span class="sd">        save_checkpoints</span>
+<span class="sd">            Whether to automatically save the untrained model and checkpoints from training.</span>
+<span class="sd">            To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where</span>
+<span class="sd">            :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,</span>
+<span class="sd">            :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using</span>
+<span class="sd">            :func:`save()` and loaded using :func:`load()`. Default: ``False``.</span>
+<span class="sd">        add_encoders</span>
+<span class="sd">            A large number of past and future covariates can be automatically generated with `add_encoders`.</span>
+<span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
+<span class="sd">            will be used as index encoders. Additionally, a transformer such as Darts&#39; :class:`Scaler` can be added to</span>
+<span class="sd">            transform the generated covariates. This happens all under one hood and only needs to be specified at</span>
+<span class="sd">            model creation.</span>
+<span class="sd">            Read :meth:`SequentialEncoder &lt;darts.dataprocessing.encoders.SequentialEncoder&gt;` to find out more about</span>
+<span class="sd">            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                def encode_year(idx):</span>
+<span class="sd">                    return (idx.year - 1950) / 50</span>
+
+<span class="sd">                add_encoders={</span>
+<span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
+<span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
+<span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [encode_year]},</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler(),</span>
+<span class="sd">                    &#39;tz&#39;: &#39;CET&#39;</span>
+<span class="sd">                }</span>
+<span class="sd">            ..</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Controls the randomness of the weights initialization and reproducible forecasting.</span>
+<span class="sd">        pl_trainer_kwargs</span>
+<span class="sd">            By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets</span>
+<span class="sd">            that performs the training, validation and prediction processes. These presets include automatic</span>
+<span class="sd">            checkpointing, tensorboard logging, setting the torch device and more.</span>
+<span class="sd">            With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer</span>
+<span class="sd">            object. Check the `PL Trainer documentation</span>
+<span class="sd">            &lt;https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html&gt;`__ for more information about the</span>
+<span class="sd">            supported kwargs. Default: ``None``.</span>
+<span class="sd">            Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``&quot;accelerator&quot;,</span>
+<span class="sd">            &quot;devices&quot;, and &quot;auto_select_gpus&quot;``. Some examples for setting the devices inside the ``pl_trainer_kwargs``</span>
+<span class="sd">            dict:</span>
+
+<span class="sd">            - ``{&quot;accelerator&quot;: &quot;cpu&quot;}`` for CPU,</span>
+<span class="sd">            - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;devices&quot;: [i]}`` to use only GPU ``i`` (``i`` must be an integer),</span>
+<span class="sd">            - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;devices&quot;: -1, &quot;auto_select_gpus&quot;: True}`` to use all available GPUS.</span>
+
+<span class="sd">            For more info, see here:</span>
+<span class="sd">            https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and</span>
+<span class="sd">            https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus</span>
+
+<span class="sd">            With parameter ``&quot;callbacks&quot;`` you can add custom or PyTorch-Lightning built-in callbacks to Darts&#39;</span>
+<span class="sd">            :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.</span>
+<span class="sd">            The model will stop training early if the validation loss `val_loss` does not improve beyond</span>
+<span class="sd">            specifications. For more information on callbacks, visit:</span>
+<span class="sd">            `PyTorch Lightning Callbacks</span>
+<span class="sd">            &lt;https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html&gt;`__</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                from pytorch_lightning.callbacks.early_stopping import EarlyStopping</span>
+
+<span class="sd">                # stop training when validation loss does not decrease more than 0.05 (`min_delta`) over</span>
+<span class="sd">                # a period of 5 epochs (`patience`)</span>
+<span class="sd">                my_stopper = EarlyStopping(</span>
+<span class="sd">                    monitor=&quot;val_loss&quot;,</span>
+<span class="sd">                    patience=5,</span>
+<span class="sd">                    min_delta=0.05,</span>
+<span class="sd">                    mode=&#39;min&#39;,</span>
+<span class="sd">                )</span>
+
+<span class="sd">                pl_trainer_kwargs={&quot;callbacks&quot;: [my_stopper]}</span>
+<span class="sd">            ..</span>
+
+<span class="sd">            Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional</span>
+<span class="sd">            parameter ``trainer`` in :func:`fit()` and :func:`predict()`.</span>
+<span class="sd">        show_warnings</span>
+<span class="sd">            whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of</span>
+<span class="sd">            your forecasting use case. Default: ``False``.</span>
+
+<span class="sd">        References</span>
+<span class="sd">        ----------</span>
+<span class="sd">        .. [1] A. Das, W. Kong, R. Sen, Y. Zhou. &quot;A decoder-only foundation model for time-series forecasting&quot;, 2025.</span>
+<span class="sd">                arXiv https://arxiv.org/abs/2310.10688.</span>
+<span class="sd">        .. [2] &quot;A decoder-only foundation model for time-series forecasting&quot;, 2024. Google Research.</span>
+<span class="sd">                https://research.google/blog/a-decoder-only-foundation-model-for-time-series-forecasting/</span>
+<span class="sd">        .. [3] T. Kim et al. &quot;Reversible Instance Normalization for Accurate Time-Series Forecasting against</span>
+<span class="sd">                Distribution Shift&quot;, https://openreview.net/forum?id=cGDAkQo1C0p</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import WeatherDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import TimesFM2p5Model</span>
+<span class="sd">        &gt;&gt;&gt; # load data in float32 format (macOS issues with float64 and PyTorch)</span>
+<span class="sd">        &gt;&gt;&gt; series = WeatherDataset().load().astype(&quot;float32&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; # predicting atmospheric pressure</span>
+<span class="sd">        &gt;&gt;&gt; target = series[&#39;p (mbar)&#39;][:100]</span>
+<span class="sd">        &gt;&gt;&gt; # by default, TimesFM2p5Model is deterministic; to enable probabilistic forecasts,</span>
+<span class="sd">        &gt;&gt;&gt; # set likelihood to QuantileRegression and use a subset of the pre-trained quantiles</span>
+<span class="sd">        &gt;&gt;&gt; model = TimesFM2p5Model(</span>
+<span class="sd">        &gt;&gt;&gt;     input_chunk_length=6,</span>
+<span class="sd">        &gt;&gt;&gt;     output_chunk_length=6,</span>
+<span class="sd">        &gt;&gt;&gt; )</span>
+<span class="sd">        &gt;&gt;&gt; # calling fit is still mandatory to ensure consistent number of components; however,</span>
+<span class="sd">        &gt;&gt;&gt; # TimesFM2p5Model is training-free and the model weights are not updated</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(target)</span>
+<span class="sd">        &gt;&gt;&gt; # when TimesFM2p5Model is probabilistic, set ``predict_likelihood_parameters=True``</span>
+<span class="sd">        &gt;&gt;&gt; # or ``num_samples&gt;&gt;1`` to get meaningful results</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
+<span class="sd">        &gt;&gt;&gt; print(pred.all_values())</span>
+<span class="sd">        [[[1005.7797 ]]</span>
+<span class="sd">        [[1005.78766]]</span>
+<span class="sd">        [[1005.7985 ]]</span>
+<span class="sd">        [[1005.7852 ]]</span>
+<span class="sd">        [[1005.7882 ]]</span>
+<span class="sd">        [[1005.79565]]]</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            TimesFM 2.5 does not support covariates natively. The source implementation uses `Xreg` to fit a ridge</span>
+<span class="sd">            regression between covariates and the target series (or forecast residuals) as a pre/post-processing step.</span>
+<span class="sd">            You can implement a similar approach externally in Darts.</span>
+<span class="sd">            See `Issue #2976 &lt;https://github.com/unit8co/darts/issues/2976#issuecomment-3691415141&gt;`_ for details.</span>
+<span class="sd">        .. note::</span>
+<span class="sd">            Fine-tuning of TimesFM 2.5 is not supported at the moment.</span>
+<span class="sd">        .. note::</span>
+<span class="sd">            TimesFM 2.5 is licensed under the `Apache-2.0 License &lt;https://github.com/google-research/timesfm/blob/master/LICENSE&gt;`_,</span>
+<span class="sd">            Copyright 2025 Google LLC. By using this model, you agree to the terms and conditions of the license.</span>
+<span class="sd">        .. warning::</span>
+<span class="sd">            Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from</span>
+<span class="sd">            those obtained using the original implementation when prediction horizon `n` is larger than 128.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">hf_connector</span> <span class="o">=</span> <span class="n">HuggingFaceConnector</span><span class="p">(</span>
+            <span class="n">model_name</span><span class="o">=</span><span class="n">hub_model_name</span><span class="p">,</span>
+            <span class="n">model_revision</span><span class="o">=</span><span class="n">hub_model_revision</span><span class="p">,</span>
+            <span class="n">local_dir</span><span class="o">=</span><span class="n">local_dir</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># As per the original implementation, the model config is ignored and default</span>
+        <span class="c1"># parameters are used instead.</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">_TimesFM2p5_200M_Definition</span><span class="p">()</span>
+
+        <span class="c1"># validate `input_chunk_length` against model&#39;s maximum context_length</span>
+        <span class="n">context_length</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">context_limit</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">input_chunk_length</span> <span class="o">+</span> <span class="n">output_chunk_length</span> <span class="o">+</span> <span class="n">output_chunk_shift</span>
+            <span class="o">&gt;</span> <span class="n">context_length</span>
+        <span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;`input_chunk_length` </span><span class="si">{</span><span class="n">input_chunk_length</span><span class="si">}</span><span class="s2"> plus `output_chunk_length` </span><span class="si">{</span><span class="n">output_chunk_length</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;plus `output_chunk_shift` </span><span class="si">{</span><span class="n">output_chunk_shift</span><span class="si">}</span><span class="s2"> cannot be greater than model&#39;s maximum &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;context_length </span><span class="si">{</span><span class="n">context_length</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># validate `output_chunk_length` and `output_chunk_shift` against model&#39;s output limits</span>
+        <span class="n">prediction_length</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_patch_len</span>
+        <span class="k">if</span> <span class="n">output_chunk_length</span> <span class="o">+</span> <span class="n">output_chunk_shift</span> <span class="o">&gt;</span> <span class="n">prediction_length</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;`output_chunk_length` </span><span class="si">{</span><span class="n">output_chunk_length</span><span class="si">}</span><span class="s2"> plus `output_chunk_shift` </span><span class="si">{</span><span class="n">output_chunk_shift</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;cannot be greater than model&#39;s maximum prediction length </span><span class="si">{</span><span class="n">prediction_length</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">quantiles</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">quantiles</span>
+        <span class="c1"># by default (`likelihood=None`), model is deterministic</span>
+        <span class="c1"># otherwise, only QuantileRegression likelihood is supported and quantiles must be</span>
+        <span class="c1"># a subset of the pre-trained quantiles</span>
+        <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">QuantileRegression</span><span class="p">):</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Only QuantileRegression likelihood is supported for TimesFM 2.5 in Darts. &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">likelihood</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="n">user_quantiles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">quantiles</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">user_quantiles</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">quantiles</span><span class="p">):</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;The quantiles for QuantileRegression likelihood </span><span class="si">{</span><span class="n">user_quantiles</span><span class="si">}</span><span class="s2"> &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;must be a subset of TimesFM 2.5 quantiles </span><span class="si">{</span><span class="n">quantiles</span><span class="si">}</span><span class="s2">.&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">hf_connector</span> <span class="o">=</span> <span class="n">hf_connector</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">enable_finetuning</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">TorchTrainingSample</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PLForecastingModule</span><span class="p">:</span>
+        <span class="n">pl_module_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hf_connector</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span>
+            <span class="n">module_class</span><span class="o">=</span><span class="n">_TimesFM2p5Module</span><span class="p">,</span>
+            <span class="n">pl_module_params</span><span class="o">=</span><span class="n">pl_module_params</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_past_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_future_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2026, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

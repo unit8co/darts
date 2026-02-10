@@ -43,6 +43,7 @@ darts.models.forecasting
    darts.models.forecasting.tft_submodels
    darts.models.forecasting.theta
    darts.models.forecasting.tide_model
+   darts.models.forecasting.timesfm2p5_model
    darts.models.forecasting.transformer_model
    darts.models.forecasting.tsmixer_model
    darts.models.forecasting.varima
@@ -85,6 +86,7 @@ darts.models.forecasting
 - :doc:`darts.models.forecasting.tft_submodels <darts.models.forecasting.tft_submodels>`
 - :doc:`darts.models.forecasting.theta <darts.models.forecasting.theta>`
 - :doc:`darts.models.forecasting.tide_model <darts.models.forecasting.tide_model>`
+- :doc:`darts.models.forecasting.timesfm2p5_model <darts.models.forecasting.timesfm2p5_model>`
 - :doc:`darts.models.forecasting.transformer_model <darts.models.forecasting.transformer_model>`
 - :doc:`darts.models.forecasting.tsmixer_model <darts.models.forecasting.tsmixer_model>`
 - :doc:`darts.models.forecasting.varima <darts.models.forecasting.varima>`

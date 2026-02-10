@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.39.0" />
+  <meta name="docsearch:version" content="0.40.0" />
   </head>
   
   
@@ -436,7 +436,11 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">_tolerance_coverages</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">_get_tolerance_levels</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.sklearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.missing_values</span><span class="w"> </span><span class="kn">import</span> <span class="n">fill_missing_values</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.ts_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_single_series</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelMode</span><span class="p">,</span> <span class="n">SeasonalityMode</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -1544,6 +1548,136 @@
     <span class="n">ax3</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;lag&quot;</span><span class="p">)</span>
     <span class="n">ax3</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;ACF&quot;</span><span class="p">)</span></div>
 
+
+
+<div class="viewcode-block" id="plot_tolerance_curve">
+<a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.plot_tolerance_curve">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_tolerance_curve</span><span class="p">(</span>
+    <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">min_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">max_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
+    <span class="n">q</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">fig_size</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plots the Tolerance Curve for evaluating forecast alignment.</span>
+
+<span class="sd">    The tolerance curve shows, for each tolerance level (as a percentage of the actual series range),</span>
+<span class="sd">    what fraction of prediction points fall within that tolerance.</span>
+
+<span class="sd">    For multivariate series, one curve is plotted per component.</span>
+
+<span class="sd">    The Area Under Tolerance Curve (AUTC) can be computed using :func:`~darts.metrics.metrics.autc`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    actual_series</span>
+<span class="sd">        The (sequence of) actual series.</span>
+<span class="sd">    pred_series</span>
+<span class="sd">        The (sequence of) predicted series.</span>
+<span class="sd">    intersect</span>
+<span class="sd">        For time series that are overlapping in time without having the same time index, setting `True`</span>
+<span class="sd">        will consider the values only over their common time interval (intersection in time).</span>
+<span class="sd">    min_tolerance</span>
+<span class="sd">        The minimum tolerance level as a fraction of the series half-range. Default is 0.0 (0%).</span>
+<span class="sd">    max_tolerance</span>
+<span class="sd">        The maximum tolerance level as a fraction of the series half-range. Default is 1.0 (100%).</span>
+<span class="sd">    step</span>
+<span class="sd">        The step size between tolerance levels. Default is 0.01 (1%).</span>
+<span class="sd">        For example, with defaults, tolerances are [0.0, 0.01, 0.02, ..., 1.0].</span>
+<span class="sd">    q</span>
+<span class="sd">        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.</span>
+<span class="sd">    n_jobs</span>
+<span class="sd">        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is</span>
+<span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
+<span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
+<span class="sd">    verbose</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    fig_size</span>
+<span class="sd">        The size of the figure to be displayed.</span>
+<span class="sd">    axis</span>
+<span class="sd">        Optionally, an axis object to plot on.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`~darts.metrics.metrics.autc` : Compute the Area Under Tolerance Curve as a single score.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># get coverage for different tolerance levels</span>
+    <span class="n">coverages</span> <span class="o">=</span> <span class="n">_tolerance_coverages</span><span class="p">(</span>
+        <span class="n">actual_series</span><span class="o">=</span><span class="n">actual_series</span><span class="p">,</span>
+        <span class="n">pred_series</span><span class="o">=</span><span class="n">pred_series</span><span class="p">,</span>
+        <span class="n">intersect</span><span class="o">=</span><span class="n">intersect</span><span class="p">,</span>
+        <span class="n">min_tolerance</span><span class="o">=</span><span class="n">min_tolerance</span><span class="p">,</span>
+        <span class="n">max_tolerance</span><span class="o">=</span><span class="n">max_tolerance</span><span class="p">,</span>
+        <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span>
+        <span class="n">q</span><span class="o">=</span><span class="n">q</span><span class="p">,</span>
+        <span class="n">component_reduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">series_reduction</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">,</span>
+        <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">tolerances</span> <span class="o">=</span> <span class="n">_get_tolerance_levels</span><span class="p">(</span>
+        <span class="n">min_tolerance</span><span class="o">=</span><span class="n">min_tolerance</span><span class="p">,</span>
+        <span class="n">max_tolerance</span><span class="o">=</span><span class="n">max_tolerance</span><span class="p">,</span>
+        <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># -&gt; (n coverages, n components * n quantiles)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">coverages</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">coverages</span> <span class="o">=</span> <span class="n">coverages</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">series_</span> <span class="o">=</span> <span class="n">get_single_series</span><span class="p">(</span><span class="n">actual_series</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">q</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="n">coverage_labels</span> <span class="o">=</span> <span class="n">series_</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">coverage_labels</span> <span class="o">=</span> <span class="n">QuantileRegression</span><span class="p">(</span><span class="n">n_outputs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">quantiles</span><span class="o">=</span><span class="n">q</span><span class="p">)</span><span class="o">.</span><span class="n">component_names</span><span class="p">(</span>
+            <span class="n">series_</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">axis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">fig_size</span><span class="p">)</span>
+
+    <span class="n">tolerances_perc</span> <span class="o">=</span> <span class="n">tolerances</span> <span class="o">*</span> <span class="mf">100.0</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">comp_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">coverage_labels</span><span class="p">):</span>
+        <span class="n">coverages_comp</span> <span class="o">=</span> <span class="n">coverages</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span>
+        <span class="n">coverages_perc</span> <span class="o">=</span> <span class="n">coverages_comp</span> <span class="o">*</span> <span class="mf">100.0</span>
+
+        <span class="n">auc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">coverages_comp</span><span class="p">,</span> <span class="n">tolerances</span><span class="p">)</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">comp_name</span><span class="si">}</span><span class="s2"> (AUTC = </span><span class="si">{</span><span class="n">auc</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="n">axis</span><span class="o">.</span><span class="n">step</span><span class="p">(</span>
+            <span class="n">tolerances_perc</span><span class="p">,</span>
+            <span class="n">coverages_perc</span><span class="p">,</span>
+            <span class="n">where</span><span class="o">=</span><span class="s2">&quot;post&quot;</span><span class="p">,</span>
+            <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">coverage_labels</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">axis</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span>
+                <span class="n">tolerances_perc</span><span class="p">,</span>
+                <span class="n">coverages_perc</span><span class="p">,</span>
+                <span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span>
+                <span class="n">color</span><span class="o">=</span><span class="n">axis</span><span class="o">.</span><span class="n">get_lines</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_color</span><span class="p">(),</span>
+                <span class="n">step</span><span class="o">=</span><span class="s2">&quot;post&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="c1"># add reference line for perfect predictions</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">105</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Tolerance (</span><span class="si">% o</span><span class="s2">f range)&quot;</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Coverage (%)&quot;</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Tolerance Curve&quot;</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span></div>
+
 </pre></div>
 
                 </article>
@@ -1585,7 +1719,7 @@
 
   <p class="copyright">
     
-      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      © Copyright 2020 - 2026, Unit8 SA (Apache 2.0 License).
       <br/>
     
   </p>

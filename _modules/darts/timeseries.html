@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.39.0" />
+  <meta name="docsearch:version" content="0.40.0" />
   </head>
   
   
@@ -452,6 +452,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
@@ -462,10 +463,9 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">inspect</span><span class="w"> </span><span class="kn">import</span> <span class="n">signature</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <span class="n">StringIO</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModuleType</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.axes</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">narwhals</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nw</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
@@ -483,11 +483,14 @@
     <span class="n">make_collapsible_section</span><span class="p">,</span>
     <span class="n">make_paragraph</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils._plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot</span> <span class="k">as</span> <span class="n">_plot</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils._plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">plotly</span> <span class="k">as</span> <span class="n">_plotly</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">SUPPORTED_RESAMPLE_METHODS</span><span class="p">,</span>
     <span class="n">dataframe_col_to_time_index</span><span class="p">,</span>
     <span class="n">expand_arr</span><span class="p">,</span>
     <span class="n">generate_index</span><span class="p">,</span>
+    <span class="n">infer_freq_intersection</span><span class="p">,</span>
     <span class="n">n_steps_between</span><span class="p">,</span>
 <span class="p">)</span>
 
@@ -495,6 +498,9 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Self</span>
 <span class="k">else</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Self</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">plotly.graph_objects</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">go</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -827,9 +833,9 @@
 
             <span class="c1"># Calling astype is costly even when there&#39;s no change...</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">cols_to_cast</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
-                <span class="n">static_covariates</span> <span class="o">=</span> <span class="n">static_covariates</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
-                    <span class="p">{</span><span class="n">col</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols_to_cast</span><span class="p">},</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span>
-                <span class="p">)</span>
+                <span class="n">static_covariates</span> <span class="o">=</span> <span class="n">static_covariates</span><span class="o">.</span><span class="n">astype</span><span class="p">({</span>
+                    <span class="n">col</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols_to_cast</span>
+                <span class="p">})</span>
 
         <span class="c1"># prepare metadata</span>
         <span class="k">if</span> <span class="n">metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
@@ -1245,7 +1251,7 @@
                     <span class="s2">&quot;`pandas.RangeIndex(len(df))`. If this is not desired consider adding a time column &quot;</span>
                     <span class="s2">&quot;to your `DataFrame` and defining `time_col`.&quot;</span>
                 <span class="p">)</span>
-            <span class="c1"># if we are here, the dataframe was pandas</span>
+            <span class="c1"># if we are here, the DataFrame was pandas</span>
             <span class="k">elif</span> <span class="ow">not</span> <span class="p">(</span>
                 <span class="nb">isinstance</span><span class="p">(</span><span class="n">time_index</span><span class="p">,</span> <span class="n">VALID_INDEX_TYPES</span><span class="p">)</span>
                 <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">time_index</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)</span>
@@ -1883,6 +1889,10 @@
 
 <span class="sd">        At the moment this only supports deterministic time series (i.e., made of 1 sample).</span>
 
+<span class="sd">        If the JSON string contains static covariates, hierarchy, or metadata, they will be automatically</span>
+<span class="sd">        loaded. The optional parameters `static_covariates`, `hierarchy`, and `metadata` can be used to</span>
+<span class="sd">        override or provide these values if they are not present in the JSON string.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        json_str</span>
@@ -1895,6 +1905,7 @@
 <span class="sd">            are globally &#39;applied&#39; to all components of the TimeSeries. If a multi-row DataFrame, the number of</span>
 <span class="sd">            rows must match the number of components of the TimeSeries (in this case, the number of columns in</span>
 <span class="sd">            ``value_cols``). This adds control for component-specific static covariates.</span>
+<span class="sd">            If the JSON string already contains static covariates, this parameter will override them.</span>
 <span class="sd">        hierarchy</span>
 <span class="sd">            Optionally, a dictionary describing the grouping(s) of the time series. The keys are component names, and</span>
 <span class="sd">            for a given component name `c`, the value is a list of component names that `c` &quot;belongs&quot; to. For instance,</span>
@@ -1920,8 +1931,10 @@
 <span class="sd">            The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at</span>
 <span class="sd">            different levels are consistent), see `hierarchical reconciliation</span>
 <span class="sd">            &lt;https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html&gt;`__.</span>
+<span class="sd">            If the JSON string already contains a hierarchy, this parameter will override it.</span>
 <span class="sd">        metadata</span>
 <span class="sd">            Optionally, a dictionary with metadata to be added to the TimeSeries.</span>
+<span class="sd">            If the JSON string already contains metadata, this parameter will override it.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1934,16 +1947,31 @@
 <span class="sd">        &gt;&gt;&gt; json_str = (</span>
 <span class="sd">        &gt;&gt;&gt;     &#39;{&quot;columns&quot;:[&quot;vals&quot;],&quot;index&quot;:[&quot;2020-01-01&quot;,&quot;2020-01-02&quot;,&quot;2020-01-03&quot;],&quot;data&quot;:[[0.0],[1.0],[2.0]]}&#39;</span>
 <span class="sd">        &gt;&gt;&gt; )</span>
-<span class="sd">        &gt;&gt;&gt; series = TimeSeries.from_json(&quot;data.csv&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; series = TimeSeries.from_json(json_str)</span>
 <span class="sd">        &gt;&gt;&gt; series.shape</span>
 <span class="sd">        (3, 1, 1)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">parsed</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_str</span><span class="p">)</span>
+
+        <span class="n">static_covariates_</span> <span class="o">=</span> <span class="n">parsed</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;static_covariates&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">static_covariates_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">static_covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">static_covariates</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">**</span><span class="n">static_covariates_</span><span class="p">)</span>
+
+        <span class="n">hierarchy_</span> <span class="o">=</span> <span class="n">parsed</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;hierarchy&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">hierarchy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">hierarchy</span> <span class="o">=</span> <span class="n">hierarchy_</span>
+
+        <span class="n">metadata_</span> <span class="o">=</span> <span class="n">parsed</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">metadata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">metadata</span> <span class="o">=</span> <span class="n">metadata_</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_json</span><span class="p">(</span><span class="n">StringIO</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">parsed</span><span class="p">)),</span> <span class="n">orient</span><span class="o">=</span><span class="s2">&quot;split&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span>
-            <span class="n">df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">read_json</span><span class="p">(</span><span class="n">StringIO</span><span class="p">(</span><span class="n">json_str</span><span class="p">),</span> <span class="n">orient</span><span class="o">=</span><span class="s2">&quot;split&quot;</span><span class="p">),</span>
+            <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
             <span class="n">static_covariates</span><span class="o">=</span><span class="n">static_covariates</span><span class="p">,</span>
             <span class="n">hierarchy</span><span class="o">=</span><span class="n">hierarchy</span><span class="p">,</span>
             <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span>
-            <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># JSON is immutable, so no need to copy</span>
+            <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
@@ -2222,27 +2250,37 @@
         <span class="n">backend</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ModuleType</span><span class="p">,</span> <span class="n">Implementation</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Implementation</span><span class="o">.</span><span class="n">PANDAS</span><span class="p">,</span>
         <span class="n">time_as_index</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">suppress_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">add_static_covariates</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">add_metadata</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a DataFrame representation of the series in a given `backend`.</span>
 
 <span class="sd">        Each of the series components will appear as a column in the DataFrame.</span>
-<span class="sd">        If the series is stochastic, the samples are returned as columns of the dataframe with column names</span>
+<span class="sd">        If the series is stochastic, the samples are returned as columns of the DataFrame with column names</span>
 <span class="sd">        as &#39;component_s#&#39; (e.g. with two components and two samples:</span>
 <span class="sd">        &#39;comp0_s0&#39;, &#39;comp0_s1&#39; &#39;comp1_s0&#39; &#39;comp1_s1&#39;).</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        copy</span>
-<span class="sd">            Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.</span>
+<span class="sd">            Whether to return a copy of the DataFrame. Leave it to True unless you know what you are doing.</span>
 <span class="sd">        backend</span>
 <span class="sd">            The backend to which to export the `TimeSeries`. See the `narwhals documentation</span>
 <span class="sd">            &lt;https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict&gt;`__ for all supported</span>
 <span class="sd">            backends.</span>
 <span class="sd">        time_as_index</span>
-<span class="sd">            Whether to set the time index as the index of the dataframe or in the left-most column.</span>
+<span class="sd">            Whether to set the time index as the index of the DataFrame or in the left-most column.</span>
 <span class="sd">            Only effective with the pandas `backend`.</span>
 <span class="sd">        suppress_warnings</span>
 <span class="sd">            Whether to suppress the warnings for the `DataFrame` creation.</span>
+<span class="sd">        add_static_covariates</span>
+<span class="sd">            Whether to add the series&#39; static covariates to the resulting DataFrame (one column per component-static</span>
+<span class="sd">            covariate pair). If a bool, controls whether to add all static covariates or none. If a string, or list of</span>
+<span class="sd">            strings, specifies the subset of static covariate columns / names to add.</span>
+<span class="sd">        add_metadata</span>
+<span class="sd">            Whether to add the series&#39; metadata to the resulting DataFrame (one column per metadata entry). If a bool,</span>
+<span class="sd">            controls whether to add all metadata entries or none. If a string, or list of strings, specifies the subset</span>
+<span class="sd">            of metadata keys / names to add.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -2279,6 +2317,66 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">columns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">values</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="n">col</span><span class="p">:</span> <span class="n">data</span><span class="p">[:,</span> <span class="n">idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">columns</span><span class="p">)}</span>
+
+        <span class="c1"># handle static covariates</span>
+        <span class="k">if</span> <span class="n">add_static_covariates</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_static_covariates</span><span class="p">:</span>
+            <span class="n">static_covs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_covariates</span>
+            <span class="n">components</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">static_covs</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">add_static_covariates</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+                <span class="n">static_cov_cols</span> <span class="o">=</span> <span class="n">static_covs</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">add_static_covariates</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">static_cov_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">add_static_covariates</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">static_cov_cols</span> <span class="o">=</span> <span class="n">add_static_covariates</span>
+
+            <span class="n">missing_cols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">static_cov_cols</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">static_covs</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">missing_cols</span><span class="p">:</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;The following static covariates to add via `add_static_covariates` &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;do not exist: </span><span class="si">{</span><span class="n">missing_cols</span><span class="si">}</span><span class="s2">. Available static covariates are: &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">static_covs</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">static_cov_col</span> <span class="ow">in</span> <span class="n">static_cov_cols</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">components</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">static_covs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">comp</span><span class="p">,</span> <span class="n">static_cov_col</span><span class="p">]</span>
+                    <span class="n">data_col</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">value</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">components</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">column</span> <span class="o">=</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">((</span><span class="n">static_cov_col</span><span class="p">,</span> <span class="n">comp</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">column</span> <span class="o">=</span> <span class="n">static_cov_col</span>
+                    <span class="n">data</span><span class="p">[</span><span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_col</span>
+
+        <span class="c1"># handle metadata</span>
+        <span class="k">if</span> <span class="n">add_metadata</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_metadata</span><span class="p">:</span>
+            <span class="n">metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">add_metadata</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+                <span class="n">metadata_cols</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">add_metadata</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">metadata_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">add_metadata</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">metadata_cols</span> <span class="o">=</span> <span class="n">add_metadata</span>
+
+            <span class="n">missing_cols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">metadata_cols</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">missing_cols</span><span class="p">:</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;The following metadata to add via `add_metadata` &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;do not exist: </span><span class="si">{</span><span class="n">missing_cols</span><span class="si">}</span><span class="s2">. Available metadata are: &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">metadata_col</span> <span class="ow">in</span> <span class="n">metadata_cols</span><span class="p">:</span>
+                <span class="n">data_col</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">metadata</span><span class="p">[</span><span class="n">metadata_col</span><span class="p">])</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">metadata_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_col</span>
 
         <span class="n">time_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span>
 
@@ -2288,12 +2386,10 @@
 
         <span class="k">if</span> <span class="n">time_as_index</span><span class="p">:</span>
             <span class="c1"># special path for pandas with index</span>
-            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">time_index</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">time_index</span><span class="p">)</span>
 
-        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">time_index</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">time_index</span><span class="p">,</span>  <span class="c1"># set time_index as left-most column</span>
-            <span class="o">**</span><span class="p">{</span><span class="n">col</span><span class="p">:</span> <span class="n">data</span><span class="p">[:,</span> <span class="n">idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">columns</span><span class="p">)},</span>
-        <span class="p">}</span>
+        <span class="c1"># set time_index as left-most column</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="n">time_index</span><span class="o">.</span><span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_dim</span><span class="p">:</span> <span class="n">time_index</span><span class="p">,</span> <span class="o">**</span><span class="n">data</span><span class="p">}</span>
 
         <span class="k">return</span> <span class="n">nw</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">)</span><span class="o">.</span><span class="n">to_native</span><span class="p">()</span></div>
 
@@ -3193,6 +3289,13 @@
             <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">time_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">time_index</span><span class="p">)</span>
+            <span class="c1"># frequency is lost when len(time_index) &lt; 3</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="mi">0</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">time_index</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span>
+                <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time_index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="n">time_index</span><span class="o">.</span><span class="n">freq</span> <span class="ow">is</span> <span class="kc">None</span>
+            <span class="p">):</span>
+                <span class="n">time_index</span><span class="o">.</span><span class="n">freq</span> <span class="o">=</span> <span class="n">infer_freq_intersection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span>
             <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">time_index</span><span class="p">]</span></div>
 
 
@@ -4130,7 +4233,7 @@
 
 <span class="sd">        The holiday component is binary where `1` corresponds to a time step falling on a holiday.</span>
 
-<span class="sd">        Available countries can be found `here &lt;https://github.com/dr-prodigy/python-holidays#available-countries&gt;`__.</span>
+<span class="sd">        Available countries can be found `here &lt;https://holidays.readthedocs.io/en/latest/#available-countries&gt;`__.</span>
 
 <span class="sd">        This works only for deterministic time series (i.e., made of 1 sample).</span>
 
@@ -4712,7 +4815,7 @@
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
 
-        <span class="c1"># read series dataframe</span>
+        <span class="c1"># read series DataFrame</span>
         <span class="n">ts_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">suppress_warnings</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="c1"># store some original attributes of the series</span>
@@ -4850,7 +4953,7 @@
                 <span class="n">drop_before_index</span><span class="p">:</span>
             <span class="p">]</span>
 
-        <span class="c1"># revert dataframe to TimeSeries</span>
+        <span class="c1"># revert DataFrame to TimeSeries</span>
         <span class="n">new_index</span> <span class="o">=</span> <span class="n">original_index</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">resulting_transformations</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">convert_hierarchy</span><span class="p">:</span>
@@ -4884,17 +4987,31 @@
 
 <span class="sd">        At the moment this function works only on deterministic time series (i.e., made of 1 sample).</span>
 
-<span class="sd">        Notes</span>
-<span class="sd">        -----</span>
-<span class="sd">        Static covariates are not returned in the JSON string. When using `TimeSeries.from_json()`, the static</span>
-<span class="sd">        covariates can be added with input argument `static_covariates`.</span>
+<span class="sd">        The JSON string includes the series values, time index, component names, as well as static covariates,</span>
+<span class="sd">        hierarchy, and metadata (if any).</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        str</span>
 <span class="sd">            A JSON String representing the series</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        TimeSeries.from_json : Create a TimeSeries from a JSON string.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s2">&quot;split&quot;</span><span class="p">,</span> <span class="n">date_format</span><span class="o">=</span><span class="s2">&quot;iso&quot;</span><span class="p">)</span></div>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s2">&quot;split&quot;</span><span class="p">,</span> <span class="n">date_format</span><span class="o">=</span><span class="s2">&quot;iso&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;static_covariates&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">static_covariates</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s2">&quot;split&quot;</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hierarchy</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;hierarchy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hierarchy</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;metadata&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span>
+
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="TimeSeries.to_csv">
@@ -4955,7 +5072,7 @@
         <span class="o">*</span><span class="n">args</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">Axes</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot the series.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot the series using Matplotlib.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -4969,7 +5086,7 @@
 <span class="sd">        low_quantile</span>
 <span class="sd">            The quantile to use for the lower bound of the plotted confidence interval. Similar to `central_quantile`,</span>
 <span class="sd">            this is applied to each component separately (i.e., displaying marginal distributions). No confidence</span>
-<span class="sd">            interval is shown if `confidence_low_quantile` is None (default 0.05).</span>
+<span class="sd">            interval is shown if `low_quantile` is None (default 0.05).</span>
 <span class="sd">        high_quantile</span>
 <span class="sd">            The quantile to use for the upper bound of the plotted confidence interval. Similar to `central_quantile`,</span>
 <span class="sd">            this is applied to each component separately (i.e., displaying marginal distributions). No confidence</span>
@@ -5009,175 +5126,108 @@
 <span class="sd">        matplotlib.axes.Axes</span>
 <span class="sd">            Either the passed `ax` axis, a newly created one if `new_plot=True`, or the existing one.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">alpha_confidence_intvls</span> <span class="o">=</span> <span class="mf">0.25</span>
+        <span class="k">return</span> <span class="n">_plot</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">new_plot</span><span class="o">=</span><span class="n">new_plot</span><span class="p">,</span>
+            <span class="n">central_quantile</span><span class="o">=</span><span class="n">central_quantile</span><span class="p">,</span>
+            <span class="n">low_quantile</span><span class="o">=</span><span class="n">low_quantile</span><span class="p">,</span>
+            <span class="n">high_quantile</span><span class="o">=</span><span class="n">high_quantile</span><span class="p">,</span>
+            <span class="n">default_formatting</span><span class="o">=</span><span class="n">default_formatting</span><span class="p">,</span>
+            <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+            <span class="n">max_nr_components</span><span class="o">=</span><span class="n">max_nr_components</span><span class="p">,</span>
+            <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+            <span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">,</span>
+            <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
-        <span class="k">if</span> <span class="n">central_quantile</span> <span class="o">!=</span> <span class="s2">&quot;mean&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
-                <span class="nb">isinstance</span><span class="p">(</span><span class="n">central_quantile</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">and</span> <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">central_quantile</span> <span class="o">&lt;=</span> <span class="mf">1.0</span>
-            <span class="p">):</span>
-                <span class="n">raise_log</span><span class="p">(</span>
-                    <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="s1">&#39;central_quantile must be either &quot;mean&quot;, or a float between 0 and 1.&#39;</span>
-                    <span class="p">),</span>
-                    <span class="n">logger</span><span class="p">,</span>
-                <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">high_quantile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">low_quantile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">low_quantile</span> <span class="o">&lt;=</span> <span class="mf">1.0</span> <span class="ow">and</span> <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">high_quantile</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">):</span>
-                <span class="n">raise_log</span><span class="p">(</span>
-                    <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="s2">&quot;confidence interval low and high quantiles must be between 0 and 1.&quot;</span><span class="p">,</span>
-                    <span class="p">),</span>
-                    <span class="n">logger</span><span class="p">,</span>
-                <span class="p">)</span>
+<div class="viewcode-block" id="TimeSeries.plotly">
+<a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.plotly">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plotly</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">fig</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;go.Figure&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">central_quantile</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">low_quantile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span>
+        <span class="n">high_quantile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.95</span><span class="p">,</span>
+        <span class="n">title</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">label</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">max_nr_components</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">c</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">downsample_threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100_000</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;go.Figure&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot the series using Plotly.</span>
 
-        <span class="k">if</span> <span class="n">max_nr_components</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
-            <span class="n">n_components_to_plot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">n_components_to_plot</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span> <span class="n">max_nr_components</span><span class="p">)</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        fig</span>
+<span class="sd">            Optionally, a Plotly `go.Figure` object to plot on. If provided, the series will be added to this</span>
+<span class="sd">            figure. If None, a new figure will be created.</span>
+<span class="sd">        central_quantile</span>
+<span class="sd">            The quantile (between 0 and 1) to plot as a &quot;central&quot; value, if the series is stochastic (i.e., if</span>
+<span class="sd">            it has multiple samples). This will be applied on each component separately (i.e., to display quantiles</span>
+<span class="sd">            of the components&#39; marginal distributions). For instance, setting `central_quantile=0.5` will plot the</span>
+<span class="sd">            median of each component. `central_quantile` can also be set to &#39;mean&#39;.</span>
+<span class="sd">        low_quantile</span>
+<span class="sd">            The quantile to use for the lower bound of the plotted confidence interval. Similar to `central_quantile`,</span>
+<span class="sd">            this is applied to each component separately (i.e., displaying marginal distributions). No confidence</span>
+<span class="sd">            interval is shown if `low_quantile` is None (default 0.05).</span>
+<span class="sd">        high_quantile</span>
+<span class="sd">            The quantile to use for the upper bound of the plotted confidence interval. Similar to `central_quantile`,</span>
+<span class="sd">            this is applied to each component separately (i.e., displaying marginal distributions). No confidence</span>
+<span class="sd">            interval is shown if `high_quantile` is None (default 0.95).</span>
+<span class="sd">        title</span>
+<span class="sd">            Optionally, a plot title.</span>
+<span class="sd">        label</span>
+<span class="sd">            Can either be a string or list of strings. If a string and the series only has a single component, it is</span>
+<span class="sd">            used as the label for that component. If a string and the series has multiple components, it is used as</span>
+<span class="sd">            a prefix for each component name. If a list of strings with length equal to the number of components in</span>
+<span class="sd">            the series, the labels will be mapped to the components in order.</span>
+<span class="sd">        max_nr_components</span>
+<span class="sd">            The maximum number of components of a series to plot. -1 means all components will be plotted.</span>
+<span class="sd">        alpha</span>
+<span class="sd">            Optionally, set the line alpha for deterministic series, or the confidence interval alpha for</span>
+<span class="sd">            probabilistic series.</span>
+<span class="sd">        color</span>
+<span class="sd">            Set the line color(s). Can be a single color string (name or hex), or a sequence of</span>
+<span class="sd">            strings (one per component). If a sequence, it must match the number of components.</span>
+<span class="sd">            By default, colors are pulled from the active Plotly template.</span>
+<span class="sd">        c</span>
+<span class="sd">            An alias for `color`.</span>
+<span class="sd">        downsample_threshold</span>
+<span class="sd">            The maximum number of total data points (time steps * components * traces) to plot.</span>
+<span class="sd">            If exceeded, the series will be automatically downsampled using a constant step</span>
+<span class="sd">            size to avoid rendering crashes. Set to -1 to disable downsampling. Defaults to 100,000.</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Additional keyword arguments to pass to `plotly.graph_objects.Scatter()` for trace customization</span>
+<span class="sd">            (e.g., `line_dash`, `line_width`, `marker_symbol`, `opacity`, or `hovertemplate`).</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">&gt;</span> <span class="n">n_components_to_plot</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Number of series components (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="si">}</span><span class="s2">) is larger than the maximum number of &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;components to plot (</span><span class="si">{</span><span class="n">max_nr_components</span><span class="si">}</span><span class="s2">). Plotting only the first `</span><span class="si">{</span><span class="n">max_nr_components</span><span class="si">}</span><span class="s2">` &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;components. You can adjust the number of components to plot using `max_nr_components`.&quot;</span>
-            <span class="p">)</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n_components_to_plot</span><span class="p">:</span>
-                <span class="n">raise_log</span><span class="p">(</span>
-                    <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;The `label` sequence must have the same length as the number of series components &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="si">}</span><span class="s2">) or as the number of plotted components (</span><span class="si">{</span><span class="n">n_components_to_plot</span><span class="si">}</span><span class="s2">). &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;Received length `</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">label</span><span class="p">)</span><span class="si">}</span><span class="s2">`.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="n">logger</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="n">custom_labels</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">custom_labels</span> <span class="o">=</span> <span class="kc">False</span>
-
-        <span class="k">if</span> <span class="n">color</span> <span class="ow">and</span> <span class="n">c</span><span class="p">:</span>
-            <span class="n">raise_log</span><span class="p">(</span>
-                <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;`color` and `c` must not be used simultaneously, use one or the other.&quot;</span>
-                <span class="p">),</span>
-                <span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="n">color</span> <span class="o">=</span> <span class="n">color</span> <span class="ow">or</span> <span class="n">c</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">color</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">color</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n_components_to_plot</span><span class="p">:</span>
-                <span class="n">raise_log</span><span class="p">(</span>
-                    <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;The `color` sequence must have the same length as the number of series components &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="si">}</span><span class="s2">) or as the number of plotted components (</span><span class="si">{</span><span class="n">n_components_to_plot</span><span class="si">}</span><span class="s2">). &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;Received length `</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">label</span><span class="p">)</span><span class="si">}</span><span class="s2">`.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="n">logger</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="n">custom_colors</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">custom_colors</span> <span class="o">=</span> <span class="kc">False</span>
-
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">alpha</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">lw</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">for</span> <span class="n">lw</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;lw&quot;</span><span class="p">,</span> <span class="s2">&quot;linewidth&quot;</span><span class="p">]):</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;lw&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
-
-        <span class="k">if</span> <span class="n">new_plot</span><span class="p">:</span>
-            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
-
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">comp_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">[:</span><span class="n">n_components_to_plot</span><span class="p">]):</span>
-            <span class="n">comp_ts</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">comp_name</span><span class="p">]</span>
-
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_stochastic</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">central_quantile</span> <span class="o">==</span> <span class="s2">&quot;mean&quot;</span><span class="p">:</span>
-                    <span class="n">central_ts</span> <span class="o">=</span> <span class="n">comp_ts</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">central_ts</span> <span class="o">=</span> <span class="n">comp_ts</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">q</span><span class="o">=</span><span class="n">central_quantile</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">central_ts</span> <span class="o">=</span> <span class="n">comp_ts</span>
-
-            <span class="n">central_series</span> <span class="o">=</span> <span class="n">central_ts</span><span class="o">.</span><span class="n">to_series</span><span class="p">()</span>  <span class="c1"># shape: (time,)</span>
-
-            <span class="k">if</span> <span class="n">custom_labels</span><span class="p">:</span>
-                <span class="n">label_to_use</span> <span class="o">=</span> <span class="n">label</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">label</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-                    <span class="n">label_to_use</span> <span class="o">=</span> <span class="n">comp_name</span>
-                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                    <span class="n">label_to_use</span> <span class="o">=</span> <span class="n">label</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">label_to_use</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">comp_name</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">label_to_use</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;c&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">color</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">custom_colors</span> <span class="k">else</span> <span class="n">color</span>
-
-            <span class="n">kwargs_central</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_stochastic</span><span class="p">:</span>
-                <span class="n">kwargs_central</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-            <span class="c1"># line plot</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">central_series</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="n">p</span> <span class="o">=</span> <span class="n">central_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-                    <span class="o">*</span><span class="n">args</span><span class="p">,</span>
-                    <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
-                    <span class="o">**</span><span class="n">kwargs_central</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">color_used</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">p</span><span class="o">.</span><span class="n">get_lines</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_color</span><span class="p">()</span> <span class="k">if</span> <span class="n">default_formatting</span> <span class="k">else</span> <span class="kc">None</span>
-                <span class="p">)</span>
-            <span class="c1"># point plot</span>
-            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">central_series</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="n">p</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-                    <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">()],</span>
-                    <span class="n">central_series</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                    <span class="s2">&quot;o&quot;</span><span class="p">,</span>
-                    <span class="o">*</span><span class="n">args</span><span class="p">,</span>
-                    <span class="o">**</span><span class="n">kwargs_central</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">color_used</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_color</span><span class="p">()</span> <span class="k">if</span> <span class="n">default_formatting</span> <span class="k">else</span> <span class="kc">None</span>
-            <span class="c1"># empty plot</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">p</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-                    <span class="p">[],</span>
-                    <span class="p">[],</span>
-                    <span class="o">*</span><span class="n">args</span><span class="p">,</span>
-                    <span class="o">**</span><span class="n">kwargs_central</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">color_used</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_color</span><span class="p">()</span> <span class="k">if</span> <span class="n">default_formatting</span> <span class="k">else</span> <span class="kc">None</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_dim</span><span class="p">)</span>
-
-            <span class="c1"># Optionally show confidence intervals</span>
-            <span class="k">if</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">is_stochastic</span>
-                <span class="ow">and</span> <span class="n">low_quantile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-                <span class="ow">and</span> <span class="n">high_quantile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="p">):</span>
-                <span class="n">low_series</span> <span class="o">=</span> <span class="n">comp_ts</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">q</span><span class="o">=</span><span class="n">low_quantile</span><span class="p">)</span><span class="o">.</span><span class="n">to_series</span><span class="p">()</span>
-                <span class="n">high_series</span> <span class="o">=</span> <span class="n">comp_ts</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">q</span><span class="o">=</span><span class="n">high_quantile</span><span class="p">)</span><span class="o">.</span><span class="n">to_series</span><span class="p">()</span>
-                <span class="c1"># filled area</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">low_series</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                    <span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
-                        <span class="n">low_series</span><span class="p">,</span>
-                        <span class="n">high_series</span><span class="p">,</span>
-                        <span class="n">color</span><span class="o">=</span><span class="n">color_used</span><span class="p">,</span>
-                        <span class="n">alpha</span><span class="o">=</span><span class="p">(</span><span class="n">alpha</span> <span class="k">if</span> <span class="n">alpha</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">alpha_confidence_intvls</span><span class="p">),</span>
-                    <span class="p">)</span>
-                <span class="c1"># filled line</span>
-                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">low_series</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-                        <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">()],</span>
-                        <span class="p">[</span><span class="n">low_series</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">high_series</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span>
-                        <span class="s2">&quot;-+&quot;</span><span class="p">,</span>
-                        <span class="n">color</span><span class="o">=</span><span class="n">color_used</span><span class="p">,</span>
-                        <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-                    <span class="p">)</span>
-
-        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span> <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">ax</span></div>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        plotly.graph_objects.Figure</span>
+<span class="sd">            The Plotly figure object containing the plot. Call `.show()` on the returned figure to display it.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">_plotly</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">fig</span><span class="o">=</span><span class="n">fig</span><span class="p">,</span>
+            <span class="n">central_quantile</span><span class="o">=</span><span class="n">central_quantile</span><span class="p">,</span>
+            <span class="n">low_quantile</span><span class="o">=</span><span class="n">low_quantile</span><span class="p">,</span>
+            <span class="n">high_quantile</span><span class="o">=</span><span class="n">high_quantile</span><span class="p">,</span>
+            <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+            <span class="n">max_nr_components</span><span class="o">=</span><span class="n">max_nr_components</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+            <span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">,</span>
+            <span class="n">downsample_threshold</span><span class="o">=</span><span class="n">downsample_threshold</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="TimeSeries.with_columns_renamed">
@@ -6623,7 +6673,7 @@
     <span class="n">drop_hierarchy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">drop_metadata</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Concatenate multiple series along a given axis.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Concatenates multiple series along a given axis.</span>
 
 <span class="sd">    ``axis`` can be an integer in (0, 1, 2) to denote (time, component, sample) or, alternatively, a string denoting</span>
 <span class="sd">    the corresponding dimension of the underlying ``DataArray``.</span>
@@ -6658,6 +6708,9 @@
 <span class="sd">    TimeSeries</span>
 <span class="sd">        The concatenated series.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span>
+
     <span class="n">axis</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">_get_axis</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span>
     <span class="n">vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">ts</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="n">series</span><span class="p">]</span>
 
@@ -6758,7 +6811,7 @@
 <div class="viewcode-block" id="slice_intersect">
 <a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.slice_intersect">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">slice_intersect</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of series, where all series have been intersected along the time index.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a list of series, where all series have been intersected along the time index.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -6784,6 +6837,90 @@
         <span class="n">series_intersected</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">series_</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">intersection</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="n">series_intersected</span></div>
+
+
+
+<div class="viewcode-block" id="to_group_dataframe">
+<a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.to_group_dataframe">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_group_dataframe</span><span class="p">(</span>
+    <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+    <span class="n">copy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">backend</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ModuleType</span><span class="p">,</span> <span class="n">Implementation</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Implementation</span><span class="o">.</span><span class="n">PANDAS</span><span class="p">,</span>
+    <span class="n">time_as_index</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">suppress_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">add_static_covariates</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">add_metadata</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">add_group_col</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts a sequence of `TimeSeries` into a long DataFrame representation.</span>
+
+<span class="sd">    It converts each series into individual DataFrames and then concatenates them row-wise into a long DataFrame</span>
+<span class="sd">    using the specified backend.</span>
+
+<span class="sd">    This is particularly useful when working with collections of time series that share a common schema</span>
+<span class="sd">    and need to be represented in a tabular format for downstream processing.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    series</span>
+<span class="sd">        A sequence of `TimeSeries` to convert into a long DataFrame.</span>
+<span class="sd">    copy</span>
+<span class="sd">        Whether to return a copy of the resulting DataFrame. Leave it to True unless you know what you are doing.</span>
+<span class="sd">    backend</span>
+<span class="sd">        The backend to which to export the `TimeSeries`. See the `narwhals documentation</span>
+<span class="sd">        &lt;https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict&gt;`__ for all supported</span>
+<span class="sd">        backends.</span>
+<span class="sd">    time_as_index</span>
+<span class="sd">        Whether to set the time index as the index of the DataFrame or in the left-most column.</span>
+<span class="sd">        Only effective with the pandas `backend`.</span>
+<span class="sd">    suppress_warnings</span>
+<span class="sd">        Whether to suppress warnings raised during the DataFrame creation.</span>
+<span class="sd">    add_static_covariates</span>
+<span class="sd">        Whether to add the series&#39; static covariates to the resulting DataFrame (one column per component-static</span>
+<span class="sd">        covariate pair). If a bool, controls whether to add all static covariates or none. If a string, or list of</span>
+<span class="sd">        strings, specifies the subset of static covariate columns / names to add.</span>
+<span class="sd">    add_metadata</span>
+<span class="sd">        Whether to add the series&#39; metadata to the resulting DataFrame (one column per metadata entry). If a bool,</span>
+<span class="sd">        controls whether to add all metadata entries or none. If a string, or list of strings, specifies the subset</span>
+<span class="sd">        of metadata keys / names to add.</span>
+<span class="sd">    add_group_col</span>
+<span class="sd">        Whether to add a integer group column to the resulting DataFrame that serves as a mapping between DataFrame</span>
+<span class="sd">        rows and their corresponding time series. If a bool, indicates whether to add a group column with the name</span>
+<span class="sd">        &quot;group&quot;. If a string, adds a group column with the name being that string value.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    DataFrame</span>
+<span class="sd">        A long DataFrame representation of the input sequence of `TimeSeries` in the specified `backend`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">backend</span> <span class="o">=</span> <span class="n">Implementation</span><span class="o">.</span><span class="n">from_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">group_col</span> <span class="o">=</span> <span class="n">add_group_col</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">add_group_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;group&quot;</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">series_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">series</span><span class="p">):</span>
+        <span class="n">df_</span> <span class="o">=</span> <span class="n">series_</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(</span>
+            <span class="n">copy</span><span class="o">=</span><span class="n">copy</span><span class="p">,</span>
+            <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span>
+            <span class="n">time_as_index</span><span class="o">=</span><span class="n">time_as_index</span><span class="p">,</span>
+            <span class="n">suppress_warnings</span><span class="o">=</span><span class="n">suppress_warnings</span><span class="p">,</span>
+            <span class="n">add_static_covariates</span><span class="o">=</span><span class="n">add_static_covariates</span><span class="p">,</span>
+            <span class="n">add_metadata</span><span class="o">=</span><span class="n">add_metadata</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">df_</span> <span class="o">=</span> <span class="n">nw</span><span class="o">.</span><span class="n">from_native</span><span class="p">(</span><span class="n">df_</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">add_group_col</span><span class="p">:</span>
+            <span class="n">df_</span> <span class="o">=</span> <span class="n">df_</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span><span class="n">nw</span><span class="o">.</span><span class="n">lit</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="n">group_col</span><span class="p">))</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">df_</span><span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">nw</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="o">.</span><span class="n">to_native</span><span class="p">()</span>
+
+    <span class="c1"># pandas keeps the row index of each df, reset it here if it does not represent the time index</span>
+    <span class="k">if</span> <span class="n">backend</span><span class="o">.</span><span class="n">is_pandas</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">time_as_index</span><span class="p">:</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span></div>
 
 
 
@@ -6893,7 +7030,7 @@
 
   <p class="copyright">
     
-      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      © Copyright 2020 - 2026, Unit8 SA (Apache 2.0 License).
       <br/>
     
   </p>

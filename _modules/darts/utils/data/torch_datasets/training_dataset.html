@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.39.0" />
+  <meta name="docsearch:version" content="0.40.0" />
   </head>
   
   
@@ -587,19 +587,24 @@
 
         <span class="n">size_of_both_chunks</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">shift</span> <span class="o">+</span> <span class="n">output_chunk_length</span><span class="p">)</span>
 
-        <span class="c1"># setup samples</span>
-        <span class="k">if</span> <span class="n">max_samples_per_ts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># read all time series to get the maximum size</span>
-            <span class="n">max_samples_per_ts</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span> <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="n">series</span><span class="p">)</span> <span class="o">-</span> <span class="n">size_of_both_chunks</span> <span class="o">+</span> <span class="mi">1</span>
-            <span class="k">if</span> <span class="n">max_samples_per_ts</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">raise_log</span><span class="p">(</span>
-                    <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;The input `series` are too short to extract even a single sample. &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;Expected min length: `</span><span class="si">{</span><span class="n">size_of_both_chunks</span><span class="si">}</span><span class="s2">`, received max length: &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">max_samples_per_ts</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">size_of_both_chunks</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">`.&quot;</span>
-                    <span class="p">)</span>
+        <span class="c1"># compute the maximum available samples over all series</span>
+        <span class="n">max_available_indices</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span> <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="n">series</span><span class="p">)</span> <span class="o">-</span> <span class="n">size_of_both_chunks</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">max_available_samples</span> <span class="o">=</span> <span class="n">ceil</span><span class="p">(</span><span class="n">max_available_indices</span> <span class="o">/</span> <span class="n">stride</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">max_available_indices</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The input `series` are too short to extract even a single sample. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Expected min length: `</span><span class="si">{</span><span class="n">size_of_both_chunks</span><span class="si">}</span><span class="s2">`, received max length: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">ts</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">series</span><span class="p">)</span><span class="si">}</span><span class="s2">`.&quot;</span>
                 <span class="p">)</span>
-            <span class="n">max_samples_per_ts</span> <span class="o">=</span> <span class="n">ceil</span><span class="p">(</span><span class="n">max_samples_per_ts</span> <span class="o">/</span> <span class="n">stride</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">max_samples_per_ts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">max_samples_per_ts</span> <span class="o">=</span> <span class="n">max_available_samples</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># upper bound maximum available samples by max_samples_per_ts</span>
+            <span class="n">max_samples_per_ts</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_samples_per_ts</span><span class="p">,</span> <span class="n">max_available_samples</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
@@ -1026,7 +1031,7 @@
 
   <p class="copyright">
     
-      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      © Copyright 2020 - 2026, Unit8 SA (Apache 2.0 License).
       <br/>
     
   </p>

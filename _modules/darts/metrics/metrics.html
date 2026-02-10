@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.39.0" />
+  <meta name="docsearch:version" content="0.40.0" />
   </head>
   
   
@@ -434,6 +434,7 @@
     <span class="n">_confusion_matrix</span><span class="p">,</span>
     <span class="n">_get_error_scale</span><span class="p">,</span>
     <span class="n">_get_quantile_intervals</span><span class="p">,</span>
+    <span class="n">_get_tolerance_levels</span><span class="p">,</span>
     <span class="n">_get_values_or_raise</span><span class="p">,</span>
     <span class="n">_get_wrapped_metric</span><span class="p">,</span>
     <span class="n">_LabelReduction</span><span class="p">,</span>
@@ -2209,8 +2210,8 @@
 <span class="sd">    .. math::</span>
 <span class="sd">        200 \\cdot \\frac{\\left| y_t - \\hat{y}_t \\right|}{\\left| y_t \\right| + \\left| \\hat{y}_t \\right|}</span>
 
-<span class="sd">    Note that it will raise a `ValueError` if :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0` for some</span>
-<span class="sd">    :math:`t`. Consider using the Absolute Scaled Error (:func:`~darts.metrics.metrics.ase`)  in these cases.</span>
+<span class="sd">    When :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0` for some :math:`t` (i.e., both actual and</span>
+<span class="sd">    prediction are zero), the error for that time step is defined as 0.</span>
 
 <span class="sd">    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to</span>
 <span class="sd">    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile</span>
@@ -2250,11 +2251,6 @@
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
 
-<span class="sd">    Raises</span>
-<span class="sd">    ------</span>
-<span class="sd">    ValueError</span>
-<span class="sd">        If `actual_series` and `pred_series` contain some zeros at the same time index.</span>
-
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    float</span>
@@ -2287,14 +2283,14 @@
         <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">q</span><span class="o">=</span><span class="n">q</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">y_true</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
-        <span class="n">raise_log</span><span class="p">(</span>
-            <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;`actual_series` must be strictly positive to compute the sMAPE.&quot;</span>
-            <span class="p">),</span>
-            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="k">return</span> <span class="mf">200.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_true</span> <span class="o">-</span> <span class="n">y_pred</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_true</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_pred</span><span class="p">))</span></div>
+    <span class="n">numerator</span> <span class="o">=</span> <span class="mi">200</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_true</span> <span class="o">-</span> <span class="n">y_pred</span><span class="p">)</span>
+    <span class="n">denominator</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_true</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_pred</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span>
+        <span class="n">numerator</span><span class="p">,</span>
+        <span class="n">denominator</span><span class="p">,</span>
+        <span class="n">out</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">numerator</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">y_true</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span>
+        <span class="n">where</span><span class="o">=</span><span class="n">denominator</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span></div>
 
 
 
@@ -2322,9 +2318,8 @@
 <span class="sd">        200 \\cdot \\frac{1}{T}</span>
 <span class="sd">        \\sum_{t=1}^{T}{\\frac{\\left| y_t - \\hat{y}_t \\right|}{\\left| y_t \\right| + \\left| \\hat{y}_t \\right|} }</span>
 
-<span class="sd">    Note that it will raise a `ValueError` if :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0`</span>
-<span class="sd">    for some :math:`t`. Consider using the Mean Absolute Scaled Error (:func:`~darts.metrics.metrics.mase`) in these</span>
-<span class="sd">    cases.</span>
+<span class="sd">    When :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0` for some :math:`t` (i.e., both actual and</span>
+<span class="sd">    prediction are zero), the error for that time step is 0.</span>
 
 <span class="sd">    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to</span>
 <span class="sd">    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile</span>
@@ -2358,11 +2353,6 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
-
-<span class="sd">    Raises</span>
-<span class="sd">    ------</span>
-<span class="sd">    ValueError</span>
-<span class="sd">        If the `actual_series` and the `pred_series` contain some zeros at the same time index.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -2895,6 +2885,189 @@
         <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">((</span><span class="n">y_true</span> <span class="o">-</span> <span class="n">y_pred</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">))</span>
         <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">)</span>
     <span class="p">)</span></div>
+
+
+
+<span class="nd">@multi_ts_support</span>
+<span class="nd">@multivariate_support</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_tolerance_coverages</span><span class="p">(</span>
+    <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">min_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">max_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
+    <span class="n">q</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">component_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">,</span>
+    <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes the tolerance coverages for different tolerance levels.</span>
+
+<span class="sd">    More info in metric `autc()`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span>
+        <span class="n">actual_series</span><span class="p">,</span>
+        <span class="n">pred_series</span><span class="p">,</span>
+        <span class="n">intersect</span><span class="p">,</span>
+        <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">q</span><span class="o">=</span><span class="n">q</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># range of actual values (max - min) for each component</span>
+    <span class="n">y_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">)</span>
+
+    <span class="c1"># handle case where range is zero (constant series)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">y_range</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;The range of actual values (max - min) must be strictly positive for all &quot;</span>
+            <span class="s2">&quot;components to compute the AUTC. Found zero range for at least one component.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">tolerances</span> <span class="o">=</span> <span class="n">_get_tolerance_levels</span><span class="p">(</span>
+        <span class="n">min_tolerance</span><span class="o">=</span><span class="n">min_tolerance</span><span class="p">,</span>
+        <span class="n">max_tolerance</span><span class="o">=</span><span class="n">max_tolerance</span><span class="p">,</span>
+        <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># compute absolute errors normalized by half the range</span>
+    <span class="n">abs_errors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_true</span> <span class="o">-</span> <span class="n">y_pred</span><span class="p">)</span>
+    <span class="n">half_range</span> <span class="o">=</span> <span class="n">y_range</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="n">normalized_errors</span> <span class="o">=</span> <span class="n">abs_errors</span> <span class="o">/</span> <span class="n">half_range</span>
+
+    <span class="c1"># get coverage for each tolerance level (fraction of points within tolerance)</span>
+    <span class="c1"># -&gt; (n components, n quantiles, n coverages)</span>
+    <span class="n">coverages</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">normalized_errors</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">tolerances</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span>
+    <span class="p">)</span>
+    <span class="c1"># &#39;abuse&#39; the first dimension which is normally the time dimension for the coverages</span>
+    <span class="c1"># -&gt; (n coverages, n components, n quantiles)</span>
+    <span class="k">return</span> <span class="n">coverages</span><span class="o">.</span><span class="n">transpose</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="autc">
+<a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.autc">[docs]</a>
+<span class="nd">@multi_ts_support</span>
+<span class="nd">@multivariate_support</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">autc</span><span class="p">(</span>
+    <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">min_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">max_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
+    <span class="n">q</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">component_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">,</span>
+    <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Area Under Tolerance Curve (AUTC).</span>
+
+<span class="sd">    AUTC measures the overall alignment between actual and predicted series across a range of tolerance levels.</span>
+<span class="sd">    For each tolerance level, it computes the fraction of points where the prediction is within ±X% of the actual</span>
+<span class="sd">    value.</span>
+<span class="sd">    The AUTC is the normalized area under this curve, providing a single score in [0, 1] where higher is better.</span>
+
+<span class="sd">    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, tolerance levels</span>
+<span class="sd">    :math:`\\tau \\in [0, 1]`, and half-range :math:`H = (\\max(y) - \\min(y)) / 2`:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \\text{Coverage}(\\tau) = \\frac{1}{T} \\sum_{t=1}^{T} \\mathbb{1}\\left[\\frac{|y_t - \\hat{y}_t|}{H}</span>
+<span class="sd">        \\leq \\tau\\right]</span>
+
+<span class="sd">        \\text{AUTC} = \\int_0^1 \\text{Coverage}(\\tau) \\, d\\tau</span>
+
+<span class="sd">    At tolerance :math:`\\tau`, a prediction is within tolerance if the error is within :math:`\\pm\\tau` of the</span>
+<span class="sd">    actual value (as a fraction of half the range). For example, at 10% tolerance, the prediction must be within</span>
+<span class="sd">    ±10% of the half-range, i.e., within ±5% of the full range.</span>
+
+<span class="sd">    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to</span>
+<span class="sd">    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile</span>
+<span class="sd">    (over all samples, or, if given, the quantile prediction itself).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    actual_series</span>
+<span class="sd">        The (sequence of) actual series.</span>
+<span class="sd">    pred_series</span>
+<span class="sd">        The (sequence of) predicted series.</span>
+<span class="sd">    intersect</span>
+<span class="sd">        For time series that are overlapping in time without having the same time index, setting `True`</span>
+<span class="sd">        will consider the values only over their common time interval (intersection in time).</span>
+<span class="sd">    min_tolerance</span>
+<span class="sd">        The minimum tolerance level as a fraction of the series half-range. Default is 0.0 (0%).</span>
+<span class="sd">    max_tolerance</span>
+<span class="sd">        The maximum tolerance level as a fraction of the series half-range. Default is 1.0 (100%).</span>
+<span class="sd">    step</span>
+<span class="sd">        The step size between tolerance levels. Default is 0.01 (1%).</span>
+<span class="sd">        For example, with defaults, tolerances are [0.0, 0.01, 0.02, ..., 1.0].</span>
+<span class="sd">    q</span>
+<span class="sd">        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.</span>
+<span class="sd">    component_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the</span>
+<span class="sd">        component axis. If `None`, will return a metric per component.</span>
+<span class="sd">    series_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the</span>
+<span class="sd">        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will</span>
+<span class="sd">        return a metric per component.</span>
+<span class="sd">    n_jobs</span>
+<span class="sd">        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is</span>
+<span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
+<span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
+<span class="sd">    verbose</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If :math:`\\max_t{y_t} = \\min_t{y_t}` (constant series with zero range).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        A single metric score in [0, 1] (when `len(q) &lt;= 1`) for:</span>
+
+<span class="sd">        - a single univariate series.</span>
+<span class="sd">        - a single multivariate series with `component_reduction`.</span>
+<span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,</span>
+<span class="sd">        and shape (n quantiles,) with component reduction and `len(q) &gt; 1`.</span>
+<span class="sd">        For:</span>
+
+<span class="sd">        - the same input arguments that result in the `float` return case from above but with `len(q) &gt; 1`.</span>
+<span class="sd">        - a single multivariate series and at least `component_reduction=None`.</span>
+<span class="sd">        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.</span>
+<span class="sd">    list[float]</span>
+<span class="sd">        Same as for type `float` but for a sequence of series.</span>
+<span class="sd">    list[np.ndarray]</span>
+<span class="sd">        Same as for type `np.ndarray` but for a sequence of series.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`~darts.utils.statistics.plot_tolerance_curve` : Plot the tolerance curve for visual inspection.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">coverages</span> <span class="o">=</span> <span class="n">_get_wrapped_metric</span><span class="p">(</span><span class="n">_tolerance_coverages</span><span class="p">)(</span>
+        <span class="n">actual_series</span><span class="p">,</span>
+        <span class="n">pred_series</span><span class="p">,</span>
+        <span class="n">intersect</span><span class="p">,</span>
+        <span class="n">q</span><span class="o">=</span><span class="n">q</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">tolerances</span> <span class="o">=</span> <span class="n">_get_tolerance_levels</span><span class="p">(</span>
+        <span class="n">min_tolerance</span><span class="o">=</span><span class="n">min_tolerance</span><span class="p">,</span>
+        <span class="n">max_tolerance</span><span class="o">=</span><span class="n">max_tolerance</span><span class="p">,</span>
+        <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">coverages</span><span class="p">,</span> <span class="n">tolerances</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
 
 
 
@@ -4720,7 +4893,7 @@
 
   <p class="copyright">
     
-      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      © Copyright 2020 - 2026, Unit8 SA (Apache 2.0 License).
       <br/>
     
   </p>

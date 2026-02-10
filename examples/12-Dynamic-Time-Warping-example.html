@@ -61,7 +61,7 @@
     <link rel="prev" title="Anomaly Detection Darts Module" href="22-anomaly-detection-examples.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.39.0" />
+  <meta name="docsearch:version" content="0.40.0" />
   </head>
   
   
@@ -586,7 +586,7 @@
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ts</span> <span class="o">=</span> <span class="n">SunspotsDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
-<span class="n">ts</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="s2">&quot;y&quot;</span><span class="p">)</span>
+<span class="n">ts</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="s2">&quot;YE&quot;</span><span class="p">)</span>
 <span class="n">ts</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -662,7 +662,7 @@
 
 <span class="n">scaled_values</span> <span class="o">=</span> <span class="n">values</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="n">c</span>
 
-<span class="n">time_range</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="n">periods</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">))</span>
+<span class="n">time_range</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;YE&quot;</span><span class="p">,</span> <span class="n">periods</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">))</span>
 <span class="n">ts_shape_series</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">scaled_values</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">time_range</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Shape&quot;</span><span class="p">)</span>
 
 <span class="n">ts_shape</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_series</span><span class="p">(</span><span class="n">ts_shape_series</span><span class="p">)</span>
@@ -1089,7 +1089,7 @@
 
   <p class="copyright">
     
-      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      © Copyright 2020 - 2026, Unit8 SA (Apache 2.0 License).
       <br/>
     
   </p>

@@ -58,7 +58,7 @@
     <link rel="prev" title="Utils for Pytorch and its usage" href="darts.utils.torch.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.39.0" />
+  <meta name="docsearch:version" content="0.40.0" />
   </head>
   
   
@@ -587,6 +587,7 @@
 
 
 
+
 <li class="toctree-l2"><a class="reference internal" href="darts.metrics.utils.html">Metric Utils</a></li>
 
 
@@ -692,6 +693,8 @@
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tide_model.html">Time-series Dense Encoder (TiDE)</a></li>
 
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.timesfm2p5_model.html">TimesFM 2.5</a></li>
+
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.transformer_model.html">Transformer Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">Time-Series Mixer (TSMixer)</a></li>
@@ -779,6 +782,7 @@
 
 
 
+
 <li class="toctree-l2"><a class="reference internal" href="darts.utils.timeseries_generation.html">Utils for TimeSeries generation</a></li>
 
 
@@ -806,6 +810,7 @@
 
 
 
+
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.config.html">Configuration</a></li>
@@ -815,6 +820,7 @@
 
 
 <li class="toctree-l1"><a class="reference internal" href="darts.timeseries.html">Timeseries</a></li>
+
 
 
 
@@ -1073,6 +1079,26 @@ The freq is optional for generating an integer index (if not specified, 1 is use
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="darts.utils.utils.infer_freq_intersection">
+<span class="sig-prename descclassname"><span class="pre">darts.utils.utils.</span></span><span class="sig-name descname"><span class="pre">infer_freq_intersection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">freq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/utils.html#infer_freq_intersection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.utils.infer_freq_intersection" title="Link to this definition">#</a></dt>
+<dd><p>Infers the frequency at which two frequencies <cite>freq</cite> and <cite>other</cite> intersect.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>freq</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DateOffset</span></code>]</span>) – The first frequency.</p></li>
+<li><p><strong>other</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DateOffset</span></code>]</span>) – The other frequency.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If the intersecting frequency cannot be inferred.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DateOffset</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.utils.n_steps_between">
 <span class="sig-prename descclassname"><span class="pre">darts.utils.utils.</span></span><span class="sig-name descname"><span class="pre">n_steps_between</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">end</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/utils.html#n_steps_between"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.utils.n_steps_between" title="Link to this definition">#</a></dt>
 <dd><p>Get the number of time steps with a given frequency <cite>freq</cite> between <cite>end</cite> and <cite>start</cite>.
@@ -1254,6 +1280,7 @@ included.</p>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.utils.drop_before_index"><code class="docutils literal notranslate"><span class="pre">drop_before_index()</span></code></a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.utils.expand_arr"><code class="docutils literal notranslate"><span class="pre">expand_arr()</span></code></a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.utils.generate_index"><code class="docutils literal notranslate"><span class="pre">generate_index()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.utils.infer_freq_intersection"><code class="docutils literal notranslate"><span class="pre">infer_freq_intersection()</span></code></a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.utils.n_steps_between"><code class="docutils literal notranslate"><span class="pre">n_steps_between()</span></code></a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.utils.random_method"><code class="docutils literal notranslate"><span class="pre">random_method()</span></code></a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.utils.sample_from_quantiles"><code class="docutils literal notranslate"><span class="pre">sample_from_quantiles()</span></code></a></li>
@@ -1296,7 +1323,7 @@ included.</p>
 
   <p class="copyright">
     
-      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      © Copyright 2020 - 2026, Unit8 SA (Apache 2.0 License).
       <br/>
     
   </p>

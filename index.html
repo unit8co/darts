@@ -59,7 +59,7 @@
     <link rel="next" title="Quickstart" href="quickstart/00-quickstart.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.39.0" />
+  <meta name="docsearch:version" content="0.40.0" />
   </head>
   
   
@@ -988,42 +988,49 @@ then use it over validation scores to get binary anomaly classification:</p>
 <td><p>✅</p></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/2510.15821">Chronos-2 report</a>, <a class="reference external" href="https://www.amazon.science/blog/introducing-chronos-2-from-univariate-to-universal-forecasting">Amazon blog post</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>Ensemble Models</strong> (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>): Model support is dependent on ensembled forecasting models and the ensemble model itself</p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.timesfm2p5_model.html#darts.models.forecasting.timesfm2p5_model.TimesFM2p5Model">TimesFM2p5Model</a></p></td>
+<td><p>✅ ✅</p></td>
+<td><p>🔴 🔴 🔴</p></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/abs/2310.10688">TimesFM 1.0 paper</a>, <a class="reference external" href="https://research.google/blog/a-decoder-only-foundation-model-for-time-series-forecasting">Google blog post</a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Ensemble Models</strong> (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>): Model support is dependent on ensembled forecasting models and the ensemble model itself</p></td>
 <td></td>
 <td></td>
 <td></td>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel">NaiveEnsembleModel</a></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel">NaiveEnsembleModel</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel">RegressionEnsembleModel</a></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel">RegressionEnsembleModel</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><strong>Conformal Models</strong> (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>): Model support is dependent on the forecasting model used</p></td>
+<tr class="row-odd"><td><p><strong>Conformal Models</strong> (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>): Model support is dependent on the forecasting model used</p></td>
 <td></td>
 <td></td>
 <td></td>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalNaiveModel">ConformalNaiveModel</a></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalNaiveModel">ConformalNaiveModel</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
 <td><p><a class="reference external" href="https://arxiv.org/pdf/1905.03222">Conformalized Prediction</a></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalQRModel">ConformalQRModel</a></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalQRModel">ConformalQRModel</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
@@ -1230,7 +1237,7 @@ then use it over validation scores to get binary anomaly classification:</p>
 
   <p class="copyright">
     
-      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      © Copyright 2020 - 2026, Unit8 SA (Apache 2.0 License).
       <br/>
     
   </p>

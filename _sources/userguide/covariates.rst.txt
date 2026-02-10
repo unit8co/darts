@@ -291,6 +291,10 @@ GFMs are models that can be trained on multiple target (and covariate) time seri
      - ✅
      - ✅
      - 
+   * - `TimesFM2p5Model <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.timesfm2p5_model.html#darts.models.forecasting.timesfm2p5_model.TimesFM2p5Model>`_
+     - 
+     - 
+     - 
    * - Ensemble Models (g)
      - ✅
      - ✅

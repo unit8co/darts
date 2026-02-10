@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.39.0" />
+  <meta name="docsearch:version" content="0.40.0" />
   </head>
   
   
@@ -877,61 +877,30 @@
 
     <span class="n">raise_if</span><span class="p">(</span><span class="nb">bool</span><span class="p">(</span><span class="n">add_length</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">bool</span><span class="p">(</span><span class="n">until</span><span class="p">),</span> <span class="s2">&quot;set only one of add_length and until&quot;</span><span class="p">)</span>
 
-    <span class="n">end</span> <span class="o">=</span> <span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">freq</span> <span class="o">=</span> <span class="n">time_index</span><span class="o">.</span><span class="n">freq</span>
+    <span class="n">datetime_index</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time_index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">add_length</span><span class="p">:</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="n">add_length</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">&quot;Expected add_length, by which to extend the time series by, &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;to be positive, got </span><span class="si">{</span><span class="n">add_length</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">end</span> <span class="o">+=</span> <span class="n">add_length</span> <span class="o">*</span> <span class="n">freq</span>
-        <span class="k">except</span> <span class="n">pd</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">OutOfBoundsDatetime</span><span class="p">:</span>
-            <span class="n">raise_log</span><span class="p">(</span>
-                <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;the add operation between </span><span class="si">{</span><span class="n">end</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">add_length</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">freq</span><span class="si">}</span><span class="s2"> will overflow&quot;</span>
-                <span class="p">),</span>
-                <span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
+        <span class="n">length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">time_index</span><span class="p">)</span> <span class="o">+</span> <span class="n">add_length</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">datetime_index</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time_index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">)</span>
+        <span class="n">length</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">until</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">until</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">until</span>
 
-        <span class="k">if</span> <span class="n">datetime_index</span><span class="p">:</span>
-            <span class="n">raise_if_not</span><span class="p">(</span>
-                <span class="nb">isinstance</span><span class="p">(</span><span class="n">until</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">)),</span>
-                <span class="s2">&quot;Expected valid timestamp for TimeSeries, &quot;</span>
-                <span class="s2">&quot;indexed by DatetimeIndex, &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;for parameter until, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">end</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">raise_if_not</span><span class="p">(</span>
-                <span class="nb">isinstance</span><span class="p">(</span><span class="n">until</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span>
-                <span class="s2">&quot;Expected integer for TimeSeries, indexed by RangeIndex, &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;for parameter until, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">end</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
+    <span class="n">new_time_index</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span>
+        <span class="n">start</span><span class="o">=</span><span class="n">time_index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">freq</span><span class="o">=</span><span class="n">time_index</span><span class="o">.</span><span class="n">freq</span> <span class="k">if</span> <span class="n">datetime_index</span> <span class="k">else</span> <span class="n">time_index</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
+        <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">,</span>
+        <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+    <span class="p">)</span>
 
-        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">until</span><span class="p">)</span> <span class="k">if</span> <span class="n">datetime_index</span> <span class="k">else</span> <span class="n">until</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="n">timestamp</span> <span class="o">&gt;</span> <span class="n">end</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">&quot;Expected until, </span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2"> to lie past end of time index </span><span class="si">{</span><span class="n">end</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="k">if</span> <span class="n">new_time_index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;`until=</span><span class="si">{</span><span class="n">end</span><span class="si">}</span><span class="s2">` must lie further ahead in the future than the end of time index </span><span class="si">{</span><span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
-
-        <span class="n">ahead</span> <span class="o">=</span> <span class="n">timestamp</span> <span class="o">-</span> <span class="n">end</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="p">(</span><span class="n">ahead</span> <span class="o">%</span> <span class="n">freq</span><span class="p">)</span> <span class="o">==</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
-            <span class="sa">f</span><span class="s2">&quot;End date must correspond with frequency </span><span class="si">{</span><span class="n">freq</span><span class="si">}</span><span class="s2"> of the time axis&quot;</span><span class="p">,</span>
-            <span class="n">logger</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">end</span> <span class="o">=</span> <span class="n">timestamp</span>
-
-    <span class="n">new_time_index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">time_index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">new_time_index</span>
 
 
@@ -952,7 +921,7 @@
 <span class="sd">    Creates a binary univariate TimeSeries with index `time_index` that equals 1 at every index that lies within</span>
 <span class="sd">    (or equals) a selected country&#39;s holiday, and 0 otherwise.</span>
 
-<span class="sd">    Available countries can be found `here &lt;https://github.com/dr-prodigy/python-holidays#available-countries&gt;`__.</span>
+<span class="sd">    Available countries can be found `here &lt;https://holidays.readthedocs.io/en/latest/#available-countries&gt;`__.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1445,7 +1414,7 @@
 
   <p class="copyright">
     
-      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      © Copyright 2020 - 2026, Unit8 SA (Apache 2.0 License).
       <br/>
     
   </p>
