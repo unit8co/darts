@@ -175,11 +175,13 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         # Collate static covariates of all `series`:
         stat_covs = pd.concat([s.static_covariates for s in series], axis=0)
 
-        cols_num, cols_cat = StaticCovariatesTransformer._infer_static_cov_dtypes(
-            stat_covs, cols_num, cols_cat
-        )
-
-        mask_num, mask_cat = StaticCovariatesTransformer._create_component_masks(
+        # Extract column names and masks in data order
+        (
+            cols_num,
+            cols_cat,
+            mask_num,
+            mask_cat,
+        ) = StaticCovariatesTransformer._process_static_cov_columns(
             stat_covs, cols_num, cols_cat
         )
 
@@ -227,45 +229,40 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         }
 
     @staticmethod
-    def _infer_static_cov_dtypes(
+    def _process_static_cov_columns(
         stat_covs: pd.DataFrame,
         cols_num: Optional[Sequence[str]],
         cols_cat: Optional[Sequence[str]],
-    ):
+    ) -> tuple[list[str], list[str], np.ndarray, np.ndarray]:
         """
-        Returns a list of names of numerical static covariates and a list
-        of names of categorical/ordinal static covariates.
+        Extracts numerical and categorical static covariate (component / columns) names and their component masks
+        in order of the input data.
+
+        Returns
+        -------
+        tuple
+            A tuple containing:
+            - cols_num: list of numerical column names in data order
+            - cols_cat: list of categorical column names in data order
+            - mask_num: boolean array indicating numerical columns
+            - mask_cat: boolean array indicating categorical columns
         """
         if cols_num is None:
             mask_num = stat_covs.columns.isin(
                 stat_covs.select_dtypes(include=np.number).columns
             )
-            cols_num = stat_covs.columns[mask_num]
+        else:
+            mask_num = stat_covs.columns.isin(cols_num)
+        cols_num = stat_covs.columns[mask_num].tolist()
+
         if cols_cat is None:
             mask_cat = stat_covs.columns.isin(
                 stat_covs.select_dtypes(exclude=np.number).columns
             )
-            cols_cat = stat_covs.columns[mask_cat]
-        return cols_num, cols_cat
-
-    @staticmethod
-    def _create_component_masks(
-        untransformed_stat_covs: pd.DataFrame,
-        cols_num: Sequence[str],
-        cols_cat: Sequence[str],
-    ):
-        """
-        Returns a boolean array indicating which components of the UNTRANSFORMED
-        `stat_covs` are numerical and a boolean array indicating which components
-        of the UNTRANSFORMED `stat_covs` are categorical.
-
-        It's important to recognize that these masks only apply to the UNTRANSFORMED
-        static covariates since some transformations can generate multiple new components
-        from a single component (e.g. one-hot encoding).
-        """
-        mask_num = untransformed_stat_covs.columns.isin(cols_num)
-        mask_cat = untransformed_stat_covs.columns.isin(cols_cat)
-        return mask_num, mask_cat
+        else:
+            mask_cat = stat_covs.columns.isin(cols_cat)
+        cols_cat = stat_covs.columns[mask_cat].tolist()
+        return cols_num, cols_cat, mask_num, mask_cat
 
     @staticmethod
     def _create_category_mappings(

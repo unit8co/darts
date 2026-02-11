@@ -17,7 +17,7 @@ class TestStaticCovariatesTransformer:
             "cont2": [0.1, 0.2, 0.3],
             "cat2": ["a", "b", "c"],
         }
-    ).astype(dtype={"cat1": "O", "cat2": "O"})
+    ).astype(dtype={"cat1": "O"})
     series1 = TimeSeries.from_times_and_values(
         times=series.time_index,
         values=np.concatenate([series.values()] * 3, axis=1),
@@ -32,8 +32,7 @@ class TestStaticCovariatesTransformer:
             "cont2": [0.3, 0.4, 0.5],
             "cat2": ["c", "d", "e"],
         }
-    )
-    static_covs2["cat1"] = static_covs2["cat1"].astype("O")
+    ).astype(dtype={"cat1": "O"})
     series2 = TimeSeries.from_times_and_values(
         times=series.time_index,
         values=np.concatenate([series.values()] * 3, axis=1),
@@ -210,6 +209,49 @@ class TestStaticCovariatesTransformer:
         ts1_inv, ts2_inv = transformer.inverse_transform([ts1_enc, ts2_enc])
         pd.testing.assert_frame_equal(ts1_inv.static_covariates, ts1.static_covariates)
         pd.testing.assert_frame_equal(ts2_inv.static_covariates, ts2.static_covariates)
+
+    def test_cols_cat_order_different_from_data(self):
+        series = [
+            self.series.with_static_covariates(
+                pd.DataFrame({"Country": ["US"], "City": ["New York"]})
+            ),
+            self.series.with_static_covariates(
+                pd.DataFrame({"Country": ["China"], "City": ["Beijing"]})
+            ),
+        ]
+
+        transformer = StaticCovariatesTransformer(
+            transformer_cat=OneHotEncoder(sparse_output=False),
+            cols_cat=["City", "Country"],
+        )
+
+        transformed = transformer.fit_transform(series)
+
+        expected_columns = [
+            "Country_China",
+            "Country_US",
+            "City_Beijing",
+            "City_New York",
+        ]
+        assert transformed[0].static_covariates.columns.tolist() == expected_columns
+        assert transformed[1].static_covariates.columns.tolist() == expected_columns
+
+        # Series 0: Country="US", City="New York"
+        # Expected: [Country_China=0.0, Country_US=1.0, City_Beijing=0.0, City_New York=1.0]
+        first_static_covs = transformed[0].static_covariates
+        assert first_static_covs.iloc[0].tolist() == [0.0, 1.0, 0.0, 1.0]
+
+        # Series 1: Country="China", City="Beijing"
+        # Expected: [Country_China=1.0, Country_US=0.0, City_Beijing=1.0, City_New York=0.0]
+        second_static_covs = transformed[1].static_covariates
+        assert second_static_covs.iloc[0].tolist() == [1.0, 0.0, 1.0, 0.0]
+
+        recovered = transformer.inverse_transform(transformed)
+        for i in range(2):
+            pd.testing.assert_frame_equal(
+                recovered[i].static_covariates,
+                series[i].static_covariates,
+            )
 
     def helper_test_scaling(self, series, scaler, test_values):
         series_copy = series.copy()

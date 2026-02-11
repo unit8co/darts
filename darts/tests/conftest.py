@@ -4,11 +4,15 @@ import shutil
 import tempfile
 from typing import Any
 
+import pandas as pd
 import pytest
+from packaging import version
 
 from darts.logging import get_logger
 
 logger = get_logger(__name__)
+
+PANDAS_30_OR_GREATER = version.parse(pd.__version__) >= version.parse("3.0.0")
 
 try:
     import torch  # noqa: F401
@@ -102,6 +106,14 @@ try:
 except ImportError:
     logger.warning("Polars not installed - Some tests will be skipped.")
     POLARS_AVAILABLE = False
+
+try:
+    import plotly  # noqa: F401
+
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    logger.warning("Plotly not installed - Some tests will be skipped.")
+    PLOTLY_AVAILABLE = False
 
 tfm_kwargs: dict[str, Any] = {
     "pl_trainer_kwargs": {

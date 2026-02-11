@@ -24,7 +24,11 @@ from statsmodels.tsa.stattools import (
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.metrics.metrics import _tolerance_coverages
+from darts.metrics.utils import _get_tolerance_levels
+from darts.utils.likelihood_models.sklearn import QuantileRegression
 from darts.utils.missing_values import fill_missing_values
+from darts.utils.ts_utils import get_single_series
 from darts.utils.utils import ModelMode, SeasonalityMode
 
 logger = get_logger(__name__)
@@ -1090,3 +1094,130 @@ def plot_residuals_analysis(
     ax3.set_ylabel("ACF value")
     ax3.set_xlabel("lag")
     ax3.set_title("ACF")
+
+
+def plot_tolerance_curve(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    intersect: bool = True,
+    min_tolerance: float = 0.0,
+    max_tolerance: float = 1.0,
+    step: float = 0.01,
+    q: Optional[Union[float, list[float]]] = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    fig_size: tuple[int, int] = None,
+    axis: Optional[plt.axis] = None,
+) -> None:
+    """
+    Plots the Tolerance Curve for evaluating forecast alignment.
+
+    The tolerance curve shows, for each tolerance level (as a percentage of the actual series range),
+    what fraction of prediction points fall within that tolerance.
+
+    For multivariate series, one curve is plotted per component.
+
+    The Area Under Tolerance Curve (AUTC) can be computed using :func:`~darts.metrics.metrics.autc`.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    min_tolerance
+        The minimum tolerance level as a fraction of the series half-range. Default is 0.0 (0%).
+    max_tolerance
+        The maximum tolerance level as a fraction of the series half-range. Default is 1.0 (100%).
+    step
+        The step size between tolerance levels. Default is 0.01 (1%).
+        For example, with defaults, tolerances are [0.0, 0.01, 0.02, ..., 1.0].
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    fig_size
+        The size of the figure to be displayed.
+    axis
+        Optionally, an axis object to plot on.
+
+    See Also
+    --------
+    :func:`~darts.metrics.metrics.autc` : Compute the Area Under Tolerance Curve as a single score.
+    """
+    # get coverage for different tolerance levels
+    coverages = _tolerance_coverages(
+        actual_series=actual_series,
+        pred_series=pred_series,
+        intersect=intersect,
+        min_tolerance=min_tolerance,
+        max_tolerance=max_tolerance,
+        step=step,
+        q=q,
+        component_reduction=None,
+        series_reduction=np.nanmean,
+        n_jobs=n_jobs,
+        verbose=verbose,
+    )
+
+    tolerances = _get_tolerance_levels(
+        min_tolerance=min_tolerance,
+        max_tolerance=max_tolerance,
+        step=step,
+    )
+
+    # -> (n coverages, n components * n quantiles)
+    if len(coverages.shape) == 1:
+        coverages = coverages.reshape(-1, 1)
+
+    series_ = get_single_series(actual_series)
+    if q is None or isinstance(q, float):
+        coverage_labels = series_.components.tolist()
+    else:
+        coverage_labels = QuantileRegression(n_outputs=1, quantiles=q).component_names(
+            series_
+        )
+
+    if axis is None:
+        _, axis = plt.subplots(figsize=fig_size)
+
+    tolerances_perc = tolerances * 100.0
+    for i, comp_name in enumerate(coverage_labels):
+        coverages_comp = coverages[:, i]
+        coverages_perc = coverages_comp * 100.0
+
+        auc = np.trapezoid(coverages_comp, tolerances)
+        label = f"{comp_name} (AUTC = {auc:.3f})"
+        axis.step(
+            tolerances_perc,
+            coverages_perc,
+            where="post",
+            linewidth=2,
+            label=label,
+        )
+        if len(coverage_labels) == 1:
+            axis.fill_between(
+                tolerances_perc,
+                coverages_perc,
+                alpha=0.25,
+                color=axis.get_lines()[-1].get_color(),
+                step="post",
+            )
+
+    # add reference line for perfect predictions
+    axis.axhline(y=100, color="gray", linestyle="--", alpha=0.5, linewidth=1)
+
+    axis.set_xlim(0, 100)
+    axis.set_ylim(0, 105)
+    axis.set_xlabel("Tolerance (% of range)")
+    axis.set_ylabel("Coverage (%)")
+    axis.set_title("Tolerance Curve")
+    axis.grid(True, alpha=0.3)
+    axis.legend()

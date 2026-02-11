@@ -1308,7 +1308,8 @@ class TestProbabilisticClassifierModels:
             labels_c.append(labels_component2)
 
         for idx, (preds, probas, labels) in enumerate(zip(preds_c, probas_c, labels_c)):
-            pred_probas = pd.value_counts(preds.flatten(), normalize=True).to_dict()
+            pred_series = pd.Series(preds.flatten())
+            pred_probas = pred_series.value_counts(normalize=True).to_dict()
             pred_probas = [pred_probas[label] for label in labels]
             rmse = np.mean((pred_probas - probas) ** 2) ** 0.5
             assert rmse < model_rmse

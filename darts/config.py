@@ -22,9 +22,9 @@ Available Options
 **Plotting Options**
 
 - ``plotting.use_darts_style`` : bool (default: False)
-    Whether to apply Darts' custom matplotlib plotting style. When True, Darts will configure
-    matplotlib with a custom style optimized for time series visualization. When False, matplotlib's
-    default or user-configured style will be used. Changes to this option take effect immediately.
+    Whether to apply Darts' custom plotting style to both matplotlib and plotly. When True, Darts will
+    configure both backends with a custom style optimized for time series visualization. When False,
+    the default or user-configured styles will be used. Changes to this option take effect immediately.
 
 Examples
 ========
@@ -49,6 +49,17 @@ from typing import Any, Callable, Optional
 from darts.logging import get_logger, raise_log
 
 logger = get_logger(__name__)
+
+# Darts color palette used for both matplotlib and plotly plotting
+_DARTS_COLORS = [
+    "#000000",
+    "#003dfd",
+    "#b512b8",
+    "#11a9ba",
+    "#0d780f",
+    "#f77f07",
+    "#ba0f0f",
+]
 
 
 class _Option:
@@ -117,10 +128,9 @@ class _OptionsManager:
         plotting_use_darts_style = _Option(
             key="plotting.use_darts_style",
             default_value=False,
-            description="Whether to apply Darts' custom matplotlib plotting style. "
-            "When True, Darts will configure matplotlib with a custom style optimized for "
-            "time series visualization. When False, matplotlib's default or user-configured "
-            "style will be used.",
+            description="Whether to apply Darts' custom plotting style to both matplotlib and plotly. "
+            "When True, Darts will configure both backends with a custom style optimized for "
+            "time series visualization. When False, the default or user-configured styles will be used.",
             validator=self._validate_bool,
             callback=self._on_plotting_style_change,
         )
@@ -134,7 +144,10 @@ class _OptionsManager:
             ]
         }
         # remember if user applied Darts style
-        self._mpl_style_applied = False
+        self._darts_plotting_style_applied = False
+        # store original templates to restore later
+        self._original_plotly_template = None
+        self._original_mpl_params = None
 
     @staticmethod
     def _validate_positive_int(value: Any):
@@ -150,43 +163,101 @@ class _OptionsManager:
 
     def _on_plotting_style_change(self, value: bool) -> None:
         """Callback for when plotting.use_darts_style changes."""
+        # matplotlib
         import matplotlib as mpl
         from matplotlib import cycler
 
-        if not value and self._mpl_style_applied:
-            # restore default options
-            mpl.rcParams.update(mpl.rcParamsDefault)
-            self._mpl_style_applied = False
-            return
+        if value:
+            # store current matplotlib params before applying darts style
+            if not self._darts_plotting_style_applied:
+                self._original_mpl_params = mpl.rcParams.copy()
 
-        # apply Darts plotting style
-        colors = cycler(
-            color=["black", "003DFD", "b512b8", "11a9ba", "0d780f", "f77f07", "ba0f0f"]
-        )
+            # apply Darts plotting style to matplotlib
+            colors = cycler(color=_DARTS_COLORS)
+            u8plots_mplstyle = {
+                "font.family": "sans serif",
+                "axes.edgecolor": "black",
+                "axes.grid": True,
+                "axes.labelcolor": "#333333",
+                "axes.labelweight": 600,
+                "axes.linewidth": 1,
+                "axes.prop_cycle": colors,
+                "axes.spines.top": False,
+                "axes.spines.right": False,
+                "axes.spines.bottom": False,
+                "axes.spines.left": False,
+                "grid.color": "#dedede",
+                "legend.frameon": False,
+                "lines.linewidth": 1.3,
+                "xtick.color": "#333333",
+                "xtick.labelsize": "small",
+                "ytick.color": "#333333",
+                "ytick.labelsize": "small",
+                "xtick.bottom": False,
+            }
+            mpl.rcParams.update(u8plots_mplstyle)
+        else:
+            # restore previous matplotlib options
+            if self._original_mpl_params is not None:
+                mpl.rcParams.update(self._original_mpl_params)
+                self._original_mpl_params = None
 
-        u8plots_mplstyle = {
-            "font.family": "sans serif",
-            "axes.edgecolor": "black",
-            "axes.grid": True,
-            "axes.labelcolor": "#333333",
-            "axes.labelweight": 600,
-            "axes.linewidth": 1,
-            "axes.prop_cycle": colors,
-            "axes.spines.top": False,
-            "axes.spines.right": False,
-            "axes.spines.bottom": False,
-            "axes.spines.left": False,
-            "grid.color": "#dedede",
-            "legend.frameon": False,
-            "lines.linewidth": 1.3,
-            "xtick.color": "#333333",
-            "xtick.labelsize": "small",
-            "ytick.color": "#333333",
-            "ytick.labelsize": "small",
-            "xtick.bottom": False,
-        }
-        mpl.rcParams.update(u8plots_mplstyle)
-        self._mpl_style_applied = True
+        # plotly
+        try:
+            import plotly.graph_objects as go
+            import plotly.io as pio
+
+            if value:
+                # store existing default to restore later
+                if not self._darts_plotting_style_applied:
+                    self._original_plotly_template = pio.templates.default
+
+                # assign the darts plotly template directly
+                pio.templates.default = go.layout.Template(
+                    layout=go.Layout(
+                        font=dict(family="Arial, sans-serif", size=14, color="black"),
+                        paper_bgcolor="white",
+                        plot_bgcolor="white",
+                        colorway=_DARTS_COLORS,
+                        showlegend=True,
+                        legend=dict(
+                            bgcolor="rgba(255, 255, 255, 0.8)",
+                            x=1,
+                            y=1,
+                            yanchor="top",
+                            xanchor="right",
+                            font=dict(size=14),
+                            borderwidth=0,
+                        ),
+                        xaxis=dict(
+                            showline=True,
+                            linecolor="#dedede",
+                            showgrid=False,
+                            title=dict(font=dict(size=16, color="black")),
+                        ),
+                        yaxis=dict(
+                            showline=False,
+                            showgrid=True,
+                            gridcolor="#dedede",
+                            gridwidth=1,
+                            zeroline=True,
+                            zerolinecolor="#dedede",
+                        ),
+                        margin=dict(l=50, r=50, t=50, b=50),
+                    ),
+                    data=dict(scatter=[go.Scatter(line=dict(width=3))]),
+                )
+            else:
+                # restore the previous default
+                if self._original_plotly_template is not None:
+                    pio.templates.default = self._original_plotly_template
+                    self._original_plotly_template = None
+        except ImportError:
+            # plotly not available, skip plotly configuration
+            pass
+
+        # update the state tracker
+        self._darts_plotting_style_applied = value
 
     def _find_option(self, pattern: str, check_unique: bool = False) -> list[_Option]:
         """Find options matching a pattern (supports both exact match and prefix match)."""

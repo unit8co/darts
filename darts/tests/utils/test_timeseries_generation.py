@@ -19,7 +19,6 @@ from darts.utils.timeseries_generation import (
     random_walk_timeseries,
     sine_timeseries,
 )
-from darts.utils.utils import freqs
 
 
 class TestTimeSeriesGeneration:
@@ -148,7 +147,7 @@ class TestTimeSeriesGeneration:
             periods=365 * 3, freq="D", start=pd.Timestamp("2014-12-24")
         )
         time_index_3 = pd.date_range(
-            periods=10, freq=freqs["YE"], start=pd.Timestamp("1960-01-01")
+            periods=10, freq="YE", start=pd.Timestamp("1960-01-01")
         ) + pd.Timedelta(days=1)
 
         # testing we have at least one holiday flag in each year
@@ -161,9 +160,7 @@ class TestTimeSeriesGeneration:
             ts = holidays_timeseries(
                 time_index, country_code, until=until, add_length=add_length
             )
-            assert all(
-                ts.to_dataframe().groupby(pd.Grouper(freq=freqs["YE"])).sum().values
-            )
+            assert all(ts.to_dataframe().groupby(pd.Grouper(freq="YE")).sum().values)
 
         for time_index in [time_index_1, time_index_2, time_index_3]:
             for country_code in ["US", "CH", "AR"]:
@@ -176,8 +173,8 @@ class TestTimeSeriesGeneration:
         test_routine(time_index_1, "AR", until=pd.Timestamp("2016-01-01"))
 
         # test overflow
-        with pytest.raises(ValueError):
-            holidays_timeseries(time_index_1, "US", add_length=99999)
+        with pytest.raises(pd.errors.OutOfBoundsDatetime):
+            holidays_timeseries(time_index_1, "US", add_length=int(1e9))
 
         # test date is too short
         with pytest.raises(ValueError):
@@ -194,7 +191,7 @@ class TestTimeSeriesGeneration:
         # test holiday with and without time zone, 1st of August is national holiday in Switzerland
         # time zone naive (e.g. in UTC)
         idx = generate_index(
-            start=pd.Timestamp("2000-07-31 22:00:00"), length=3, freq=freqs["h"]
+            start=pd.Timestamp("2000-07-31 22:00:00"), length=3, freq="h"
         )
         ts = holidays_timeseries(idx, country_code="CH")
         np.testing.assert_array_almost_equal(ts.values()[:, 0], np.array([0, 0, 1]))
@@ -357,14 +354,12 @@ class TestTimeSeriesGeneration:
         np.testing.assert_array_almost_equal(vals_act, vals_exp)
 
     def test_datetime_attribute_timeseries_wrong_args(self):
-        idx = generate_index(
-            start=pd.Timestamp("2000-01-01"), length=48, freq=freqs["h"]
-        )
+        idx = generate_index(start=pd.Timestamp("2000-01-01"), length=48, freq="h")
         # no pd.DatetimeIndex
         with pytest.raises(ValueError) as err:
             self.helper_routine(
                 pd.RangeIndex(start=0, stop=len(idx)),
-                freqs["h"],
+                "h",
                 vals_exp=np.arange(len(idx)),
             )
         assert str(err.value).startswith(
@@ -373,22 +368,20 @@ class TestTimeSeriesGeneration:
 
         # invalid attribute
         with pytest.raises(ValueError) as err:
-            self.helper_routine(idx, freqs["h"], vals_exp=np.arange(len(idx)))
+            self.helper_routine(idx, "h", vals_exp=np.arange(len(idx)))
         assert str(err.value).startswith(
-            f"attribute `{freqs['h']}` needs to be an attribute of pd.DatetimeIndex."
+            f"attribute `{'h'}` needs to be an attribute of pd.DatetimeIndex."
         )
 
         # no time zone aware index
         with pytest.raises(ValueError) as err:
             self.helper_routine(
-                idx.tz_localize("UTC"), freqs["h"], vals_exp=np.arange(len(idx))
+                idx.tz_localize("UTC"), "h", vals_exp=np.arange(len(idx))
             )
         assert "`time_index` must be time zone naive." == str(err.value)
 
     def test_datetime_attribute_timeseries(self):
-        idx = generate_index(
-            start=pd.Timestamp("2000-01-01"), length=48, freq=freqs["h"]
-        )
+        idx = generate_index(start=pd.Timestamp("2000-01-01"), length=48, freq="h")
         # ===> datetime attribute
         # hour
         vals = [i for i in range(24)] * 2
@@ -420,13 +413,13 @@ class TestTimeSeriesGeneration:
     @pytest.mark.parametrize(
         "config",
         [
-            (freqs["ME"], "month", 12),
-            (freqs["h"], "hour", 24),
+            ("ME", "month", 12),
+            ("h", "hour", 24),
             ("D", "weekday", 7),
-            (freqs["s"], "second", 60),
+            ("s", "second", 60),
             ("W", "weekofyear", 52),
             ("D", "dayofyear", 365),
-            (freqs["QE"], "quarter", 4),
+            ("QE", "quarter", 4),
         ],
     )
     def test_datetime_attribute_timeseries_indexing_shift(self, config):
@@ -464,12 +457,12 @@ class TestTimeSeriesGeneration:
     @pytest.mark.parametrize(
         "config",
         [
-            (freqs["ME"], "month", 12),
-            (freqs["h"], "hour", 24),
+            ("ME", "month", 12),
+            ("h", "hour", 24),
             ("D", "weekday", 7),
-            (freqs["s"], "second", 60),
+            ("s", "second", 60),
             ("W", "weekofyear", 52),
-            (freqs["QE"], "quarter", 4),
+            ("QE", "quarter", 4),
             ("D", "dayofyear", 365),
         ],
     )
@@ -525,9 +518,7 @@ class TestTimeSeriesGeneration:
 
         self.helper_routine(idx, attribute_freq, vals_exp=vals, one_hot=True)
 
-    @pytest.mark.parametrize(
-        "config", [(freqs["h"], "hour", 24), (freqs["ME"], "month", 12)]
-    )
+    @pytest.mark.parametrize("config", [("h", "hour", 24), ("ME", "month", 12)])
     def test_datetime_attribute_timeseries_cyclic(self, config):
         base_freq, attribute_freq, period = config
         idx = generate_index(
