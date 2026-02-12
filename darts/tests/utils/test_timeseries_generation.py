@@ -1,5 +1,7 @@
 import itertools
+from datetime import timezone
 from typing import Union
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
@@ -394,9 +396,15 @@ class TestTimeSeriesGeneration:
             vals_exp=vals,
         )
 
-        # tz=CET is +1 hour to UTC
+        # tz=timezone.utc is the same as tz=None
+        self.helper_routine(idx, "hour", vals_exp=vals, tz=timezone.utc)
+
+        # tz="CET" is +1 hour to UTC
         vals = vals[1:] + [0]
         self.helper_routine(idx, "hour", vals_exp=vals, tz="CET")
+
+        # tz=ZoneInfo("CET") is the same as tz="CET"
+        self.helper_routine(idx, "hour", vals_exp=vals, tz=ZoneInfo("CET"))
 
         # day, 0-indexed
         vals = [0] * 24 + [1] * 24
