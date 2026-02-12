@@ -578,6 +578,11 @@ def prepare_pyfunc_input(
     past_covariates: Optional[Union["TimeSeries", list["TimeSeries"]]] = None,
     future_covariates: Optional[Union["TimeSeries", list["TimeSeries"]]] = None,
     num_samples: int = 1,
+    verbose: Optional[bool] = None,
+    show_warnings: bool = True,
+    random_state: Optional[int] = None,
+    predict_likelihood_parameters: bool = False,
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """Prepare input DataFrame for MLflow pyfunc prediction.
 
@@ -596,13 +601,39 @@ def prepare_pyfunc_input(
         Future covariates.
     num_samples : int
         Number of samples for probabilistic models.
+    verbose : Optional[bool]
+        Optionally, set the prediction verbosity. Not effective for all models.
+    show_warnings : bool
+        Optionally, control whether warnings are shown. Not effective for all models.
+    random_state : Optional[int]
+        Controls the randomness of probabilistic predictions.
+    predict_likelihood_parameters : bool
+        If set to True, the model predicts the parameters of its likelihood instead of
+        the target. Only supported for probabilistic models with a likelihood.
+    **kwargs : Any
+        Additional model-specific parameters (e.g., ``mc_dropout`` for torch models,
+        ``batch_size``, etc.). These are serialized as JSON and passed to the model's
+        ``predict()`` method.
 
     Returns
     -------
     pd.DataFrame
         Input DataFrame for pyfunc ``predict()`` method.
     """
-    data = {"n": [n], "num_samples": [num_samples]}
+    data = {
+        "n": [n],
+        "num_samples": [num_samples],
+    }
+
+    # Only add optional parameters if explicitly set (not defaults)
+    if verbose is not None:
+        data["verbose"] = [verbose]
+    if show_warnings is not True:  # Only add if not default
+        data["show_warnings"] = [show_warnings]
+    if random_state is not None:
+        data["random_state"] = [random_state]
+    if predict_likelihood_parameters is not False:  # Only add if not default
+        data["predict_likelihood_parameters"] = [predict_likelihood_parameters]
 
     if series is not None:
         data["_darts_series"] = [_serialize_timeseries_for_pyfunc(series)]
@@ -617,6 +648,10 @@ def prepare_pyfunc_input(
                 _serialize_timeseries_for_pyfunc(future_covariates)
             ]
 
+    # Serialize kwargs as JSON string for model-specific parameters
+    if kwargs:
+        data["_darts_kwargs"] = [json.dumps(kwargs)]
+
     return pd.DataFrame(data)
 
 
@@ -626,6 +661,12 @@ def infer_signature(
     past_covariates: Optional["TimeSeries"] = None,
     future_covariates: Optional["TimeSeries"] = None,
     n: int = 1,
+    num_samples: int = 1,
+    verbose: Optional[bool] = None,
+    show_warnings: bool = True,
+    random_state: Optional[int] = None,
+    predict_likelihood_parameters: bool = False,
+    **kwargs: Any,
 ) -> "mlflow.models.ModelSignature":
     """Infer MLflow ModelSignature from a darts model and example inputs.
 
@@ -644,6 +685,18 @@ def infer_signature(
         Example future covariates.
     n : int
         Forecast horizon for generating example output.
+    num_samples : int
+        Number of samples for probabilistic models.
+    verbose : Optional[bool]
+        Optionally, set the prediction verbosity.
+    show_warnings : bool
+        Optionally, control whether warnings are shown.
+    random_state : Optional[int]
+        Controls the randomness of probabilistic predictions.
+    predict_likelihood_parameters : bool
+        If set to True, the model predicts the parameters of its likelihood.
+    **kwargs : Any
+        Additional model-specific parameters.
 
     Returns
     -------
@@ -655,7 +708,12 @@ def infer_signature(
         series=series,
         past_covariates=past_covariates,
         future_covariates=future_covariates,
-        num_samples=1,
+        num_samples=num_samples,
+        verbose=verbose,
+        show_warnings=show_warnings,
+        random_state=random_state,
+        predict_likelihood_parameters=predict_likelihood_parameters,
+        **kwargs,
     )
 
     wrapper = _DartsModelWrapper(model)
@@ -698,9 +756,11 @@ class _DartsModelWrapper:
         ----------
         model_input : pd.DataFrame
             Input DataFrame with columns: ``n``, ``num_samples``, and optionally
-            ``_darts_series``, ``_darts_past_covariates``, ``_darts_future_covariates``.
+            ``_darts_series``, ``_darts_past_covariates``, ``_darts_future_covariates``,
+            ``verbose``, ``show_warnings``, ``random_state``,
+            ``predict_likelihood_parameters``, ``_darts_kwargs``.
         params : Optional[dict[str, Any]]
-            Override parameters (e.g., ``{"n": 20}``).
+            Override parameters (e.g., ``{"n": 20, "random_state": 42}``).
 
         Returns
         -------
@@ -721,6 +781,41 @@ class _DartsModelWrapper:
 
         predict_kwargs = {"n": n, "num_samples": num_samples}
 
+        # Extract standard prediction parameters (only if present in DataFrame/params)
+        optional_params = [
+            "verbose",
+            "show_warnings",
+            "random_state",
+            "predict_likelihood_parameters",
+        ]
+
+        for param_name in optional_params:
+            value = None
+            if params and param_name in params:
+                value = params[param_name]
+            elif param_name in model_input.columns:
+                value = model_input[param_name].iloc[0]
+                # Handle NaN/None
+                if pd.isna(value):
+                    continue
+            else:
+                # Parameter not provided
+                continue
+
+            # Convert to appropriate Python type
+            if param_name in [
+                "verbose",
+                "show_warnings",
+                "predict_likelihood_parameters",
+            ]:
+                value = bool(value)
+            elif param_name == "random_state":
+                value = int(value) if value is not None else None
+
+            # Only add if not None
+            if value is not None:
+                predict_kwargs[param_name] = value
+
         if "_darts_series" in model_input.columns:
             series_json = model_input["_darts_series"].iloc[0]
             if pd.notna(series_json) and series_json:
@@ -740,6 +835,13 @@ class _DartsModelWrapper:
                 predict_kwargs["future_covariates"] = (
                     _deserialize_timeseries_from_pyfunc(future_cov_json)
                 )
+
+        # Handle model-specific kwargs
+        if "_darts_kwargs" in model_input.columns:
+            kwargs_json = model_input["_darts_kwargs"].iloc[0]
+            if pd.notna(kwargs_json) and kwargs_json:
+                extra_kwargs = json.loads(kwargs_json)
+                predict_kwargs.update(extra_kwargs)
 
         prediction = self.model.predict(**predict_kwargs)
 

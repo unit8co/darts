@@ -605,3 +605,125 @@ class TestMLflow:
         np.testing.assert_array_almost_equal(
             output_df.values, expected_df.values, decimal=4
         )
+
+    def test_prepare_input_with_all_params(self):
+        """Test prepare_pyfunc_input with all new parameters"""
+        input_df = prepare_pyfunc_input(
+            n=10,
+            series=self.ts_univariate,
+            past_covariates=self.ts_past_cov,
+            num_samples=5,
+            verbose=True,
+            show_warnings=False,
+            random_state=42,
+            predict_likelihood_parameters=True,
+            mc_dropout=True,
+            batch_size=32,
+        )
+
+        assert "n" in input_df.columns
+        assert "num_samples" in input_df.columns
+        assert "verbose" in input_df.columns
+        assert "show_warnings" in input_df.columns
+        assert "random_state" in input_df.columns
+        assert "predict_likelihood_parameters" in input_df.columns
+        assert "_darts_series" in input_df.columns
+        assert "_darts_past_covariates" in input_df.columns
+        assert "_darts_kwargs" in input_df.columns
+
+        assert input_df["n"].iloc[0] == 10
+        assert input_df["num_samples"].iloc[0] == 5
+        assert bool(input_df["verbose"].iloc[0]) is True
+        assert bool(input_df["show_warnings"].iloc[0]) is False
+        assert input_df["random_state"].iloc[0] == 42
+        assert bool(input_df["predict_likelihood_parameters"].iloc[0]) is True
+
+        import json
+
+        kwargs = json.loads(input_df["_darts_kwargs"].iloc[0])
+        assert kwargs["mc_dropout"] is True  # JSON bools are Python bools
+        assert kwargs["batch_size"] == 32
+
+    def test_wrapper_with_standard_params(self):
+        """Test wrapper with standard prediction parameters"""
+        model = ExponentialSmoothing()
+        model.fit(self.ts_univariate)
+
+        wrapper = _DartsModelWrapper(model)
+        input_df = prepare_pyfunc_input(
+            n=5,
+            verbose=False,
+            show_warnings=False,
+            random_state=42,
+        )
+
+        # Should not raise an error even with extra params
+        output_df = wrapper.predict(input_df)
+
+        assert isinstance(output_df, pd.DataFrame)
+        assert len(output_df) == 5
+
+    def test_wrapper_with_kwargs(self):
+        """Test wrapper with model-specific kwargs"""
+        model = LinearRegressionModel(lags=3)
+        model.fit(self.ts_univariate)
+
+        wrapper = _DartsModelWrapper(model)
+
+        # Add kwargs that don't affect LinearRegressionModel but shouldn't cause errors
+        input_df = prepare_pyfunc_input(
+            n=5,
+            series=self.ts_univariate,
+            verbose=False,
+        )
+
+        output_df = wrapper.predict(input_df)
+
+        assert isinstance(output_df, pd.DataFrame)
+        assert len(output_df) == 5
+
+    def test_pyfunc_with_all_params(self, tmpdir_fn):
+        """Test end-to-end pyfunc with all parameters"""
+        mlflow.set_tracking_uri(f"sqlite:///{tmpdir_fn}/mlflow.db")
+        mlflow.set_experiment("test_experiment")
+
+        model = ExponentialSmoothing()
+        model.fit(self.ts_univariate)
+
+        with mlflow.start_run():
+            signature = infer_signature(
+                model,
+                n=5,
+                verbose=False,
+                show_warnings=False,
+                random_state=42,
+            )
+            log_info = log_model(model, name="model", signature=signature)
+
+        pyfunc_model = mlflow.pyfunc.load_model(log_info.model_uri)
+
+        input_df = prepare_pyfunc_input(
+            n=5,
+            verbose=False,
+            show_warnings=False,
+            random_state=42,
+        )
+
+        output_df = pyfunc_model.predict(input_df)
+
+        assert isinstance(output_df, pd.DataFrame)
+        assert len(output_df) == 5
+
+    def test_params_override_with_new_params(self):
+        """Test that params dict overrides DataFrame values for new parameters"""
+        model = ExponentialSmoothing()
+        model.fit(self.ts_univariate)
+
+        wrapper = _DartsModelWrapper(model)
+        input_df = prepare_pyfunc_input(n=5, random_state=10)
+
+        # Override random_state via params
+        output_df = wrapper.predict(input_df, params={"random_state": 42})
+
+        # Should complete without error (random_state was overridden)
+        assert len(output_df) == 5
