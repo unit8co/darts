@@ -300,7 +300,7 @@ class TestMLflow:
 
     def test_log_model_basic(self, tmpdir_fn):
         """Test basic log_model functionality"""
-        mlflow.set_tracking_uri(f"file://{tmpdir_fn}")
+        mlflow.set_tracking_uri(f"sqlite:///{tmpdir_fn}/mlflow.db")
         mlflow.set_experiment("test_experiment")
 
         model = ExponentialSmoothing()
@@ -320,7 +320,7 @@ class TestMLflow:
 
     def test_log_model_with_params(self, tmpdir_fn):
         """Test that log_params=True logs model parameters"""
-        mlflow.set_tracking_uri(f"file://{tmpdir_fn}")
+        mlflow.set_tracking_uri(f"sqlite:///{tmpdir_fn}/mlflow.db")
         mlflow.set_experiment("test_experiment")
 
         model = LinearRegressionModel(lags=5, lags_past_covariates=3)
@@ -339,7 +339,7 @@ class TestMLflow:
 
     def test_log_model_with_covariates(self, tmpdir_fn):
         """Test that covariate info is logged with correct values"""
-        mlflow.set_tracking_uri(f"file://{tmpdir_fn}")
+        mlflow.set_tracking_uri(f"sqlite:///{tmpdir_fn}/mlflow.db")
         mlflow.set_experiment("test_experiment")
 
         model = LinearRegressionModel(lags=5, lags_past_covariates=3)
@@ -361,7 +361,7 @@ class TestMLflow:
 
     def test_pyfunc_load_and_predict(self, tmpdir_fn):
         """Test loading model as pyfunc and making predictions"""
-        mlflow.set_tracking_uri(f"file://{tmpdir_fn}")
+        mlflow.set_tracking_uri(f"sqlite:///{tmpdir_fn}/mlflow.db")
         mlflow.set_experiment("test_experiment")
 
         model = ExponentialSmoothing()
@@ -386,7 +386,7 @@ class TestMLflow:
 
     def test_pyfunc_with_covariates(self, tmpdir_fn):
         """Test pyfunc with model that requires covariates"""
-        mlflow.set_tracking_uri(f"file://{tmpdir_fn}")
+        mlflow.set_tracking_uri(f"sqlite:///{tmpdir_fn}/mlflow.db")
         mlflow.set_experiment("test_experiment")
 
         train = self.ts_univariate[:40]
@@ -464,7 +464,7 @@ class TestMLflow:
 
     def test_autolog_enable_disable(self, tmpdir_fn):
         """Test autolog can be enabled and disabled"""
-        mlflow.set_tracking_uri(f"file://{tmpdir_fn}")
+        mlflow.set_tracking_uri(f"sqlite:///{tmpdir_fn}/mlflow.db")
         mlflow.set_experiment("test_experiment")
 
         autolog()
@@ -488,7 +488,7 @@ class TestMLflow:
 
     def test_autolog_parameters(self, tmpdir_fn):
         """Test that autolog logs model parameters"""
-        mlflow.set_tracking_uri(f"file://{tmpdir_fn}")
+        mlflow.set_tracking_uri(f"sqlite:///{tmpdir_fn}/mlflow.db")
         mlflow.set_experiment("test_experiment")
 
         autolog()
@@ -508,7 +508,7 @@ class TestMLflow:
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_autolog_torch_metrics(self, tmpdir_fn):
         """Test that autolog logs training metrics for torch models"""
-        mlflow.set_tracking_uri(f"file://{tmpdir_fn}")
+        mlflow.set_tracking_uri(f"sqlite:///{tmpdir_fn}/mlflow.db")
         mlflow.set_experiment("test_experiment")
 
         autolog()
@@ -575,7 +575,7 @@ class TestMLflow:
         if use_torch and not TORCH_AVAILABLE:
             pytest.skip("torch not available")
 
-        mlflow.set_tracking_uri(f"file://{tmpdir_fn}")
+        mlflow.set_tracking_uri(f"sqlite:///{tmpdir_fn}/mlflow.db")
         mlflow.set_experiment("test_experiment")
 
         if use_torch:
