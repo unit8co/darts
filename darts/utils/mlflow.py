@@ -19,9 +19,11 @@ import mlflow
 import pandas as pd
 import yaml
 from mlflow.models import Model
+from mlflow.models import infer_signature as mlflow_infer_signature
 from mlflow.tracking.artifact_utils import _download_artifact_from_uri
 
 import darts
+from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.utils.utils import PL_AVAILABLE
@@ -192,8 +194,10 @@ def save_model(
         when provided.
     signature
         An ``mlflow.models.ModelSignature`` instance describing model input/output.
+        Use :func:`infer_signature` to automatically generate from example inputs.
     input_example
-        An example input for the model (used by MLflow UI).
+        An example input for the model (used by MLflow UI). Should be a DataFrame
+        created with :func:`prepare_pyfunc_input`.
     metadata
         Optional dictionary of custom metadata to store in the ``MLmodel`` file.
     """
@@ -361,9 +365,11 @@ def log_model(
     pip_requirements
         Pip requirements list.
     signature
-        An ``mlflow.models.ModelSignature``.
+        An ``mlflow.models.ModelSignature``. Use :func:`infer_signature`
+        to automatically generate from example inputs.
     input_example
-        An example model input.
+        An example model input. Should be a DataFrame created with
+        :func:`prepare_pyfunc_input`.
     metadata
         Optional dict of custom metadata.
     log_params
@@ -518,19 +524,151 @@ def _log_covariate_info(model) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _serialize_timeseries_for_pyfunc(
+    ts: Union["TimeSeries", list["TimeSeries"]],
+) -> str:
+    """Serialize TimeSeries to JSON string for pyfunc.
+
+    Parameters
+    ----------
+    ts : Union[TimeSeries, list[TimeSeries]]
+        Single TimeSeries or list of TimeSeries objects.
+
+    Returns
+    -------
+    str
+        JSON string representation. For a single TimeSeries, returns a JSON object.
+        For a list, returns a JSON array.
+    """
+    if isinstance(ts, TimeSeries):
+        return ts.to_json()
+    elif isinstance(ts, (list, tuple)):
+        serialized = [t.to_json() for t in ts]
+        return "[" + ",".join(serialized) + "]"
+    else:
+        raise TypeError(f"Expected TimeSeries or list of TimeSeries, got {type(ts)}")
+
+
+def _deserialize_timeseries_from_pyfunc(
+    json_str: str,
+) -> Union["TimeSeries", list["TimeSeries"]]:
+    """Deserialize TimeSeries from JSON string.
+
+    Parameters
+    ----------
+    json_str : str
+        JSON string representation (single object or array).
+
+    Returns
+    -------
+    Union[TimeSeries, list[TimeSeries]]
+        Single TimeSeries or list of TimeSeries objects.
+    """
+    json_str = json_str.strip()
+    if json_str.startswith("["):
+        array_data = json.loads(json_str)
+        return [TimeSeries.from_json(json.dumps(item)) for item in array_data]
+    else:
+        return TimeSeries.from_json(json_str)
+
+
+def prepare_pyfunc_input(
+    n: int,
+    series: Optional[Union["TimeSeries", list["TimeSeries"]]] = None,
+    past_covariates: Optional[Union["TimeSeries", list["TimeSeries"]]] = None,
+    future_covariates: Optional[Union["TimeSeries", list["TimeSeries"]]] = None,
+    num_samples: int = 1,
+) -> pd.DataFrame:
+    """Prepare input DataFrame for MLflow pyfunc prediction.
+
+    Creates a DataFrame for use with models loaded via ``mlflow.pyfunc.load_model()``.
+    Serializes TimeSeries to JSON in special columns.
+
+    Parameters
+    ----------
+    n : int
+        Forecast horizon.
+    series : Optional[Union[TimeSeries, list[TimeSeries]]]
+        Target series for prediction (required for global models on new data).
+    past_covariates : Optional[Union[TimeSeries, list[TimeSeries]]]
+        Past covariates.
+    future_covariates : Optional[Union[TimeSeries, list[TimeSeries]]]
+        Future covariates.
+    num_samples : int
+        Number of samples for probabilistic models.
+
+    Returns
+    -------
+    pd.DataFrame
+        Input DataFrame for pyfunc ``predict()`` method.
+    """
+    data = {"n": [n], "num_samples": [num_samples]}
+
+    if series is not None:
+        data["_darts_series"] = [_serialize_timeseries_for_pyfunc(series)]
+
+        if past_covariates is not None:
+            data["_darts_past_covariates"] = [
+                _serialize_timeseries_for_pyfunc(past_covariates)
+            ]
+
+        if future_covariates is not None:
+            data["_darts_future_covariates"] = [
+                _serialize_timeseries_for_pyfunc(future_covariates)
+            ]
+
+    return pd.DataFrame(data)
+
+
+def infer_signature(
+    model,
+    series: Optional["TimeSeries"] = None,
+    past_covariates: Optional["TimeSeries"] = None,
+    future_covariates: Optional["TimeSeries"] = None,
+    n: int = 1,
+) -> "mlflow.models.ModelSignature":
+    """Infer MLflow ModelSignature from a darts model and example inputs.
+
+    Generates a signature describing input/output schemas for the pyfunc interface.
+    The ``_darts_series`` and covariate columns are marked as optional.
+
+    Parameters
+    ----------
+    model
+        A fitted darts ``ForecastingModel`` instance.
+    series : Optional[TimeSeries]
+        Example target series for signature inference.
+    past_covariates : Optional[TimeSeries]
+        Example past covariates.
+    future_covariates : Optional[TimeSeries]
+        Example future covariates.
+    n : int
+        Forecast horizon for generating example output.
+
+    Returns
+    -------
+    mlflow.models.ModelSignature
+        Signature describing the model's input/output interface.
+    """
+    input_example = prepare_pyfunc_input(
+        n=n,
+        series=series,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
+        num_samples=1,
+    )
+
+    wrapper = _DartsModelWrapper(model)
+    output_example = wrapper.predict(input_example)
+
+    return mlflow_infer_signature(input_example, output_example)
+
+
 class _DartsModelWrapper:
     """A pyfunc-compatible wrapper around a darts ``ForecastingModel``.
 
-    MLflow's generic pyfunc inference API requires a ``predict(model_input)``
-    method that accepts a ``pandas.DataFrame``.  This wrapper translates that
-    call into a darts ``model.predict(n=...)`` call and returns the forecast
-    as a ``pandas.DataFrame``.
-
-    The forecast horizon ``n`` is determined from (in order of precedence):
-
-    1. A key ``"n"`` in the ``params`` dict, or
-    2. A column named ``"n"`` in ``model_input`` (first value is used), or
-    3. A default of ``1``.
+    Deserializes TimeSeries from JSON-encoded columns and calls the model's
+    ``predict()`` method. Input should be created using :func:`prepare_pyfunc_input`.
 
     Parameters
     ----------
@@ -551,23 +689,23 @@ class _DartsModelWrapper:
         model_input: pd.DataFrame,
         params: Optional[dict[str, Any]] = None,
     ) -> pd.DataFrame:
-        """Generate forecasts.
+        """Generate forecasts from pyfunc input.
+
+        Input should be created using :func:`prepare_pyfunc_input`. Deserializes
+        TimeSeries from JSON columns and passes to model.predict().
 
         Parameters
         ----------
-        model_input
-            A ``pandas.DataFrame``. If it contains a column ``"n"``, the first
-            value is used as the forecast horizon.  Additional columns
-            (``"num_samples"``) are forwarded if present.
-        params
-            Optional dict; ``params["n"]`` overrides the horizon from the
-            DataFrame.
+        model_input : pd.DataFrame
+            Input DataFrame with columns: ``n``, ``num_samples``, and optionally
+            ``_darts_series``, ``_darts_past_covariates``, ``_darts_future_covariates``.
+        params : Optional[dict[str, Any]]
+            Override parameters (e.g., ``{"n": 20}``).
 
         Returns
         -------
         pd.DataFrame
-            Forecasted values with a ``DatetimeIndex`` (or ``RangeIndex``)
-            and one column per component of the target series.
+            Forecasted values. For multiple series, includes a ``series_id`` column.
         """
         n = 1
         if params and "n" in params:
@@ -581,8 +719,39 @@ class _DartsModelWrapper:
         elif "num_samples" in model_input.columns:
             num_samples = int(model_input["num_samples"].iloc[0])
 
-        prediction = self.model.predict(n=n, num_samples=num_samples)
-        return prediction.to_dataframe()
+        predict_kwargs = {"n": n, "num_samples": num_samples}
+
+        if "_darts_series" in model_input.columns:
+            series_json = model_input["_darts_series"].iloc[0]
+            if pd.notna(series_json) and series_json:
+                series = _deserialize_timeseries_from_pyfunc(series_json)
+                predict_kwargs["series"] = series
+
+        if "_darts_past_covariates" in model_input.columns:
+            past_cov_json = model_input["_darts_past_covariates"].iloc[0]
+            if pd.notna(past_cov_json) and past_cov_json:
+                predict_kwargs["past_covariates"] = _deserialize_timeseries_from_pyfunc(
+                    past_cov_json
+                )
+
+        if "_darts_future_covariates" in model_input.columns:
+            future_cov_json = model_input["_darts_future_covariates"].iloc[0]
+            if pd.notna(future_cov_json) and future_cov_json:
+                predict_kwargs["future_covariates"] = (
+                    _deserialize_timeseries_from_pyfunc(future_cov_json)
+                )
+
+        prediction = self.model.predict(**predict_kwargs)
+
+        if isinstance(prediction, TimeSeries):
+            return prediction.to_dataframe()
+        else:
+            dfs = []
+            for i, pred in enumerate(prediction):
+                df = pred.to_dataframe()
+                df["series_id"] = i
+                dfs.append(df)
+            return pd.concat(dfs, axis=0)
 
 
 def _load_pyfunc(path: str):
