@@ -1970,7 +1970,7 @@ class TimeSeries:
             schema = {k: deepcopy(v) for k, v in schema.items()}
         return schema
 
-    def astype(self, dtype: Union[str, np.dtype]) -> Self:
+    def astype(self, dtype: Union[str, type[np.float32], type[np.float64]]) -> Self:
         """Return a new series with the values have been converted to the desired `dtype`.
 
         Parameters
