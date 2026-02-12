@@ -8,6 +8,7 @@ to MLflow, including a pyfunc wrapper for MLflow's generic inference API.
 """
 
 import importlib
+import json
 import os
 import sys
 import tempfile
@@ -379,6 +380,7 @@ def log_model(
 
     if log_params:
         _log_model_params(model)
+        _log_covariate_info(model)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         model_dir = os.path.join(tmp_dir, artifact_name)
@@ -436,6 +438,79 @@ def _log_model_params(model) -> None:
 
     if safe_params:
         mlflow.log_params(safe_params)
+
+
+def _log_covariate_info(model) -> None:
+    """Log covariate usage information to MLflow.
+
+    Extracts information about past, future, and static covariates used during
+    training and logs them as tags, parameters, and a JSON artifact for easy
+    filtering, comparison, and documentation.
+
+    Logs three types of information:
+    - Tags: Boolean flags for filtering (e.g., "uses_past_covariates")
+    - Parameters: Feature counts and names (truncated to 500 chars)
+    - Artifact: Complete covariate metadata as JSON file
+
+    Parameters
+    ----------
+    model
+        A fitted Darts forecasting model instance.
+    """
+    covariate_types = [
+        (
+            "past_covariates",
+            "_uses_past_covariates",
+            "past_covariate_series",
+            "components",
+        ),
+        (
+            "future_covariates",
+            "_uses_future_covariates",
+            "future_covariate_series",
+            "components",
+        ),
+        (
+            "static_covariates",
+            "_uses_static_covariates",
+            "static_covariates",
+            "columns",
+        ),
+    ]
+
+    covariate_info = {}
+
+    for cov_key, uses_attr, series_attr, names_attr in covariate_types:
+        info = {"used": False, "count": 0, "names": []}
+
+        if getattr(model, uses_attr, False):
+            info["used"] = True
+            series = getattr(model, series_attr, None)
+            if series is not None:
+                names = getattr(series, names_attr).tolist()
+                info["names"] = names
+                info["count"] = len(names)
+
+        covariate_info[cov_key] = info
+
+        mlflow.set_tag(f"uses_{cov_key}", str(info["used"]).lower())
+        mlflow.log_param(f"n_{cov_key}", info["count"])
+
+        if info["names"]:
+            names_str = ",".join(info["names"])
+            if len(names_str) > 500:
+                names_str = names_str[:497] + "..."
+            mlflow.log_param(f"{cov_key.split('_')[0]}_cov_names", names_str)
+
+    # log complete information as JSON artifact
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(covariate_info, f, indent=2)
+        temp_path = f.name
+
+    try:
+        mlflow.log_artifact(temp_path, "covariates.json")
+    finally:
+        os.remove(temp_path)
 
 
 # ---------------------------------------------------------------------------
@@ -775,6 +850,9 @@ def _patch_fit(
                 _inject_mlflow_callback(self)
 
             result = original_fit(self, *args, **kwargs)
+
+            if log_params:
+                _log_covariate_info(self)
 
             if log_models:
                 try:
