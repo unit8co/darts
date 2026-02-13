@@ -43,6 +43,7 @@ class RandomForestModel(SKLearnModel):
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
         random_state: Optional[int] = None,
+        dir_rec: Optional[bool] = False,
         **kwargs,
     ):
         """Random Forest Model
@@ -139,6 +140,10 @@ class RandomForestModel(SKLearnModel):
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         random_state
             Controls the randomness for reproducible forecasting.
+        dir_rec
+            Whether to use direct-recursive strategy for multi-step forecasting. When True, each forecast
+            horizon uses predictions from previous horizons as additional input features. This creates a
+            chained prediction where step t+2 uses the prediction for step t+1 as a feature. Default: False.
         **kwargs
             Additional keyword arguments passed to `sklearn.ensemble.RandomForestRegressor`.
 
@@ -190,6 +195,7 @@ class RandomForestModel(SKLearnModel):
             model=RandomForestRegressor(**kwargs),
             use_static_covariates=use_static_covariates,
             random_state=random_state,
+            dir_rec=dir_rec,
         )
 
 
