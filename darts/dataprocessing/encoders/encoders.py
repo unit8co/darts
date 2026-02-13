@@ -158,7 +158,7 @@ TorchForecastingModel (this is only meant to illustrate many features at once).
 
 import copy
 from collections.abc import Sequence
-from typing import Callable, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -182,6 +182,7 @@ from darts.utils.ts_utils import seq2series, series2seq
 from darts.utils.utils import generate_index
 
 SupportedTimeSeries = Union[TimeSeries, Sequence[TimeSeries]]
+
 logger = get_logger(__name__)
 
 ENCODER_KEYS = ["cyclic", "datetime_attribute", "position", "custom"]
@@ -203,7 +204,7 @@ class CyclicTemporalEncoder(SingleEncoder):
         self,
         index_generator: CovariatesIndexGenerator,
         attribute: str,
-        tz: Optional[str] = None,
+        tz: Any = None,
     ):
         """
         Cyclic index encoding for `TimeSeries` that have a time index of type `pd.DatetimeIndex`.
@@ -221,7 +222,9 @@ class CyclicTemporalEncoder(SingleEncoder):
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
         """
         super().__init__(index_generator)
         self.attribute = attribute
@@ -271,7 +274,7 @@ class PastCyclicEncoder(CyclicTemporalEncoder):
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
         lags_covariates: Optional[list[int]] = None,
-        tz: Optional[str] = None,
+        tz: Any = None,
     ):
         """
         Parameters
@@ -298,7 +301,9 @@ class PastCyclicEncoder(CyclicTemporalEncoder):
             Only required for :class:`SKLearnModel`.
             Corresponds to the lag values from parameter `lags_past_covariates` of :class:`SKLearnModel`.
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
         """
         super().__init__(
             index_generator=PastCovariatesIndexGenerator(
@@ -320,7 +325,7 @@ class FutureCyclicEncoder(CyclicTemporalEncoder):
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
         lags_covariates: Optional[list[int]] = None,
-        tz: Optional[str] = None,
+        tz: Any = None,
     ):
         """
         Parameters
@@ -347,7 +352,9 @@ class FutureCyclicEncoder(CyclicTemporalEncoder):
             Only required for :class:`SKLearnModel`.
             Corresponds to the lag values from parameter `lags_future_covariates` from :class:`SKLearnModel`.
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
         """
         super().__init__(
             index_generator=FutureCovariatesIndexGenerator(
@@ -369,7 +376,7 @@ class DatetimeAttributeEncoder(SingleEncoder):
         self,
         index_generator: CovariatesIndexGenerator,
         attribute: str,
-        tz: Optional[str] = None,
+        tz: Any = None,
     ):
         """
         Parameters
@@ -385,7 +392,9 @@ class DatetimeAttributeEncoder(SingleEncoder):
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
         """
         super().__init__(index_generator)
         self.attribute = attribute
@@ -431,7 +440,7 @@ class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
         lags_covariates: Optional[list[int]] = None,
-        tz: Optional[str] = None,
+        tz: Any = None,
     ):
         """
         Parameters
@@ -458,7 +467,9 @@ class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
             Only required for :class:`SKLearnModel`.
             Corresponds to the lag values from parameter `lags_past_covariates` of :class:`SKLearnModel`.
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
         """
         super().__init__(
             index_generator=PastCovariatesIndexGenerator(
@@ -480,7 +491,7 @@ class FutureDatetimeAttributeEncoder(DatetimeAttributeEncoder):
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
         lags_covariates: Optional[list[int]] = None,
-        tz: Optional[str] = None,
+        tz: Any = None,
     ):
         """
         Parameters
@@ -507,7 +518,9 @@ class FutureDatetimeAttributeEncoder(DatetimeAttributeEncoder):
             Only required for :class:`SKLearnModel`.
             Corresponds to the lag values from parameter `lags_future_covariates` from :class:`SKLearnModel`.
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
         """
         super().__init__(
             index_generator=FutureCovariatesIndexGenerator(

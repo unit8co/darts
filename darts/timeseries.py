@@ -3573,7 +3573,7 @@ class TimeSeries:
         attribute,
         one_hot: bool = False,
         cyclic: bool = False,
-        tz: Optional[str] = None,
+        tz: Any = None,
     ) -> Self:
         """Return a new series with one (or more) additional component(s) that contain an attribute of the series' time
         index.
@@ -3600,7 +3600,9 @@ class TimeSeries:
             Alternative to one_hot encoding, enable only one of the two.
             (adds 2 columns, corresponding to sin and cos transformation).
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
 
         Returns
         -------
@@ -3625,7 +3627,7 @@ class TimeSeries:
         country_code: str,
         prov: str = None,
         state: str = None,
-        tz: Optional[str] = None,
+        tz: Any = None,
     ) -> Self:
         """Return a new series with an added holiday component.
 
@@ -3644,7 +3646,9 @@ class TimeSeries:
         state
             The state
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
 
         Returns
         -------
