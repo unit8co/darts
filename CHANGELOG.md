@@ -5,11 +5,13 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.41.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.40.0...master)
 
 ### For users of the library:
 
 **Improved**
+
+- Added support for full and partial fine-tuning of foundation models with integrated layer freezing and `PeftCallback` for LoRA integration. [#2964](https://github.com/unit8co/darts/issues/2964) by [Alain Gysi](https://github.com/Kurokabe)
 
 **Fixed**
 
@@ -53,19 +55,16 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
-- Fixed a bug in `StaticCovariatesTransformer` where one-hot encoded column names were incorrectly assigned when the order of columns specified in `cols_cat` differed from the actual data column order. This caused silent data corruption where column names combined wrong feature names with wrong category values (e.g., `City_US` instead of `Country_US`). [#2989](https://github.com/unit8co/darts/pull/2989) by [Dustin Brunner](https://github.com/brunnedu).
+- Fixed bug in `StaticCovariatesTransformer` where one-hot encoded column names were incorrectly assigned when the order of columns specified in `cols_cat` differed from the actual data column order. This caused silent data corruption where column names combined wrong feature names with wrong category values (e.g., `City_US` instead of `Country_US`). [#2989](https://github.com/unit8co/darts/pull/2989) by [Dustin Brunner](https://github.com/brunnedu).
 - Fixed a bug in `TorchTrainingDataset` where `max_samples_per_ts` was not acting as an upper bound on the number of samples per time series. Now `max_samples_per_ts` correctly acts as an upper bound, capping the dataset size at the actual number of samples that can be extracted from the longest series. [#2987](https://github.com/unit8co/darts/pull/2987) by [Dustin Brunner](https://github.com/brunnedu).
-- Updated metrics `sape`and `smape` to not raise a ValueError when actuals and predictions are zero for the same timestep. [#2984](https://github.com/unit8co/darts/pull/2984) by [eschibli](https://github.com/eschibli).
+- Updated s(m)ape to not raise a ValueError when actuals and predictions are zero for the same timestep. [#2984](https://github.com/unit8co/darts/pull/2984) by [eschibli](https://github.com/eschibli).
 - Updated outdated links to [holidays package](https://holidays.readthedocs.io/en/latest/#available-countries) in `TimeSeries`, `holidays_timeseries()`, and `Prophet`. [#2999](https://github.com/unit8co/darts/pull/2999) by [Zhihao Dai](https://github.com/daidahao).
 
 **Dependencies**
 
-- Added support for `pandas>=3.0.0`, bumped minimum supported Pandas version to `pandas>=2.2.0`, bumped minimum supported NumPy version to `numpy>=2.2.0`. [#3004](https://github.com/unit8co/darts/pull/3004) by [Jakub Chłapek](https://github.com/jakubchlapek)
+- We set an upper version cap on `pandas<3.0.0` until we officially support it. [#2995](https://github.com/unit8co/darts/pull/2995) by [Dennis Bader](https://github.com/dennisbader).
 
 ### For developers of the library:
-
-- Migrated the dependency management and tooling to [uv](https://docs.astral.sh/uv/). Use `uv sync --group dev-all --upgrade` to setup your development environment; See the [contribution guide](https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md) for further information. [#2993](https://github.com/unit8co/darts/pull/2993) by [Jules Authier](https://github.com/authierj).
-- Removed unit tests from the package distribution (PyPI and conda-forge) to reduce package size. [#2979](https://github.com/unit8co/darts/pull/2979) and [u8darts-feedstock#59](https://github.com/conda-forge/u8darts-feedstock/pull/59) by [Zhihao Dai](https://github.com/daidahao).
 
 ## [0.40.0](https://github.com/unit8co/darts/tree/0.40.0) (2025-12-23)
 
@@ -114,7 +113,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improvements to forecasting models:
   - 🚀🚀 Added new forecasting model `Chronos2Model`: Amazon's pre-trained 120M-parameter foundational model for zero-shot forecasting. `Chronos2Model` can be used for univariate, multivariate, and multiple time series forecasting without any training. It supports past and future covariates and can output deterministic or probabilistic forecasts. Check out the new [Chronos-2 Foundation Model Notebook](https://unit8co.github.io/darts/examples/25-Chronos-2-examples.html) for examples and usage of Chronos-2. [#2944](https://github.com/unit8co/darts/pull/2944) by [Zhihao Dai](https://github.com/daidahao).
 
-- Improvements to `TimeSeries`:
+- Improvements to `TimeSeries`
   - 🚀 Revamped how TimeSeries are displayed in notebooks and consoles to provide a cleaner and more informative summary. Values are now shown in tabular / DataFrame format. If available, static covariates, hierarchy, and metadata are shown in dedicated formatted sections. [#2931](https://github.com/unit8co/darts/pull/2931) by [Jakub Chłapek](https://github.com/jakubchlapek)
   - 🔴 Improved the performance of the `TimeSeries.map()` method for functions that take two arguments. The mapping is now applied on the entire time index and values array which requires users to reshape the time index explicitly within the function. See more information in the `TimeSeries.map()` method documentation. [#2911](https://github.com/unit8co/darts/pull/2911) by [Jakub Chłapek](https://github.com/jakubchlapek)
 

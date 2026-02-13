@@ -9,11 +9,14 @@ This file contains several abstract classes:
 """
 
 from abc import ABC
+from typing import Any
+
+from torch import nn
 
 from darts.logging import get_logger, raise_log
-from darts.models.forecasting.torch_forecasting_model import (
-    MixedCovariatesTorchModel,
-)
+from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
+from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
+from darts.utils.callbacks.fine_tuning import LayerFreezeCallback
 
 logger = get_logger(__name__)
 
@@ -24,6 +27,8 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
     def __init__(
         self,
         enable_finetuning: bool = False,
+        freeze_patterns: list[str] | None = None,
+        unfreeze_patterns: list[str] | None = None,
         **kwargs,
     ):
         """Foundation Forecasting Model with PyTorch Lightning backend.
@@ -51,6 +56,13 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
         enable_finetuning
             Whether to enable fine-tuning of the foundation model. If set to ``True``, calling :func:`fit()` will
             update the model weights. Default: ``False``.
+        freeze_patterns
+            A list of strings. Parameters whose names start with any of these patterns will be frozen
+            (``requires_grad=False``). This is only used if ``enable_finetuning=True``. Default: ``None``.
+        unfreeze_patterns
+            A list of strings. Parameters whose names start with any of these patterns will be unfrozen
+            (``requires_grad=True``). This is applied after ``freeze_patterns``. This is only used if
+            ``enable_finetuning=True``. Default: ``None``.
         batch_size
             Number of time series (input and output sequences) used in each fine-tuning pass. Default: ``32``.
         n_epochs
@@ -157,13 +169,7 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
         """
-        # initialize `TorchForecastingModel` base class
-        super().__init__(**self._extract_torch_model_params(**self.model_params))
-
-        # extract pytorch lightning module kwargs
-        self.pl_module_params = self._extract_pl_module_params(**self.model_params)
-
-        # validate and set fine-tuning flag
+        # validate fine-tuning flag
         if enable_finetuning and not self._allows_finetuning:
             raise_log(
                 ValueError(
@@ -173,8 +179,83 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
                 logger,
             )
 
+        if not enable_finetuning and (freeze_patterns or unfreeze_patterns):
+            logger.warning(
+                "`freeze_patterns` or `unfreeze_patterns` are specified, but `enable_finetuning` is False. "
+                "These patterns will be ignored."
+            )
+
+        if enable_finetuning and (freeze_patterns or unfreeze_patterns):
+            pl_trainer_kwargs = self.model_params.get("pl_trainer_kwargs")
+            if pl_trainer_kwargs is None:
+                pl_trainer_kwargs = {}
+            else:
+                pl_trainer_kwargs = dict(pl_trainer_kwargs)
+
+            callbacks = pl_trainer_kwargs.get("callbacks")
+            if callbacks is None:
+                callbacks = []
+            else:
+                callbacks = list(callbacks)
+
+            callbacks.append(
+                LayerFreezeCallback(
+                    freeze_patterns=freeze_patterns or [],
+                    unfreeze_patterns=unfreeze_patterns or [],
+                )
+            )
+            pl_trainer_kwargs["callbacks"] = callbacks
+            # we must update model_params to be picked up by super().__init__()
+            self.model_params["pl_trainer_kwargs"] = pl_trainer_kwargs
+
+        # initialize `TorchForecastingModel` base class
+        super().__init__(**self._extract_torch_model_params(**self.model_params))
+
+        # extract pytorch lightning module kwargs
+        self.pl_module_params = self._extract_pl_module_params(**self.model_params)
+
         self._enable_finetuning = enable_finetuning
 
     @property
     def _requires_training(self) -> bool:
         return self._enable_finetuning
+
+    @property
+    def internal_model(self) -> Any:
+        """
+        Returns the underlying PyTorch model (nn.Module).
+        This gives access to the actual internal mechanics of the model, which can be useful
+        for advanced usage like accessing PEFT adapters, inspecting weights or custom saving/loading.
+
+        If the model has not been initialized yet, returns None.
+        """
+        if hasattr(self, "model") and hasattr(self.model, "model"):
+            return self.model.model
+        return None
+
+    @internal_model.setter
+    def internal_model(self, model: nn.Module):
+        """
+        Sets the underlying PyTorch model (nn.Module).
+        This allows replacing the internal model, which can be useful for advanced usage like loading PEFT adapters.
+
+        Parameters
+        ----------
+        model
+            The new PyTorch nn.Module to set as the internal model.
+        """
+        if hasattr(self, "model"):
+            self.model.model = model
+        else:
+            raise_log(
+                AttributeError(
+                    "The internal model cannot be set because the outer model is not initialized yet."
+                ),
+                logger,
+            )
+
+
+class FoundationPLModule(PLForecastingModule):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.model: nn.Module
