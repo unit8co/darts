@@ -447,61 +447,30 @@ def _extend_time_index_until(
 
     raise_if(bool(add_length) and bool(until), "set only one of add_length and until")
 
-    end = time_index[-1]
-    freq = time_index.freq
+    datetime_index = isinstance(time_index, pd.DatetimeIndex)
 
     if add_length:
-        raise_if_not(
-            add_length >= 0,
-            f"Expected add_length, by which to extend the time series by, "
-            f"to be positive, got {add_length}",
-        )
-
-        try:
-            end += add_length * freq
-        except pd.errors.OutOfBoundsDatetime:
-            raise_log(
-                ValueError(
-                    f"the add operation between {end} and {add_length * freq} will overflow"
-                ),
-                logger,
-            )
+        length = len(time_index) + add_length
+        end = None
     else:
-        datetime_index = isinstance(time_index, pd.DatetimeIndex)
+        length = None
+        end = pd.Timestamp(until) if isinstance(until, str) else until
 
-        if datetime_index:
-            raise_if_not(
-                isinstance(until, (str, pd.Timestamp)),
-                "Expected valid timestamp for TimeSeries, "
-                "indexed by DatetimeIndex, "
-                f"for parameter until, got {type(end)}",
-                logger,
-            )
-        else:
-            raise_if_not(
-                isinstance(until, int),
-                "Expected integer for TimeSeries, indexed by RangeIndex, "
-                f"for parameter until, got {type(end)}",
-                logger,
-            )
+    new_time_index = generate_index(
+        start=time_index[0],
+        freq=time_index.freq if datetime_index else time_index.freq,
+        length=length,
+        end=end,
+        name=name,
+    )
 
-        timestamp = pd.Timestamp(until) if datetime_index else until
-
-        raise_if_not(
-            timestamp > end,
-            f"Expected until, {timestamp} to lie past end of time index {end}",
+    if new_time_index[-1] < time_index[-1]:
+        raise_log(
+            ValueError(
+                f"`until={end}` must lie further ahead in the future than the end of time index {time_index[-1]}"
+            ),
+            logger=logger,
         )
-
-        ahead = timestamp - end
-        raise_if_not(
-            (ahead % freq) == pd.Timedelta(0),
-            f"End date must correspond with frequency {freq} of the time axis",
-            logger,
-        )
-
-        end = timestamp
-
-    new_time_index = pd.date_range(start=time_index[0], end=end, freq=freq, name=name)
     return new_time_index
 
 

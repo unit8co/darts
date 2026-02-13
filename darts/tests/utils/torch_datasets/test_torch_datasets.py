@@ -8,7 +8,6 @@ import pytest
 from darts import TimeSeries
 from darts.tests.conftest import TORCH_AVAILABLE
 from darts.utils.timeseries_generation import gaussian_timeseries
-from darts.utils.utils import freqs
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -2582,8 +2581,8 @@ class TestDataset:
         assert _get_matching_index(target, cov, idx=15) == 5
 
         # check non-dividable freq
-        times1 = pd.date_range(start="20100101", end="20120101", freq=freqs["ME"])
-        times2 = pd.date_range(start="20090101", end="20110601", freq=freqs["ME"])
+        times1 = pd.date_range(start="20100101", end="20120101", freq="ME")
+        times2 = pd.date_range(start="20090101", end="20110601", freq="ME")
         target = TimeSeries.from_times_and_values(
             times1, np.random.randn(len(times1))
         ).with_static_covariates(self.cov_st2_df)

@@ -4,6 +4,7 @@ Additional util functions
 """
 
 import contextlib
+import math
 from collections.abc import Iterator
 from enum import Enum
 from functools import wraps
@@ -102,30 +103,6 @@ class ModelMode(Enum):
     MULTIPLICATIVE = "multiplicative"
     ADDITIVE = "additive"
     NONE = None
-
-
-# TODO: remove this at some point when we set a lower cap on pandas v2.2.0
-pd_above_v22 = pd.__version__ >= "2.2"
-freqs = {
-    "YE": "YE" if pd_above_v22 else "A",
-    "YS": "YS" if pd_above_v22 else "AS",
-    "BYS": "BYS" if pd_above_v22 else "BAS",
-    "BYE": "BYE" if pd_above_v22 else "BA",
-    "QE": "QE" if pd_above_v22 else "Q",
-    "BQE": "BQE" if pd_above_v22 else "BQ",
-    "ME": "ME" if pd_above_v22 else "M",
-    "SME": "SME" if pd_above_v22 else "SM",
-    "BME": "BME" if pd_above_v22 else "BM",
-    "CBME": "CBME" if pd_above_v22 else "CBM",
-    "h": "h" if pd_above_v22 else "H",
-    "bh": "bh" if pd_above_v22 else "BH",
-    "cbh": "cbh" if pd_above_v22 else "CBH",
-    "min": "min" if pd_above_v22 else "T",
-    "s": "s" if pd_above_v22 else "S",
-    "ms": "ms" if pd_above_v22 else "L",
-    "us": "us" if pd_above_v22 else "U",
-    "ns": "ns" if pd_above_v22 else "N",
-}
 
 
 def _build_tqdm_iterator(iterable, verbose, **kwargs):
@@ -468,8 +445,9 @@ def n_steps_between(
             ),
             logger=logger,
         )
-    # Series frequency represents a non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’, 'W')
-    if pd.to_timedelta(freq, errors="coerce") is not pd.NaT:
+
+    # frequency has a fixed period (e.g. non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’, 'W'), or integer step)
+    if isinstance(freq, int) or pd.to_timedelta(freq, errors="coerce") is not pd.NaT:
         diff = end - start
         if abs(diff) != diff:
             # (A) when diff is negative, not perfectly divisible by freq, and freq is a multiple of a base frequency
@@ -504,6 +482,51 @@ def n_steps_between(
             # floor division by the frequency multiplier ("2MS" has multiplier 2)
             n_steps = diff // freq.n
     return n_steps
+
+
+def infer_freq_intersection(
+    freq: Union[int, str, pd.tseries.offsets.DateOffset],
+    other: Union[int, str, pd.tseries.offsets.DateOffset],
+) -> Union[int, pd.tseries.offsets.DateOffset]:
+    """Infers the frequency at which two frequencies `freq` and `other` intersect.
+
+    Parameters
+    ----------
+    freq
+        The first frequency.
+    other
+        The other frequency.
+
+    Raises
+    ------
+    ValueError
+        If the intersecting frequency cannot be inferred.
+    """
+    freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
+    other = pd.tseries.frequencies.to_offset(other) if isinstance(other, str) else other
+
+    if freq == other:
+        return freq
+
+    if isinstance(freq, int):
+        # e.g. (4, 1), (24, 3)
+        n_freq, n_other = freq, other
+    elif freq.base == other.base:
+        # e.g. (4W-MON, W-MON), (24h, 3h); frequency with the same base frequency
+        n_freq, n_other = freq.n, other.n
+    else:
+        try:
+            # e.g. (4D, 2h), (24h, 3min); only frequency with constant / fixed period
+            n_freq, n_other = freq.nanos, other.nanos
+        except ValueError as exc:
+            # e.g. (W-MON, MS, ...); frequencies with non-fixed period
+            raise_log(
+                ValueError(
+                    f"Cannot find intersecting frequency between ({freq}, {other}): {exc}"
+                ),
+                logger=logger,
+            )
+    return freq * (math.lcm(n_freq, n_other) // n_freq)
 
 
 def generate_index(
@@ -549,18 +572,29 @@ def generate_index(
         f"`start` to None.",
         logger,
     )
+
+    start = pd.Timestamp(start) if isinstance(start, str) else start
+    end = pd.Timestamp(end) if isinstance(end, str) else end
+
     raise_if(
         end is not None and start is not None and type(start) is not type(end),
         "index generation with `start` and `end` requires equal object types of `start` and `end`",
         logger,
     )
 
-    start = pd.Timestamp(start) if isinstance(start, str) else start
-    end = pd.Timestamp(end) if isinstance(end, str) else end
-
     if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
         freq = "D" if freq is None else freq
         freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
+
+        # performance notes: rolling a timestamp is only costly if the timestamp does not intersect
+        # with the offset (frequency)
+        if start is not None:
+            # adjust `start` so that it intersects with `freq`
+            start = freq.rollforward(start) if freq.n >= 0 else freq.rollback(start)
+        if end is not None:
+            # adjust `end` so that it intersects with `freq`
+            end = freq.rollback(end) if freq.n >= 0 else freq.rollforward(end)
+
         index = pd.date_range(
             start=start,
             end=end,
@@ -568,14 +602,6 @@ def generate_index(
             freq=freq,
             name=name,
         )
-        if freq.n < 0:
-            if start is not None and not freq.is_on_offset(start):
-                # for anchored negative frequencies, and `start` does not intersect with `freq`:
-                # pandas (v2.2.1) generates an index that starts one step before `start` -> remove this step
-                index = index[1:]
-            elif end is not None and not freq.is_on_offset(end):
-                # if `start` intersects with `freq`, then the same can happen for `end` -> remove this step
-                index = index[:-1]
     else:  # int
         step = 1 if freq is None else freq
         if start is None:

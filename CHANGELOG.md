@@ -11,18 +11,45 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- Added new time aggregated metric `autc()` (Area Under Tolerance Curve): The tolerance curve gives the fraction of predicted target values within tolerance bands of the actual target values across a range of tolerances (defined as % of target range). The AUTC is the normalized area under this tolerance curve and given as a score between [0, 1]. Higher scores are better. [#2994](https://github.com/unit8co/darts/pull/2994) by [Jakub Chłapek](https://github.com/jakubchlapek)
-- Added new plotting function `darts.utils.statistics.plot_tolerance_curve()` to plot the tolerance curve described above. [#2994](https://github.com/unit8co/darts/pull/2994) by [Jakub Chłapek](https://github.com/jakubchlapek)
-- Added `TimeSeries.plotly()` method for interactive time series visualization using Plotly backend. [#2977](https://github.com/unit8co/darts/pull/2977) by [Dustin Brunner](https://github.com/brunnedu).
-  - Provides interactive plotting with zoom, pan, hover tooltips, and legend interactions
-  - Maintains API consistency with the existing `plot()` method for easy adoption
-  - Supports deterministic and stochastic, univariate and multivariate series
-  - Allows overlaying multiple series on the same figure via the `fig` parameter
-  - Customizable trace styling via `**kwargs`
-  - Includes automatic downsampling for large series (configurable via `downsample_threshold` parameter) to avoid crashes when plotting large series
-  - Integrates seamlessly with `plotting.use_darts_style` which now affects both `TimeSeries.plot()` and `TimeSeries.plotly()`
-  - Plotly remains an optional dependency and can be installed with `pip install plotly`
 - Added support for full and partial fine-tuning of foundation models with integrated layer freezing and `PeftCallback` for LoRA integration. [#2964](https://github.com/unit8co/darts/issues/2964) by [Alain Gysi](https://github.com/Kurokabe)
+
+**Fixed**
+
+**Dependencies**
+
+### For developers of the library:
+
+## [0.41.0](https://github.com/unit8co/darts/tree/0.41.0) (2025-02-10)
+
+### For users of the library:
+
+**Migration from PyPI `u8darts` package to `darts` package**
+
+- The `darts` PyPI package now replaces `u8darts` with the same installation options (e.g. `darts`, `darts[torch]`, `darts[notorch]`, `darts[all]`). No code changes are required. See the [migration guide](https://github.com/unit8co/darts/blob/master/INSTALL.md#important-darts-pypi-package-changes-as-of-version-0410) for details.
+  - If you have been using `darts` before: switch to `pip install "darts[torch]>=0.41.0"` and replace `darts` by `darts[torch]>=0.41.0` in your project requirements.
+  - If you have been using `u8darts` before: switch to `pip install "darts>=0.41.0"` and replace `u8darts` by `darts>=0.41.0` in your project requirements.
+
+**Improved**
+
+- Improvements to forecasting models:
+  - 🚀🚀 Added new forecasting model `TimesFM2p5Model`: Google's pre-trained 200M-parameter foundational model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series forecasting without training and can output deterministic or probabilistic forecasts. [#2980](https://github.com/unit8co/darts/pull/2980) by [Zhihao Dai](https://github.com/daidahao).
+- Improvements to `TimeSeries` :
+  - 🚀🚀 Added method `TimeSeries.plotly()` method for interactive time series visualization using Plotly backend. [#2977](https://github.com/unit8co/darts/pull/2977) by [Dustin Brunner](https://github.com/brunnedu).
+    - Provides interactive plotting with zoom, pan, hover tooltips, and legend interactions
+    - Maintains API consistency with the existing `plot()` method for easy adoption
+    - Supports deterministic and stochastic, univariate and multivariate series
+    - Allows overlaying multiple series on the same figure via the `fig` parameter
+    - Customizable trace styling via `**kwargs`
+    - Includes automatic downsampling for large series (configurable via `downsample_threshold` parameter) to avoid crashes when plotting large series
+    - Integrates seamlessly with `plotting.use_darts_style` which now affects both `TimeSeries.plot()` and `TimeSeries.plotly()`
+    - Plotly remains an optional dependency and can be installed with `pip install plotly`
+  - Methods `TimeSeries.to_json()` and `TimeSeries.from_json()` now support serialization and deserialization of static covariates, metadata, and hierarchy. The optional parameters in `from_json()` can still be used to override or provide these values if they are not present in the JSON string. [#2996](https://github.com/unit8co/darts/pull/2996) by [Tiberiu Sabau](https://github.com/tibisabau).
+  - Method `TimeSeries.to_dataframe()` now supports fine-grained control over adding the time series' metadata and static covariates to the output DataFrame with the new parameters `add_static_cov` and `add_metadata`. [#2965](https://github.com/unit8co/darts/issues/2965) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
+- New Top-level functions:
+  - Added method `darts.to_group_dataframe()` to convert a list of time series into a long DataFrame (pandas, polars, ...) - e.g. into the DataFrame format that is used as input for `from_group_dataframe()`. [#2965](https://github.com/unit8co/darts/issues/2965) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
+- Improvements to metrics and evaluation:
+  - Added new time aggregated metric `autc()` (Area Under Tolerance Curve): The tolerance curve gives the fraction of predicted target values within tolerance bands of the actual target values across a range of tolerances (defined as % of target range). The AUTC is the normalized area under this tolerance curve and given as a score between [0, 1]. Higher scores are better. [#2994](https://github.com/unit8co/darts/pull/2994) by [Jakub Chłapek](https://github.com/jakubchlapek)
+  - Added new plotting function `darts.utils.statistics.plot_tolerance_curve()` to plot the tolerance curve described above. [#2994](https://github.com/unit8co/darts/pull/2994) by [Jakub Chłapek](https://github.com/jakubchlapek)
 
 **Fixed**
 

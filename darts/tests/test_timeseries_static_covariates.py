@@ -8,9 +8,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts import TimeSeries, concatenate
+from darts import TimeSeries, concatenate, to_group_dataframe
 from darts.dataprocessing.transformers import BoxCox, Scaler
-from darts.tests.conftest import POLARS_AVAILABLE
+from darts.tests.conftest import PANDAS_30_OR_GREATER, POLARS_AVAILABLE
 from darts.timeseries import (
     DEFAULT_GLOBAL_STATIC_COV_NAME,
     METADATA_TAG,
@@ -130,7 +130,141 @@ class TestTimeSeriesStaticCovariate:
             tag, ts, TimeSeries.from_csv(f_csv, time_col="time", **kwargs)
         )
         self.helper_test_transfer(tag, ts, TimeSeries.from_pickle(f_pkl))
+        # Test with kwargs (backward compatibility)
         self.helper_test_transfer(tag, ts, TimeSeries.from_json(ts_json, **kwargs))
+        # Test without kwargs (new automatic serialization)
+        self.helper_test_transfer(tag, ts, TimeSeries.from_json(ts_json))
+
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_to_dataframe_add_static_covariates(self, backend):
+        """Tests adding global as well as component specific static covariates to dataframe."""
+        df = pd.DataFrame({
+            "time": [0, 1, 2],
+            "a": [1.0, 2.0, 3.0],
+            "b": [4.0, 5.0, 6.0],
+        })
+        df = self.pd_to_backend(df, backend)
+        static_covs = pd.DataFrame(
+            {"sc1": ["a"], "sc2": ["b"]}, index=["global_components"]
+        )
+        series = TimeSeries.from_dataframe(
+            df,
+            time_col="time",
+            static_covariates=static_covs,
+        )
+        assert series.static_covariates.equals(static_covs)
+
+        # sanity check that by default no static covs are added
+        kwargs = {"backend": backend, "time_as_index": False}
+        assert series.to_dataframe(**kwargs).equals(df)
+
+        # adding all static covariates
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_static_covariates=True)
+        ).to_pandas()
+        assert df_out.columns.tolist() == ["time", "a", "b", "sc1", "sc2"]
+        assert (df_out[["sc1", "sc2"]] == static_covs.values).all().all()
+
+        # adding a single column as string
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_static_covariates="sc2")
+        ).to_pandas()
+        assert df_out.columns.tolist() == ["time", "a", "b", "sc2"]
+        assert (df_out[["sc2"]] == static_covs[["sc2"]].values).all().all()
+
+        # adding a list of columns with different order
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_static_covariates=["sc2", "sc1"])
+        ).to_pandas()
+        assert df_out.columns.tolist() == ["time", "a", "b", "sc2", "sc1"]
+        assert (
+            (df_out[["sc2", "sc1"]] == static_covs[["sc2", "sc1"]].values).all().all()
+        )
+
+        with pytest.raises(ValueError, match="`add_static_covariates` do not exist"):
+            _ = series.to_dataframe(
+                **kwargs, add_static_covariates=["does_not_exist", "sc1"]
+            )
+
+        # component specific static covariates
+        static_covs = pd.DataFrame(
+            {"sc1": ["aa", "ab"], "sc2": ["ba", "bb"]}, index=["a", "b"]
+        )
+        series = TimeSeries.from_dataframe(
+            df,
+            time_col="time",
+            static_covariates=static_covs,
+        )
+        assert series.static_covariates.equals(static_covs)
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_static_covariates=True)
+        ).to_pandas()
+        assert df_out.columns.tolist() == [
+            "time",
+            "a",
+            "b",
+            "sc1_a",
+            "sc1_b",
+            "sc2_a",
+            "sc2_b",
+        ]
+        assert (
+            (
+                df_out[["sc1_a", "sc1_b", "sc2_a", "sc2_b"]]
+                == static_covs.values.flatten(order="K")
+            )
+            .all()
+            .all()
+        )
+
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_to_dataframe_add_metadata(self, backend):
+        """Tests adding metadata to dataframe."""
+        df = pd.DataFrame({
+            "time": [0, 1, 2],
+            "a": [1.0, 2.0, 3.0],
+            "b": [4.0, 5.0, 6.0],
+        })
+        df = self.pd_to_backend(df, backend)
+        metadata = {"sc1": "a", "sc2": "b"}
+        series = TimeSeries.from_dataframe(
+            df,
+            time_col="time",
+            metadata=metadata,
+        )
+        assert series.metadata == metadata
+
+        # sanity check that by default no metadata are added
+        kwargs = {"backend": backend, "time_as_index": False}
+        assert series.to_dataframe(**kwargs).equals(df)
+
+        # adding all metadata
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_metadata=True)
+        ).to_pandas()
+        assert df_out.columns.tolist() == ["time", "a", "b", "sc1", "sc2"]
+        assert (df_out[["sc1", "sc2"]] == metadata.values()).all().all()
+
+        # adding a single column as string
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_metadata="sc2")
+        ).to_pandas()
+        assert df_out.columns.tolist() == ["time", "a", "b", "sc2"]
+        assert (df_out[["sc2"]] == metadata["sc2"]).all().all()
+
+        # adding a list of columns with different order
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_metadata=["sc2", "sc1"])
+        ).to_pandas()
+        assert df_out.columns.tolist() == ["time", "a", "b", "sc2", "sc1"]
+        assert (
+            (df_out[["sc2", "sc1"]] == [metadata[key] for key in ["sc2", "sc1"]])
+            .all()
+            .all()
+        )
+
+        with pytest.raises(ValueError, match="`add_metadata` do not exist"):
+            _ = series.to_dataframe(**kwargs, add_metadata=["does_not_exist", "sc1"])
 
     def test_invalid_metadata(self):
         ts = linear_timeseries(length=10)
@@ -176,6 +310,191 @@ class TestTimeSeriesStaticCovariate:
         # check the values
         assert (ts[0].values().flatten() == [values[2], values[1], values[0]]).all()
         assert (ts[1].values().flatten() == [values[3], values[4], values[5]]).all()
+
+    @pytest.mark.parametrize(
+        "backend,time_as_index",
+        itertools.product(
+            TEST_BACKENDS,
+            [True, False],
+        ),
+    )
+    def test_to_group_dataframe_creation(self, backend, time_as_index):
+        df_pd = pd.DataFrame(
+            data={
+                "time": pd.date_range(start="2023-01-01", periods=10, freq="D"),
+                "value": [float(i) for i in range(10)],
+                "ID": [0.0] * 5 + [1.0] * 5,
+            }
+        )
+        df = self.pd_to_backend(df_pd, backend)
+        series = TimeSeries.from_group_dataframe(
+            df,
+            time_col="time",
+            group_cols="ID",
+            value_cols="value",
+        )
+
+        if time_as_index and backend == "polars":
+            time_as_index = False
+        elif time_as_index:
+            df_pd = df_pd.set_index("time")
+
+        reconstructed = to_group_dataframe(
+            series,
+            add_static_covariates=True,
+            backend=backend,
+            time_as_index=time_as_index,
+        )
+        reconstructed_pd = nw.from_native(reconstructed).to_pandas()
+        expected = df_pd.sort_values(["ID", "time"])
+        reconstructed_pd = reconstructed_pd.sort_values(["ID", "time"])
+        assert reconstructed_pd.equals(expected)
+
+    @pytest.mark.parametrize(
+        "add_metadata,metadata_cols",
+        [
+            (True, ["source", "version", "created"]),
+            (["source", "version", "created"], ["source", "version", "created"]),
+            ("source", "source"),
+        ],
+    )
+    def test_to_group_dataframe_metadata_support(self, add_metadata, metadata_cols):
+        df = pd.DataFrame({
+            "value": [float(i) for i in range(10)] * 2,
+            "ID": [0.0] * 10 + [1.0] * 10,
+        })
+        metadata = {
+            "source": "test_data",
+            "version": "1.0",
+            "created": "2025-01-09",
+        }
+        for k, v in metadata.items():
+            df[k] = v
+
+        if add_metadata is True:
+            cols_to_include = ["value", "ID"] + list(metadata.keys())
+        else:
+            if isinstance(metadata_cols, str):
+                metadata_cols = [metadata_cols]
+            cols_to_include = ["value", "ID"] + metadata_cols
+
+        df_subset = df[cols_to_include]
+
+        ts_list = TimeSeries.from_group_dataframe(
+            df_subset, group_cols="ID", metadata_cols=metadata_cols
+        )
+        reconstructed = to_group_dataframe(
+            ts_list, add_static_covariates=True, add_metadata=add_metadata
+        )
+
+        expected = df_subset.sort_values("ID")
+        reconstructed = reconstructed.sort_values("ID")
+        assert reconstructed.equals(expected)
+
+    @pytest.mark.parametrize(
+        "add_static_cov,expected_cols",
+        [
+            (True, ["split", "set"]),
+            (["split", "set", "ID"], ["split", "set"]),
+            (["set", "ID"], "set"),
+        ],
+    )
+    def test_to_group_dataframe_global_static_cov_support(
+        self, add_static_cov, expected_cols
+    ):
+        df = pd.DataFrame({
+            "value": [float(i) for i in range(10)] * 3,
+            "ID": [0.0] * 10 + [1.0] * 10 + [2.0] * 10,
+            "split": ["test"] * 10 + ["train"] * 20,
+            "set": ["B"] * 20 + ["A"] * 10,
+        })
+        expected_cols = (
+            [expected_cols] if isinstance(expected_cols, str) else expected_cols
+        )
+        df_subset = df[["value", "ID", *expected_cols]]
+        ts_list = TimeSeries.from_group_dataframe(
+            df_subset, group_cols="ID", static_cols=expected_cols
+        )
+        reconstructed = to_group_dataframe(
+            ts_list, add_static_covariates=add_static_cov, add_metadata=True
+        )
+        expected = df_subset.sort_values(["ID"])
+        reconstructed = reconstructed.sort_values(["ID"])
+        reconstructed = reconstructed[expected.columns]
+        assert reconstructed.equals(expected)
+
+    def test_to_group_dataframe_component_static_cov_support(self):
+        df = pd.DataFrame({
+            "time": pd.date_range("2023-01-01", periods=3, freq="D").tolist() * 2,
+            "value1": [1.0, 2.0, 3.0] * 2,
+            "value2": [4.0, 5.0, 6.0] * 2,
+            "ID": [0.0] * 3 + [1.0] * 3,
+        })
+        static_covs = pd.DataFrame(
+            {
+                "source": ["sensor_A", "sensor_B"],
+                "region": ["EU", "US"],
+            },
+            index=[0, 1],
+        )
+
+        ts_list = [
+            ts.with_static_covariates(static_covs)
+            for ts in TimeSeries.from_group_dataframe(
+                df,
+                group_cols="ID",
+                value_cols=["value1", "value2"],
+                time_col="time",
+            )
+        ]
+
+        reconstructed = to_group_dataframe(
+            ts_list,
+            add_static_covariates=True,
+            add_metadata=False,
+            time_as_index=False,
+        )
+        expected_cols = [
+            "source_value1",
+            "source_value2",
+            "region_value1",
+            "region_value2",
+        ]
+        assert all(col in reconstructed.columns for col in expected_cols)
+
+        assert (reconstructed["source_value1"] == static_covs["source"].loc[0]).all()
+        assert (reconstructed["source_value2"] == static_covs["source"].loc[1]).all()
+        assert (reconstructed["region_value1"] == static_covs["region"].loc[0]).all()
+        assert (reconstructed["region_value2"] == static_covs["region"].loc[1]).all()
+
+    @pytest.mark.parametrize("add_group_col", [True, "added_group_col"])
+    def test_to_group_dataframe_add_group_col(self, add_group_col):
+        df = pd.DataFrame({
+            "time": pd.date_range("2023-01-01", periods=10, freq="D"),
+            "value": np.arange(10).astype("float"),
+            "ID": [0] * 5 + [1] * 5,
+        })
+
+        ts = TimeSeries.from_group_dataframe(
+            df,
+            group_cols="ID",
+            value_cols="value",
+            time_col="time",
+        )
+
+        reconstructed = to_group_dataframe(
+            ts,
+            add_static_covariates=False,
+            add_metadata=False,
+            add_group_col=add_group_col,
+            time_as_index=False,
+        )
+        if not isinstance(add_group_col, str):
+            add_group_col = "group"
+
+        assert "ID" not in reconstructed.columns
+        reconstructed = reconstructed.rename(columns={add_group_col: "ID"})[df.columns]
+        assert reconstructed.equals(df)
 
     @pytest.mark.parametrize("backend", TEST_BACKENDS)
     def test_timeseries_from_longitudinal_df(self, backend):
@@ -470,9 +789,11 @@ class TestTimeSeriesStaticCovariate:
         assert (ts.static_covariates_values(copy=False) != -1.0).all()
 
         # changing values of view should change original DataFrame
-        vals = ts.static_covariates_values(copy=False)
-        vals[:] = -1.0
-        assert (ts.static_covariates_values(copy=False) == -1.0).all()
+        # In pandas 3.0+, DataFrame.values returns a read-only array
+        if not PANDAS_30_OR_GREATER:
+            vals = ts.static_covariates_values(copy=False)
+            vals[:] = -1.0
+            assert (ts.static_covariates_values(copy=False) == -1.0).all()
 
         ts = ts.with_static_covariates(None)
         assert ts.static_covariates is None
@@ -965,3 +1286,146 @@ class TestTimeSeriesStaticCovariate:
             )
         else:  # metadata
             assert ts_new.metadata == ts.metadata
+
+
+class TestTimeSeriesJSONSerialization:
+    """Test JSON serialization with static_covariates, metadata, and hierarchy."""
+
+    def test_json_with_static_covariates(self):
+        """Test that static covariates are preserved in JSON serialization."""
+        ts = linear_timeseries(length=10)
+        static_cov = pd.Series([0.0, 1.0], index=["st1", "st2"])
+        ts = ts.with_static_covariates(static_cov)
+
+        # Serialize and deserialize
+        json_str = ts.to_json()
+        ts_restored = TimeSeries.from_json(json_str)
+
+        # Check that static covariates are preserved
+        assert ts_restored.static_covariates is not None
+        assert ts_restored.static_covariates.equals(ts.static_covariates)
+
+    def test_json_with_metadata(self):
+        """Test that metadata is preserved in JSON serialization."""
+        ts = linear_timeseries(length=10)
+        metadata = {"key1": "value1", "key2": 42, "key3": [1, 2, 3]}
+        ts = ts.with_metadata(metadata)
+
+        # Serialize and deserialize
+        json_str = ts.to_json()
+        ts_restored = TimeSeries.from_json(json_str)
+
+        # Check that metadata is preserved
+        assert ts_restored.metadata is not None
+        assert ts_restored.metadata == ts.metadata
+
+    def test_json_with_hierarchy(self):
+        """Test that hierarchy is preserved in JSON serialization."""
+        components = ["total", "a", "b", "ax", "bx"]
+        hierarchy = {
+            "ax": ["a"],
+            "bx": ["b"],
+            "a": ["total"],
+            "b": ["total"],
+        }
+        ts = TimeSeries.from_values(
+            values=np.random.rand(10, len(components)),
+            columns=components,
+            hierarchy=hierarchy,
+        )
+
+        # Serialize and deserialize
+        json_str = ts.to_json()
+        ts_restored = TimeSeries.from_json(json_str)
+
+        # Check that hierarchy is preserved
+        assert ts_restored.hierarchy is not None
+        assert ts_restored.hierarchy == ts.hierarchy
+        assert ts_restored.top_level_component == ts.top_level_component
+        assert ts_restored.bottom_level_components == ts.bottom_level_components
+
+    def test_json_with_all_attributes(self):
+        """Test JSON serialization with all attributes (static_covariates, metadata, hierarchy)."""
+        components = ["total", "a", "b"]
+        hierarchy = {"a": ["total"], "b": ["total"]}
+        static_cov = pd.DataFrame(
+            [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]],
+            index=components,
+            columns=["sc1", "sc2"],
+        )
+        metadata = {"description": "test series", "version": 1}
+
+        ts = TimeSeries.from_values(
+            values=np.random.rand(10, len(components)),
+            columns=components,
+            hierarchy=hierarchy,
+            static_covariates=static_cov,
+            metadata=metadata,
+        )
+
+        # Serialize and deserialize
+        json_str = ts.to_json()
+        ts_restored = TimeSeries.from_json(json_str)
+
+        # Check all attributes are preserved
+        assert ts_restored.static_covariates is not None
+        assert ts_restored.static_covariates.equals(ts.static_covariates)
+        assert ts_restored.metadata == ts.metadata
+        assert ts_restored.hierarchy == ts.hierarchy
+        assert ts_restored.top_level_component == ts.top_level_component
+        assert ts_restored.bottom_level_components == ts.bottom_level_components
+
+    def test_json_override_attributes(self):
+        """Test that from_json parameters can override JSON-embedded attributes."""
+        components = ["total", "a", "b"]
+        hierarchy = {"a": ["total"], "b": ["total"]}
+        static_cov = pd.DataFrame(
+            [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]],
+            index=components,
+            columns=["sc1", "sc2"],
+        )
+        metadata = {"description": "test series", "version": 1}
+
+        ts = TimeSeries.from_values(
+            values=np.random.rand(10, len(components)),
+            columns=components,
+            hierarchy=hierarchy,
+            static_covariates=static_cov,
+            metadata=metadata,
+        )
+        json_str = ts.to_json()
+
+        # Override with different values
+        new_static_cov = pd.DataFrame(
+            [[10.0, 11.0], [12.0, 13.0], [14.0, 5.0]],
+            index=components,
+            columns=["sc_new1", "sc_new2"],
+        )
+        new_metadata = {"key2": "value2"}
+        new_hierarchy = {"total": ["b"], "b": ["a"]}
+        ts_restored = TimeSeries.from_json(
+            json_str,
+            static_covariates=new_static_cov,
+            metadata=new_metadata,
+            hierarchy=new_hierarchy,
+        )
+
+        # Check that overrides worked
+        # When a Series is passed, it becomes a single-row DataFrame with the series index as columns
+        assert ts_restored.static_covariates is not None
+        assert ts_restored.static_covariates.equals(new_static_cov)
+        assert ts_restored.metadata == new_metadata
+        assert ts_restored.hierarchy == new_hierarchy
+
+    def test_json_without_attributes(self):
+        """Test JSON serialization for series without optional attributes."""
+        ts = linear_timeseries(length=10)
+
+        # Serialize and deserialize
+        json_str = ts.to_json()
+        ts_restored = TimeSeries.from_json(json_str)
+
+        # Check that optional attributes are None
+        assert ts_restored.static_covariates is None
+        assert ts_restored.metadata is None
+        assert ts_restored.hierarchy is None
