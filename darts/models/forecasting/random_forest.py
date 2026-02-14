@@ -15,8 +15,6 @@ References
 .. [1] https://en.wikipedia.org/wiki/Random_forest
 """
 
-from typing import Optional
-
 from sklearn.ensemble import RandomForestRegressor
 
 from darts.logging import get_logger, raise_deprecation_warning
@@ -32,17 +30,17 @@ logger = get_logger(__name__)
 class RandomForestModel(SKLearnModel):
     def __init__(
         self,
-        lags: Optional[LAGS_TYPE] = None,
-        lags_past_covariates: Optional[LAGS_TYPE] = None,
-        lags_future_covariates: Optional[FUTURE_LAGS_TYPE] = None,
+        lags: LAGS_TYPE | None = None,
+        lags_past_covariates: LAGS_TYPE | None = None,
+        lags_future_covariates: FUTURE_LAGS_TYPE | None = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
-        add_encoders: Optional[dict] = None,
-        n_estimators: Optional[int] = 100,
-        max_depth: Optional[int] = None,
-        multi_models: Optional[bool] = True,
+        add_encoders: dict | None = None,
+        n_estimators: int | None = 100,
+        max_depth: int | None = None,
+        multi_models: bool | None = True,
         use_static_covariates: bool = True,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
         **kwargs,
     ):
         """Random Forest Model
@@ -196,17 +194,17 @@ class RandomForestModel(SKLearnModel):
 class RandomForest(RandomForestModel):
     def __init__(
         self,
-        lags: Optional[LAGS_TYPE] = None,
-        lags_past_covariates: Optional[LAGS_TYPE] = None,
-        lags_future_covariates: Optional[FUTURE_LAGS_TYPE] = None,
+        lags: LAGS_TYPE | None = None,
+        lags_past_covariates: LAGS_TYPE | None = None,
+        lags_future_covariates: FUTURE_LAGS_TYPE | None = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
-        add_encoders: Optional[dict] = None,
-        n_estimators: Optional[int] = 100,
-        max_depth: Optional[int] = None,
-        multi_models: Optional[bool] = True,
+        add_encoders: dict | None = None,
+        n_estimators: int | None = 100,
+        max_depth: int | None = None,
+        multi_models: bool | None = True,
         use_static_covariates: bool = True,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
         **kwargs,
     ):
         """Random Forest Model

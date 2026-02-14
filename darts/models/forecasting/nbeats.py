@@ -4,7 +4,7 @@ N-BEATS
 """
 
 from enum import Enum
-from typing import NewType, Union
+from typing import NewType
 
 import numpy as np
 import torch
@@ -545,7 +545,7 @@ class NBEATSModel(PastCovariatesTorchModel):
         num_stacks: int = 30,
         num_blocks: int = 1,
         num_layers: int = 4,
-        layer_widths: Union[int, list[int]] = 256,
+        layer_widths: int | list[int] = 256,
         expansion_coefficient_dim: int = 5,
         trend_polynomial_degree: int = 2,
         dropout: float = 0.0,

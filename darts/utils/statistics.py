@@ -5,8 +5,8 @@ TimeSeries Statistics
 
 import math
 from collections.abc import Sequence
-from typing import Optional, Union
 
+import matplotlib.axes
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import argrelmax
@@ -35,7 +35,7 @@ logger = get_logger(__name__)
 
 
 def check_seasonality(
-    ts: TimeSeries, m: Optional[int] = None, max_lag: int = 24, alpha: float = 0.05
+    ts: TimeSeries, m: int | None = None, max_lag: int = 24, alpha: float = 0.05
 ):
     """
     Checks whether the TimeSeries `ts` is seasonal with period `m` or not.
@@ -135,8 +135,8 @@ def _bartlett_formula(r: np.ndarray, m: int, length: int) -> float:
 
 def extract_trend_and_seasonality(
     ts: TimeSeries,
-    freq: Union[int, Sequence[int]] = None,
-    model: Union[SeasonalityMode, ModelMode] = ModelMode.MULTIPLICATIVE,
+    freq: int | Sequence[int] = None,
+    model: SeasonalityMode | ModelMode = ModelMode.MULTIPLICATIVE,
     method: str = "naive",
     **kwargs,
 ) -> tuple[TimeSeries, TimeSeries]:
@@ -259,7 +259,7 @@ def extract_trend_and_seasonality(
 
 
 def remove_from_series(
-    ts: TimeSeries, other: TimeSeries, model: Union[SeasonalityMode, ModelMode]
+    ts: TimeSeries, other: TimeSeries, model: SeasonalityMode | ModelMode
 ) -> TimeSeries:
     """
     Removes the TimeSeries `other` from the TimeSeries `ts` as specified by `model`.
@@ -447,7 +447,7 @@ def stationarity_tests(
 
 
 def stationarity_test_kpss(
-    ts: TimeSeries, regression: str = "c", nlags: Union[str, int] = "auto"
+    ts: TimeSeries, regression: str = "c", nlags: str | int = "auto"
 ) -> set:
     """
     Provides Kwiatkowski-Phillips-Schmidt-Shin test for stationarity for a time series,
@@ -490,9 +490,9 @@ def stationarity_test_kpss(
 
 def stationarity_test_adf(
     ts: TimeSeries,
-    maxlag: Union[None, int] = None,
+    maxlag: None | int = None,
     regression: str = "c",
-    autolag: Union[None, str] = "AIC",
+    autolag: None | str = "AIC",
 ) -> set:
     """
     Provides Augmented Dickey-Fuller unit root test for a time series,
@@ -619,12 +619,12 @@ def granger_causality_tests(
 
 def plot_acf(
     ts: TimeSeries,
-    m: Optional[int] = None,
+    m: int | None = None,
     max_lag: int = 24,
     alpha: float = 0.05,
     bartlett_confint: bool = True,
     fig_size: tuple[int, int] = (10, 5),
-    axis: Optional[plt.axis] = None,
+    axis: matplotlib.axes.Axes | None = None,
     default_formatting: bool = True,
 ) -> None:
     """
@@ -717,12 +717,12 @@ def plot_acf(
 
 def plot_pacf(
     ts: TimeSeries,
-    m: Optional[int] = None,
+    m: int | None = None,
     max_lag: int = 24,
     method: str = "ywadjusted",
     alpha: float = 0.05,
     fig_size: tuple[int, int] = (10, 5),
-    axis: Optional[plt.axis] = None,
+    axis: matplotlib.axes.Axes | None = None,
     default_formatting: bool = True,
 ) -> None:
     """
@@ -816,12 +816,12 @@ def plot_pacf(
 def plot_ccf(
     ts: TimeSeries,
     ts_other: TimeSeries,
-    m: Optional[int] = None,
+    m: int | None = None,
     max_lag: int = 24,
     alpha: float = 0.05,
     bartlett_confint: bool = True,
     fig_size: tuple[int, int] = (10, 5),
-    axis: Optional[plt.axis] = None,
+    axis: matplotlib.axes.Axes | None = None,
     default_formatting: bool = True,
 ) -> None:
     """
@@ -934,12 +934,12 @@ def plot_ccf(
 
 
 def plot_hist(
-    data: Union[TimeSeries, list[float], np.ndarray],
-    bins: Optional[Union[int, np.ndarray, list[float]]] = None,
+    data: TimeSeries | list[float] | np.ndarray,
+    bins: int | np.ndarray | list[float] | None = None,
     density: bool = False,
-    title: Optional[str] = None,
-    fig_size: Optional[tuple[int, int]] = None,
-    ax: Optional[plt.axis] = None,
+    title: str | None = None,
+    fig_size: tuple[int, int] | None = None,
+    ax: matplotlib.axes.Axes | None = None,
 ) -> None:
     """This function plots the histogram of values in a TimeSeries instance or an array-like.
 
@@ -1097,17 +1097,17 @@ def plot_residuals_analysis(
 
 
 def plot_tolerance_curve(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     min_tolerance: float = 0.0,
     max_tolerance: float = 1.0,
     step: float = 0.01,
-    q: Optional[Union[float, list[float]]] = None,
+    q: float | list[float] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
     fig_size: tuple[int, int] = None,
-    axis: Optional[plt.axis] = None,
+    axis: matplotlib.axes.Axes | None = None,
 ) -> None:
     """
     Plots the Tolerance Curve for evaluating forecast alignment.

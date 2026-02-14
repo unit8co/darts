@@ -1,6 +1,5 @@
 import copy
 from collections.abc import Sequence
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -1311,7 +1310,7 @@ class TestEncoder:
         self,
         encoder: SingleEncoder,
         target: Sequence[TimeSeries],
-        covariates: Sequence[Optional[TimeSeries]],
+        covariates: Sequence[TimeSeries | None],
         result: Sequence[TimeSeries],
         merge_covariates: bool = True,
     ):
@@ -1345,7 +1344,7 @@ class TestEncoder:
         encoder: SingleEncoder,
         n: int,
         target: Sequence[TimeSeries],
-        covariates: Sequence[Optional[TimeSeries]],
+        covariates: Sequence[TimeSeries | None],
         result: Sequence[TimeSeries],
         merge_covariates: bool = True,
     ):

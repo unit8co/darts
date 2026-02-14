@@ -5,8 +5,7 @@ Metrics
 Some metrics to compare time series.
 """
 
-from collections.abc import Sequence
-from typing import Callable, Optional, Union
+from collections.abc import Callable, Sequence
 
 import numpy as np
 import pandas as pd
@@ -38,14 +37,14 @@ logger = get_logger(__name__)
 @multi_ts_support
 @multivariate_support
 def err(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -132,13 +131,13 @@ def err(
 @multi_ts_support
 @multivariate_support
 def merr(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -217,14 +216,14 @@ def merr(
 @multi_ts_support
 @multivariate_support
 def ae(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -311,13 +310,13 @@ def ae(
 @multi_ts_support
 @multivariate_support
 def mae(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -396,16 +395,16 @@ def mae(
 @multi_ts_support
 @multivariate_support
 def ase(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    insample: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
+    insample: TimeSeries | Sequence[TimeSeries],
     m: int = 1,
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -516,15 +515,15 @@ def ase(
 @multi_ts_support
 @multivariate_support
 def mase(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    insample: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
+    insample: TimeSeries | Sequence[TimeSeries],
     m: int = 1,
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -630,14 +629,14 @@ def mase(
 @multi_ts_support
 @multivariate_support
 def se(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -724,13 +723,13 @@ def se(
 @multi_ts_support
 @multivariate_support
 def mse(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -809,16 +808,16 @@ def mse(
 @multi_ts_support
 @multivariate_support
 def sse(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    insample: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
+    insample: TimeSeries | Sequence[TimeSeries],
     m: int = 1,
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -929,15 +928,15 @@ def sse(
 @multi_ts_support
 @multivariate_support
 def msse(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    insample: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
+    insample: TimeSeries | Sequence[TimeSeries],
     m: int = 1,
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -1043,13 +1042,13 @@ def msse(
 @multi_ts_support
 @multivariate_support
 def rmse(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -1127,15 +1126,15 @@ def rmse(
 @multi_ts_support
 @multivariate_support
 def rmsse(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    insample: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
+    insample: TimeSeries | Sequence[TimeSeries],
     m: int = 1,
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -1238,14 +1237,14 @@ def rmsse(
 @multi_ts_support
 @multivariate_support
 def sle(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -1335,13 +1334,13 @@ def sle(
 @multi_ts_support
 @multivariate_support
 def rmsle(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -1424,14 +1423,14 @@ def rmsle(
 @multi_ts_support
 @multivariate_support
 def ape(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -1533,13 +1532,13 @@ def ape(
 @multi_ts_support
 @multivariate_support
 def mape(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -1627,13 +1626,13 @@ def mape(
 @multi_ts_support
 @multivariate_support
 def wmape(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -1726,14 +1725,14 @@ def wmape(
 @multi_ts_support
 @multivariate_support
 def sape(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -1831,13 +1830,13 @@ def sape(
 @multi_ts_support
 @multivariate_support
 def smape(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -1922,13 +1921,13 @@ def smape(
 @multi_ts_support
 @multivariate_support
 def ope(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -2024,14 +2023,14 @@ def ope(
 @multi_ts_support
 @multivariate_support
 def arre(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -2133,13 +2132,13 @@ def arre(
 @multi_ts_support
 @multivariate_support
 def marre(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -2219,13 +2218,13 @@ def marre(
 @multi_ts_support
 @multivariate_support
 def r2_score(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -2314,13 +2313,13 @@ def r2_score(
 @multi_ts_support
 @multivariate_support
 def coefficient_of_variation(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -2407,16 +2406,16 @@ def coefficient_of_variation(
 @multi_ts_support
 @multivariate_support
 def _tolerance_coverages(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
     min_tolerance: float = 0.0,
     max_tolerance: float = 1.0,
     step: float = 0.01,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -2466,16 +2465,16 @@ def _tolerance_coverages(
 @multi_ts_support
 @multivariate_support
 def autc(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
     min_tolerance: float = 0.0,
     max_tolerance: float = 1.0,
     step: float = 0.01,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -2588,18 +2587,18 @@ def autc(
 @multi_ts_support
 @multivariate_support
 def dtw_metric(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     metric: Callable[
         [
-            Union[TimeSeries, Sequence[TimeSeries]],
-            Union[TimeSeries, Sequence[TimeSeries]],
+            TimeSeries | Sequence[TimeSeries],
+            TimeSeries | Sequence[TimeSeries],
         ],
         METRIC_OUTPUT_TYPE,
     ] = mae,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
     **kwargs,
@@ -2671,13 +2670,13 @@ def dtw_metric(
 @multi_ts_support
 @multivariate_support
 def qr(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Union[float, list[float], tuple[np.ndarray, pd.Index]] = 0.5,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] = 0.5,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -2781,14 +2780,14 @@ def qr(
 @multi_ts_support
 @multivariate_support
 def ql(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Union[float, list[float], tuple[np.ndarray, pd.Index]] = 0.5,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] = 0.5,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -2883,13 +2882,13 @@ def ql(
 @multi_ts_support
 @multivariate_support
 def mql(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q: Union[float, list[float], tuple[np.ndarray, pd.Index]] = 0.5,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] = 0.5,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -2976,15 +2975,15 @@ def mql(
 @multi_ts_support
 @multivariate_support
 def iw(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q_interval: Union[tuple[float, float], Sequence[tuple[float, float]]] = None,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q_interval: tuple[float, float] | Sequence[tuple[float, float]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -3078,14 +3077,14 @@ def iw(
 @multi_ts_support
 @multivariate_support
 def miw(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q_interval: Union[tuple[float, float], Sequence[tuple[float, float]]] = None,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q_interval: tuple[float, float] | Sequence[tuple[float, float]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -3172,15 +3171,15 @@ def miw(
 @multi_ts_support
 @multivariate_support
 def iws(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q_interval: Union[tuple[float, float], Sequence[tuple[float, float]]] = None,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q_interval: tuple[float, float] | Sequence[tuple[float, float]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -3301,14 +3300,14 @@ def iws(
 @multi_ts_support
 @multivariate_support
 def miws(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q_interval: Union[tuple[float, float], Sequence[tuple[float, float]]] = None,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q_interval: tuple[float, float] | Sequence[tuple[float, float]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -3397,15 +3396,15 @@ def miws(
 @multi_ts_support
 @multivariate_support
 def ic(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q_interval: Union[tuple[float, float], Sequence[tuple[float, float]]] = None,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q_interval: tuple[float, float] | Sequence[tuple[float, float]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -3504,14 +3503,14 @@ def ic(
 @multi_ts_support
 @multivariate_support
 def mic(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q_interval: Union[tuple[float, float], Sequence[tuple[float, float]]] = None,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q_interval: tuple[float, float] | Sequence[tuple[float, float]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -3596,16 +3595,16 @@ def mic(
 @multi_ts_support
 @multivariate_support
 def incs_qr(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q_interval: Union[tuple[float, float], Sequence[tuple[float, float]]] = None,
+    q_interval: tuple[float, float] | Sequence[tuple[float, float]] = None,
     symmetric: bool = True,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -3705,15 +3704,15 @@ def incs_qr(
 @multi_ts_support
 @multivariate_support
 def mincs_qr(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    q_interval: Union[tuple[float, float], Sequence[tuple[float, float]]] = None,
+    q_interval: tuple[float, float] | Sequence[tuple[float, float]] = None,
     symmetric: bool = True,
-    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -3802,12 +3801,12 @@ def mincs_qr(
 @multi_ts_support
 @multivariate_support
 def accuracy(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -3889,14 +3888,14 @@ def accuracy(
 @multi_ts_support
 @multivariate_support
 def precision(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    labels: Optional[Union[int, list[int], np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
-    label_reduction: Union[Optional[str], _LabelReduction] = _LabelReduction.MACRO,
+    labels: int | list[int] | np.ndarray | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    label_reduction: str | None | _LabelReduction = _LabelReduction.MACRO,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -4004,14 +4003,14 @@ def precision(
 @multi_ts_support
 @multivariate_support
 def recall(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    labels: Optional[Union[int, list[int], np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
-    label_reduction: Union[Optional[str], _LabelReduction] = _LabelReduction.MACRO,
+    labels: int | list[int] | np.ndarray | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    label_reduction: str | None | _LabelReduction = _LabelReduction.MACRO,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -4119,14 +4118,14 @@ def recall(
 @multi_ts_support
 @multivariate_support
 def f1(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    labels: Optional[Union[int, list[int], np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
-    label_reduction: Union[Optional[str], _LabelReduction] = _LabelReduction.MACRO,
+    labels: int | list[int] | np.ndarray | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    label_reduction: str | None | _LabelReduction = _LabelReduction.MACRO,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -4236,13 +4235,13 @@ def f1(
 @multi_ts_support
 @multivariate_support
 def confusion_matrix(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeries | Sequence[TimeSeries],
+    pred_series: TimeSeries | Sequence[TimeSeries],
     intersect: bool = True,
     *,
-    labels: Optional[Union[int, list[int], np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nansum,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    labels: int | list[int] | np.ndarray | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nansum,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:

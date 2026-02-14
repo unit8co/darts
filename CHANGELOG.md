@@ -19,6 +19,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For developers of the library:
 
+- Updated target-version to python310, and auto-refactored source code using ruff. [#3017](https://github.com/unit8co/darts/pull/2589) by [Dennis Bader](https://github.com/dennisbader).
+
 ## [0.41.0](https://github.com/unit8co/darts/tree/0.41.0) (2025-02-10)
 
 ### For users of the library:

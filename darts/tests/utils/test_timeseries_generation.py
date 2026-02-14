@@ -1,6 +1,5 @@
 import itertools
 from datetime import timezone
-from typing import Union
 from zoneinfo import ZoneInfo
 
 import numpy as np
@@ -156,7 +155,7 @@ class TestTimeSeriesGeneration:
         def test_routine(
             time_index,
             country_code,
-            until: Union[int, pd.Timestamp, str] = 0,
+            until: int | pd.Timestamp | str = 0,
             add_length=0,
         ):
             ts = holidays_timeseries(

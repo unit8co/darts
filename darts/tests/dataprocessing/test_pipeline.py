@@ -1,5 +1,5 @@
 from collections.abc import Mapping, Sequence
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 import pytest
@@ -108,7 +108,7 @@ class TestPipeline:
 
         @staticmethod
         def ts_fit(
-            series: Union[TimeSeries, Sequence[TimeSeries]],
+            series: TimeSeries | Sequence[TimeSeries],
             params: Mapping[str, Any],
             *args,
             **kwargs,

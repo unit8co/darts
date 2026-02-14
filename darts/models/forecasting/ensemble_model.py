@@ -8,7 +8,7 @@ import os
 import sys
 from abc import abstractmethod
 from collections.abc import Sequence
-from typing import BinaryIO, Optional, Union
+from typing import BinaryIO
 
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.utils.likelihood_models.base import LikelihoodType
@@ -77,9 +77,9 @@ class EnsembleModel(GlobalForecastingModel):
     def __init__(
         self,
         forecasting_models: list[ForecastingModel],
-        ensemble_model: Optional[SKLearnModel],
+        ensemble_model: SKLearnModel | None,
         train_num_samples: int,
-        train_samples_reduction: Optional[Union[str, float]],
+        train_samples_reduction: str | float | None,
         train_forecasting_models: bool = True,
         train_n_points: int = 0,
         show_warnings: bool = True,
@@ -206,7 +206,7 @@ class EnsembleModel(GlobalForecastingModel):
         self.train_forecasting_models = train_forecasting_models
         self.show_warnings = show_warnings
         # converted to List[int] if regression_train_n_points=-1 and ensemble is trained with multiple series
-        self.train_n_points: Union[int, list[int]] = train_n_points
+        self.train_n_points: int | list[int] = train_n_points
 
         if show_warnings:
             if (
@@ -245,10 +245,10 @@ class EnsembleModel(GlobalForecastingModel):
     @abstractmethod
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        verbose: Optional[bool] = None,
+        series: TimeSeries | Sequence[TimeSeries],
+        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        verbose: bool | None = None,
     ):
         """
         Fits the model on the provided series.
@@ -323,14 +323,14 @@ class EnsembleModel(GlobalForecastingModel):
     def _make_multiple_predictions(
         self,
         n: int,
-        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeries | Sequence[TimeSeries] | None = None,
+        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
-        random_state: Optional[int] = None,
-        verbose: Optional[bool] = None,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        random_state: int | None = None,
+        verbose: bool | None = None,
+    ) -> TimeSeries | Sequence[TimeSeries]:
         is_single_series = isinstance(series, TimeSeries) or series is None
         # maximize covariate usage
         predictions = [
@@ -368,15 +368,15 @@ class EnsembleModel(GlobalForecastingModel):
     def predict(
         self,
         n: int,
-        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeries | Sequence[TimeSeries] | None = None,
+        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
         num_samples: int = 1,
-        verbose: Optional[bool] = None,
+        verbose: bool | None = None,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
-        random_state: Optional[int] = None,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        random_state: int | None = None,
+    ) -> TimeSeries | Sequence[TimeSeries]:
         # ensure forecasting models all rely on the same series during inference
         if series is None:
             series = self.training_series
@@ -432,13 +432,13 @@ class EnsembleModel(GlobalForecastingModel):
     @abstractmethod
     def ensemble(
         self,
-        predictions: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        predictions: TimeSeries | Sequence[TimeSeries],
+        series: TimeSeries | Sequence[TimeSeries],
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
-        random_state: Optional[int] = None,
-        verbose: Optional[bool] = None,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        random_state: int | None = None,
+        verbose: bool | None = None,
+    ) -> TimeSeries | Sequence[TimeSeries]:
         """
         Defines how to ensemble the individual models' predictions to produce a single prediction.
 
@@ -468,8 +468,8 @@ class EnsembleModel(GlobalForecastingModel):
         pass
 
     def _predictions_reduction(
-        self, predictions: Union[Sequence[TimeSeries], TimeSeries]
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        self, predictions: Sequence[TimeSeries] | TimeSeries
+    ) -> TimeSeries | Sequence[TimeSeries]:
         """Reduce the sample dimension of the forecasting models predictions"""
         is_single_series = isinstance(predictions, TimeSeries)
         predictions = series2seq(predictions)
@@ -493,7 +493,7 @@ class EnsembleModel(GlobalForecastingModel):
 
     def save(
         self,
-        path: Optional[Union[str, os.PathLike, BinaryIO]] = None,
+        path: str | os.PathLike | BinaryIO | None = None,
         clean: bool = False,
         **pkl_kwargs,
     ) -> None:
@@ -552,8 +552,8 @@ class EnsembleModel(GlobalForecastingModel):
 
     @staticmethod
     def load(
-        path: Union[str, os.PathLike, BinaryIO],
-        pl_trainer_kwargs: Optional[dict] = None,
+        path: str | os.PathLike | BinaryIO,
+        pl_trainer_kwargs: dict | None = None,
         **kwargs,
     ) -> "EnsembleModel":
         """
@@ -618,15 +618,15 @@ class EnsembleModel(GlobalForecastingModel):
     def extreme_lags(
         self,
     ) -> tuple[
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
+        int | None,
+        int | None,
+        int | None,
+        int | None,
+        int | None,
+        int | None,
         int,
     ]:
-        def find_max_lag_or_none(lag_id, aggregator) -> Optional[int]:
+        def find_max_lag_or_none(lag_id, aggregator) -> int | None:
             max_lag = None
             for model in self.forecasting_models:
                 curr_lag = model.extreme_lags[lag_id]
@@ -643,7 +643,7 @@ class EnsembleModel(GlobalForecastingModel):
         )
 
     @property
-    def output_chunk_length(self) -> Optional[int]:
+    def output_chunk_length(self) -> int | None:
         """Return `None` if none of the forecasting models have a `output_chunk_length`,
         otherwise return the smallest output_chunk_length.
         """

@@ -4,7 +4,7 @@ Mixed-data sampling (MIDAS) Transformer
 """
 
 from collections.abc import Mapping, Sequence
-from typing import Any, Optional, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -118,11 +118,11 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
 
     @staticmethod
     def ts_fit(
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeries | Sequence[TimeSeries],
         params: Mapping[str, Any],
         *args,
         **kwargs,
-    ) -> Union[dict[str, Any], list[dict[str, Any]]]:
+    ) -> dict[str, Any] | list[dict[str, Any]]:
         """MIDAS needs the high frequency period name in order to easily reverse_transform
         TimeSeries, the parallelization is handled by `transform` and/or `inverse_transform`
         (see InvertibleDataTransformer.__init__() docstring).
@@ -406,8 +406,8 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
     @staticmethod
     def _verify_series(
         series: TimeSeries,
-        high_freq: Optional[str] = None,
-        low_freq: Optional[str] = None,
+        high_freq: str | None = None,
+        low_freq: str | None = None,
     ):
         """Some sanity checks on the input, the high_freq and low_freq arguments are mutually exclusive"""
         if not isinstance(series.time_index, pd.DatetimeIndex):
@@ -445,7 +445,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         n_midas: int,
         drop_static_covariates: bool,
         inverse_transform: bool,
-    ) -> Optional[Union[pd.Series, pd.DataFrame]]:
+    ) -> pd.Series | pd.DataFrame | None:
         """
         If static covariates are component-specific, they must be reshaped appropriately.
         """
@@ -468,7 +468,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
     def _create_midas_df(
         series: TimeSeries,
         arr: np.ndarray,
-        time_index: Union[pd.DatetimeIndex, pd.RangeIndex],
+        time_index: pd.DatetimeIndex | pd.RangeIndex,
         n_midas: int,
         drop_static_covariates: bool,
         inverse_transform: bool,

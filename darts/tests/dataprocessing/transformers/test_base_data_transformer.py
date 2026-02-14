@@ -1,5 +1,5 @@
 from collections.abc import Mapping, Sequence
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 import pytest
@@ -17,7 +17,7 @@ class TestBaseDataTransformer:
             translation: float,
             stack_samples: bool = False,
             mask_components: bool = True,
-            parallel_params: Union[bool, Sequence[str]] = False,
+            parallel_params: bool | Sequence[str] = False,
         ):
             """
             Applies the transform `transformed_series = scale * series + translation`.

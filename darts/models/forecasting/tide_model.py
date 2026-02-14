@@ -3,8 +3,6 @@ Time-series Dense Encoder (TiDE)
 --------------------------------
 """
 
-from typing import Optional
-
 import torch
 import torch.nn as nn
 
@@ -77,8 +75,8 @@ class _TideModule(PLForecastingModule):
         temporal_width_future: int,
         use_layer_norm: bool,
         dropout: float,
-        temporal_hidden_size_past: Optional[int] = None,
-        temporal_hidden_size_future: Optional[int] = None,
+        temporal_hidden_size_past: int | None = None,
+        temporal_hidden_size_future: int | None = None,
         **kwargs,
     ):
         """Pytorch module implementing the TiDE architecture.

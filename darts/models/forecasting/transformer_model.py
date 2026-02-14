@@ -4,7 +4,6 @@ Transformer Model
 """
 
 import math
-from typing import Optional, Union
 
 import torch
 import torch.nn as nn
@@ -131,9 +130,9 @@ class _TransformerModule(PLForecastingModule):
         dim_feedforward: int,
         dropout: float,
         activation: str,
-        norm_type: Union[str, nn.Module, None] = None,
-        custom_encoder: Optional[nn.Module] = None,
-        custom_decoder: Optional[nn.Module] = None,
+        norm_type: str | nn.Module | None = None,
+        custom_encoder: nn.Module | None = None,
+        custom_decoder: nn.Module | None = None,
         **kwargs,
     ):
         """PyTorch module implementing a Transformer to be used in `TransformerModel`.
@@ -338,9 +337,9 @@ class TransformerModel(PastCovariatesTorchModel):
         dim_feedforward: int = 512,
         dropout: float = 0.1,
         activation: str = "relu",
-        norm_type: Union[str, nn.Module, None] = None,
-        custom_encoder: Optional[nn.Module] = None,
-        custom_decoder: Optional[nn.Module] = None,
+        norm_type: str | nn.Module | None = None,
+        custom_encoder: nn.Module | None = None,
+        custom_decoder: nn.Module | None = None,
         **kwargs,
     ):
         """Transformer model

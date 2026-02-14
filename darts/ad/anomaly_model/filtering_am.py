@@ -9,7 +9,7 @@ by comparing how actuals deviate from the model's predictions (filtered series).
 
 import sys
 from collections.abc import Sequence
-from typing import Literal, Optional, Union
+from typing import Literal
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -29,7 +29,7 @@ class FilteringAnomalyModel(AnomalyModel):
     def __init__(
         self,
         model: FilteringModel,
-        scorer: Union[AnomalyScorer, Sequence[AnomalyScorer]],
+        scorer: AnomalyScorer | Sequence[AnomalyScorer],
     ):
         """Filtering-based Anomaly Detection Model
 
@@ -62,7 +62,7 @@ class FilteringAnomalyModel(AnomalyModel):
 
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeries | Sequence[TimeSeries],
         allow_model_training: bool = False,
         **filter_fit_kwargs,
     ) -> Self:
@@ -97,10 +97,10 @@ class FilteringAnomalyModel(AnomalyModel):
 
     def score(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeries | Sequence[TimeSeries],
         return_model_prediction: bool = False,
         **filter_kwargs,
-    ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
+    ) -> TimeSeries | Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]]:
         """Compute the anomaly score(s) for the given (sequence of) series.
 
         Predicts the given target time series with the filtering model, and applies the scorer(s)
@@ -150,16 +150,16 @@ class FilteringAnomalyModel(AnomalyModel):
 
     def eval_metric(
         self,
-        anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        anomalies: TimeSeries | Sequence[TimeSeries],
+        series: TimeSeries | Sequence[TimeSeries],
         metric: Literal["AUC_ROC", "AUC_PR"] = "AUC_ROC",
         **filter_kwargs,
-    ) -> Union[
-        dict[str, float],
-        dict[str, Sequence[float]],
-        Sequence[dict[str, float]],
-        Sequence[dict[str, Sequence[float]]],
-    ]:
+    ) -> (
+        dict[str, float]
+        | dict[str, Sequence[float]]
+        | Sequence[dict[str, float]]
+        | Sequence[dict[str, Sequence[float]]]
+    ):
         """Compute a metric for the anomaly scores computed by the model.
 
         Predicts the `series` with the filtering model, and applies the scorer(s) on the filtered time series
@@ -203,9 +203,9 @@ class FilteringAnomalyModel(AnomalyModel):
         self,
         series: TimeSeries,
         anomalies: TimeSeries = None,
-        names_of_scorers: Union[str, Sequence[str]] = None,
+        names_of_scorers: str | Sequence[str] = None,
         title: str = None,
-        metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,
+        metric: Literal["AUC_ROC", "AUC_PR"] | None = None,
         **score_kwargs,
     ):
         """Plot the results of the anomaly model.
