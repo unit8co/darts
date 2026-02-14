@@ -267,7 +267,7 @@ def plot(
     alpha_line = prepared_params["alpha_line"]
 
     # determine if custom colors (sequence of colors) are provided
-    custom_colors = isinstance(color, Sequence) and not isinstance(color, (str, tuple))
+    custom_colors = isinstance(color, Sequence) and not isinstance(color, str | tuple)
 
     kwargs["alpha"] = alpha_line
     if not any(lw in kwargs for lw in ["lw", "linewidth"]):
