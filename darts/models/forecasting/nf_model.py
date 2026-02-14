@@ -115,7 +115,7 @@ class _NFModel(BaseModel):
     def forward(self, window_batch: _WindowBatch) -> torch.Tensor: ...
 
 
-class _PLForecastingModule(PLForecastingModule):
+class _NeuralForecastModule(PLForecastingModule):
     def __init__(
         self,
         nf_model: _NFModel,
@@ -640,7 +640,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         )
 
         pl_module_params = self.pl_module_params or {}
-        return _PLForecastingModule(
+        return _NeuralForecastModule(
             nf_model=nf_model,  # pyright: ignore[reportArgumentType]
             n_past_covs=n_past_covs,
             n_future_covs=n_future_covs,
@@ -650,7 +650,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
 
     @property
     def nf_model(self) -> BaseModel:
-        if not isinstance(self.model, _PLForecastingModule):
+        if not isinstance(self.model, _NeuralForecastModule):
             raise_log(
                 ValueError(
                     "The underlying NeuralForecast model has not been created yet."
