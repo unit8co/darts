@@ -33,7 +33,7 @@ We thus define the expected keys and their types below:
     to be shared across the batch dimension, but may be different across target components.
     For univariate models, static exogenous variables can be different across time series.
 """
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import torch
 from neuralforecast.common._base_model import BaseModel
@@ -54,9 +54,9 @@ logger = get_logger(__name__)
 class _WindowBatch(TypedDict):
     insample_y: torch.Tensor
     insample_mask: torch.Tensor
-    hist_exog: Optional[torch.Tensor]
-    futr_exog: Optional[torch.Tensor]
-    stat_exog: Optional[torch.Tensor]
+    hist_exog: torch.Tensor | None
+    futr_exog: torch.Tensor | None
+    stat_exog: torch.Tensor | None
 
 
 IGNORED_NF_MODEL_PARAM_NAMES = {
@@ -104,7 +104,7 @@ class _PseudoLoss(BasePointLoss):
 
     """
 
-    def __init__(self, likelihood: Optional[TorchLikelihood]):
+    def __init__(self, likelihood: TorchLikelihood | None):
         n_likelihood_params = likelihood.num_parameters if likelihood is not None else 1
         super().__init__(outputsize_multiplier=n_likelihood_params)
 
