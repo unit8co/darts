@@ -1,6 +1,5 @@
 import os.path
 from itertools import product
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -186,8 +185,8 @@ class TestOnnx:
         model,
         onnx_filename: str,
         series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
+        past_covariates: TimeSeries | None,
+        future_covariates: TimeSeries | None,
     ):
         """Darts model is only used to detect which covariates are supported by the weights."""
         ort_session = ort.InferenceSession(onnx_filename)

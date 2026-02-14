@@ -8,7 +8,6 @@ identifies time points as anomalous when values are beyond the thresholds.
 """
 
 from collections.abc import Sequence
-from typing import Union
 
 import numpy as np
 
@@ -22,8 +21,8 @@ logger = get_logger(__name__)
 class ThresholdDetector(Detector, _BoundedDetectorMixin):
     def __init__(
         self,
-        low_threshold: Union[int, float, Sequence[float], None] = None,
-        high_threshold: Union[int, float, Sequence[float], None] = None,
+        low_threshold: int | float | Sequence[float] | None = None,
+        high_threshold: int | float | Sequence[float] | None = None,
     ) -> None:
         """Threshold Detector
 

@@ -7,7 +7,6 @@ covariate series lags in order to obtain a forecast.
 """
 
 from collections.abc import Sequence
-from typing import Optional, Union
 
 from scipy.optimize import linprog
 from sklearn.linear_model import LinearRegression, PoissonRegressor, QuantileRegressor
@@ -32,16 +31,16 @@ logger = get_logger(__name__)
 class LinearRegressionModel(SKLearnModel):
     def __init__(
         self,
-        lags: Optional[LAGS_TYPE] = None,
-        lags_past_covariates: Optional[LAGS_TYPE] = None,
-        lags_future_covariates: Optional[FUTURE_LAGS_TYPE] = None,
+        lags: LAGS_TYPE | None = None,
+        lags_past_covariates: LAGS_TYPE | None = None,
+        lags_future_covariates: FUTURE_LAGS_TYPE | None = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
-        add_encoders: Optional[dict] = None,
-        likelihood: Optional[str] = None,
-        quantiles: Optional[list[float]] = None,
-        random_state: Optional[int] = None,
-        multi_models: Optional[bool] = True,
+        add_encoders: dict | None = None,
+        likelihood: str | None = None,
+        quantiles: list[float] | None = None,
+        random_state: int | None = None,
+        multi_models: bool | None = True,
         use_static_covariates: bool = True,
         **kwargs,
     ):
@@ -208,13 +207,13 @@ class LinearRegressionModel(SKLearnModel):
 
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        max_samples_per_ts: Optional[int] = None,
-        n_jobs_multioutput_wrapper: Optional[int] = None,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-        verbose: Optional[bool] = None,
+        series: TimeSeries | Sequence[TimeSeries],
+        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        max_samples_per_ts: int | None = None,
+        n_jobs_multioutput_wrapper: int | None = None,
+        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        verbose: bool | None = None,
         **kwargs,
     ):
         likelihood = self.likelihood

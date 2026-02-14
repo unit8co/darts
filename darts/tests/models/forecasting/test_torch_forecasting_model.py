@@ -13,7 +13,7 @@ import itertools
 import logging
 import math
 import os
-from typing import Any, Optional
+from typing import Any
 from unittest.mock import patch
 
 import numpy as np
@@ -2800,11 +2800,11 @@ class TestTorchForecastingModel:
 
     def helper_create_DLinearModel(
         self,
-        work_dir: Optional[str] = None,
+        work_dir: str | None = None,
         model_name: str = "unitest_model",
-        add_encoders: Optional[dict] = None,
+        add_encoders: dict | None = None,
         save_checkpoints: bool = False,
-        likelihood: Optional[TorchLikelihood] = None,
+        likelihood: TorchLikelihood | None = None,
         output_chunk_length: int = 1,
         **kwargs,
     ):

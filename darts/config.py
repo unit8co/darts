@@ -42,9 +42,9 @@ Examples
 20
 """
 
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
-from typing import Any, Callable, Optional
+from typing import Any
 
 from darts.logging import get_logger, raise_log
 
@@ -70,8 +70,8 @@ class _Option:
         key: str,
         default_value: Any,
         description: str,
-        validator: Optional[Callable] = None,
-        callback: Optional[Callable] = None,
+        validator: Callable | None = None,
+        callback: Callable | None = None,
     ):
         self.key = key
         self.default_value = default_value

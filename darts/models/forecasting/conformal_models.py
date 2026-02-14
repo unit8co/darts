@@ -10,19 +10,14 @@ import math
 import os
 import sys
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
-from typing import Any, BinaryIO, Callable, Optional, Union
+from collections.abc import Callable, Sequence
+from typing import Any, BinaryIO, Literal
 
 from darts.utils.likelihood_models.base import (
     Likelihood,
     LikelihoodType,
     quantile_names,
 )
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -73,10 +68,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
         model: GlobalForecastingModel,
         quantiles: list[float],
         symmetric: bool = True,
-        cal_length: Optional[int] = None,
+        cal_length: int | None = None,
         cal_stride: int = 1,
         cal_num_samples: int = 500,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ):
         """Base Conformal Prediction Model.
 
@@ -193,10 +188,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        verbose: Optional[bool] = None,
+        series: TimeSeries | Sequence[TimeSeries],
+        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        verbose: bool | None = None,
         **kwargs,
     ) -> "ConformalModel":
         """Fit/train the underlying forecasting model on (potentially multiple) series.
@@ -249,16 +244,16 @@ class ConformalModel(GlobalForecastingModel, ABC):
     def predict(
         self,
         n: int,
-        series: Union[TimeSeries, Sequence[TimeSeries]] = None,
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeries | Sequence[TimeSeries] = None,
+        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
         num_samples: int = 1,
-        verbose: Optional[bool] = None,
+        verbose: bool | None = None,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
         **kwargs,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    ) -> TimeSeries | Sequence[TimeSeries]:
         """Forecasts calibrated quantile intervals (or samples from calibrated intervals) for `n` time steps after the
         end of the `series`.
 
@@ -321,7 +316,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
         Returns
         -------
-        Union[TimeSeries, Sequence[TimeSeries]]
+        TimeSeries | Sequence[TimeSeries]
             If `series` is not specified, this function returns a single time series containing the `n`
             next points after then end of the training series.
             If `series` is given and is a simple ``TimeSeries``, this function returns the `n` next points
@@ -400,17 +395,17 @@ class ConformalModel(GlobalForecastingModel, ABC):
     @_with_sanity_checks("_historical_forecasts_sanity_checks")
     def historical_forecasts(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeries | Sequence[TimeSeries],
+        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
         forecast_horizon: int = 1,
         num_samples: int = 1,
-        train_length: Optional[int] = None,
+        train_length: int | None = None,
         val_length: int = 0,
-        start: Optional[Union[pd.Timestamp, int]] = None,
+        start: pd.Timestamp | int | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
-        retrain: Union[bool, int, Callable[..., bool]] = True,
+        retrain: bool | int | Callable[..., bool] = True,
         apply_globally: bool = False,
         overlap_end: bool = False,
         last_points_only: bool = True,
@@ -418,14 +413,12 @@ class ConformalModel(GlobalForecastingModel, ABC):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
-        data_transformers: Optional[
-            dict[str, Union[BaseDataTransformer, Pipeline]]
-        ] = None,
-        fit_kwargs: Optional[dict[str, Any]] = None,
-        predict_kwargs: Optional[dict[str, Any]] = None,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-        random_state: Optional[int] = None,
-    ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
+        data_transformers: dict[str, BaseDataTransformer | Pipeline] | None = None,
+        fit_kwargs: dict[str, Any] | None = None,
+        predict_kwargs: dict[str, Any] | None = None,
+        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        random_state: int | None = None,
+    ) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]]:
         """Generates calibrated historical forecasts by simulating predictions at various points in time throughout the
         history of the provided (potentially multiple) `series`. This process involves retrospectively applying the
         model to different time steps, as if the forecasts were made in real-time at those specific moments. This
@@ -635,38 +628,37 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
     def backtest(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        historical_forecasts: Optional[
-            Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
-        ] = None,
+        series: TimeSeries | Sequence[TimeSeries],
+        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        historical_forecasts: TimeSeries
+        | Sequence[TimeSeries]
+        | Sequence[Sequence[TimeSeries]]
+        | None = None,
         forecast_horizon: int = 1,
         num_samples: int = 1,
-        train_length: Optional[int] = None,
+        train_length: int | None = None,
         val_length: int = 0,
-        start: Optional[Union[pd.Timestamp, int]] = None,
+        start: pd.Timestamp | int | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
-        retrain: Union[bool, int, Callable[..., bool]] = True,
+        retrain: bool | int | Callable[..., bool] = True,
         apply_globally: bool = False,
         overlap_end: bool = False,
         last_points_only: bool = False,
-        metric: Union[METRIC_TYPE, list[METRIC_TYPE]] = metrics.mape,
-        reduction: Union[Callable[..., float], None] = np.mean,
+        metric: METRIC_TYPE | list[METRIC_TYPE] = metrics.mape,
+        reduction: Callable[..., float] | None = np.mean,
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
-        data_transformers: Optional[
-            dict[str, Union[BaseDataTransformer, Pipeline]]
-        ] = None,
-        metric_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
-        fit_kwargs: Optional[dict[str, Any]] = None,
-        predict_kwargs: Optional[dict[str, Any]] = None,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-        random_state: Optional[int] = None,
-    ) -> Union[float, np.ndarray, list[float], list[np.ndarray]]:
+        data_transformers: dict[str, BaseDataTransformer | Pipeline] | None = None,
+        metric_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
+        fit_kwargs: dict[str, Any] | None = None,
+        predict_kwargs: dict[str, Any] | None = None,
+        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        random_state: int | None = None,
+    ) -> float | np.ndarray | list[float] | list[np.ndarray]:
         r"""Compute error values that the model produced for historical forecasts on (potentially multiple) `series`.
 
         If `historical_forecasts` are provided, the metric(s) (given by the `metric` function) is evaluated directly on
@@ -869,20 +861,21 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
     def residuals(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        historical_forecasts: Optional[
-            Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
-        ] = None,
+        series: TimeSeries | Sequence[TimeSeries],
+        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        historical_forecasts: TimeSeries
+        | Sequence[TimeSeries]
+        | Sequence[Sequence[TimeSeries]]
+        | None = None,
         forecast_horizon: int = 1,
         num_samples: int = 1,
-        train_length: Optional[int] = None,
+        train_length: int | None = None,
         val_length: int = 0,
-        start: Optional[Union[pd.Timestamp, int]] = None,
+        start: pd.Timestamp | int | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
-        retrain: Union[bool, int, Callable[..., bool]] = True,
+        retrain: bool | int | Callable[..., bool] = True,
         apply_globally: bool = False,
         overlap_end: bool = False,
         last_points_only: bool = True,
@@ -891,16 +884,14 @@ class ConformalModel(GlobalForecastingModel, ABC):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
-        data_transformers: Optional[
-            dict[str, Union[BaseDataTransformer, Pipeline]]
-        ] = None,
-        metric_kwargs: Optional[dict[str, Any]] = None,
-        fit_kwargs: Optional[dict[str, Any]] = None,
-        predict_kwargs: Optional[dict[str, Any]] = None,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        data_transformers: dict[str, BaseDataTransformer | Pipeline] | None = None,
+        metric_kwargs: dict[str, Any] | None = None,
+        fit_kwargs: dict[str, Any] | None = None,
+        predict_kwargs: dict[str, Any] | None = None,
+        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
         values_only: bool = False,
-        random_state: Optional[int] = None,
-    ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
+        random_state: int | None = None,
+    ) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]]:
         """Compute the residuals that the model produced for historical forecasts on (potentially multiple) `series`.
 
         This function computes the difference (or one of Darts' "per time step" metrics) between the actual
@@ -1097,9 +1088,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
     def _calibrate_forecasts(
         self,
         series: Sequence[TimeSeries],
-        forecasts: Union[Sequence[Sequence[TimeSeries]], Sequence[TimeSeries]],
+        forecasts: Sequence[Sequence[TimeSeries]] | Sequence[TimeSeries],
         num_samples: int = 1,
-        start: Optional[Union[pd.Timestamp, int, str]] = None,
+        start: pd.Timestamp | int | str | None = None,
         start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
         stride: int = 1,
@@ -1108,8 +1099,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
-        random_state: Optional[int] = None,
-    ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
+        random_state: int | None = None,
+    ) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]]:
         """Generate calibrated historical forecasts.
 
         In general the workflow of the models to produce one calibrated forecast/prediction per step in the horizon
@@ -1387,7 +1378,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
     def save(
         self,
-        path: Optional[Union[str, os.PathLike, BinaryIO]] = None,
+        path: str | os.PathLike | BinaryIO | None = None,
         clean: bool = False,
         **pkl_kwargs,
     ) -> None:
@@ -1446,8 +1437,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
     @staticmethod
     def load(
-        path: Union[str, os.PathLike, BinaryIO],
-        pl_trainer_kwargs: Optional[dict] = None,
+        path: str | os.PathLike | BinaryIO,
+        pl_trainer_kwargs: dict | None = None,
         **kwargs,
     ) -> "ConformalModel":
         """
@@ -1503,7 +1494,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
     @property
     @abstractmethod
-    def _residuals_metric(self) -> tuple[METRIC_TYPE, Optional[dict]]:
+    def _residuals_metric(self) -> tuple[METRIC_TYPE, dict | None]:
         """Gives the "per time step" metric and optional metric kwargs used to compute residuals /
         non-conformity scores."""
 
@@ -1511,7 +1502,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         super()._historical_forecasts_sanity_checks(*args, **kwargs, is_conformal=True)
 
     @property
-    def output_chunk_length(self) -> Optional[int]:
+    def output_chunk_length(self) -> int | None:
         # conformal models can predict any horizon if the calibration set is large enough
         return None
 
@@ -1527,12 +1518,12 @@ class ConformalModel(GlobalForecastingModel, ABC):
     def extreme_lags(
         self,
     ) -> tuple[
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
+        int | None,
+        int | None,
+        int | None,
+        int | None,
+        int | None,
+        int | None,
         int,
     ]:
         return self.model.extreme_lags
@@ -1600,10 +1591,10 @@ class ConformalNaiveModel(ConformalModel):
         model: GlobalForecastingModel,
         quantiles: list[float],
         symmetric: bool = True,
-        cal_length: Optional[int] = None,
+        cal_length: int | None = None,
         cal_stride: int = 1,
         cal_num_samples: int = 500,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ):
         """Naive Conformal Prediction Model.
 
@@ -1723,7 +1714,7 @@ class ConformalNaiveModel(ConformalModel):
         return pred.reshape(len(pred), -1)
 
     @property
-    def _residuals_metric(self) -> tuple[METRIC_TYPE, Optional[dict]]:
+    def _residuals_metric(self) -> tuple[METRIC_TYPE, dict | None]:
         return (metrics.ae if self.symmetric else metrics.err), None
 
 
@@ -1733,10 +1724,10 @@ class ConformalQRModel(ConformalModel):
         model: GlobalForecastingModel,
         quantiles: list[float],
         symmetric: bool = True,
-        cal_length: Optional[int] = None,
+        cal_length: int | None = None,
         cal_stride: int = 1,
         cal_num_samples: int = 500,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ):
         """Conformalized Quantile Regression Model.
 
@@ -1885,7 +1876,7 @@ class ConformalQRModel(ConformalModel):
         return pred.reshape(len(pred), -1)
 
     @property
-    def _residuals_metric(self) -> tuple[METRIC_TYPE, Optional[dict]]:
+    def _residuals_metric(self) -> tuple[METRIC_TYPE, dict | None]:
         return metrics.incs_qr, {
             "q_interval": self.q_interval,
             "symmetric": self.symmetric,
@@ -1896,11 +1887,11 @@ def _get_calibration_hfc_start(
     series: Sequence[TimeSeries],
     horizon: int,
     output_chunk_shift: int,
-    cal_length: Optional[int],
+    cal_length: int | None,
     cal_stride: int,
-    start: Optional[Union[pd.Timestamp, int, Literal["end"]]],
+    start: pd.Timestamp | int | Literal["end"] | None,
     start_format: Literal["position", "value"],
-) -> tuple[Optional[Union[int, pd.Timestamp]], Literal["position", "value"]]:
+) -> tuple[int | pd.Timestamp | None, Literal["position", "value"]]:
     """Find the calibration start point (CSP) (for historical forecasts on calibration set).
 
     - If `start=None`, the CSP is also `None` (all possible hfcs).
@@ -1939,7 +1930,7 @@ def _get_calibration_hfc_start(
         return start_idx_rel, cal_start_format
 
     # `historical_forecasts()` is relative to `start`
-    start_is_position = isinstance(start, (int, np.int64)) and (
+    start_is_position = isinstance(start, int | np.int64) and (
         start_format == "position" or series[0]._has_datetime_index
     )
     cal_start_format = start_format

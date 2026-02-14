@@ -3,7 +3,6 @@ import logging
 import math
 from copy import deepcopy
 from itertools import product
-from typing import Optional
 from unittest.mock import patch
 
 import numpy as np
@@ -2894,8 +2893,8 @@ class TestHistoricalforecast:
         retrain: bool,
         end_idx: int,
         ocl: int,
-        series_idx: Optional[int] = None,
-        train_length: Optional[int] = None,
+        series_idx: int | None = None,
+        train_length: int | None = None,
         val_length: int = 0,
     ):
         ts_copy = deepcopy(ts)

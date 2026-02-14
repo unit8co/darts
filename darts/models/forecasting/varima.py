@@ -10,8 +10,6 @@ References
 .. [1] https://en.wikipedia.org/wiki/Vector_autoregression
 """
 
-from typing import Optional
-
 import numpy as np
 import pandas as pd
 from sklearn.utils import check_random_state
@@ -34,9 +32,9 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         p: int = 1,
         d: int = 0,
         q: int = 0,
-        trend: Optional[str] = None,
-        add_encoders: Optional[dict] = None,
-        random_state: Optional[int] = None,
+        trend: str | None = None,
+        add_encoders: dict | None = None,
+        random_state: int | None = None,
     ):
         """VARIMA
 
@@ -128,8 +126,8 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
     def fit(
         self,
         series: TimeSeries,
-        future_covariates: Optional[TimeSeries] = None,
-        verbose: Optional[bool] = False,
+        future_covariates: TimeSeries | None = None,
+        verbose: bool | None = False,
     ):
         # for VARIMA we need to process target `series` before calling
         # TransferableFutureCovariatesLocalForecastingModel's fit() method
@@ -146,8 +144,8 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
     def _fit(
         self,
         series: TimeSeries,
-        future_covariates: Optional[TimeSeries] = None,
-        verbose: Optional[bool] = None,
+        future_covariates: TimeSeries | None = None,
+        verbose: bool | None = None,
     ):
         super()._fit(series, future_covariates, verbose=verbose)
 
@@ -169,13 +167,13 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
     def _predict(
         self,
         n: int,
-        series: Optional[TimeSeries] = None,
-        historic_future_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: TimeSeries | None = None,
+        historic_future_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ) -> TimeSeries:
         if num_samples > 1 and self.trend:
             logger.warning(

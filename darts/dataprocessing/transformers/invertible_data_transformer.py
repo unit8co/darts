@@ -5,7 +5,7 @@ Invertible Data Transformer Base Class
 
 from abc import abstractmethod
 from collections.abc import Mapping, Sequence
-from typing import Any, Optional, Union
+from typing import Any
 
 import numpy as np
 
@@ -26,7 +26,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
         name: str = "InvertibleDataTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
-        parallel_params: Union[bool, Sequence[str]] = False,
+        parallel_params: bool | Sequence[str] = False,
         mask_components: bool = True,
     ):
         """Abstract class for invertible transformers.
@@ -220,12 +220,12 @@ class InvertibleDataTransformer(BaseDataTransformer):
 
     def inverse_transform(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]],
+        series: TimeSeries | Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]],
         *args,
-        component_mask: Optional[np.array] = None,
-        series_idx: Optional[Union[int, Sequence[int]]] = None,
+        component_mask: np.ndarray | None = None,
+        series_idx: int | Sequence[int] | None = None,
         **kwargs,
-    ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
+    ) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]]:
         """Inverse transforms a (sequence of) series by calling the user-implemented `ts_inverse_transform` method.
 
         In case a sequence or list of lists is passed as input data, this function takes care of parallelising the
@@ -249,7 +249,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
             to fit the transformer.
         args
             Additional positional arguments for the :func:`ts_inverse_transform()` method
-        component_mask : Optional[np.ndarray] = None
+        component_mask
             Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies
             which components of the underlying `series` the inverse transform should consider.
         series_idx
@@ -260,7 +260,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
 
         Returns
         -------
-        Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]
+        TimeSeries | List[TimeSeries] | List[List[TimeSeries]]
             Inverse transformed data.
 
         Notes

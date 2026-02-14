@@ -5,7 +5,7 @@ Static Covariates Transformer
 
 from collections import OrderedDict
 from collections.abc import Sequence
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -29,8 +29,8 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         self,
         transformer_num=None,
         transformer_cat=None,
-        cols_num: Optional[list[str]] = None,
-        cols_cat: Optional[list[str]] = None,
+        cols_num: list[str] | None = None,
+        cols_cat: list[str] | None = None,
         name="StaticCovariatesTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
@@ -231,8 +231,8 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
     @staticmethod
     def _process_static_cov_columns(
         stat_covs: pd.DataFrame,
-        cols_num: Optional[Sequence[str]],
-        cols_cat: Optional[Sequence[str]],
+        cols_num: Sequence[str] | None,
+        cols_cat: Sequence[str] | None,
     ) -> tuple[list[str], list[str], np.ndarray, np.ndarray]:
         """
         Extracts numerical and categorical static covariate (component / columns) names and their component masks

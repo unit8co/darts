@@ -12,7 +12,7 @@ Base Detector
 import sys
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -37,13 +37,13 @@ class Detector(ABC):
     """Base class for all detectors"""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.width_trained_on: Optional[int] = None
+        self.width_trained_on: int | None = None
 
     def detect(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeries | Sequence[TimeSeries],
         name: str = "series",
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    ) -> TimeSeries | Sequence[TimeSeries]:
         """Detect anomalies on given time series.
 
         Parameters
@@ -55,7 +55,7 @@ class Detector(ABC):
 
         Returns
         -------
-        Union[TimeSeries, Sequence[TimeSeries]]
+        TimeSeries | Sequence[TimeSeries]
             binary prediction (1 if considered as an anomaly, 0 if not)
         """
         called_with_single_series = isinstance(series, TimeSeries)
@@ -72,11 +72,11 @@ class Detector(ABC):
 
     def eval_metric(
         self,
-        anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-        pred_scores: Union[TimeSeries, Sequence[TimeSeries]],
+        anomalies: TimeSeries | Sequence[TimeSeries],
+        pred_scores: TimeSeries | Sequence[TimeSeries],
         window: int = 1,
         metric: Literal["recall", "precision", "f1", "accuracy"] = "recall",
-    ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
+    ) -> float | Sequence[float] | Sequence[Sequence[float]]:
         """Score the results against true anomalies.
 
         Parameters
@@ -93,7 +93,7 @@ class Detector(ABC):
 
         Returns
         -------
-        Union[float, Sequence[float], Sequence[Sequence[float]]]
+        float | Sequence[float] | Sequence[Sequence[float]]
             Metric results for each anomaly score
         """
         return eval_metric_from_binary_prediction(
@@ -117,13 +117,13 @@ class FittableDetector(Detector):
 
     def detect(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeries | Sequence[TimeSeries],
         name: str = "series",
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    ) -> TimeSeries | Sequence[TimeSeries]:
         _assert_fit_called(self._fit_called, name="Detector")
         return super().detect(series, name=name)
 
-    def fit(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> Self:
+    def fit(self, series: TimeSeries | Sequence[TimeSeries]) -> Self:
         """Trains the detector on the given time series.
 
         Parameters
@@ -151,8 +151,8 @@ class FittableDetector(Detector):
         return self
 
     def fit_detect(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]]
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        self, series: TimeSeries | Sequence[TimeSeries]
+    ) -> TimeSeries | Sequence[TimeSeries]:
         """Trains the detector and detects anomalies on the same series.
 
         Parameters
@@ -162,7 +162,7 @@ class FittableDetector(Detector):
 
         Returns
         -------
-        Union[TimeSeries, Sequence[TimeSeries]]
+        TimeSeries | Sequence[TimeSeries]
             Binary prediction (1 if considered as an anomaly, 0 if not)
         """
         self.fit(series)
@@ -183,9 +183,9 @@ class _BoundedDetectorMixin(ABC):
     def _prepare_boundaries(
         lower_bound_name: str,
         upper_bound_name: str,
-        lower_bound: Optional[Union[Sequence[float], float]] = None,
-        upper_bound: Optional[Union[Sequence[float], float]] = None,
-    ) -> tuple[list[Optional[float]], list[Optional[float]]]:
+        lower_bound: Sequence[float] | float | None = None,
+        upper_bound: Sequence[float] | float | None = None,
+    ) -> tuple[list[float | None], list[float | None]]:
         """
         Process the boundaries argument and perform some sanity checks
 
@@ -219,7 +219,7 @@ class _BoundedDetectorMixin(ABC):
                 logger=logger,
             )
 
-        def _prep_boundaries(boundaries) -> list[Optional[float]]:
+        def _prep_boundaries(boundaries) -> list[float | None]:
             """Convert boundaries to List"""
             return (
                 boundaries.tolist()
