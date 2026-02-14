@@ -2,7 +2,6 @@ import itertools
 import warnings
 from collections.abc import Sequence
 from itertools import product
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -61,10 +60,10 @@ class TestCreateLaggedPredictionData:
         target: TimeSeries,
         past: TimeSeries,
         future: TimeSeries,
-        lags: Optional[int],
-        lags_past: Optional[int],
-        lags_future: Optional[int],
-        max_samples_per_ts: Optional[int],
+        lags: int | None,
+        lags_past: int | None,
+        lags_future: int | None,
+        max_samples_per_ts: int | None,
     ) -> pd.Index:
         """
         Helper function that returns the times shared by all of the specified series that can be used
@@ -230,7 +229,7 @@ class TestCreateLaggedPredictionData:
 
     @staticmethod
     def construct_X_block(
-        series: TimeSeries, feature_times: pd.Index, lags: Optional[Sequence[int]]
+        series: TimeSeries, feature_times: pd.Index, lags: Sequence[int] | None
     ) -> np.array:
         """
         Helper function that creates the lagged features 'block' of a specific

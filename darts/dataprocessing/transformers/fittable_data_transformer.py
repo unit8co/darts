@@ -5,7 +5,7 @@ Fittable Data Transformer Base Class
 
 from abc import abstractmethod
 from collections.abc import Generator, Iterable, Mapping, Sequence
-from typing import Any, Optional, Union
+from typing import Any
 
 import numpy as np
 
@@ -26,7 +26,7 @@ class FittableDataTransformer(BaseDataTransformer):
         name: str = "FittableDataTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
-        parallel_params: Union[bool, Sequence[str]] = False,
+        parallel_params: bool | Sequence[str] = False,
         mask_components: bool = True,
         global_fit: bool = False,
     ):
@@ -161,7 +161,7 @@ class FittableDataTransformer(BaseDataTransformer):
     @staticmethod
     @abstractmethod
     def ts_fit(
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeries | Sequence[TimeSeries],
         params: Mapping[str, Any],
         *args,
         **kwargs,
@@ -189,7 +189,7 @@ class FittableDataTransformer(BaseDataTransformer):
 
         Parameters
         ----------
-        series (Union[TimeSeries, Sequence[TimeSeries]])
+        series
             `TimeSeries` against which the scaler will be fit.
 
         Notes
@@ -203,9 +203,9 @@ class FittableDataTransformer(BaseDataTransformer):
 
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeries | Sequence[TimeSeries],
         *args,
-        component_mask: Optional[np.array] = None,
+        component_mask: np.ndarray | None = None,
         **kwargs,
     ) -> "FittableDataTransformer":
         """Fits transformer to a (sequence of) `TimeSeries` by calling the user-implemented `ts_fit` method.
@@ -225,7 +225,7 @@ class FittableDataTransformer(BaseDataTransformer):
             (sequence of) series to fit the transformer on.
         args
             Additional positional arguments for the :func:`ts_fit` method
-        component_mask : Optional[np.ndarray] = None
+        component_mask
             Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies which
             components of the underlying `series` the transform should be fitted to.
         kwargs
@@ -272,12 +272,12 @@ class FittableDataTransformer(BaseDataTransformer):
 
     def transform(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeries | Sequence[TimeSeries],
         *args,
-        component_mask: Optional[np.array] = None,
-        series_idx: Optional[Union[int, Sequence[int]]] = None,
+        component_mask: np.ndarray | None = None,
+        series_idx: int | Sequence[int] | None = None,
         **kwargs,
-    ) -> Union[TimeSeries, list[TimeSeries]]:
+    ) -> TimeSeries | list[TimeSeries]:
         return super().transform(
             series=series,
             *args,
@@ -288,11 +288,11 @@ class FittableDataTransformer(BaseDataTransformer):
 
     def fit_transform(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeries | Sequence[TimeSeries],
         *args,
-        component_mask: Optional[np.array] = None,
+        component_mask: np.ndarray | None = None,
         **kwargs,
-    ) -> Union[TimeSeries, list[TimeSeries]]:
+    ) -> TimeSeries | list[TimeSeries]:
         """Fit the transformer to the (sequence of) series and return the transformed input.
 
         Parameters
@@ -301,7 +301,7 @@ class FittableDataTransformer(BaseDataTransformer):
             the (sequence of) series to transform.
         args
             Additional positional arguments passed to the :func:`ts_transform` and :func:`ts_fit` methods.
-        component_mask : Optional[np.ndarray] = None
+        component_mask
             Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies which
             components of the underlying `series` the transform should be fitted and applied to.
         kwargs
@@ -309,7 +309,7 @@ class FittableDataTransformer(BaseDataTransformer):
 
         Returns
         -------
-        Union[TimeSeries, Sequence[TimeSeries]]
+        TimeSeries | Sequence[TimeSeries]
             Transformed data.
         """
         return self.fit(

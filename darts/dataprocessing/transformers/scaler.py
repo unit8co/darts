@@ -5,7 +5,7 @@ Scaler
 
 from collections.abc import Mapping, Sequence
 from copy import deepcopy
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
@@ -151,7 +151,7 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
 
     @staticmethod
     def ts_fit(
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeries | Sequence[TimeSeries],
         params: Mapping[str, Any],
         *args,
         **kwargs,

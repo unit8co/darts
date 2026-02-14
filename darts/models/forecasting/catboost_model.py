@@ -22,7 +22,7 @@ https://github.com/unit8co/darts/blob/master/INSTALL.md
 """
 
 from collections.abc import Sequence
-from typing import Any, Optional, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -46,20 +46,20 @@ logger = get_logger(__name__)
 class CatBoostModel(SKLearnModelWithCategoricalFeatures):
     def __init__(
         self,
-        lags: Optional[LAGS_TYPE] = None,
-        lags_past_covariates: Optional[LAGS_TYPE] = None,
-        lags_future_covariates: Optional[FUTURE_LAGS_TYPE] = None,
+        lags: LAGS_TYPE | None = None,
+        lags_past_covariates: LAGS_TYPE | None = None,
+        lags_future_covariates: FUTURE_LAGS_TYPE | None = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
-        add_encoders: Optional[dict] = None,
-        likelihood: Optional[str] = None,
+        add_encoders: dict | None = None,
+        likelihood: str | None = None,
         quantiles: list = None,
-        random_state: Optional[int] = None,
-        multi_models: Optional[bool] = True,
+        random_state: int | None = None,
+        multi_models: bool | None = True,
         use_static_covariates: bool = True,
-        categorical_past_covariates: Optional[Union[str, list[str]]] = None,
-        categorical_future_covariates: Optional[Union[str, list[str]]] = None,
-        categorical_static_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_past_covariates: str | list[str] | None = None,
+        categorical_future_covariates: str | list[str] | None = None,
+        categorical_static_covariates: str | list[str] | None = None,
         **kwargs,
     ):
         """CatBoost Model
@@ -247,10 +247,10 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
 
     def _set_likelihood(
         self,
-        likelihood: Optional[str],
+        likelihood: str | None,
         output_chunk_length: int,
         multi_models: bool,
-        quantiles: Optional[list[float]] = None,
+        quantiles: list[float] | None = None,
     ):
         if likelihood == "RMSEWithUncertainty":
             # RMSEWithUncertainty returns mean and variance which is equivalent to gaussian
@@ -282,19 +282,17 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
 
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        max_samples_per_ts: Optional[int] = None,
-        n_jobs_multioutput_wrapper: Optional[int] = None,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-        val_sample_weight: Optional[
-            Union[TimeSeries, Sequence[TimeSeries], str]
-        ] = None,
-        verbose: Optional[Union[int, bool]] = None,
+        series: TimeSeries | Sequence[TimeSeries],
+        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        val_series: TimeSeries | Sequence[TimeSeries] | None = None,
+        val_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        val_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        max_samples_per_ts: int | None = None,
+        n_jobs_multioutput_wrapper: int | None = None,
+        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        val_sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        verbose: int | bool | None = None,
         **kwargs,
     ):
         """
@@ -389,9 +387,9 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         self,
         kwargs: dict,
         val_series: Sequence[TimeSeries],
-        val_past_covariates: Optional[Sequence[TimeSeries]],
-        val_future_covariates: Optional[Sequence[TimeSeries]],
-        val_sample_weight: Optional[Union[Sequence[TimeSeries], str]],
+        val_past_covariates: Sequence[TimeSeries] | None,
+        val_future_covariates: Sequence[TimeSeries] | None,
+        val_sample_weight: Sequence[TimeSeries] | str | None,
         max_samples_per_ts: int,
         stride: int,
     ) -> dict:
@@ -427,7 +425,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         return True
 
     @property
-    def val_set_params(self) -> tuple[Optional[str], Optional[str]]:
+    def val_set_params(self) -> tuple[str | None, str | None]:
         return "eval_set", "eval_sample_weight"
 
     @property
@@ -439,14 +437,14 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         )
 
     @property
-    def _categorical_fit_param(self) -> Optional[str]:
+    def _categorical_fit_param(self) -> str | None:
         """
         Returns the name of the categorical features parameter from model's `fit` method .
         """
         return "cat_features"
 
     def _format_samples(
-        self, samples: np.ndarray, labels: Optional[np.ndarray] = None
+        self, samples: np.ndarray, labels: np.ndarray | None = None
     ) -> tuple[Any, Any]:
         """
         CatBoost currently only supports categorical features as int.
@@ -464,19 +462,19 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
 class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
     def __init__(
         self,
-        lags: Union[int, list] = None,
-        lags_past_covariates: Union[int, list[int]] = None,
-        lags_future_covariates: Union[tuple[int, int], list[int]] = None,
+        lags: int | list = None,
+        lags_past_covariates: int | list[int] = None,
+        lags_future_covariates: tuple[int, int] | list[int] = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
-        add_encoders: Optional[dict] = None,
-        likelihood: Optional[str] = LikelihoodType.ClassProbability.value,
-        random_state: Optional[int] = None,
-        multi_models: Optional[bool] = True,
+        add_encoders: dict | None = None,
+        likelihood: str | None = LikelihoodType.ClassProbability.value,
+        random_state: int | None = None,
+        multi_models: bool | None = True,
         use_static_covariates: bool = True,
-        categorical_past_covariates: Optional[Union[str, list[str]]] = None,
-        categorical_future_covariates: Optional[Union[str, list[str]]] = None,
-        categorical_static_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_past_covariates: str | list[str] | None = None,
+        categorical_future_covariates: str | list[str] | None = None,
+        categorical_static_covariates: str | list[str] | None = None,
         **kwargs,
     ):
         """CatBoost Model for classification forecasting
@@ -661,10 +659,10 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
 
     def _set_likelihood(
         self,
-        likelihood: Optional[str],
+        likelihood: str | None,
         output_chunk_length: int,
         multi_models: bool,
-        quantiles: Optional[list[float]] = None,
+        quantiles: list[float] | None = None,
     ):
         """
         Check and set the likelihood.

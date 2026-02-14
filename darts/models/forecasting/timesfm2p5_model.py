@@ -13,7 +13,7 @@ For detailed examples and tutorials, check out the Chronos2 notebook:
 
 import os
 from dataclasses import dataclass, field
-from typing import Any, Optional, Union
+from typing import Any
 
 import torch
 import torch.nn.functional as F
@@ -313,10 +313,10 @@ class TimesFM2p5Model(FoundationModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        likelihood: Optional[QuantileRegression] = None,
+        likelihood: QuantileRegression | None = None,
         hub_model_name: str = "google/timesfm-2.5-200m-pytorch",
-        hub_model_revision: Optional[str] = "1d952420fba87f3c6dee4f240de0f1a0fbc790e3",
-        local_dir: Optional[Union[str, os.PathLike]] = None,
+        hub_model_revision: str | None = "1d952420fba87f3c6dee4f240de0f1a0fbc790e3",
+        local_dir: str | os.PathLike | None = None,
         **kwargs,
     ):
         """TimesFM 2.5 Model for zero-shot forecasting.

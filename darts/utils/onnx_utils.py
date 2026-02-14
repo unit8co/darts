@@ -3,8 +3,6 @@ ONNX Utils
 ----------
 """
 
-from typing import Optional
-
 import numpy as np
 
 from darts import TimeSeries
@@ -13,9 +11,9 @@ from darts import TimeSeries
 def prepare_onnx_inputs(
     model,
     series: TimeSeries,
-    past_covariates: Optional[TimeSeries] = None,
-    future_covariates: Optional[TimeSeries] = None,
-) -> tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
+    past_covariates: TimeSeries | None = None,
+    future_covariates: TimeSeries | None = None,
+) -> tuple[np.ndarray, np.ndarray | None, np.ndarray | None]:
     """Helper function to slice and concatenate the input features.
 
     In order to remove the dependency on the `model` argument, it can be decomposed into

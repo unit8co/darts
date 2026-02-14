@@ -11,7 +11,7 @@ For detailed examples and tutorials, see:
 import math
 import os
 from dataclasses import dataclass
-from typing import Any, Literal, Optional, Union, cast
+from typing import Any, Literal, cast
 
 import torch
 from torch import nn
@@ -64,7 +64,7 @@ class _Chronos2Module(PLForecastingModule):
         feed_forward_proj: str = "relu",
         rope_theta: float = 10000.0,
         attn_implementation: Literal["eager", "sdpa"] | None = None,
-        chronos_config: Optional[dict[str, Any]] = None,
+        chronos_config: dict[str, Any] | None = None,
         **kwargs,
     ):
         """PyTorch module implementing the Chronos-2 model, ported from
@@ -565,10 +565,10 @@ class Chronos2Model(FoundationModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        likelihood: Optional[QuantileRegression] = None,
+        likelihood: QuantileRegression | None = None,
         hub_model_name: str = "amazon/chronos-2",
-        hub_model_revision: Optional[str] = None,
-        local_dir: Optional[Union[str, os.PathLike]] = None,
+        hub_model_revision: str | None = None,
+        local_dir: str | os.PathLike | None = None,
         **kwargs,
     ):
         """Chronos-2 Model for zero-shot forecasting.

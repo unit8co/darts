@@ -32,7 +32,6 @@ to see what is the support. Similarly, the prior parameters also have to lie in 
 
 import collections.abc
 from abc import ABC, abstractmethod
-from typing import Optional, Union
 
 import numpy as np
 import torch
@@ -74,7 +73,7 @@ MIN_CAUCHY_GAMMA_SAMPLING = 1e-100
 def _check(param, predicate, param_name, condition_str):
     if param is None:
         return
-    if isinstance(param, (collections.abc.Sequence, np.ndarray)):
+    if isinstance(param, collections.abc.Sequence | np.ndarray):
         raise_if_not(
             all(predicate(p) for p in param),
             f"All provided parameters {param_name} must be {condition_str}.",
@@ -184,7 +183,7 @@ class TorchLikelihood(Likelihood, ABC):
     @abstractmethod
     def _params_from_output(
         self, model_output: torch.Tensor
-    ) -> Union[tuple[torch.Tensor, ...], torch.Tensor]:
+    ) -> tuple[torch.Tensor, ...] | torch.Tensor:
         """
         Returns the distribution parameters, obtained from the raw model outputs
         (e.g. applies softplus or sigmoids to get parameters in the expected domains).
@@ -1042,7 +1041,7 @@ class WeibullLikelihood(TorchLikelihood):
 
 
 class QuantileRegression(TorchLikelihood):
-    def __init__(self, quantiles: Optional[list[float]] = None):
+    def __init__(self, quantiles: list[float] | None = None):
         """
         The "likelihood" corresponding to quantile regression.
         It uses the Quantile Loss Metric for custom quantiles centered around q=0.5.

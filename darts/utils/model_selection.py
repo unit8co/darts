@@ -6,7 +6,6 @@ Utilities that help in model selection e.g. by splitting a dataset.
 """
 
 from collections.abc import Sequence
-from typing import Optional, Union
 
 from darts import TimeSeries
 
@@ -23,11 +22,11 @@ class SplitTimeSeriesSequence(Sequence):
         self,
         type: str,
         data: Sequence[TimeSeries],
-        test_size: Optional[Union[float, int]] = 0.25,
-        axis: Optional[int] = 0,
-        input_size: Optional[int] = None,
-        horizon: Optional[int] = None,
-        vertical_split_type: Optional[str] = SIMPLE,
+        test_size: float | int | None = 0.25,
+        axis: int | None = 0,
+        input_size: int | None = None,
+        horizon: int | None = None,
+        vertical_split_type: str | None = SIMPLE,
     ):
         if type not in ["train", "test"]:
             raise AttributeError(
@@ -159,16 +158,17 @@ class SplitTimeSeriesSequence(Sequence):
     @classmethod
     def make_splitter(
         cls,
-        data: Union[TimeSeries, Sequence[TimeSeries]],
-        test_size: Optional[Union[float, int]] = 0.25,
-        axis: Optional[int] = 0,
-        input_size: Optional[int] = 0,
-        horizon: Optional[int] = 0,
-        vertical_split_type: Optional[str] = SIMPLE,
+        data: TimeSeries | Sequence[TimeSeries],
+        test_size: float | int | None = 0.25,
+        axis: int | None = 0,
+        input_size: int | None = 0,
+        horizon: int | None = 0,
+        vertical_split_type: str | None = SIMPLE,
         lazy: bool = False,
-    ) -> Union[
-        tuple[TimeSeries, TimeSeries], tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
-    ]:
+    ) -> (
+        tuple[TimeSeries, TimeSeries]
+        | tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
+    ):
         if not isinstance(data, Sequence):
             axis = 1
             data = [data]  # convert to sequence for unified processing later
@@ -206,16 +206,14 @@ class SplitTimeSeriesSequence(Sequence):
 
 
 def train_test_split(
-    data: Union[TimeSeries, Sequence[TimeSeries]],
-    test_size: Optional[Union[float, int]] = 0.25,
-    axis: Optional[int] = 0,
-    input_size: Optional[int] = 0,
-    horizon: Optional[int] = 0,
-    vertical_split_type: Optional[str] = SIMPLE,
+    data: TimeSeries | Sequence[TimeSeries],
+    test_size: float | int | None = 0.25,
+    axis: int | None = 0,
+    input_size: int | None = 0,
+    horizon: int | None = 0,
+    vertical_split_type: str | None = SIMPLE,
     lazy: bool = False,
-) -> Union[
-    tuple[TimeSeries, TimeSeries], tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
-]:
+) -> tuple[TimeSeries, TimeSeries] | tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
     """
     Splits the provided series into training and test series.
 

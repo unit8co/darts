@@ -157,8 +157,8 @@ TorchForecastingModel (this is only meant to illustrate many features at once).
 """
 
 import copy
-from collections.abc import Sequence
-from typing import Callable, Optional, Union
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -181,7 +181,8 @@ from darts.utils.timeseries_generation import datetime_attribute_timeseries
 from darts.utils.ts_utils import seq2series, series2seq
 from darts.utils.utils import generate_index
 
-SupportedTimeSeries = Union[TimeSeries, Sequence[TimeSeries]]
+SupportedTimeSeries = TimeSeries | Sequence[TimeSeries]
+
 logger = get_logger(__name__)
 
 ENCODER_KEYS = ["cyclic", "datetime_attribute", "position", "custom"]
@@ -203,7 +204,7 @@ class CyclicTemporalEncoder(SingleEncoder):
         self,
         index_generator: CovariatesIndexGenerator,
         attribute: str,
-        tz: Optional[str] = None,
+        tz: Any = None,
     ):
         """
         Cyclic index encoding for `TimeSeries` that have a time index of type `pd.DatetimeIndex`.
@@ -221,7 +222,9 @@ class CyclicTemporalEncoder(SingleEncoder):
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
         """
         super().__init__(index_generator)
         self.attribute = attribute
@@ -268,10 +271,10 @@ class PastCyclicEncoder(CyclicTemporalEncoder):
     def __init__(
         self,
         attribute: str,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[list[int]] = None,
-        tz: Optional[str] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
+        tz: Any = None,
     ):
         """
         Parameters
@@ -298,7 +301,9 @@ class PastCyclicEncoder(CyclicTemporalEncoder):
             Only required for :class:`SKLearnModel`.
             Corresponds to the lag values from parameter `lags_past_covariates` of :class:`SKLearnModel`.
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
         """
         super().__init__(
             index_generator=PastCovariatesIndexGenerator(
@@ -317,10 +322,10 @@ class FutureCyclicEncoder(CyclicTemporalEncoder):
     def __init__(
         self,
         attribute: str,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[list[int]] = None,
-        tz: Optional[str] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
+        tz: Any = None,
     ):
         """
         Parameters
@@ -347,7 +352,9 @@ class FutureCyclicEncoder(CyclicTemporalEncoder):
             Only required for :class:`SKLearnModel`.
             Corresponds to the lag values from parameter `lags_future_covariates` from :class:`SKLearnModel`.
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
         """
         super().__init__(
             index_generator=FutureCovariatesIndexGenerator(
@@ -369,7 +376,7 @@ class DatetimeAttributeEncoder(SingleEncoder):
         self,
         index_generator: CovariatesIndexGenerator,
         attribute: str,
-        tz: Optional[str] = None,
+        tz: Any = None,
     ):
         """
         Parameters
@@ -385,7 +392,9 @@ class DatetimeAttributeEncoder(SingleEncoder):
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
         """
         super().__init__(index_generator)
         self.attribute = attribute
@@ -428,10 +437,10 @@ class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
     def __init__(
         self,
         attribute: str,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[list[int]] = None,
-        tz: Optional[str] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
+        tz: Any = None,
     ):
         """
         Parameters
@@ -458,7 +467,9 @@ class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
             Only required for :class:`SKLearnModel`.
             Corresponds to the lag values from parameter `lags_past_covariates` of :class:`SKLearnModel`.
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
         """
         super().__init__(
             index_generator=PastCovariatesIndexGenerator(
@@ -477,10 +488,10 @@ class FutureDatetimeAttributeEncoder(DatetimeAttributeEncoder):
     def __init__(
         self,
         attribute: str,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[list[int]] = None,
-        tz: Optional[str] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
+        tz: Any = None,
     ):
         """
         Parameters
@@ -507,7 +518,9 @@ class FutureDatetimeAttributeEncoder(DatetimeAttributeEncoder):
             Only required for :class:`SKLearnModel`.
             Corresponds to the lag values from parameter `lags_future_covariates` from :class:`SKLearnModel`.
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
         """
         super().__init__(
             index_generator=FutureCovariatesIndexGenerator(
@@ -607,9 +620,9 @@ class PastIntegerIndexEncoder(IntegerIndexEncoder):
     def __init__(
         self,
         attribute: str,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[list[int]] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
         **kwargs,
     ):
         """
@@ -651,9 +664,9 @@ class FutureIntegerIndexEncoder(IntegerIndexEncoder):
     def __init__(
         self,
         attribute: str,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[list[int]] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
         **kwargs,
     ):
         """
@@ -756,9 +769,9 @@ class PastCallableIndexEncoder(CallableIndexEncoder):
     def __init__(
         self,
         attribute: Callable,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[list[int]] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
         **kwargs,
     ):
         """
@@ -803,9 +816,9 @@ class FutureCallableIndexEncoder(CallableIndexEncoder):
     def __init__(
         self,
         attribute: Callable,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[list[int]] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
         **kwargs,
     ):
         """
@@ -851,10 +864,10 @@ class SequentialEncoder(Encoder):
     def __init__(
         self,
         add_encoders: dict,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_past_covariates: Optional[list[int]] = None,
-        lags_future_covariates: Optional[list[int]] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_past_covariates: list[int] | None = None,
+        lags_future_covariates: list[int] | None = None,
         takes_past_covariates: bool = False,
         takes_future_covariates: bool = False,
     ) -> None:
@@ -961,8 +974,8 @@ class SequentialEncoder(Encoder):
         self._future_components: pd.Index = pd.Index([])
 
         # transformer
-        self._past_transformer: Optional[SequentialEncoderTransformer] = None
-        self._future_transformer: Optional[SequentialEncoderTransformer] = None
+        self._past_transformer: SequentialEncoderTransformer | None = None
+        self._future_transformer: SequentialEncoderTransformer | None = None
 
         # setup encoders and transformer
         self._setup_encoders(self.params)
@@ -971,13 +984,11 @@ class SequentialEncoder(Encoder):
     def encode_train(
         self,
         target: SupportedTimeSeries,
-        past_covariates: Optional[SupportedTimeSeries] = None,
-        future_covariates: Optional[SupportedTimeSeries] = None,
+        past_covariates: SupportedTimeSeries | None = None,
+        future_covariates: SupportedTimeSeries | None = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> tuple[
-        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
-    ]:
+    ) -> tuple[TimeSeries | Sequence[TimeSeries], TimeSeries | Sequence[TimeSeries]]:
         """Returns encoded index for all past and/or future covariates for training.
         Which covariates are generated depends on the parameters used at model creation.
 
@@ -1009,7 +1020,7 @@ class SequentialEncoder(Encoder):
             creation and build your encodings covariates manually for lazy loading.
         """
         if not self.fit_called:
-            if not isinstance(target, (TimeSeries, list)):
+            if not isinstance(target, TimeSeries | list):
                 logger.warning(
                     "Fitting was called with `add_encoders` and suspicion of lazy loading. "
                     "The encodings/covariates are generated pre-train for all individual targets and "
@@ -1034,13 +1045,11 @@ class SequentialEncoder(Encoder):
         self,
         n: int,
         target: SupportedTimeSeries,
-        past_covariates: Optional[SupportedTimeSeries] = None,
-        future_covariates: Optional[SupportedTimeSeries] = None,
+        past_covariates: SupportedTimeSeries | None = None,
+        future_covariates: SupportedTimeSeries | None = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> tuple[
-        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
-    ]:
+    ) -> tuple[TimeSeries | Sequence[TimeSeries], TimeSeries | Sequence[TimeSeries]]:
         """Returns encoded index for all past and/or future covariates for inference/prediction.
         Which covariates are generated depends on the parameters used at model creation.
 
@@ -1086,13 +1095,11 @@ class SequentialEncoder(Encoder):
         self,
         n: int,
         target: SupportedTimeSeries,
-        past_covariates: Optional[SupportedTimeSeries] = None,
-        future_covariates: Optional[SupportedTimeSeries] = None,
+        past_covariates: SupportedTimeSeries | None = None,
+        future_covariates: SupportedTimeSeries | None = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> tuple[
-        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
-    ]:
+    ) -> tuple[TimeSeries | Sequence[TimeSeries], TimeSeries | Sequence[TimeSeries]]:
         """Returns encoded index for all past and/or future covariates for training and inference/prediction.
         Which covariates are generated depends on the parameters used at model creation.
 
@@ -1119,7 +1126,7 @@ class SequentialEncoder(Encoder):
             for the {x}_covariates.
         """
         if not self.fit_called:
-            if not isinstance(target, (TimeSeries, list)):
+            if not isinstance(target, TimeSeries | list):
                 logger.warning(
                     "Fitting was called with `add_encoders` and suspicion of lazy loading. "
                     "The encodings/covariates are generated pre-train for all individual targets and "
@@ -1146,7 +1153,7 @@ class SequentialEncoder(Encoder):
         past_covariates: SupportedTimeSeries,
         future_covariates: SupportedTimeSeries,
         encoder_method: _EncoderMethod,
-        n: Optional[int] = None,
+        n: int | None = None,
         encode_past: bool = True,
         encode_future: bool = True,
     ) -> tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
@@ -1195,12 +1202,12 @@ class SequentialEncoder(Encoder):
     def _encode_sequence(
         self,
         encoders: Sequence[SingleEncoder],
-        transformer: Optional[SequentialEncoderTransformer],
+        transformer: SequentialEncoderTransformer | None,
         target: Sequence[TimeSeries],
-        covariates: Optional[SupportedTimeSeries],
+        covariates: SupportedTimeSeries | None,
         covariates_type: str,
         encoder_method: _EncoderMethod,
-        n: Optional[int] = None,
+        n: int | None = None,
     ) -> list[TimeSeries]:
         """Sequentially encodes the index of all input target/covariates TimeSeries with the corresponding
         `encoder_method`.
@@ -1500,7 +1507,7 @@ class SequentialEncoder(Encoder):
 
     def _process_input_transformer(
         self, params: dict
-    ) -> tuple[Optional[FittableDataTransformer], list, list]:
+    ) -> tuple[FittableDataTransformer | None, list, list]:
         """Processes input params used at model creation and returns tuple of one transformer object and two masks
         that specify which past / future encoders accept being transformed.
 
@@ -1538,7 +1545,7 @@ class SequentialEncoder(Encoder):
         return transformer, transform_past_mask, transform_future_mask
 
     @staticmethod
-    def _process_timezone(params: dict) -> Optional[str]:
+    def _process_timezone(params: dict) -> str | None:
         """Processes input params used at model creation for time zone specification, and returns the time zone.
 
         Parameters

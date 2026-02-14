@@ -5,7 +5,7 @@ Encoder Base Classes
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Literal, Optional, Union
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -15,8 +15,8 @@ from darts.dataprocessing.transformers import FittableDataTransformer
 from darts.logging import get_logger, raise_if, raise_log
 from darts.utils.utils import generate_index
 
-SupportedIndex = Union[pd.DatetimeIndex, pd.RangeIndex]
-EncoderOutputType = Optional[Union[Sequence[TimeSeries], list[TimeSeries]]]
+SupportedIndex = pd.DatetimeIndex | pd.RangeIndex
+EncoderOutputType = Sequence[TimeSeries] | list[TimeSeries] | None
 logger = get_logger(__name__)
 
 
@@ -43,9 +43,9 @@ class _EncoderMethod:
 class CovariatesIndexGenerator(ABC):
     def __init__(
         self,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[list[int]] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
     ):
         """:class:`CovariatesIndexGenerator` generates a time index for covariates at training and inference /
         prediction time with methods :func:`generate_train_idx()`, and :func:`generate_inference_idx()`.
@@ -111,7 +111,7 @@ class CovariatesIndexGenerator(ABC):
 
     @abstractmethod
     def generate_train_idx(
-        self, target: TimeSeries, covariates: Optional[TimeSeries] = None
+        self, target: TimeSeries, covariates: TimeSeries | None = None
     ) -> tuple[SupportedIndex, pd.Timestamp]:
         """
         Generates/extracts time index (or integer index) for covariates at model training time.
@@ -130,7 +130,7 @@ class CovariatesIndexGenerator(ABC):
 
     @abstractmethod
     def generate_inference_idx(
-        self, n: int, target: TimeSeries, covariates: Optional[TimeSeries] = None
+        self, n: int, target: TimeSeries, covariates: TimeSeries | None = None
     ) -> tuple[SupportedIndex, pd.Timestamp]:
         """
         Generates/extracts time index (or integer index) for covariates at model inference / prediction time.
@@ -151,7 +151,7 @@ class CovariatesIndexGenerator(ABC):
         pass
 
     def generate_train_inference_idx(
-        self, n: int, target: TimeSeries, covariates: Optional[TimeSeries] = None
+        self, n: int, target: TimeSeries, covariates: TimeSeries | None = None
     ) -> tuple[SupportedIndex, pd.Timestamp]:
         """
         Generates/extracts time index (or integer index) for covariates for training and inference / prediction.
@@ -195,9 +195,9 @@ class CovariatesIndexGenerator(ABC):
 
     def _verify_scenario(
         self,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[list[int]] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
     ):
         # LocalForecastingModel, or model agnostic (only supported by future covariates)
         is_scenario_a = (
@@ -272,7 +272,7 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
     """Generates index for past covariates on train and inference datasets"""
 
     def generate_train_idx(
-        self, target: TimeSeries, covariates: Optional[TimeSeries] = None
+        self, target: TimeSeries, covariates: TimeSeries | None = None
     ) -> tuple[SupportedIndex, pd.Timestamp]:
         super().generate_train_idx(target, covariates)
 
@@ -313,7 +313,7 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
         )
 
     def generate_inference_idx(
-        self, n: int, target: TimeSeries, covariates: Optional[TimeSeries] = None
+        self, n: int, target: TimeSeries, covariates: TimeSeries | None = None
     ) -> tuple[SupportedIndex, pd.Timestamp]:
         super().generate_inference_idx(n, target, covariates)
 
@@ -371,7 +371,7 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
     """Generates index for future covariates on train and inference datasets."""
 
     def generate_train_idx(
-        self, target: TimeSeries, covariates: Optional[TimeSeries] = None
+        self, target: TimeSeries, covariates: TimeSeries | None = None
     ) -> tuple[SupportedIndex, pd.Timestamp]:
         super().generate_train_idx(target, covariates)
 
@@ -421,7 +421,7 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
         )
 
     def generate_inference_idx(
-        self, n: int, target: TimeSeries, covariates: Optional[TimeSeries] = None
+        self, n: int, target: TimeSeries, covariates: TimeSeries | None = None
     ) -> tuple[SupportedIndex, pd.Timestamp]:
         super().generate_inference_idx(n, target, covariates)
 
@@ -483,7 +483,7 @@ class Encoder(ABC):
     def encode_train(
         self,
         target: TimeSeries,
-        covariates: Optional[TimeSeries] = None,
+        covariates: TimeSeries | None = None,
         merge_covariates: bool = True,
         **kwargs,
     ) -> TimeSeries:
@@ -505,7 +505,7 @@ class Encoder(ABC):
         self,
         n: int,
         target: TimeSeries,
-        covariates: Optional[TimeSeries] = None,
+        covariates: TimeSeries | None = None,
         merge_covariates: bool = True,
         **kwargs,
     ) -> TimeSeries:
@@ -530,7 +530,7 @@ class Encoder(ABC):
         self,
         n: int,
         target: TimeSeries,
-        covariates: Optional[TimeSeries] = None,
+        covariates: TimeSeries | None = None,
         merge_covariates: bool = True,
         **kwargs,
     ) -> TimeSeries:
@@ -551,7 +551,7 @@ class Encoder(ABC):
 
     @staticmethod
     def _merge_covariates(
-        encoded: TimeSeries, covariates: Optional[TimeSeries] = None
+        encoded: TimeSeries, covariates: TimeSeries | None = None
     ) -> TimeSeries:
         """If (actual) covariates are given, merge the encoded index with the covariates
 
@@ -566,8 +566,8 @@ class Encoder(ABC):
 
     @staticmethod
     def _drop_encoded_components(
-        covariates: Optional[TimeSeries], components: pd.Index
-    ) -> Optional[TimeSeries]:
+        covariates: TimeSeries | None, components: pd.Index
+    ) -> TimeSeries | None:
         """Avoid pitfalls: `encode_train()` or `encode_inference()` can be called multiple times or chained.
         Exclude any encoded components from `covariates` to generate and add the new encodings at a later time.
         """
@@ -650,7 +650,7 @@ class SingleEncoder(Encoder, ABC):
     def encode_train(
         self,
         target: TimeSeries,
-        covariates: Optional[TimeSeries] = None,
+        covariates: TimeSeries | None = None,
         merge_covariates: bool = True,
         **kwargs,
     ) -> TimeSeries:
@@ -695,7 +695,7 @@ class SingleEncoder(Encoder, ABC):
         self,
         n: int,
         target: TimeSeries,
-        covariates: Optional[TimeSeries] = None,
+        covariates: TimeSeries | None = None,
         merge_covariates: bool = True,
         **kwargs,
     ) -> TimeSeries:
@@ -751,7 +751,7 @@ class SingleEncoder(Encoder, ABC):
         self,
         n: int,
         target: TimeSeries,
-        covariates: Optional[TimeSeries] = None,
+        covariates: TimeSeries | None = None,
         merge_covariates: bool = True,
         **kwargs,
     ) -> TimeSeries:

@@ -38,8 +38,9 @@ Adapted for Darts with custom `PLForecastingModule` and `FoundationModel` integr
 """
 
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Literal
+from typing import Literal
 
 import torch
 import torch.nn.functional as F

@@ -7,7 +7,6 @@ A `_ForecastingModelExplainer` takes a fitted forecasting model as input and gen
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Optional, Union
 
 from darts import TimeSeries
 from darts.explainability.explainability_result import _ExplainabilityResult
@@ -25,13 +24,9 @@ class _ForecastingModelExplainer(ABC):
     def __init__(
         self,
         model: ForecastingModel,
-        background_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        background_past_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        background_future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
+        background_series: TimeSeries | Sequence[TimeSeries] | None = None,
+        background_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        background_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
         requires_background: bool = False,
         requires_covariates_encoding: bool = False,
         check_component_names: bool = False,
@@ -80,7 +75,7 @@ class _ForecastingModelExplainer(ABC):
             )
         self.model = model
         # default forecasting horizon
-        self.n: Optional[int] = getattr(self.model, "output_chunk_length", None)
+        self.n: int | None = getattr(self.model, "output_chunk_length", None)
 
         # check background input validity and process it
         (
@@ -113,15 +108,11 @@ class _ForecastingModelExplainer(ABC):
     @abstractmethod
     def explain(
         self,
-        foreground_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        foreground_past_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        foreground_future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        horizons: Optional[Sequence[int]] = None,
-        target_components: Optional[Sequence[str]] = None,
+        foreground_series: TimeSeries | Sequence[TimeSeries] | None = None,
+        foreground_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        foreground_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        horizons: Sequence[int] | None = None,
+        target_components: Sequence[str] | None = None,
     ) -> _ExplainabilityResult:
         """
         Explains a foreground time series, and returns a :class:`_ExplainabilityResult
@@ -152,13 +143,9 @@ class _ForecastingModelExplainer(ABC):
 
     def _process_foreground(
         self,
-        foreground_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        foreground_past_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        foreground_future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
+        foreground_series: TimeSeries | Sequence[TimeSeries] | None = None,
+        foreground_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        foreground_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
     ):
         return process_input(
             model=self.model,
@@ -177,8 +164,8 @@ class _ForecastingModelExplainer(ABC):
 
     def _process_horizons_and_targets(
         self,
-        horizons: Optional[Union[int, Sequence[int]]],
-        target_components: Optional[Union[str, Sequence[str]]],
+        horizons: int | Sequence[int] | None,
+        target_components: str | Sequence[str] | None,
     ) -> tuple[Sequence[int], Sequence[str]]:
         return process_horizons_and_targets(
             horizons=horizons,

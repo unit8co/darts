@@ -4,7 +4,7 @@ Differencing Transformer
 """
 
 from collections.abc import Mapping, Sequence
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 
@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 class Diff(FittableDataTransformer, InvertibleDataTransformer):
     def __init__(
         self,
-        lags: Union[int, Sequence[int]] = 1,
+        lags: int | Sequence[int] = 1,
         dropna: bool = True,
         name: str = "Diff",
         n_jobs: int = 1,

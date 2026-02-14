@@ -4,7 +4,7 @@ Window Transformer
 """
 
 from collections.abc import Mapping
-from typing import Any, Optional, Union
+from typing import Any
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import BaseDataTransformer
@@ -16,12 +16,12 @@ logger = get_logger(__name__)
 class WindowTransformer(BaseDataTransformer):
     def __init__(
         self,
-        transforms: Union[dict, list[dict]],
-        treat_na: Optional[Union[str, Union[int, float]]] = None,
-        forecasting_safe: Optional[bool] = True,
-        keep_non_transformed: Optional[bool] = False,
-        include_current: Optional[bool] = True,
-        keep_names: Optional[bool] = False,
+        transforms: dict | list[dict],
+        treat_na: str | int | float | None = None,
+        forecasting_safe: bool | None = True,
+        keep_non_transformed: bool | None = False,
+        include_current: bool | None = True,
+        keep_names: bool | None = False,
         name: str = "WindowTransformer",
         n_jobs: int = 1,
         verbose: bool = False,

@@ -2273,7 +2273,7 @@ class TestMetrics:
                 y, y, params={}, kwargs={"q": (np.array([0.5]), None, None)}
             )
         assert str(exc.value).startswith(
-            "`q` must be of tuple of `(np.ndarray, Optional[pd.Index])`"
+            "`q` must be of tuple of `(np.ndarray, pd.Index | None)`"
         )
 
     def test_wrapped_metrics(self):

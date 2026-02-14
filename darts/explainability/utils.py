@@ -4,7 +4,6 @@ Explainability Utils
 """
 
 from collections.abc import Sequence
-from typing import Optional, Union
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
@@ -18,14 +17,12 @@ logger = get_logger(__name__)
 def process_input(
     model: ForecastingModel,
     input_type: str,
-    series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    fallback_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    fallback_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    fallback_future_covariates: Optional[
-        Union[TimeSeries, Sequence[TimeSeries]]
-    ] = None,
+    series: TimeSeries | Sequence[TimeSeries] | None = None,
+    past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+    future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+    fallback_series: TimeSeries | Sequence[TimeSeries] | None = None,
+    fallback_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+    fallback_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
     check_component_names: bool = False,
     requires_input: bool = True,
     requires_covariates_encoding: bool = False,
@@ -186,10 +183,10 @@ def process_input(
 
 
 def process_horizons_and_targets(
-    horizons: Optional[Union[int, Sequence[int]]] = None,
-    fallback_horizon: Optional[int] = None,
-    target_components: Optional[Union[str, Sequence[str]]] = None,
-    fallback_target_components: Optional[Sequence[str]] = None,
+    horizons: int | Sequence[int] | None = None,
+    fallback_horizon: int | None = None,
+    target_components: str | Sequence[str] | None = None,
+    fallback_target_components: Sequence[str] | None = None,
     check_component_names: bool = False,
 ) -> tuple[Sequence[int], Sequence[str]]:
     """Processes the input horizons and target component names.
@@ -245,10 +242,10 @@ def process_horizons_and_targets(
 
 def get_component_names(
     series: Sequence[TimeSeries],
-    past_covariates: Optional[Sequence[TimeSeries]] = None,
-    future_covariates: Optional[Sequence[TimeSeries]] = None,
+    past_covariates: Sequence[TimeSeries] | None = None,
+    future_covariates: Sequence[TimeSeries] | None = None,
     idx: int = 0,
-) -> tuple[list[str], Optional[list[str]], Optional[list[str]], Optional[list[str]]]:
+) -> tuple[list[str], list[str] | None, list[str] | None, list[str] | None]:
     """Extract and return the components of target series, static covariate, past and future covariates series.
 
     Parameters
@@ -291,11 +288,11 @@ def _check_valid_input(
     model,
     input_type: str,
     series: Sequence[TimeSeries],
-    past_covariates: Optional[Sequence[TimeSeries]],
-    future_covariates: Optional[Sequence[TimeSeries]],
-    target_components: Optional[list[str]],
-    past_covariates_components: Optional[list[str]],
-    future_covariates_components: Optional[list[str]],
+    past_covariates: Sequence[TimeSeries] | None,
+    future_covariates: Sequence[TimeSeries] | None,
+    target_components: list[str] | None,
+    past_covariates_components: list[str] | None,
+    future_covariates_components: list[str] | None,
     check_component_names: bool = False,
     requires_input: bool = False,
     test_stationarity: bool = False,
@@ -366,5 +363,5 @@ def _check_valid_input(
         )
 
 
-def _test_stationarity(series: Union[TimeSeries, Sequence[TimeSeries]]):
+def _test_stationarity(series: TimeSeries | Sequence[TimeSeries]):
     return all([(stationarity_tests(bs[c]) for c in bs.components) for bs in series])
