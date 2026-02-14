@@ -524,16 +524,6 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         # assign input/output chunk lengths
         self.pl_module_params["input_chunk_length"] = model.input_size
         self.pl_module_params["output_chunk_length"] = model.h
-        # NeuralForecast models do not use `output_chunk_shift`, but we still allow users
-        # to set it to create a time gap. From the base model's perspective, it is trained
-        # to predict the shifted output chunk as if it immediately follows the input chunk.
-        if output_chunk_shift > 0:
-            logger.warning(
-                f"NeuralForecast base models natively do not use `output_chunk_shift`. "
-                f"Setting `output_chunk_shift={output_chunk_shift}` will create a time gap "
-                f"that is imperceptible to the base model. The model is trained to predict "
-                f"the shifted output chunk as if it immediately follows the input chunk."
-            )
 
         self.nf_model_class = model.__class__
         self.nf_model_params = dict(model.hparams)
