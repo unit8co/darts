@@ -588,8 +588,8 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
 
         # TODO: sanity checks on covariate support of the nf_model_class
 
-        # validate number of target components
         n_targets = future_target.shape[1]
+        # validate number of target components
         if n_targets != 1 and not self.supports_multivariate:
             raise_log(
                 ValueError(
