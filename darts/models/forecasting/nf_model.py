@@ -84,8 +84,8 @@ IGNORED_NF_MODEL_PARAM_NAMES = {
     "stat_exog_list",  # prepared by Darts
     "exclude_insample_y",  # TODO: check if this should be ignored
     "drop_last_loader",
-    "random_seed",  # TODO: check if this should be ignored
-    "alias",  # TODO: check if this should be ignored
+    "random_seed",
+    "alias",
     "optimizer",
     "optimizer_kwargs",
     "lr_scheduler",
