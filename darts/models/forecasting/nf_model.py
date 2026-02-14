@@ -504,7 +504,6 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         .. note::
             Under the hood, a new base model instance will be created with the relevant parameters from ``model``.
             That means that ``model`` itself will not be trained or updated.
-            Use :func:`nf_model` to access the new base model instance.
         .. warning::
             For compatibility, when static covariates are enabled for a multivariate base model, Darts will use the
             static covariates of the first sample in each batch as the static covariates for the entire batch.
@@ -637,17 +636,6 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             is_multivariate=self.supports_multivariate,
             **pl_module_params,
         )
-
-    @property
-    def nf_model(self) -> BaseModel:
-        if not isinstance(self.model, _NeuralForecastModule):
-            raise_log(
-                ValueError(
-                    "The underlying NeuralForecast model has not been created yet."
-                    "Make sure to call `fit()` before accessing `nf_model`."
-                )
-            )
-        return self.model.nf
 
     @property
     def supports_multivariate(self) -> bool:
