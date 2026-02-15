@@ -264,6 +264,7 @@ class _ConditionalMixerLayer(nn.Module):
         super().__init__()
 
         mixing_input = input_dim
+
         if static_cov_dim != 0:
             self.feature_mixing_static = _FeatureMixing(
                 sequence_length=sequence_length,
@@ -312,13 +313,14 @@ class _TSMixerModule(PLForecastingModule):
         self,
         input_dim: int,
         output_dim: int,
+        num_encoder_blocks: int,
+        num_decoder_blocks: int,
         past_cov_dim: int,
         future_cov_dim: int,
         static_cov_dim: int,
         nr_params: int,
         hidden_size: int,
         ff_size: int,
-        num_blocks: int,
         activation: str,
         dropout: float,
         norm_type: str | nn.Module,
@@ -326,7 +328,7 @@ class _TSMixerModule(PLForecastingModule):
         **kwargs,
     ) -> None:
         """
-        Initializes the TSMixer module for use within a Darts forecasting model.
+        Initializes the TSMixer module.
 
         Parameters
         ----------
@@ -334,6 +336,11 @@ class _TSMixerModule(PLForecastingModule):
             Number of input target features.
         output_dim
             Number of output target features.
+
+        num_encoder_blocks
+            Number of encoder blocks (that operate on input_chunk_length).
+        num_decoder_blocks
+            Number of decoder blocks (that operate on output_chunk_length).
         past_cov_dim
             Number of past covariate features.
         future_cov_dim
@@ -347,8 +354,6 @@ class _TSMixerModule(PLForecastingModule):
            Hidden state size of the TSMixer.
         ff_size
             Dimension of the feedforward network internal to the module.
-        num_blocks
-            Number of mixer blocks.
         activation
             Activation function to use.
         dropout
@@ -368,7 +373,7 @@ class _TSMixerModule(PLForecastingModule):
         if activation not in ACTIVATIONS:
             raise_log(
                 ValueError(
-                    f"Invalid `activation={activation}`. Must be on of {ACTIVATIONS}."
+                    f"Invalid `activation={activation}`. Must be one of {ACTIVATIONS}."
                 ),
                 logger=logger,
             )
@@ -378,7 +383,7 @@ class _TSMixerModule(PLForecastingModule):
             if norm_type not in NORMS:
                 raise_log(
                     ValueError(
-                        f"Invalid `norm_type={norm_type}`. Must be on of {NORMS}."
+                        f"Invalid `norm_type={norm_type}`. Must be one of {NORMS}."
                     ),
                     logger=logger,
                 )
@@ -397,13 +402,17 @@ class _TSMixerModule(PLForecastingModule):
             "normalize_before": normalize_before,
         }
 
+        # Projects from the input time dimension to the output time dimension
         self.fc_hist = nn.Linear(self.input_chunk_length, self.output_chunk_length)
+
         self.feature_mixing_hist = _FeatureMixing(
-            sequence_length=self.output_chunk_length,
+            sequence_length=self.input_chunk_length,
             input_dim=input_dim + past_cov_dim + future_cov_dim,
             output_dim=hidden_size,
             **mixer_params,
         )
+
+        # Process future covariates in decoder (if exists)
         if future_cov_dim:
             self.feature_mixing_future = _FeatureMixing(
                 sequence_length=self.output_chunk_length,
@@ -413,19 +422,40 @@ class _TSMixerModule(PLForecastingModule):
             )
         else:
             self.feature_mixing_future = None
-        self.conditional_mixer = self._build_mixer(
-            prediction_length=self.output_chunk_length,
-            num_blocks=num_blocks,
+
+        # Remove previous fc_hist and fc_future.
+        # New projection from encoder (input_chunk_length) to decoder (output_chunk_length)
+        self.encoder_to_decoder = nn.Linear(
+            self.input_chunk_length, self.output_chunk_length
+        )
+
+        # Build encoder mixer (operating on input_chunk_length)
+        self.encoder_mixer = self._build_mixer(
+            sequence_length=self.input_chunk_length,
+            num_blocks=num_encoder_blocks,
+            hidden_size=hidden_size,
+            future_cov_dim=0,  # encoder mixing uses only historical features
+            static_cov_dim=static_cov_dim,
+            **mixer_params,
+        )
+        # Build decoder mixer (operating on output_chunk_length)
+        self.decoder_mixer = self._build_mixer(
+            sequence_length=self.output_chunk_length,
+            num_blocks=num_decoder_blocks,
             hidden_size=hidden_size,
             future_cov_dim=future_cov_dim,
             static_cov_dim=static_cov_dim,
             **mixer_params,
         )
-        self.fc_out = nn.Linear(hidden_size, output_dim * nr_params)
+
+        self.fc_out = nn.Linear(
+            hidden_size * (1 + int((num_decoder_blocks == 0) and (future_cov_dim > 0))),
+            output_dim * nr_params,
+        )
 
     @staticmethod
     def _build_mixer(
-        prediction_length: int,
+        sequence_length: int,
         num_blocks: int,
         hidden_size: int,
         future_cov_dim: int,
@@ -436,14 +466,15 @@ class _TSMixerModule(PLForecastingModule):
         # the first block takes `x` consisting of concatenated features with size `hidden_size`:
         # - historic features
         # - optional future features
-        input_dim_block = hidden_size * (1 + int(future_cov_dim > 0))
-
+        input_dim_block = hidden_size * (
+            1 + int(future_cov_dim > 0)
+        )  # starting dimension for mixer layers
         mixer_layers = nn.ModuleList()
         for _ in range(num_blocks):
             layer = _ConditionalMixerLayer(
                 input_dim=input_dim_block,
                 output_dim=hidden_size,
-                sequence_length=prediction_length,
+                sequence_length=sequence_length,
                 static_cov_dim=static_cov_dim,
                 **kwargs,
             )
@@ -478,39 +509,53 @@ class _TSMixerModule(PLForecastingModule):
         # S: static cov features
         # H = C + P + F: historic features
         # H_S: hidden Size
-        # N_P: likelihood parameters
+        # N_P: number of parameters to predict per target feature
 
         # `x`: (B, L, H), `x_future`: (B, T, F), `x_static`: (B, C or 1, S)
         x, x_future, x_static = x_in
 
-        # swap feature and time dimensions (B, L, H) -> (B, H, L)
-        x = _time_to_feature(x)
-        # linear transformations to horizon (B, H, L) -> (B, H, T)
-        x = self.fc_hist(x)
-        # (B, H, T) -> (B, T, H)
-        x = _time_to_feature(x)
-
-        # feature mixing for historical features (B, T, H) -> (B, T, H_S)
-        x = self.feature_mixing_hist(x)
-        if self.future_cov_dim:
-            # feature mixing for future features (B, T, F) -> (B, T, H_S)
-            x_future = self.feature_mixing_future(x_future)
-            # (B, T, H_S) + (B, T, H_S) -> (B, T, 2*H_S)
-            x = torch.cat([x, x_future], dim=-1)
-
         if self.static_cov_dim:
             # (B, C, S) -> (B, 1, C * S)
-            x_static = x_static.reshape(x_static.shape[0], 1, -1)
-            # repeat to match horizon (B, 1, C * S) -> (B, T, C * S)
-            x_static = x_static.repeat(1, self.output_chunk_length, 1)
+            x_static_hist = x_static.reshape(x_static.shape[0], 1, -1)
+            # repeat to match lookback time dim: (B, 1, C * S) -> (B, L, C * S)
+            x_static_hist = x_static_hist.repeat(1, self.input_chunk_length, 1)
 
-        for mixing_layer in self.conditional_mixer:
-            # conditional mixer layers with static covariates (B, T, 2 * H_S), (B, T, C * S) -> (B, T, H_S)
-            x = mixing_layer(x, x_static=x_static)
+            # (B, C, S) -> (B, 1, C * S)
+            x_static_future = x_static.reshape(x_static.shape[0], 1, -1)
+            # repeat to match horizon time dim: (B, 1, C * S) -> (B, T, C * S)
+            x_static_future = x_static_future.repeat(1, self.output_chunk_length, 1)
+        else:
+            x_static_hist = None
+            x_static_future = None
 
-        # linear transformation to generate the forecast (B, T, H_S) -> (B, T, C * N_P)
+        # Process historical data (B, L, H) -> (B, L, H_S)
+        x = self.feature_mixing_hist(x)
+
+        # Process future data (B, T, F) -> (B, T, H_S)
+        if self.future_cov_dim:
+            x_future = self.feature_mixing_future(x_future)
+
+        # Apply encoder mixer layers
+        for layer in self.encoder_mixer:
+            x = layer(x, x_static_hist)
+
+        # Project time dimension (B, L, H_S) -> (B, T, H_S)
+        x = x.transpose(1, 2)
+        x = self.encoder_to_decoder(x)  # Linear map
+        x = x.transpose(1, 2)
+
+        # If future covariates are provided, mix and concatenate them with the encoder output
+        if self.future_cov_dim:
+            # (B, T, H_S) -> (B, T, 2 * H_S)
+            x = torch.cat([x, x_future], dim=-1)
+
+        # Apply decoder mixer layers
+        for layer in self.decoder_mixer:
+            x = layer(x, x_static_future)
+
+        # Forecast generation
+        # (B, T, H_S) -> (B, T, C * N_P)
         x = self.fc_out(x)
-        # (B, T, C * N_P) -> (B, T, C, N_P)
         x = x.view(-1, self.output_chunk_length, self.output_dim, self.nr_params)
         return x
 
@@ -529,6 +574,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
         norm_type: str | nn.Module = "LayerNorm",
         normalize_before: bool = False,
         use_static_covariates: bool = True,
+        project_after_n_blocks: int = 0,
         **kwargs,
     ) -> None:
         """Time-Series Mixer (TSMixer): An All-MLP Architecture for Time Series.
@@ -570,8 +616,10 @@ class TSMixerModel(MixedCovariatesTorchModel):
             The hidden state size / size of the second feed-forward layer in the feature mixing MLP.
         ff_size
             The size of the first feed-forward layer in the feature mixing MLP.
-        num_blocks
-            The number of mixer blocks in the model. The number includes the first block and all subsequent blocks.
+        num_encoder_blocks
+            The number of mixer blocks in the encoder.
+        num_decoder_blocks
+            The number of mixer blocks in the decoder.
         activation
             The activation function to use in the mixer layers (default='ReLU').
             Supported activations: ['ReLU', 'RReLU', 'PReLU', 'ELU', 'Softplus', 'Tanh', 'SELU', 'LeakyReLU', 'Sigmoid',
@@ -762,11 +810,12 @@ class TSMixerModel(MixedCovariatesTorchModel):
         # Model specific parameters
         self.ff_size = ff_size
         self.dropout = dropout
-        self.num_blocks = num_blocks
         self.activation = activation
         self.normalize_before = normalize_before
         self.norm_type = norm_type
         self.hidden_size = hidden_size
+        self.num_blocks = num_blocks
+        self.project_after_n_blocks = project_after_n_blocks
         self._considers_static_covariates = use_static_covariates
 
     def _create_model(self, train_sample: TorchTrainingSample) -> nn.Module:
@@ -793,6 +842,22 @@ class TSMixerModel(MixedCovariatesTorchModel):
         input_dim = past_target.shape[1]
         output_dim = future_target.shape[1]
 
+        num_encoder_blocks = self.project_after_n_blocks
+        num_decoder_blocks = self.num_blocks - num_encoder_blocks
+
+        # Raise exception for nonsensical number of encoder and decoder blocks
+        if (
+            num_encoder_blocks < 0
+            or num_decoder_blocks < 0
+            or (num_encoder_blocks + num_decoder_blocks != self.num_blocks)
+        ):
+            raise_log(
+                ValueError(
+                    f"Invalid number of encoder and decoder blocks. "
+                    f"project_after_n_blocks must be between 0 and {self.num_blocks} inclusive."
+                ),
+            )
+
         static_cov_dim = (
             static_covariates.shape[0] * static_covariates.shape[1]
             if static_covariates is not None
@@ -813,7 +878,8 @@ class TSMixerModel(MixedCovariatesTorchModel):
             nr_params=nr_params,
             hidden_size=self.hidden_size,
             ff_size=self.ff_size,
-            num_blocks=self.num_blocks,
+            num_encoder_blocks=num_encoder_blocks,
+            num_decoder_blocks=num_decoder_blocks,
             activation=self.activation,
             dropout=self.dropout,
             norm_type=self.norm_type,
