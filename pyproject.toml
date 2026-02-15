@@ -156,7 +156,8 @@ optional = [
     "polars>=1.37.1",
     "pydantic>=2.12.5",
     "ray>=2.53.0",
-    "plotly>=6.5.2"
+    "plotly>=6.5.2",
+    "neuralforecast>=3.0.0",
 ]
 release = [
     "bump-my-version>=1.2.5",
