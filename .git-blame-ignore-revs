@@ -8,3 +8,5 @@
 8158d3eaef9d9f6e04f219b029e306d1f1be46d5
 # Change Python target-version to 3.9 and update Ruff to 0.7.2
 18e2e3fd7d82d239ab24807fcc1033094ea09940
+# Change Python target-version to 3.10
+d5cda436e48d4eb773b1b165726556fe6a8db490
