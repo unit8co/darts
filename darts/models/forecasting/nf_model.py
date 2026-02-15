@@ -119,12 +119,19 @@ class _NFModel(BaseModel):
     def forward(self, window_batch: _WindowBatch) -> torch.Tensor: ...
 
 
+def _build_exog_list(prefix: str, n_components: int) -> list[str]:
+    """Utility function to create pseudo *_exog_list inputs expected by NeuralForecast"""
+    return [f"{prefix}_{i}" for i in range(n_components)]
+
+
 class _NeuralForecastModule(PLForecastingModule):
     def __init__(
         self,
-        nf_model: _NFModel,
+        nf_model_class: type[_NFModel],
+        nf_model_params: dict,
         n_past_covs: int,
         n_future_covs: int,
+        n_stat_covs: int,
         is_multivariate: bool,
         **kwargs,
     ):
@@ -133,12 +140,17 @@ class _NeuralForecastModule(PLForecastingModule):
 
         Parameters
         ----------
-        nf_model
-            An instance of a NeuralForecast base model.
+        nf_model_class
+            The class of the NeuralForecast model to be used. It should inherit from `BaseModel` and implement the
+            expected `forward()` method.
+        nf_model_params
+            A dictionary of parameters to initialize the `nf_model_class`.
         n_past_covs
             Number of past covariate components (X).
         n_future_covs
             Number of future covariate components (F).
+        n_stat_covs
+            Number of static covariate components (S) per target component.
         is_multivariate
             Whether the NeuralForecast base model is multivariate (i.e., supports C >= 1 target components).
         **kwargs
@@ -146,7 +158,26 @@ class _NeuralForecastModule(PLForecastingModule):
             base class.
         """
         super().__init__(**kwargs)
-        self.nf = nf_model
+
+        futr_exog_list, hist_exog_list, stat_exog_list = None, None, None
+        if n_future_covs > 0:
+            futr_exog_list = _build_exog_list("futr_exog", n_future_covs)
+        if n_past_covs > 0:
+            hist_exog_list = _build_exog_list("hist_exog", n_past_covs)
+        if n_stat_covs > 0:
+            stat_exog_list = _build_exog_list("stat_exog", n_stat_covs)
+
+        # set loss to pseudo loss with correct number of likelihood parameters
+        loss = _PseudoLoss(self.likelihood)
+
+        self.nf = nf_model_class(
+            **nf_model_params,
+            loss=loss,
+            n_series=self.n_targets,
+            futr_exog_list=futr_exog_list,
+            hist_exog_list=hist_exog_list,
+            stat_exog_list=stat_exog_list,
+        )
         self.is_multivariate = is_multivariate
         self.past_slice = (
             slice(self.n_targets, self.n_targets + n_past_covs)
@@ -675,8 +706,6 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             future_target,
         ) = train_sample
 
-        # TODO: sanity checks on covariate support of the nf_model_class
-
         n_targets = future_target.shape[1]
         # validate number of target components
         if n_targets != 1 and not self.supports_multivariate:
@@ -688,40 +717,21 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
                 logger,
             )
 
-        # create pseudo *_exog_list inputs expected by NeuralForecast
-        def build_exog_list(prefix: str, n_components: int) -> list[str]:
-            return [f"{prefix}_{i}" for i in range(n_components)]
-
-        futr_exog_list, hist_exog_list, stat_exog_list = None, None, None
         n_past_covs, n_future_covs, n_stat_covs = 0, 0, 0
         if future_covariates is not None:
             n_future_covs = future_covariates.shape[1]
-            futr_exog_list = build_exog_list("futr_exog", n_future_covs)
         if past_covariates is not None:
             n_past_covs = past_covariates.shape[1]
-            hist_exog_list = build_exog_list("hist_exog", n_past_covs)
         if static_covariates is not None:
             n_stat_covs = static_covariates.shape[1]
-            stat_exog_list = build_exog_list("stat_exog", n_stat_covs)
-
-        # set loss to pseudo loss with correct number of likelihood parameters
-        loss = _PseudoLoss(self.likelihood)
-
-        # initialize nf_model instance
-        nf_model = self.nf_model_class(
-            **self.nf_model_params,
-            loss=loss,
-            n_series=n_targets,
-            futr_exog_list=futr_exog_list,
-            hist_exog_list=hist_exog_list,
-            stat_exog_list=stat_exog_list,
-        )
 
         pl_module_params = self.pl_module_params or {}
         return _NeuralForecastModule(
-            nf_model=nf_model,  # pyright: ignore[reportArgumentType]
+            nf_model_class=self.nf_model_class,  # pyright: ignore[reportArgumentType]
+            nf_model_params=self.nf_model_params,
             n_past_covs=n_past_covs,
             n_future_covs=n_future_covs,
+            n_stat_covs=n_stat_covs,
             is_multivariate=self.supports_multivariate,
             **pl_module_params,
         )
