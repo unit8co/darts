@@ -33,6 +33,7 @@ We thus define the expected keys and their types below:
     to be shared across the batch dimension, but may be different across target components.
     For univariate models, static exogenous variables can be different across time series.
 """
+import inspect
 from typing import TypedDict
 
 import torch
@@ -60,6 +61,8 @@ class _WindowBatch(TypedDict):
 
 
 IGNORED_NF_MODEL_PARAM_NAMES = {
+    "input_size",
+    "h",
     "loss",
     "valid_loss",
     "learning_rate",
@@ -91,6 +94,7 @@ IGNORED_NF_MODEL_PARAM_NAMES = {
     "lr_scheduler",
     "lr_scheduler_kwargs",
     "dataloader_kwargs",
+    "trainer_kwargs",
 }
 
 
@@ -255,8 +259,11 @@ class _NeuralForecastModule(PLForecastingModule):
 class NeuralForecastModel(MixedCovariatesTorchModel):
     def __init__(
         self,
-        model: BaseModel,
+        model: str | type[BaseModel],
+        input_chunk_length: int,
+        output_chunk_length: int,
         output_chunk_shift: int = 0,
+        model_kwargs: dict | None = None,
         use_static_covariates: bool = False,
         **kwargs,
     ):
@@ -275,13 +282,14 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
 
         - **Univariate forecasting**: Supported for any base model, univariate or multivariate.
 
-          - Simply set ``model`` to a base model instance when initializing ``NeuralForecastModel``,
-            e.g., ``model=KAN(input_size=..., h=...)``.
+          - Simply set ``model`` to a base model name or class, e.g., ``model="KAN"`` or ``model=KAN``.
 
-          - For multivariate base models, you should set ``n_series`` in the base model to an arbitrary
-            positive integer as it is required by `NeuralForecast`,
-            e.g., ``model=TSMixerx(input_size=..., h=..., n_series=1)``.
-            However, it will be overridden internally by Darts when fitting to match the number of target components.
+          - To configure the model's architectural parameters, pass them in ``model_kwargs`` as a dictionary,
+            e.g., ``model_kwargs={"hidden_size": 64}`` for ``KAN``.
+
+          - Other parameters such as ``input_size`` and ``h`` will be automatically configured to match
+            ``input_chunk_length`` and ``output_chunk_length``, respectively.
+            You do not need to specify them in ``model_kwargs``.
 
         - **Multivariate forecasting**: Supported only if the base model is multivariate.
 
@@ -317,13 +325,27 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         Parameters
         ----------
         model
-            An instance of a `NeuralForecast` base model, e.g., ``KAN(input_size=..., h=...)``. Input and output chunk
-            lengths are set to match ``input_size`` and ``h`` of the base model, respectively.
+            Name or class of the NeuralForecast base model to be used from ``neuralforecast.models``,
+            e.g., ``""KAN""`` or ``KAN``.
+        input_chunk_length
+            Number of time steps in the past to take as a model input (per chunk). Applies to the target
+            series, and past and/or future covariates (if the model supports it).
+        output_chunk_length
+            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
+            from future covariates to use as a model input (if the model supports future covariates). It is not the same
+            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
+            using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents
+            auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
+            the model from using future values of past and / or future covariates for prediction (depending on the
+            model's covariate support).
         output_chunk_shift
-            The number of steps to shift the start of the output chunk into the future (relative to the input
-            chunk end). This will create a gap between the input and output. Default: ``0``.
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate autoregressive predictions (`n > output_chunk_length`). Default: ``0``.
         use_static_covariates
-            Whether to consider static covariates if supported by the base model. Default: `False`.
+            Whether to consider static covariates if supported by the base model. Default: ``False``.
             See **Static covariates** section above for details and caveats.
         **kwargs
             Optional arguments to initialize the ``pytorch_lightning.Module``, ``pytorch_lightning.Trainer``, and
@@ -498,12 +520,12 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
               - Recurrent base models like ``GRU`` and ``LSTM``. Many are, however, natively implemented
                 as :class:`RNNModel <darts.models.forecasting.rnn_model.RNNModel>` in Darts.
         .. note::
+            Input/output parameters of ``model`` such as ``input_size`` and ``h`` will be automatically set to
+            match the ``input_chunk_length`` and ``output_chunk_length``. For multivariate base models,
+            ``n_series`` will be set to the number of target components when fitting the model.
             Training-specific parameters of ``model`` such as ``loss``, ``learning_rate``, and ``hist_exog_list``
-            will be ignored as Darts manages them via ``TorchForecastingModel`` APIs. Only architectural
-            parameters, ``input_size``, and ``h`` in ``model`` are relevant and used.
-        .. note::
-            Under the hood, a new base model instance will be created with the relevant parameters from ``model``.
-            That means that ``model`` itself will not be trained or updated.
+            will be ignored as Darts manages them via ``TorchForecastingModel`` APIs.
+            You do not need to specify any of these parameters in ``model_kwargs``.
         .. warning::
             For compatibility, when static covariates are enabled for a multivariate base model, Darts will use the
             static covariates of the first sample in each batch as the static covariates for the entire batch.
@@ -513,23 +535,29 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
-        if not isinstance(model, BaseModel):
-            raise ValueError(
-                "`model` must be a NeuralForecast base model imported from `neuralforecast.models`."
-            )
-
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
-        # assign input/output chunk lengths
-        self.pl_module_params["input_chunk_length"] = model.input_size
-        self.pl_module_params["output_chunk_length"] = model.h
 
-        self.nf_model_class = model.__class__
-        self.nf_model_params = dict(model.hparams)
-        self._validate_nf_model_params(
-            self.pl_module_params.get("use_reversible_instance_norm", False)
+        # import and validate the NeuralForecast base model class
+        if isinstance(model, str):
+            self.nf_model_class = self._import_nf_model_class(model)
+            self._validate_nf_model_class(name=f"neuralforecast.models.{model}")
+        else:
+            self.nf_model_class = model
+            self._validate_nf_model_class()
+
+        # extract, validate, and update the NeuralForecast base model parameters
+        self.nf_model_params = model_kwargs or {}
+        self._validate_nf_model_params()
+        self._update_nf_model_params(
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            use_reversible_instance_norm=self.pl_module_params.get(
+                "use_reversible_instance_norm", False
+            ),
         )
 
+        # recurrent models are not supported due to incompatibable tensor shapes
         if self.nf_model_class.RECURRENT:
             raise_log(
                 NotImplementedError(
@@ -537,6 +565,8 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
                 ),
                 logger,
             )
+
+        # warn if static covariates are enabled for multivariate base models
         if self.supports_multivariate and use_static_covariates:
             logger.warning(
                 "Multivariate NeuralForecast models require static covariates to be the same "
@@ -549,11 +579,57 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         # consider static covariates if supported by `nf_model_class`
         self._considers_static_covariates = use_static_covariates
 
-    def _validate_nf_model_params(self, use_reversible_instance_norm: bool) -> None:
+    def _import_nf_model_class(self, model: str) -> type[BaseModel]:
+        import neuralforecast.models
+
+        try:
+            model_class = getattr(neuralforecast.models, model)
+        except AttributeError:
+            raise_log(
+                ValueError(
+                    f"Could not find a NeuralForecast model class named `{model}` in `neuralforecast.models`."
+                ),
+                logger,
+            )
+        return model_class
+
+    def _validate_nf_model_class(self, name: str = "model") -> None:
+        if not inspect.isclass(self.nf_model_class):
+            raise_log(
+                ValueError(
+                    f"`{name}` must be a class, but got {type(self.nf_model_class)}."
+                ),
+                logger,
+            )
+        if not issubclass(self.nf_model_class, BaseModel):
+            raise_log(
+                ValueError(
+                    f"`{name}` must be a NeuralForecast base model class,  but got {type(self.nf_model_class)}."
+                ),
+                logger,
+            )
+
+    def _validate_nf_model_params(
+        self,
+    ) -> None:
+        # check all provided parameters are valid parameters for the nf_model_class
+        signature = inspect.signature(self.nf_model_class.__init__)
+        valid_param_names = set(signature.parameters.keys())
+        valid_param_names.discard("self")
+        invalid_params = set(self.nf_model_params.keys()) - valid_param_names
+        if len(invalid_params) > 0:
+            raise_log(
+                ValueError(
+                    f"The following parameters are not valid for the provided NeuralForecast model "
+                    f"{self.nf_model_class.__name__} and should be removed from `model_kwargs`: {invalid_params}"
+                ),
+                logger,
+            )
+
+        # remove ignored params
         ignored_params_in_use = IGNORED_NF_MODEL_PARAM_NAMES.intersection(
             self.nf_model_params.keys()
         )
-        # remove ignored params
         if len(ignored_params_in_use) > 0:
             logger.info(
                 f"The following NeuralForecast model parameters will be ignored "
@@ -561,6 +637,19 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             )
             for param in ignored_params_in_use:
                 self.nf_model_params.pop(param)
+
+    def _update_nf_model_params(
+        self,
+        input_chunk_length: int,
+        output_chunk_length: int,
+        use_reversible_instance_norm: bool,
+    ) -> None:
+        # set `input_size` and `h` to match the `input_chunk_length` and `output_chunk_length` of the PL module
+        self.nf_model_params["input_size"] = input_chunk_length
+        self.nf_model_params["h"] = output_chunk_length
+
+        # warn if `use_norm` is enabled for the NeuralForecast model
+        # while `use_reversible_instance_norm` is enabled for the PL module
         if self.nf_model_params.get("use_norm", False) and use_reversible_instance_norm:
             logger.warning(
                 "NeuralForecast model's `use_norm=True` is incompatible with "
