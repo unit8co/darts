@@ -85,7 +85,7 @@ _NF_MODEL_IGNORED_PARAMS = {
     "futr_exog_list",  # prepared by Darts
     "hist_exog_list",  # prepared by Darts
     "stat_exog_list",  # prepared by Darts
-    "exclude_insample_y",  # TODO: check if this should be ignored
+    "exclude_insample_y",
     "drop_last_loader",
     "random_seed",
     "alias",
