@@ -357,7 +357,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         ----------
         model
             Name or class of the NeuralForecast base model to be used from ``neuralforecast.models``,
-            e.g., ``""KAN""`` or ``KAN``.
+            e.g., ``"KAN"`` or ``KAN``.
         input_chunk_length
             Number of time steps in the past to take as a model input (per chunk). Applies to the target
             series, and past and/or future covariates (if the model supports it).
@@ -375,6 +375,9 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
             cannot generate autoregressive predictions (`n > output_chunk_length`). Default: ``0``.
+        model_kwargs
+            A dictionary of architectural parameters to initialize the `NeuralForecast` base model. The expected
+            parameters depend on the base model used. See NeuralForecast documentation for details. Default: ``None``.
         use_static_covariates
             Whether to consider static covariates if supported by the base model. Default: ``False``.
             See **Static covariates** section above for details and caveats.
@@ -551,12 +554,12 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
               - Recurrent base models like ``GRU`` and ``LSTM``. Many are, however, natively implemented
                 as :class:`RNNModel <darts.models.forecasting.rnn_model.RNNModel>` in Darts.
         .. note::
-            Input/output parameters of ``model`` such as ``input_size`` and ``h`` will be automatically set to
-            match the ``input_chunk_length`` and ``output_chunk_length``. For multivariate base models,
-            ``n_series`` will be set to the number of target components when fitting the model.
-            Training-specific parameters of ``model`` such as ``loss``, ``learning_rate``, and ``hist_exog_list``
-            will be ignored as Darts manages them via ``TorchForecastingModel`` APIs.
-            You do not need to specify any of these parameters in ``model_kwargs``.
+            The following parameters will be ignored if provided in ``model_kwargs``:
+              - Input and output parameters: ``input_size``, ``h``, and ``n_series``. They will be automatically set
+                to match the ``input_chunk_length``, ``output_chunk_length``, and number of target series, respectively.
+              - Training parameters: ``loss``, ``learning_rate``, ``max_steps``, etc. Training logic is
+                instead managed by Darts' ``TorchForecastingModule`` and PyTorch Lightning Trainer.
+              - Covariate list parameters: ``futr_exog_list``, ``hist_exog_list``, and ``stat_exog_list``.
         .. warning::
             For compatibility, when static covariates are enabled for a multivariate base model, Darts will use the
             static covariates of the first sample in each batch as the static covariates for the entire batch.
