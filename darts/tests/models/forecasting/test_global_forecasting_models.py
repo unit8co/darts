@@ -728,9 +728,9 @@ class TestGlobalForecastingModels:
         assert isinstance(
             model,
             (
-                PastCovariatesTorchModel,
-                DualCovariatesTorchModel,
-                MixedCovariatesTorchModel,
+                PastCovariatesTorchModel
+                | DualCovariatesTorchModel
+                | MixedCovariatesTorchModel
             ),
         ), "unit test not yet defined for the given {X}CovariatesTorchModel."
 

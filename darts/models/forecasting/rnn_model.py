@@ -6,7 +6,6 @@ Recurrent Neural Networks
 import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Optional, Union
 
 import torch
 import torch.nn as nn
@@ -85,7 +84,7 @@ class CustomRNNModule(PLForecastingModule, ABC):
     @io_processor
     @abstractmethod
     def forward(
-        self, x_in: PLModuleInput, h: Optional[torch.Tensor] = None
+        self, x_in: PLModuleInput, h: torch.Tensor | None = None
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """RNN Module forward.
 
@@ -133,7 +132,7 @@ class CustomRNNModule(PLForecastingModule, ABC):
         )
 
     def _produce_predict_output(
-        self, x: PLModuleInput, last_hidden_state: Optional[torch.Tensor] = None
+        self, x: PLModuleInput, last_hidden_state: torch.Tensor | None = None
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """overwrite parent classes `_produce_predict_output` method"""
         output, hidden = self(x, last_hidden_state)
@@ -146,7 +145,7 @@ class CustomRNNModule(PLForecastingModule, ABC):
             return output.squeeze(dim=-1), hidden
 
     def _get_batch_prediction(
-        self, n: int, input_batch: tuple[Optional[torch.Tensor], ...], roll_size: int
+        self, n: int, input_batch: tuple[torch.Tensor | None, ...], roll_size: int
     ) -> torch.Tensor:
         """
         This model is recurrent, so we have to write a specific way to
@@ -265,7 +264,7 @@ class _RNNModule(CustomRNNModule):
 
     @io_processor
     def forward(
-        self, x_in: PLModuleInput, h: Optional[torch.Tensor] = None
+        self, x_in: PLModuleInput, h: torch.Tensor | None = None
     ) -> tuple[torch.Tensor, torch.Tensor]:
         x, _, _ = x_in
         # data is of size (batch_size, input_length, input_size)
@@ -288,7 +287,7 @@ class RNNModel(DualCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,
-        model: Union[str, type[CustomRNNModule]] = "RNN",
+        model: str | type[CustomRNNModule] = "RNN",
         hidden_dim: int = 25,
         n_rnn_layers: int = 1,
         dropout: float = 0.0,
@@ -574,10 +573,10 @@ class RNNModel(DualCovariatesTorchModel):
     def _build_train_dataset(
         self,
         series: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        sample_weight: Optional[Sequence[TimeSeries]],
-        max_samples_per_ts: Optional[int],
+        past_covariates: Sequence[TimeSeries] | None,
+        future_covariates: Sequence[TimeSeries] | None,
+        sample_weight: Sequence[TimeSeries] | None,
+        max_samples_per_ts: int | None,
         stride: int = 1,
     ) -> ShiftedTorchTrainingDataset:
         return ShiftedTorchTrainingDataset(

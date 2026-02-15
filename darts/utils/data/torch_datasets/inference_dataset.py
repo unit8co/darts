@@ -9,7 +9,6 @@ Inference Datasets
 import bisect
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Optional, Union
 
 import numpy as np
 
@@ -61,12 +60,12 @@ class TorchInferenceDataset(TorchDataset, ABC):
 class SequentialTorchInferenceDataset(TorchInferenceDataset):
     def __init__(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeries | Sequence[TimeSeries],
+        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
         n: int = 1,
         stride: int = 0,
-        bounds: Optional[np.ndarray] = None,
+        bounds: np.ndarray | None = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,

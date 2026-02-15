@@ -27,7 +27,7 @@ each of the (lagged) series.
 
 from collections.abc import Sequence
 from enum import Enum
-from typing import NewType, Optional, Union
+from typing import NewType
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -67,15 +67,11 @@ class ShapExplainer(_ForecastingModelExplainer):
     def __init__(
         self,
         model: SKLearnModel,
-        background_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        background_past_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        background_future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        background_num_samples: Optional[int] = None,
-        shap_method: Optional[str] = None,
+        background_series: TimeSeries | Sequence[TimeSeries] | None = None,
+        background_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        background_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        background_num_samples: int | None = None,
+        shap_method: str | None = None,
         **kwargs,
     ):
         """ShapExplainer
@@ -199,15 +195,11 @@ class ShapExplainer(_ForecastingModelExplainer):
 
     def explain(
         self,
-        foreground_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        foreground_past_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        foreground_future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        horizons: Optional[Sequence[int]] = None,
-        target_components: Optional[Sequence[str]] = None,
+        foreground_series: TimeSeries | Sequence[TimeSeries] | None = None,
+        foreground_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        foreground_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        horizons: Sequence[int] | None = None,
+        target_components: Sequence[str] | None = None,
     ) -> ShapExplainabilityResult:
         """
         Explains a foreground time series and returns a :class:`ShapExplainabilityResult
@@ -373,10 +365,10 @@ class ShapExplainer(_ForecastingModelExplainer):
 
     def summary_plot(
         self,
-        horizons: Optional[Union[int, Sequence[int]]] = None,
-        target_components: Optional[Union[str, Sequence[str]]] = None,
-        num_samples: Optional[int] = None,
-        plot_type: Optional[str] = "dot",
+        horizons: int | Sequence[int] | None = None,
+        target_components: str | Sequence[str] | None = None,
+        num_samples: int | None = None,
+        plot_type: str | None = "dot",
         **kwargs,
     ) -> dict[int, dict[str, shap.Explanation]]:
         """
@@ -438,11 +430,11 @@ class ShapExplainer(_ForecastingModelExplainer):
 
     def force_plot_from_ts(
         self,
-        foreground_series: Optional[TimeSeries] = None,
-        foreground_past_covariates: Optional[TimeSeries] = None,
-        foreground_future_covariates: Optional[TimeSeries] = None,
-        horizon: Optional[int] = 1,
-        target_component: Optional[str] = None,
+        foreground_series: TimeSeries | None = None,
+        foreground_past_covariates: TimeSeries | None = None,
+        foreground_future_covariates: TimeSeries | None = None,
+        horizon: int | None = 1,
+        target_component: str | None = None,
         **kwargs,
     ):
         """
@@ -577,7 +569,7 @@ class _RegressionShapExplainers:
         background_past_covariates: Sequence[TimeSeries],
         background_future_covariates: Sequence[TimeSeries],
         shap_method: _ShapMethod,
-        background_num_samples: Optional[int] = None,
+        background_num_samples: int | None = None,
         **kwargs,
     ):
         self.model = model
@@ -627,8 +619,8 @@ class _RegressionShapExplainers:
     def shap_explanations(
         self,
         foreground_X: pd.DataFrame,
-        horizons: Optional[Sequence[int]] = None,
-        target_components: Optional[Sequence[str]] = None,
+        horizons: Sequence[int] | None = None,
+        target_components: Sequence[str] | None = None,
     ) -> dict[int, dict[str, shap.Explanation]]:
         """
         Return a dictionary of dictionaries of shap.Explanation instances:
@@ -694,7 +686,7 @@ class _RegressionShapExplainers:
         self,
         model_sklearn,
         background_X: pd.DataFrame,
-        shap_method: Optional[ShapMethod] = None,
+        shap_method: ShapMethod | None = None,
         **kwargs,
     ):
         model_name = type(model_sklearn).__name__
@@ -742,10 +734,10 @@ class _RegressionShapExplainers:
 
     def _create_regression_model_shap_X(
         self,
-        target_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
-        n_samples: Optional[int] = None,
+        target_series: TimeSeries | Sequence[TimeSeries] | None,
+        past_covariates: TimeSeries | Sequence[TimeSeries] | None,
+        future_covariates: TimeSeries | Sequence[TimeSeries] | None,
+        n_samples: int | None = None,
         train: bool = False,
     ) -> pd.DataFrame:
         """

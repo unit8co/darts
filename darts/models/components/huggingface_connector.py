@@ -7,7 +7,6 @@ import inspect
 import json
 import os
 from pathlib import Path
-from typing import Optional, Union
 
 from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
@@ -24,8 +23,8 @@ class HuggingFaceConnector:
     def __init__(
         self,
         model_name: str,
-        model_revision: Optional[str] = None,
-        local_dir: Optional[Union[str, os.PathLike]] = None,
+        model_revision: str | None = None,
+        local_dir: str | os.PathLike | None = None,
         config_file: str = "config.json",
         model_file: str = "model.safetensors",
     ):
@@ -111,7 +110,7 @@ class HuggingFaceConnector:
         self,
         module_class: type[PLForecastingModule],
         pl_module_params: dict,
-        additional_params: Optional[dict] = None,
+        additional_params: dict | None = None,
     ) -> PLForecastingModule:
         """Load the model by creating an instance of the given module class and loading
         the weights. Some configuration files might contain external parameters that

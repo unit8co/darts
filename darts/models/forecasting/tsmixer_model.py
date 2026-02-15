@@ -22,7 +22,7 @@ Time-Series Mixer (TSMixer)
 # portions of the Software.
 # '
 
-from typing import Callable, Optional, Union
+from collections.abc import Callable
 
 import torch
 from torch import nn
@@ -299,9 +299,7 @@ class _ConditionalMixerLayer(nn.Module):
             norm_type=norm_type,
         )
 
-    def forward(
-        self, x: torch.Tensor, x_static: Optional[torch.Tensor]
-    ) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, x_static: torch.Tensor | None) -> torch.Tensor:
         if self.feature_mixing_static is not None:
             x_static_mixed = self.feature_mixing_static(x_static)
             x = torch.cat([x, x_static_mixed], dim=-1)
@@ -325,7 +323,7 @@ class _TSMixerModule(PLForecastingModule):
         ff_size: int,
         activation: str,
         dropout: float,
-        norm_type: Union[str, nn.Module],
+        norm_type: str | nn.Module,
         normalize_before: bool,
         **kwargs,
     ) -> None:
@@ -573,7 +571,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
         num_blocks: int = 2,
         activation: str = "ReLU",
         dropout: float = 0.1,
-        norm_type: Union[str, nn.Module] = "LayerNorm",
+        norm_type: str | nn.Module = "LayerNorm",
         normalize_before: bool = False,
         use_static_covariates: bool = True,
         project_after_n_blocks: int = 0,

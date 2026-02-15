@@ -3,8 +3,6 @@ AutoETS
 -------
 """
 
-from typing import Optional
-
 from statsforecast.models import AutoETS as SFAutoETS
 
 from darts.models.forecasting.sf_model import StatsForecastModel
@@ -14,9 +12,9 @@ class AutoETS(StatsForecastModel):
     def __init__(
         self,
         *args,
-        add_encoders: Optional[dict] = None,
-        quantiles: Optional[list[float]] = None,
-        random_state: Optional[int] = None,
+        add_encoders: dict | None = None,
+        quantiles: list[float] | None = None,
+        random_state: int | None = None,
         **kwargs,
     ):
         """Auto-ETS based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`__.

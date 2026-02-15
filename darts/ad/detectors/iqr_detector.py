@@ -9,7 +9,6 @@ computed as distances from the IQR of historical data when the detector is fitte
 """
 
 from collections.abc import Sequence
-from typing import Union
 
 import numpy as np
 
@@ -22,7 +21,7 @@ logger = get_logger(__name__)
 
 
 class IQRDetector(QuantileDetector):
-    def __init__(self, scale: Union[Sequence[float], float] = 1.5) -> None:
+    def __init__(self, scale: Sequence[float] | float = 1.5) -> None:
         """IQR Detector
 
         Flags values that lie outside of the interquartile range (IQR)

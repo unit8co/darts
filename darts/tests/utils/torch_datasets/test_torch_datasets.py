@@ -49,11 +49,12 @@ class TestDataset:
             assert type(left) is type(right)
             assert (
                 isinstance(
-                    left, (TimeSeries, pd.Series, pd.DataFrame, np.ndarray, list, dict)
+                    left,
+                    TimeSeries | pd.Series | pd.DataFrame | np.ndarray | list | dict,
                 )
                 or left is None
             )
-            if isinstance(left, (pd.Series, pd.DataFrame)):
+            if isinstance(left, pd.Series | pd.DataFrame):
                 assert left.equals(right)
             elif isinstance(left, np.ndarray):
                 np.testing.assert_array_equal(left, right)

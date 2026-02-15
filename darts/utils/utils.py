@@ -5,11 +5,11 @@ Additional util functions
 
 import contextlib
 import math
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from enum import Enum
 from functools import wraps
 from inspect import Parameter, getcallargs, signature
-from typing import Any, Callable, Optional, TypeVar, Union
+from typing import Any, TypeVar
 
 import narwhals as nw
 import numpy as np
@@ -283,10 +283,10 @@ def _check_quantiles(quantiles):
 
 
 def slice_index(
-    index: Union[pd.RangeIndex, pd.DatetimeIndex],
-    start: Union[int, pd.Timestamp],
-    end: Union[int, pd.Timestamp],
-) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
+    index: pd.RangeIndex | pd.DatetimeIndex,
+    start: int | pd.Timestamp,
+    end: int | pd.Timestamp,
+) -> pd.RangeIndex | pd.DatetimeIndex:
     """
     Returns a new Index with the same type as the input `index`, containing the values between `start`
     and `end` included. If start and end are not in the index, the closest values are used instead.
@@ -305,7 +305,7 @@ def slice_index(
 
     Returns
     -------
-    Union[pd.RangeIndex, pd.DatetimeIndex]
+    pd.RangeIndex | pd.DatetimeIndex
         A new index with the same type as the input `index`, but with only the values between `start` and `end`
         included.
     """
@@ -342,9 +342,9 @@ def slice_index(
 
 
 def drop_before_index(
-    index: Union[pd.RangeIndex, pd.DatetimeIndex],
-    split_point: Union[int, pd.Timestamp],
-) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
+    index: pd.RangeIndex | pd.DatetimeIndex,
+    split_point: int | pd.Timestamp,
+) -> pd.RangeIndex | pd.DatetimeIndex:
     """
     Drops everything before the provided time `split_point` (excluded) from the index.
 
@@ -357,16 +357,16 @@ def drop_before_index(
 
     Returns
     -------
-    Union[pd.RangeIndex, pd.DatetimeIndex]
+    pd.RangeIndex | pd.DatetimeIndex
         A new index with values before `split_point` dropped.
     """
     return slice_index(index, split_point, index[-1])
 
 
 def drop_after_index(
-    index: Union[pd.RangeIndex, pd.DatetimeIndex],
-    split_point: Union[int, pd.Timestamp],
-) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
+    index: pd.RangeIndex | pd.DatetimeIndex,
+    split_point: int | pd.Timestamp,
+) -> pd.RangeIndex | pd.DatetimeIndex:
     """
     Drops everything after the provided time `split_point` (excluded) from the index.
 
@@ -379,7 +379,7 @@ def drop_after_index(
 
     Returns
     -------
-    Union[pd.RangeIndex, pd.DatetimeIndex]
+    pd.RangeIndex | pd.DatetimeIndex
         A new index with values after `split_point` dropped.
     """
 
@@ -387,9 +387,9 @@ def drop_after_index(
 
 
 def n_steps_between(
-    end: Union[pd.Timestamp, int],
-    start: Union[pd.Timestamp, int],
-    freq: Union[pd.DateOffset, int, str],
+    end: pd.Timestamp | int,
+    start: pd.Timestamp | int,
+    freq: pd.DateOffset | int | str,
 ) -> int:
     """Get the number of time steps with a given frequency `freq` between `end` and `start`.
     Works for both integers and time stamps.
@@ -485,9 +485,9 @@ def n_steps_between(
 
 
 def infer_freq_intersection(
-    freq: Union[int, str, pd.tseries.offsets.DateOffset],
-    other: Union[int, str, pd.tseries.offsets.DateOffset],
-) -> Union[int, pd.tseries.offsets.DateOffset]:
+    freq: int | str | pd.tseries.offsets.DateOffset,
+    other: int | str | pd.tseries.offsets.DateOffset,
+) -> int | pd.tseries.offsets.DateOffset:
     """Infers the frequency at which two frequencies `freq` and `other` intersect.
 
     Parameters
@@ -530,12 +530,12 @@ def infer_freq_intersection(
 
 
 def generate_index(
-    start: Optional[Union[pd.Timestamp, str, int]] = None,
-    end: Optional[Union[pd.Timestamp, str, int]] = None,
-    length: Optional[int] = None,
-    freq: Union[str, int, pd.DateOffset] = None,
+    start: pd.Timestamp | str | int | None = None,
+    end: pd.Timestamp | str | int | None = None,
+    length: int | None = None,
+    freq: str | int | pd.DateOffset = None,
     name: str = None,
-) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
+) -> pd.DatetimeIndex | pd.RangeIndex:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
     or a pandas RangeIndex. The index starts at
 
@@ -763,7 +763,7 @@ class ModelType(Enum):
 def dataframe_col_to_time_index(
     df: DataFrame,
     time_col: str,
-) -> Union[pd.Index, pd.DatetimeIndex]:
+) -> pd.Index | pd.DatetimeIndex:
     """Convert a dataframe column to a pandas Index or DatetimeIndex.
 
     Parameters

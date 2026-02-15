@@ -10,7 +10,7 @@ It can be added to a ``TimeSeries`` using e.g., the :meth:`TimeSeries.with_hiera
 """
 
 from collections.abc import Mapping
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -229,7 +229,7 @@ class MinTReconciliator(FittableDataTransformer):
         )
 
     @staticmethod
-    def get_matrices(series: Optional[TimeSeries], method: str):
+    def get_matrices(series: TimeSeries | None, method: str):
         """Returns the G matrix given a specified reconciliation method."""
         S = _get_summation_matrix(series)
         if method == "ols":
