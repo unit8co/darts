@@ -60,7 +60,7 @@ class _WindowBatch(TypedDict):
     stat_exog: torch.Tensor | None
 
 
-IGNORED_NF_MODEL_PARAM_NAMES = {
+_NF_MODEL_IGNORED_PARAMS = {
     "input_size",
     "h",
     "loss",
@@ -96,6 +96,15 @@ IGNORED_NF_MODEL_PARAM_NAMES = {
     "dataloader_kwargs",
     "trainer_kwargs",
 }
+_NF_MODEL_RINORM_PARAMS = {
+    "use_norm",
+    "revin",
+}
+
+
+def _build_exog_list(prefix: str, n_components: int) -> list[str]:
+    """Utility function to create pseudo *_exog_list inputs expected by NeuralForecast"""
+    return [f"{prefix}_{i}" for i in range(n_components)]
 
 
 class _PseudoLoss(BasePointLoss):
@@ -117,11 +126,6 @@ class _NFModel(BaseModel):
     """This serves as a protocol for expected NeuralForecast BaseModel API."""
 
     def forward(self, window_batch: _WindowBatch) -> torch.Tensor: ...
-
-
-def _build_exog_list(prefix: str, n_components: int) -> list[str]:
-    """Utility function to create pseudo *_exog_list inputs expected by NeuralForecast"""
-    return [f"{prefix}_{i}" for i in range(n_components)]
 
 
 class _NeuralForecastModule(PLForecastingModule):
@@ -582,13 +586,14 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
 
         # extract, validate, and update the NeuralForecast base model parameters
         self.nf_model_params = model_kwargs or {}
-        self._validate_nf_model_params()
-        self._update_nf_model_params(
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
+        self._validate_nf_model_params(
             use_reversible_instance_norm=self.pl_module_params.get(
                 "use_reversible_instance_norm", False
             ),
+        )
+        self._update_nf_model_params(
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
         )
 
         # recurrent models are not supported due to incompatibable tensor shapes
@@ -645,6 +650,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
 
     def _validate_nf_model_params(
         self,
+        use_reversible_instance_norm: bool,
     ) -> None:
         # check all provided parameters are valid parameters for the nf_model_class
         signature = inspect.signature(self.nf_model_class.__init__)
@@ -661,7 +667,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             )
 
         # remove ignored params
-        ignored_params_in_use = IGNORED_NF_MODEL_PARAM_NAMES.intersection(
+        ignored_params_in_use = _NF_MODEL_IGNORED_PARAMS.intersection(
             self.nf_model_params.keys()
         )
         if len(ignored_params_in_use) > 0:
@@ -669,29 +675,48 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
                 f"The following NeuralForecast model parameters will be ignored "
                 f"as they are either managed by Darts or not relevant: {ignored_params_in_use}"
             )
-            for param in ignored_params_in_use:
-                self.nf_model_params.pop(param)
+            for rinorm_param in ignored_params_in_use:
+                self.nf_model_params.pop(rinorm_param)
+
+        # warn if RINorm is enabled for NF model while `use_reversible_instance_norm` is enabled for the PL module
+        if use_reversible_instance_norm:
+            self._check_rinorm_compatibility(signature)
+
+    def _check_rinorm_compatibility(
+        self,
+        signature: inspect.Signature,
+    ) -> None:
+        for rinorm_name in _NF_MODEL_RINORM_PARAMS:
+            rinorm_param = signature.parameters.get(rinorm_name)
+            if rinorm_param is None:
+                continue
+            if self.nf_model_params.get(rinorm_name, rinorm_param.default):
+                logger.warning(
+                    f"NeuralForecast model's `{rinorm_name}=True` may be incompatible with "
+                    f"`PLForecastingModule`'s `use_reversible_instance_norm=True` since they "
+                    f"both apply reversible instance normalization to the target series. "
+                    f"If you experience issues, please consider setting one of them to `False`."
+                )
+            return
+
+        # Models like `RMoK` has RINorm always enabled and
+        # can only be inferred from the presence of `revin_affine` parameter
+        rinorm_param = signature.parameters.get("revin_affine")
+        if rinorm_param is not None:
+            logger.warning(
+                "NeuralForecast model has reversible instance normalization enabled and "
+                "may be incompatible with `PLForecastingModule`'s `use_reversible_instance_norm=True`. "
+                "If you experience issues, please consider setting `use_reversible_instance_norm=False`."
+            )
 
     def _update_nf_model_params(
         self,
         input_chunk_length: int,
         output_chunk_length: int,
-        use_reversible_instance_norm: bool,
     ) -> None:
         # set `input_size` and `h` to match the `input_chunk_length` and `output_chunk_length` of the PL module
         self.nf_model_params["input_size"] = input_chunk_length
         self.nf_model_params["h"] = output_chunk_length
-
-        # warn if `use_norm` is enabled for the NeuralForecast model
-        # while `use_reversible_instance_norm` is enabled for the PL module
-        if self.nf_model_params.get("use_norm", False) and use_reversible_instance_norm:
-            logger.warning(
-                "NeuralForecast model's `use_norm=True` is incompatible with "
-                "PLForecastingModule's `use_reversible_instance_norm=True` since they"
-                "both apply normalization to the target series. Disabling `use_norm` "
-                "to avoid potential issues."
-            )
-            self.nf_model_params["use_norm"] = False
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         # unpack train sample
