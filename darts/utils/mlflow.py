@@ -10,7 +10,6 @@ to MLflow.
 import importlib
 import json
 import os
-import sys
 import tempfile
 from functools import wraps
 from typing import Any, Optional, Union
@@ -18,7 +17,28 @@ from typing import Any, Optional, Union
 import mlflow
 import yaml
 from mlflow.models import Model
+from mlflow.models.model import MLMODEL_FILE_NAME
+from mlflow.models.utils import _save_example
 from mlflow.tracking.artifact_utils import _download_artifact_from_uri
+from mlflow.utils.environment import (
+    _CONDA_ENV_FILE_NAME,
+    _CONSTRAINTS_FILE_NAME,
+    _PYTHON_ENV_FILE_NAME,
+    _REQUIREMENTS_FILE_NAME,
+    _mlflow_conda_env,
+    _process_conda_env,
+    _process_pip_requirements,
+    _PythonEnv,
+    _validate_env_arguments,
+)
+from mlflow.utils.file_utils import TempDir, write_to
+from mlflow.utils.model_utils import (
+    _add_code_from_conf_to_system_path,
+    _get_flavor_configuration,
+    _validate_and_copy_code_paths,
+    _validate_and_prepare_target_save_path,
+)
+from mlflow.utils.requirements_utils import _get_pinned_requirement
 
 import darts
 from darts.logging import get_logger
@@ -114,6 +134,86 @@ def _import_model_class(module_path: str, class_name: str):
     return getattr(module, class_name)
 
 
+def _create_mlmodel_file(
+    path: str,
+    darts_flavor_conf: dict,
+    signature,
+    input_example,
+    metadata: Optional[dict],
+) -> None:
+    """Create and save MLmodel file with metadata.
+
+    Creates the following files in the model directory:
+    * ``MLmodel`` - MLmodel file with flavor metadata.
+
+    Parameters
+    ----------
+    path: str
+        Root directory of the MLflow model where the MLmodel file will be saved.
+    darts_flavor_conf: dict
+        Dictionary containing the flavor configuration for the darts model.
+    signature: mlflow.models.ModelSignature
+        An ``mlflow.models.ModelSignature`` instance describing model input/output.
+        Use :func:`infer_signature` to automatically generate from example inputs.
+    input_example: DataFrame
+        An example input for the model (used by MLflow UI). Should be a DataFrame
+        created with :func:`prepare_pyfunc_input`.
+    metadata: Optional[dict]
+        Optional dictionary of custom metadata to store in the ``MLmodel`` file.
+    """
+    mlmodel = Model()
+
+    if signature is not None:
+        mlmodel.signature = signature
+
+    if input_example is not None:
+        _save_example(mlmodel, input_example, path)
+
+    if metadata is not None:
+        mlmodel.metadata = metadata
+
+    mlmodel.add_flavor(FLAVOR_NAME, **darts_flavor_conf)
+    mlmodel.save(os.path.join(path, MLMODEL_FILE_NAME))
+
+
+def _write_environment_files(
+    path: str,
+    conda_env: dict,
+    pip_requirements: list[str],
+    pip_constraints: Optional[list[str]],
+) -> None:
+    """Write Python environment specification files for model reproducibility.
+
+    Creates the following files in the model directory:
+
+    * ``conda.yaml`` - Conda environment specification including Python version and pip dependencies
+    * ``requirements.txt`` - Pip requirements list for non-conda environments
+    * ``python_env.yaml`` - MLflow Python environment specification
+    * ``constraints.txt`` (optional) - Pip version constraints if specified
+
+    Parameters
+    ----------
+    path: str
+        Root directory of the MLflow model where environment files will be written.
+    conda_env: dict
+        Processed conda environment dictionary containing 'name', 'channels',
+        'dependencies' keys.
+    pip_requirements: list[str]
+        List of pip requirement strings (e.g., ['numpy>=1.20.0', 'pandas']).
+    pip_constraints: Optional[list[str]]
+        Optional list of pip constraint strings for pinning transitive dependencies.
+        Only written if provided.
+    """
+    with open(os.path.join(path, _CONDA_ENV_FILE_NAME), "w") as f:
+        yaml.safe_dump(conda_env, stream=f, default_flow_style=False)
+
+    if pip_constraints:
+        write_to(os.path.join(path, _CONSTRAINTS_FILE_NAME), "\n".join(pip_constraints))
+
+    write_to(os.path.join(path, _REQUIREMENTS_FILE_NAME), "\n".join(pip_requirements))
+    _PythonEnv.current().to_yaml(os.path.join(path, _PYTHON_ENV_FILE_NAME))
+
+
 def get_default_pip_requirements(is_torch: bool = False) -> list[str]:
     """Return the default pip requirements for logging a darts model.
 
@@ -128,9 +228,12 @@ def get_default_pip_requirements(is_torch: bool = False) -> list[str]:
     list[str]
         A list of pip requirement strings.
     """
-    reqs = [f"darts=={darts.__version__}"]
+    reqs = [_get_pinned_requirement("darts")]
     if is_torch:
-        reqs.extend(["torch>=2.0.0", "pytorch-lightning>=2.0.0"])
+        reqs.extend([
+            _get_pinned_requirement("torch"),
+            _get_pinned_requirement("pytorch-lightning"),
+        ])
     return reqs
 
 
@@ -147,24 +250,19 @@ def get_default_conda_env(is_torch: bool = False) -> dict:
     dict
         A conda environment specification dictionary.
     """
-    return {
-        "channels": ["defaults", "conda-forge"],
-        "dependencies": [
-            "python",
-            "pip",
-            {
-                "pip": get_default_pip_requirements(is_torch=is_torch),
-            },
-        ],
-        "name": "darts_env",
-    }
+    return _mlflow_conda_env(
+        additional_pip_deps=get_default_pip_requirements(is_torch),
+        additional_conda_channels=["conda-forge"],
+    )
 
 
 def save_model(
     model,
     path: str,
     conda_env: Optional[Union[dict, str]] = None,
+    code_paths: Optional[list[str]] = None,
     pip_requirements: Optional[list[str]] = None,
+    extra_pip_requirements: Optional[list[str]] = None,
     signature=None,
     input_example=None,
     metadata: Optional[dict] = None,
@@ -186,9 +284,16 @@ def save_model(
     conda_env
         A conda environment specification (dict or path to a ``conda.yaml``).
         If ``None``, a default environment is generated.
+    code_paths
+        A list of local filesystem paths to Python file dependencies (or directories
+        containing file dependencies). These files are prepended to the system path
+        when the model is loaded.
     pip_requirements
         A list of pip requirement strings. Overrides ``conda_env`` pip section
         when provided.
+    extra_pip_requirements
+        A list of additional pip requirement strings to add to the model's environment,
+        in addition to the default requirements.
     signature
         An ``mlflow.models.ModelSignature`` instance describing model input/output.
         Use :func:`infer_signature` to automatically generate from example inputs.
@@ -198,11 +303,13 @@ def save_model(
     metadata
         Optional dictionary of custom metadata to store in the ``MLmodel`` file.
     """
-    data_dir = os.path.join(path, _MODEL_DATA_SUBFOLDER)
+    _validate_env_arguments(conda_env, pip_requirements, extra_pip_requirements)
+    _validate_and_prepare_target_save_path(path)
+    code_dir_subpath = _validate_and_copy_code_paths(code_paths, path)
 
+    data_dir = os.path.join(path, _MODEL_DATA_SUBFOLDER)
     is_torch = _is_torch_model(model)
 
-    os.makedirs(path, exist_ok=True)
     os.makedirs(data_dir, exist_ok=True)
 
     if is_torch:
@@ -223,50 +330,20 @@ def save_model(
         "data": _MODEL_DATA_SUBFOLDER,
     }
 
-    if pip_requirements is not None:
-        pip_reqs = pip_requirements
-    else:
-        pip_reqs = get_default_pip_requirements(is_torch=is_torch)
+    if code_dir_subpath is not None:
+        darts_flavor_conf["code"] = code_dir_subpath
 
-    if conda_env is not None:
-        if isinstance(conda_env, str):
-            with open(conda_env) as f:
-                conda_env_dict = yaml.safe_load(f)
-        else:
-            conda_env_dict = conda_env
-    else:
-        conda_env_dict = get_default_conda_env(is_torch=is_torch)
+    default_reqs = None if pip_requirements else get_default_pip_requirements(is_torch)
+    conda_env, pip_requirements, pip_constraints = (
+        _process_pip_requirements(
+            default_reqs, pip_requirements, extra_pip_requirements
+        )
+        if conda_env is None
+        else _process_conda_env(conda_env)
+    )
 
-    conda_path = os.path.join(path, "conda.yaml")
-    with open(conda_path, "w") as f:
-        yaml.dump(conda_env_dict, f, default_flow_style=False)
-
-    reqs_path = os.path.join(path, "requirements.txt")
-    with open(reqs_path, "w") as f:
-        f.write("\n".join(pip_reqs) + "\n")
-
-    python_env_path = os.path.join(path, "python_env.yaml")
-    python_env = {
-        "python": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
-        "build_dependencies": ["pip"],
-        "dependencies": ["requirements.txt"],
-    }
-    with open(python_env_path, "w") as f:
-        yaml.dump(python_env, f, default_flow_style=False)
-
-    mlmodel = Model()
-    mlmodel.add_flavor(FLAVOR_NAME, **darts_flavor_conf)
-
-    if signature is not None:
-        mlmodel.signature = signature
-
-    if input_example is not None:
-        mlmodel.input_example = input_example
-
-    if metadata is not None:
-        mlmodel.metadata = metadata
-
-    mlmodel.save(os.path.join(path, "MLmodel"))
+    _write_environment_files(path, conda_env, pip_requirements, pip_constraints)
+    _create_mlmodel_file(path, darts_flavor_conf, signature, input_example, metadata)
 
 
 def load_model(
@@ -295,32 +372,26 @@ def load_model(
     local_path = _download_artifact_from_uri(
         artifact_uri=model_uri, output_path=dst_path
     )
-    mlmodel_path = os.path.join(local_path, "MLmodel")
-    mlmodel = Model.load(mlmodel_path)
 
-    if FLAVOR_NAME not in mlmodel.flavors:
-        raise ValueError(
-            f"The MLflow model at '{model_uri}' does not have a '{FLAVOR_NAME}' flavor. "
-            f"Available flavors: {list(mlmodel.flavors.keys())}"
-        )
+    flavor_conf = _get_flavor_configuration(
+        model_path=local_path, flavor_name=FLAVOR_NAME
+    )
+    _add_code_from_conf_to_system_path(local_path, flavor_conf)
 
-    flavor_conf = mlmodel.flavors[FLAVOR_NAME]
-    module_path = flavor_conf["model_class_module"]
-    class_name = flavor_conf["model_class_name"]
-    model_file = flavor_conf["model_file"]
-    is_torch = flavor_conf.get("is_torch_model", False)
+    model_cls = _import_model_class(
+        flavor_conf["model_class_module"], flavor_conf["model_class_name"]
+    )
 
-    model_cls = _import_model_class(module_path, class_name)
+    model_path = os.path.join(
+        local_path,
+        flavor_conf.get("data", _MODEL_DATA_SUBFOLDER),
+        flavor_conf["model_file"],
+    )
 
-    data_dir = os.path.join(local_path, flavor_conf.get("data", _MODEL_DATA_SUBFOLDER))
-    model_path = os.path.join(data_dir, model_file)
-
-    if is_torch:
-        loaded_model = model_cls.load(model_path, **kwargs)
+    if flavor_conf.get("is_torch_model", False):
+        return model_cls.load(model_path, **kwargs)
     else:
-        loaded_model = model_cls.load(model_path)
-
-    return loaded_model
+        return model_cls.load(model_path)
 
 
 def log_model(
@@ -329,7 +400,9 @@ def log_model(
     name: Optional[str] = None,
     registered_model_name: Optional[str] = None,
     conda_env: Optional[Union[dict, str]] = None,
+    code_paths: Optional[list[str]] = None,
     pip_requirements: Optional[list[str]] = None,
+    extra_pip_requirements: Optional[list[str]] = None,
     signature=None,
     input_example=None,
     metadata: Optional[dict] = None,
@@ -352,8 +425,15 @@ def log_model(
         under this name.
     conda_env
         Conda environment specification (dict or path).
+    code_paths
+        A list of local filesystem paths to Python file dependencies (or directories
+        containing file dependencies). These files are prepended to the system path
+        when the model is loaded.
     pip_requirements
         Pip requirements list.
+    extra_pip_requirements
+        A list of additional pip requirement strings to add to the model's environment,
+        in addition to the default requirements.
     signature
         An ``mlflow.models.ModelSignature``. Use :func:`infer_signature`
         to automatically generate from example inputs.
@@ -384,7 +464,9 @@ def log_model(
             model=model,
             path=model_dir,
             conda_env=conda_env,
+            code_paths=code_paths,
             pip_requirements=pip_requirements,
+            extra_pip_requirements=extra_pip_requirements,
             signature=signature,
             input_example=input_example,
             metadata=metadata,
@@ -408,8 +490,7 @@ def _log_model_params(model) -> None:
     """Log model creation parameters to MLflow.
 
     Extracts model parameters from ``model.model_params`` and logs them to the active
-    MLflow run. Logs non-serializable values as "<non-serialisable>" and truncates long parameter values
-    to fit MLflow's 500-character limit.
+    MLflow run. Logs non-serializable values as "<non-serialisable>".
 
     Parameters
     ----------
@@ -425,13 +506,11 @@ def _log_model_params(model) -> None:
     safe_params = {}
     for key, value in params.items():
         try:
-            str_val = str(value)
-            if len(str_val) > 500:  # MLflow param value limit
-                str_val = str_val[:497] + "..."
-            safe_params[key] = str_val
+            safe_params[key] = str(value)
         except Exception:
             safe_params[key] = "<non-serialisable>"
 
+    # mlflow validates and truncates the param values internally
     if safe_params:
         mlflow.log_params(safe_params)
 
@@ -445,7 +524,7 @@ def _log_covariate_info(model) -> None:
 
     Logs three types of information:
     - Tags: Boolean flags for filtering (e.g., "uses_past_covariates")
-    - Parameters: Feature counts and names (truncated to 500 chars)
+    - Parameters: Feature counts and names (truncated to MAX_PARAM_VAL_LENGTH chars)
     - Artifact: Complete covariate metadata as JSON file
 
     Parameters
@@ -494,19 +573,14 @@ def _log_covariate_info(model) -> None:
 
         if info["names"]:
             names_str = ",".join(info["names"])
-            if len(names_str) > 500:
-                names_str = names_str[:497] + "..."
             mlflow.log_param(f"{cov_key.split('_')[0]}_cov_names", names_str)
 
     # log complete information as JSON artifact
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-        json.dump(covariate_info, f, indent=2)
-        temp_path = f.name
-
-    try:
-        mlflow.log_artifact(temp_path, "covariates.json")
-    finally:
-        os.remove(temp_path)
+    with TempDir() as tmp:
+        covariates_path = tmp.path("covariates.json")
+        with open(covariates_path, "w") as f:
+            json.dump(covariate_info, f, indent=2)
+        mlflow.log_artifact(covariates_path)
 
 
 # stores original (unpatched) `fit` methods so they can be restored.
