@@ -6,17 +6,16 @@ import numpy as np
 import pytest
 import torch
 
+from darts.models.forecasting import tirex_model
 from darts.tests.conftest import TORCH_AVAILABLE
+from darts.utils.likelihood_models import QuantileRegression
+from darts.utils.timeseries_generation import linear_timeseries
 
 if not TORCH_AVAILABLE:
     pytest.skip(
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
-
-from darts.models.forecasting import tirex_model
-from darts.utils.likelihood_models import QuantileRegression
-from darts.utils.timeseries_generation import linear_timeseries
 
 # TiRex default quantiles used by the wrapper
 ALL_QUANTILES = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
@@ -65,15 +64,10 @@ class TestTiRexModel:
 
     def test_requires_license_acceptance(self):
         with pytest.raises(ValueError, match="accept_license=True"):
-            tirex_model.TiRexModel(
-                input_chunk_length=64,
-                output_chunk_length=12,
-            )
+            tirex_model.TiRexModel()
 
     def test_default_deterministic(self):
         model = tirex_model.TiRexModel(
-            input_chunk_length=64,
-            output_chunk_length=12,
             accept_license=True,
         )
 
@@ -88,8 +82,6 @@ class TestTiRexModel:
 
     def test_probabilistic_quantiles(self):
         model = tirex_model.TiRexModel(
-            input_chunk_length=64,
-            output_chunk_length=12,
             likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
             accept_license=True,
         )
@@ -107,8 +99,6 @@ class TestTiRexModel:
 
     def test_probabilistic_sampling(self):
         model = tirex_model.TiRexModel(
-            input_chunk_length=64,
-            output_chunk_length=12,
             likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
             accept_license=True,
         )
@@ -124,8 +114,6 @@ class TestTiRexModel:
 
     def test_rejects_covariates(self):
         model = tirex_model.TiRexModel(
-            input_chunk_length=64,
-            output_chunk_length=12,
             accept_license=True,
         )
 
@@ -140,8 +128,6 @@ class TestTiRexModel:
 
     def test_rejects_multivariate(self):
         model = tirex_model.TiRexModel(
-            input_chunk_length=64,
-            output_chunk_length=12,
             accept_license=True,
         )
 
