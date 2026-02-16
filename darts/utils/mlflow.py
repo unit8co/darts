@@ -11,8 +11,7 @@ import importlib
 import json
 import os
 import tempfile
-from functools import wraps
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 import mlflow
 import yaml
@@ -20,6 +19,11 @@ from mlflow.models import Model
 from mlflow.models.model import MLMODEL_FILE_NAME
 from mlflow.models.utils import _save_example
 from mlflow.tracking.artifact_utils import _download_artifact_from_uri
+from mlflow.utils.autologging_utils import (
+    autologging_integration,
+    get_autologging_config,
+    safe_patch,
+)
 from mlflow.utils.environment import (
     _CONDA_ENV_FILE_NAME,
     _CONSTRAINTS_FILE_NAME,
@@ -305,10 +309,12 @@ def log_model(
     )
 
 
+@autologging_integration(FLAVOR_NAME)
 def autolog(
     log_models: bool = True,
     log_params: bool = True,
     disable: bool = False,
+    silent: bool = False,
 ) -> None:
     """Enable (or disable) automatic MLflow logging for darts models.
 
@@ -330,23 +336,29 @@ def autolog(
     disable
         If ``True``, restore the original ``fit()`` methods and stop
         autologging.
+    silent
+        If ``True`` (default ``False``), suppress all event logging and warnings from
+        MLflow during autologging.
     """
-    if disable:
-        _restore_original_fit_methods()
-        return
-
-    _patch_fit(ForecastingModel, log_models=log_models, log_params=log_params)
+    safe_patch(
+        FLAVOR_NAME,
+        ForecastingModel,
+        "fit",
+        _patched_fit,
+        manage_run=True,
+    )
 
     try:
         from darts.models.forecasting.torch_forecasting_model import (
             TorchForecastingModel,
         )
 
-        _patch_fit(
+        safe_patch(
+            FLAVOR_NAME,
             TorchForecastingModel,
-            log_models=log_models,
-            log_params=log_params,
-            inject_callback=True,
+            "fit",
+            _patched_fit,
+            manage_run=True,
         )
     except ImportError:
         pass
@@ -630,8 +642,51 @@ def _log_covariate_info(model) -> None:
         mlflow.log_artifact(covariates_path)
 
 
-# stores original (unpatched) `fit` methods so they can be restored.
-_ORIGINAL_FIT_METHODS: dict[type, Any] = {}
+def _patched_fit(original, self, *args, **kwargs):
+    """Patch function for ForecastingModel.fit() autologging.
+
+    Handles both statistical and PyTorch-based models. For PyTorch models,
+    automatically injects MLflow callback for per-epoch metrics logging.
+
+    Parameters
+    ----------
+    original
+        The original fit method being patched.
+    self
+        The model instance (ForecastingModel or TorchForecastingModel).
+    args
+        Positional arguments passed to fit.
+    kwargs
+        Keyword arguments passed to fit.
+
+    Returns
+    -------
+        The result of calling the original fit method.
+    """
+    log_models = get_autologging_config(FLAVOR_NAME, "log_models", True)
+    log_params = get_autologging_config(FLAVOR_NAME, "log_params", True)
+
+    mlflow.set_tag("darts.model_class", type(self).__name__)
+
+    if log_params:
+        _log_model_params(self)
+
+    # Inject callback for torch models (no-op for non-torch models)
+    _inject_mlflow_callback(self)
+
+    result = original(self, *args, **kwargs)
+
+    if log_params:
+        _log_covariate_info(self)
+
+    if log_models:
+        try:
+            log_model(self, name="model", log_params=False)
+        except Exception as e:
+            logger.warning(f"Failed to autolog model artifact: {e}")
+
+    return result
+
 
 if PL_AVAILABLE:
     import pytorch_lightning as pl
@@ -722,86 +777,13 @@ def _inject_mlflow_callback(model) -> None:
 
     existing_callbacks = model.trainer_params.get("callbacks", [])
 
-    cb_type = type(callback)
-    for existing in existing_callbacks:
-        if type(existing).__name__ == cb_type.__name__:
-            return
+    if any(isinstance(cb, _DartsMlflowCallback) for cb in existing_callbacks):
+        logger.debug("MLflow callback already present, skipping injection")
+        return
+
+    if not isinstance(existing_callbacks, list):
+        existing_callbacks = list(existing_callbacks)
 
     existing_callbacks.append(callback)
     model.trainer_params["callbacks"] = existing_callbacks
-
-
-def _patch_fit(
-    cls,
-    *,
-    log_models: bool,
-    log_params: bool,
-    inject_callback: bool = False,
-) -> None:
-    """Replace a model class's ``fit`` method with an MLflow logging wrapper.
-
-    Parameters
-    ----------
-    cls : type
-        The model class to patch (e.g., ForecastingModel, TorchForecastingModel).
-    log_models : bool
-        Whether to log the trained model artifact after fitting.
-    log_params : bool
-        Whether to log model creation parameters.
-    inject_callback : bool, optional
-        Whether to inject the MLflow callback for PyTorch Lightning models.
-        Default is False.
-    """
-    if cls in _ORIGINAL_FIT_METHODS:
-        return
-
-    original_fit = cls.fit
-    _ORIGINAL_FIT_METHODS[cls] = original_fit
-
-    @wraps(original_fit)
-    def _patched_fit(self, *args, **kwargs):
-        run_started_here = False
-        if mlflow.active_run() is None:
-            mlflow.start_run()
-            run_started_here = True
-
-        try:
-            mlflow.set_tag("darts.model_class", type(self).__name__)
-
-            if log_params:
-                _log_model_params(self)
-
-            if inject_callback:
-                _inject_mlflow_callback(self)
-
-            result = original_fit(self, *args, **kwargs)
-
-            if log_params:
-                _log_covariate_info(self)
-
-            if log_models:
-                try:
-                    log_model(self, name="model", log_params=False)
-                except Exception as e:
-                    logger.warning(f"Failed to autolog model artifact: {e}")
-
-            return result
-
-        except Exception:
-            raise
-        finally:
-            if run_started_here:
-                mlflow.end_run()
-
-    cls.fit = _patched_fit
-
-
-def _restore_original_fit_methods() -> None:
-    """Restore all patched ``fit()`` methods to their original implementations.
-
-    This function is called when ``autolog(disable=True)`` is invoked to remove
-    all MLflow logging functionality added by autologging.
-    """
-    for cls, original_fit in _ORIGINAL_FIT_METHODS.items():
-        cls.fit = original_fit
-    _ORIGINAL_FIT_METHODS.clear()
+    logger.debug(f"Injected MLflow callback into {type(model).__name__}")
