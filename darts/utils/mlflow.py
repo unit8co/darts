@@ -10,7 +10,6 @@ to MLflow.
 import importlib
 import json
 import os
-import tempfile
 from typing import Optional, Union
 
 import mlflow
@@ -55,25 +54,6 @@ FLAVOR_NAME = "darts"
 _MODEL_DATA_SUBFOLDER = "data"
 
 
-class _ModelLogInfo:
-    """Lightweight container returned by :func:`log_model` with essential metadata.
-
-    Attributes
-    ----------
-    model_uri : str
-        The full MLflow model URI (e.g., "runs:/run_id/model").
-    run_id : str
-        The MLflow run ID that logged the model.
-    artifact_path : str
-        The artifact path where the model was logged within the run.
-    """
-
-    def __init__(self, model_uri: str, run_id: str, artifact_path: str):
-        self.model_uri = model_uri
-        self.run_id = run_id
-        self.artifact_path = artifact_path
-
-
 _MODEL_FILE_STAT = "model.pkl"
 _MODEL_FILE_TORCH = "model.pt"
 _MODEL_FILE_TORCH_CKPT = "model.pt.ckpt"
@@ -89,6 +69,7 @@ def save_model(
     signature=None,
     input_example=None,
     metadata: Optional[dict] = None,
+    mlflow_model: Optional[Model] = None,
 ) -> None:
     """Save a darts forecasting model in MLflow format.
 
@@ -125,6 +106,9 @@ def save_model(
         created with :func:`prepare_pyfunc_input`.
     metadata
         Optional dictionary of custom metadata to store in the ``MLmodel`` file.
+    mlflow_model
+        Optional MLflow Model object to use for saving. When provided (typically by
+        ``Model.log()``), this model instance is used instead of creating a new one.
     """
     _validate_env_arguments(conda_env, pip_requirements, extra_pip_requirements)
     _validate_and_prepare_target_save_path(path)
@@ -165,8 +149,29 @@ def save_model(
         else _process_conda_env(conda_env)
     )
 
-    _write_environment_files(path, conda_env, pip_requirements, pip_constraints)
-    _create_mlmodel_file(path, darts_flavor_conf, signature, input_example, metadata)
+    with open(os.path.join(path, _CONDA_ENV_FILE_NAME), "w") as f:
+        yaml.safe_dump(conda_env, stream=f, default_flow_style=False)
+
+    if pip_constraints:
+        write_to(os.path.join(path, _CONSTRAINTS_FILE_NAME), "\n".join(pip_constraints))
+
+    write_to(os.path.join(path, _REQUIREMENTS_FILE_NAME), "\n".join(pip_requirements))
+    _PythonEnv.current().to_yaml(os.path.join(path, _PYTHON_ENV_FILE_NAME))
+
+    if mlflow_model is None:
+        mlflow_model = Model()
+
+    if signature is not None:
+        mlflow_model.signature = signature
+
+    if input_example is not None:
+        _save_example(mlflow_model, input_example, path)
+
+    if metadata is not None:
+        mlflow_model.metadata = metadata
+
+    mlflow_model.add_flavor(FLAVOR_NAME, **darts_flavor_conf)
+    mlflow_model.save(os.path.join(path, MLMODEL_FILE_NAME))
 
 
 def load_model(
@@ -271,41 +276,30 @@ def log_model(
 
     Returns
     -------
-    _ModelLogInfo
-        A lightweight object with ``model_uri``, ``run_id``, and
-        ``artifact_path`` attributes.
+    ModelInfo
+        MLflow ModelInfo object containing model_uri, run_id, artifact_path,
+        model_id, timestamps, and other metadata about the logged model.
     """
-    artifact_name = name or artifact_path or "model"
+    # import required as Model.log will call flavor.save_model() internally
+    import darts.utils.mlflow as darts_mlflow
 
     if log_params:
         _log_model_params(model)
         _log_covariate_info(model)
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        model_dir = os.path.join(tmp_dir, artifact_name)
-        save_model(
-            model=model,
-            path=model_dir,
-            conda_env=conda_env,
-            code_paths=code_paths,
-            pip_requirements=pip_requirements,
-            extra_pip_requirements=extra_pip_requirements,
-            signature=signature,
-            input_example=input_example,
-            metadata=metadata,
-        )
-        mlflow.log_artifacts(model_dir, artifact_path=artifact_name)
-
-    run_id = mlflow.active_run().info.run_id
-    model_uri = f"runs:/{run_id}/{artifact_name}"
-
-    if registered_model_name is not None:
-        mlflow.register_model(model_uri, registered_model_name)
-
-    return _ModelLogInfo(
-        model_uri=model_uri,
-        run_id=run_id,
-        artifact_path=artifact_name,
+    return Model.log(
+        artifact_path=artifact_path,
+        name=name,
+        flavor=darts_mlflow,
+        registered_model_name=registered_model_name,
+        model=model,
+        conda_env=conda_env,
+        code_paths=code_paths,
+        pip_requirements=pip_requirements,
+        extra_pip_requirements=extra_pip_requirements,
+        signature=signature,
+        input_example=input_example,
+        metadata=metadata,
     )
 
 
@@ -463,86 +457,6 @@ def _import_model_class(module_path: str, class_name: str):
     """
     module = importlib.import_module(module_path)
     return getattr(module, class_name)
-
-
-def _create_mlmodel_file(
-    path: str,
-    darts_flavor_conf: dict,
-    signature,
-    input_example,
-    metadata: Optional[dict],
-) -> None:
-    """Create and save MLmodel file with metadata.
-
-    Creates the following files in the model directory:
-    * ``MLmodel`` - MLmodel file with flavor metadata.
-
-    Parameters
-    ----------
-    path: str
-        Root directory of the MLflow model where the MLmodel file will be saved.
-    darts_flavor_conf: dict
-        Dictionary containing the flavor configuration for the darts model.
-    signature: mlflow.models.ModelSignature
-        An ``mlflow.models.ModelSignature`` instance describing model input/output.
-        Use :func:`infer_signature` to automatically generate from example inputs.
-    input_example: DataFrame
-        An example input for the model (used by MLflow UI). Should be a DataFrame
-        created with :func:`prepare_pyfunc_input`.
-    metadata: Optional[dict]
-        Optional dictionary of custom metadata to store in the ``MLmodel`` file.
-    """
-    mlmodel = Model()
-
-    if signature is not None:
-        mlmodel.signature = signature
-
-    if input_example is not None:
-        _save_example(mlmodel, input_example, path)
-
-    if metadata is not None:
-        mlmodel.metadata = metadata
-
-    mlmodel.add_flavor(FLAVOR_NAME, **darts_flavor_conf)
-    mlmodel.save(os.path.join(path, MLMODEL_FILE_NAME))
-
-
-def _write_environment_files(
-    path: str,
-    conda_env: dict,
-    pip_requirements: list[str],
-    pip_constraints: Optional[list[str]],
-) -> None:
-    """Write Python environment specification files for model reproducibility.
-
-    Creates the following files in the model directory:
-
-    * ``conda.yaml`` - Conda environment specification including Python version and pip dependencies
-    * ``requirements.txt`` - Pip requirements list for non-conda environments
-    * ``python_env.yaml`` - MLflow Python environment specification
-    * ``constraints.txt`` (optional) - Pip version constraints if specified
-
-    Parameters
-    ----------
-    path: str
-        Root directory of the MLflow model where environment files will be written.
-    conda_env: dict
-        Processed conda environment dictionary containing 'name', 'channels',
-        'dependencies' keys.
-    pip_requirements: list[str]
-        List of pip requirement strings (e.g., ['numpy>=1.20.0', 'pandas']).
-    pip_constraints: Optional[list[str]]
-        Optional list of pip constraint strings for pinning transitive dependencies.
-        Only written if provided.
-    """
-    with open(os.path.join(path, _CONDA_ENV_FILE_NAME), "w") as f:
-        yaml.safe_dump(conda_env, stream=f, default_flow_style=False)
-
-    if pip_constraints:
-        write_to(os.path.join(path, _CONSTRAINTS_FILE_NAME), "\n".join(pip_constraints))
-
-    write_to(os.path.join(path, _REQUIREMENTS_FILE_NAME), "\n".join(pip_requirements))
-    _PythonEnv.current().to_yaml(os.path.join(path, _PYTHON_ENV_FILE_NAME))
 
 
 def _log_model_params(model) -> None:
