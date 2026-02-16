@@ -34,9 +34,25 @@ logger = get_logger(__name__)
 
 
 def _require_tirex():
-    """Import and return the TiRex loader from the optional `tirex-ts` dependency."""
+    """
+    Import and return the TiRex `load_model` entry point from the optional
+    `tirex-ts` dependency.
+
+    This helper ensures that the TiRex integration remains optional and that
+    Darts itself does not depend on `tirex-ts`. If the package is not installed,
+    an informative ImportError is raised.
+
+    Returns
+    -------
+    Callable
+        The `load_model` function from the `tirex` package.
+
+    Raises
+    ------
+    ImportError
+        If `tirex-ts` is not installed.
+    """
     try:
-        # `tirex-ts` exposes a `load_model` entry point.
         from tirex import load_model  # type: ignore
 
     except Exception as e:  # pragma: no cover
@@ -60,6 +76,29 @@ class _TiRexQuantiles:
 
 
 class _TiRexModule(PLForecastingModule):
+    """
+    PyTorch Lightning module wrapping a pre-loaded TiRex pipeline.
+
+    This module adapts TiRex's zero-shot forecasting interface to Darts'
+    `PLForecastingModule` API. It does not implement any trainable layers
+    itself. Instead, it delegates all forecasting logic to the TiRex pipeline
+    obtained via `tirex.load_model()`.
+
+    The module:
+
+    - Accepts batched past target tensors from Darts
+    - Calls `tirex_pipeline.forecast()`
+    - Selects user-requested quantiles (or median)
+    - Returns outputs in Darts' expected shape:
+      `(batch_size, time, n_targets, n_quantiles)`
+
+    Notes
+    -----
+    - Mulitvariate is currently not supported.
+    - Covariates are currently not supported.
+    - Fine-tuning is not supported; this is a zero-shot wrapper.
+    """
+
     def __init__(
         self,
         tirex_pipeline,
@@ -69,6 +108,9 @@ class _TiRexModule(PLForecastingModule):
         # `kwargs` must include PLForecastingModule args (incl. output_chunk_length,
         # output_chunk_shift, likelihood, etc.)
         super().__init__(**kwargs)
+        # Do not store the TiRex pipeline inside Lightning hyperparameters/checkpoints.
+        # It is re-loadable via `tirex.load_model(...)` and can be large / non-serializable.
+        self.save_hyperparameters(ignore=["tirex_pipeline"])
 
         self.tirex_pipeline = tirex_pipeline
         self.register_buffer(
@@ -101,6 +143,25 @@ class _TiRexModule(PLForecastingModule):
             )
 
     def forward(self, x_in, *args, **kwargs):
+        """
+        TiRex forward pass.
+
+        Parameters
+        ----------
+        x_in
+            Tuple `(x_past, x_future, x_static)` as provided by Darts.
+            - `x_past`: tensor of shape `(batch_size, input_chunk_length, n_targets)`
+            - `x_future`: expected to be `None` (covariates unsupported)
+            - `x_static`: ignored
+
+        Returns
+        -------
+        torch.Tensor
+            Tensor of shape `(batch_size, output_chunk_length, n_targets, n_quantiles)`
+            containing the selected quantile predictions.
+            If deterministic (`likelihood=None`), only the median (0.5) quantile
+            is returned.
+        """
         # PLModuleInput is typically a tuple: (x_past, x_future, x_static)
         x_past, x_future, _ = x_in
 
@@ -157,18 +218,87 @@ class _TiRexModule(PLForecastingModule):
 
 
 class TiRexModel(FoundationModel):
-    """TiRex zero-shot forecasting model wrapper for Darts.
+    """
+    TiRex foundation model for zero-shot time series forecasting.
 
-    This integration follows Darts' `FoundationModel` interface, and delegates
-    forecasting logic and weight management to the optional `tirex-ts` package.
+    This is a Darts wrapper around the TiRex model introduced in [1]_.
+    The implementation delegates all forecasting logic and weight loading
+    to the optional `tirex-ts` package while exposing a standard
+    :class:`FoundationModel` interface.
 
-    Constraints (initial integration):
-    - univariate target series only
-    - no covariates
-    - probabilistic forecasts via quantile outputs (supports sampling through Darts)
+    TiRex is a pre-trained time series foundation model designed for
+    zero-shot forecasting across both short and long horizons.
 
-    Users must explicitly acknowledge the NXAI Community License by passing
-    `accept_license=True`.
+    By default, the model is deterministic (median forecast only).
+    To enable probabilistic forecasts, pass a
+    :class:`~darts.utils.likelihood_models.torch.QuantileRegression`
+    instance to the ``likelihood`` parameter.
+
+    Important
+    ---------
+    TiRex is distributed under the NXAI Community License:
+
+    https://github.com/NX-AI/tirex-internal/blob/main/LICENSE
+
+    You must explicitly acknowledge this license by passing
+    ``accept_license=True`` when constructing the model.
+
+    Constraints (current integration)
+    ----------------------------------
+    - Univariate target series only
+    - No past or future covariates
+    - Zero-shot inference only (no fine-tuning support)
+
+    Parameters
+    ----------
+    model_name
+        Identifier passed to `tirex.load_model()`. Default: ``"NX-AI/TiRex"``.
+    likelihood
+        Must be ``None`` or an instance of
+        :class:`~darts.utils.likelihood_models.torch.QuantileRegression`.
+        Requested quantiles must be a subset of TiRex's default quantiles:
+        (0.1, 0.2, ..., 0.9).
+    accept_license
+        Must be set to ``True`` to confirm acceptance of the NXAI Community License.
+    device
+        Optional device passed to `tirex.load_model()`.
+    backend
+        Optional backend passed to `tirex.load_model()`.
+    compile
+        Optional compilation flag passed to `tirex.load_model()`.
+    add_encoders
+        Optional encoders passed to :class:`FoundationModel`.
+    **tirex_kwargs
+        Additional keyword arguments forwarded to `tirex.load_model()`.
+
+    References
+    ----------
+    .. [1] TiRex: Zero-Shot Forecasting across Long and Short Horizons.
+           https://arxiv.org/abs/2505.23719
+
+    Examples
+    --------
+    >>> from darts.models import TiRexModel
+    >>> from darts.utils.likelihood_models.torch import QuantileRegression
+    >>> from darts.datasets import AirPassengersDataset
+
+    >>> series = AirPassengersDataset().load().astype("float32")
+    >>> train, test = series.split_after(0.72)
+
+    >>> model = TiRexModel(
+    ...     accept_license=True,
+    ... )
+    >>> model.fit(train)
+    >>> forecast = model.predict(n=len(test(), series=train)
+
+    Probabilistic forecasting:
+
+    >>> model = TiRexModel(
+    ...     likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
+    ...     accept_license=True,
+    ... )
+    >>> model.fit(train)
+    >>> forecast = pred_s = model.predict(n=len(test), series=train, num_samples=50)
     """
 
     # TiRex quantiles returned by default (0.1..0.9)
@@ -176,10 +306,7 @@ class TiRexModel(FoundationModel):
 
     def __init__(
         self,
-        input_chunk_length: int,
-        output_chunk_length: int,
         model_name: str = "NX-AI/TiRex",
-        output_chunk_shift: int = 0,
         likelihood: QuantileRegression | None = None,
         accept_license: bool = False,
         device: str | None = None,
@@ -218,13 +345,28 @@ class TiRexModel(FoundationModel):
                     logger,
                 )
 
+        # TiRex uses fixed context/horizon sizes in this integration.
+        # We keep these internal (not user-configurable), but they must be present in
+        # `pl_module_params` for TorchForecastingModel internals (e.g. encoder initialization).
+        _input_chunk_length = 64
+        _output_chunk_length = 12
+        _output_chunk_shift = 0
+
         super().__init__(
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
-            output_chunk_shift=output_chunk_shift,
+            input_chunk_length=_input_chunk_length,
+            output_chunk_length=_output_chunk_length,
+            output_chunk_shift=_output_chunk_shift,
             likelihood=likelihood,
             add_encoders=add_encoders,
         )
+
+        # Make sure these keys exist even if the parent class does not populate them.
+        # (TorchForecastingModel accesses them before `fit()`.)
+        if self.pl_module_params is None:
+            self.pl_module_params = {}
+        self.pl_module_params.setdefault("input_chunk_length", _input_chunk_length)
+        self.pl_module_params.setdefault("output_chunk_length", _output_chunk_length)
+        self.pl_module_params.setdefault("output_chunk_shift", _output_chunk_shift)
 
         self.model_name = model_name
         self.device = device
@@ -260,7 +402,9 @@ class TiRexModel(FoundationModel):
     def fit(self, series, past_covariates=None, future_covariates=None, verbose=None):
         # enforce initial integration constraints early
         if past_covariates is not None or future_covariates is not None:
-            raise_log(ValueError("TiRexModel does not support covariates."), logger)
+            raise_log(
+                ValueError("TiRexModel currently does not support covariates."), logger
+            )
 
         # univariate-only
         series_list = [series] if not isinstance(series, Sequence) else list(series)
