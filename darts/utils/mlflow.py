@@ -75,187 +75,6 @@ _MODEL_FILE_TORCH = "model.pt"
 _MODEL_FILE_TORCH_CKPT = "model.pt.ckpt"
 
 
-def _is_torch_model(model) -> bool:
-    """Check if a model is a TorchForecastingModel.
-
-    Parameters
-    ----------
-    model
-        A Darts forecasting model instance.
-
-    Returns
-    -------
-    bool
-        True if the model is a TorchForecastingModel, False otherwise.
-    """
-    try:
-        from darts.models.forecasting.torch_forecasting_model import (
-            TorchForecastingModel,
-        )
-
-        return isinstance(model, TorchForecastingModel)
-    except ImportError:
-        return False
-
-
-def _get_model_class_path(model) -> tuple[str, str]:
-    """Extract the module path and class name from a model instance.
-
-    Parameters
-    ----------
-    model
-        A Darts forecasting model instance.
-
-    Returns
-    -------
-    tuple[str, str]
-        A tuple containing (module_path, class_name).
-    """
-    cls = type(model)
-    return cls.__module__, cls.__name__
-
-
-def _import_model_class(module_path: str, class_name: str):
-    """Dynamically import and return a model class.
-
-    Parameters
-    ----------
-    module_path : str
-        The fully qualified module path (e.g., "darts.models.exponential_smoothing").
-    class_name : str
-        The name of the class to import (e.g., "ExponentialSmoothing").
-
-    Returns
-    -------
-    type
-        The imported model class.
-    """
-    module = importlib.import_module(module_path)
-    return getattr(module, class_name)
-
-
-def _create_mlmodel_file(
-    path: str,
-    darts_flavor_conf: dict,
-    signature,
-    input_example,
-    metadata: Optional[dict],
-) -> None:
-    """Create and save MLmodel file with metadata.
-
-    Creates the following files in the model directory:
-    * ``MLmodel`` - MLmodel file with flavor metadata.
-
-    Parameters
-    ----------
-    path: str
-        Root directory of the MLflow model where the MLmodel file will be saved.
-    darts_flavor_conf: dict
-        Dictionary containing the flavor configuration for the darts model.
-    signature: mlflow.models.ModelSignature
-        An ``mlflow.models.ModelSignature`` instance describing model input/output.
-        Use :func:`infer_signature` to automatically generate from example inputs.
-    input_example: DataFrame
-        An example input for the model (used by MLflow UI). Should be a DataFrame
-        created with :func:`prepare_pyfunc_input`.
-    metadata: Optional[dict]
-        Optional dictionary of custom metadata to store in the ``MLmodel`` file.
-    """
-    mlmodel = Model()
-
-    if signature is not None:
-        mlmodel.signature = signature
-
-    if input_example is not None:
-        _save_example(mlmodel, input_example, path)
-
-    if metadata is not None:
-        mlmodel.metadata = metadata
-
-    mlmodel.add_flavor(FLAVOR_NAME, **darts_flavor_conf)
-    mlmodel.save(os.path.join(path, MLMODEL_FILE_NAME))
-
-
-def _write_environment_files(
-    path: str,
-    conda_env: dict,
-    pip_requirements: list[str],
-    pip_constraints: Optional[list[str]],
-) -> None:
-    """Write Python environment specification files for model reproducibility.
-
-    Creates the following files in the model directory:
-
-    * ``conda.yaml`` - Conda environment specification including Python version and pip dependencies
-    * ``requirements.txt`` - Pip requirements list for non-conda environments
-    * ``python_env.yaml`` - MLflow Python environment specification
-    * ``constraints.txt`` (optional) - Pip version constraints if specified
-
-    Parameters
-    ----------
-    path: str
-        Root directory of the MLflow model where environment files will be written.
-    conda_env: dict
-        Processed conda environment dictionary containing 'name', 'channels',
-        'dependencies' keys.
-    pip_requirements: list[str]
-        List of pip requirement strings (e.g., ['numpy>=1.20.0', 'pandas']).
-    pip_constraints: Optional[list[str]]
-        Optional list of pip constraint strings for pinning transitive dependencies.
-        Only written if provided.
-    """
-    with open(os.path.join(path, _CONDA_ENV_FILE_NAME), "w") as f:
-        yaml.safe_dump(conda_env, stream=f, default_flow_style=False)
-
-    if pip_constraints:
-        write_to(os.path.join(path, _CONSTRAINTS_FILE_NAME), "\n".join(pip_constraints))
-
-    write_to(os.path.join(path, _REQUIREMENTS_FILE_NAME), "\n".join(pip_requirements))
-    _PythonEnv.current().to_yaml(os.path.join(path, _PYTHON_ENV_FILE_NAME))
-
-
-def get_default_pip_requirements(is_torch: bool = False) -> list[str]:
-    """Return the default pip requirements for logging a darts model.
-
-    Parameters
-    ----------
-    is_torch
-        Whether the model is a PyTorch-based model. If ``True``, adds
-        ``torch`` and ``pytorch-lightning`` to the requirements.
-
-    Returns
-    -------
-    list[str]
-        A list of pip requirement strings.
-    """
-    reqs = [_get_pinned_requirement("darts")]
-    if is_torch:
-        reqs.extend([
-            _get_pinned_requirement("torch"),
-            _get_pinned_requirement("pytorch-lightning"),
-        ])
-    return reqs
-
-
-def get_default_conda_env(is_torch: bool = False) -> dict:
-    """Return a default conda environment dict for a darts model.
-
-    Parameters
-    ----------
-    is_torch
-        Whether the model is a PyTorch-based model.
-
-    Returns
-    -------
-    dict
-        A conda environment specification dictionary.
-    """
-    return _mlflow_conda_env(
-        additional_pip_deps=get_default_pip_requirements(is_torch),
-        additional_conda_channels=["conda-forge"],
-    )
-
-
 def save_model(
     model,
     path: str,
@@ -486,6 +305,234 @@ def log_model(
     )
 
 
+def autolog(
+    log_models: bool = True,
+    log_params: bool = True,
+    disable: bool = False,
+) -> None:
+    """Enable (or disable) automatic MLflow logging for darts models.
+
+    When enabled, every call to ``model.fit()`` on any darts forecasting model
+    will automatically:
+
+    1. Start an MLflow run (or reuse the currently active one).
+    2. Log model creation parameters (``model.model_params``).
+    3. For PyTorch-based models: inject a callback that logs per-epoch
+       ``train_loss`` / ``val_loss`` metrics.
+    4. Log the trained model artifact at the end of training.
+
+    Parameters
+    ----------
+    log_models
+        If ``True`` (default), log the trained model artifact after ``fit()``.
+    log_params
+        If ``True`` (default), log model creation parameters.
+    disable
+        If ``True``, restore the original ``fit()`` methods and stop
+        autologging.
+    """
+    if disable:
+        _restore_original_fit_methods()
+        return
+
+    _patch_fit(ForecastingModel, log_models=log_models, log_params=log_params)
+
+    try:
+        from darts.models.forecasting.torch_forecasting_model import (
+            TorchForecastingModel,
+        )
+
+        _patch_fit(
+            TorchForecastingModel,
+            log_models=log_models,
+            log_params=log_params,
+            inject_callback=True,
+        )
+    except ImportError:
+        pass
+
+
+def get_default_pip_requirements(is_torch: bool = False) -> list[str]:
+    """Return the default pip requirements for logging a darts model.
+
+    Parameters
+    ----------
+    is_torch
+        Whether the model is a PyTorch-based model. If ``True``, adds
+        ``torch`` and ``pytorch-lightning`` to the requirements.
+
+    Returns
+    -------
+    list[str]
+        A list of pip requirement strings.
+    """
+    reqs = [_get_pinned_requirement("darts")]
+    if is_torch:
+        reqs.extend([
+            _get_pinned_requirement("torch"),
+            _get_pinned_requirement("pytorch-lightning"),
+        ])
+    return reqs
+
+
+def get_default_conda_env(is_torch: bool = False) -> dict:
+    """Return a default conda environment dict for a darts model.
+
+    Parameters
+    ----------
+    is_torch
+        Whether the model is a PyTorch-based model.
+
+    Returns
+    -------
+    dict
+        A conda environment specification dictionary.
+    """
+    return _mlflow_conda_env(
+        additional_pip_deps=get_default_pip_requirements(is_torch),
+        additional_conda_channels=["conda-forge"],
+    )
+
+
+def _is_torch_model(model) -> bool:
+    """Check if a model is a TorchForecastingModel.
+
+    Parameters
+    ----------
+    model
+        A Darts forecasting model instance.
+
+    Returns
+    -------
+    bool
+        True if the model is a TorchForecastingModel, False otherwise.
+    """
+    try:
+        from darts.models.forecasting.torch_forecasting_model import (
+            TorchForecastingModel,
+        )
+
+        return isinstance(model, TorchForecastingModel)
+    except ImportError:
+        return False
+
+
+def _get_model_class_path(model) -> tuple[str, str]:
+    """Extract the module path and class name from a model instance.
+
+    Parameters
+    ----------
+    model
+        A Darts forecasting model instance.
+
+    Returns
+    -------
+    tuple[str, str]
+        A tuple containing (module_path, class_name).
+    """
+    cls = type(model)
+    return cls.__module__, cls.__name__
+
+
+def _import_model_class(module_path: str, class_name: str):
+    """Dynamically import and return a model class.
+
+    Parameters
+    ----------
+    module_path : str
+        The fully qualified module path (e.g., "darts.models.exponential_smoothing").
+    class_name : str
+        The name of the class to import (e.g., "ExponentialSmoothing").
+
+    Returns
+    -------
+    type
+        The imported model class.
+    """
+    module = importlib.import_module(module_path)
+    return getattr(module, class_name)
+
+
+def _create_mlmodel_file(
+    path: str,
+    darts_flavor_conf: dict,
+    signature,
+    input_example,
+    metadata: Optional[dict],
+) -> None:
+    """Create and save MLmodel file with metadata.
+
+    Creates the following files in the model directory:
+    * ``MLmodel`` - MLmodel file with flavor metadata.
+
+    Parameters
+    ----------
+    path: str
+        Root directory of the MLflow model where the MLmodel file will be saved.
+    darts_flavor_conf: dict
+        Dictionary containing the flavor configuration for the darts model.
+    signature: mlflow.models.ModelSignature
+        An ``mlflow.models.ModelSignature`` instance describing model input/output.
+        Use :func:`infer_signature` to automatically generate from example inputs.
+    input_example: DataFrame
+        An example input for the model (used by MLflow UI). Should be a DataFrame
+        created with :func:`prepare_pyfunc_input`.
+    metadata: Optional[dict]
+        Optional dictionary of custom metadata to store in the ``MLmodel`` file.
+    """
+    mlmodel = Model()
+
+    if signature is not None:
+        mlmodel.signature = signature
+
+    if input_example is not None:
+        _save_example(mlmodel, input_example, path)
+
+    if metadata is not None:
+        mlmodel.metadata = metadata
+
+    mlmodel.add_flavor(FLAVOR_NAME, **darts_flavor_conf)
+    mlmodel.save(os.path.join(path, MLMODEL_FILE_NAME))
+
+
+def _write_environment_files(
+    path: str,
+    conda_env: dict,
+    pip_requirements: list[str],
+    pip_constraints: Optional[list[str]],
+) -> None:
+    """Write Python environment specification files for model reproducibility.
+
+    Creates the following files in the model directory:
+
+    * ``conda.yaml`` - Conda environment specification including Python version and pip dependencies
+    * ``requirements.txt`` - Pip requirements list for non-conda environments
+    * ``python_env.yaml`` - MLflow Python environment specification
+    * ``constraints.txt`` (optional) - Pip version constraints if specified
+
+    Parameters
+    ----------
+    path: str
+        Root directory of the MLflow model where environment files will be written.
+    conda_env: dict
+        Processed conda environment dictionary containing 'name', 'channels',
+        'dependencies' keys.
+    pip_requirements: list[str]
+        List of pip requirement strings (e.g., ['numpy>=1.20.0', 'pandas']).
+    pip_constraints: Optional[list[str]]
+        Optional list of pip constraint strings for pinning transitive dependencies.
+        Only written if provided.
+    """
+    with open(os.path.join(path, _CONDA_ENV_FILE_NAME), "w") as f:
+        yaml.safe_dump(conda_env, stream=f, default_flow_style=False)
+
+    if pip_constraints:
+        write_to(os.path.join(path, _CONSTRAINTS_FILE_NAME), "\n".join(pip_constraints))
+
+    write_to(os.path.join(path, _REQUIREMENTS_FILE_NAME), "\n".join(pip_requirements))
+    _PythonEnv.current().to_yaml(os.path.join(path, _PYTHON_ENV_FILE_NAME))
+
+
 def _log_model_params(model) -> None:
     """Log model creation parameters to MLflow.
 
@@ -682,53 +729,6 @@ def _inject_mlflow_callback(model) -> None:
 
     existing_callbacks.append(callback)
     model.trainer_params["callbacks"] = existing_callbacks
-
-
-def autolog(
-    log_models: bool = True,
-    log_params: bool = True,
-    disable: bool = False,
-) -> None:
-    """Enable (or disable) automatic MLflow logging for darts models.
-
-    When enabled, every call to ``model.fit()`` on any darts forecasting model
-    will automatically:
-
-    1. Start an MLflow run (or reuse the currently active one).
-    2. Log model creation parameters (``model.model_params``).
-    3. For PyTorch-based models: inject a callback that logs per-epoch
-       ``train_loss`` / ``val_loss`` metrics.
-    4. Log the trained model artifact at the end of training.
-
-    Parameters
-    ----------
-    log_models
-        If ``True`` (default), log the trained model artifact after ``fit()``.
-    log_params
-        If ``True`` (default), log model creation parameters.
-    disable
-        If ``True``, restore the original ``fit()`` methods and stop
-        autologging.
-    """
-    if disable:
-        _restore_original_fit_methods()
-        return
-
-    _patch_fit(ForecastingModel, log_models=log_models, log_params=log_params)
-
-    try:
-        from darts.models.forecasting.torch_forecasting_model import (
-            TorchForecastingModel,
-        )
-
-        _patch_fit(
-            TorchForecastingModel,
-            log_models=log_models,
-            log_params=log_params,
-            inject_callback=True,
-        )
-    except ImportError:
-        pass
 
 
 def _patch_fit(
