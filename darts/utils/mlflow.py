@@ -309,6 +309,7 @@ def autolog(
     log_params: bool = True,
     disable: bool = False,
     silent: bool = False,
+    manage_run: bool = True,
 ) -> None:
     """Enable (or disable) automatic MLflow logging for darts models.
 
@@ -333,29 +334,39 @@ def autolog(
     silent
         If ``True`` (default ``False``), suppress all event logging and warnings from
         MLflow during autologging.
+    manage_run
+        If `True`, applies the `with_managed_run` wrapper to the specified
+        `patch_function`, which automatically creates & terminates an MLflow
+        active run during patch code execution if necessary. If `False`,
+        does not apply the `with_managed_run` wrapper to the specified
+        `patch_function`.
     """
-    safe_patch(
-        FLAVOR_NAME,
-        ForecastingModel,
-        "fit",
-        _patched_fit,
-        manage_run=True,
-    )
 
-    try:
-        from darts.models.forecasting.torch_forecasting_model import (
-            TorchForecastingModel,
-        )
+    # recursively get all subclasses of ForecastingModel that override fit()
+    def get_all_subclasses(cls):
+        all_subclasses = []
+        for subclass in cls.__subclasses__():
+            all_subclasses.append(subclass)
+            all_subclasses.extend(get_all_subclasses(subclass))
+        return all_subclasses
 
-        safe_patch(
-            FLAVOR_NAME,
-            TorchForecastingModel,
-            "fit",
-            _patched_fit,
-            manage_run=True,
-        )
-    except ImportError:
-        pass
+    classes_to_patch = [ForecastingModel]
+
+    for subclass in get_all_subclasses(ForecastingModel):
+        if "fit" in subclass.__dict__:
+            classes_to_patch.append(subclass)
+
+    for cls in classes_to_patch:
+        try:
+            safe_patch(
+                FLAVOR_NAME,
+                cls,
+                "fit",
+                _patched_fit,
+                manage_run=manage_run,
+            )
+        except Exception:
+            pass
 
 
 def get_default_pip_requirements(is_torch: bool = False) -> list[str]:
@@ -398,6 +409,88 @@ def get_default_conda_env(is_torch: bool = False) -> dict:
         additional_pip_deps=get_default_pip_requirements(is_torch),
         additional_conda_channels=["conda-forge"],
     )
+
+
+def _log_model_params(model) -> None:
+    """Log model creation parameters to MLflow.
+
+    Extracts model parameters from ``model.model_params`` and logs them to the active
+    MLflow run.
+
+    Parameters
+    ----------
+    model
+        A Darts forecasting model instance with a ``model_params`` attribute.
+    """
+    try:
+        params = model.model_params
+    except AttributeError:
+        logger.debug("Model has no model_params attribute; skipping parameter logging.")
+        return
+
+    if params:
+        mlflow.log_params(params)
+
+
+def _log_covariate_info(model) -> None:
+    """Log covariate usage information to MLflow.
+
+    Extracts information about past, future, and static covariates used during
+    training and logs them as tags, parameters, and a JSON artifact for easy
+    filtering, comparison, and documentation.
+
+    Logs three types of information:
+    - Tags: Boolean flags for filtering (e.g., "uses_past_covariates")
+    - Parameters: Feature counts and names (truncated by MLflow)
+    - Artifact: Complete covariate metadata as JSON file
+
+    Parameters
+    ----------
+    model
+        A fitted Darts forecasting model instance.
+    """
+    covariate_types = [
+        (
+            "past_covariates",
+            "_uses_past_covariates",
+            "past_covariate_series",
+            "components",
+        ),
+        (
+            "future_covariates",
+            "_uses_future_covariates",
+            "future_covariate_series",
+            "components",
+        ),
+        (
+            "static_covariates",
+            "_uses_static_covariates",
+            "static_covariates",
+            "columns",
+        ),
+    ]
+
+    covariate_info = {
+        cov_key: _extract_covariate_metadata(
+            model, cov_key, uses_attr, series_attr, names_attr
+        )
+        for cov_key, uses_attr, series_attr, names_attr in covariate_types
+    }
+
+    for cov_key, info in covariate_info.items():
+        mlflow.set_tag(f"uses_{cov_key}", str(info["used"]).lower())
+        mlflow.log_param(f"n_{cov_key}", info["count"])
+
+        if info["names"]:
+            names_str = ",".join(info["names"])
+            mlflow.log_param(f"{cov_key.split('_')[0]}_cov_names", names_str)
+
+    # log complete information as JSON artifact
+    with TempDir() as tmp:
+        covariates_path = tmp.path("covariates.json")
+        with open(covariates_path, "w") as f:
+            json.dump(covariate_info, f, indent=2)
+        mlflow.log_artifact(covariates_path)
 
 
 def _is_torch_model(model) -> bool:
@@ -459,101 +552,40 @@ def _import_model_class(module_path: str, class_name: str):
     return getattr(module, class_name)
 
 
-def _log_model_params(model) -> None:
-    """Log model creation parameters to MLflow.
-
-    Extracts model parameters from ``model.model_params`` and logs them to the active
-    MLflow run. Logs non-serializable values as "<non-serialisable>".
-
-    Parameters
-    ----------
-    model
-        A Darts forecasting model instance with a ``model_params`` attribute.
-    """
-    try:
-        params = model.model_params
-    except AttributeError:
-        logger.debug("Model has no model_params attribute; skipping parameter logging.")
-        return
-
-    safe_params = {}
-    for key, value in params.items():
-        try:
-            safe_params[key] = str(value)
-        except Exception:
-            safe_params[key] = "<non-serialisable>"
-
-    # mlflow validates and truncates the param values internally
-    if safe_params:
-        mlflow.log_params(safe_params)
-
-
-def _log_covariate_info(model) -> None:
-    """Log covariate usage information to MLflow.
-
-    Extracts information about past, future, and static covariates used during
-    training and logs them as tags, parameters, and a JSON artifact for easy
-    filtering, comparison, and documentation.
-
-    Logs three types of information:
-    - Tags: Boolean flags for filtering (e.g., "uses_past_covariates")
-    - Parameters: Feature counts and names (truncated to MAX_PARAM_VAL_LENGTH chars)
-    - Artifact: Complete covariate metadata as JSON file
+def _extract_covariate_metadata(
+    model, cov_type: str, uses_attr: str, series_attr: str, names_attr: str
+) -> dict:
+    """Extract metadata for a single covariate type.
 
     Parameters
     ----------
     model
-        A fitted Darts forecasting model instance.
+        A Darts forecasting model instance.
+    cov_type : str
+        Covariate type name (e.g., "past_covariates").
+    uses_attr : str
+        Model attribute name indicating covariate usage.
+    series_attr : str
+        Model attribute name for the covariate series.
+    names_attr : str
+        Series attribute name for feature names ("components" or "columns").
+
+    Returns
+    -------
+    dict
+        Dictionary with keys: "used" (bool), "count" (int), "names" (list).
     """
-    covariate_types = [
-        (
-            "past_covariates",
-            "_uses_past_covariates",
-            "past_covariate_series",
-            "components",
-        ),
-        (
-            "future_covariates",
-            "_uses_future_covariates",
-            "future_covariate_series",
-            "components",
-        ),
-        (
-            "static_covariates",
-            "_uses_static_covariates",
-            "static_covariates",
-            "columns",
-        ),
-    ]
+    info = {"used": False, "count": 0, "names": []}
 
-    covariate_info = {}
+    if getattr(model, uses_attr, False):
+        info["used"] = True
+        series = getattr(model, series_attr, None)
+        if series is not None:
+            names = getattr(series, names_attr).tolist()
+            info["names"] = names
+            info["count"] = len(names)
 
-    for cov_key, uses_attr, series_attr, names_attr in covariate_types:
-        info = {"used": False, "count": 0, "names": []}
-
-        if getattr(model, uses_attr, False):
-            info["used"] = True
-            series = getattr(model, series_attr, None)
-            if series is not None:
-                names = getattr(series, names_attr).tolist()
-                info["names"] = names
-                info["count"] = len(names)
-
-        covariate_info[cov_key] = info
-
-        mlflow.set_tag(f"uses_{cov_key}", str(info["used"]).lower())
-        mlflow.log_param(f"n_{cov_key}", info["count"])
-
-        if info["names"]:
-            names_str = ",".join(info["names"])
-            mlflow.log_param(f"{cov_key.split('_')[0]}_cov_names", names_str)
-
-    # log complete information as JSON artifact
-    with TempDir() as tmp:
-        covariates_path = tmp.path("covariates.json")
-        with open(covariates_path, "w") as f:
-            json.dump(covariate_info, f, indent=2)
-        mlflow.log_artifact(covariates_path)
+    return info
 
 
 def _patched_fit(original, self, *args, **kwargs):
