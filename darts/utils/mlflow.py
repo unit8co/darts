@@ -56,7 +56,6 @@ _MODEL_DATA_SUBFOLDER = "data"
 
 _MODEL_FILE_STAT = "model.pkl"
 _MODEL_FILE_TORCH = "model.pt"
-_MODEL_FILE_TORCH_CKPT = "model.pt.ckpt"
 
 
 def save_model(
