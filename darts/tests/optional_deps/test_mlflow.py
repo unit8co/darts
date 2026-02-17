@@ -67,10 +67,14 @@ def assert_mlflow_artifacts_exist(path: str, is_torch: bool = False):
         assert os.path.exists(os.path.join(path, "data", "model.pkl"))
 
 
-def assert_predictions_equal(model1, model2, n: int, decimal: int = 4):
-    """Assert that two models produce equivalent predictions."""
+def assert_predictions_equal(model1, model2, n: int, decimal: int = 4, series=None):
+    """Assert that two models produce equivalent predictions. If series is provided,
+    it will be passed to the second model's predict method (for global models that require it)."""
     pred1 = model1.predict(n=n)
-    pred2 = model2.predict(n=n)
+    if series is not None:
+        pred2 = model2.predict(n=n, series=series)
+    else:
+        pred2 = model2.predict(n=n)
     np.testing.assert_array_almost_equal(
         pred1.values(), pred2.values(), decimal=decimal
     )
@@ -111,7 +115,7 @@ class TestMLflow:
         assert_mlflow_artifacts_exist(model_path, is_torch=False)
 
         loaded_model = load_model(f"file://{model_path}")
-        assert_predictions_equal(model, loaded_model, n=3)
+        assert_predictions_equal(model, loaded_model, n=3, series=self.ts_univariate)
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_save_load_torch_model(self, tmpdir_fn):
@@ -127,7 +131,7 @@ class TestMLflow:
         assert_mlflow_artifacts_exist(model_path, is_torch=True)
 
         loaded_model = load_model(f"file://{model_path}")
-        assert_predictions_equal(model, loaded_model, n=2)
+        assert_predictions_equal(model, loaded_model, n=2, series=self.ts_univariate)
 
     def test_log_model_basic(self, mlflow_tracking):
         """Test basic log_model functionality"""
@@ -511,7 +515,7 @@ class TestMLflow:
         loaded_model = load_model(f"file://{model_path}")
 
         pred_original = model.predict(n=3)
-        pred_loaded = loaded_model.predict(n=3)
+        pred_loaded = loaded_model.predict(n=3, series=target)
 
         # verify multivariate structure preserved
         assert pred_original.width == pred_loaded.width == 2, (
@@ -591,7 +595,10 @@ class TestMLflow:
         save_model(model, model_path)
         loaded = load_model(f"file://{model_path}")
 
-        assert_predictions_equal(model, loaded, n=5)
+        # Only pass series for global models (LinearRegressionModel)
+        # Local models (ExponentialSmoothing) don't need it
+        series = self.ts_univariate if fit_kwargs else None
+        assert_predictions_equal(model, loaded, n=5, series=series)
 
     @pytest.mark.parametrize(
         "series,series_name",
@@ -612,9 +619,9 @@ class TestMLflow:
 
         loaded_model = load_model(f"file://{model_path}")
 
-        assert_predictions_equal(model, loaded_model, n=3)
+        assert_predictions_equal(model, loaded_model, n=3, series=test_series)
 
         # verify the series dimensions are preserved
         pred_original = model.predict(n=3)
-        pred_loaded = loaded_model.predict(n=3)
+        pred_loaded = loaded_model.predict(n=3, series=test_series)
         assert pred_original.width == pred_loaded.width

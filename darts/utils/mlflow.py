@@ -119,12 +119,13 @@ def save_model(
 
     os.makedirs(data_dir, exist_ok=True)
 
+    # pass in clean=True to not include any timeseries or callbacks within the model file
     if is_torch:
         model_file = _MODEL_FILE_TORCH
-        model.save(os.path.join(data_dir, model_file))
+        model.save(os.path.join(data_dir, model_file), clean=True)
     else:
         model_file = _MODEL_FILE_STAT
-        model.save(os.path.join(data_dir, model_file))
+        model.save(os.path.join(data_dir, model_file), clean=True)
 
     module_path, class_name = _get_model_class_path(model)
 
