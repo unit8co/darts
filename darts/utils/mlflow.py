@@ -44,7 +44,7 @@ from mlflow.utils.model_utils import (
 from mlflow.utils.requirements_utils import _get_pinned_requirement
 
 import darts
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.utils.utils import PL_AVAILABLE
 
@@ -110,6 +110,11 @@ def save_model(
         Optional MLflow Model object to use for saving. When provided (typically by
         ``Model.log()``), this model instance is used instead of creating a new one.
     """
+    raise_if_not(
+        isinstance(model, ForecastingModel),
+        "model must be an instance of darts.models.forecasting.ForecastingModel",
+        logger,
+    )
     _validate_env_arguments(conda_env, pip_requirements, extra_pip_requirements)
     _validate_and_prepare_target_save_path(path)
     code_dir_subpath = _validate_and_copy_code_paths(code_paths, path)
@@ -366,8 +371,8 @@ def autolog(
                 _patched_fit,
                 manage_run=manage_run,
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.info(f"Failed to patch {cls.__name__}.fit() for autologging: {e}")
 
 
 def get_default_pip_requirements(is_torch: bool = False) -> list[str]:
@@ -426,7 +431,7 @@ def _log_model_params(model) -> None:
     try:
         params = model.model_params
     except AttributeError:
-        logger.debug("Model has no model_params attribute; skipping parameter logging.")
+        logger.info("Model has no model_params attribute; skipping parameter logging.")
         return
 
     if params:
@@ -514,6 +519,7 @@ def _is_torch_model(model) -> bool:
 
         return isinstance(model, TorchForecastingModel)
     except ImportError:
+        logger.info("TorchForecastingModel not available; treating model as non-torch")
         return False
 
 
@@ -550,7 +556,13 @@ def _import_model_class(module_path: str, class_name: str):
         The imported model class.
     """
     module = importlib.import_module(module_path)
-    return getattr(module, class_name)
+    cls = getattr(module, class_name, None)
+    raise_if(
+        cls is None,
+        f"Class '{class_name}' not found in module '{module_path}'",
+        logger,
+    )
+    return cls
 
 
 def _extract_covariate_metadata(
@@ -630,7 +642,9 @@ def _patched_fit(original, self, *args, **kwargs):
         try:
             log_model(self, name="model", log_params=False)
         except Exception as e:
-            logger.warning(f"Failed to autolog model artifact: {e}")
+            logger.warning(
+                f"Failed to autolog model artifact for {type(self).__name__}: {e}"
+            )
 
     return result
 
@@ -725,7 +739,7 @@ def _inject_mlflow_callback(model) -> None:
     existing_callbacks = model.trainer_params.get("callbacks", [])
 
     if any(isinstance(cb, _DartsMlflowCallback) for cb in existing_callbacks):
-        logger.debug("MLflow callback already present, skipping injection")
+        logger.info("MLflow callback already present, skipping injection")
         return
 
     if not isinstance(existing_callbacks, list):
@@ -733,4 +747,4 @@ def _inject_mlflow_callback(model) -> None:
 
     existing_callbacks.append(callback)
     model.trainer_params["callbacks"] = existing_callbacks
-    logger.debug(f"Injected MLflow callback into {type(model).__name__}")
+    logger.info(f"Injected MLflow callback into {type(model).__name__}")
