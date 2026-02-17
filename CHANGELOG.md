@@ -12,6 +12,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 
 **Fixed**
+- `backtest()` now provides clear, actionable error messages when `future_covariates` don't extend far enough or start too late, replacing cryptic `IndexError` and `TypeError` with detailed `ValueError` messages that include timestamps, missing steps, and code examples. Also fixed bug in `residuals()` method where `past_covariates` and `future_covariates` weren't being forwarded to `backtest()`. [#2846](https://github.com/unit8co/darts/issues/2846) by [Aditya Mehra](https://github.com/addym).
 
 - Updated the restrictive type hint for the timezone parameter `tz` to `Any`. This allows the use of more timezone definitions supported by Pandas [tz_convert](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html). [#3015](https://github.com/unit8co/darts/pull/3015) by [Moritz Waldleben](https://github.com/mwaldleben).
 
