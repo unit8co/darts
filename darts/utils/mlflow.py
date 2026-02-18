@@ -17,9 +17,10 @@ https://github.com/sktime/sktime/blob/main/sktime/utils/mlflow_sktime.py
 import importlib
 import json
 import os
-from typing import Optional, Union
+from typing import Callable, Optional, Union
 
 import mlflow
+import numpy as np
 import yaml
 from mlflow.models import Model
 from mlflow.models.model import MLMODEL_FILE_NAME
@@ -52,7 +53,9 @@ from mlflow.utils.requirements_utils import _get_pinned_requirement
 
 import darts
 from darts.logging import get_logger, raise_if, raise_if_not
+from darts.metrics import mae, mape, mse, rmse
 from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.timeseries import TimeSeries
 from darts.utils.utils import PL_AVAILABLE
 
 logger = get_logger(__name__)
@@ -329,10 +332,17 @@ def log_model(
     )
 
 
+_DEFAULT_METRICS = [mae, mse, rmse, mape]
+
+
 @autologging_integration(FLAVOR_NAME)
 def autolog(
     log_models: bool = True,
     log_params: bool = True,
+    log_training_metrics: bool = True,
+    log_validation_metrics: bool = True,
+    inject_per_epoch_callbacks: bool = False,
+    extra_metrics: Optional[list[Callable]] = None,
     disable: bool = False,
     silent: bool = False,
     manage_run: bool = True,
@@ -347,6 +357,8 @@ def autolog(
     3. Log covariate usage information (past, future, and static covariates).
     4. For PyTorch-based models: inject a callback that logs per-epoch metrics.
     5. Log the trained model artifact at the end of training.
+    6. Optionally compute and log forecasting metrics on training and/or
+       validation data.
 
     Parameters
     ----------
@@ -354,6 +366,25 @@ def autolog(
         If ``True`` (default), log the trained model artifact after ``fit()``.
     log_params
         If ``True`` (default), log model creation parameters.
+    log_training_metrics
+        If ``True``, compute in-sample forecasting metrics on the training data
+        after ``fit()`` completes.
+        Default ``True``.
+    log_validation_metrics
+        If ``True``, compute forecasting metrics on the validation series
+        (``val_series``) passed to ``fit()``.  Only effective for models whose
+        ``fit()`` accepts a ``val_series`` argument (e.g. PyTorch-based models).
+        Default ``True``.
+    inject_per_epoch_callbacks
+        If ``True``, inject a PyTorch Lightning callback to log training and validation metrics at
+        the end of each epoch. Only effective for PyTorch-based models. To provide additional
+        callbacks use ``torch_metrics`` parameter while initializing the model.
+        Default ``False``.
+    extra_metrics
+        An optional list of additional Darts metric functions to log on top of
+        the defaults (``mae``, ``mse``, ``rmse``, ``mape``).  Each function
+        must follow the standard Darts metric signature
+        ``metric(actual_series, pred_series)``.
     disable
         If ``True``, restore the original ``fit()`` methods and stop
         autologging.
@@ -642,19 +673,40 @@ def _patched_fit(original, self, *args, **kwargs):
     """
     log_models = get_autologging_config(FLAVOR_NAME, "log_models", True)
     log_params = get_autologging_config(FLAVOR_NAME, "log_params", True)
+    log_training_metrics = get_autologging_config(
+        FLAVOR_NAME, "log_training_metrics", False
+    )
+    log_validation_metrics = get_autologging_config(
+        FLAVOR_NAME, "log_validation_metrics", False
+    )
+    inject_per_epoch_callbacks = get_autologging_config(
+        FLAVOR_NAME, "inject_per_epoch_callbacks", False
+    )
+    extra_metrics = get_autologging_config(FLAVOR_NAME, "extra_metrics", None)
 
     mlflow.set_tag("darts.model_class", type(self).__name__)
 
     if log_params:
         _log_model_params(self)
 
-    # Inject callback for torch models (no-op for non-torch models)
-    _inject_mlflow_callback(self)
+    # Inject per-epoch callbacks for torch models (no-op for non-torch models)
+    if inject_per_epoch_callbacks:
+        _inject_mlflow_callback(self)
 
     result = original(self, *args, **kwargs)
 
     if log_params:
         _log_covariate_info(self)
+
+    if log_training_metrics or log_validation_metrics:
+        _log_forecasting_metrics(
+            model=self,
+            fit_args=args,
+            fit_kwargs=kwargs,
+            log_training=log_training_metrics,
+            log_validation=log_validation_metrics,
+            extra_metrics=extra_metrics,
+        )
 
     if log_models:
         try:
@@ -665,6 +717,177 @@ def _patched_fit(original, self, *args, **kwargs):
             )
 
     return result
+
+
+def _log_forecasting_metrics(
+    model,
+    fit_args: tuple,
+    fit_kwargs: dict,
+    log_training: bool,
+    log_validation: bool,
+    extra_metrics: Optional[list[Callable]] = None,
+) -> None:
+    """Compute and log training and/or validation forecasting metrics to MLflow.
+
+    After a model has been fitted this function optionally:
+
+    * Runs ``model.backtest()`` on the training series (``retrain=False``)
+      and logs metrics with a ``train_`` prefix.
+    * Runs ``model.backtest()`` on the validation series and logs metrics
+      with a ``val_`` prefix.
+
+    For multiple series the metrics are averaged to produce a single value per metric.
+
+    Parameters
+    ----------
+    model
+        A fitted Darts forecasting model.
+    fit_args
+        Positional arguments originally passed to ``fit()``.
+    fit_kwargs
+        Keyword arguments originally passed to ``fit()``.
+    log_training
+        Whether to compute and log in-sample training metrics.
+    log_validation
+        Whether to compute and log validation metrics.
+    extra_metrics
+        Optional extra metric functions in addition to the defaults.
+    """
+    metrics_list = _get_metrics_list(extra_metrics)
+
+    # determine forecast horizon from model attributes
+    forecast_horizon = getattr(model, "output_chunk_length", None) or 1
+
+    # extract series and covariates from fit() call
+    train_series = fit_args[0] if fit_args else fit_kwargs.get("series")
+    past_covariates = fit_kwargs.get("past_covariates")
+    future_covariates = fit_kwargs.get("future_covariates")
+    val_series = fit_kwargs.get("val_series")
+    val_past_covariates = fit_kwargs.get("val_past_covariates")
+    val_future_covariates = fit_kwargs.get("val_future_covariates")
+
+    if log_training and train_series is not None:
+        try:
+            _backtest_and_log(
+                model,
+                series=train_series,
+                metrics_list=metrics_list,
+                prefix="train",
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                forecast_horizon=forecast_horizon,
+            )
+        except Exception:
+            logger.info(
+                "Could not compute training forecasting metrics for "
+                f"{type(model).__name__}.",
+                exc_info=True,
+            )
+
+    if log_validation and val_series is not None:
+        try:
+            _backtest_and_log(
+                model,
+                series=val_series,
+                metrics_list=metrics_list,
+                prefix="val",
+                past_covariates=val_past_covariates or past_covariates,
+                future_covariates=val_future_covariates or future_covariates,
+                forecast_horizon=forecast_horizon,
+            )
+        except Exception:
+            logger.info(
+                "Could not compute validation forecasting metrics for "
+                f"{type(model).__name__}.",
+                exc_info=True,
+            )
+
+
+def _backtest_and_log(
+    model,
+    series: Union[TimeSeries, list[TimeSeries]],
+    metrics_list: list[Callable],
+    prefix: str,
+    past_covariates=None,
+    future_covariates=None,
+    forecast_horizon: int = 1,
+) -> None:
+    """Run ``model.backtest()`` and log the resulting scores to MLflow.
+
+    Parameters
+    ----------
+    model
+        A fitted Darts forecasting model.
+    series
+        One or more target series to evaluate on.
+    metrics_list
+        List of Darts metric functions to evaluate.
+    prefix
+        Prefix for the logged metric names (e.g. ``"train"`` or ``"val"``).
+    past_covariates
+        Optional past covariates matching ``series``.
+    future_covariates
+        Optional future covariates matching ``series``.
+    forecast_horizon
+        Number of steps to forecast at each backtest step.
+    """
+    backtest_kwargs = dict(
+        series=series,
+        forecast_horizon=forecast_horizon,
+        retrain=False,
+        overlap_end=False,
+        last_points_only=True,
+        reduction=None,
+        verbose=False,
+        show_warnings=False,
+    )
+    if past_covariates is not None:
+        backtest_kwargs["past_covariates"] = past_covariates
+    if future_covariates is not None:
+        backtest_kwargs["future_covariates"] = future_covariates
+
+    logged = {}
+    for metric_fn in metrics_list:
+        try:
+            score = model.backtest(**backtest_kwargs, metric=metric_fn)
+            # backtest returns a float, np.ndarray, or list depending on the
+            # input.  We want a single scalar per metric so we take the mean.
+
+            logged[f"{prefix}_{metric_fn.__name__}"] = float(np.nanmean(score))
+        except Exception:
+            logger.debug(
+                f"Backtest metric {metric_fn.__name__} failed for "
+                f"{type(model).__name__}, skipping.",
+                exc_info=True,
+            )
+
+    if logged:
+        mlflow.log_metrics(logged)
+
+
+def _get_metrics_list(
+    extra_metrics: Optional[list[Callable]] = None,
+) -> list[Callable]:
+    """Return the combined list of default and extra metric functions.
+
+    Parameters
+    ----------
+    extra_metrics
+        Optional additional metric functions to append to the defaults.
+
+    Returns
+    -------
+    list[Callable]
+        A list of metric functions (``mae``, ``mse``, ``rmse``, ``mape``, plus extras).
+    """
+    metrics = list(_DEFAULT_METRICS)
+    if extra_metrics:
+        seen_names = {m.__name__ for m in metrics}
+        for m in extra_metrics:
+            if m.__name__ not in seen_names:
+                metrics.append(m)
+                seen_names.add(m.__name__)
+    return metrics
 
 
 if PL_AVAILABLE:
