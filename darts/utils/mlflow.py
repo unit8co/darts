@@ -341,7 +341,7 @@ def autolog(
     log_params: bool = True,
     log_training_metrics: bool = True,
     log_validation_metrics: bool = True,
-    inject_per_epoch_callbacks: bool = False,
+    inject_per_epoch_callbacks: bool = True,
     extra_metrics: Optional[list[Callable]] = None,
     disable: bool = False,
     silent: bool = False,
@@ -376,10 +376,9 @@ def autolog(
         ``fit()`` accepts a ``val_series`` argument (e.g. PyTorch-based models).
         Default ``True``.
     inject_per_epoch_callbacks
-        If ``True``, inject a PyTorch Lightning callback to log training and validation metrics at
-        the end of each epoch. Only effective for PyTorch-based models. To provide additional
-        callbacks use ``torch_metrics`` parameter while initializing the model.
-        Default ``False``.
+        If ``True`` (default), inject a PyTorch Lightning callback to log training and validation
+        metrics at the end of each epoch. Only effective for PyTorch-based models. To provide
+        additional callbacks use ``torch_metrics`` parameter while initializing the model.
     extra_metrics
         An optional list of additional Darts metric functions to log on top of
         the defaults (``mae``, ``mse``, ``rmse``, ``mape``).  Each function
@@ -680,7 +679,7 @@ def _patched_fit(original, self, *args, **kwargs):
         FLAVOR_NAME, "log_validation_metrics", False
     )
     inject_per_epoch_callbacks = get_autologging_config(
-        FLAVOR_NAME, "inject_per_epoch_callbacks", False
+        FLAVOR_NAME, "inject_per_epoch_callbacks", True
     )
     extra_metrics = get_autologging_config(FLAVOR_NAME, "extra_metrics", None)
 
