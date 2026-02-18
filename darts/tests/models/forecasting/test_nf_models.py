@@ -19,8 +19,10 @@ if not NF_AVAILABLE:
     )
 
 import torch
+from neuralforecast.models import Autoformer, MLPMultivariate, NLinear
 
 from darts import TimeSeries, concatenate
+from darts.dataprocessing.transformers import StaticCovariatesTransformer
 from darts.models import NeuralForecastModel
 from darts.utils.likelihood_models import (
     GaussianLikelihood,
@@ -40,14 +42,14 @@ kwargs = {
 
 UNIVARIATE_MODELS = [
     ("PatchTST", {"patch_len": 3}),
-    ("NLinear", None),
+    (NLinear, None),
 ]
 MULTIVARIATE_MODELS = [
-    ("SOFTS", None),
+    ("SOFTS", {"hidden_size": 16, "d_core": 16, "d_ff": 64}),
     ("TimeMixer", None),
 ]
 UNIVARIATE_MODELS_WITH_FUTURE_COVS = [
-    ("Autoformer", None),
+    (Autoformer, None),
     ("FEDformer", None),
 ]
 UNIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS = [
@@ -55,7 +57,7 @@ UNIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS = [
     ("KAN", None),
 ]
 MULTIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS = [
-    ("MLPMultivariate", None),
+    (MLPMultivariate, None),
     ("TSMixerx", None),
 ]
 ALL_MODELS = (
@@ -106,9 +108,41 @@ class TestNeuralForecastModel:
         axis=1,
     )
     multiple_series = [
-        linear_timeseries(length=100, dtype=np.float32, column_name="S1"),
-        sine_timeseries(length=200, dtype=np.float32, column_name="S2"),
-        gaussian_timeseries(length=300, dtype=np.float32, column_name="S3"),
+        linear_timeseries(
+            length=100, dtype=np.float32, column_name="S1"
+        ).with_static_covariates(pd.DataFrame({"type": ["linear"]})),
+        sine_timeseries(
+            length=200, dtype=np.float32, column_name="S1"
+        ).with_static_covariates(pd.DataFrame({"type": ["sine"]})),
+        gaussian_timeseries(
+            length=300, dtype=np.float32, column_name="S1"
+        ).with_static_covariates(pd.DataFrame({"type": ["gaussian"]})),
+    ]
+    multiple_multivariate_series = [
+        concatenate(
+            [
+                linear_timeseries(length=100, dtype=np.float32, column_name="S1_M1"),
+                linear_timeseries(length=100, dtype=np.float32, column_name="S1_M2"),
+                linear_timeseries(length=100, dtype=np.float32, column_name="S1_M3"),
+            ],
+            axis=1,
+        ).with_static_covariates(pd.DataFrame({"type": ["linear"]})),
+        concatenate(
+            [
+                sine_timeseries(length=200, dtype=np.float32, column_name="S1_M1"),
+                sine_timeseries(length=200, dtype=np.float32, column_name="S1_M2"),
+                sine_timeseries(length=200, dtype=np.float32, column_name="S1_M3"),
+            ],
+            axis=1,
+        ).with_static_covariates(pd.DataFrame({"type": ["sine"]})),
+        concatenate(
+            [
+                gaussian_timeseries(length=300, dtype=np.float32, column_name="S1_M1"),
+                gaussian_timeseries(length=300, dtype=np.float32, column_name="S1_M2"),
+                gaussian_timeseries(length=300, dtype=np.float32, column_name="S1_M3"),
+            ],
+            axis=1,
+        ).with_static_covariates(pd.DataFrame({"type": ["gaussian"]})),
     ]
 
     @pytest.mark.parametrize("model_name, model_kwargs", ALL_MODELS)
@@ -306,6 +340,55 @@ class TestNeuralForecastModel:
         assert pred.n_timesteps == 4
         assert pred.n_components == 1
 
+    @pytest.mark.parametrize(
+        "model_name, model_kwargs",
+        UNIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS
+        + MULTIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS,
+    )
+    def test_multiple_series_with_static_covs(
+        self, model_name: str, model_kwargs: dict | None
+    ):
+        model = NeuralForecastModel(
+            model=model_name,
+            input_chunk_length=11,
+            output_chunk_length=13,
+            model_kwargs=model_kwargs,
+            use_static_covariates=True,
+            **kwargs,
+        )
+        scaler = StaticCovariatesTransformer()
+        train_series = scaler.fit_transform(self.multiple_series)
+        model.fit(series=train_series)
+        assert model.uses_static_covariates
+        pred = model.predict(n=11, series=train_series[0])
+        assert isinstance(pred, TimeSeries)
+        assert pred.n_timesteps == 11
+        assert pred.n_components == 1
+
+    @pytest.mark.parametrize(
+        "model_name, model_kwargs",
+        MULTIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS,
+    )
+    def test_multiple_multivariate_series_with_static_covs(
+        self, model_name: str, model_kwargs: dict | None
+    ):
+        model = NeuralForecastModel(
+            model=model_name,
+            input_chunk_length=9,
+            output_chunk_length=12,
+            model_kwargs=model_kwargs,
+            use_static_covariates=True,
+            **kwargs,
+        )
+        scaler = StaticCovariatesTransformer()
+        train_series = scaler.fit_transform(self.multiple_multivariate_series)
+        model.fit(series=train_series)
+        assert model.uses_static_covariates
+        pred = model.predict(n=10, series=train_series[0])
+        assert isinstance(pred, TimeSeries)
+        assert pred.n_timesteps == 10
+        assert pred.n_components == train_series[0].n_components
+
     @pytest.mark.parametrize("model_name, model_kwargs", ALL_MODELS)
     def test_output_chunk_shift(self, model_name: str, model_kwargs: dict | None):
         model = NeuralForecastModel(
@@ -375,3 +458,46 @@ class TestNeuralForecastModel:
             assert pred.n_timesteps == 10
             assert pred.n_components == 1
             assert pred.n_samples == 50
+
+    def test_invalid_model_name(self):
+        with pytest.raises(
+            ValueError,
+            match="Could not find a NeuralForecast model class named `InvalidModel`",
+        ):
+            NeuralForecastModel(
+                model="InvalidModel",
+                input_chunk_length=10,
+                output_chunk_length=5,
+                **kwargs,
+            )
+
+    def test_invalid_model_class(self):
+        # not a base class
+        from neuralforecast import NeuralForecast
+        from neuralforecast.auto import AutoAutoformer, AutoKAN
+
+        for model_class in ["HINT", NeuralForecast, AutoAutoformer, AutoKAN]:
+            with pytest.raises(
+                ValueError, match="must be a NeuralForecast base model class"
+            ):
+                NeuralForecastModel(
+                    model=model_class,
+                    input_chunk_length=10,
+                    output_chunk_length=5,
+                    **kwargs,
+                )
+
+    @pytest.mark.parametrize("model_name", ["DeepAR", "LSTM"])
+    def test_unsupported_recurrent_models(self, model_name: str):
+        # Recurrent models are not currently supported in Darts due to the way they handle covariates.
+        # If we try to use one, we should get a clear error message.
+        with pytest.raises(
+            NotImplementedError,
+            match="Recurrent NeuralForecast models are currently not supported",
+        ):
+            NeuralForecastModel(
+                model=model_name,
+                input_chunk_length=10,
+                output_chunk_length=5,
+                **kwargs,
+            )
