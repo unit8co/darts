@@ -263,13 +263,13 @@ class _NeuralForecastModule(PLForecastingModule):
         # process static covariates if supported and provided
         if x_static is not None:
             if self.is_multivariate:
-                # `stat_exog`: (B, C, S) -> (C, S)
+                # `stat_exog`: (B, C, S) or (B, 1, S) -> (C, S)
                 # For multivariate models, NeuralForecast expects `stat_exog` to be of
                 # shape (C, S) and shared across the batch dimension,
-                # but Darts provides them in shape (B, C, S).
+                # but Darts provides them in shape (B, C, S) or (B, 1, S).
                 # Here, we assume that static covariates are the same across each sample
                 # in the batch and simply take the first sample's static covariates.
-                stat_exog = x_static[0]
+                stat_exog = x_static[0].expand(self.n_targets, -1)
             else:
                 # `stat_exog`: (B, C * S) [C=1]
                 stat_exog = x_static.squeeze(1)
@@ -633,13 +633,6 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         return model_class
 
     def _validate_nf_model_class(self, name: str = "model") -> None:
-        if not inspect.isclass(self.nf_model_class):
-            raise_log(
-                ValueError(
-                    f"`{name}` must be a class, but got {type(self.nf_model_class)}."
-                ),
-                logger,
-            )
         if not issubclass(self.nf_model_class, BaseModel):
             raise_log(
                 ValueError(
