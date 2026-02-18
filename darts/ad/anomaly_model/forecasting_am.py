@@ -24,6 +24,7 @@ from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -67,9 +68,9 @@ class ForecastingAnomalyModel(AnomalyModel):
 
     def fit(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         allow_model_training: bool = False,
         forecast_horizon: int = 1,
         start: pd.Timestamp | float | int = None,
@@ -154,9 +155,9 @@ class ForecastingAnomalyModel(AnomalyModel):
 
     def score(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         forecast_horizon: int = 1,
         start: pd.Timestamp | float | int = None,
         start_format: Literal["position", "value"] = "value",
@@ -165,7 +166,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         show_warnings: bool = True,
         enable_optimization: bool = True,
         return_model_prediction: bool = False,
-    ) -> TimeSeries | Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]]:
+    ) -> TimeSeriesLike | Sequence[Sequence[TimeSeries]]:
         """Compute anomaly score(s) for the given series.
 
         Predicts the given target time series with the forecasting model, and applies the scorer(s)
@@ -327,10 +328,10 @@ class ForecastingAnomalyModel(AnomalyModel):
 
     def eval_metric(
         self,
-        anomalies: TimeSeries | Sequence[TimeSeries],
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        anomalies: TimeSeriesLike,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         forecast_horizon: int = 1,
         start: pd.Timestamp | float | int = None,
         start_format: Literal["position", "value"] = "value",

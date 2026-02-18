@@ -19,6 +19,7 @@ from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
 from darts.logging import get_logger, raise_if
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -124,7 +125,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
 
     @staticmethod
     def ts_fit(
-        series: TimeSeries | Sequence[TimeSeries],
+        series: TimeSeriesLike,
         params: Mapping[str, Any],
         *args,
         **kwargs,

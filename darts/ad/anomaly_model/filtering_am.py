@@ -21,6 +21,7 @@ from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
 from darts.logging import get_logger, raise_log
 from darts.models.filtering.filtering_model import FilteringModel
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -62,7 +63,7 @@ class FilteringAnomalyModel(AnomalyModel):
 
     def fit(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
+        series: TimeSeriesLike,
         allow_model_training: bool = False,
         **filter_fit_kwargs,
     ) -> Self:
@@ -97,10 +98,10 @@ class FilteringAnomalyModel(AnomalyModel):
 
     def score(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
+        series: TimeSeriesLike,
         return_model_prediction: bool = False,
         **filter_kwargs,
-    ) -> TimeSeries | Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]]:
+    ) -> TimeSeriesLike | Sequence[Sequence[TimeSeries]]:
         """Compute the anomaly score(s) for the given (sequence of) series.
 
         Predicts the given target time series with the filtering model, and applies the scorer(s)
@@ -150,8 +151,8 @@ class FilteringAnomalyModel(AnomalyModel):
 
     def eval_metric(
         self,
-        anomalies: TimeSeries | Sequence[TimeSeries],
-        series: TimeSeries | Sequence[TimeSeries],
+        anomalies: TimeSeriesLike,
+        series: TimeSeriesLike,
         metric: Literal["AUC_ROC", "AUC_PR"] = "AUC_ROC",
         **filter_kwargs,
     ) -> (

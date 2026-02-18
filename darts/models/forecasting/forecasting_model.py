@@ -30,6 +30,7 @@ from typing import Any, BinaryIO, Literal
 
 from darts.metrics import CLASSIFICATION_METRICS
 from darts.metrics.utils import _PARAM_LABEL_REDUCTION, _PARAM_LABELS
+from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import (
     Likelihood,
     likelihood_component_names,
@@ -410,11 +411,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def _fit_wrapper(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        sample_weight: TimeSeries | Sequence[TimeSeries] | None = None,
-        val_series: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        sample_weight: TimeSeriesLike | None = None,
+        val_series: TimeSeriesLike | None = None,
         **kwargs,
     ):
         add_kwargs = {}
@@ -448,7 +449,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         predict_likelihood_parameters: bool = False,
         random_state: int | None = None,
         **kwargs,
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         add_kwargs = {}
         # not all models supports input `series` at inference
         if self.supports_transferable_series_prediction:
@@ -669,9 +670,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     @_with_sanity_checks("_historical_forecasts_sanity_checks")
     def historical_forecasts(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         forecast_horizon: int = 1,
         num_samples: int = 1,
         train_length: int | None = None,
@@ -690,7 +691,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         data_transformers: dict[str, BaseDataTransformer | Pipeline] | None = None,
         fit_kwargs: dict[str, Any] | None = None,
         predict_kwargs: dict[str, Any] | None = None,
-        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
         random_state: int | None = None,
     ) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]]:
         """Generates historical forecasts by simulating predictions at various points in time throughout the history of
@@ -1247,9 +1248,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def backtest(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         historical_forecasts: TimeSeries
         | Sequence[TimeSeries]
         | Sequence[Sequence[TimeSeries]]
@@ -1275,7 +1276,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         metric_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
         fit_kwargs: dict[str, Any] | None = None,
         predict_kwargs: dict[str, Any] | None = None,
-        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
         random_state: int | None = None,
     ) -> float | np.ndarray | list[float] | list[np.ndarray]:
         r"""Compute error values that the model produced for historical forecasts on (potentially multiple) `series`.
@@ -2001,9 +2002,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def residuals(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         historical_forecasts: TimeSeries
         | Sequence[TimeSeries]
         | Sequence[Sequence[TimeSeries]]
@@ -2028,7 +2029,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         metric_kwargs: dict[str, Any] | None = None,
         fit_kwargs: dict[str, Any] | None = None,
         predict_kwargs: dict[str, Any] | None = None,
-        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
         values_only: bool = False,
         random_state: int | None = None,
     ) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]]:
@@ -2382,10 +2383,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def generate_fit_encodings(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-    ) -> tuple[TimeSeries | Sequence[TimeSeries], TimeSeries | Sequence[TimeSeries]]:
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+    ) -> tuple[TimeSeriesLike, TimeSeriesLike]:
         """Generates the covariate encodings that were used/generated for fitting the model and returns a tuple of
         past, and future covariates series with the original and encoded covariates stacked together. The encodings are
         generated by the encoders defined at model creation with parameter `add_encoders`. Pass the same `series`,
@@ -2402,7 +2403,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         Returns
         -------
-        Tuple[TimeSeries | Sequence[TimeSeries], TimeSeries | Sequence[TimeSeries]]
+        Tuple[TimeSeriesLike, TimeSeriesLike]
             A tuple of (past covariates, future covariates). Each covariate contains the original as well as the
             encoded covariates.
         """
@@ -2421,10 +2422,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def generate_predict_encodings(
         self,
         n: int,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-    ) -> tuple[TimeSeries | Sequence[TimeSeries], TimeSeries | Sequence[TimeSeries]]:
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+    ) -> tuple[TimeSeriesLike, TimeSeriesLike]:
         """Generates covariate encodings for the inference/prediction set and returns a tuple of past, and future
         covariates series with the original and encoded covariates stacked together. The encodings are generated by the
         encoders defined at model creation with parameter `add_encoders`. Pass the same `series`, `past_covariates`,
@@ -2445,7 +2446,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         Returns
         -------
-        Tuple[TimeSeries | Sequence[TimeSeries], TimeSeries | Sequence[TimeSeries]]
+        Tuple[TimeSeriesLike, TimeSeriesLike]
             A tuple of (past covariates, future covariates). Each covariate contains the original as well as the
             encoded covariates.
         """
@@ -2465,10 +2466,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def generate_fit_predict_encodings(
         self,
         n: int,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-    ) -> tuple[TimeSeries | Sequence[TimeSeries], TimeSeries | Sequence[TimeSeries]]:
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+    ) -> tuple[TimeSeriesLike, TimeSeriesLike]:
         """Generates covariate encodings for training and inference/prediction and returns a tuple of past, and future
         covariates series with the original and encoded covariates stacked together. The encodings are generated by the
         encoders defined at model creation with parameter `add_encoders`. Pass the same `series`, `past_covariates`,
@@ -2489,7 +2490,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         Returns
         -------
-        Tuple[TimeSeries | Sequence[TimeSeries], TimeSeries | Sequence[TimeSeries]]
+        Tuple[TimeSeriesLike, TimeSeriesLike]
             A tuple of (past covariates, future covariates). Each covariate contains the original as well as the
             encoded covariates.
         """
@@ -2993,9 +2994,9 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     @abstractmethod
     def fit(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         verbose: bool | None = None,
     ) -> "GlobalForecastingModel":
         """Fit/train the model on (potentially multiple) series.
@@ -3071,15 +3072,15 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     def predict(
         self,
         n: int,
-        series: TimeSeries | Sequence[TimeSeries] | None = None,
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike | None = None,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         num_samples: int = 1,
         verbose: bool | None = None,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
         random_state: int | None = None,
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         """Forecasts values for `n` time steps after the end of the series.
 
         If :func:`fit()` has been called with only one ``TimeSeries`` as argument, then the `series` argument of
@@ -3123,7 +3124,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
 
         Returns
         -------
-        TimeSeries | Sequence[TimeSeries]
+        TimeSeriesLike
             If `series` is not specified, this function returns a single time series containing the `n`
             next points after then end of the training series.
             If `series` is given and is a simple ``TimeSeries``, this function returns the `n` next points
@@ -3587,10 +3588,10 @@ class TransferableFutureCovariatesLocalForecastingModel(
     def generate_predict_encodings(
         self,
         n: int,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-    ) -> tuple[TimeSeries | Sequence[TimeSeries], TimeSeries | Sequence[TimeSeries]]:
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+    ) -> tuple[TimeSeriesLike, TimeSeriesLike]:
         raise_if(
             self.encoders is None or not self.encoders.encoding_available,
             "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "

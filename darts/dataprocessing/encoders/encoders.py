@@ -176,12 +176,12 @@ from darts.dataprocessing.encoders.encoder_base import (
 from darts.dataprocessing.transformers import FittableDataTransformer
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.timeseries import DIMS
-from darts.typing import TimeIndex
+from darts.typing import TimeIndex, TimeSeriesLike
 from darts.utils.timeseries_generation import datetime_attribute_timeseries
 from darts.utils.ts_utils import seq2series, series2seq
 from darts.utils.utils import generate_index
 
-SupportedTimeSeries = TimeSeries | Sequence[TimeSeries]
+SupportedTimeSeries = TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -988,7 +988,7 @@ class SequentialEncoder(Encoder):
         future_covariates: SupportedTimeSeries | None = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> tuple[TimeSeries | Sequence[TimeSeries], TimeSeries | Sequence[TimeSeries]]:
+    ) -> tuple[TimeSeriesLike, TimeSeriesLike]:
         """Returns encoded index for all past and/or future covariates for training.
         Which covariates are generated depends on the parameters used at model creation.
 
@@ -1049,7 +1049,7 @@ class SequentialEncoder(Encoder):
         future_covariates: SupportedTimeSeries | None = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> tuple[TimeSeries | Sequence[TimeSeries], TimeSeries | Sequence[TimeSeries]]:
+    ) -> tuple[TimeSeriesLike, TimeSeriesLike]:
         """Returns encoded index for all past and/or future covariates for inference/prediction.
         Which covariates are generated depends on the parameters used at model creation.
 
@@ -1099,7 +1099,7 @@ class SequentialEncoder(Encoder):
         future_covariates: SupportedTimeSeries | None = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> tuple[TimeSeries | Sequence[TimeSeries], TimeSeries | Sequence[TimeSeries]]:
+    ) -> tuple[TimeSeriesLike, TimeSeriesLike]:
         """Returns encoded index for all past and/or future covariates for training and inference/prediction.
         Which covariates are generated depends on the parameters used at model creation.
 

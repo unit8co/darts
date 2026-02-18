@@ -16,6 +16,7 @@ from darts.models.forecasting.forecasting_model import (
     ForecastingModel,
     LocalForecastingModel,
 )
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -327,10 +328,10 @@ class NaiveEnsembleModel(EnsembleModel):
 
     def fit(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
         verbose: bool | None = None,
     ):
         super().fit(
@@ -358,13 +359,13 @@ class NaiveEnsembleModel(EnsembleModel):
 
     def ensemble(
         self,
-        predictions: TimeSeries | Sequence[TimeSeries],
-        series: TimeSeries | Sequence[TimeSeries],
+        predictions: TimeSeriesLike,
+        series: TimeSeriesLike,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         random_state: int | None = None,
         verbose: bool | None = None,
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         """Average the `forecasting_models` predictions, component-wise"""
         raise_if(
             predict_likelihood_parameters

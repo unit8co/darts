@@ -32,6 +32,7 @@ from darts.ad.utils import (
     series2seq,
 )
 from darts.logging import get_logger, raise_log
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -67,9 +68,9 @@ class Aggregator(ABC):
 
     def predict(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
+        series: TimeSeriesLike,
         name: str = "series",
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         """Aggregates the (sequence of) multivariate binary series given as
         input into a (sequence of) univariate binary series.
 
@@ -99,8 +100,8 @@ class Aggregator(ABC):
 
     def eval_metric(
         self,
-        anomalies: TimeSeries | Sequence[TimeSeries],
-        series: TimeSeries | Sequence[TimeSeries],
+        anomalies: TimeSeriesLike,
+        series: TimeSeriesLike,
         window: int = 1,
         metric: Literal["recall", "precision", "f1", "accuracy"] = "recall",
     ) -> float | Sequence[float]:
@@ -158,8 +159,8 @@ class FittableAggregator(Aggregator):
 
     def fit(
         self,
-        anomalies: TimeSeries | Sequence[TimeSeries],
-        series: TimeSeries | Sequence[TimeSeries],
+        anomalies: TimeSeriesLike,
+        series: TimeSeriesLike,
     ) -> Self:
         """Fit the aggregators on the (sequence of) multivariate binary anomaly series.
 
@@ -208,8 +209,8 @@ class FittableAggregator(Aggregator):
 
     def predict(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
+        series: TimeSeriesLike,
         name: str = "series",
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         _assert_fit_called(self._fit_called, name="Aggregator")
         return super().predict(series=series, name=name)

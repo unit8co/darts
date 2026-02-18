@@ -3,7 +3,7 @@ Mixed-data sampling (MIDAS) Transformer
 ---------------------------------------
 """
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from typing import Any
 
 import numpy as np
@@ -16,7 +16,7 @@ from darts.dataprocessing.transformers import (
 )
 from darts.logging import get_logger, raise_log
 from darts.timeseries import DEFAULT_GLOBAL_STATIC_COV_NAME, _finite_rows_boundaries
-from darts.typing import TimeIndex
+from darts.typing import TimeIndex, TimeSeriesLike
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -119,7 +119,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
 
     @staticmethod
     def ts_fit(
-        series: TimeSeries | Sequence[TimeSeries],
+        series: TimeSeriesLike,
         params: Mapping[str, Any],
         *args,
         **kwargs,

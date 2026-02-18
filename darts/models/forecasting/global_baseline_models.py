@@ -24,6 +24,7 @@ from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
     TorchForecastingModel,
 )
+from darts.typing import TimeSeriesLike
 from darts.utils.data import (
     SequentialTorchTrainingDataset,
     TorchTrainingDataset,
@@ -151,9 +152,9 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
 
     def fit(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         *args,
         **kwargs,
     ) -> TorchForecastingModel:

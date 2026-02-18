@@ -177,7 +177,7 @@ class TestAnomalyDetectionModel:
         )
 
         # if return_model_prediction set to false output must be
-        # TimeSeries | Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]]
+        # TimeSeriesLike | Sequence[Sequence[TimeSeries]]
         assert not isinstance(
             anomaly_model.score(self.test, return_model_prediction=False), tuple
         )

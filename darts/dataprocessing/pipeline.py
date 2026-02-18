@@ -13,6 +13,7 @@ from darts.dataprocessing.transformers import (
     InvertibleDataTransformer,
 )
 from darts.logging import get_logger, raise_if_not
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -102,7 +103,7 @@ class Pipeline:
             for transformer in self._transformers:
                 transformer.set_n_jobs(n_jobs)
 
-    def fit(self, data: TimeSeries | Sequence[TimeSeries]):
+    def fit(self, data: TimeSeriesLike):
         """
         Fit all fittable transformers in pipeline.
 
@@ -128,9 +129,7 @@ class Pipeline:
             if idx < last_fittable_idx:
                 data = transformer.transform(data)
 
-    def fit_transform(
-        self, data: TimeSeries | Sequence[TimeSeries]
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    def fit_transform(self, data: TimeSeriesLike) -> TimeSeriesLike:
         """
         For each data transformer in the pipeline, first fit the data if transformer is fittable then transform data
         using fitted transformer. The transformed data is then passed to next transformer.
@@ -142,7 +141,7 @@ class Pipeline:
 
         Returns
         -------
-        TimeSeries | Sequence[TimeSeries]
+        TimeSeriesLike
             Transformed data.
         """
         for transformer in self._transformers:
@@ -154,9 +153,9 @@ class Pipeline:
 
     def transform(
         self,
-        data: TimeSeries | Sequence[TimeSeries],
+        data: TimeSeriesLike,
         series_idx: int | Sequence[int] | None = None,
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         """
         For each data transformer in pipeline transform data. Then transformed data is passed to next transformer.
 
@@ -170,7 +169,7 @@ class Pipeline:
 
         Returns
         -------
-        TimeSeries | Sequence[TimeSeries]
+        TimeSeriesLike
             Transformed data.
         """
         for transformer in self._transformers:
@@ -179,10 +178,10 @@ class Pipeline:
 
     def inverse_transform(
         self,
-        data: TimeSeries | Sequence[TimeSeries],
+        data: TimeSeriesLike,
         partial: bool = False,
         series_idx: int | Sequence[int] | None = None,
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         """
         For each data transformer in the pipeline, inverse-transform data. Then inverse transformed data is passed to
         the next transformer. Transformers are traversed in reverse order. Raises value error if not all transformers
@@ -202,7 +201,7 @@ class Pipeline:
 
         Returns
         -------
-        TimeSeries | Sequence[TimeSeries]
+        TimeSeriesLike
             Inverse transformed data.
         """
         if not partial:

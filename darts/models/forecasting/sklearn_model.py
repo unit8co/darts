@@ -76,6 +76,7 @@ from darts.logging import (
     raise_log,
 )
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+from darts.typing import TimeSeriesLike
 from darts.utils.data.tabularization import (
     _create_lagged_data_autoregression,
     create_lagged_component_names,
@@ -910,12 +911,12 @@ class SKLearnModel(GlobalForecastingModel):
 
     def fit(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         max_samples_per_ts: int | None = None,
         n_jobs_multioutput_wrapper: int | None = None,
-        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
         stride: int = 1,
         verbose: bool | None = None,
         **kwargs,
@@ -1137,16 +1138,16 @@ class SKLearnModel(GlobalForecastingModel):
     def predict(
         self,
         n: int,
-        series: TimeSeries | Sequence[TimeSeries] | None = None,
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike | None = None,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         num_samples: int = 1,
         verbose: bool | None = None,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
         random_state: int | None = None,
         **kwargs,
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         """Forecasts values for `n` time steps after the end of the series.
 
         Parameters
@@ -1781,9 +1782,9 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
 
     def _get_categorical_features(
         self,
-        series: Sequence[TimeSeries] | TimeSeries,
-        past_covariates: Sequence[TimeSeries] | TimeSeries | None = None,
-        future_covariates: Sequence[TimeSeries] | TimeSeries | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
     ) -> tuple[list[int], list[str]]:
         """
         Returns the indices and column names of the categorical features in the regression model.
@@ -2103,12 +2104,12 @@ class _ClassifierMixin:
 
     def fit(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         max_samples_per_ts: int | None = None,
         n_jobs_multioutput_wrapper: int | None = None,
-        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
         stride: int = 1,
         verbose: bool | None = None,
         **kwargs,

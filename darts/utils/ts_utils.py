@@ -9,6 +9,7 @@ from functools import total_ordering
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
+from darts.typing import TimeSeriesLike
 
 try:
     from IPython import get_ipython
@@ -60,10 +61,10 @@ class SeriesType(Enum):
 
 
 def series2seq(
-    ts: TimeSeries | Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]] | None,
+    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None,
     seq_type_out: SeriesType = SeriesType.SEQ,
     nested: bool = False,
-) -> TimeSeries | Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]] | None:
+) -> TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None:
     """If possible, converts `ts` into the desired sequence type `seq_type_out`. Otherwise, returns the
     original `ts`.
 
@@ -144,7 +145,7 @@ def series2seq(
 
 
 def seq2series(
-    ts: TimeSeries | Sequence[TimeSeries] | None,
+    ts: TimeSeriesLike | None,
 ) -> TimeSeries | None:
     """If `ts` is a Sequence with only a single series, return the single series as TimeSeries.
 
@@ -162,7 +163,7 @@ def seq2series(
 
 
 def get_single_series(
-    ts: TimeSeries | Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]] | None,
+    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None,
 ) -> TimeSeries | None:
     """Returns a single (first) TimeSeries or `None` from `ts`. Returns `ts` if  `ts` is a TimeSeries, `ts[0]` if
     `ts` is a `Sequence[TimeSeries]`, and `ts[0][0]` if `ts` is a `Sequence[Sequence[TimeSeries]]`.
@@ -190,7 +191,7 @@ def get_single_series(
 
 
 def get_series_seq_type(
-    ts: TimeSeries | Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]],
+    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]],
 ) -> SeriesType:
     """Returns the sequence type of `ts`.
 

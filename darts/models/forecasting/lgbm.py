@@ -18,11 +18,8 @@ To enable LightGBM support in Darts, follow the detailed install instructions fo
 https://github.com/unit8co/darts/blob/master/INSTALL.md
 """
 
-from collections.abc import Sequence
-
 import lightgbm as lgb
 
-from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
@@ -31,6 +28,7 @@ from darts.models.forecasting.sklearn_model import (
     _ClassifierMixin,
     _QuantileModelContainer,
 )
+from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import QuantileRegression, _get_likelihood
 
@@ -250,16 +248,16 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
 
     def fit(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        val_series: TimeSeries | Sequence[TimeSeries] | None = None,
-        val_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        val_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        val_series: TimeSeriesLike | None = None,
+        val_past_covariates: TimeSeriesLike | None = None,
+        val_future_covariates: TimeSeriesLike | None = None,
         max_samples_per_ts: int | None = None,
         n_jobs_multioutput_wrapper: int | None = None,
-        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
-        val_sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
+        val_sample_weight: TimeSeriesLike | str | None = None,
         verbose: bool | None = None,
         **kwargs,
     ):

@@ -13,6 +13,7 @@ from numpy.lib.stride_tricks import sliding_window_view
 
 from darts import TimeSeries
 from darts.logging import get_logger
+from darts.typing import TimeSeriesLike
 from darts.utils import _build_tqdm_iterator
 from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
@@ -39,7 +40,7 @@ def _optimized_historical_forecasts_regression(
     random_state: int | None = None,
     predict_kwargs: dict[str, Any] | None = None,
     last_points_only: bool = False,
-) -> TimeSeries | Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]]:
+) -> TimeSeriesLike | Sequence[Sequence[TimeSeries]]:
     """
     Optimized historical forecasts for SKLearnModel.
 

@@ -19,7 +19,7 @@ from darts.dataprocessing.transformers import (
 )
 from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries, slice_intersect
-from darts.typing import TimeIndex
+from darts.typing import TimeIndex, TimeSeriesLike
 from darts.utils.ts_utils import (
     SeriesType,
     get_series_seq_type,
@@ -1429,7 +1429,7 @@ def _apply_data_transformers(
 
 
 def _apply_inverse_data_transformers(
-    series: TimeSeries | Sequence[TimeSeries],
+    series: TimeSeriesLike,
     forecasts: TimeSeries | list[TimeSeries] | list[list[TimeSeries]],
     data_transformers: dict[str, Pipeline],
     series_idx: int | None = None,
@@ -1514,7 +1514,7 @@ def _pack_series_in_list(
 
 
 def _process_historical_forecast_for_backtest(
-    series: TimeSeries | Sequence[TimeSeries],
+    series: TimeSeriesLike,
     historical_forecasts: TimeSeries
     | Sequence[TimeSeries]
     | Sequence[Sequence[TimeSeries]],

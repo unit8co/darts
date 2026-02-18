@@ -26,6 +26,7 @@ from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.metrics.metrics import _tolerance_coverages
 from darts.metrics.utils import _get_tolerance_levels
+from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.sklearn import QuantileRegression
 from darts.utils.missing_values import fill_missing_values
 from darts.utils.ts_utils import get_single_series
@@ -1097,8 +1098,8 @@ def plot_residuals_analysis(
 
 
 def plot_tolerance_curve(
-    actual_series: TimeSeries | Sequence[TimeSeries],
-    pred_series: TimeSeries | Sequence[TimeSeries],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     min_tolerance: float = 0.0,
     max_tolerance: float = 1.0,

@@ -13,6 +13,7 @@ from darts.dataprocessing.transformers import (
     InvertibleMapper,
     Mapper,
 )
+from darts.typing import TimeSeriesLike
 from darts.utils.timeseries_generation import constant_timeseries
 
 
@@ -108,7 +109,7 @@ class TestPipeline:
 
         @staticmethod
         def ts_fit(
-            series: TimeSeries | Sequence[TimeSeries],
+            series: TimeSeriesLike,
             params: Mapping[str, Any],
             *args,
             **kwargs,
