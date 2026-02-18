@@ -64,7 +64,7 @@ torch = [
     "safetensors>=0.6.2",
 ]
 notorch = [
-    "catboost>=1.0.6",
+    "catboost>=1.0.6,<=1.2.9",
     "lightgbm>=3.2.0",
     "prophet>=1.1.1",
     "statsforecast>=1.4",
