@@ -96,6 +96,19 @@ class TestMLflow:
     ts_past_cov = tg.sine_timeseries(length=62).astype("float32")
     ts_future_cov = tg.constant_timeseries(value=1.0, length=62).astype("float32")
 
+    def test_save_load_statistical_model(self, tmpdir_fn):
+        """Test save/load round-trip for statistical model"""
+        model = ExponentialSmoothing()
+        model.fit(self.ts_univariate)
+
+        model_path = os.path.join(tmpdir_fn, "test_model")
+        save_model(model, model_path)
+
+        assert_mlflow_artifacts_exist(model_path, is_torch=False)
+
+        loaded_model = load_model(f"file://{model_path}")
+        assert_predictions_equal(model, loaded_model, n=5)
+
     def test_save_load_regression_model(self, tmpdir_fn):
         """Test save/load round-trip for regression model"""
         model = LinearRegressionModel(lags=5)
@@ -135,6 +148,22 @@ class TestMLflow:
 
         loaded_model = load_model(log_info.model_uri)
         assert_predictions_equal(model, loaded_model, n=5)
+
+    def test_log_model_with_params(self, mlflow_tracking):
+        """Test that log_params=True logs model parameters"""
+        model = LinearRegressionModel(lags=5, lags_past_covariates=3)
+        model.fit(self.ts_univariate[:40], past_covariates=self.ts_past_cov[:40])
+
+        with mlflow.start_run():
+            log_model(model, name="model", log_params=True)
+            run_id = mlflow.active_run().info.run_id
+
+        run = mlflow.get_run(run_id)
+        assert run.data.params["lags"] == "5"
+        assert run.data.params["lags_past_covariates"] == "3"
+        assert run.data.params["n_past_covariates"] == "1"
+        assert run.data.params["n_future_covariates"] == "0"
+        assert run.data.params["n_static_covariates"] == "0"
 
     def test_log_model_with_covariates(self, mlflow_tracking):
         """Test that covariate info is logged with correct values"""
@@ -263,7 +292,7 @@ class TestMLflow:
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_autolog_torch_metrics(self, mlflow_tracking, autolog_context):
         """Test that autolog logs training metrics for torch models"""
-        with autolog_context(inject_per_epoch_callbacks=True):
+        with autolog_context():
             model = NBEATSModel(
                 input_chunk_length=4,
                 output_chunk_length=2,
@@ -300,7 +329,7 @@ class TestMLflow:
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_autolog_injects_callback(self, mlflow_tracking, autolog_context):
         """Test that autolog injects MLflow callback into torch models"""
-        with autolog_context(inject_per_epoch_callbacks=True):
+        with autolog_context():
             model = NBEATSModel(
                 input_chunk_length=4,
                 output_chunk_length=2,
@@ -331,6 +360,33 @@ class TestMLflow:
             assert has_mlflow_callback, (
                 f"_DartsMlflowCallback not found in {[type(cb).__name__ for cb in final_callbacks]}"
             )
+
+    def test_covariate_artifact_schema(self, mlflow_tracking):
+        """Test that covariate artifact has correct JSON schema"""
+        model = LinearRegressionModel(lags=5, lags_past_covariates=3)
+        model.fit(self.ts_univariate[:40], past_covariates=self.ts_past_cov[:40])
+
+        with mlflow.start_run():
+            log_model(model, name="model", log_params=True)
+
+            artifact_uri = mlflow.get_artifact_uri("covariates.json")
+            artifact_path = artifact_uri.replace("file://", "")
+
+            with open(artifact_path) as f:
+                cov_data = json.load(f)
+
+        # validate schema structure
+        required_keys = ["past_covariates", "future_covariates", "static_covariates"]
+        assert all(key in cov_data for key in required_keys), (
+            "Missing required covariate keys"
+        )
+
+        for cov_type in required_keys:
+            cov_info = cov_data[cov_type]
+            assert "used" in cov_info and isinstance(cov_info["used"], bool)
+            assert "count" in cov_info and isinstance(cov_info["count"], int)
+            assert "names" in cov_info and isinstance(cov_info["names"], list)
+            assert cov_info["count"] == len(cov_info["names"])
 
     def test_multivariate_with_all_covariate_types(self, mlflow_tracking):
         """Test saving/loading multivariate series with all covariate types"""
@@ -377,7 +433,7 @@ class TestMLflow:
         else:
             pytest.skip("PyTorch Lightning not available")
 
-        with autolog_context(inject_per_epoch_callbacks=True):
+        with autolog_context():
             model = NBEATSModel(
                 input_chunk_length=4,
                 output_chunk_length=2,
@@ -421,6 +477,34 @@ class TestMLflow:
         assert "ExponentialSmoothing" in model_classes
         assert "LinearRegressionModel" in model_classes
 
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
+    def test_autolog_torch_model_multiple_fits(self, mlflow_tracking, autolog_context):
+        """Test autolog with multiple fits of a torch model"""
+        with autolog_context():
+            with mlflow.start_run():
+                model1 = NBEATSModel(
+                    input_chunk_length=4,
+                    output_chunk_length=2,
+                    n_epochs=1,
+                    **tfm_kwargs_dev,
+                )
+                train, val = self.ts_univariate.split_before(0.7)
+                model1.fit(train, val_series=val)
+
+            with mlflow.start_run():
+                model2 = LinearRegressionModel(lags=5)
+                model2.fit(self.ts_univariate)
+
+        runs = mlflow.search_runs()
+        assert len(runs) == 2, "Expected two separate runs for two fits"
+
+        for _, run in runs.iterrows():
+            assert run["tags.darts.model_class"] in [
+                "NBEATSModel",
+                "LinearRegressionModel",
+            ]
+            assert run["tags.mlflow.runName"] is not None
+
     def test_save_load_preserves_series_metadata(self, tmpdir_fn):
         """Test that save/load preserves multivariate and static covariate structure"""
         target = self.ts_multivariate.with_static_covariates(
@@ -447,6 +531,11 @@ class TestMLflow:
         np.testing.assert_array_almost_equal(
             pred_original.values(), pred_loaded.values(), decimal=4
         )
+
+    def test_load_nonexistent_model(self):
+        """Test that loading nonexistent model raises appropriate error"""
+        with pytest.raises(Exception):
+            load_model("runs:/fake_run_id/model")
 
     def test_load_invalid_uri_fails(self):
         """Test that loading with invalid URI raises an error"""
