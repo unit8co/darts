@@ -135,7 +135,12 @@ class TestMLflow:
 
         assert_mlflow_artifacts_exist(model_path, is_torch=True)
 
-        loaded_model = load_model(f"file://{model_path}")
+        # save(clean=True) strips pl_trainer_kwargs; explicitly restore accelerator
+        # so Lightning doesn't default to MPS on Github macOS runner
+        loaded_model = load_model(
+            f"file://{model_path}",
+            pl_trainer_kwargs=tfm_kwargs_dev.get("pl_trainer_kwargs", {}),
+        )
         assert_predictions_equal(model, loaded_model, n=2, series=self.ts_univariate)
 
     def test_log_model_basic(self, mlflow_tracking):
