@@ -438,7 +438,10 @@ class TestMLflow:
                 input_chunk_length=4,
                 output_chunk_length=2,
                 n_epochs=2,
-                pl_trainer_kwargs={"callbacks": [existing_callback]},
+                pl_trainer_kwargs={
+                    **tfm_kwargs_dev.get("pl_trainer_kwargs", {}),
+                    "callbacks": [existing_callback],
+                },
                 **{k: v for k, v in tfm_kwargs_dev.items() if k != "pl_trainer_kwargs"},
             )
 
