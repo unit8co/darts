@@ -247,7 +247,7 @@ class TestNeuralForecastModel:
 
     @pytest.mark.parametrize(
         "model_name, model_kwargs",
-        MULTIVARIATE_MODELS + MULTIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS,
+        ALL_MODELS,
     )
     def test_multivariate(self, model_name: str, model_kwargs: dict | None):
         model = NeuralForecastModel(
@@ -264,7 +264,9 @@ class TestNeuralForecastModel:
         assert pred.n_components == self.multivariate_series.n_components
 
     @pytest.mark.parametrize(
-        "model_name, model_kwargs", MULTIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS
+        "model_name, model_kwargs",
+        UNIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS
+        + MULTIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS,
     )
     def test_multivariate_with_past_covs(
         self, model_name: str, model_kwargs: dict | None
@@ -283,7 +285,10 @@ class TestNeuralForecastModel:
         assert pred.n_components == self.multivariate_series.n_components
 
     @pytest.mark.parametrize(
-        "model_name, model_kwargs", MULTIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS
+        "model_name, model_kwargs",
+        UNIVARIATE_MODELS_WITH_FUTURE_COVS
+        + UNIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS
+        + MULTIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS,
     )
     def test_multivariate_with_future_covs(
         self, model_name: str, model_kwargs: dict | None
@@ -302,7 +307,9 @@ class TestNeuralForecastModel:
         assert pred.n_components == self.multivariate_series.n_components
 
     @pytest.mark.parametrize(
-        "model_name, model_kwargs", MULTIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS
+        "model_name, model_kwargs",
+        UNIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS
+        + MULTIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS,
     )
     def test_multivariate_with_past_and_future_covs(
         self, model_name: str, model_kwargs: dict | None
@@ -323,8 +330,6 @@ class TestNeuralForecastModel:
         assert isinstance(pred, TimeSeries)
         assert pred.n_timesteps == 13
         assert pred.n_components == self.multivariate_series.n_components
-
-    # TODO: add tests for static covariates
 
     @pytest.mark.parametrize("model_name, model_kwargs", ALL_MODELS)
     def test_multiple_series(self, model_name: str, model_kwargs: dict | None):
@@ -368,7 +373,8 @@ class TestNeuralForecastModel:
 
     @pytest.mark.parametrize(
         "model_name, model_kwargs",
-        MULTIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS,
+        UNIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS
+        + MULTIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS,
     )
     def test_multiple_multivariate_series_with_static_covs(
         self, model_name: str, model_kwargs: dict | None

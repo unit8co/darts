@@ -197,6 +197,14 @@ class _NeuralForecastModule(PLForecastingModule):
             else None
         )
 
+    @property
+    def converts_to_multivariate(self) -> bool:
+        """Whether to convert the NF base model from univariate to multivariate by:
+        1) Folding the target components into the batch dimension, and
+        2) Repeating the past, future, and static covariates across the folded target components accordingly.
+        """
+        return (not self.is_multivariate) and self.n_targets > 1
+
     @io_processor
     def forward(self, x_in: PLModuleInput):
         """PyTorch-native forward pass.
@@ -219,7 +227,7 @@ class _NeuralForecastModule(PLForecastingModule):
         # unpack inputs
         # `x_past`: (B, L, C + X + F)
         # `x_future`: (B, H, F)
-        # `x_static`: (B, C, S)
+        # `x_static`: (B, C, S) or (B, 1, S)
         x_past, x_future, x_static = x_in
 
         # build window_batch dict expected by `nf.forward()`
@@ -228,7 +236,7 @@ class _NeuralForecastModule(PLForecastingModule):
         # - `insample_mask`: (B, L)
         # - `hist_exog`: (B, L, X) or None
         # - `futr_exog`: (B, L + H, F) or None
-        # - `stat_exog`: (B, C * S) or None
+        # - `stat_exog`: (B, S) or None
         # Expected shapes in the multivariate case (C >= 1):
         # - `insample_y`: (B, L, C)
         # - `insample_mask`: (B, L)
@@ -240,6 +248,15 @@ class _NeuralForecastModule(PLForecastingModule):
         insample_mask = torch.ones_like(x_past[:, :, 0])
         hist_exog, futr_exog, stat_exog = None, None, None
 
+        if self.converts_to_multivariate:
+            # For univariate base models with C > 1 target components,
+            # we fold the target components into the batch dimension.
+            # The new batch size becomes B * C, and the number of target components becomes 1.
+            # -> (B, C, L)
+            insample_y = insample_y.transpose(1, 2)
+            # -> (B * C, L, 1)
+            insample_y = insample_y.reshape(-1, self.input_chunk_length, 1)
+
         # process past covariates if supported and provided
         if self.past_slice is not None:
             # `hist_exog`: (B, L, X)
@@ -249,6 +266,11 @@ class _NeuralForecastModule(PLForecastingModule):
                 hist_exog = hist_exog.transpose(1, 2).unsqueeze(-1)
                 # -> (B, X, L, C)
                 hist_exog = hist_exog.repeat(1, 1, 1, self.n_targets)
+            elif self.converts_to_multivariate:
+                # For univariate base models with C > 1 target components,
+                # we repeat the past covariates across the folded target components.
+                # -> (B * C, L, X)
+                hist_exog = hist_exog.repeat_interleave(self.n_targets, dim=0)
 
         # process future covariates if supported and provided
         if x_future is not None and self.future_slice is not None:
@@ -259,6 +281,11 @@ class _NeuralForecastModule(PLForecastingModule):
                 futr_exog = futr_exog.transpose(1, 2).unsqueeze(-1)
                 # -> (B, F, L + H, C)
                 futr_exog = futr_exog.repeat(1, 1, 1, self.n_targets)
+            elif self.converts_to_multivariate:
+                # For univariate base models with C > 1 target components,
+                # we repeat the future covariates across the folded target components.
+                # -> (B * C, L + H, F)
+                futr_exog = futr_exog.repeat_interleave(self.n_targets, dim=0)
 
         # process static covariates if supported and provided
         if x_static is not None:
@@ -270,9 +297,21 @@ class _NeuralForecastModule(PLForecastingModule):
                 # Here, we assume that static covariates are the same across each sample
                 # in the batch and simply take the first sample's static covariates.
                 stat_exog = x_static[0].expand(self.n_targets, -1)
+            elif x_static.shape[1] == 1:
+                # For univariate base models, regardless of the number of target components,
+                # if static covariates are provided in shape (B, 1, S)--i.e.,
+                # 1) they are the global static covariates shared across all target components, or
+                # 2) they are the static covariates for ONE target component--
+                # we repeat them across the target components to create the shape expected by NeuralForecast.
+                # `stat_exog`: (B, C, S)
+                stat_exog = x_static.repeat(1, self.n_targets, 1)
+                # -> (B * C, S)
+                stat_exog = stat_exog.flatten(start_dim=0, end_dim=1)
             else:
-                # `stat_exog`: (B, C * S) [C=1]
-                stat_exog = x_static.squeeze(1)
+                # For other cases in univariate base models, we fold the target components into the batch dimension
+                # together with the static covariates.
+                # `stat_exog`: (B * C, S)
+                stat_exog = x_static.flatten(start_dim=0, end_dim=1)
 
         window_batch = _WindowBatch(
             insample_y=insample_y,
@@ -285,8 +324,14 @@ class _NeuralForecastModule(PLForecastingModule):
         # forward pass through NeuralForecast model
         # `y_pred`: (B, H, C * N)
         y_pred: torch.Tensor = self.nf(window_batch)
-        # -> (B, H, C, N)
-        y_pred = y_pred.unflatten(-1, (self.n_targets, -1))
+        if self.converts_to_multivariate:
+            # (B * C, H, N) -> (B, C, H, N)
+            y_pred = y_pred.unflatten(0, (-1, self.n_targets))
+            # -> (B, H, C, N)
+            y_pred = y_pred.transpose(1, 2)
+        else:
+            # -> (B, H, C, N)
+            y_pred = y_pred.unflatten(-1, (self.n_targets, -1))
 
         return y_pred
 
@@ -326,7 +371,10 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             ``input_chunk_length`` and ``output_chunk_length``, respectively.
             You do not need to specify them in ``model_kwargs``.
 
-        - **Multivariate forecasting**: Supported only if the base model is multivariate.
+        - **Multivariate forecasting**: Supported for any base model, univariate or multivariate.
+
+          - For univariate base models, multivariate forecasting is achieved by folding the target components into the
+            batch dimension and repeating the covariates across the folded target components accordingly.
 
         - **Past/future covariates**: Supported only if the base model supports exogenous historical/future variables,
           respectively.
@@ -717,7 +765,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         # `past_covariates`: (L, X)
         # `historic_future_covariates`: (L, F)
         # `future_covariates`: (H, F)
-        # `static_covariates`: (C, S)
+        # `static_covariates`: (C, S) or (1, S)
         (
             past_target,
             past_covariates,
@@ -727,16 +775,16 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             future_target,
         ) = train_sample
 
-        n_targets = future_target.shape[1]
-        # validate number of target components
-        if n_targets != 1 and not self.supports_multivariate:
-            raise_log(
-                ValueError(
-                    f"The provided {self.nf_model_class.__name__} is a univariate model "
-                    f"but the target has {n_targets} component(s)."
-                ),
-                logger,
-            )
+        # n_targets = future_target.shape[1]
+        # # validate number of target components
+        # if n_targets != 1 and not self.supports_multivariate:
+        #     raise_log(
+        #         ValueError(
+        #             f"The provided {self.nf_model_class.__name__} is a univariate model "
+        #             f"but the target has {n_targets} component(s)."
+        #         ),
+        #         logger,
+        #     )
 
         n_past_covs, n_future_covs, n_stat_covs = 0, 0, 0
         if future_covariates is not None:
@@ -753,13 +801,9 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             n_past_covs=n_past_covs,
             n_future_covs=n_future_covs,
             n_stat_covs=n_stat_covs,
-            is_multivariate=self.supports_multivariate,
+            is_multivariate=self.nf_model_class.MULTIVARIATE,
             **pl_module_params,
         )
-
-    @property
-    def supports_multivariate(self) -> bool:
-        return self.nf_model_class.MULTIVARIATE
 
     @property
     def supports_past_covariates(self) -> bool:
