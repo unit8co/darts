@@ -17,7 +17,7 @@ https://github.com/sktime/sktime/blob/main/sktime/utils/mlflow_sktime.py
 import importlib
 import json
 import os
-from typing import Callable, Optional, Union
+from collections.abc import Callable
 
 import mlflow
 import numpy as np
@@ -71,14 +71,14 @@ _MODEL_FILE_TORCH = "model.pt"
 def save_model(
     model,
     path: str,
-    conda_env: Optional[Union[dict, str]] = None,
-    code_paths: Optional[list[str]] = None,
-    pip_requirements: Optional[list[str]] = None,
-    extra_pip_requirements: Optional[list[str]] = None,
+    conda_env: dict | str | None = None,
+    code_paths: list[str] | None = None,
+    pip_requirements: list[str] | None = None,
+    extra_pip_requirements: list[str] | None = None,
     signature=None,
     input_example=None,
-    metadata: Optional[dict] = None,
-    mlflow_model: Optional[Model] = None,
+    metadata: dict | None = None,
+    mlflow_model: Model | None = None,
 ) -> None:
     """Save a darts forecasting model in MLflow format.
 
@@ -198,7 +198,7 @@ def save_model(
 
 def load_model(
     model_uri: str,
-    dst_path: Optional[str] = None,
+    dst_path: str | None = None,
     **kwargs,
 ):
     """Load a darts model from an MLflow model URI.
@@ -246,16 +246,16 @@ def load_model(
 
 def log_model(
     model,
-    artifact_path: Optional[str] = None,
-    name: Optional[str] = None,
-    registered_model_name: Optional[str] = None,
-    conda_env: Optional[Union[dict, str]] = None,
-    code_paths: Optional[list[str]] = None,
-    pip_requirements: Optional[list[str]] = None,
-    extra_pip_requirements: Optional[list[str]] = None,
+    artifact_path: str | None = None,
+    name: str | None = None,
+    registered_model_name: str | None = None,
+    conda_env: dict | str | None = None,
+    code_paths: list[str] | None = None,
+    pip_requirements: list[str] | None = None,
+    extra_pip_requirements: list[str] | None = None,
     signature=None,
     input_example=None,
-    metadata: Optional[dict] = None,
+    metadata: dict | None = None,
     log_params: bool = True,
 ):
     """Log a darts model to the current MLflow run.
@@ -342,7 +342,7 @@ def autolog(
     log_training_metrics: bool = True,
     log_validation_metrics: bool = True,
     inject_per_epoch_callbacks: bool = True,
-    extra_metrics: Optional[list[Callable]] = None,
+    extra_metrics: list[Callable] | None = None,
     disable: bool = False,
     silent: bool = False,
     manage_run: bool = True,
@@ -724,7 +724,7 @@ def _log_forecasting_metrics(
     fit_kwargs: dict,
     log_training: bool,
     log_validation: bool,
-    extra_metrics: Optional[list[Callable]] = None,
+    extra_metrics: list[Callable] | None = None,
 ) -> None:
     """Compute and log training and/or validation forecasting metrics to MLflow.
 
@@ -804,7 +804,7 @@ def _log_forecasting_metrics(
 
 def _backtest_and_log(
     model,
-    series: Union[TimeSeries, list[TimeSeries]],
+    series: TimeSeries | list[TimeSeries],
     metrics_list: list[Callable],
     prefix: str,
     past_covariates=None,
@@ -865,7 +865,7 @@ def _backtest_and_log(
 
 
 def _get_metrics_list(
-    extra_metrics: Optional[list[Callable]] = None,
+    extra_metrics: list[Callable] | None = None,
 ) -> list[Callable]:
     """Return the combined list of default and extra metric functions.
 
