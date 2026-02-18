@@ -1,3 +1,4 @@
+import logging
 import os
 
 import numpy as np
@@ -486,6 +487,76 @@ class TestNeuralForecastModel:
                     output_chunk_length=5,
                     **kwargs,
                 )
+
+    def test_invalid_model_kwargs(self):
+        with pytest.raises(
+            ValueError,
+            match="The following parameters are not valid",
+        ):
+            NeuralForecastModel(
+                model="PatchTST",
+                input_chunk_length=10,
+                output_chunk_length=5,
+                model_kwargs={"invalid_arg_zzz": 123},
+                **kwargs,
+            )
+
+    @pytest.mark.parametrize(
+        "model_name, rinorm_name",
+        [
+            ("iTransformer", "use_norm"),
+            ("PatchTST", "revin"),
+        ],
+    )
+    def test_use_reversible_instance_norm(
+        self, model_name: str, rinorm_name: str, caplog
+    ):
+        # Both iTransformer and PatchTST enable RINorm by default,
+        # but can be disabled by setting `use_norm=False` or `revin=False`.
+        with caplog.at_level(logging.WARNING):
+            NeuralForecastModel(
+                model=model_name,
+                input_chunk_length=10,
+                output_chunk_length=5,
+                use_reversible_instance_norm=True,
+                **kwargs,
+            )
+        assert (
+            f"NeuralForecast model's `{rinorm_name}=True` may be incompatible"
+            in caplog.text
+        )
+
+        NeuralForecastModel(
+            model=model_name,
+            input_chunk_length=10,
+            output_chunk_length=5,
+            use_reversible_instance_norm=True,
+            model_kwargs={rinorm_name: False},
+            **kwargs,
+        )
+
+    def test_use_reversible_instance_norm_rmok(self, caplog):
+        # RMoK always enables RINorm and cannot be disabled
+        with caplog.at_level(logging.WARNING):
+            NeuralForecastModel(
+                model="RMoK",
+                input_chunk_length=10,
+                output_chunk_length=5,
+                use_reversible_instance_norm=True,
+                **kwargs,
+            )
+        assert (
+            "NeuralForecast model has reversible instance normalization enabled"
+            in caplog.text
+        )
+
+        NeuralForecastModel(
+            model="RMoK",
+            input_chunk_length=10,
+            output_chunk_length=5,
+            use_reversible_instance_norm=False,
+            **kwargs,
+        )
 
     @pytest.mark.parametrize("model_name", ["DeepAR", "LSTM"])
     def test_unsupported_recurrent_models(self, model_name: str):
