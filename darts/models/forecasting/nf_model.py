@@ -574,7 +574,6 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
 
         Examples
         --------
-        >>> from neuralforecast.models import KAN
         >>> from darts.datasets import WeatherDataset
         >>> from darts.models import NeuralForecastModel
         >>> # load the dataset
@@ -583,10 +582,8 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         >>> target = series['T (degC)'][:100]
         >>> # optionally, use future atmospheric pressure (pretending this component is a forecast)
         >>> future_cov = series['p (mbar)'][:106]
-        >>> # create a NeuralForecast base model with `input_size` and `h` (forecast horizon)
-        >>> nf_model = KAN(input_size=7, h=6)
-        >>> # wrap it in `NeuralForecastModel`
-        >>> model = NeuralForecastModel(model=nf_model, n_epochs=20)
+        >>> # create a NeuralForecastModel with KAN as the base model
+        >>> model = NeuralForecastModel("KAN", 7, 6, n_epochs=20)
         >>> # fit and predict
         >>> model.fit(target, future_covariates=future_cov)
         >>> pred = model.predict(6)
