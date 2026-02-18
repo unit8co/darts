@@ -6,7 +6,7 @@ Optimized Historical Forecasts Utils
 import inspect
 from collections.abc import Callable, Sequence
 from types import SimpleNamespace
-from typing import Any, Literal, TypeVar
+from typing import Any, Literal, TypeAlias, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -19,7 +19,7 @@ from darts.dataprocessing.transformers import (
 )
 from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries, slice_intersect
-from darts.typing import ExtendedTimeIndex
+from darts.typing import TimeIndex
 from darts.utils.ts_utils import (
     SeriesType,
     get_series_seq_type,
@@ -31,6 +31,10 @@ from darts.utils.utils import n_steps_between
 logger = get_logger(__name__)
 
 T = TypeVar("T")
+
+ExtendedTimeIndex: TypeAlias = (
+    TimeIndex | tuple[int, int] | tuple[pd.Timestamp, pd.Timestamp]
+)
 
 
 def _historical_forecasts_general_checks(
