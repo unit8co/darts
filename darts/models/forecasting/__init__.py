@@ -51,6 +51,7 @@ PyTorch (Lightning)-based Models (`GlobalForecastingModel <https://unit8co.githu
     - :class:`~darts.models.forecasting.nlinear.NLinearModel`
     - :class:`~darts.models.forecasting.tide_model.TiDEModel`
     - :class:`~darts.models.forecasting.tsmixer_model.TSMixerModel`
+    - :class:`~darts.models.forecasting.nf_model.NeuralForecastModel`
 Foundation Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`__)
     - :class:`~darts.models.forecasting.chronos2_model.Chronos2Model`
     - :class:`~darts.models.forecasting.timesfm2p5_model.TimesFM2p5Model`

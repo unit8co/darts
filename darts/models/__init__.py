@@ -211,4 +211,5 @@ __all__ = [
     "ConformalQRModel",
     "Chronos2Model",
     "TimesFM2p5Model",
+    "NeuralForecastModel",
 ]
