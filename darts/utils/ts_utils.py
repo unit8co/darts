@@ -6,7 +6,6 @@ Additional TimeSeries related util functions
 from collections.abc import Sequence
 from enum import Enum
 from functools import total_ordering
-from typing import Optional, Union
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
@@ -61,12 +60,10 @@ class SeriesType(Enum):
 
 
 def series2seq(
-    ts: Optional[
-        Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
-    ],
+    ts: TimeSeries | Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]] | None,
     seq_type_out: SeriesType = SeriesType.SEQ,
     nested: bool = False,
-) -> Optional[Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]]:
+) -> TimeSeries | Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]] | None:
     """If possible, converts `ts` into the desired sequence type `seq_type_out`. Otherwise, returns the
     original `ts`.
 
@@ -147,8 +144,8 @@ def series2seq(
 
 
 def seq2series(
-    ts: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
-) -> Optional[TimeSeries]:
+    ts: TimeSeries | Sequence[TimeSeries] | None,
+) -> TimeSeries | None:
     """If `ts` is a Sequence with only a single series, return the single series as TimeSeries.
 
     Parameters
@@ -165,10 +162,8 @@ def seq2series(
 
 
 def get_single_series(
-    ts: Optional[
-        Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
-    ],
-) -> Optional[TimeSeries]:
+    ts: TimeSeries | Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]] | None,
+) -> TimeSeries | None:
     """Returns a single (first) TimeSeries or `None` from `ts`. Returns `ts` if  `ts` is a TimeSeries, `ts[0]` if
     `ts` is a `Sequence[TimeSeries]`, and `ts[0][0]` if `ts` is a `Sequence[Sequence[TimeSeries]]`.
     Otherwise, returns `None`.
@@ -195,7 +190,7 @@ def get_single_series(
 
 
 def get_series_seq_type(
-    ts: Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]],
+    ts: TimeSeries | Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]],
 ) -> SeriesType:
     """Returns the sequence type of `ts`.
 

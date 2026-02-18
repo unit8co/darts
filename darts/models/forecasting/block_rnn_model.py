@@ -5,7 +5,6 @@ Block Recurrent Neural Networks
 
 import inspect
 from abc import ABC, abstractmethod
-from typing import Optional, Union
 
 import torch
 import torch.nn as nn
@@ -32,7 +31,7 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
         num_layers: int,
         target_size: int,
         nr_params: int,
-        num_layers_out_fc: Optional[list] = None,
+        num_layers_out_fc: list | None = None,
         dropout: float = 0.0,
         activation: str = "ReLU",
         **kwargs,
@@ -114,7 +113,7 @@ class _BlockRNNModule(CustomBlockRNNModule):
     def __init__(
         self,
         name: str,
-        activation: Optional[str] = None,
+        activation: str | None = None,
         **kwargs,
     ):
         """PyTorch module implementing a block RNN to be used in `BlockRNNModel`.
@@ -260,10 +259,10 @@ class BlockRNNModel(MixedCovariatesTorchModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        model: Union[str, type[CustomBlockRNNModule]] = "RNN",
+        model: str | type[CustomBlockRNNModule] = "RNN",
         hidden_dim: int = 25,
         n_rnn_layers: int = 1,
-        hidden_fc_sizes: Optional[list] = None,
+        hidden_fc_sizes: list | None = None,
         dropout: float = 0.0,
         activation: str = "ReLU",
         use_static_covariates: bool = True,

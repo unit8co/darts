@@ -39,7 +39,7 @@ jobs:
 
       - name: "Bump version, commit, and tag"
         id: bump_version
-        uses: callowayproject/bump-my-version@v0.27.0
+        uses: callowayproject/bump-my-version@v1.2
         with:
           args: ${{ github.event.inputs.bump_type }}
           github-token: ${{ secrets.RELEASE_WORKFLOW_TOKEN_NEW_FINE_GRAINED }}
@@ -55,8 +55,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.bump_version.outputs.new_version }}
-          release_name: Darts ${{ github.event.inputs.bump_type }} ${{ steps.bump_version.outputs.new_version }}
+          tag_name: ${{ steps.bump_version.outputs.current-version }}
+          release_name: Darts ${{ github.event.inputs.bump_type }} ${{ steps.bump_version.outputs.current-version }}
           draft: false
           body_path: .github/RELEASE_TEMPLATE/release_body.md
 

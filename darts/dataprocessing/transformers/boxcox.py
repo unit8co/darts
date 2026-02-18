@@ -4,7 +4,7 @@ Box-Cox Transformer
 """
 
 from collections.abc import Mapping, Sequence
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -27,9 +27,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
     def __init__(
         self,
         name: str = "BoxCox",
-        lmbda: Optional[
-            Union[float, Sequence[float], Sequence[Sequence[float]]]
-        ] = None,
+        lmbda: float | Sequence[float] | Sequence[Sequence[float]] | None = None,
         optim_method: Literal["mle", "pearsonr"] = "mle",
         global_fit: bool = False,
         n_jobs: int = 1,
@@ -126,11 +124,11 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
 
     @staticmethod
     def ts_fit(
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeries | Sequence[TimeSeries],
         params: Mapping[str, Any],
         *args,
         **kwargs,
-    ) -> Union[Sequence[float], pd.Series]:
+    ) -> Sequence[float] | pd.Series:
         lmbda, method = params["fixed"]["_lmbda"], params["fixed"]["_optim_method"]
         # If `global_fit` is `True`, then `series` will be ` Sequence[TimeSeries]`;
         # otherwise, `series` is a single `TimeSeries`:

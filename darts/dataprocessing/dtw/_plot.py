@@ -1,5 +1,3 @@
-from typing import Union
-
 import numpy as np
 import xarray as xr
 from matplotlib import pyplot as plt
@@ -102,7 +100,7 @@ def plot_alignment(
     new_plot: bool = False,
     series1_y_offset: float = 0,
     series2_y_offset: float = 0,
-    components: Union[tuple[Union[str, int], Union[str, int]]] = (0, 0),
+    components: tuple[str | int, str | int] = (0, 0),
     args_line: dict = {},
     args_series1: dict = {},
     args_series2: dict = {},

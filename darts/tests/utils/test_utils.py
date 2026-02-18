@@ -139,7 +139,7 @@ class TestUtils:
                 "2000-01-01",  # saturday
                 "2000-01-03",  # first monday
                 "2000-01-03",  # first monday
-                None,  # first wednesday
+                None,  # first monday
                 "W-MON",
                 1,
             ),
@@ -493,14 +493,21 @@ class TestUtils:
                 infer_freq_intersection(freq, other)
             return
 
+        n_intersection = 4
         assert infer_freq_intersection(freq, other) == expected
         if isinstance(freq, int):
-            index_freq = pd.RangeIndex(start=0, stop=freq * 1000, step=freq)
-            index_other = pd.RangeIndex(start=0, stop=other * 1000, step=other)
+            start = 0
+            end = start + (n_intersection - 1) * expected
+            index_freq = pd.RangeIndex(start=start, stop=end + 1, step=freq)
+            index_other = pd.RangeIndex(start=start, stop=end + 1, step=other)
             assert index_freq.intersection(index_other).step == expected
         else:
-            index_freq = pd.date_range("2000-01-01", periods=1000, freq=freq)
-            index_other = pd.date_range("2000-01-01", periods=1000, freq=other)
+            freq_expected = pd.tseries.frequencies.to_offset(expected)
+            # apply trick to resample a timestamp to the desired frequency
+            start = freq_expected.rollback(pd.Timestamp("2000-01-01"))
+            end = start + (n_intersection - 1) * freq_expected
+            index_freq = pd.date_range(start=start, end=end, freq=freq)
+            index_other = pd.date_range(start=start, end=end, freq=other)
             if expected == "24h":
                 expected = "D"
             assert index_freq.intersection(index_other).freq == expected

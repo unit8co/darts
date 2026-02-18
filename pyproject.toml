@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "darts"
-version = "0.40.0"
+version = "0.41.0"
 description = "A python library for easy manipulation and forecasting of time series."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -102,7 +102,7 @@ markers = [
 
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py310"
 line-length = 88
 
 [tool.ruff.format]
@@ -192,11 +192,12 @@ dev-all = [
 ]
 
 [tool.bumpversion]
-current_version = "0.40.0"
+current_version = "0.41.0"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
 serialize = ["{major}.{minor}.{patch}"]
 commit = true
 tag = true
+tag_name = "{new_version}"
 message = "Bump version: {current_version} → {new_version}"
 
 [[tool.bumpversion.files]]

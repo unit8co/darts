@@ -4,11 +4,11 @@ Metric Utils
 """
 
 import inspect
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from enum import Enum
 from functools import wraps
 from inspect import signature
-from typing import Any, Callable, Optional, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -66,7 +66,7 @@ class _LabelReduction(Enum):
 # the `actual_series` and `pred_series` parameters, and not having other ``Sequence`` as args (since these decorators
 # don't "unpack" parameters different from `actual_series` and `pred_series`). In those cases, the new metric must take
 # care of dealing with Sequence[TimeSeries] and multivariate TimeSeries on its own (See mase() implementation).
-METRIC_OUTPUT_TYPE = Union[float, list[float], np.ndarray, list[np.ndarray]]
+METRIC_OUTPUT_TYPE = float | list[float] | np.ndarray | list[np.ndarray]
 METRIC_TYPE = Callable[
     ...,
     METRIC_OUTPUT_TYPE,
@@ -441,7 +441,7 @@ def _regression_handling(actual_series, pred_series, params, kwargs):
         if not isinstance(q, tuple) or not len(q) == 2:
             raise_log(
                 ValueError(
-                    f"`{_PARAM_Q}` must be of tuple of `(np.ndarray, Optional[pd.Index])` "
+                    f"`{_PARAM_Q}` must be of tuple of `(np.ndarray, pd.Index | None)` "
                     "where the (quantile values, optional quantile component names). "
                     f"Received `{_PARAM_Q}={q}`."
                 ),
@@ -505,7 +505,7 @@ def _get_values(
     vals: np.ndarray,
     vals_components: pd.Index,
     actual_components: pd.Index,
-    q: Optional[tuple[Sequence[float], Union[Optional[pd.Index]]]] = None,
+    q: tuple[Sequence[float], pd.Index | None] | None = None,
     is_classification: bool = False,
 ) -> np.ndarray:
     """
@@ -563,7 +563,7 @@ def _get_values_or_raise(
     actual_series: TimeSeries,
     pred_series: TimeSeries,
     intersect: bool,
-    q: Optional[tuple[Sequence[float], Union[Optional[pd.Index]]]] = None,
+    q: tuple[Sequence[float], pd.Index | None] | None = None,
     remove_nan_union: bool = False,
     is_insample: bool = False,
     is_classification: bool = False,
@@ -783,7 +783,7 @@ def _get_wrapped_metric(
 
 def _get_reduction(
     kwargs, params, red_name, axis, sanity_check: bool = True
-) -> Optional[Callable[..., np.ndarray]]:
+) -> Callable[..., np.ndarray] | None:
     """Returns the reduction function either from user kwargs or metric default.
     Optionally performs sanity checks for presence of `axis` parameter, and correct output type and
     reduced shape."""
@@ -879,26 +879,26 @@ def _unique_labels(y_true: np.ndarray, y_pred: np.ndarray) -> list[np.ndarray]:
 def _confusion_matrix(
     y_true: np.ndarray,
     y_pred: np.ndarray,
-    labels: Optional[np.ndarray] = None,
+    labels: np.ndarray | None = None,
     compute_multilabel: bool = True,
-) -> tuple[np.ndarray, Optional[np.ndarray]]:
+) -> tuple[np.ndarray, np.ndarray | None]:
     """Computes a confusion matrix using numpy for two np.arrays `y_true` and `y_pred`.
 
     Parameters
     ----------
-    y_true : np.ndarray
+    y_true
         The true labels.
-    y_pred : np.ndarray
+    y_pred
         The predicted labels.
-    labels : Optional[np.ndarray]
+    labels
         The labels to consider for the confusion matrix. If `None`, will use unique labels from `y_true` and `y_pred`.
-    compute_multilabel : bool
+    compute_multilabel
         Whether to compute a multilabel confusion matrix. If `True`, will return a component- and label-specific
         confusion matrix.
 
     Returns
     -------
-    tuple[np.ndarray, Optional[np.ndarray]]
+    tuple[np.ndarray, np.ndarray | None]
         The confusion matrix and optionally the multilabel confusion matrix.
     """
     n_comps = y_true.shape[COMP_AX]
@@ -978,21 +978,21 @@ def _compute_score(
     y_pred,
     score_func: Callable,
     label_reduction: _LabelReduction,
-    labels: Optional[np.ndarray] = None,
+    labels: np.ndarray | None = None,
 ) -> np.ndarray:
     """Computes a score on the confusion matrix of two np.arrays `y_true` and `y_pred`.
 
     Parameters
     ----------
-    y_true : np.ndarray
+    y_true
         The true labels.
-    y_pred : np.ndarray
+    y_pred
         The predicted labels.
-    score_func : Callable
+    score_func
         The function to compute the score from the confusion matrix.
-    label_reduction : Optional[str]
+    label_reduction
         The label reduction method to apply. Can be one of `None`, `"micro"`, `"macro"`, or `"weighted"`.
-    labels : Optional[np.ndarray]
+    labels
         The labels to consider for the confusion matrix. If `None`, will use unique labels from `y_true` and `y_pred`.
 
     Returns

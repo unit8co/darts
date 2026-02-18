@@ -23,7 +23,7 @@ We also show how to use the `TFTExplainer` in the example notebook of the `TFTMo
 """
 
 from collections.abc import Sequence
-from typing import Literal, Optional, Union
+from typing import Literal
 
 import matplotlib.axes
 import matplotlib.pyplot as plt
@@ -48,13 +48,9 @@ class TFTExplainer(_ForecastingModelExplainer):
     def __init__(
         self,
         model: TFTModel,
-        background_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        background_past_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        background_future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
+        background_series: TimeSeries | Sequence[TimeSeries] | None = None,
+        background_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        background_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
     ):
         """
         Explainer class for the `TFTModel`.
@@ -120,15 +116,11 @@ class TFTExplainer(_ForecastingModelExplainer):
 
     def explain(
         self,
-        foreground_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        foreground_past_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        foreground_future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        horizons: Optional[Sequence[int]] = None,
-        target_components: Optional[Sequence[str]] = None,
+        foreground_series: TimeSeries | Sequence[TimeSeries] | None = None,
+        foreground_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        foreground_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        horizons: Sequence[int] | None = None,
+        target_components: Sequence[str] | None = None,
     ) -> TFTExplainabilityResult:
         """Returns the :class:`TFTExplainabilityResult
         <darts.explainability.explainability_result.TFTExplainabilityResult>` result for all series in
@@ -307,9 +299,9 @@ class TFTExplainer(_ForecastingModelExplainer):
     def plot_attention(
         self,
         expl_result: TFTExplainabilityResult,
-        plot_type: Optional[Literal["all", "time", "heatmap"]] = "all",
+        plot_type: Literal["all", "time", "heatmap"] | None = "all",
         show_index_as: Literal["relative", "time"] = "relative",
-        ax: Optional[matplotlib.axes.Axes] = None,
+        ax: matplotlib.axes.Axes | None = None,
         max_nr_series: int = 5,
         show_plot: bool = True,
     ) -> matplotlib.axes.Axes:
@@ -557,7 +549,7 @@ class TFTExplainer(_ForecastingModelExplainer):
     def _plot_cov_selection(
         importance: pd.DataFrame,
         title: str = "Variable importance",
-        ax: Optional[matplotlib.axes.Axes] = None,
+        ax: matplotlib.axes.Axes | None = None,
     ):
         """Plots the variable importance of the TFT model.
 

@@ -5,7 +5,6 @@ Likelihoods for SKLearnModel
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Optional
 
 import numpy as np
 
@@ -256,7 +255,7 @@ class QuantileRegression(SKLearnLikelihood):
     def __init__(
         self,
         n_outputs: int,
-        quantiles: Optional[list[float]] = None,
+        quantiles: list[float] | None = None,
     ):
         """
         Quantile Regression [1]_.
@@ -408,8 +407,8 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
             n_outputs=n_outputs,
             parameter_names=[],
         )
-        self._index_first_param_per_component: Optional[np.ndarray] = None
-        self._classes: Optional[list[np.ndarray]] = None
+        self._index_first_param_per_component: np.ndarray | None = None
+        self._classes: list[np.ndarray] | None = None
 
     def fit(self, model):
         """
@@ -454,8 +453,8 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
 
     def component_names(
         self,
-        series: Optional[TimeSeries] = None,
-        components: Optional[Sequence] = None,
+        series: TimeSeries | None = None,
+        components: Sequence | None = None,
     ) -> list[str]:
         """Generates names for the parameters of the Likelihood."""
         if self._index_first_param_per_component is None:
@@ -608,11 +607,11 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
 
 
 def _get_likelihood(
-    likelihood: Optional[str],
+    likelihood: str | None,
     n_outputs: int,
     available_likelihoods: list[LikelihoodType],
-    quantiles: Optional[list[float]] = None,
-) -> Optional[SKLearnLikelihood]:
+    quantiles: list[float] | None = None,
+) -> SKLearnLikelihood | None:
     """Get the `Likelihood` object for `SKLearnModel`.
 
     Parameters
