@@ -16,6 +16,7 @@ from darts.dataprocessing.transformers import (
 )
 from darts.logging import get_logger, raise_log
 from darts.timeseries import DEFAULT_GLOBAL_STATIC_COV_NAME, _finite_rows_boundaries
+from darts.typing import TimeIndex
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -468,7 +469,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
     def _create_midas_df(
         series: TimeSeries,
         arr: np.ndarray,
-        time_index: pd.DatetimeIndex | pd.RangeIndex,
+        time_index: TimeIndex,
         n_midas: int,
         drop_static_covariates: bool,
         inverse_transform: bool,

@@ -22,6 +22,7 @@ from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.typing import TimeIndex
 
 logger = get_logger(__name__)
 
@@ -283,10 +284,10 @@ def _check_quantiles(quantiles):
 
 
 def slice_index(
-    index: pd.RangeIndex | pd.DatetimeIndex,
+    index: TimeIndex,
     start: int | pd.Timestamp,
     end: int | pd.Timestamp,
-) -> pd.RangeIndex | pd.DatetimeIndex:
+) -> TimeIndex:
     """
     Returns a new Index with the same type as the input `index`, containing the values between `start`
     and `end` included. If start and end are not in the index, the closest values are used instead.
@@ -342,9 +343,9 @@ def slice_index(
 
 
 def drop_before_index(
-    index: pd.RangeIndex | pd.DatetimeIndex,
+    index: TimeIndex,
     split_point: int | pd.Timestamp,
-) -> pd.RangeIndex | pd.DatetimeIndex:
+) -> TimeIndex:
     """
     Drops everything before the provided time `split_point` (excluded) from the index.
 
@@ -357,16 +358,16 @@ def drop_before_index(
 
     Returns
     -------
-    pd.RangeIndex | pd.DatetimeIndex
+    TimeIndex
         A new index with values before `split_point` dropped.
     """
     return slice_index(index, split_point, index[-1])
 
 
 def drop_after_index(
-    index: pd.RangeIndex | pd.DatetimeIndex,
+    index: TimeIndex,
     split_point: int | pd.Timestamp,
-) -> pd.RangeIndex | pd.DatetimeIndex:
+) -> TimeIndex:
     """
     Drops everything after the provided time `split_point` (excluded) from the index.
 
@@ -379,7 +380,7 @@ def drop_after_index(
 
     Returns
     -------
-    pd.RangeIndex | pd.DatetimeIndex
+    TimeIndex
         A new index with values after `split_point` dropped.
     """
 
@@ -535,7 +536,7 @@ def generate_index(
     length: int | None = None,
     freq: str | int | pd.DateOffset = None,
     name: str = None,
-) -> pd.DatetimeIndex | pd.RangeIndex:
+) -> TimeIndex:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
     or a pandas RangeIndex. The index starts at
 

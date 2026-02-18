@@ -18,6 +18,7 @@ from numpy.lib.stride_tricks import as_strided
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
+from darts.typing import TimeIndex
 from darts.utils.data.utils import _process_sample_weight
 from darts.utils.ts_utils import get_single_series, series2seq
 from darts.utils.utils import n_steps_between
@@ -1528,9 +1529,9 @@ def _extract_component_lags_autoregression(
 
 # For convenience, define following types for `_get_feature_times`:
 FeatureTimes = tuple[
-    pd.Index | pd.DatetimeIndex | pd.RangeIndex | None,
-    pd.Index | pd.DatetimeIndex | pd.RangeIndex | None,
-    pd.Index | pd.DatetimeIndex | pd.RangeIndex | None,
+    pd.Index | TimeIndex | None,
+    pd.Index | TimeIndex | None,
+    pd.Index | TimeIndex | None,
 ]
 MinLags = tuple[int | None, int | None, int | None]
 MaxLags = tuple[int | None, int | None, int | None]

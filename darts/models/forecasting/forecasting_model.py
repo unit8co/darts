@@ -51,6 +51,7 @@ from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.metrics.utils import METRIC_TYPE
+from darts.typing import TimeIndex
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _apply_data_transformers,
@@ -567,7 +568,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def _generate_new_dates(
         self, n: int, input_series: TimeSeries | None = None
-    ) -> pd.DatetimeIndex | pd.RangeIndex:
+    ) -> TimeIndex:
         """
         Generates `n` new dates after the end of the specified series
         """

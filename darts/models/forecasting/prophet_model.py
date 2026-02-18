@@ -17,6 +17,7 @@ from darts.logging import execute_and_suppress_output, get_logger, raise_if, rai
 from darts.models.forecasting.forecasting_model import (
     FutureCovariatesLocalForecastingModel,
 )
+from darts.typing import TimeIndex
 from darts.utils.utils import random_method
 
 logger = get_logger(__name__)
@@ -30,12 +31,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         add_seasonalities: dict | list[dict] | None = None,
         add_regressor_configs: dict[str, dict[str, Any]] | None = None,
         country_holidays: str | None = None,
-        cap: float
-        | Callable[[pd.DatetimeIndex | pd.RangeIndex], Sequence[float]]
-        | None = None,
-        floor: float
-        | Callable[[pd.DatetimeIndex | pd.RangeIndex], Sequence[float]]
-        | None = None,
+        cap: float | Callable[[TimeIndex], Sequence[float]] | None = None,
+        floor: float | Callable[[TimeIndex], Sequence[float]] | None = None,
         add_encoders: dict | None = None,
         random_state: int | None = None,
         suppress_stdout_stderror: bool = True,

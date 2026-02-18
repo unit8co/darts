@@ -19,6 +19,7 @@ from darts.dataprocessing.transformers import (
 )
 from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries, slice_intersect
+from darts.typing import ExtendedTimeIndex
 from darts.utils.ts_utils import (
     SeriesType,
     get_series_seq_type,
@@ -28,13 +29,6 @@ from darts.utils.ts_utils import (
 from darts.utils.utils import n_steps_between
 
 logger = get_logger(__name__)
-
-TimeIndex = (
-    pd.DatetimeIndex
-    | pd.RangeIndex
-    | tuple[int, int]
-    | tuple[pd.Timestamp, pd.Timestamp]
-)
 
 T = TypeVar("T")
 
@@ -566,7 +560,7 @@ def _get_start_index(
     start: pd.Timestamp | int | float,
     start_format: Literal["value", "position"],
     stride: int,
-    historical_forecasts_time_index: TimeIndex | None = None,
+    historical_forecasts_time_index: ExtendedTimeIndex | None = None,
 ):
     """Finds a valid historical forecast start point within either `series` or `historical_forecasts_time_index`
     (depending on whether `historical_forecasts_time_index` is passed, denoted as `ref`).
@@ -812,13 +806,7 @@ def _get_maximum_historical_forecastable_time_index(
     past_covariates: TimeSeries | None = None,
     future_covariates: TimeSeries | None = None,
     is_training: bool | None = False,
-) -> (
-    pd.DatetimeIndex
-    | pd.RangeIndex
-    | tuple[int, int]
-    | tuple[pd.Timestamp, pd.Timestamp]
-    | None
-):
+) -> ExtendedTimeIndex | None:
     """Computes the maximum historical forecastable time index for training or prediction mode.
 
     Only accounts for `is_training`, `forecast_horizon`, `overlap_end`.
@@ -1009,12 +997,12 @@ def _get_maximum_historical_forecastable_time_index(
 def _adjust_historical_forecasts_time_index(
     series: TimeSeries,
     series_idx: int,
-    historical_forecasts_time_index: TimeIndex,
+    historical_forecasts_time_index: ExtendedTimeIndex,
     start: pd.Timestamp | float | int | None,
     start_format: Literal["position", "value"],
     stride: int,
     show_warnings: bool,
-) -> TimeIndex:
+) -> ExtendedTimeIndex:
     """
     Shrink the beginning and end of the historical forecasts time index based on the value of `start`.
     """
@@ -1061,14 +1049,14 @@ def _adjust_historical_forecasts_time_index(
 
 def _adjust_historical_forecasts_time_index_training(
     model,
-    historical_forecasts_time_index: TimeIndex,
+    historical_forecasts_time_index: ExtendedTimeIndex,
     series: TimeSeries,
     series_idx: int,
     retrain: bool | int | Callable[..., bool],
     train_length: int | None,
     val_length: int,
     show_warnings: bool,
-) -> tuple[TimeIndex, int | None, int]:
+) -> tuple[ExtendedTimeIndex, int | None, int]:
     """
     Shrink the beginning of the historical forecasts time index based on the value of `retrain`, `train_length`
     and `val_length`.
