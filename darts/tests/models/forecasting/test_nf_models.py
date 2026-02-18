@@ -145,6 +145,62 @@ class TestNeuralForecastModel:
             axis=1,
         ).with_static_covariates(pd.DataFrame({"type": ["gaussian"]})),
     ]
+    multiple_multivariate_series_local_static_covs = [
+        concatenate(
+            [
+                linear_timeseries(
+                    length=100, dtype=np.float32, column_name="S1_M1"
+                ).with_static_covariates(
+                    pd.DataFrame({"id": ["0"], "type": ["linear"]})
+                ),
+                linear_timeseries(
+                    length=100, dtype=np.float32, column_name="S1_M2"
+                ).with_static_covariates(
+                    pd.DataFrame({"id": ["1"], "type": ["linear"]})
+                ),
+                linear_timeseries(
+                    length=100, dtype=np.float32, column_name="S1_M3"
+                ).with_static_covariates(
+                    pd.DataFrame({"id": ["2"], "type": ["linear"]})
+                ),
+            ],
+            axis=1,
+        ),
+        concatenate(
+            [
+                sine_timeseries(
+                    length=200, dtype=np.float32, column_name="S1_M1"
+                ).with_static_covariates(pd.DataFrame({"id": ["0"], "type": ["sine"]})),
+                sine_timeseries(
+                    length=200, dtype=np.float32, column_name="S1_M2"
+                ).with_static_covariates(pd.DataFrame({"id": ["1"], "type": ["sine"]})),
+                sine_timeseries(
+                    length=200, dtype=np.float32, column_name="S1_M3"
+                ).with_static_covariates(pd.DataFrame({"id": ["2"], "type": ["sine"]})),
+            ],
+            axis=1,
+        ),
+        concatenate(
+            [
+                gaussian_timeseries(
+                    length=300, dtype=np.float32, column_name="S1_M1"
+                ).with_static_covariates(
+                    pd.DataFrame({"id": ["0"], "type": ["gaussian"]})
+                ),
+                gaussian_timeseries(
+                    length=300, dtype=np.float32, column_name="S1_M2"
+                ).with_static_covariates(
+                    pd.DataFrame({"id": ["1"], "type": ["gaussian"]})
+                ),
+                gaussian_timeseries(
+                    length=300, dtype=np.float32, column_name="S1_M3"
+                ).with_static_covariates(
+                    pd.DataFrame({"id": ["2"], "type": ["gaussian"]})
+                ),
+            ],
+            axis=1,
+        ),
+    ]
 
     @pytest.mark.parametrize("model_name, model_kwargs", ALL_MODELS)
     def test_univariate(self, model_name: str, model_kwargs: dict | None, tmpdir_fn):
@@ -389,6 +445,33 @@ class TestNeuralForecastModel:
         )
         scaler = StaticCovariatesTransformer()
         train_series = scaler.fit_transform(self.multiple_multivariate_series)
+        model.fit(series=train_series)
+        assert model.uses_static_covariates
+        pred = model.predict(n=10, series=train_series[0])
+        assert isinstance(pred, TimeSeries)
+        assert pred.n_timesteps == 10
+        assert pred.n_components == train_series[0].n_components
+
+    @pytest.mark.parametrize(
+        "model_name, model_kwargs",
+        UNIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS
+        + MULTIVARIATE_MODELS_WITH_PAST_AND_FUTURE_COVS,
+    )
+    def test_multiple_multivariate_series_with_local_static_covs(
+        self, model_name: str, model_kwargs: dict | None
+    ):
+        model = NeuralForecastModel(
+            model=model_name,
+            input_chunk_length=9,
+            output_chunk_length=12,
+            model_kwargs=model_kwargs,
+            use_static_covariates=True,
+            **kwargs,
+        )
+        scaler = StaticCovariatesTransformer()
+        train_series = scaler.fit_transform(
+            self.multiple_multivariate_series_local_static_covs
+        )
         model.fit(series=train_series)
         assert model.uses_static_covariates
         pred = model.predict(n=10, series=train_series[0])
