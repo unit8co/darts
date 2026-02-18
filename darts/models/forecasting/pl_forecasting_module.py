@@ -455,8 +455,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
             pred = output.squeeze(dim=-1)
 
         # torch metrics require 2D targets of shape (batch size * ocl, num targets)
-        target = target.reshape(-1, self.n_targets)
-        pred = pred.reshape(-1, self.n_targets)
+        # contiguous() is needed because model outputs can be non-contiguous views
+        # (e.g. NBEATS slices the last dimension), and some torchmetrics implementations
+        # call .view() internally which requires a contiguous tensor.
+        target = target.reshape(-1, self.n_targets).contiguous()
+        pred = pred.reshape(-1, self.n_targets).contiguous()
 
         metrics.update(pred, target)
 
