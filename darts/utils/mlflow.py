@@ -5,6 +5,13 @@ MLflow Integration for Darts
 Custom MLflow model flavor for darts forecasting models. Supports saving, loading,
 logging and autolog for any darts ``ForecastingModel`` (statistical, ML-based, and PyTorch-based)
 to MLflow.
+
+This module is partly adapted from and inspired by the open-source
+implementation of SKtime's MLflow integration, with modifications to support
+autologging and handle Darts-specific model and covariate metadata.
+
+References:
+https://github.com/sktime/sktime/blob/main/sktime/utils/mlflow_sktime.py
 """
 
 import importlib
@@ -98,16 +105,23 @@ def save_model(
         A list of additional pip requirement strings to add to the model's environment,
         in addition to the default requirements.
     signature
-        An ``mlflow.models.ModelSignature`` instance describing model input/output.
-        Use :func:`infer_signature` to automatically generate from example inputs.
+        *Unsupported, see notes.* An ``mlflow.models.ModelSignature`` instance describing model input/output.
+        Use ``mlflow.models.infer_signature()`` to automatically generate from example inputs.
     input_example
-        An example input for the model (used by MLflow UI). Should be a DataFrame
-        created with :func:`prepare_pyfunc_input`.
+        *Unsupported, see notes.* An example input for the model (used by MLflow UI).
     metadata
         Optional dictionary of custom metadata to store in the ``MLmodel`` file.
     mlflow_model
         Optional MLflow Model object to use for saving. When provided (typically by
         ``Model.log()``), this model instance is used instead of creating a new one.
+
+    Notes
+    -----
+    Signature and input_example params are currently not supported, as they
+    are used to support serving and input validation in the MLflow pyfunc flavor,
+    which is not implemented for darts models. They are accepted as params for
+    simplifying potential future extensibility, and to keep in line with MLflow API
+    conventions.
     """
     raise_if_not(
         isinstance(model, ForecastingModel),
@@ -268,11 +282,10 @@ def log_model(
         A list of additional pip requirement strings to add to the model's environment,
         in addition to the default requirements.
     signature
-        An ``mlflow.models.ModelSignature``. Use :func:`infer_signature`
+       *Unsupported, see notes.* An ``mlflow.models.ModelSignature``. Use ``mlflow.models.infer_signature()``
         to automatically generate from example inputs.
     input_example
-        An example model input. Should be a DataFrame created with
-        :func:`prepare_pyfunc_input`.
+        *Unsupported, see notes.* An example model input.
     metadata
         Optional dict of custom metadata.
     log_params
@@ -284,6 +297,14 @@ def log_model(
     ModelInfo
         MLflow ModelInfo object containing model_uri, run_id, artifact_path,
         model_id, timestamps, and other metadata about the logged model.
+
+    Notes
+    -----
+    Signature and input_example params are currently not supported, as they
+    are used to support serving and input validation in the MLflow pyfunc flavor,
+    which is not implemented for darts models. They are accepted as params for
+    simplifying potential future extensibility, and to keep in line with MLflow API
+    conventions.
     """
     # import required as Model.log will call flavor.save_model() internally
     import darts.utils.mlflow as darts_mlflow
@@ -323,9 +344,9 @@ def autolog(
 
     1. Start an MLflow run (or reuse the currently active one).
     2. Log model creation parameters (``model.model_params``).
-    3. For PyTorch-based models: inject a callback that logs per-epoch
-       ``train_loss`` / ``val_loss`` metrics.
-    4. Log the trained model artifact at the end of training.
+    3. Log covariate usage information (past, future, and static covariates).
+    4. For PyTorch-based models: inject a callback that logs per-epoch metrics.
+    5. Log the trained model artifact at the end of training.
 
     Parameters
     ----------
@@ -476,9 +497,7 @@ def _log_covariate_info(model) -> None:
     ]
 
     covariate_info = {
-        cov_key: _extract_covariate_metadata(
-            model, cov_key, uses_attr, series_attr, names_attr
-        )
+        cov_key: _extract_covariate_metadata(model, uses_attr, series_attr, names_attr)
         for cov_key, uses_attr, series_attr, names_attr in covariate_types
     }
 
@@ -565,7 +584,7 @@ def _import_model_class(module_path: str, class_name: str):
 
 
 def _extract_covariate_metadata(
-    model, cov_type: str, uses_attr: str, series_attr: str, names_attr: str
+    model, uses_attr: str, series_attr: str, names_attr: str
 ) -> dict:
     """Extract metadata for a single covariate type.
 
@@ -573,8 +592,6 @@ def _extract_covariate_metadata(
     ----------
     model
         A Darts forecasting model instance.
-    cov_type : str
-        Covariate type name (e.g., "past_covariates").
     uses_attr : str
         Model attribute name indicating covariate usage.
     series_attr : str
@@ -605,6 +622,8 @@ def _patched_fit(original, self, *args, **kwargs):
 
     Handles both statistical and PyTorch-based models. For PyTorch models,
     automatically injects MLflow callback for per-epoch metrics logging.
+
+    Logs the trained model artifact if configured.
 
     Parameters
     ----------
