@@ -28,6 +28,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         name: str = "Diff",
         n_jobs: int = 1,
         verbose: bool = False,
+        columns: str | list[str] | None = None,
     ):
         r"""Differencing data transformer.
 
@@ -111,7 +112,11 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         # Don't automatically apply `component_mask` - need to throw error when `dropna = True`
         # and `component_mask` is specified:
         super().__init__(
-            name=name, n_jobs=n_jobs, verbose=verbose, mask_components=False
+            name=name,
+            n_jobs=n_jobs,
+            verbose=verbose,
+            mask_components=False,
+            columns=columns,
         )
 
     @staticmethod

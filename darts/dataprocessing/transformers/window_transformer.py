@@ -25,6 +25,7 @@ class WindowTransformer(BaseDataTransformer):
         name: str = "WindowTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
+        columns: str | list[str] | None = None,
     ):
         """
         A transformer that applies window transformation to a TimeSeries or a Sequence of TimeSeries. It expects a
@@ -167,7 +168,7 @@ class WindowTransformer(BaseDataTransformer):
         self.forecasting_safe = forecasting_safe
         self.include_current = include_current
         self.keep_names = keep_names
-        super().__init__(name, n_jobs, verbose)
+        super().__init__(name, n_jobs, verbose, columns=columns)
 
     @staticmethod
     def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:

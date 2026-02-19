@@ -32,6 +32,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         global_fit: bool = False,
         n_jobs: int = 1,
         verbose: bool = False,
+        columns: str | list[str] | None = None,
     ):
         """Box-Cox data transformer.
 
@@ -120,6 +121,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
             parallel_params=parallel_params,
             mask_components=True,
             global_fit=global_fit,
+            columns=columns,
         )
 
     @staticmethod

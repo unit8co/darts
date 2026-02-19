@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+ - Added a `columns` parameter to data transformers to allow specifying a subset of columns to apply the transformation on. [#3023](https://github.com/unit8co/darts/pull/3023) by [Krzsztof Pęczek](https://github.com/u8-krpeczek)
+
 **Fixed**
 
 - Updated the restrictive type hint for the timezone parameter `tz` to `Any`. This allows the use of more timezone definitions supported by Pandas [tz_convert](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html). [#3015](https://github.com/unit8co/darts/pull/3015) by [Moritz Waldleben](https://github.com/mwaldleben).
