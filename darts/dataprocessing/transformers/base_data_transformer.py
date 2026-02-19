@@ -64,6 +64,7 @@ class BaseDataTransformer(ABC):
         verbose: bool = False,
         parallel_params: bool | Sequence[str] = False,
         mask_components: bool = True,
+        columns: str | list[str] | None = None,
     ):
         """Abstract class for data transformers.
 
@@ -167,10 +168,18 @@ class BaseDataTransformer(ABC):
         elif not parallel_params:
             parallel_params = tuple()
         self._parallel_params = parallel_params
-        self._mask_components = mask_components
         self._name = name
         self._verbose = verbose
         self._n_jobs = n_jobs
+
+        self._mask_components = mask_components
+        self._columns = [columns] if isinstance(columns, str) else columns
+        if self._columns is not None and not self._mask_components:
+            raise_log(
+                "Contradictory arguments: `columns` was provided, but `mask_components` "
+                "is set to False. If you want to transform specific columns, "
+                "`mask_components` must be True."
+            )
 
     def set_verbose(self, value: bool):
         """Set the verbosity status.
@@ -366,6 +375,17 @@ class BaseDataTransformer(ABC):
             total=len(data),
         )
 
+        if self._columns is not None and component_mask is not None:
+            raise_log(
+                "You cannot use the `columns` parameter"
+                "and pass a `component_mask` to `transform()` at the same time."
+            )
+
+        if self._columns is not None:
+            component_mask = BaseDataTransformer._generate_component_mask(
+                data[0], self._columns
+            )
+
         # apply & unapply component masking to the transform method
         kwargs["mask_components"] = self._mask_components
         kwargs["mask_components_apply_only"] = False
@@ -442,6 +462,30 @@ class BaseDataTransformer(ABC):
         Note: the validity of the entries in series_idx is checked in _get_params().
         """
         return [series_idx] if isinstance(series_idx, int) else series_idx
+
+    @staticmethod
+    def _generate_component_mask(
+        series: TimeSeries, columns: str | list[str] | None
+    ) -> np.ndarray | None:
+        """
+        Translates the `self._columns` list into a boolean numpy array mask.
+        """
+        if columns is None:
+            return None
+
+        mask = np.zeros(series.n_components, dtype=bool)
+        series_components = series.components.tolist()
+
+        for col in columns:
+            if col not in series_components:
+                raise_log(
+                    f"Column '{col}' specified in `columns` was not found in the "
+                    f"TimeSeries components: {series_components}"
+                )
+            idx = series_components.index(col)
+            mask[idx] = True
+
+        return mask
 
     @staticmethod
     def apply_component_mask(
