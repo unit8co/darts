@@ -30,6 +30,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         name: str = "MIDAS",
         n_jobs: int = 1,
         verbose: bool = False,
+        columns: str | list[str] | None = None,
     ):
         """Mixed-data sampling transformer.
 
@@ -114,7 +115,9 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         self._drop_static_covariates = drop_static_covariates
         self._sep = "_midas_"
         # Original high frequency should be fitted on TimeSeries independently
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose, global_fit=False)
+        super().__init__(
+            name=name, n_jobs=n_jobs, verbose=verbose, global_fit=False, columns=columns
+        )
 
     @staticmethod
     def ts_fit(

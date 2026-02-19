@@ -21,6 +21,7 @@ class MissingValuesFiller(BaseDataTransformer):
         name: str = "MissingValuesFiller",
         n_jobs: int = 1,
         verbose: bool = False,
+        columns: str | list[str] | None = None,
     ):
         """Data transformer to fill missing values from a (sequence of) deterministic ``TimeSeries``.
 
@@ -68,7 +69,7 @@ class MissingValuesFiller(BaseDataTransformer):
         )
         # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self._fill = fill
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
+        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose, columns=columns)
 
     @staticmethod
     def ts_transform(

@@ -30,6 +30,7 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
         global_fit: bool = False,
         n_jobs: int = 1,
         verbose: bool = False,
+        columns: str | list[str] | None = None,
     ):
         """Generic wrapper class for using scalers on time series.
 
@@ -111,7 +112,11 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
         # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self.transformer = scaler
         super().__init__(
-            name=name, n_jobs=n_jobs, verbose=verbose, global_fit=global_fit
+            name=name,
+            n_jobs=n_jobs,
+            verbose=verbose,
+            global_fit=global_fit,
+            columns=columns,
         )
 
     @staticmethod
