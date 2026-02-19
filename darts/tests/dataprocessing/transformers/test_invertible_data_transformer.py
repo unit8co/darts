@@ -180,7 +180,8 @@ class TestInvertibleDataTransformer:
     @pytest.mark.parametrize("col_names", [["A"], ["B"], ["A", "B"]])
     def test_columns_subset(self, col_names):
         """
-        Tests if the `columns` argument correctly applies the transform only to the specified columns.
+        Tests if the `columns` argument correctly applies the transform
+        and it's inverse only to the specified columns.
         """
         ts_a = constant_timeseries(value=1, length=10, column_name="A")
         ts_b = constant_timeseries(value=2, length=10, column_name="B")

@@ -28,6 +28,7 @@ class FittableDataTransformer(BaseDataTransformer):
         verbose: bool = False,
         parallel_params: bool | Sequence[str] = False,
         mask_components: bool = True,
+        columns: str | list[str] | None = None,
         global_fit: bool = False,
     ):
         """Base class for fittable transformers.
@@ -146,6 +147,7 @@ class FittableDataTransformer(BaseDataTransformer):
             verbose=verbose,
             parallel_params=parallel_params,
             mask_components=mask_components,
+            columns=columns,
         )
 
         self._fit_called = False
@@ -259,6 +261,17 @@ class FittableDataTransformer(BaseDataTransformer):
         input_iterator = _build_tqdm_iterator(
             fit_iterator, verbose=self._verbose, desc=desc, total=n_jobs
         )
+
+        if self._columns is not None and component_mask is not None:
+            raise_log(
+                "You cannot use the `columns` parameter"
+                "and pass a `component_mask` to `fit()` at the same time."
+            )
+
+        if self._columns is not None:
+            component_mask = BaseDataTransformer._generate_component_mask(
+                data[0], self._columns
+            )
 
         # apply component masking to the fit method
         kwargs["mask_components"] = self._mask_components

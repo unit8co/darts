@@ -336,7 +336,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
         if self._columns is not None and component_mask is not None:
             raise_log(
                 "You cannot use the `columns` parameter"
-                "and pass a `component_mask` to `transform()` at the same time."
+                "and pass a `component_mask` to `inverse_transform()` at the same time."
             )
 
         if self._columns is not None:
