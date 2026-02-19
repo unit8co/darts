@@ -774,17 +774,6 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             future_target,
         ) = train_sample
 
-        # n_targets = future_target.shape[1]
-        # # validate number of target components
-        # if n_targets != 1 and not self.supports_multivariate:
-        #     raise_log(
-        #         ValueError(
-        #             f"The provided {self.nf_model_class.__name__} is a univariate model "
-        #             f"but the target has {n_targets} component(s)."
-        #         ),
-        #         logger,
-        #     )
-
         n_past_covs, n_future_covs, n_stat_covs = 0, 0, 0
         if future_covariates is not None:
             n_future_covs = future_covariates.shape[1]
