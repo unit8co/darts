@@ -252,10 +252,12 @@ class _NeuralForecastModule(PLForecastingModule):
             # For univariate base models with C > 1 target components,
             # we fold the target components into the batch dimension.
             # The new batch size becomes B * C, and the number of target components becomes 1.
-            # -> (B, C, L)
+            # `insample_y`: (B, L, C) -> (B, C, L)
             insample_y = insample_y.transpose(1, 2)
             # -> (B * C, L, 1)
             insample_y = insample_y.reshape(-1, self.input_chunk_length, 1)
+            # `insample_mask`: (B, L) -> (B * C, L)
+            insample_mask = insample_mask.repeat_interleave(self.n_targets, dim=0)
 
         # process past covariates if supported and provided
         if self.past_slice is not None:
