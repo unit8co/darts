@@ -28,6 +28,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
         verbose: bool = False,
         parallel_params: bool | Sequence[str] = False,
         mask_components: bool = True,
+        columns: str | list[str] | None = None,
     ):
         """Abstract class for invertible transformers.
 
@@ -136,6 +137,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
             verbose=verbose,
             parallel_params=parallel_params,
             mask_components=mask_components,
+            columns=columns,
         )
 
     @classmethod
@@ -330,6 +332,17 @@ class InvertibleDataTransformer(BaseDataTransformer):
             desc=desc,
             total=len(transformer_selector),
         )
+
+        if self._columns is not None and component_mask is not None:
+            raise_log(
+                "You cannot use the `columns` parameter"
+                "and pass a `component_mask` to `transform()` at the same time."
+            )
+
+        if self._columns is not None:
+            component_mask = BaseDataTransformer._generate_component_mask(
+                data[0], self._columns
+            )
 
         # apply & unapply component masking to the transform method
         kwargs["mask_components"] = self._mask_components
