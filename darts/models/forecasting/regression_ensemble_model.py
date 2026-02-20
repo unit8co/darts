@@ -8,8 +8,6 @@ An ensemble model which uses a regression model to compute the ensemble forecast
 from collections.abc import Sequence
 from typing import Optional, Union
 
-import numpy as np
-
 from darts import TimeSeries, concatenate
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
@@ -114,9 +112,33 @@ class RegressionEnsembleModel(EnsembleModel):
          [557.35256055]
          [630.24334385]]
         """
+        shifts = [model.output_chunk_shift for model in forecasting_models]
+        raise_if(
+            len(set(shifts)) > 1,
+            "All the base forecasting models must have the same `output_chunk_shift`",
+        )
+        output_chunk_shift = shifts[0] if shifts[0] else 0
+        output_chunk_lengths = [
+            model.output_chunk_length
+            for model in forecasting_models
+            if model.output_chunk_length is not None
+        ]
+        if len(set(output_chunk_lengths)) > 1:
+            output_chunk_length = min([
+                model.output_chunk_length
+                for model in forecasting_models
+                if model.output_chunk_length is not None
+            ])
+        elif len(set(output_chunk_lengths)) == 1:
+            output_chunk_length = output_chunk_lengths[0]
+        else:
+            output_chunk_length = 0
         if regression_model is None:
             regression_model = LinearRegressionModel(
-                lags=None, lags_future_covariates=[0], fit_intercept=False
+                lags=None,
+                lags_future_covariates=(0, output_chunk_length),
+                output_chunk_shift=output_chunk_shift,
+                fit_intercept=False,
             )
         elif isinstance(regression_model, SKLearnModel):
             raise_if_not(
@@ -124,18 +146,38 @@ class RegressionEnsembleModel(EnsembleModel):
                 "Cannot use `regression_model` that was created with `multi_models = False`.",
                 logger,
             )
+            raise_if(
+                regression_model.output_chunk_shift != output_chunk_shift,
+                "In case base models have a specified `output_chunk_shift`, the regression model should be"
+                f"initialized with the same one. Base model `output_chunk_shift` : {output_chunk_shift}, regression"
+                f"model `output_chunk_shift` : {regression_model.output_chunk_shift}",
+            )
+            raise_if(
+                regression_model.output_chunk_length != output_chunk_length,
+                "In case base models have a different `output_chunk_length`, the regression model "
+                f"`output_chunk_length` should be equal to the minimum of the one of the base models. Minimum base "
+                f"model `output_chunk_length` : {output_chunk_length}, regression model `output_chunk_length` : "
+                f"{regression_model.output_chunk_length}",
+            )
             regression_model = regression_model
         else:
             # scikit-learn like model
             regression_model = SKLearnModel(
-                lags_future_covariates=[0], model=regression_model
+                lags_future_covariates=(0, output_chunk_length),
+                output_chunk_shift=output_chunk_shift,
+                model=regression_model,
             )
 
         # check lags of the regression model
+        lags_future_covariates = list(range(output_chunk_length))
+        if regression_model.output_chunk_shift is not None:
+            lags_future_covariates = [
+                lag + output_chunk_shift for lag in lags_future_covariates
+            ]
         raise_if_not(
-            regression_model.lags == {"future": [0]},
+            regression_model.lags == {"future": lags_future_covariates},
             f"`lags` and `lags_past_covariates` of regression model must be `None`"
-            f"and `lags_future_covariates` must be [0]. Given:\n"
+            f"and `lags_future_covariates` must be {list(range(output_chunk_length))}. Given:\n"
             f"{regression_model.lags}",
         )
 
@@ -171,7 +213,6 @@ class RegressionEnsembleModel(EnsembleModel):
         self,
         train_n_points: int,
         series: Union[TimeSeries, Sequence[TimeSeries]],
-        direct_predictions: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
@@ -189,34 +230,26 @@ class RegressionEnsembleModel(EnsembleModel):
         verbose = verbose or False
         is_single_series = isinstance(series, TimeSeries)
         series = series2seq(series)
-        direct_predictions = series2seq(direct_predictions)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
-
-        n_components = series[0].n_components
-        model_predict_cols = direct_predictions[0].columns.tolist()
 
         predictions = []
         for m_idx, model in enumerate(self.forecasting_models):
             # get the columns corresponding to the current model's predictions
-            pred_cols_slice = slice(m_idx * n_components, (m_idx + 1) * n_components)
-            pred_cols = model_predict_cols[pred_cols_slice]
 
             # we start historical fc at multiple of the output length before the end.
             n_ocl_back = train_n_points // model.output_chunk_length
 
-            if not n_ocl_back:
-                # no historical forecasts required, use direct predictions
-                predictions.append([
-                    preds_dir[pred_cols] for preds_dir in direct_predictions
-                ])
-                continue
+            raise_if(
+                n_ocl_back == 0,
+                "The number of forecast models' training points should be greater than their "
+                "`output_chunk_length` with `train_using_historical_forecasts = True`.",
+            )
 
             start_hist_forecasts = n_ocl_back * model.output_chunk_length
 
             # we use the precomputed `direct_prediction` to fill any missing prediction
             # timesteps at the beginning (if train_n_points is not perfectly divisible by output length)
-            missing_steps = train_n_points % model.output_chunk_length
 
             tmp_pred = model.historical_forecasts(
                 series=series,
@@ -243,27 +276,6 @@ class RegressionEnsembleModel(EnsembleModel):
             # concatenate the stridden predictions of output_chunk_length values each
             tmp_pred = [concatenate(sub_pred, axis=0) for sub_pred in tmp_pred]
 
-            # add the missing steps at beginning by taking the first values of precomputed predictions
-            if missing_steps:
-                # add the missing steps at beginning by taking the first values of precomputed predictions
-                # get the model's direct (uni/multivariate) predictions
-                tmp_pred = [
-                    preds_hfc.with_times_and_values(
-                        times=preds_dir.time_index[:missing_steps].union(
-                            preds_hfc.time_index
-                        ),
-                        values=np.concatenate(
-                            [
-                                preds_dir.all_values(copy=False)[
-                                    :missing_steps, pred_cols_slice
-                                ],
-                                preds_hfc.all_values(copy=False),
-                            ],
-                            axis=0,
-                        ),
-                    )
-                    for preds_dir, preds_hfc in zip(direct_predictions, tmp_pred)
-                ]
             predictions.append(tmp_pred)
 
         tmp_predictions = []
@@ -368,20 +380,25 @@ class RegressionEnsembleModel(EnsembleModel):
 
         # we can call direct prediction in any case. Even if we overwrite with historical
         # forecasts later on, it serves as input validation
-        predictions = self._make_multiple_predictions(
-            n=self.train_n_points,
-            series=forecast_training,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            num_samples=self.train_num_samples,
-            verbose=verbose,
-        )
+        if not self.train_using_historical_forecasts:
+            raise_if(
+                self.ensemble_model.output_chunk_shift > 0,
+                "Can not use normal predictions from base models when `output_chunk_shift` is not 0.",
+            )
 
-        if self.train_using_historical_forecasts:
+            predictions = self._make_multiple_predictions(
+                n=self.train_n_points,
+                series=forecast_training,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=self.train_num_samples,
+                verbose=verbose,
+            )
+
+        else:
             predictions = self._make_multiple_historical_forecasts(
                 train_n_points=self.train_n_points,
                 series=series,
-                direct_predictions=predictions,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
                 num_samples=self.train_num_samples,
