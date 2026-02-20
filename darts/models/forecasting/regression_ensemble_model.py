@@ -133,10 +133,15 @@ class RegressionEnsembleModel(EnsembleModel):
             output_chunk_length = output_chunk_lengths[0]
         else:
             output_chunk_length = 0
+
+        lags_future_covariates = list(range(output_chunk_length))
+        if not len(set(lags_future_covariates)) > 1:
+            lags_future_covariates = [0]
+
         if regression_model is None:
             regression_model = LinearRegressionModel(
                 lags=None,
-                lags_future_covariates=(0, output_chunk_length),
+                lags_future_covariates=lags_future_covariates,
                 output_chunk_shift=output_chunk_shift,
                 fit_intercept=False,
             )
@@ -163,13 +168,12 @@ class RegressionEnsembleModel(EnsembleModel):
         else:
             # scikit-learn like model
             regression_model = SKLearnModel(
-                lags_future_covariates=(0, output_chunk_length),
+                lags_future_covariates=lags_future_covariates,
                 output_chunk_shift=output_chunk_shift,
                 model=regression_model,
             )
 
         # check lags of the regression model
-        lags_future_covariates = list(range(output_chunk_length))
         if regression_model.output_chunk_shift is not None:
             lags_future_covariates = [
                 lag + output_chunk_shift for lag in lags_future_covariates
@@ -177,7 +181,7 @@ class RegressionEnsembleModel(EnsembleModel):
         raise_if_not(
             regression_model.lags == {"future": lags_future_covariates},
             f"`lags` and `lags_past_covariates` of regression model must be `None`"
-            f"and `lags_future_covariates` must be {list(range(output_chunk_length))}. Given:\n"
+            f"and `lags_future_covariates` must be {lags_future_covariates}. Given:\n"
             f"{regression_model.lags}",
         )
 
