@@ -17,6 +17,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Dependencies**
 
+- Removed the upper version cap on `scikit-learn<1.8.0` since `catboost` added support in version `1.2.10`. [#3025](https://github.com/unit8co/darts/pull/3025) by [Simon Michau](https://github.com/simonmichau).
+
 ### For developers of the library:
 
 - Updated target-version to python310, and auto-refactored source code using ruff. [#3017](https://github.com/unit8co/darts/pull/2589) by [Dennis Bader](https://github.com/dennisbader).
