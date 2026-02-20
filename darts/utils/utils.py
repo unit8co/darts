@@ -37,6 +37,13 @@ try:
 except ImportError:
     TORCH_AVAILABLE = False
 
+try:
+    import pytorch_lightning as pl  # noqa: F401
+
+    PL_AVAILABLE = True
+except ImportError:
+    PL_AVAILABLE = False
+
 logger = get_logger(__name__)
 
 MAX_TORCH_SEED_VALUE = (1 << 31) - 1  # to accommodate 32-bit architectures

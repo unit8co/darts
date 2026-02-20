@@ -100,6 +100,14 @@ except ImportError:
     RAY_AVAILABLE = False
 
 try:
+    import mlflow  # noqa: F401
+
+    MLFLOW_AVAILABLE = True
+except ImportError:
+    logger.warning("MLflow not installed - Some tests will be skipped.")
+    MLFLOW_AVAILABLE = False
+
+try:
     import polars  # noqa: F401
 
     POLARS_AVAILABLE = True
