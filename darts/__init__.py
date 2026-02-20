@@ -18,7 +18,6 @@ from darts.timeseries import (
     slice_intersect,
     to_group_dataframe,
 )
-from darts.typing import TimeIndex, TimeSeriesLike
 
 __version__ = "0.41.0"
 
@@ -32,6 +31,4 @@ __all__ = [
     "reset_option",
     "describe_option",
     "option_context",
-    "TimeIndex",
-    "TimeSeriesLike",
 ]
