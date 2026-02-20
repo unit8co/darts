@@ -1,6 +1,4 @@
-"""DARTS TYPES
-
-tldr;   This file defines reusable types for the Darts Eco-System.
+"""Darts types
 """
 
 from collections.abc import Sequence
