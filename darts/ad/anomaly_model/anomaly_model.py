@@ -22,6 +22,7 @@ from darts.ad.utils import (
     show_anomalies_from_scores,
 )
 from darts.logging import get_logger, raise_log
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -42,7 +43,7 @@ class AnomalyModel(ABC):
 
     def fit(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
+        series: TimeSeriesLike,
         allow_model_training: bool,
         **kwargs,
     ) -> Self:
@@ -61,10 +62,10 @@ class AnomalyModel(ABC):
     @abstractmethod
     def score(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
+        series: TimeSeriesLike,
         return_model_prediction: bool = False,
         **kwargs,
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         """Compute anomaly score(s) for the given series.
 
         Predicts the given target time series with the forecasting model, and applies the scorer(s)
@@ -123,8 +124,8 @@ class AnomalyModel(ABC):
 
     def eval_metric(
         self,
-        anomalies: TimeSeries | Sequence[TimeSeries],
-        series: TimeSeries | Sequence[TimeSeries],
+        anomalies: TimeSeriesLike,
+        series: TimeSeriesLike,
         metric: Literal["AUC_ROC", "AUC_PR"] = "AUC_ROC",
         **kwargs,
     ) -> (
@@ -346,7 +347,7 @@ class AnomalyModel(ABC):
                 scorer.fit_from_prediction(list_series, list_pred)
 
     @staticmethod
-    def _process_input_series(series: TimeSeries | Sequence[TimeSeries], **kwargs):
+    def _process_input_series(series: TimeSeriesLike, **kwargs):
         """Checks input series and coverts series and covariates in `kwargs` to sequences."""
         series = _check_input(series, name="series")
         for cov_name in ["past_covariates", "future_covariates"]:

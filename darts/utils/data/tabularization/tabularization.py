@@ -18,6 +18,7 @@ from numpy.lib.stride_tricks import as_strided
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
+from darts.typing import TimeIndex, TimeSeriesLike
 from darts.utils.data.utils import _process_sample_weight
 from darts.utils.ts_utils import get_single_series, series2seq
 from darts.utils.utils import n_steps_between
@@ -30,9 +31,9 @@ ArrayOrArraySequence = np.ndarray | Sequence[np.ndarray]
 
 
 def create_lagged_data(
-    target_series: TimeSeries | Sequence[TimeSeries] | None = None,
-    past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-    future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+    target_series: TimeSeriesLike | None = None,
+    past_covariates: TimeSeriesLike | None = None,
+    future_covariates: TimeSeriesLike | None = None,
     lags: Sequence[int] | dict[str, list[int]] | None = None,
     lags_past_covariates: Sequence[int] | dict[str, list[int]] | None = None,
     lags_future_covariates: Sequence[int] | dict[str, list[int]] | None = None,
@@ -46,7 +47,7 @@ def create_lagged_data(
     use_moving_windows: bool = True,
     is_training: bool = True,
     concatenate: bool = True,
-    sample_weight: str | TimeSeries | Sequence[TimeSeries] | None = None,
+    sample_weight: str | TimeSeriesLike | None = None,
     stride: int = 1,
     show_warnings: bool = True,
 ) -> tuple[
@@ -436,11 +437,11 @@ def create_lagged_data(
 
 
 def create_lagged_training_data(
-    target_series: TimeSeries | Sequence[TimeSeries],
+    target_series: TimeSeriesLike,
     output_chunk_length: int,
     output_chunk_shift: int,
-    past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-    future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+    past_covariates: TimeSeriesLike | None = None,
+    future_covariates: TimeSeriesLike | None = None,
     lags: Sequence[int] | dict[str, list[int]] | None = None,
     lags_past_covariates: Sequence[int] | dict[str, list[int]] | None = None,
     lags_future_covariates: Sequence[int] | dict[str, list[int]] | None = None,
@@ -602,9 +603,9 @@ def create_lagged_training_data(
 
 
 def create_lagged_prediction_data(
-    target_series: TimeSeries | Sequence[TimeSeries] | None = None,
-    past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-    future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+    target_series: TimeSeriesLike | None = None,
+    past_covariates: TimeSeriesLike | None = None,
+    future_covariates: TimeSeriesLike | None = None,
     lags: Sequence[int] | dict[str, list[int]] | None = None,
     lags_past_covariates: Sequence[int] | dict[str, list[int]] | None = None,
     lags_future_covariates: Sequence[int] | dict[str, list[int]] | None = None,
@@ -733,7 +734,7 @@ def create_lagged_prediction_data(
 
 def add_static_covariates_to_lagged_data(
     features: np.ndarray | Sequence[np.ndarray],
-    target_series: TimeSeries | Sequence[TimeSeries],
+    target_series: TimeSeriesLike,
     uses_static_covariates: bool = True,
     last_shape: tuple[int, int] | None = None,
 ) -> np.ndarray | Sequence[np.ndarray]:
@@ -826,9 +827,9 @@ def add_static_covariates_to_lagged_data(
 
 
 def create_lagged_component_names(
-    target_series: TimeSeries | Sequence[TimeSeries] | None = None,
-    past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-    future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+    target_series: TimeSeriesLike | None = None,
+    past_covariates: TimeSeriesLike | None = None,
+    future_covariates: TimeSeriesLike | None = None,
     lags: Sequence[int] | dict[str, list[int]] | None = None,
     lags_past_covariates: Sequence[int] | dict[str, list[int]] | None = None,
     lags_future_covariates: Sequence[int] | dict[str, list[int]] | None = None,
@@ -1413,7 +1414,7 @@ def _create_lagged_data_by_intersecting_times(
 
 
 def _create_lagged_data_autoregression(
-    target_series: TimeSeries | Sequence[TimeSeries],
+    target_series: TimeSeriesLike,
     t_pred: int,
     shift: int,
     last_step_shift: int,
@@ -1528,9 +1529,9 @@ def _extract_component_lags_autoregression(
 
 # For convenience, define following types for `_get_feature_times`:
 FeatureTimes = tuple[
-    pd.Index | pd.DatetimeIndex | pd.RangeIndex | None,
-    pd.Index | pd.DatetimeIndex | pd.RangeIndex | None,
-    pd.Index | pd.DatetimeIndex | pd.RangeIndex | None,
+    pd.Index | TimeIndex | None,
+    pd.Index | TimeIndex | None,
+    pd.Index | TimeIndex | None,
 ]
 MinLags = tuple[int | None, int | None, int | None]
 MaxLags = tuple[int | None, int | None, int | None]

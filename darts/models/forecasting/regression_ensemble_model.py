@@ -15,6 +15,7 @@ from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.sklearn_model import SKLearnModel
+from darts.typing import TimeSeriesLike
 from darts.utils.ts_utils import seq2series, series2seq
 
 logger = get_logger(__name__)
@@ -169,13 +170,13 @@ class RegressionEnsembleModel(EnsembleModel):
     def _make_multiple_historical_forecasts(
         self,
         train_n_points: int,
-        series: TimeSeries | Sequence[TimeSeries],
-        direct_predictions: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        direct_predictions: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         num_samples: int = 1,
         verbose: bool | None = None,
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         """
         For GlobalForecastingModel, when predicting n > output_chunk_length, `historical_forecasts()` generally
         produce better forecasts than `predict()`.
@@ -285,10 +286,10 @@ class RegressionEnsembleModel(EnsembleModel):
 
     def fit(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
         verbose: bool | None = None,
     ):
         """
@@ -419,13 +420,13 @@ class RegressionEnsembleModel(EnsembleModel):
 
     def ensemble(
         self,
-        predictions: TimeSeries | Sequence[TimeSeries],
-        series: TimeSeries | Sequence[TimeSeries],
+        predictions: TimeSeriesLike,
+        series: TimeSeriesLike,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         random_state: int | None = None,
         verbose: bool | None = None,
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         is_single_series = isinstance(series, TimeSeries) or series is None
         predictions = series2seq(predictions)
         series = series2seq(series) if series is not None else [None]

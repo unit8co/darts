@@ -8,6 +8,7 @@ Utilities that help in model selection e.g. by splitting a dataset.
 from collections.abc import Sequence
 
 from darts import TimeSeries
+from darts.typing import TimeSeriesLike
 
 MODEL_AWARE = "model-aware"
 SIMPLE = "simple"
@@ -158,7 +159,7 @@ class SplitTimeSeriesSequence(Sequence):
     @classmethod
     def make_splitter(
         cls,
-        data: TimeSeries | Sequence[TimeSeries],
+        data: TimeSeriesLike,
         test_size: float | int | None = 0.25,
         axis: int | None = 0,
         input_size: int | None = 0,
@@ -206,7 +207,7 @@ class SplitTimeSeriesSequence(Sequence):
 
 
 def train_test_split(
-    data: TimeSeries | Sequence[TimeSeries],
+    data: TimeSeriesLike,
     test_size: float | int | None = 0.25,
     axis: int | None = 0,
     input_size: int | None = 0,

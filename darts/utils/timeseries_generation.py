@@ -19,6 +19,7 @@ from darts.timeseries import (
     TIME_AX,
     TimeSeries,
 )
+from darts.typing import TimeIndex
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -437,7 +438,7 @@ def autoregressive_timeseries(
 
 
 def _extend_time_index_until(
-    time_index: pd.DatetimeIndex | pd.RangeIndex,
+    time_index: TimeIndex,
     until: int | str | pd.Timestamp | None,
     add_length: int,
     name,
@@ -760,7 +761,7 @@ def _build_forecast_series(
     with_static_covs: bool = True,
     with_hierarchy: bool = True,
     pred_start: pd.Timestamp | int | None = None,
-    time_index: pd.DatetimeIndex | pd.RangeIndex = None,
+    time_index: TimeIndex = None,
     copy: bool = False,
 ) -> TimeSeries:
     """
@@ -887,7 +888,7 @@ def _build_forecast_series_from_schema(
 
 def _generate_new_dates(
     n: int, input_series: TimeSeries, start: pd.Timestamp | int | None = None
-) -> pd.DatetimeIndex | pd.RangeIndex:
+) -> TimeIndex:
     """
     Generates `n` new dates after the end of the specified series
     """

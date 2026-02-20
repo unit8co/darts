@@ -23,7 +23,6 @@ if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
-
 import numpy as np
 import pandas as pd
 
@@ -33,6 +32,7 @@ from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger, raise_log
 from darts.metrics.utils import METRIC_TYPE
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+from darts.typing import TimeSeriesLike
 from darts.utils import _build_tqdm_iterator, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _adjust_historical_forecasts_time_index,
@@ -188,9 +188,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
     def fit(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         verbose: bool | None = None,
         **kwargs,
     ) -> "ConformalModel":
@@ -244,16 +244,16 @@ class ConformalModel(GlobalForecastingModel, ABC):
     def predict(
         self,
         n: int,
-        series: TimeSeries | Sequence[TimeSeries] = None,
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike = None,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         num_samples: int = 1,
         verbose: bool | None = None,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
         random_state: int | None = None,
         **kwargs,
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         """Forecasts calibrated quantile intervals (or samples from calibrated intervals) for `n` time steps after the
         end of the `series`.
 
@@ -316,7 +316,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
         Returns
         -------
-        TimeSeries | Sequence[TimeSeries]
+        TimeSeriesLike
             If `series` is not specified, this function returns a single time series containing the `n`
             next points after then end of the training series.
             If `series` is given and is a simple ``TimeSeries``, this function returns the `n` next points
@@ -395,9 +395,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
     @_with_sanity_checks("_historical_forecasts_sanity_checks")
     def historical_forecasts(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         forecast_horizon: int = 1,
         num_samples: int = 1,
         train_length: int | None = None,
@@ -416,7 +416,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         data_transformers: dict[str, BaseDataTransformer | Pipeline] | None = None,
         fit_kwargs: dict[str, Any] | None = None,
         predict_kwargs: dict[str, Any] | None = None,
-        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
         random_state: int | None = None,
     ) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]]:
         """Generates calibrated historical forecasts by simulating predictions at various points in time throughout the
@@ -628,9 +628,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
     def backtest(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         historical_forecasts: TimeSeries
         | Sequence[TimeSeries]
         | Sequence[Sequence[TimeSeries]]
@@ -656,7 +656,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         metric_kwargs: dict[str, Any] | list[dict[str, Any]] | None = None,
         fit_kwargs: dict[str, Any] | None = None,
         predict_kwargs: dict[str, Any] | None = None,
-        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
         random_state: int | None = None,
     ) -> float | np.ndarray | list[float] | list[np.ndarray]:
         r"""Compute error values that the model produced for historical forecasts on (potentially multiple) `series`.
@@ -861,9 +861,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
     def residuals(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         historical_forecasts: TimeSeries
         | Sequence[TimeSeries]
         | Sequence[Sequence[TimeSeries]]
@@ -888,7 +888,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         metric_kwargs: dict[str, Any] | None = None,
         fit_kwargs: dict[str, Any] | None = None,
         predict_kwargs: dict[str, Any] | None = None,
-        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
         values_only: bool = False,
         random_state: int | None = None,
     ) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]]:

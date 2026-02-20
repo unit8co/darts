@@ -39,6 +39,7 @@ from darts.explainability.explainability import _ForecastingModelExplainer
 from darts.explainability.explainability_result import ShapExplainabilityResult
 from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
+from darts.typing import TimeSeriesLike
 from darts.utils.data.tabularization import create_lagged_prediction_data
 
 logger = get_logger(__name__)
@@ -67,9 +68,9 @@ class ShapExplainer(_ForecastingModelExplainer):
     def __init__(
         self,
         model: SKLearnModel,
-        background_series: TimeSeries | Sequence[TimeSeries] | None = None,
-        background_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        background_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        background_series: TimeSeriesLike | None = None,
+        background_past_covariates: TimeSeriesLike | None = None,
+        background_future_covariates: TimeSeriesLike | None = None,
         background_num_samples: int | None = None,
         shap_method: str | None = None,
         **kwargs,
@@ -195,9 +196,9 @@ class ShapExplainer(_ForecastingModelExplainer):
 
     def explain(
         self,
-        foreground_series: TimeSeries | Sequence[TimeSeries] | None = None,
-        foreground_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        foreground_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        foreground_series: TimeSeriesLike | None = None,
+        foreground_past_covariates: TimeSeriesLike | None = None,
+        foreground_future_covariates: TimeSeriesLike | None = None,
         horizons: Sequence[int] | None = None,
         target_components: Sequence[str] | None = None,
     ) -> ShapExplainabilityResult:
@@ -734,9 +735,9 @@ class _RegressionShapExplainers:
 
     def _create_regression_model_shap_X(
         self,
-        target_series: TimeSeries | Sequence[TimeSeries] | None,
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None,
+        target_series: TimeSeriesLike | None,
+        past_covariates: TimeSeriesLike | None,
+        future_covariates: TimeSeriesLike | None,
         n_samples: int | None = None,
         train: bool = False,
     ) -> pd.DataFrame:

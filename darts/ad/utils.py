@@ -28,14 +28,15 @@ from sklearn.metrics import (
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
+from darts.typing import TimeSeriesLike
 from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
 
 
 def eval_metric_from_scores(
-    anomalies: TimeSeries | Sequence[TimeSeries],
-    pred_scores: TimeSeries | Sequence[TimeSeries],
+    anomalies: TimeSeriesLike,
+    pred_scores: TimeSeriesLike,
     window: int | Sequence[int] = 1,
     metric: Literal["AUC_ROC", "AUC_PR"] = "AUC_ROC",
 ) -> float | Sequence[float] | Sequence[Sequence[float]]:
@@ -87,8 +88,8 @@ def eval_metric_from_scores(
 
 
 def eval_metric_from_binary_prediction(
-    anomalies: TimeSeries | Sequence[TimeSeries],
-    pred_anomalies: TimeSeries | Sequence[TimeSeries],
+    anomalies: TimeSeriesLike,
+    pred_anomalies: TimeSeriesLike,
     window: int | Sequence[int] = 1,
     metric: Literal["recall", "precision", "f1", "accuracy"] = "recall",
 ) -> float | Sequence[float] | Sequence[Sequence[float]]:
@@ -141,8 +142,8 @@ def eval_metric_from_binary_prediction(
 
 
 def _eval_metric(
-    anomalies: TimeSeries | Sequence[TimeSeries],
-    pred_series: TimeSeries | Sequence[TimeSeries],
+    anomalies: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     window: int | Sequence[int],
     metric: Literal["AUC_ROC", "AUC_PR", "recall", "precision", "f1", "accuracy"],
     pred_is_binary: bool,
@@ -301,7 +302,7 @@ def show_anomalies_from_scores(
     series: TimeSeries,
     anomalies: TimeSeries = None,
     pred_series: TimeSeries = None,
-    pred_scores: TimeSeries | Sequence[TimeSeries] = None,
+    pred_scores: TimeSeriesLike = None,
     window: int | Sequence[int] = 1,
     names_of_scorers: str | Sequence[str] = None,
     title: str = None,
@@ -678,7 +679,7 @@ def _plot_series(series, ax_id, linewidth, label_name, **kwargs):
 
 
 def _check_input(
-    series: TimeSeries | Sequence[TimeSeries],
+    series: TimeSeriesLike,
     name: str,
     width_expected: int | None = None,
     check_deterministic: bool = False,

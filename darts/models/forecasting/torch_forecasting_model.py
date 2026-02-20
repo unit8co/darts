@@ -56,6 +56,7 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
 )
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
+from darts.typing import TimeSeriesLike
 from darts.utils.data import (
     SequentialTorchInferenceDataset,
     SequentialTorchTrainingDataset,
@@ -821,19 +822,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @random_method
     def fit(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        val_series: TimeSeries | Sequence[TimeSeries] | None = None,
-        val_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        val_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        val_series: TimeSeriesLike | None = None,
+        val_past_covariates: TimeSeriesLike | None = None,
+        val_future_covariates: TimeSeriesLike | None = None,
         trainer: pl.Trainer | None = None,
         verbose: bool | None = None,
         epochs: int = 0,
         max_samples_per_ts: int | None = None,
         dataloader_kwargs: dict[str, Any] | None = None,
-        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
-        val_sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
+        val_sample_weight: TimeSeriesLike | str | None = None,
         stride: int = 1,
         load_best: bool = False,
     ) -> "TorchForecastingModel":
@@ -957,15 +958,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _setup_for_fit_from_dataset(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
         stride: int = 1,
-        val_series: TimeSeries | Sequence[TimeSeries] | None = None,
-        val_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        val_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        val_sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        val_series: TimeSeriesLike | None = None,
+        val_past_covariates: TimeSeriesLike | None = None,
+        val_future_covariates: TimeSeriesLike | None = None,
+        val_sample_weight: TimeSeriesLike | str | None = None,
         trainer: pl.Trainer | None = None,
         verbose: bool | None = None,
         epochs: int = 0,
@@ -1378,14 +1379,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @random_method
     def lr_find(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        val_series: TimeSeries | Sequence[TimeSeries] | None = None,
-        val_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        val_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
-        val_sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        val_series: TimeSeriesLike | None = None,
+        val_past_covariates: TimeSeriesLike | None = None,
+        val_future_covariates: TimeSeriesLike | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
+        val_sample_weight: TimeSeriesLike | str | None = None,
         trainer: pl.Trainer | None = None,
         verbose: bool | None = None,
         epochs: int = 0,
@@ -1533,9 +1534,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def predict(
         self,
         n: int,
-        series: TimeSeries | Sequence[TimeSeries] | None = None,
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike | None = None,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         trainer: pl.Trainer | None = None,
         batch_size: int | None = None,
         verbose: bool | None = None,
@@ -1547,7 +1548,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
         random_state: int | None = None,
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         """Predict the ``n`` time step following the end of the training series, or of the specified ``series``.
 
         Prediction is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
@@ -1624,7 +1625,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         Returns
         -------
-        TimeSeries | Sequence[TimeSeries]
+        TimeSeriesLike
             One or several time series containing the forecasts of ``series``, or the forecast of the training series
             if ``series`` is not specified and the model has been trained on a single series.
         """

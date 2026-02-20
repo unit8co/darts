@@ -15,6 +15,7 @@ from darts.dataprocessing.transformers.base_data_transformer import (
     component_masking,
 )
 from darts.logging import get_logger, raise_log
+from darts.typing import TimeSeriesLike
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 
 logger = get_logger(__name__)
@@ -220,7 +221,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
 
     def inverse_transform(
         self,
-        series: TimeSeries | Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]],
+        series: TimeSeriesLike | Sequence[Sequence[TimeSeries]],
         *args,
         component_mask: np.ndarray | None = None,
         series_idx: int | Sequence[int] | None = None,

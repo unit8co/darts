@@ -64,6 +64,7 @@ from scipy.stats import kurtosis, skew
 
 from darts.config import get_option
 from darts.logging import get_logger, raise_log
+from darts.typing import TimeIndex
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils._formatting import (
     format_bytes,
@@ -100,7 +101,6 @@ COMP_AX = 1
 SMPL_AX = 2
 AXES = {"time": TIME_AX, "component": COMP_AX, "sample": SMPL_AX}
 
-VALID_INDEX_TYPES = (pd.DatetimeIndex, pd.RangeIndex)
 STATIC_COV_TAG = "static_covariates"
 DEFAULT_GLOBAL_STATIC_COV_NAME = "global_components"
 HIERARCHY_TAG = "hierarchy"
@@ -110,7 +110,7 @@ METADATA_TAG = "metadata"
 class TimeSeries:
     def __init__(
         self,
-        times: pd.DatetimeIndex | pd.RangeIndex | pd.Index,
+        times: TimeIndex | pd.Index,
         values: np.ndarray,
         fill_missing_dates: bool | None = False,
         freq: str | int | None = None,
@@ -218,10 +218,7 @@ class TimeSeries:
         >>> series.shape
         (3, 1, 1)
         """
-        if not (
-            isinstance(times, VALID_INDEX_TYPES)
-            or np.issubdtype(times.dtype, np.integer)
-        ):
+        if not (isinstance(times, TimeIndex) or np.issubdtype(times.dtype, np.integer)):
             raise_log(
                 ValueError(
                     "the `times` argument must be a `pandas.RangeIndex`, or `pandas.DateTimeIndex`. Use "
@@ -831,7 +828,7 @@ class TimeSeries:
                 )
             # if we are here, the DataFrame was pandas
             elif not (
-                isinstance(time_index, VALID_INDEX_TYPES)
+                isinstance(time_index, TimeIndex)
                 or np.issubdtype(time_index.dtype, np.integer)
             ):
                 raise_log(
@@ -1239,7 +1236,7 @@ class TimeSeries:
     @classmethod
     def from_times_and_values(
         cls,
-        times: pd.DatetimeIndex | pd.RangeIndex | pd.Index,
+        times: TimeIndex | pd.Index,
         values: np.ndarray,
         fill_missing_dates: bool | None = False,
         freq: str | int | None = None,
@@ -1688,7 +1685,7 @@ class TimeSeries:
         return self.components
 
     @property
-    def time_index(self) -> pd.DatetimeIndex | pd.RangeIndex:
+    def time_index(self) -> TimeIndex:
         """The time index of the series."""
         return self._time_index.copy()
 
@@ -2782,9 +2779,7 @@ class TimeSeries:
         else:
             return vals[self._time_index.isin(other._time_index)]
 
-    def slice_intersect_times(
-        self, other: Self, copy: bool = True
-    ) -> pd.DatetimeIndex | pd.RangeIndex:
+    def slice_intersect_times(self, other: Self, copy: bool = True) -> TimeIndex:
         """Return the time index of the series where the time index was intersected with the `other` series.
 
         This method is in general *not* symmetric.
@@ -3259,7 +3254,7 @@ class TimeSeries:
 
     def with_times_and_values(
         self,
-        times: pd.DatetimeIndex | pd.RangeIndex | pd.Index,
+        times: TimeIndex | pd.Index,
         values: np.ndarray,
         fill_missing_dates: bool | None = False,
         freq: str | int | None = None,
@@ -3772,7 +3767,7 @@ class TimeSeries:
     def map(
         self,
         fn: Callable[[np.ndarray], np.ndarray]
-        | Callable[[pd.DatetimeIndex | pd.RangeIndex, np.ndarray], np.ndarray],
+        | Callable[[TimeIndex, np.ndarray], np.ndarray],
     ) -> Self:  # noqa: E501
         """Return a new series with the function `fn` applied to the values of this series.
 
@@ -4988,10 +4983,10 @@ class TimeSeries:
     @classmethod
     def _fill_missing_dates(
         cls,
-        times: pd.DatetimeIndex | pd.RangeIndex | pd.Index,
+        times: TimeIndex | pd.Index,
         values: np.ndarray,
         freq: str | int | None = None,
-    ) -> tuple[pd.DatetimeIndex | pd.RangeIndex, np.ndarray]:
+    ) -> tuple[TimeIndex, np.ndarray]:
         """Return the time index and values with missing dates inserted.
 
         This requires either a provided `freq` or the possibility to infer a unique frequency from `times` (see
@@ -5069,9 +5064,9 @@ class TimeSeries:
 
     @staticmethod
     def _sort_index(
-        times: pd.DatetimeIndex | pd.RangeIndex | pd.Index,
+        times: TimeIndex | pd.Index,
         values: np.ndarray,
-    ) -> tuple[pd.DatetimeIndex | pd.RangeIndex, np.ndarray]:
+    ) -> tuple[TimeIndex, np.ndarray]:
         """Sort `times` and `values` by ascending dates.
 
         Only performed if `times` is not already monotonically increasing.
@@ -5119,7 +5114,7 @@ class TimeSeries:
         cls,
         times: pd.Index,
         values: np.ndarray,
-    ) -> tuple[pd.DatetimeIndex | pd.RangeIndex, np.ndarray]:
+    ) -> tuple[TimeIndex, np.ndarray]:
         """Return `times` re-indexed into a `pandas.RangeIndex` and `values` in the re-indexed order.
 
         An integer `pandas.Index` can be converted to a `pandas.RangeIndex`, if the sorted index has a constant step
@@ -5148,10 +5143,10 @@ class TimeSeries:
     @classmethod
     def _restore_from_frequency(
         cls,
-        times: pd.DatetimeIndex | pd.RangeIndex | pd.Index,
+        times: TimeIndex | pd.Index,
         values: np.ndarray,
         freq: str | int,
-    ) -> tuple[pd.DatetimeIndex | pd.RangeIndex, np.ndarray]:
+    ) -> tuple[TimeIndex, np.ndarray]:
         """Return `times` resampled with frequency `freq` and values with `np.nan` for the newly inserted dates.
 
         The frequency `freq` must represent a target frequency that allows to maintain all dates from `times`.
@@ -5244,9 +5239,7 @@ class TimeSeries:
                 )
             return DIMS.index(axis)
 
-    def _get_agg_dims(
-        self, new_cname: str, axis: int
-    ) -> tuple[pd.DatetimeIndex | pd.RangeIndex, pd.Index]:
+    def _get_agg_dims(self, new_cname: str, axis: int) -> tuple[TimeIndex, pd.Index]:
         """Get output time index and components based on a aggregation `axis` and potential new column name
         `new_cname`.
         """
@@ -5700,7 +5693,7 @@ class TimeSeries:
         )
 
         # handle DatetimeIndex and RangeIndex:
-        if isinstance(key, pd.DatetimeIndex | pd.RangeIndex):
+        if isinstance(key, TimeIndex):
             is_dti = isinstance(key, pd.DatetimeIndex)
             _check_dt() if is_dti else _check_range()
             times = self._time_index

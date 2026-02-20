@@ -171,17 +171,17 @@ from darts.dataprocessing.encoders.encoder_base import (
     PastCovariatesIndexGenerator,
     SequentialEncoderTransformer,
     SingleEncoder,
-    SupportedIndex,
     _EncoderMethod,
 )
 from darts.dataprocessing.transformers import FittableDataTransformer
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.timeseries import DIMS
+from darts.typing import TimeIndex, TimeSeriesLike
 from darts.utils.timeseries_generation import datetime_attribute_timeseries
 from darts.utils.ts_utils import seq2series, series2seq
 from darts.utils.utils import generate_index
 
-SupportedTimeSeries = TimeSeries | Sequence[TimeSeries]
+SupportedTimeSeries = TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -231,7 +231,7 @@ class CyclicTemporalEncoder(SingleEncoder):
         self.tz = tz
 
     def _encode(
-        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
+        self, index: TimeIndex, target_end: pd.Timestamp, dtype: np.dtype
     ) -> TimeSeries:
         """applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`."""
         super()._encode(index, target_end, dtype)
@@ -401,7 +401,7 @@ class DatetimeAttributeEncoder(SingleEncoder):
         self.tz = tz
 
     def _encode(
-        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
+        self, index: TimeIndex, target_end: pd.Timestamp, dtype: np.dtype
     ) -> TimeSeries:
         """Encode `index` as a scalar."""
         super()._encode(index, target_end, dtype)
@@ -560,7 +560,7 @@ class IntegerIndexEncoder(SingleEncoder):
         self.attribute = attribute
 
     def _encode(
-        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
+        self, index: TimeIndex, target_end: pd.Timestamp, dtype: np.dtype
     ) -> TimeSeries:
         """Adds integer index value (position) to the provided `index`.
         For attribute=='relative', the reference point/index is the prediction/forecast index of the target series.
@@ -731,7 +731,7 @@ class CallableIndexEncoder(SingleEncoder):
         self.attribute = attribute
 
     def _encode(
-        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
+        self, index: TimeIndex, target_end: pd.Timestamp, dtype: np.dtype
     ) -> TimeSeries:
         """Apply the user-defined callable to encode the index"""
         super()._encode(index, target_end, dtype)
@@ -988,7 +988,7 @@ class SequentialEncoder(Encoder):
         future_covariates: SupportedTimeSeries | None = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> tuple[TimeSeries | Sequence[TimeSeries], TimeSeries | Sequence[TimeSeries]]:
+    ) -> tuple[TimeSeriesLike, TimeSeriesLike]:
         """Returns encoded index for all past and/or future covariates for training.
         Which covariates are generated depends on the parameters used at model creation.
 
@@ -1049,7 +1049,7 @@ class SequentialEncoder(Encoder):
         future_covariates: SupportedTimeSeries | None = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> tuple[TimeSeries | Sequence[TimeSeries], TimeSeries | Sequence[TimeSeries]]:
+    ) -> tuple[TimeSeriesLike, TimeSeriesLike]:
         """Returns encoded index for all past and/or future covariates for inference/prediction.
         Which covariates are generated depends on the parameters used at model creation.
 
@@ -1099,7 +1099,7 @@ class SequentialEncoder(Encoder):
         future_covariates: SupportedTimeSeries | None = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> tuple[TimeSeries | Sequence[TimeSeries], TimeSeries | Sequence[TimeSeries]]:
+    ) -> tuple[TimeSeriesLike, TimeSeriesLike]:
         """Returns encoded index for all past and/or future covariates for training and inference/prediction.
         Which covariates are generated depends on the parameters used at model creation.
 

@@ -8,6 +8,7 @@ from darts import TimeSeries
 from darts.dataprocessing.transformers.fittable_data_transformer import (
     FittableDataTransformer,
 )
+from darts.typing import TimeSeriesLike
 from darts.utils.timeseries_generation import constant_timeseries
 
 
@@ -340,7 +341,7 @@ class TestGlobalFittableDataTransformer:
 
         @staticmethod
         def ts_fit(
-            series: TimeSeries | Sequence[TimeSeries],
+            series: TimeSeriesLike,
             params: Mapping[str, Any],
             **kwargs,
         ):
