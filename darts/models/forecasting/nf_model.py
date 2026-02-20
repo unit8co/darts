@@ -341,10 +341,10 @@ class _NeuralForecastModule(PLForecastingModule):
 class NeuralForecastModel(MixedCovariatesTorchModel):
     def __init__(
         self,
-        model: str | type[BaseModel],
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
+        model: str | type[BaseModel] = "TiDE",
         model_kwargs: dict | None = None,
         use_static_covariates: bool = False,
         **kwargs,
@@ -355,63 +355,65 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         For a list of available base models,
         see `NeuralForecast package <https://nixtlaverse.nixtla.io/neuralforecast/docs/capabilities/overview.html>`__.
 
-        This converts the `NeuralForecast` base model into a ``TorchForecastingModel`` and enable full Darts
-        functionality, such as covariate support, probabilistic forecasting, backtesting, etc.
-        See `Torch Forecasting Models User Guide <https://unit8co.github.io/darts/userguide/torch_forecasting_models.html>`__
-        for details and usage examples.
+        This converts the `NeuralForecast` base model into a ``TorchForecastingModel`` and enables full Darts
+        functionality, such as covariate support, probabilistic forecasting, optimized backtesting, etc.
+        See the `Torch Forecasting Models User Guide
+        <https://unit8co.github.io/darts/userguide/torch_forecasting_models.html>`__ for details and usage examples.
+
+        The general setup looks like this:
+
+        - Simply set ``model`` to any `NeuralForecast` base model name or class, e.g., ``model="TiDE"`` or
+          ``model=TiDE``.
+
+        - To configure the model's architectural parameters, pass them in ``model_kwargs`` as a dictionary,
+          e.g., ``model_kwargs={"hidden_size": 64}`` for ``TiDE``.
+
+        - Darts will take care of automatically setting other non-architectural parameters for you. These parameters
+          **will be ignored** in ``model_kwargs``:
+
+          - Input and output parameters: ``input_size``, ``h``, and ``n_series``. These are automatically set
+            to match the ``input_chunk_length``, ``output_chunk_length``, and number of target series (components),
+            respectively.
+
+          - Covariate parameters: ``futr_exog_list``, ``hist_exog_list``, and ``stat_exog_list``. These are
+            inferred directly from the input time series passed to :func:`fit()`.
+
+          - Training and PyTorch (Lightning)-related setup: ``loss``, ``learning_rate``, ``max_steps``, etc.
+            are all handled by Darts. You can specify these parameters directly. See the parameter description
+            below for all available options.
 
         Our ``NeuralForecastModel`` has the following support, depending on the provided `NeuralForecast` base model:
 
-        - **Univariate forecasting**: Supported for any base model, univariate or multivariate.
+        - **Univariate forecasting**: Supported by all base models. Simply pass a univariate time series as
+          ``series`` to :func:`fit()` and :func:`predict()`.
 
-          - Simply set ``model`` to a base model name or class, e.g., ``model="KAN"`` or ``model=KAN``.
-
-          - To configure the model's architectural parameters, pass them in ``model_kwargs`` as a dictionary,
-            e.g., ``model_kwargs={"hidden_size": 64}`` for ``KAN``.
-
-          - Other parameters such as ``input_size`` and ``h`` will be automatically configured to match
-            ``input_chunk_length`` and ``output_chunk_length``, respectively.
-            You do not need to specify them in ``model_kwargs``.
-
-        - **Multivariate forecasting**: Supported for any base model, univariate or multivariate.
+        - **Multivariate forecasting**: Supported by all base models. Simply pass a multivariate time series as
+          ``series`` to :func:`fit()` and :func:`predict()`.
 
           - For univariate base models, multivariate forecasting is achieved by folding the target components into the
-            batch dimension and repeating the covariates across the folded target components accordingly.
+            batch dimension and repeating the covariates for each target component accordingly. This translates to
+            global training and forecasting on multiple univariate series.
 
-        - **Past/future covariates**: Supported only if the base model supports exogenous historical/future variables,
-          respectively.
+        - **Multiple time series**: Supported by all base models. Simply pass a sequence of uni- or multivariate
+          time series as ``series`` to :func:`fit()` and :func:`predict()`.
 
-        - **Static covariates**: Supported only if the base model supports exogenous static variables:
-
-          - Simply set ``use_static_covariates=True``.
+        - **Past / future / static covariates**: Supported only if the base model supports exogenous historical /
+          future / static variables, respectively. Simply pass your time series as ``past_covariates`` and /
+          or ``future_covariates`` to :func:`fit()` and :func:`predict()`. For static covariates, set
+          ``use_static_covariates=True`` at model creation.
 
           - For multivariate base models, `NeuralForecast` requires static covariates to be the same across time
             series, but may be different across target components. See the warning below for recommendations.
 
-          - For univariate base models, static covariates can be different across time series.
+        - **Probabilistic forecasting**: Supported by all base models. Simply set ``likelihood`` to a
+          :meth:`TorchLikelihood <darts.utils.likelihood_models.torch.TorchLikelihood>` instance to be used for
+          probabilistic forecasting.
 
-        - **Multiple time series**: Supported for any base model, univariate or multivariate.
-
-          - Simply pass a sequence of time series as ``series`` to :func:`fit()` and :func:`predict()`.
-
-        - **Loss function**: Supported for any base model, univariate or multivariate.
-
-          - Simply set ``loss_fn`` to a PyTorch loss function (default is ``torch.nn.MSELoss()``).
-
-        - **Probabilistic forecasting**: Supported for any base model, univariate or multivariate.
-
-          - Simply set ``likelihood`` to a :meth:`TorchLikelihood <darts.utils.likelihood_models.torch.TorchLikelihood>`
-            instance to be used for probabilistic forecasting.
-
-        - **Output chunk shift**: Supported for any base model, univariate or multivariate.
-
-          - Simply set ``output_chunk_shift`` to create a time gap between the input and output.
+        - **Loss function**: Supported by all base models. Simply set ``loss_fn`` to a PyTorch loss function (default
+          is ``torch.nn.MSELoss()``).
 
         Parameters
         ----------
-        model
-            Name or class of the NeuralForecast base model to be used from ``neuralforecast.models``,
-            e.g., ``"KAN"`` or ``KAN``.
         input_chunk_length
             Number of time steps in the past to take as a model input (per chunk). Applies to the target
             series, and past and/or future covariates (if the model supports it).
@@ -429,9 +431,14 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
             cannot generate autoregressive predictions (`n > output_chunk_length`). Default: ``0``.
+        model
+            Name or class of the NeuralForecast base model to be used from ``neuralforecast.models``, e.g., ``"TiDE"``
+            or ``TiDE``. See all `NeuralForecast models
+            <https://nixtlaverse.nixtla.io/neuralforecast/docs/capabilities/overview.html>`__ here.
         model_kwargs
             A dictionary of architectural parameters to initialize the `NeuralForecast` base model. The expected
-            parameters depend on the base model used. See NeuralForecast documentation for details. Default: ``None``.
+            parameters depend on the base model used. Read the general description above for more info on which
+            parameters are relevant. See the NeuralForecast base model documentation for details. Default: ``None``.
         use_static_covariates
             Whether to consider static covariates if supported by the base model. Default: ``False``.
             See **Static covariates** section above for details and caveats.
@@ -443,17 +450,17 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
-        torch_metrics
-            A ``torchmetric.Metric`` or a ``MetricCollection`` used for evaluation. A full list of available metrics
-            can be found `here <https://torchmetrics.readthedocs.io/en/latest/>`__. Default: ``None``.
         likelihood
             One of Darts' :meth:`TorchLikelihood <darts.utils.likelihood_models.torch.TorchLikelihood>` models to be
             used for probabilistic forecasts. Default: ``None``.
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         optimizer_cls
             The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
         optimizer_kwargs
             Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
-            for specifying a learning rate). Otherwise the default values of the selected ``optimizer_cls``
+            for specifying a learning rate). Otherwise, the default values of the selected ``optimizer_cls``
             will be used. Default: ``None``.
         lr_scheduler_cls
             Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds
@@ -461,7 +468,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
-            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [1]_.
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
             It is only applied to the features of the target series and not the covariates.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
@@ -534,10 +541,8 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
 
             For more info, see here:
-            `trainer flags
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags>`__,
-            and `training on multiple gpus
-            <https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus>`__.
+            https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
+            https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus
 
             With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
             :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
@@ -571,7 +576,9 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
 
         References
         ----------
-        .. [1] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+        .. [1] Nixtla's `NeuralForecast Package
+                <https://nixtlaverse.nixtla.io/neuralforecast/docs/getting-started/introduction.html>`__.
+        .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
                 Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
 
         Examples
@@ -584,18 +591,18 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         >>> target = series['T (degC)'][:100]
         >>> # optionally, use future atmospheric pressure (pretending this component is a forecast)
         >>> future_cov = series['p (mbar)'][:106]
-        >>> # create a NeuralForecastModel with KAN as the base model
-        >>> model = NeuralForecastModel("KAN", 7, 6, n_epochs=20)
+        >>> # create a NeuralForecastModel with TiDE as the base model
+        >>> model = NeuralForecastModel(7, 6, model="TiDE", n_epochs=20)
         >>> # fit and predict
         >>> model.fit(target, future_covariates=future_cov)
         >>> pred = model.predict(6)
         >>> print(pred.values())
-        [[ 1.6961709 ]
-        [-2.4282002 ]
-        [-0.01969378]
-        [ 3.3592758 ]
-        [-0.8043982 ]
-        [-2.2625582 ]]
+        [[0.00738985]
+         [1.5933118 ]
+         [3.8275871 ]
+         [2.1793625 ]
+         [3.6311367 ]
+         [4.0539136 ]]
 
         .. note::
             The following `NeuralForecast` models are not supported:
@@ -604,19 +611,12 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
               - ``HINT`` model which is not a base model.
               - Recurrent base models like ``GRU`` and ``LSTM``. Many are, however, natively implemented
                 as :class:`RNNModel <darts.models.forecasting.rnn_model.RNNModel>` in Darts.
-        .. note::
-            The following parameters will be ignored if provided in ``model_kwargs``:
-              - Input and output parameters: ``input_size``, ``h``, and ``n_series``. They will be automatically set
-                to match the ``input_chunk_length``, ``output_chunk_length``, and number of target series, respectively.
-              - Training parameters: ``loss``, ``learning_rate``, ``max_steps``, etc. Training logic is
-                instead managed by Darts' ``TorchForecastingModule`` and PyTorch Lightning Trainer.
-              - Covariate list parameters: ``futr_exog_list``, ``hist_exog_list``, and ``stat_exog_list``.
         .. warning::
             For compatibility, when static covariates are enabled for a multivariate base model, Darts will use the
             static covariates of the first sample in each batch as the static covariates for the entire batch.
             This may cause issues if you have multiple time series with different static covariates.
-            Please consider setting ``use_static_covariates=False`` to disable support or
-            setting ``batch_size=1`` to ensure that each batch only contains one time series.
+            Please consider setting ``use_static_covariates=False`` to disable support or setting ``batch_size=1`` to
+            ensure that each batch only contains one time series.
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
