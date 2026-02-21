@@ -1,6 +1,6 @@
 import pytest
 
-from darts.tests.conftest import TORCH_AVAILABLE
+from darts.tests.conftest import NF_AVAILABLE, TORCH_AVAILABLE
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -120,6 +120,20 @@ models = [
     (GlobalNaiveAggregate, kwargs),
     (GlobalNaiveDrift, kwargs),
 ]
+
+if NF_AVAILABLE:
+    nf_tide_kwargs = {
+        "model": "TiDE",
+    }
+    nf_tsmixerx_kwargs = {
+        "model": "TSMixerx",
+    }
+    from darts.models.forecasting.nf_model import NeuralForecastModel
+
+    models += [
+        (NeuralForecastModel, dict(kwargs, **nf_tide_kwargs)),
+        (NeuralForecastModel, dict(kwargs, **nf_tsmixerx_kwargs)),
+    ]
 
 
 class NumsCalled(Metric):
