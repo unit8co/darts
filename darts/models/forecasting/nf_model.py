@@ -632,7 +632,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             self._validate_nf_model_class()
 
         # extract, validate, and update the NeuralForecast base model parameters
-        self.nf_model_params = model_kwargs or {}
+        self.nf_model_params = model_kwargs.copy() if model_kwargs else {}
         self._validate_nf_model_params(
             use_reversible_instance_norm=self.pl_module_params.get(
                 "use_reversible_instance_norm", False
@@ -665,7 +665,8 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         # consider static covariates if supported by `nf_model_class`
         self._considers_static_covariates = use_static_covariates
 
-    def _import_nf_model_class(self, model: str) -> type[BaseModel]:
+    @staticmethod
+    def _import_nf_model_class(model: str) -> type[BaseModel]:
         import neuralforecast.models
 
         try:
