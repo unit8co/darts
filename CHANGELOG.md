@@ -296,6 +296,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug with `SKLearnModel.__str__()` which raised an error when the model was wrapped by Darts' MultioutputRegressor. [#2811](https://github.com/unit8co/darts/pull/2811) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed the default `_ShapMethod` for three tree based regression models (HistGradientBoostingRegressor, ExtraTreesRegressor and RandomForestRegressor). [#2821](https://github.com/unit8co/darts/pull/2821) by [Rijk van der Meulen](https://github.com/rijkvandermeulen).
 - Fixed a bug in `StatsForecastModel` where custom future covariates support (OLS) resulted in a feature error with target series that contain static covariates. [#2824](https://github.com/unit8co/darts/pull/2824) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug in `_VariableSelectionNetwork.input_size_total` that was causing incorrect tensor dimension calculations. [#2818](https://github.com/unit8co/darts/pull/2818) by [Ayush R. Dahal](https://github.com/penknife6153)
 
 **Dependencies**
 
