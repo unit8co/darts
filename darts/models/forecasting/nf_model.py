@@ -716,8 +716,8 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
                 f"The following NeuralForecast model parameters will be ignored "
                 f"as they are either managed by Darts or not relevant: {ignored_params_in_use}"
             )
-            for rinorm_param in ignored_params_in_use:
-                self.nf_model_params.pop(rinorm_param)
+            for param in ignored_params_in_use:
+                self.nf_model_params.pop(param)
 
         # warn if RINorm is enabled for NF model while `use_reversible_instance_norm` is enabled for the PL module
         if use_reversible_instance_norm:
