@@ -656,7 +656,7 @@ Our regression models are designed to predict continuous numerical values, makin
      - ✅ ✅ ✅
      - ✅ ✅
      - ✅
-     - `NeuralForecast Documentation <https://nixtlaverse.nixtla.io/neuralforecast>`_
+     - `NeuralForecast Documentation <https://nixtlaverse.nixtla.io/neuralforecast/docs/>`_
    * - **Foundation Models** (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_): No training required
      -
      -

@@ -569,7 +569,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         References
         ----------
         .. [1] Nixtla's `NeuralForecast Package
-                <https://nixtlaverse.nixtla.io/neuralforecast/docs/getting-started/introduction.html>`__.
+                <https://nixtlaverse.nixtla.io/neuralforecast/docs/>`__.
         .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
                 Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
 
