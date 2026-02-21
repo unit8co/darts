@@ -394,6 +394,7 @@ class TestNeuralForecastModel:
             input_chunk_length=10,
             output_chunk_length=8,
             model_kwargs=model_kwargs,
+            use_static_covariates=False,
             **kwargs,
         )
         model.fit(series=self.multiple_series)
@@ -637,6 +638,22 @@ class TestNeuralForecastModel:
                 model_kwargs={"invalid_arg_zzz": 123},
                 **kwargs,
             )
+
+    def test_ignored_model_kwargs(self, caplog):
+        with caplog.at_level(logging.INFO):
+            NeuralForecastModel(
+                model="NLinear",
+                input_chunk_length=7,
+                output_chunk_length=3,
+                model_kwargs={"input_size": 10, "learning_rate": 3},
+                **kwargs,
+            )
+        assert (
+            "The following NeuralForecast model parameters will be ignored"
+            in caplog.text
+        )
+        assert "input_size" in caplog.text
+        assert "learning_rate" in caplog.text
 
     @pytest.mark.parametrize(
         "model_name, rinorm_name",

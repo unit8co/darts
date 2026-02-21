@@ -700,8 +700,8 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             )
 
         # remove ignored params
-        ignored_params_in_use = _NF_MODEL_IGNORED_PARAMS.intersection(
-            self.nf_model_params.keys()
+        ignored_params_in_use = sorted(
+            _NF_MODEL_IGNORED_PARAMS.intersection(self.nf_model_params.keys())
         )
         if len(ignored_params_in_use) > 0:
             logger.info(
