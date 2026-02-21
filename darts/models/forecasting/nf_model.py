@@ -338,7 +338,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         output_chunk_shift: int = 0,
         model: str | type[BaseModel] = "TiDE",
         model_kwargs: dict | None = None,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
         **kwargs,
     ):
         """NeuralForecast Model.
@@ -432,7 +432,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             parameters depend on the base model used. Read the general description above for more info on which
             parameters are relevant. See the NeuralForecast base model documentation for details. Default: ``None``.
         use_static_covariates
-            Whether to consider static covariates if supported by the base model. Default: ``False``.
+            Whether to consider static covariates if supported by the base model. Default: ``True``.
             See **Static covariates** section above for details and caveats.
         **kwargs
             Optional arguments to initialize the ``pytorch_lightning.Module``, ``pytorch_lightning.Trainer``, and
