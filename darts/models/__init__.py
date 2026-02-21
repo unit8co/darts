@@ -97,7 +97,7 @@ except ModuleNotFoundError:
 try:
     from darts.models.forecasting.nf_model import NeuralForecastModel
 except ModuleNotFoundError:
-    NeuralForecastModel = NotImportedModule(module_name="NeuralForecast", warn=False)
+    NeuralForecastModel = NotImportedModule(module_name="NeuralForecast")
 
 try:
     from darts.models.forecasting.prophet_model import Prophet

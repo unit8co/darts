@@ -9,9 +9,18 @@ Darts offers a modular installation system with optional dependencies. Choose th
 * **Core only** (without neural networks, Prophet, LightGBM, CatBoost, XGBoost, StatsForecast): `pip install darts`
 * **Core + PyTorch** (for neural network models): `pip install "darts[torch]"`
 * **Core + Prophet, LightGBM, CatBoost, XGBoost, StatsForecast** (no neural networks): `pip install "darts[notorch]"`
-* **All available models**: `pip install "darts[all]"`
+* **All available models** (except listed below): `pip install "darts[all]"`
+
 
 If the PyTorch installation fails on your platform, please follow the official installation guide for [PyTorch](https://pytorch.org/get-started/locally/), then try installing Darts again.
+
+### Optional dependencies for specific models
+Some models have additional dependencies that are not included in the `all` installation option. To use them, you need to install the following dependencies separately from PyPI:
+
+| Model                 | Dependencies          |
+|-----------------------|-----------------------|
+| `NeuralForecastModel` | neuralforecast>=3.0.0 |
+
 
 ## From conda-forge
 Create a conda environment (e.g., for Python 3.11):
@@ -28,7 +37,16 @@ As some models have relatively heavy dependencies, we provide four conda-forge p
 * **Core only** (without neural networks, Prophet, LightGBM, CatBoost, XGBoost, StatsForecast): `conda install -c conda-forge u8darts`
 * **Core + PyTorch** (for neural network models): `conda install -c conda-forge -c pytorch u8darts-torch`
 * **Core + Prophet, LightGBM, CatBoost, XGBoost, StatsForecast** (no neural networks): `conda install -c conda-forge u8darts-notorch`
-* **All available models**: `conda install -c conda-forge -c pytorch u8darts-all`
+* **All available models** (except listed below): `conda install -c conda-forge -c pytorch u8darts-all`
+
+### Optional dependencies for specific models
+Some models have additional dependencies that are not included in the `all` installation option. To use them, you need to install the following dependencies separately from conda-forge:
+
+| Model                 | Dependencies          |
+|-----------------------|-----------------------|
+| `NeuralForecastModel` | neuralforecast>=3.0.0 |
+
+
 
 ## Other Information
 
