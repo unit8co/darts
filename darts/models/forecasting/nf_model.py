@@ -122,16 +122,10 @@ class _PseudoLoss(BasePointLoss):
         super().__init__(outputsize_multiplier=n_likelihood_params)
 
 
-class _NFModel(BaseModel):
-    """This serves as a protocol for expected NeuralForecast BaseModel API."""
-
-    def forward(self, window_batch: _WindowBatch) -> torch.Tensor: ...
-
-
 class _NeuralForecastModule(PLForecastingModule):
     def __init__(
         self,
-        nf_model_class: type[_NFModel],
+        nf_model_class: type[BaseModel],
         nf_model_params: dict,
         n_past_covs: int,
         n_future_covs: int,
@@ -785,7 +779,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
 
         pl_module_params = self.pl_module_params or {}
         return _NeuralForecastModule(
-            nf_model_class=self.nf_model_class,  # pyright: ignore[reportArgumentType]
+            nf_model_class=self.nf_model_class,
             nf_model_params=self.nf_model_params,
             n_past_covs=n_past_covs,
             n_future_covs=n_future_covs,
