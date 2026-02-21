@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added `project_after_n_blocks` hyperparameter to `TSMixerModel`, allowing some or all of the backbone to operate in the lookback rather than forecasted time space [#2555](https://github.com/unit8co/darts/pull/2555) by [Eric Schibli](https://github.com/eschibli)
+
 **Fixed**
 
 - Updated the restrictive type hint for the timezone parameter `tz` to `Any`. This allows the use of more timezone definitions supported by Pandas [tz_convert](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html). [#3015](https://github.com/unit8co/darts/pull/3015) by [Moritz Waldleben](https://github.com/mwaldleben).
