@@ -397,10 +397,21 @@ class TestNeuralForecastModel:
             **kwargs,
         )
         model.fit(series=self.multiple_series)
+
+        # predict on first series
         pred = model.predict(n=4, series=self.multiple_series[0])
         assert isinstance(pred, TimeSeries)
         assert pred.n_timesteps == 4
         assert pred.n_components == 1
+
+        # predict on multiple series at once
+        pred = model.predict(n=6, series=self.multiple_series)
+        assert isinstance(pred, list)
+        assert len(pred) == len(self.multiple_series)
+        for p in pred:
+            assert isinstance(p, TimeSeries)
+            assert p.n_timesteps == 6
+            assert p.n_components == 1
 
     @pytest.mark.parametrize(
         "model_name, model_kwargs",
@@ -548,6 +559,43 @@ class TestNeuralForecastModel:
             assert pred.n_timesteps == 10
             assert pred.n_components == 1
             assert pred.n_samples == 50
+
+    @pytest.mark.parametrize("model_name, model_kwargs", ALL_MODELS)
+    def test_probabilistic_multivariate_forecasting(
+        self, model_name: str, model_kwargs: dict | None
+    ):
+        if model_name in ["DeepNPTS"]:
+            pytest.skip(
+                f"{model_name} does not support likelihood models. Skipping test.",
+                allow_module_level=True,
+            )
+
+        for likelihood in LIKELIHOOD_MODELS:
+            model = NeuralForecastModel(
+                model=model_name,
+                input_chunk_length=14,
+                output_chunk_length=7,
+                model_kwargs=model_kwargs,
+                likelihood=likelihood,
+                **kwargs,
+            )
+            model.fit(series=self.multivariate_series)
+
+            # predict with likelihood parameters
+            pred = model.predict(n=4, predict_likelihood_parameters=True)
+            assert isinstance(pred, TimeSeries)
+            assert pred.n_timesteps == 4
+            assert (
+                pred.n_components
+                == likelihood.num_parameters * self.multivariate_series.n_components
+            )
+
+            # predict with auto-regressive sampling
+            pred = model.predict(n=14, num_samples=49)
+            assert isinstance(pred, TimeSeries)
+            assert pred.n_timesteps == 14
+            assert pred.n_components == self.multivariate_series.n_components
+            assert pred.n_samples == 49
 
     def test_invalid_model_name(self):
         with pytest.raises(
