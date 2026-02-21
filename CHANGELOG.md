@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- 🚀🚀 Added new forecasting model `NeuralForecastModel` to convert any NeuralForecast base model into a Darts `TorchForecastingModel`. Like all torch models, it supports univariate, multivariate, probabilistic forecasting, and more. Depending on the base model, it also supports past, future, and static covariates. [#3002](https://github.com/unit8co/darts/pull/3002) by [Zhihao Dai](https://github.com/daidahao)
+
 **Fixed**
 
 - Updated the restrictive type hint for the timezone parameter `tz` to `Any`. This allows the use of more timezone definitions supported by Pandas [tz_convert](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html). [#3015](https://github.com/unit8co/darts/pull/3015) by [Moritz Waldleben](https://github.com/mwaldleben).

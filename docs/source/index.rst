@@ -651,6 +651,12 @@ Our regression models are designed to predict continuous numerical values, makin
      - ✅ ✅
      - ✅
      - `TSMixer paper <https://arxiv.org/pdf/2303.06053.pdf>`_, `PyTorch Implementation <https://github.com/ditschuk/pytorch-tsmixer>`_
+   * - `NeuralForecastModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nf_model.html#darts.models.forecasting.nf_model.NeuralForecastModel>`_: wrapper around any `NeuralForecast <https://nixtlaverse.nixtla.io/neuralforecast/docs/capabilities/overview.html>`_ model
+     - ✅ ✅
+     - ✅ ✅ ✅
+     - ✅ ✅
+     - ✅
+     - `NeuralForecast Documentation <https://nixtlaverse.nixtla.io/neuralforecast/docs/>`_
    * - **Foundation Models** (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_): No training required
      -
      -

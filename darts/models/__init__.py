@@ -95,6 +95,11 @@ except ModuleNotFoundError:
     TimesFM2p5Model = NotImportedModule(module_name="(Py)Torch", warn=False)
 
 try:
+    from darts.models.forecasting.nf_model import NeuralForecastModel
+except ModuleNotFoundError:
+    NeuralForecastModel = NotImportedModule(module_name="NeuralForecast")
+
+try:
     from darts.models.forecasting.prophet_model import Prophet
 except ImportError:
     Prophet = NotImportedModule(module_name="Prophet", warn=False)
@@ -206,4 +211,5 @@ __all__ = [
     "ConformalQRModel",
     "Chronos2Model",
     "TimesFM2p5Model",
+    "NeuralForecastModel",
 ]

@@ -11,7 +11,7 @@ import pytest
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
 from darts.metrics import mape
-from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.conftest import NF_AVAILABLE, TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 from darts.utils.timeseries_generation import linear_timeseries
 
@@ -194,6 +194,37 @@ models_cls_kwargs_errs = [
         39,
     ),
 ]
+
+if NF_AVAILABLE:
+    from darts.models.forecasting.nf_model import NeuralForecastModel
+
+    models_cls_kwargs_errs += [
+        (
+            NeuralForecastModel,
+            {
+                "model": "TiDE",
+                "model_kwargs": {
+                    "hidden_size": 128,
+                    "decoder_output_dim": 16,
+                    "temporal_decoder_dim": 32,
+                    "dropout": 0.1,
+                    "layernorm": False,
+                },
+                "n_epochs": 10,
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+            },
+            40.0,
+        ),
+        (
+            NeuralForecastModel,
+            {
+                "model": "TSMixerx",
+                "n_epochs": 10,
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+            },
+            40.0,
+        ),
+    ]
 
 
 class TestGlobalForecastingModels:
