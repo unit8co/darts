@@ -39,6 +39,7 @@ from typing import TypedDict
 import torch
 from neuralforecast.common._base_model import BaseModel
 from neuralforecast.losses.pytorch import BasePointLoss
+from numpy.random import RandomState
 
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
@@ -48,6 +49,7 @@ from darts.models.forecasting.pl_forecasting_module import (
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.likelihood_models.torch import TorchLikelihood
+from darts.utils.utils import MAX_NUMPY_SEED_VALUE
 
 logger = get_logger(__name__)
 
@@ -748,6 +750,12 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         # set `input_size` and `h` to match the `input_chunk_length` and `output_chunk_length` of the PL module
         self.nf_model_params["input_size"] = input_chunk_length
         self.nf_model_params["h"] = output_chunk_length
+
+        # set random seed for reproducibility
+        random_instance: RandomState = getattr(self, "_random_instance")
+        self.nf_model_params["random_seed"] = random_instance.randint(
+            0, MAX_NUMPY_SEED_VALUE
+        )
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         # unpack train sample
