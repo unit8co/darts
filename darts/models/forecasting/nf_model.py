@@ -130,7 +130,6 @@ class _NeuralForecastModule(PLForecastingModule):
         n_past_covs: int,
         n_future_covs: int,
         n_stat_covs: int,
-        is_multivariate: bool,
         **kwargs,
     ):
         """PyTorch Lightning module that wraps around the NeuralForecast model and
@@ -149,8 +148,6 @@ class _NeuralForecastModule(PLForecastingModule):
             Number of future covariate components (F).
         n_stat_covs
             Number of static covariate components (S) per target component.
-        is_multivariate
-            Whether the NeuralForecast base model is multivariate (i.e., supports C >= 1 target components).
         **kwargs
             all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
             base class.
@@ -176,7 +173,14 @@ class _NeuralForecastModule(PLForecastingModule):
             hist_exog_list=hist_exog_list,
             stat_exog_list=stat_exog_list,
         )
-        self.is_multivariate = is_multivariate
+        self.is_multivariate_base = self.nf.MULTIVARIATE
+        # whether to convert the NF base model from univariate to multivariate by:
+        # 1) Folding the target components into the batch dimension, and
+        # 2) Repeating the past, future, and static covariates across the folded target components accordingly.
+        self.converts_to_multivariate = (
+            not self.is_multivariate_base
+        ) and self.n_targets > 1
+
         self.past_slice = (
             slice(self.n_targets, self.n_targets + n_past_covs)
             if n_past_covs > 0
@@ -190,14 +194,6 @@ class _NeuralForecastModule(PLForecastingModule):
             if n_future_covs > 0
             else None
         )
-
-    @property
-    def converts_to_multivariate(self) -> bool:
-        """Whether to convert the NF base model from univariate to multivariate by:
-        1) Folding the target components into the batch dimension, and
-        2) Repeating the past, future, and static covariates across the folded target components accordingly.
-        """
-        return (not self.is_multivariate) and self.n_targets > 1
 
     @io_processor
     def forward(self, x_in: PLModuleInput):
@@ -257,7 +253,7 @@ class _NeuralForecastModule(PLForecastingModule):
         if self.past_slice is not None:
             # `hist_exog`: (B, L, X)
             hist_exog = x_past[:, :, self.past_slice]
-            if self.is_multivariate:
+            if self.is_multivariate_base:
                 # -> (B, X, L, 1)
                 hist_exog = hist_exog.transpose(1, 2).unsqueeze(-1)
                 # -> (B, X, L, C)
@@ -272,7 +268,7 @@ class _NeuralForecastModule(PLForecastingModule):
         if x_future is not None and self.future_slice is not None:
             # `futr_exog`: (B, L + H, F)
             futr_exog = torch.cat([x_past[:, :, self.future_slice], x_future], dim=1)
-            if self.is_multivariate:
+            if self.is_multivariate_base:
                 # -> (B, F, L + H, 1)
                 futr_exog = futr_exog.transpose(1, 2).unsqueeze(-1)
                 # -> (B, F, L + H, C)
@@ -285,7 +281,7 @@ class _NeuralForecastModule(PLForecastingModule):
 
         # process static covariates if supported and provided
         if x_static is not None:
-            if self.is_multivariate:
+            if self.is_multivariate_base:
                 # `stat_exog`: (B, C, S) or (B, 1, S) -> (C, S)
                 # For multivariate models, NeuralForecast expects `stat_exog` to be of
                 # shape (C, S) and shared across the batch dimension,
@@ -784,7 +780,6 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             n_past_covs=n_past_covs,
             n_future_covs=n_future_covs,
             n_stat_covs=n_stat_covs,
-            is_multivariate=self.nf_model_class.MULTIVARIATE,
             **pl_module_params,
         )
 
