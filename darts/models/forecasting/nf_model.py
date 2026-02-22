@@ -39,7 +39,6 @@ from typing import TypedDict
 import torch
 from neuralforecast.common._base_model import BaseModel
 from neuralforecast.losses.pytorch import BasePointLoss
-from numpy.random import RandomState
 
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
@@ -49,7 +48,6 @@ from darts.models.forecasting.pl_forecasting_module import (
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.likelihood_models.torch import TorchLikelihood
-from darts.utils.utils import MAX_NUMPY_SEED_VALUE
 
 logger = get_logger(__name__)
 
@@ -633,6 +631,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         self._update_nf_model_params(
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
+            random_state=kwargs.get("random_state"),
         )
 
         # recurrent models are not supported due to incompatibable tensor shapes
@@ -726,11 +725,10 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             if self.nf_model_params.get(rinorm_name, rinorm_param.default):
                 logger.warning(
                     f"NeuralForecast model's `{rinorm_name}=True` may be incompatible with "
-                    f"`PLForecastingModule`'s `use_reversible_instance_norm=True` since they "
+                    f"Darts's `use_reversible_instance_norm=True` since they "
                     f"both apply reversible instance normalization to the target series. "
                     f"If you experience issues, please consider setting one of them to `False`."
                 )
-            return
 
         # Models like `RMoK` has RINorm always enabled and
         # can only be inferred from the presence of `revin_affine` parameter
@@ -738,7 +736,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         if rinorm_param is not None:
             logger.warning(
                 "NeuralForecast model has reversible instance normalization enabled and "
-                "may be incompatible with `PLForecastingModule`'s `use_reversible_instance_norm=True`. "
+                "may be incompatible with Darts' `use_reversible_instance_norm=True`. "
                 "If you experience issues, please consider setting `use_reversible_instance_norm=False`."
             )
 
@@ -746,16 +744,12 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        random_state: int | None,
     ) -> None:
         # set `input_size` and `h` to match the `input_chunk_length` and `output_chunk_length` of the PL module
         self.nf_model_params["input_size"] = input_chunk_length
         self.nf_model_params["h"] = output_chunk_length
-
-        # set random seed for reproducibility
-        random_instance: RandomState = getattr(self, "_random_instance")
-        self.nf_model_params["random_seed"] = random_instance.randint(
-            0, MAX_NUMPY_SEED_VALUE
-        )
+        self.nf_model_params["random_seed"] = random_state
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         # unpack train sample

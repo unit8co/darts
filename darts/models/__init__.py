@@ -97,7 +97,7 @@ except ModuleNotFoundError:
 try:
     from darts.models.forecasting.nf_model import NeuralForecastModel
 except ModuleNotFoundError:
-    NeuralForecastModel = NotImportedModule(module_name="NeuralForecast")
+    NeuralForecastModel = NotImportedModule(module_name="NeuralForecast", warn=False)
 
 try:
     from darts.models.forecasting.prophet_model import Prophet
@@ -145,8 +145,8 @@ except ImportError:
 try:
     from darts.models.forecasting.xgboost import XGBClassifierModel, XGBModel
 except ImportError:
-    XGBModel = NotImportedModule(module_name="XGBoost")
-    XGBClassifierModel = NotImportedModule(module_name="XGBoost")
+    XGBModel = NotImportedModule(module_name="XGBoost", warn=False)
+    XGBClassifierModel = NotImportedModule(module_name="XGBoost", warn=False)
 
 # Filtering
 from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter

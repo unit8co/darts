@@ -307,13 +307,13 @@ class TestGlobalForecastingModels:
                 input_chunk_length=4,
                 hidden_dim=10,
                 batch_size=32,
-                n_epochs=10,
+                n_epochs=1,
                 **tfm_kwargs,
             ),
             TCNModel(
                 input_chunk_length=4,
                 output_chunk_length=3,
-                n_epochs=10,
+                n_epochs=1,
                 batch_size=32,
                 **tfm_kwargs,
             ),
@@ -327,7 +327,19 @@ class TestGlobalForecastingModels:
                 lags_past_covariates=[-1, -2, -3],
                 lags_future_covariates=[1, 2, 3],
             ),
-        ],
+        ]
+        + (
+            [
+                NeuralForecastModel(
+                    input_chunk_length=4,
+                    output_chunk_length=3,
+                    n_epochs=1,
+                    **tfm_kwargs,
+                )
+            ]
+            if NF_AVAILABLE
+            else []
+        ),
     )
     def test_save_load_model(self, tmpdir_fn, model):
         # check if save and load methods work and if loaded model creates same forecasts as original model
