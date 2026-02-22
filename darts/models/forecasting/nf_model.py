@@ -1,6 +1,11 @@
 """
 NeuralForecastModel
 -------------------
+
+For detailed examples and tutorials, see:
+
+* `Chronos-2 Foundation Model Examples
+  <https://unit8co.github.io/darts/examples/26-NeuralForecast-examples.html>`__
 """
 
 """
