@@ -17,8 +17,6 @@ from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 
 logger = get_logger(__name__)
 
-from darts.models.forecasting.foundation_model import FoundationPLModule
-
 
 class HuggingFaceConnector:
     def __init__(
@@ -109,10 +107,10 @@ class HuggingFaceConnector:
 
     def load_model(
         self,
-        module_class: type[FoundationPLModule],
+        module_class: type[PLForecastingModule],
         pl_module_params: dict,
         additional_params: Optional[dict] = None,
-    ) -> FoundationPLModule:
+    ) -> PLForecastingModule:
         """Load the model by creating an instance of the given module class and loading
         the weights. Some configuration files might contain external parameters that
         are not part of the module class constructor like `architectures`. They are filtered
@@ -140,7 +138,7 @@ class HuggingFaceConnector:
             **pl_module_params,
             **additional_params,
         )
-        self.load_model_weights(module.model)
+        self.load_model_weights(module)
         return module
 
     def _get_file_path(

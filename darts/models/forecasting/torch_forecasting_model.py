@@ -145,6 +145,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         random_state: Optional[int] = None,
         pl_trainer_kwargs: Optional[dict] = None,
         show_warnings: bool = False,
+        enable_finetuning: Optional[Union[bool, dict[str, list[str]]]] = None,
     ):
         """Pytorch Lightning (PL)-based Forecasting Model.
 
@@ -265,6 +266,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective, if not `None`.
+            If a bool, specifies whether to perform full fine tuning / training (all parameters are updated)
+            or keep all parameters frozen.
+            If a dict, specifies which parameters to fine tune. Must only contain one key-value record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen: `{"unfreeze": ["patterns.to.freeze"]}`
+            - Freeze specific parameters, while keeping everything else unfrozen: `{"freeze": ["patterns.to.freeze"]}`
         """
         super().__init__(add_encoders=add_encoders)
         suppress_lightning_warnings(suppress_all=not show_warnings)
@@ -360,6 +369,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # pl_module_params must be set in __init__ method of TorchForecastingModel subclass
         self.pl_module_params: Optional[dict] = None
+
+        self.enable_finetuning = enable_finetuning
 
     @classmethod
     def _validate_model_params(cls, **kwargs):
@@ -498,7 +509,71 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     _get_runs_folder(self.work_dir, self.model_name), INIT_MODEL_NAME
                 )
             )
+        self._setup_fine_tuning(model)
         return model
+
+    def _setup_fine_tuning(self, model: PLForecastingModule):
+        """
+        Sets up the model for fine-tuning based on `self.enable_finetuning`.
+        """
+        # Default behavior (None): fine-tuning (training) is enabled, all parameters are trainable
+        # This means we don't need to do anything, as parameters are trainable by default.
+        if self.enable_finetuning is None:
+            return
+
+        # Boolean behavior
+        if isinstance(self.enable_finetuning, bool):
+            requires_grad = self.enable_finetuning
+            for param in model.parameters():
+                param.requires_grad = requires_grad
+            return
+
+        # Dict behavior
+        if isinstance(self.enable_finetuning, dict):
+            keys = list(self.enable_finetuning.keys())
+            if len(keys) != 1 or keys[0] not in ["freeze", "unfreeze"]:
+                raise_log(
+                    ValueError(
+                        "If `enable_finetuning` is a dict, it must contain exactly one key: 'freeze' or 'unfreeze'."
+                    ),
+                    logger,
+                )
+
+            mode = keys[0]
+            patterns = self.enable_finetuning[mode]
+
+            if not isinstance(patterns, list) or not all(
+                isinstance(p, str) for p in patterns
+            ):
+                raise_log(
+                    ValueError(
+                        "The value of `enable_finetuning` dict must be a list of strings (patterns)."
+                    ),
+                    logger,
+                )
+
+            # "unfreeze" mode: freeze all, then unfreeze specific
+            if mode == "unfreeze":
+                for param in model.parameters():
+                    param.requires_grad = False
+                self._apply_freeze_patterns(model, patterns, freeze=False)
+
+            # "freeze" mode: unfreeze all, then freeze specific
+            elif mode == "freeze":
+                for param in model.parameters():
+                    param.requires_grad = True
+                self._apply_freeze_patterns(model, patterns, freeze=True)
+
+    @staticmethod
+    def _apply_freeze_patterns(
+        model: PLForecastingModule, patterns: list[str], freeze: bool
+    ):
+        """
+        Applies freezing or unfreezing to parameters matching the given patterns.
+        """
+        for name, param in model.named_parameters():
+            if any(name.startswith(p) for p in patterns):
+                param.requires_grad = not freeze
 
     def _setup_trainer(
         self,
@@ -2473,7 +2548,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @property
     def _requires_training(self) -> bool:
         """Whether the model should be trained when calling a `fit*` method."""
-        return True
+        return False if not self.enable_finetuning else True
 
     def _check_optimizable_historical_forecasts(
         self,
