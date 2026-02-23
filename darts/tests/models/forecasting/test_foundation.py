@@ -100,6 +100,15 @@ class TestFoundationModel:
                 non_existent_param=None,
                 **tfm_kwargs,
             )
+        with pytest.raises(
+            ValueError, match="Reversible Instance Normalization is not supported"
+        ):
+            _ = Chronos2Model(
+                input_chunk_length=12,
+                output_chunk_length=6,
+                use_reversible_instance_norm=True,
+                **tfm_kwargs,
+            )
 
     @patch(
         "darts.models.components.huggingface_connector.hf_hub_download",
