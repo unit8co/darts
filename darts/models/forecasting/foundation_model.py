@@ -173,6 +173,15 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
                 logger,
             )
 
+        if self.pl_module_params.get("use_reversible_instance_norm", False):
+            raise_log(
+                ValueError(
+                    "Reversible Instance Normalization is not supported for foundation models. "
+                    "Please set `use_reversible_instance_norm=False`."
+                ),
+                logger,
+            )
+
         self._enable_finetuning = enable_finetuning
 
     @property
