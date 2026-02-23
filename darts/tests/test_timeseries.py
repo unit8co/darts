@@ -2004,7 +2004,7 @@ class TestTimeSeries:
         schema_actual = ts.schema(copy=True)
 
         for k, v_exp in schema_expected.items():
-            if isinstance(v_exp, (pd.DataFrame, pd.Index)):
+            if isinstance(v_exp, pd.DataFrame | pd.Index):
                 assert schema_actual[k].equals(v_exp)
             else:
                 assert schema_actual[k] == v_exp

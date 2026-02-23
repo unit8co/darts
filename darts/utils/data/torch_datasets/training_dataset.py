@@ -9,12 +9,10 @@ Training Datasets
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
 from math import ceil
-from typing import Optional, Union
 
-from darts import TimeSeries
 from darts.logging import get_logger, raise_log
+from darts.typing import TimeSeriesLike
 from darts.utils.data.torch_datasets.dataset import TorchDataset
 from darts.utils.data.torch_datasets.utils import TorchTrainingDatasetOutput
 from darts.utils.data.utils import (
@@ -59,16 +57,16 @@ class TorchTrainingDataset(TorchDataset, ABC):
 class ShiftedTorchTrainingDataset(TorchTrainingDataset):
     def __init__(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         shift: int = 1,
         stride: int = 1,
-        max_samples_per_ts: Optional[int] = None,
+        max_samples_per_ts: int | None = None,
         use_static_covariates: bool = True,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        sample_weight: TimeSeriesLike | str | None = None,
     ):
         """Shifted Training Dataset
 
@@ -336,16 +334,16 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
 class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
     def __init__(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         stride: int = 1,
-        max_samples_per_ts: Optional[int] = None,
+        max_samples_per_ts: int | None = None,
         use_static_covariates: bool = True,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        sample_weight: TimeSeriesLike | str | None = None,
     ):
         """Sequential Training Dataset
 
@@ -433,16 +431,16 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
 class HorizonBasedTorchTrainingDataset(SequentialTorchTrainingDataset):
     def __init__(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         output_chunk_length: int = 12,
         output_chunk_shift: int = 0,
         stride: int = 1,
         lh: tuple[int, int] = (1, 3),
         lookback: int = 3,
         use_static_covariates: bool = True,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        sample_weight: TimeSeriesLike | str | None = None,
     ) -> None:
         """Horizon Based Training Dataset
 

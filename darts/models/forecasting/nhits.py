@@ -3,8 +3,6 @@ N-HiTS
 ------
 """
 
-from typing import Optional, Union
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -471,9 +469,9 @@ class NHiTSModel(PastCovariatesTorchModel):
         num_stacks: int = 3,
         num_blocks: int = 1,
         num_layers: int = 2,
-        layer_widths: Union[int, list[int]] = 512,
-        pooling_kernel_sizes: Optional[tuple[tuple[int]]] = None,
-        n_freq_downsample: Optional[tuple[tuple[int]]] = None,
+        layer_widths: int | list[int] = 512,
+        pooling_kernel_sizes: tuple[tuple[int]] | None = None,
+        n_freq_downsample: tuple[tuple[int]] | None = None,
         dropout: float = 0.1,
         activation: str = "ReLU",
         MaxPool1d: bool = True,

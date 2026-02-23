@@ -4,9 +4,9 @@ Optimized Historical Forecasts Utils
 """
 
 import inspect
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from types import SimpleNamespace
-from typing import Any, Callable, Literal, Optional, TypeVar, Union
+from typing import Any, Literal, TypeAlias, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -19,6 +19,7 @@ from darts.dataprocessing.transformers import (
 )
 from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries, slice_intersect
+from darts.typing import TimeIndex, TimeSeriesLike
 from darts.utils.ts_utils import (
     SeriesType,
     get_series_seq_type,
@@ -29,14 +30,11 @@ from darts.utils.utils import n_steps_between
 
 logger = get_logger(__name__)
 
-TimeIndex = Union[
-    pd.DatetimeIndex,
-    pd.RangeIndex,
-    tuple[int, int],
-    tuple[pd.Timestamp, pd.Timestamp],
-]
-
 T = TypeVar("T")
+
+ExtendedTimeIndex: TypeAlias = (
+    TimeIndex | tuple[int, int] | tuple[pd.Timestamp, pd.Timestamp]
+)
 
 
 def _historical_forecasts_general_checks(
@@ -87,7 +85,7 @@ def _historical_forecasts_general_checks(
 
     if n.start is not None:
         # check start parameter in general (non series dependent)
-        if not isinstance(n.start, (float, int, np.int64, pd.Timestamp)):
+        if not isinstance(n.start, float | int | np.int64 | pd.Timestamp):
             raise_log(
                 TypeError(
                     "`start` must be either `float`, `int`, `pd.Timestamp` or `None`."
@@ -101,7 +99,7 @@ def _historical_forecasts_general_checks(
                     f"`start_format` must be on of ['position', 'value']. Received '{n.start_format}'."
                 )
             )
-        if n.start_format == "position" and not isinstance(n.start, (int, np.int64)):
+        if n.start_format == "position" and not isinstance(n.start, int | np.int64):
             raise_log(
                 ValueError(
                     f"Since `start_format='position'`, `start` must be an integer, received {type(n.start)}."
@@ -143,7 +141,7 @@ def _historical_forecasts_general_checks(
                         logger,
                     )
                 start_is_value = True
-            elif isinstance(n.start, (int, np.int64)):
+            elif isinstance(n.start, int | np.int64):
                 if n.start_format == "position" or series_.has_datetime_index:
                     if n.start >= len(series_):
                         raise_log(
@@ -494,8 +492,8 @@ def _historical_forecasts_general_checks(
 
 def _historical_forecasts_sanitize_kwargs(
     model,
-    fit_kwargs: Optional[dict[str, Any]],
-    predict_kwargs: Optional[dict[str, Any]],
+    fit_kwargs: dict[str, Any] | None,
+    predict_kwargs: dict[str, Any] | None,
     retrain: bool,
     val_length: int,
     show_warnings: bool,
@@ -563,10 +561,10 @@ def _historical_forecasts_check_kwargs(
 def _get_start_index(
     series: TimeSeries,
     series_idx: int,
-    start: Union[pd.Timestamp, int, float],
+    start: pd.Timestamp | int | float,
     start_format: Literal["value", "position"],
     stride: int,
-    historical_forecasts_time_index: Optional[TimeIndex] = None,
+    historical_forecasts_time_index: ExtendedTimeIndex | None = None,
 ):
     """Finds a valid historical forecast start point within either `series` or `historical_forecasts_time_index`
     (depending on whether `historical_forecasts_time_index` is passed, denoted as `ref`).
@@ -670,11 +668,11 @@ def _adjust_start(rel_start, stride):
 def _check_start(
     series: TimeSeries,
     start_idx: int,
-    start: Union[pd.Timestamp, int, float],
+    start: pd.Timestamp | int | float,
     start_format: Literal["value", "position"],
-    series_start: Union[pd.Timestamp, int],
-    ref_start: Union[pd.Timestamp, int],
-    ref_end: Union[pd.Timestamp, int],
+    series_start: pd.Timestamp | int,
+    ref_start: pd.Timestamp | int,
+    ref_end: pd.Timestamp | int,
     stride: int,
     series_idx: int,
     is_historical_forecast: bool,
@@ -715,22 +713,22 @@ def _check_start(
 def _get_historical_forecasts_setup(
     model,
     series: TimeSeries,
-    past_covariates: Optional[TimeSeries],
-    future_covariates: Optional[TimeSeries],
+    past_covariates: TimeSeries | None,
+    future_covariates: TimeSeries | None,
     series_idx: int,
     forecast_horizon: int,
-    start: Union[pd.Timestamp, int, float],
+    start: pd.Timestamp | int | float,
     start_format: Literal["value", "position"],
     stride: int,
     overlap_end: bool,
-    retrain: Union[bool, int, Callable[..., bool]],
-    train_length: Optional[int],
+    retrain: bool | int | Callable[..., bool],
+    train_length: int | None,
     val_length: int,
     show_warnings: bool,
 ) -> tuple[
-    Optional[Union[tuple[int, int], tuple[pd.Timestamp, pd.Timestamp]]],
+    tuple[int, int] | tuple[pd.Timestamp, pd.Timestamp] | None,
     TimeSeries,
-    Optional[int],
+    int | None,
     int,
 ]:
     # get the first and last historical forecast start points for either (re)training or (zero shot) prediction
@@ -809,17 +807,10 @@ def _get_maximum_historical_forecastable_time_index(
     series: TimeSeries,
     forecast_horizon: int,
     overlap_end: bool,
-    past_covariates: Optional[TimeSeries] = None,
-    future_covariates: Optional[TimeSeries] = None,
-    is_training: Optional[bool] = False,
-) -> Optional[
-    Union[
-        pd.DatetimeIndex,
-        pd.RangeIndex,
-        tuple[int, int],
-        tuple[pd.Timestamp, pd.Timestamp],
-    ]
-]:
+    past_covariates: TimeSeries | None = None,
+    future_covariates: TimeSeries | None = None,
+    is_training: bool | None = False,
+) -> ExtendedTimeIndex | None:
     """Computes the maximum historical forecastable time index for training or prediction mode.
 
     Only accounts for `is_training`, `forecast_horizon`, `overlap_end`.
@@ -858,7 +849,7 @@ def _get_maximum_historical_forecastable_time_index(
         Whether the returned time_index should be taking into account the training.
     Returns
     -------
-    Union[pd.DatetimeIndex, pd.RangeIndex, tuple[int, int], tuple[pd.Timestamp, pd.Timestamp], None]
+    pd.DatetimeIndex | pd.RangeIndex | tuple[int, int] | tuple[pd.Timestamp, pd.Timestamp] | None
         The longest time_index that can be used for historical forecasting, either as a range or a tuple.
 
     Examples
@@ -1010,12 +1001,12 @@ def _get_maximum_historical_forecastable_time_index(
 def _adjust_historical_forecasts_time_index(
     series: TimeSeries,
     series_idx: int,
-    historical_forecasts_time_index: TimeIndex,
-    start: Optional[Union[pd.Timestamp, float, int]],
+    historical_forecasts_time_index: ExtendedTimeIndex,
+    start: pd.Timestamp | float | int | None,
     start_format: Literal["position", "value"],
     stride: int,
     show_warnings: bool,
-) -> TimeIndex:
+) -> ExtendedTimeIndex:
     """
     Shrink the beginning and end of the historical forecasts time index based on the value of `start`.
     """
@@ -1062,14 +1053,14 @@ def _adjust_historical_forecasts_time_index(
 
 def _adjust_historical_forecasts_time_index_training(
     model,
-    historical_forecasts_time_index: TimeIndex,
+    historical_forecasts_time_index: ExtendedTimeIndex,
     series: TimeSeries,
     series_idx: int,
-    retrain: Union[bool, int, Callable[..., bool]],
-    train_length: Optional[int],
+    retrain: bool | int | Callable[..., bool],
+    train_length: int | None,
     val_length: int,
     show_warnings: bool,
-) -> tuple[TimeIndex, Optional[int], int]:
+) -> tuple[ExtendedTimeIndex, int | None, int]:
     """
     Shrink the beginning of the historical forecasts time index based on the value of `retrain`, `train_length`
     and `val_length`.
@@ -1162,9 +1153,9 @@ def _get_historical_forecast_boundaries(
     model,
     series: TimeSeries,
     series_idx: int,
-    past_covariates: Optional[TimeSeries],
-    future_covariates: Optional[TimeSeries],
-    start: Optional[Union[pd.Timestamp, float, int]],
+    past_covariates: TimeSeries | None,
+    future_covariates: TimeSeries | None,
+    start: pd.Timestamp | float | int | None,
     start_format: Literal["position", "value"],
     forecast_horizon: int,
     overlap_end: bool,
@@ -1282,7 +1273,7 @@ def _get_historical_forecast_boundaries(
 
 
 def _check_optimizable_historical_forecasts_global_models(
-    retrain: Union[bool, int, Callable[..., bool]],
+    retrain: bool | int | Callable[..., bool],
 ) -> bool:
     """
     Historical forecast can be optimized only if `retrain=False`.
@@ -1293,14 +1284,10 @@ def _check_optimizable_historical_forecasts_global_models(
 def _process_historical_forecast_input(
     model,
     series: Sequence[TimeSeries],
-    past_covariates: Optional[Sequence[TimeSeries]] = None,
-    future_covariates: Optional[Sequence[TimeSeries]] = None,
+    past_covariates: Sequence[TimeSeries] | None = None,
+    future_covariates: Sequence[TimeSeries] | None = None,
     forecast_horizon: int = 1,
-) -> Union[
-    Sequence[TimeSeries],
-    Optional[Sequence[TimeSeries]],
-    Optional[Sequence[TimeSeries]],
-]:
+) -> Sequence[TimeSeries] | Sequence[TimeSeries] | None | Sequence[TimeSeries] | None:
     if not model._fit_called:
         raise_log(
             ValueError("Model has not been fit yet."),
@@ -1362,7 +1349,7 @@ def _process_predict_start_points_bounds(
 
 
 def _convert_data_transformers(
-    data_transformers: Optional[dict[str, Union[BaseDataTransformer, Pipeline]]],
+    data_transformers: dict[str, BaseDataTransformer | Pipeline] | None,
     copy: bool,
 ) -> dict[str, Pipeline]:
     if data_transformers is None:
@@ -1378,17 +1365,17 @@ def _convert_data_transformers(
 
 def _apply_data_transformers(
     series: Sequence[TimeSeries],
-    pred_series: Optional[Sequence[TimeSeries]],
-    past_covariates: Optional[Sequence[TimeSeries]],
-    future_covariates: Optional[Sequence[TimeSeries]],
+    pred_series: Sequence[TimeSeries] | None,
+    past_covariates: Sequence[TimeSeries] | None,
+    future_covariates: Sequence[TimeSeries] | None,
     data_transformers: dict[str, Pipeline],
     max_future_cov_lag: int,
     fit_transformers: bool,
 ) -> tuple[
     Sequence[TimeSeries],
-    Optional[Sequence[TimeSeries]],
-    Optional[Sequence[TimeSeries]],
-    Optional[Sequence[TimeSeries]],
+    Sequence[TimeSeries] | None,
+    Sequence[TimeSeries] | None,
+    Sequence[TimeSeries] | None,
 ]:
     """Transform each series using the corresponding Pipeline.
 
@@ -1442,11 +1429,11 @@ def _apply_data_transformers(
 
 
 def _apply_inverse_data_transformers(
-    series: Union[TimeSeries, Sequence[TimeSeries]],
-    forecasts: Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]],
+    series: TimeSeriesLike,
+    forecasts: TimeSeries | list[TimeSeries] | list[list[TimeSeries]],
     data_transformers: dict[str, Pipeline],
-    series_idx: Optional[int] = None,
-) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
+    series_idx: int | None = None,
+) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]]:
     """
     Apply the inverse transform to the forecasts when defined.
 
@@ -1467,14 +1454,14 @@ def _apply_inverse_data_transformers(
 
 def _slice_intersect_series(
     series: Sequence[TimeSeries],
-    past_covariates: Optional[Sequence[TimeSeries]],
-    future_covariates: Optional[Sequence[TimeSeries]],
-    sample_weight: Optional[Union[str, Sequence[TimeSeries]]],
+    past_covariates: Sequence[TimeSeries] | None,
+    future_covariates: Sequence[TimeSeries] | None,
+    sample_weight: str | Sequence[TimeSeries] | None,
 ) -> tuple[
     Sequence[TimeSeries],
-    Optional[Sequence[TimeSeries]],
-    Optional[Sequence[TimeSeries]],
-    Optional[Union[str, Sequence[TimeSeries]]],
+    Sequence[TimeSeries] | None,
+    Sequence[TimeSeries] | None,
+    str | Sequence[TimeSeries] | None,
 ]:
     """Computes the slice intersection of all series sequences.
 
@@ -1510,10 +1497,10 @@ def _slice_intersect_series(
 def _pack_series_in_list(
     series: T, past_covariates: T, future_covariates: T, sample_weight: T
 ) -> tuple[
-    Union[T, list[T]],
-    Union[T, list[T]],
-    Union[T, list[T]],
-    Union[T, list[T]],
+    T | list[T],
+    T | list[T],
+    T | list[T],
+    T | list[T],
 ]:
     """Packs each provided input into a list (or str in case of sample weight)."""
     series = [series]
@@ -1527,10 +1514,10 @@ def _pack_series_in_list(
 
 
 def _process_historical_forecast_for_backtest(
-    series: Union[TimeSeries, Sequence[TimeSeries]],
-    historical_forecasts: Union[
-        TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]
-    ],
+    series: TimeSeriesLike,
+    historical_forecasts: TimeSeries
+    | Sequence[TimeSeries]
+    | Sequence[Sequence[TimeSeries]],
     last_points_only: bool,
 ):
     """Checks that the `historical_forecasts` have the correct format based on the input `series` and

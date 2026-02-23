@@ -23,8 +23,6 @@ all copies or substantial portions of the Software.
 '
 """
 
-from typing import Optional, Union
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -34,7 +32,7 @@ from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
 
-HiddenState = Union[tuple[torch.Tensor, torch.Tensor], torch.Tensor]
+HiddenState = tuple[torch.Tensor, torch.Tensor] | torch.Tensor
 
 
 def get_embedding_size(n: int, max_size: int = 100) -> int:
@@ -180,8 +178,8 @@ class _GatedLinearUnit(nn.Module):
     def __init__(
         self,
         input_size: int,
-        hidden_size: Optional[int] = None,
-        dropout: Optional[float] = None,
+        hidden_size: int | None = None,
+        dropout: float | None = None,
     ):
         super().__init__()
 
@@ -213,7 +211,7 @@ class _ResampleNorm(nn.Module):
     def __init__(
         self,
         input_size: int,
-        output_size: Optional[int] = None,
+        output_size: int | None = None,
         trainable_add: bool = True,
         norm: type[nn.Module] = nn.LayerNorm,
         skip_interpolation: bool = False,
@@ -252,7 +250,7 @@ class _AddNorm(nn.Module):
     def __init__(
         self,
         input_size: int,
-        skip_size: Optional[int] = None,
+        skip_size: int | None = None,
         trainable_add: bool = True,
         norm: type[nn.Module] = nn.LayerNorm,
         skip_interpolation: bool = False,
@@ -291,10 +289,10 @@ class _GateAddNorm(nn.Module):
     def __init__(
         self,
         input_size: int,
-        hidden_size: Optional[int] = None,
-        skip_size: Optional[int] = None,
+        hidden_size: int | None = None,
+        skip_size: int | None = None,
         trainable_add: bool = False,
-        dropout: Optional[float] = None,
+        dropout: float | None = None,
         layer_norm: type[nn.Module] = nn.LayerNorm,
         skip_interpolation: bool = False,
     ):
@@ -329,7 +327,7 @@ class _GatedResidualNetwork(nn.Module):
         hidden_size: int,
         output_size: int,
         dropout: float = 0.1,
-        context_size: Optional[int] = None,
+        context_size: int | None = None,
         residual: bool = False,
         layer_norm: type[nn.Module] = nn.LayerNorm,
         skip_interpolation: bool = False,
@@ -404,11 +402,11 @@ class _VariableSelectionNetwork(nn.Module):
         self,
         input_sizes: dict[str, int],
         hidden_size: int,
-        input_embedding_flags: Optional[dict[str, bool]] = None,
+        input_embedding_flags: dict[str, bool] | None = None,
         dropout: float = 0.1,
-        context_size: Optional[int] = None,
-        single_variable_grns: Optional[dict[str, _GatedResidualNetwork]] = None,
-        prescalers: Optional[dict[str, nn.Linear]] = None,
+        context_size: int | None = None,
+        single_variable_grns: dict[str, _GatedResidualNetwork] | None = None,
+        prescalers: dict[str, nn.Linear] | None = None,
         layer_norm: type[nn.Module] = nn.LayerNorm,
         skip_interpolation: bool = False,
     ):
@@ -490,9 +488,7 @@ class _VariableSelectionNetwork(nn.Module):
     def num_inputs(self):
         return len(self.input_sizes)
 
-    def forward(
-        self, x: dict[str, torch.Tensor], context: Optional[torch.Tensor] = None
-    ):
+    def forward(self, x: dict[str, torch.Tensor], context: torch.Tensor | None = None):
         if self.num_inputs > 1:
             # transform single variables
             var_outputs = []
@@ -533,7 +529,7 @@ class _VariableSelectionNetwork(nn.Module):
 
 
 class _ScaledDotProductAttention(nn.Module):
-    def __init__(self, dropout: Optional[float] = None, scale: bool = True):
+    def __init__(self, dropout: float | None = None, scale: bool = True):
         super().__init__()
         if dropout is not None:
             self.dropout = MonteCarloDropout(p=dropout)

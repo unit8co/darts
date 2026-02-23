@@ -1,6 +1,5 @@
 from collections.abc import Sequence
 from copy import deepcopy
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -26,7 +25,7 @@ class TestDiff:
         series1: TimeSeries,
         series2: TimeSeries,
         equal_nan: bool,
-        to_compare: Optional[np.ndarray] = None,
+        to_compare: np.ndarray | None = None,
     ):
         """
         Helper to compare series differenced by `Diff`.

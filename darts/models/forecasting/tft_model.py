@@ -4,7 +4,6 @@ Temporal Fusion Transformer (TFT)
 """
 
 from collections.abc import Sequence
-from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -51,7 +50,7 @@ class _TFTModule(PLForecastingModule):
         categorical_embedding_sizes: dict[str, tuple[int, int]],
         dropout: float,
         add_relative_index: bool,
-        norm_type: Union[str, type[nn.Module]],
+        norm_type: str | type[nn.Module],
         skip_interpolation: bool = False,
         **kwargs,
     ):
@@ -655,21 +654,19 @@ class TFTModel(MixedCovariatesTorchModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        hidden_size: Union[int, list[int]] = 16,
+        hidden_size: int | list[int] = 16,
         lstm_layers: int = 1,
         num_attention_heads: int = 4,
         full_attention: bool = False,
         feed_forward: str = "GatedResidualNetwork",
         dropout: float = 0.1,
         hidden_continuous_size: int = 8,
-        categorical_embedding_sizes: Optional[
-            dict[str, Union[int, tuple[int, int]]]
-        ] = None,
+        categorical_embedding_sizes: dict[str, int | tuple[int, int]] | None = None,
         add_relative_index: bool = False,
         skip_interpolation: bool = False,
-        loss_fn: Optional[nn.Module] = None,
-        likelihood: Optional[TorchLikelihood] = None,
-        norm_type: Union[str, nn.Module] = "LayerNorm",
+        loss_fn: nn.Module | None = None,
+        likelihood: TorchLikelihood | None = None,
+        norm_type: str | nn.Module = "LayerNorm",
         use_static_covariates: bool = True,
         **kwargs,
     ):
@@ -961,7 +958,7 @@ class TFTModel(MixedCovariatesTorchModel):
         )
         self.add_relative_index = add_relative_index
         self.skip_interpolation = skip_interpolation
-        self.output_dim: Optional[tuple[int, int]] = None
+        self.output_dim: tuple[int, int] | None = None
         self.norm_type = norm_type
         self._considers_static_covariates = use_static_covariates
 
@@ -1101,7 +1098,7 @@ class TFTModel(MixedCovariatesTorchModel):
                             # get embedding sizes for each categorical variable
                             embedding = self.categorical_embedding_sizes[col_name]
                             raise_if_not(
-                                isinstance(embedding, (int, tuple)),
+                                isinstance(embedding, int | tuple),
                                 "Dict values of `categorical_embedding_sizes` must either be integers or tuples. Read "
                                 "the TFTModel documentation for more information.",
                                 logger,
@@ -1160,10 +1157,10 @@ class TFTModel(MixedCovariatesTorchModel):
     def _build_train_dataset(
         self,
         series: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        sample_weight: Optional[Union[Sequence[TimeSeries], str]],
-        max_samples_per_ts: Optional[int],
+        past_covariates: Sequence[TimeSeries] | None,
+        future_covariates: Sequence[TimeSeries] | None,
+        sample_weight: Sequence[TimeSeries] | str | None,
+        max_samples_per_ts: int | None,
         stride: int = 1,
     ) -> TorchTrainingDataset:
         raise_if(

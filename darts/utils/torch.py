@@ -3,8 +3,9 @@ Utils for Pytorch and its usage
 -------------------------------
 """
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, TypeVar
+from typing import TypeVar
 
 import numpy as np
 import torch.nn as nn

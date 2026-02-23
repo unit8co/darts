@@ -4,7 +4,7 @@ Dynamic Time Warping (DTW)
 """
 
 import copy
-from typing import Callable, Optional, Union
+from collections.abc import Callable
 
 import numpy as np
 import pandas as pd
@@ -16,7 +16,7 @@ from darts.logging import get_logger, raise_if, raise_if_not
 
 logger = get_logger(__name__)
 
-SeriesValue = Union[np.ndarray, np.floating]
+SeriesValue = np.ndarray | np.floating
 DistanceFunc = Callable[[SeriesValue, SeriesValue], float]
 
 
@@ -261,8 +261,8 @@ class DTWAlignment:
 def dtw(
     series1: TimeSeries,
     series2: TimeSeries,
-    window: Optional[Window] = None,
-    distance: Union[DistanceFunc, None] = None,
+    window: Window | None = None,
+    distance: DistanceFunc | None = None,
     multi_grid_radius: int = -1,
 ) -> DTWAlignment:
     """

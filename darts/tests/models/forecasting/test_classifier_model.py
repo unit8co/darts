@@ -668,7 +668,7 @@ class TestClassifierModel:
             assert str(err.value).endswith("Expected: [0 1 2], got [0. 2. 3.]")
 
         # Single label
-        if issubclass(clf, (SVC, GaussianProcessClassifier)) or isinstance(
+        if issubclass(clf, SVC | GaussianProcessClassifier) or isinstance(
             model.model, LogisticRegression
         ):
             # Model specific error message

@@ -5,7 +5,6 @@ Temporal Convolutional Network
 
 import math
 from collections.abc import Sequence
-from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -138,7 +137,7 @@ class _TCNModule(PLForecastingModule):
         input_size: int,
         kernel_size: int,
         num_filters: int,
-        num_layers: Optional[int],
+        num_layers: int | None,
         dilation_base: int,
         weight_norm: bool,
         target_size: int,
@@ -267,7 +266,7 @@ class TCNModel(PastCovariatesTorchModel):
         output_chunk_shift: int = 0,
         kernel_size: int = 3,
         num_filters: int = 3,
-        num_layers: Optional[int] = None,
+        num_layers: int | None = None,
         dilation_base: int = 2,
         weight_norm: bool = False,
         dropout: float = 0.2,
@@ -530,10 +529,10 @@ class TCNModel(PastCovariatesTorchModel):
     def _build_train_dataset(
         self,
         series: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        sample_weight: Optional[Sequence[TimeSeries]],
-        max_samples_per_ts: Optional[int],
+        past_covariates: Sequence[TimeSeries] | None,
+        future_covariates: Sequence[TimeSeries] | None,
+        sample_weight: Sequence[TimeSeries] | None,
+        max_samples_per_ts: int | None,
         stride: int = 1,
     ) -> TorchTrainingDataset:
         return ShiftedTorchTrainingDataset(

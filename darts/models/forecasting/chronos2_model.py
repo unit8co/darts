@@ -6,6 +6,8 @@ For detailed examples and tutorials, see:
 
 * `Chronos-2 Foundation Model Examples
   <https://unit8co.github.io/darts/examples/25-Chronos-2-examples.html>`__
+* `Tine Tuning Examples
+  <https://unit8co.github.io/darts/examples/26-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__
 """
 
 import math

@@ -5,7 +5,7 @@ Optimized Historical Forecasts for TorchForecastingModel
 
 import inspect
 from collections.abc import Sequence
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -24,10 +24,10 @@ logger = get_logger(__name__)
 def _optimized_historical_forecasts(
     model,
     series: Sequence[TimeSeries],
-    past_covariates: Optional[Sequence[TimeSeries]] = None,
-    future_covariates: Optional[Sequence[TimeSeries]] = None,
+    past_covariates: Sequence[TimeSeries] | None = None,
+    future_covariates: Sequence[TimeSeries] | None = None,
     num_samples: int = 1,
-    start: Optional[Union[pd.Timestamp, float, int]] = None,
+    start: pd.Timestamp | float | int | None = None,
     start_format: Literal["position", "value"] = "value",
     forecast_horizon: int = 1,
     stride: int = 1,
@@ -36,9 +36,9 @@ def _optimized_historical_forecasts(
     show_warnings: bool = True,
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
-    random_state: Optional[int] = None,
-    predict_kwargs: Optional[dict[str, Any]] = None,
-) -> Union[Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
+    random_state: int | None = None,
+    predict_kwargs: dict[str, Any] | None = None,
+) -> Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]]:
     """
     Optimized historical forecasts for TorchForecastingModels
 

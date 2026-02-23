@@ -5,7 +5,6 @@ Pipeline
 
 from collections.abc import Iterator, Sequence
 from copy import deepcopy
-from typing import Optional, Union
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import (
@@ -14,6 +13,7 @@ from darts.dataprocessing.transformers import (
     InvertibleDataTransformer,
 )
 from darts.logging import get_logger, raise_if_not
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -103,7 +103,7 @@ class Pipeline:
             for transformer in self._transformers:
                 transformer.set_n_jobs(n_jobs)
 
-    def fit(self, data: Union[TimeSeries, Sequence[TimeSeries]]):
+    def fit(self, data: TimeSeriesLike):
         """
         Fit all fittable transformers in pipeline.
 
@@ -129,9 +129,7 @@ class Pipeline:
             if idx < last_fittable_idx:
                 data = transformer.transform(data)
 
-    def fit_transform(
-        self, data: Union[TimeSeries, Sequence[TimeSeries]]
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    def fit_transform(self, data: TimeSeriesLike) -> TimeSeriesLike:
         """
         For each data transformer in the pipeline, first fit the data if transformer is fittable then transform data
         using fitted transformer. The transformed data is then passed to next transformer.
@@ -143,7 +141,7 @@ class Pipeline:
 
         Returns
         -------
-        Union[TimeSeries, Sequence[TimeSeries]]
+        TimeSeriesLike
             Transformed data.
         """
         for transformer in self._transformers:
@@ -155,9 +153,9 @@ class Pipeline:
 
     def transform(
         self,
-        data: Union[TimeSeries, Sequence[TimeSeries]],
-        series_idx: Optional[Union[int, Sequence[int]]] = None,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        data: TimeSeriesLike,
+        series_idx: int | Sequence[int] | None = None,
+    ) -> TimeSeriesLike:
         """
         For each data transformer in pipeline transform data. Then transformed data is passed to next transformer.
 
@@ -171,7 +169,7 @@ class Pipeline:
 
         Returns
         -------
-        Union[TimeSeries, Sequence[TimeSeries]]
+        TimeSeriesLike
             Transformed data.
         """
         for transformer in self._transformers:
@@ -180,10 +178,10 @@ class Pipeline:
 
     def inverse_transform(
         self,
-        data: Union[TimeSeries, Sequence[TimeSeries]],
+        data: TimeSeriesLike,
         partial: bool = False,
-        series_idx: Optional[Union[int, Sequence[int]]] = None,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        series_idx: int | Sequence[int] | None = None,
+    ) -> TimeSeriesLike:
         """
         For each data transformer in the pipeline, inverse-transform data. Then inverse transformed data is passed to
         the next transformer. Transformers are traversed in reverse order. Raises value error if not all transformers
@@ -203,7 +201,7 @@ class Pipeline:
 
         Returns
         -------
-        Union[TimeSeries, Sequence[TimeSeries]]
+        TimeSeriesLike
             Inverse transformed data.
         """
         if not partial:
@@ -266,7 +264,7 @@ class Pipeline:
             for t in self._transformers
         )
 
-    def __getitem__(self, key: Union[int, slice]) -> "Pipeline":
+    def __getitem__(self, key: int | slice) -> "Pipeline":
         """
         Gets subset of Pipeline based either on index or slice with indexes.
         Resulting pipeline will deep copy transformers of the original pipeline.
