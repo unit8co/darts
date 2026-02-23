@@ -12,7 +12,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 
 - 🚀🚀 Added new forecasting model `NeuralForecastModel` to convert any of the 30+ NeuralForecast base model into a Darts `TorchForecastingModel`. This includes models such as NBEATSx, PatchTST, TimeXer, KAN, and many more. Like all Darts torch models, it supports univariate, multivariate, probabilistic forecasting, optimized backtesting and more. Depending on the base model, it also supports past, future, and static covariates. [#3002](https://github.com/unit8co/darts/pull/3002) by [Zhihao Dai](https://github.com/daidahao)
-  - Check out our new [NeuralForecastModel Notebook](https://unit8co.github.io/darts/examples/26-NeuralForecast-examples.html) for detailed examples. [#3026](https://github.com/unit8co/darts/pull/3026) by [Zhihao Dai](https://github.com/daidahao).
+  - Check out our new [NeuralForecastModel Notebook](https://unit8co.github.io/darts/examples/26-NeuralForecast-examples.html) for detailed examples. [#3026](https://github.com/unit8co/darts/pull/3026) by [Dennis Bader](https://github.com/dennisbader).
 - Created `darts.typing` to collect typical type annotation in one place. Introduced `TimeIndex` & `TimeSeriesLike` type aliases for improved readability & maintainability of the code. Commmon type annotations can be added to this file in the future. [#3021](https://github.com/unit8co/darts/pull/3021) by [Michel Zeller](https://github.com/mizeller)
 
 **Fixed**
