@@ -639,168 +639,125 @@ class TestMLflow:
         pred_loaded = loaded_model.predict(n=3, series=test_series)
         assert pred_original.width == pred_loaded.width
 
-    def test_autolog_training_metrics_regression(
+    def test_autolog_metric_logging_scalar(self, mlflow_tracking, autolog_context):
+        """Calling a darts metric inside an active run logs a scalar to MLflow."""
+        with autolog_context(log_metrics=True):
+            from darts.metrics import mae
+
+            with mlflow.start_run() as run:
+                result = mae(self.ts_univariate, self.ts_univariate * 1.1)
+
+        run_data = mlflow.get_run(run.info.run_id).data
+        assert "mae" in run_data.metrics, "mae should be logged to MLflow"
+        assert np.isfinite(run_data.metrics["mae"])
+        assert np.isscalar(result)
+        assert np.isfinite(float(result))
+
+    def test_autolog_metric_repeated_call(self, mlflow_tracking, autolog_context):
+        """Calling the same metric twice overwrites the value (last-value-wins)."""
+        with autolog_context(log_metrics=True):
+            from darts.metrics import rmse
+
+            with mlflow.start_run() as run:
+                rmse(self.ts_univariate, self.ts_univariate * 1.1)
+                rmse(self.ts_univariate, self.ts_univariate * 1.2)
+
+        run_data = mlflow.get_run(run.info.run_id).data
+        assert "rmse" in run_data.metrics, "rmse should be logged to MLflow"
+
+    def test_autolog_metric_per_component(self, mlflow_tracking, autolog_context):
+        """Non-scalar metric results logged per-component as {name}_{component_name}.
+
+        ts_multivariate = ts_univariate.stack(ts_univariate * 1.5), whose component
+        names are ['linear', 'linear_1'].  With component_reduction=None the result
+        is a 1-D array (one value per component), so the expected keys are
+        'mae_linear' and 'mae_linear_1'.
+        """
+        with autolog_context(log_metrics=True):
+            from darts.metrics import mae
+
+            with mlflow.start_run() as run:
+                mae(
+                    self.ts_multivariate,
+                    self.ts_multivariate * 1.1,
+                    component_reduction=None,
+                )
+
+        run_data = mlflow.get_run(run.info.run_id).data
+        assert "mae_linear" in run_data.metrics, (
+            "Component 'linear' should be logged as mae_linear"
+        )
+        assert "mae_linear_1" in run_data.metrics, (
+            "Component 'linear_1' should be logged as mae_linear_1"
+        )
+        assert np.isfinite(run_data.metrics["mae_linear"])
+        assert np.isfinite(run_data.metrics["mae_linear_1"])
+
+    def test_autolog_metric_no_active_run(self, mlflow_tracking, autolog_context):
+        """Calling a metric without an active run does not raise and returns correctly."""
+        with autolog_context(log_metrics=True):
+            from darts.metrics import mse
+
+            # called outside any start_run — must not raise
+            result = mse(self.ts_univariate, self.ts_univariate * 1.1)
+
+        assert np.isscalar(result)
+        assert np.isfinite(float(result))
+
+    def test_autolog_metric_returns_correct_value(
         self, mlflow_tracking, autolog_context
     ):
-        """Test that autolog computes and logs in-sample training metrics for regression models."""
-        with autolog_context(log_training_metrics=True):
+        """The patched metric returns the same value whether inside or outside a run."""
+        with autolog_context(log_metrics=True):
+            from darts.metrics import mae
+
+            pred = self.ts_univariate * 1.05
+
+            with mlflow.start_run():
+                result_inside = mae(self.ts_univariate, pred)
+
+            # call outside a run — no logging, same computation
+            result_outside = mae(self.ts_univariate, pred)
+
+        np.testing.assert_almost_equal(result_inside, result_outside, decimal=6)
+        assert np.isfinite(result_inside)
+
+    def test_autolog_log_metrics_false(self, mlflow_tracking, autolog_context):
+        """autolog(log_metrics=False) leaves metrics unpatched — nothing is logged."""
+        with autolog_context(log_metrics=False):
+            from darts.metrics import mape
+
             with mlflow.start_run() as run:
-                model = LinearRegressionModel(lags=5, output_chunk_length=3)
-                model.fit(self.ts_univariate)
+                mape(self.ts_univariate, self.ts_univariate * 1.1)
 
         run_data = mlflow.get_run(run.info.run_id).data
-
-        for metric_name in ["train_mae", "train_mse", "train_rmse", "train_mape"]:
-            assert metric_name in run_data.metrics, f"{metric_name} should be logged"
-            assert np.isfinite(run_data.metrics[metric_name])
-
-    def test_autolog_extra_metrics(self, mlflow_tracking, autolog_context):
-        """Test that extra_metrics are logged alongside defaults."""
-        from darts.metrics import r2_score, smape
-
-        with autolog_context(
-            log_training_metrics=True, extra_metrics=[smape, r2_score]
-        ):
-            with mlflow.start_run() as run:
-                model = LinearRegressionModel(lags=5, output_chunk_length=3)
-                model.fit(self.ts_univariate)
-
-        run_data = mlflow.get_run(run.info.run_id).data
-
-        # defaults
-        for metric_name in ["train_mae", "train_mse", "train_rmse", "train_mape"]:
-            assert metric_name in run_data.metrics
-        # extras
-        assert "train_smape" in run_data.metrics
-        assert "train_r2_score" in run_data.metrics
-
-    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
-    def test_autolog_training_metrics_torch(self, mlflow_tracking, autolog_context):
-        """Test that autolog logs training metrics for torch models including epochs_trained."""
-        with autolog_context(
-            log_training_metrics=True, inject_per_epoch_callbacks=True
-        ):
-            with mlflow.start_run() as run:
-                model = NBEATSModel(
-                    input_chunk_length=4,
-                    output_chunk_length=2,
-                    n_epochs=2,
-                    **tfm_kwargs_dev,
-                )
-                train, val = self.ts_univariate.split_before(0.7)
-                model.fit(train)
-
-        run_data = mlflow.get_run(run.info.run_id).data
-
-        assert "train_loss" in run_data.metrics
-        for metric_name in ["train_mae", "train_mse", "train_rmse", "train_mape"]:
-            assert metric_name in run_data.metrics, (
-                f"{metric_name} should be logged for torch model"
-            )
-
-    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
-    def test_autolog_validation_metrics_torch(self, mlflow_tracking, autolog_context):
-        """Test that validation metrics are computed on val_series for torch models."""
-        with autolog_context(log_training_metrics=True, log_validation_metrics=True):
-            with mlflow.start_run() as run:
-                model = NBEATSModel(
-                    input_chunk_length=4,
-                    output_chunk_length=2,
-                    n_epochs=2,
-                    **tfm_kwargs_dev,
-                )
-                train, val = self.ts_univariate.split_before(0.7)
-                model.fit(train, val_series=val)
-
-        run_data = mlflow.get_run(run.info.run_id).data
-
-        # validation forecasting metrics
-        for metric_name in ["val_mae", "val_mse", "val_rmse", "val_mape"]:
-            assert metric_name in run_data.metrics, (
-                f"{metric_name} should be logged for torch model with val_series"
-            )
-            assert np.isfinite(run_data.metrics[metric_name])
-
-    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
-    def test_autolog_validation_metrics_disabled(
-        self, mlflow_tracking, autolog_context
-    ):
-        """Test that validation metrics are NOT logged when log_validation_metrics=False."""
-        with autolog_context(log_training_metrics=True, log_validation_metrics=False):
-            with mlflow.start_run() as run:
-                model = NBEATSModel(
-                    input_chunk_length=4,
-                    output_chunk_length=2,
-                    n_epochs=2,
-                    **tfm_kwargs_dev,
-                )
-                train, val = self.ts_univariate.split_before(0.7)
-                model.fit(train, val_series=val)
-
-        run_data = mlflow.get_run(run.info.run_id).data
-
-        # training metrics should still be present
-        assert "train_mae" in run_data.metrics
-        # validation metrics should NOT be present
-        for metric_name in ["val_mae", "val_mse", "val_rmse", "val_mape"]:
-            assert metric_name not in run_data.metrics, (
-                f"{metric_name} should NOT be logged when validation disabled"
-            )
-
-    def test_autolog_training_metrics_multiple_series(
-        self, mlflow_tracking, autolog_context
-    ):
-        """Test that backtest-based training metrics work with multiple series."""
-        ts1 = tg.linear_timeseries(start_value=10, end_value=50, length=50).astype(
-            "float32"
-        )
-        ts2 = tg.linear_timeseries(start_value=20, end_value=60, length=50).astype(
-            "float32"
+        assert "mape" not in run_data.metrics, (
+            "mape should NOT be logged when log_metrics=False"
         )
 
-        with autolog_context(log_training_metrics=True):
-            with mlflow.start_run() as run:
-                model = LinearRegressionModel(lags=5, output_chunk_length=3)
-                model.fit([ts1, ts2])
+    def test_autolog_public_namespace_patched(self, mlflow_tracking, autolog_context):
+        """Only darts.metrics (public namespace) is patched; darts.metrics.metrics is not.
 
-        run_data = mlflow.get_run(run.info.run_id).data
+        Patching only the public namespace avoids breaking internal metric-to-metric
+        calls within the implementation module (e.g. rmse calling mse internally).
+        """
+        with autolog_context(log_metrics=True):
+            import darts.metrics as dm
+            import darts.metrics.metrics as dmm
 
-        for metric_name in ["train_mae", "train_mse", "train_rmse", "train_mape"]:
-            assert metric_name in run_data.metrics, (
-                f"{metric_name} should be logged for multiple series"
-            )
-            assert np.isfinite(run_data.metrics[metric_name])
+            # public namespace → patched: call inside a run should log
+            with mlflow.start_run() as run_public:
+                dm.mae(self.ts_univariate, self.ts_univariate * 1.1)
 
-    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
-    def test_autolog_training_metrics_multiple_series_torch(
-        self, mlflow_tracking, autolog_context
-    ):
-        """Test that backtest-based training metrics work with multiple series on torch models."""
-        ts1 = tg.linear_timeseries(start_value=10, end_value=50, length=50).astype(
-            "float32"
+            # implementation module → NOT patched: call inside a run should not log
+            with mlflow.start_run() as run_impl:
+                dmm.mae(self.ts_univariate, self.ts_univariate * 1.1)
+
+        run_data_public = mlflow.get_run(run_public.info.run_id).data
+        run_data_impl = mlflow.get_run(run_impl.info.run_id).data
+        assert "mae" in run_data_public.metrics, (
+            "darts.metrics.mae should log to MLflow (public namespace is patched)"
         )
-        ts2 = tg.linear_timeseries(start_value=20, end_value=60, length=50).astype(
-            "float32"
+        assert "mae" not in run_data_impl.metrics, (
+            "darts.metrics.metrics.mae should NOT log (implementation module is not patched)"
         )
-
-        with autolog_context(log_training_metrics=True):
-            with mlflow.start_run() as run:
-                model = NBEATSModel(
-                    input_chunk_length=4,
-                    output_chunk_length=2,
-                    n_epochs=2,
-                    pl_trainer_kwargs={
-                        "accelerator": "cpu",
-                        "enable_progress_bar": False,
-                        "enable_model_summary": False,
-                    },
-                )
-                model.fit([ts1, ts2])
-
-        run_data = mlflow.get_run(run.info.run_id).data
-
-        for metric_name in ["train_mae", "train_mse", "train_rmse", "train_mape"]:
-            assert metric_name in run_data.metrics, (
-                f"{metric_name} should be logged for torch multiple series"
-            )
-            assert np.isfinite(run_data.metrics[metric_name])
