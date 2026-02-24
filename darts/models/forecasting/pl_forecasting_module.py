@@ -151,8 +151,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [1]_.
             It is only applied to the features of the target series and not the covariates. When set to ``True``,
-            ``RINorm`` is applied with default hyperparameters. Alternatively, a dictionary of hyperparameters
-            is accepted. Default: ``False``.
+            ``RINorm`` is applied with default hyperparameters. Default: ``False``. Alternatively, a dictionary of
+            hyperparameters is accepted, which is passed to the ``RINorm`` constructor. For example:
 
             .. highlight:: python
             .. code-block:: python
