@@ -94,7 +94,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         optimizer_kwargs: dict | None = None,
         lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler | None = None,
         lr_scheduler_kwargs: dict | None = None,
-        use_reversible_instance_norm: bool = False,
+        use_reversible_instance_norm: bool | dict = False,
     ) -> None:
         """
         PyTorch Lightning-based Forecasting Module.
@@ -150,7 +150,19 @@ class PLForecastingModule(pl.LightningModule, ABC):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [1]_.
-            It is only applied to the features of the target series and not the covariates.
+            It is only applied to the features of the target series and not the covariates. When set to ``True``,
+            ``RINorm`` is applied with default hyperparameters. Alternatively, a dictionary of hyperparameters
+            is accepted. Default: ``False``.
+
+            .. highlight:: python
+            .. code-block:: python
+
+                # default RINorm hyperparameters when `use_reversible_instance_norm=True`
+                use_reversible_instance_norm={
+                    "eps": 1e-5,
+                    "affine": True,
+                }
+            ..
 
         References
         ----------
@@ -206,8 +218,10 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         # reversible instance norm
         self.use_reversible_instance_norm = use_reversible_instance_norm
-        if use_reversible_instance_norm:
+        if use_reversible_instance_norm is True:
             self.rin = RINorm(input_dim=self.n_targets)
+        elif isinstance(use_reversible_instance_norm, dict):
+            self.rin = RINorm(input_dim=self.n_targets, **use_reversible_instance_norm)
         else:
             self.rin = None
 
