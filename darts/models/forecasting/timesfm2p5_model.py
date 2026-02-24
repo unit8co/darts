@@ -509,8 +509,6 @@ class TimesFM2p5Model(FoundationModel):
                 arXiv https://arxiv.org/abs/2310.10688.
         .. [2] "A decoder-only foundation model for time-series forecasting", 2024. Google Research.
                 https://research.google/blog/a-decoder-only-foundation-model-for-time-series-forecasting/
-        .. [3] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
-                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
 
         Examples
         --------
