@@ -631,6 +631,9 @@ class Chronos2Model(FoundationModel):
             [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9,
             0.95, 0.99].
             Default: ``None``, which will make Chronos-2 deterministic (median quantile only).
+            If fine-tuning is enable (``enable_finetuning`` is ``True`` or a dict), and ``likelihood`` is not specified,
+            it will default to all quantiles used during pre-training to avoid catastrophic forgetting and distribution
+            shift.
         hub_model_name
             The model ID on HuggingFace Hub. Default: ``"amazon/chronos-2"``. Other available variants include
             ``"autogluon/chronos-2-small"`` and ``"autogluon/chronos-2-synth"``.
@@ -854,6 +857,14 @@ class Chronos2Model(FoundationModel):
             )
 
         quantiles = chronos_config["quantiles"]
+
+        # handle default likelihood for fine-tuning
+        # if fine-tuning is enabled and likelihood is not specified, we use the quantiles
+        # used during pre-training to avoid catastrophic forgetting/distribution shift
+        if kwargs.get("enable_finetuning") and likelihood is None:
+            likelihood = QuantileRegression(quantiles)
+            self.model_params["likelihood"] = likelihood
+
         # by default (`likelihood=None`), model is deterministic
         # otherwise, only QuantileRegression likelihood is supported and quantiles must be
         # a subset of Chronos-2 quantiles
@@ -874,6 +885,16 @@ class Chronos2Model(FoundationModel):
                         f"must be a subset of Chronos-2 quantiles {quantiles}."
                     ),
                     logger,
+                )
+
+            if kwargs.get("enable_finetuning") and set(user_quantiles) != set(
+                quantiles
+            ):
+                logger.warning(
+                    f"You are fine-tuning on a subset of the model's original quantiles ({user_quantiles}). "
+                    f"This effectively changes the model's output definition (loss function) and might degrade "
+                    f"its pre-trained knowledge. Consider fine-tuning on all pre-trained quantiles: {quantiles}, "
+                    f"implied by default when `enable_finetuning=True` and `likelihood=None`."
                 )
 
         self.hf_connector = hf_connector
