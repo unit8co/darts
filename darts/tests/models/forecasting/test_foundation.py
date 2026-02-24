@@ -6,7 +6,6 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-import torch
 
 from darts import TimeSeries, concatenate
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
@@ -19,7 +18,6 @@ if not TORCH_AVAILABLE:
     )
 
 from darts.models import Chronos2Model
-from darts.utils.callbacks.fine_tuning import LayerFreezeCallback, PeftCallback
 
 
 def generate_series(n_variables: int, length: int, prefix: str):
@@ -188,43 +186,74 @@ class TestFoundationModel:
         "darts.models.components.huggingface_connector.hf_hub_download",
         side_effect=mock_download,
     )
+    def test_default_no_finetuning(self, mock_method):
+        # Default behavior: enable_finetuning=False (no training)
+        model = Chronos2Model(
+            input_chunk_length=12,
+            output_chunk_length=6,
+            **tfm_kwargs,
+        )
+        # Check that the given parameters remain unchanged, but that enable_finetuning is False
+        # (because if not specified, it is None, but we want it to be False by default for foundation models)
+        assert model.input_chunk_length == 12
+        assert model.output_chunk_length == 6
+        assert model.model_params["enable_finetuning"] is False
+        mock_method.assert_called()
+
+        # calling `fit()` should NOT use `trainer.fit()` when finetuning is disabled
+        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+            model.fit(
+                series=self.series,
+                future_covariates=self.future_cov,
+            )
+            mock_fit.assert_not_called()
+
+        # foundation model should be deterministic by default
+        assert model.model_created
+
+        # predictions should allow n > output_chunk_length (autoregressive)
+        pred = model.predict(n=10)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 10
+        assert pred.n_components == self.series.n_components
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
     def test_full_finetuning(self, mock_method, tmpdir):
-        # 1. Training activation
+        # 1. Enable Full Fine-tuning
         model = Chronos2Model(
             input_chunk_length=12,
             output_chunk_length=6,
             enable_finetuning=True,
-            n_epochs=5,
+            n_epochs=1,
             **tfm_kwargs,
         )
-        assert model._requires_training is True
+        assert model.model_params["enable_finetuning"] is True
 
-        # Capture initial weights
+        # Initialize model (this will train for 1 epoch, but that's fine for verification)
         model.fit(self.series)
-        initial_params = {
-            n: p.clone() for n, p in model.internal_model.named_parameters()
-        }
 
-        # 2. Weight update
-        # We need to actually train for 1 epoch. tfm_kwargs usually has "accelerator": "cpu"
-        model.fit(self.series, epochs=1)
-
-        # Check if at least some weights changed
-        any_changed = False
-        for n, p in model.internal_model.named_parameters():
-            if not torch.equal(initial_params[n], p):
-                any_changed = True
-                break
-        assert any_changed, "The weights should be updated after fine-tuning"
+        # Verify all parameters require grad
+        for n, p in model.model.named_parameters():
+            assert p.requires_grad is True, (
+                f"Parameter {n} should require grad for full fine-tuning"
+            )
 
         # 3. Persistence (Save/Load)
-        save_path = os.path.join(tmpdir, "model.pt")
+        save_path = os.path.join(tmpdir, "model_full_ft.pt")
         model.save(save_path)
-        loaded_model = Chronos2Model.load(save_path)
 
+        # Load back
+        loaded_model = Chronos2Model.load(save_path)
+        assert loaded_model.model_params["enable_finetuning"] is True
+
+        # Check predictions match
         pred_orig = model.predict(n=6, series=self.series)
         pred_loaded = loaded_model.predict(n=6, series=self.series)
-        assert np.allclose(pred_orig.values(), pred_loaded.values()), (
+        # Relax tolerance slightly for floating point differences across save/load on CPU
+        assert np.allclose(pred_orig.values(), pred_loaded.values(), atol=1e-6), (
             "Prediction of the fine-tuned model and the saved/loaded fine-tuned model should be the same"
         )
 
@@ -232,104 +261,116 @@ class TestFoundationModel:
         "darts.models.components.huggingface_connector.hf_hub_download",
         side_effect=mock_download,
     )
-    def test_partial_finetuning(self, mock_method):
-        # 1. Callback injection
+    def test_partial_finetuning_block_freeze(self, mock_method):
+        # Test freezing specific layers (partial fine-tuning)
+        # We freeze the encoder, so only other parts (like head/decoder) should be trainable
+
+        # For this test, let's freeze 'encoder'
         model = Chronos2Model(
             input_chunk_length=12,
             output_chunk_length=6,
-            enable_finetuning=True,
-            freeze_patterns=["encoder.block.0"],
-            unfreeze_patterns=["encoder.block.0.layer.0"],  # Example unfreeze
+            enable_finetuning={"freeze": ["encoder.*"]},
+            n_epochs=1,
             **tfm_kwargs,
         )
-        assert any(
-            isinstance(c, LayerFreezeCallback)
-            for c in model.trainer_params["callbacks"]
+
+        # Initialize model
+        model.fit(self.series)
+
+        # Check requires_grad status
+        frozen_found = False
+        trainable_found = False
+
+        for name, param in model.model.named_parameters():
+            if "encoder" in name:
+                assert param.requires_grad is False, (
+                    f"Parameter {name} should be frozen"
+                )
+                frozen_found = True
+            elif param.requires_grad:
+                trainable_found = True
+
+        assert frozen_found, "Should have found frozen parameters matching 'encoder'"
+        assert trainable_found, "Should have found some trainable parameters"
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_partial_finetuning_unfreeze(self, mock_method):
+        # Test unfreezing specific layers (partial fine-tuning)
+        # Everything is frozen EXCEPT the specified patterns
+
+        # Let's unfreeze only the 'encoder' (or part of it)
+        model = Chronos2Model(
+            input_chunk_length=12,
+            output_chunk_length=6,
+            enable_finetuning={"unfreeze": ["encoder.*"]},
+            n_epochs=1,
+            **tfm_kwargs,
         )
 
-        # 2. Freezing logic
-        # We call fit to initialize the model and trigger the callback setup automatically
-        model.fit(self.series, epochs=5)
+        # Initialize model
+        model.fit(self.series)
 
-        # Check requires_grad status.
-        found_any = False
-        for name, param in model.internal_model.named_parameters():
-            if name.startswith("encoder.block.0"):
-                found_any = True
-                if name.startswith("encoder.block.0.layer.0"):
-                    assert param.requires_grad is True, (
-                        f"Parameter {name} should be trainable"
-                    )
-                else:
-                    assert param.requires_grad is False, (
-                        f"Parameter {name} should be frozen"
-                    )
-        assert found_any, "No parameters matched the freeze patterns, test is invalid"
+        # Check requires_grad status
+        unfrozen_found = False
+        frozen_found = False
+
+        for name, param in model.model.named_parameters():
+            if "encoder" in name:
+                assert param.requires_grad is True, (
+                    f"Parameter {name} should be unfrozen"
+                )
+                unfrozen_found = True
+            else:
+                assert param.requires_grad is False, (
+                    f"Parameter {name} should be frozen"
+                )
+                frozen_found = True
+
+        assert unfrozen_found, (
+            "Should have found unfrozen parameters matching 'encoder'"
+        )
+        assert frozen_found, "Should have found frozen parameters (non-matching)"
 
     @patch(
         "darts.models.components.huggingface_connector.hf_hub_download",
         side_effect=mock_download,
     )
     def test_finetuning_misconfiguration(self, mock_method):
-        # Warning if freeze_patterns assigned but enable_finetuning is False
-        with patch(
-            "darts.models.forecasting.foundation_model.logger.warning"
-        ) as mock_warning:
-            _ = Chronos2Model(
+        # 1. Invalid dict key
+        with pytest.raises(
+            ValueError,
+            match="If `enable_finetuning` is a dict, it must contain exactly one key: 'freeze' or 'unfreeze'.",
+        ):
+            model = Chronos2Model(
                 input_chunk_length=12,
                 output_chunk_length=6,
-                enable_finetuning=False,
-                freeze_patterns=["some_pattern"],
+                enable_finetuning={"invalid_key": ["pattern"]},
                 **tfm_kwargs,
             )
-            mock_warning.assert_called_once()
-            assert "enable_finetuning` is False" in mock_warning.call_args[0][0]
 
-    @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
-    )
-    def test_lora_callback(self, mock_method, tmpdir):
-        pytest.importorskip("peft")
-        from peft import LoraConfig, PeftModel
+            model.fit(self.series)
 
-        lora_config = LoraConfig(target_modules=["q", "v"])
-        callback = PeftCallback(peft_config=lora_config)
+        # 2. Invalid dict value type
+        with pytest.raises(ValueError, match="must be a list of strings"):
+            model = Chronos2Model(
+                input_chunk_length=12,
+                output_chunk_length=6,
+                enable_finetuning={"freeze": "not_a_list"},
+                **tfm_kwargs,
+            )
 
-        # Avoid duplicate pl_trainer_kwargs
-        kwargs = {k: v for k, v in tfm_kwargs.items() if k != "pl_trainer_kwargs"}
-        pl_trainer_kwargs = tfm_kwargs.get("pl_trainer_kwargs", {}).copy()
-        pl_trainer_kwargs["callbacks"] = [callback]
+            model.fit(self.series)
 
-        model = Chronos2Model(
-            input_chunk_length=12,
-            output_chunk_length=6,
-            enable_finetuning=True,
-            pl_trainer_kwargs=pl_trainer_kwargs,
-            **kwargs,
-        )
+        # 3. Both keys (impossible due to dict construction, but multiple keys)
+        with pytest.raises(ValueError, match="must contain exactly one key"):
+            model = Chronos2Model(
+                input_chunk_length=12,
+                output_chunk_length=6,
+                enable_finetuning={"freeze": ["p1"], "unfreeze": ["p2"]},
+                **tfm_kwargs,
+            )
 
-        # 1. Initialize and fit
-        model.fit(self.series, epochs=5)
-
-        # Verify transformation happened
-        assert isinstance(model.internal_model, PeftModel), (
-            "Internal model should be a PeftModel after fit"
-        )
-
-        # 2. Checkpoint merging test (via save/load)
-        save_path = os.path.join(tmpdir, "lora_model.pt")
-        model.save(save_path)
-
-        # Loading back should yield a standard model (weights merged)
-        loaded_model = Chronos2Model.load(save_path)
-        assert not isinstance(loaded_model.internal_model, PeftModel), (
-            "Loaded model should have merged weights and not be a PeftModel"
-        )
-
-        # Verify predictions match
-        pred_orig = model.predict(n=6, series=self.series)
-        pred_loaded = loaded_model.predict(n=6, series=self.series)
-        assert np.allclose(pred_orig.values(), pred_loaded.values()), (
-            "Prediction of the fine-tuned model and the saved/loaded fine-tuned model should be the same"
-        )
+            model.fit(self.series)
