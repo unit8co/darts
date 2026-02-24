@@ -19,6 +19,7 @@ This file contains several abstract classes:
 
 import copy
 import datetime
+import fnmatch
 import inspect
 import os
 import shutil
@@ -573,7 +574,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Applies freezing or unfreezing to parameters matching the given patterns.
         """
         for name, param in model.named_parameters():
-            if any(name.startswith(p) for p in patterns):
+            if any(fnmatch.fnmatch(name, p) for p in patterns):
                 param.requires_grad = not freeze
 
     def _setup_trainer(
@@ -2543,7 +2544,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @property
     def _requires_training(self) -> bool:
         """Whether the model should be trained when calling a `fit*` method."""
-        return False if not self.enable_finetuning else True
+        # Multiple cases, enable_finetuning is None, we retrain the model
+        # If enable_finetuning is a dictionary, we retrain the model (not necessarily all weights)
+        # Otherwise, it's a boolean so we return the value
+        if self.enable_finetuning is None or self.enable_finetuning is dict:
+            return True
+
+        return self.enable_finetuning
 
     def _check_optimizable_historical_forecasts(
         self,
