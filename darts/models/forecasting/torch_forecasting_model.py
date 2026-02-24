@@ -511,10 +511,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     _get_runs_folder(self.work_dir, self.model_name), INIT_MODEL_NAME
                 )
             )
-        self._setup_fine_tuning(model)
+        self._setup_finetuning(model)
         return model
 
-    def _setup_fine_tuning(self, model: PLForecastingModule):
+    def _setup_finetuning(self, model: PLForecastingModule):
         """
         Sets up the model for fine-tuning based on `self.enable_finetuning`.
         """
