@@ -17,6 +17,7 @@ https://github.com/sktime/sktime/blob/main/sktime/utils/mlflow_sktime.py
 import importlib
 import json
 import os
+import re
 from collections.abc import Callable
 
 import mlflow
@@ -26,6 +27,7 @@ from mlflow.models import Model
 from mlflow.models.model import MLMODEL_FILE_NAME
 from mlflow.models.utils import _save_example
 from mlflow.tracking.artifact_utils import _download_artifact_from_uri
+from mlflow.utils import _inspect_original_var_name
 from mlflow.utils.autologging_utils import (
     autologging_integration,
     get_autologging_config,
@@ -53,9 +55,7 @@ from mlflow.utils.requirements_utils import _get_pinned_requirement
 
 import darts
 from darts.logging import get_logger, raise_if, raise_if_not
-from darts.metrics import mae, mape, mse, rmse
 from darts.models.forecasting.forecasting_model import ForecastingModel
-from darts.timeseries import TimeSeries
 from darts.utils.utils import PL_AVAILABLE
 
 logger = get_logger(__name__)
@@ -332,17 +332,12 @@ def log_model(
     )
 
 
-_DEFAULT_METRICS = [mae, mse, rmse, mape]
-
-
 @autologging_integration(FLAVOR_NAME)
 def autolog(
     log_models: bool = True,
     log_params: bool = True,
-    log_training_metrics: bool = True,
-    log_validation_metrics: bool = True,
+    log_metrics: bool = True,
     inject_per_epoch_callbacks: bool = True,
-    extra_metrics: list[Callable] | None = None,
     disable: bool = False,
     silent: bool = False,
     manage_run: bool = True,
@@ -355,10 +350,33 @@ def autolog(
     1. Start an MLflow run (or reuse the currently active one).
     2. Log model creation parameters (``model.model_params``).
     3. Log covariate usage information (past, future, and static covariates).
-    4. For PyTorch-based models: inject a callback that logs per-epoch metrics.
-    5. Log the trained model artifact at the end of training.
-    6. Optionally compute and log forecasting metrics on training and/or
-       validation data.
+    4. Patch all darts metric functions so that any call made inside an active
+       MLflow run automatically logs the result.  Repeated calls overwrite
+       the previous value.
+    5. For PyTorch-based models: inject a callback that logs per-epoch metrics.
+    6. Log the trained model artifact at the end of training.
+
+    .. important::
+
+        ``autolog()`` must be called **before** importing metric functions from
+        ``darts.metrics``.  Metric functions imported before ``autolog()`` is
+        enabled will **not** log to MLflow.
+
+    .. note::
+
+        Logged metric keys depend on the result shape:
+
+        * **Scalar** → ``{metric_name}``
+        * **Per-component** (1-D, single series) →
+          ``{metric_name}_{component_name}``
+        * **Per-series** (1-D, list of series) →
+          ``{metric_name}_{series_idx}``
+        * **Per-series × per-component** (2-D) →
+          ``{metric_name}_{component_name}_{series_idx}``
+
+        When a dataset variable name can be captured via frame inspection,
+        it is inserted after the metric name (e.g.
+        ``{metric_name}_{dataset_name}_{component_name}``).
 
     Parameters
     ----------
@@ -366,15 +384,9 @@ def autolog(
         If ``True`` (default), log the trained model artifact after ``fit()``.
     log_params
         If ``True`` (default), log model creation parameters.
-    log_training_metrics
-        If ``True``, compute in-sample forecasting metrics on the training data
-        after ``fit()`` completes.
-        Default ``True``.
-    log_validation_metrics
-        If ``True``, compute forecasting metrics on the validation series
-        (``val_series``) passed to ``fit()``.  Only effective for models whose
-        ``fit()`` accepts a ``val_series`` argument (e.g. PyTorch-based models).
-        Default ``True``.
+    log_metrics
+        If ``True`` (default), patch all darts metric functions so that any
+        call made inside an active MLflow run is automatically logged.
     inject_per_epoch_callbacks
         If ``True`` (default), inject a PyTorch Lightning callback to log training and validation
         metrics at the end of each epoch. Only effective for PyTorch-based models. To provide
@@ -423,6 +435,25 @@ def autolog(
             )
         except Exception as e:
             logger.info(f"Failed to patch {cls.__name__}.fit() for autologging: {e}")
+
+    if log_metrics:
+        import darts.metrics as _darts_metrics
+
+        for metric_name in _darts_metrics.__all__:
+            try:
+                # metrics should not create their own runs;
+                # they log into the run started by fit(), so manage_run=False here
+                safe_patch(
+                    FLAVOR_NAME,
+                    _darts_metrics,
+                    metric_name,
+                    _make_metric_patch(metric_name),
+                    manage_run=False,
+                )
+            except Exception as e:
+                logger.info(
+                    f"Failed to patch metric '{metric_name}' on darts.metrics: {e}"
+                )
 
 
 def get_default_pip_requirements(is_torch: bool = False) -> list[str]:
@@ -672,16 +703,9 @@ def _patched_fit(original, self, *args, **kwargs):
     """
     log_models = get_autologging_config(FLAVOR_NAME, "log_models", True)
     log_params = get_autologging_config(FLAVOR_NAME, "log_params", True)
-    log_training_metrics = get_autologging_config(
-        FLAVOR_NAME, "log_training_metrics", False
-    )
-    log_validation_metrics = get_autologging_config(
-        FLAVOR_NAME, "log_validation_metrics", False
-    )
     inject_per_epoch_callbacks = get_autologging_config(
         FLAVOR_NAME, "inject_per_epoch_callbacks", True
     )
-    extra_metrics = get_autologging_config(FLAVOR_NAME, "extra_metrics", None)
 
     mlflow.set_tag("darts.model_class", type(self).__name__)
 
@@ -697,196 +721,193 @@ def _patched_fit(original, self, *args, **kwargs):
     if log_params:
         _log_covariate_info(self)
 
-    if log_training_metrics or log_validation_metrics:
-        _log_forecasting_metrics(
-            model=self,
-            fit_args=args,
-            fit_kwargs=kwargs,
-            log_training=log_training_metrics,
-            log_validation=log_validation_metrics,
-            extra_metrics=extra_metrics,
-        )
-
     if log_models:
         try:
             log_model(self, name="model", log_params=False)
-        except Exception as e:
-            logger.warning(
-                f"Failed to autolog model artifact for {type(self).__name__}: {e}"
+        except Exception:
+            logger.info(
+                f"Failed to autolog model artifact for {type(self).__name__}.",
+                exc_info=True,
             )
 
     return result
 
 
-def _log_forecasting_metrics(
-    model,
-    fit_args: tuple,
-    fit_kwargs: dict,
-    log_training: bool,
-    log_validation: bool,
-    extra_metrics: list[Callable] | None = None,
-) -> None:
-    """Compute and log training and/or validation forecasting metrics to MLflow.
+def _sanitize_mlflow_key(name: str) -> str:
+    """Sanitize a string for use as an MLflow metric key.
 
-    After a model has been fitted this function optionally:
-
-    * Runs ``model.backtest()`` on the training series (``retrain=False``)
-      and logs metrics with a ``train_`` prefix.
-    * Runs ``model.backtest()`` on the validation series and logs metrics
-      with a ``val_`` prefix.
-
-    For multiple series the metrics are averaged to produce a single value per metric.
+    Replaces any character that is not alphanumeric, a hyphen, or an
+    underscore with an underscore, so component names become valid
+    MLflow keys.
 
     Parameters
     ----------
-    model
-        A fitted Darts forecasting model.
-    fit_args
-        Positional arguments originally passed to ``fit()``.
-    fit_kwargs
-        Keyword arguments originally passed to ``fit()``.
-    log_training
-        Whether to compute and log in-sample training metrics.
-    log_validation
-        Whether to compute and log validation metrics.
-    extra_metrics
-        Optional extra metric functions in addition to the defaults.
-    """
-    metrics_list = _get_metrics_list(extra_metrics)
-
-    # determine forecast horizon from model attributes
-    forecast_horizon = getattr(model, "output_chunk_length", None) or 1
-
-    # extract series and covariates from fit() call
-    train_series = fit_args[0] if fit_args else fit_kwargs.get("series")
-    past_covariates = fit_kwargs.get("past_covariates")
-    future_covariates = fit_kwargs.get("future_covariates")
-    val_series = fit_kwargs.get("val_series")
-    val_past_covariates = fit_kwargs.get("val_past_covariates")
-    val_future_covariates = fit_kwargs.get("val_future_covariates")
-
-    if log_training and train_series is not None:
-        try:
-            _backtest_and_log(
-                model,
-                series=train_series,
-                metrics_list=metrics_list,
-                prefix="train",
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                forecast_horizon=forecast_horizon,
-            )
-        except Exception:
-            logger.info(
-                "Could not compute training forecasting metrics for "
-                f"{type(model).__name__}.",
-                exc_info=True,
-            )
-
-    if log_validation and val_series is not None:
-        try:
-            _backtest_and_log(
-                model,
-                series=val_series,
-                metrics_list=metrics_list,
-                prefix="val",
-                past_covariates=val_past_covariates or past_covariates,
-                future_covariates=val_future_covariates or future_covariates,
-                forecast_horizon=forecast_horizon,
-            )
-        except Exception:
-            logger.info(
-                "Could not compute validation forecasting metrics for "
-                f"{type(model).__name__}.",
-                exc_info=True,
-            )
-
-
-def _backtest_and_log(
-    model,
-    series: TimeSeries | list[TimeSeries],
-    metrics_list: list[Callable],
-    prefix: str,
-    past_covariates=None,
-    future_covariates=None,
-    forecast_horizon: int = 1,
-) -> None:
-    """Run ``model.backtest()`` and log the resulting scores to MLflow.
-
-    Parameters
-    ----------
-    model
-        A fitted Darts forecasting model.
-    series
-        One or more target series to evaluate on.
-    metrics_list
-        List of Darts metric functions to evaluate.
-    prefix
-        Prefix for the logged metric names (e.g. ``"train"`` or ``"val"``).
-    past_covariates
-        Optional past covariates matching ``series``.
-    future_covariates
-        Optional future covariates matching ``series``.
-    forecast_horizon
-        Number of steps to forecast at each backtest step.
-    """
-    backtest_kwargs = dict(
-        series=series,
-        forecast_horizon=forecast_horizon,
-        retrain=False,
-        overlap_end=False,
-        last_points_only=True,
-        reduction=None,
-        verbose=False,
-        show_warnings=False,
-    )
-    if past_covariates is not None:
-        backtest_kwargs["past_covariates"] = past_covariates
-    if future_covariates is not None:
-        backtest_kwargs["future_covariates"] = future_covariates
-
-    logged = {}
-    for metric_fn in metrics_list:
-        try:
-            score = model.backtest(**backtest_kwargs, metric=metric_fn)
-            # backtest returns a float, np.ndarray, or list depending on the
-            # input.  We want a single scalar per metric so we take the mean.
-
-            logged[f"{prefix}_{metric_fn.__name__}"] = float(np.nanmean(score))
-        except Exception:
-            logger.debug(
-                f"Backtest metric {metric_fn.__name__} failed for "
-                f"{type(model).__name__}, skipping.",
-                exc_info=True,
-            )
-
-    if logged:
-        mlflow.log_metrics(logged)
-
-
-def _get_metrics_list(
-    extra_metrics: list[Callable] | None = None,
-) -> list[Callable]:
-    """Return the combined list of default and extra metric functions.
-
-    Parameters
-    ----------
-    extra_metrics
-        Optional additional metric functions to append to the defaults.
+    name
+        The raw name to sanitize.
 
     Returns
     -------
-    list[Callable]
-        A list of metric functions (``mae``, ``mse``, ``rmse``, ``mape``, plus extras).
+    str
+        A string safe for use as an MLflow metric key.
     """
-    metrics = list(_DEFAULT_METRICS)
-    if extra_metrics:
-        seen_names = {m.__name__ for m in metrics}
-        for m in extra_metrics:
-            if m.__name__ not in seen_names:
-                metrics.append(m)
-                seen_names.add(m.__name__)
-    return metrics
+    return re.sub(r"[^\w-]", "_", name)
+
+
+def _log_metric_result(
+    metric_name: str,
+    result,
+    dataset_name: str | None = None,
+    component_names: list[str] | None = None,
+    input_is_list: bool = False,
+) -> None:
+    """Log a metric result to the active MLflow run.
+
+    Handles Python scalars, numpy scalars, 1-D arrays, and 2-D arrays.
+
+    The logged MLflow key follows the pattern::
+
+        {metric_name}_{dataset_name}_{component}_{series_index}
+
+    Specifically:
+
+    * **Scalar** (0-d) → ``{metric}_{dataset}``
+    * **1-D, single TimeSeries input** (per-component) →
+      ``{metric}_{dataset}_{component_name_or_idx}``
+    * **1-D, list input** (per-series, component already reduced) →
+      ``{metric}_{dataset}_{series_idx}``
+    * **2-D, list input** (per-series × per-component) →
+      ``{metric}_{dataset}_{component_name_or_idx}_{series_idx}``
+
+    All optional parts are omitted when not available (e.g. no dataset name
+    when the variable name could not be inspected).
+
+    Parameters
+    ----------
+    metric_name
+        Base metric name used as the MLflow key.
+    result
+        The metric result to log.
+    dataset_name
+        Sanitized variable name of ``actual_series`` in the caller's frame.
+        Omitted from key when ``None``.
+    component_names
+        Component name strings to use as the component part of the key.
+        For single-series input these come from ``series.components``; for
+        list input they come from the first series in the list.
+        Falls back to integer indices when ``None`` or length mismatches.
+    input_is_list
+        ``True`` when ``actual_series`` was a ``Sequence[TimeSeries]``.  Drives
+        whether the first result axis is treated as *series* or *components*.
+    """
+    result_arr = np.asarray(result)
+
+    if mlflow.active_run() is None:
+        return
+
+    base_key = f"{metric_name}_{dataset_name}" if dataset_name else metric_name
+
+    def _comp_suffix(idx: int) -> str:
+        if component_names is not None and idx < len(component_names):
+            return _sanitize_mlflow_key(component_names[idx])
+        return str(idx)
+
+    if result_arr.ndim == 0:
+        # scalar result
+        mlflow.log_metric(base_key, float(result_arr))
+
+    elif result_arr.ndim == 1:
+        if not input_is_list:
+            # single series: log per-component
+            for c_i, val in enumerate(result_arr):
+                mlflow.log_metric(f"{base_key}_{_comp_suffix(c_i)}", float(val))
+        else:
+            # list input, components already reduced: log per-series
+            for s_i, val in enumerate(result_arr):
+                mlflow.log_metric(f"{base_key}_{s_i}", float(val))
+
+    elif result_arr.ndim == 2:
+        # list input: log per-series and per-component
+        n_series, n_components = result_arr.shape
+        for s_i in range(n_series):
+            for c_i in range(n_components):
+                mlflow.log_metric(
+                    f"{base_key}_{_comp_suffix(c_i)}_{s_i}",
+                    float(result_arr[s_i, c_i]),
+                )
+
+    else:
+        # unexpected shape — flatten with integer indices
+        for i, val in enumerate(result_arr.flatten()):
+            mlflow.log_metric(f"{base_key}_{i}", float(val))
+
+
+def _make_metric_patch(metric_name: str) -> Callable:
+    """Create a ``safe_patch``-compatible patch function for a darts metric.
+
+    The returned patch calls the original metric and, when an active MLflow
+    run exists, logs the result under a key built as::
+
+        {metric_name}[_{dataset_name}][_{component}][_{series_index}]
+
+    where:
+
+    * ``dataset_name`` – Python variable name of the first argument in the
+      caller's frame (captured via frame inspection, omitted if not found).
+    * ``component`` – component label from the ``TimeSeries`` if the result is
+      per-component, otherwise an integer index.
+    * ``series_index`` – integer index appended when the input is a
+      ``Sequence[TimeSeries]`` and the result has a series axis.
+
+    The original return value is always forwarded unchanged.
+
+    Parameters
+    ----------
+    metric_name
+        The darts metric function name used as the MLflow metric key.
+    """
+
+    def _patched_metric(original, *args, **kwargs):
+        result = original(*args, **kwargs)
+
+        if mlflow.active_run() is None:
+            return result
+
+        series = args[0]
+
+        # capture the variable name of actual_series for metric key
+        raw = _inspect_original_var_name(series, fallback_name=None)
+        dataset_name = _sanitize_mlflow_key(raw) if raw else None
+
+        # handling multi_series input
+        input_is_list = not hasattr(series, "components")
+
+        # extract component names from the series (or first element if list)
+        component_names = None
+        try:
+            if input_is_list:
+                # we assume that subsequent series have same component order
+                component_names = series[0].components.tolist()
+            else:
+                component_names = series.components.tolist()
+        except Exception:
+            logger.info("Could not extract component names from series.")
+
+        try:
+            _log_metric_result(
+                metric_name,
+                result,
+                dataset_name=dataset_name,
+                component_names=component_names,
+                input_is_list=input_is_list,
+            )
+        except Exception:
+            logger.info(
+                f"Failed to log metric '{metric_name}' to MLflow.", exc_info=True
+            )
+
+        return result
+
+    return _patched_metric
 
 
 if PL_AVAILABLE:
