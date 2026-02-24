@@ -100,15 +100,72 @@ class TestFoundationModel:
                 non_existent_param=None,
                 **tfm_kwargs,
             )
-        with pytest.raises(
-            ValueError, match="Reversible Instance Normalization is not supported"
-        ):
-            _ = Chronos2Model(
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    @pytest.mark.parametrize(
+        "use_reversible_instance_norm",
+        [
+            True,
+            {"eps": 1e-7},
+            {"affine": True},
+            {"eps": 1e-9, "affine": True},
+        ],
+    )
+    def test_rinorm(self, mock_method, caplog, use_reversible_instance_norm):
+        # `use_reversible_instance_norm` is overridden to `use_reversible_instance_norm={"affine": False}`
+        with caplog.at_level(logging.WARNING):
+            model = Chronos2Model(
                 input_chunk_length=12,
                 output_chunk_length=6,
-                use_reversible_instance_norm=True,
+                use_reversible_instance_norm=use_reversible_instance_norm,
                 **tfm_kwargs,
             )
+        assert "`use_reversible_instance_norm` is overriden to" in caplog.text
+        # RINorm affine transformation is disabled
+        assert model.pl_module_params["use_reversible_instance_norm"]["affine"] is False
+        model.fit(series=self.series)
+        assert model.model.rin.affine is False
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    @pytest.mark.parametrize(
+        "use_reversible_instance_norm",
+        [
+            {"affine": False},
+            {"eps": 1e-8, "affine": False},
+            False,
+        ],
+    )
+    def test_rinorm_no_override(
+        self, mock_method, caplog, use_reversible_instance_norm
+    ):
+        # no override should happen
+        with caplog.at_level(logging.WARNING):
+            model = Chronos2Model(
+                input_chunk_length=12,
+                output_chunk_length=6,
+                use_reversible_instance_norm=use_reversible_instance_norm,
+                **tfm_kwargs,
+            )
+        assert "`use_reversible_instance_norm` is overriden to" not in caplog.text
+        if use_reversible_instance_norm is False:
+            # RINorm should be disabled
+            assert model.pl_module_params["use_reversible_instance_norm"] is False
+            model.fit(series=self.series)
+            assert model.model.rin is None
+        else:
+            # RINorm affine transformation is disabled
+            assert (
+                model.pl_module_params["use_reversible_instance_norm"]["affine"]
+                is False
+            )
+            model.fit(series=self.series)
+            assert model.model.rin.affine is False
 
     @patch(
         "darts.models.components.huggingface_connector.hf_hub_download",
