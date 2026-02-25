@@ -56,7 +56,6 @@ from mlflow.utils.requirements_utils import _get_pinned_requirement
 import darts
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.forecasting_model import ForecastingModel
-from darts.utils.utils import PL_AVAILABLE
 
 logger = get_logger(__name__)
 
@@ -140,13 +139,9 @@ def save_model(
 
     os.makedirs(data_dir, exist_ok=True)
 
-    # pass in clean=True to not include any timeseries or callbacks within the model file
-    if is_torch:
-        model_file = _MODEL_FILE_TORCH
-        model.save(os.path.join(data_dir, model_file), clean=True)
-    else:
-        model_file = _MODEL_FILE_STAT
-        model.save(os.path.join(data_dir, model_file), clean=True)
+    # clean=True excludes any timeseries or callbacks from the model file
+    model_file = _MODEL_FILE_TORCH if is_torch else _MODEL_FILE_STAT
+    model.save(os.path.join(data_dir, model_file), clean=True)
 
     module_path, class_name = _get_model_class_path(model)
 
@@ -332,7 +327,6 @@ def log_model(
     )
 
 
-@autologging_integration(FLAVOR_NAME)
 def autolog(
     log_models: bool = True,
     log_params: bool = True,
@@ -353,7 +347,8 @@ def autolog(
     4. Patch all darts metric functions so that any call made inside an active
        MLflow run automatically logs the result.  Repeated calls overwrite
        the previous value.
-    5. For PyTorch-based models: inject a callback that logs per-epoch metrics.
+    5. For PyTorch-based models: leverage ``mlflow.pytorch.autolog()`` to
+       automatically log per-epoch training and validation metrics.
     6. Log the trained model artifact at the end of training.
 
     .. important::
@@ -388,9 +383,9 @@ def autolog(
         If ``True`` (default), patch all darts metric functions so that any
         call made inside an active MLflow run is automatically logged.
     inject_per_epoch_callbacks
-        If ``True`` (default), inject a PyTorch Lightning callback to log training and validation
-        metrics at the end of each epoch. Only effective for PyTorch-based models. To provide
-        additional callbacks use ``torch_metrics`` parameter while initializing the model.
+        If ``True`` (default), enable ``mlflow.pytorch.autolog(log_models=False)``
+        around PyTorch-based model training to automatically log per-epoch
+        training and validation metrics. Only effective for PyTorch-based models.
     extra_metrics
         An optional list of additional Darts metric functions to log on top of
         the defaults (``mae``, ``mse``, ``rmse``, ``mape``).  Each function
@@ -408,6 +403,58 @@ def autolog(
         active run during patch code execution if necessary. If `False`,
         does not apply the `with_managed_run` wrapper to the specified
         `patch_function`.
+    """
+    # Enable/disable mlflow.pytorch.autolog for per-epoch metrics on torch models.
+    # This must happen outside the @autologging_integration-decorated _autolog()
+    # because the decorator short-circuits on disable=True before the function
+    # body executes, and MLflow's session manager suppresses nested autolog
+    # patches if called from within a safe_patch context.
+    if inject_per_epoch_callbacks and not disable:
+        try:
+            import mlflow.pytorch
+
+            mlflow.pytorch.autolog(log_models=False, log_datasets=False, silent=silent)
+        except ImportError:
+            logger.info(
+                "mlflow.pytorch not available; skipping per-epoch metrics logging."
+            )
+    elif disable:
+        try:
+            import mlflow.pytorch
+
+            mlflow.pytorch.autolog(disable=True)
+        except (ImportError, Exception):
+            logger.info(
+                "mlflow.pytorch not available; skipping per-epoch metrics logging."
+            )
+
+    _autolog(
+        log_models=log_models,
+        log_params=log_params,
+        log_metrics=log_metrics,
+        inject_per_epoch_callbacks=inject_per_epoch_callbacks,
+        disable=disable,
+        silent=silent,
+        manage_run=manage_run,
+    )
+
+
+@autologging_integration(FLAVOR_NAME)
+def _autolog(
+    log_models: bool = True,
+    log_params: bool = True,
+    log_metrics: bool = True,
+    inject_per_epoch_callbacks: bool = True,
+    disable: bool = False,
+    silent: bool = False,
+    manage_run: bool = True,
+) -> None:
+    """Internal autolog implementation decorated with ``@autologging_integration``.
+
+    Handles patching of darts ``ForecastingModel.fit()`` and metric functions.
+    The ``mlflow.pytorch.autolog`` coordination is handled by the public
+    ``autolog()`` wrapper because the decorator short-circuits on
+    ``disable=True``.
     """
 
     # recursively get all subclasses of ForecastingModel that override fit()
@@ -681,11 +728,7 @@ def _extract_covariate_metadata(
 def _patched_fit(original, self, *args, **kwargs):
     """Patch function for ForecastingModel.fit() autologging.
 
-    Handles both statistical and PyTorch-based models. For PyTorch models,
-    automatically injects MLflow callback for per-epoch metrics logging.
-
-    Logs the trained model artifact if configured.
-
+    Logs model parameters, class, covariates and the model itself.
     Parameters
     ----------
     original
@@ -703,18 +746,11 @@ def _patched_fit(original, self, *args, **kwargs):
     """
     log_models = get_autologging_config(FLAVOR_NAME, "log_models", True)
     log_params = get_autologging_config(FLAVOR_NAME, "log_params", True)
-    inject_per_epoch_callbacks = get_autologging_config(
-        FLAVOR_NAME, "inject_per_epoch_callbacks", True
-    )
 
     mlflow.set_tag("darts.model_class", type(self).__name__)
 
     if log_params:
         _log_model_params(self)
-
-    # Inject per-epoch callbacks for torch models (no-op for non-torch models)
-    if inject_per_epoch_callbacks:
-        _inject_mlflow_callback(self)
 
     result = original(self, *args, **kwargs)
 
@@ -847,7 +883,7 @@ def _make_metric_patch(metric_name: str) -> Callable:
     The returned patch calls the original metric and, when an active MLflow
     run exists, logs the result under a key built as::
 
-        {metric_name}[_{dataset_name}][_{component}][_{series_index}]
+        {metric_name}_{dataset_name}_{component}_{series_index}
 
     where:
 
@@ -908,104 +944,3 @@ def _make_metric_patch(metric_name: str) -> Callable:
         return result
 
     return _patched_metric
-
-
-if PL_AVAILABLE:
-    import pytorch_lightning as pl
-
-    class _DartsMlflowCallback(pl.Callback):
-        """PyTorch Lightning callback that logs epoch-level metrics to MLflow.
-
-        This callback automatically logs training and validation metrics (such as
-        loss values) to the active MLflow run at the end of each epoch.
-
-        Notes
-        -----
-        The callback is automatically injected into TorchForecastingModel instances
-        when ``autolog()`` is enabled with PyTorch-based models.
-        """
-
-        def on_train_epoch_end(self, trainer, pl_module):
-            """Log training metrics at the end of each training epoch."""
-            self._log_epoch_metrics(trainer)
-
-        def on_validation_epoch_end(self, trainer, pl_module):
-            """Log validation metrics at the end of each validation epoch."""
-            self._log_epoch_metrics(trainer)
-
-        def _log_epoch_metrics(self, trainer) -> None:
-            """Extract and log metrics from the trainer to MLflow.
-
-            Parameters
-            ----------
-            trainer
-                PyTorch Lightning Trainer instance containing metrics.
-            """
-            if mlflow.active_run() is None:
-                return
-
-            epoch = trainer.current_epoch
-            metrics: dict[str, float] = {}
-
-            for source in (trainer.callback_metrics, trainer.logged_metrics):
-                for key, value in source.items():
-                    try:
-                        metrics[key] = float(value)
-                    except (TypeError, ValueError):
-                        pass
-
-            if metrics:
-                mlflow.log_metrics(metrics, step=epoch)
-
-else:
-    _DartsMlflowCallback = None
-
-
-def _get_mlflow_callback():
-    """Create and return a ``_DartsMlflowCallback`` instance.
-
-    Returns
-    -------
-    _DartsMlflowCallback or None
-        A callback instance if PyTorch Lightning is available, None otherwise.
-    """
-    if not PL_AVAILABLE:
-        return None
-
-    return _DartsMlflowCallback()
-
-
-def _inject_mlflow_callback(model) -> None:
-    """Inject the MLflow callback into a ``TorchForecastingModel``'s trainer params.
-
-    Adds a ``_DartsMlflowCallback`` to the model's PyTorch Lightning trainer callbacks
-    if not already present. This enables automatic logging of training metrics to MLflow.
-
-    Parameters
-    ----------
-    model
-        A TorchForecastingModel instance with a ``trainer_params`` attribute.
-
-    Notes
-    -----
-    This is a no-op if the callback is already present or PyTorch Lightning is unavailable.
-    """
-    callback = _get_mlflow_callback()
-    if callback is None:
-        return
-
-    if not hasattr(model, "trainer_params"):
-        return
-
-    existing_callbacks = model.trainer_params.get("callbacks", [])
-
-    if any(isinstance(cb, _DartsMlflowCallback) for cb in existing_callbacks):
-        logger.info("MLflow callback already present, skipping injection")
-        return
-
-    if not isinstance(existing_callbacks, list):
-        existing_callbacks = list(existing_callbacks)
-
-    existing_callbacks.append(callback)
-    model.trainer_params["callbacks"] = existing_callbacks
-    logger.info(f"Injected MLflow callback into {type(model).__name__}")
