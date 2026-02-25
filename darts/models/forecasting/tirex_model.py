@@ -248,11 +248,22 @@ class TiRexModel(FoundationModel):
     - Univariate target series only
     - No past or future covariates
     - Zero-shot inference only (no fine-tuning support)
+    - TiRex supports up to 2048 steps per *single* forecast call
+      (i.e., `output_chunk_length + output_chunk_shift <= 2048`). For longer horizons,
+      Darts' autoregressive prediction loop is used when `n > output_chunk_length`.
 
     Parameters
     ----------
     model_name
         Identifier passed to `tirex.load_model()`. Default: ``"NX-AI/TiRex"``.
+    input_chunk_length
+        Length of the past context window (number of past time steps) used for each forecast.
+        Default: ``64``.
+    output_chunk_length
+        Number of time steps to forecast in each call. Default: ``12``.
+    output_chunk_shift
+        Number of time steps to shift the output window (forecasting starts after this many steps).
+        Default: ``0``.
     likelihood
         Must be ``None`` or an instance of
         :class:`~darts.utils.likelihood_models.torch.QuantileRegression`.
@@ -289,7 +300,7 @@ class TiRexModel(FoundationModel):
     ...     accept_license=True,
     ... )
     >>> model.fit(train)
-    >>> forecast = model.predict(n=len(test(), series=train)
+    >>> forecast = model.predict(n=len(test()), series=train)
 
     Probabilistic forecasting:
 
@@ -298,15 +309,19 @@ class TiRexModel(FoundationModel):
     ...     accept_license=True,
     ... )
     >>> model.fit(train)
-    >>> forecast = pred_s = model.predict(n=len(test), series=train, num_samples=50)
+    >>> forecast = model.predict(n=len(test), series=train, num_samples=50)
     """
 
     # TiRex quantiles returned by default (0.1..0.9)
     _DEFAULT_QUANTILES = _TiRexQuantiles().quantiles
+    _MAX_PREDICTION_LENGTH = 2048
 
     def __init__(
         self,
         model_name: str = "NX-AI/TiRex",
+        input_chunk_length: int = 64,
+        output_chunk_length: int = 12,
+        output_chunk_shift: int = 0,
         likelihood: QuantileRegression | None = None,
         accept_license: bool = False,
         device: str | None = None,
@@ -345,17 +360,36 @@ class TiRexModel(FoundationModel):
                     logger,
                 )
 
-        # TiRex uses fixed context/horizon sizes in this integration.
-        # We keep these internal (not user-configurable), but they must be present in
-        # `pl_module_params` for TorchForecastingModel internals (e.g. encoder initialization).
-        _input_chunk_length = 64
-        _output_chunk_length = 12
-        _output_chunk_shift = 0
+        # Validate chunk lengths. Darts uses these values to build training/prediction batches.
+        if input_chunk_length <= 0:
+            raise_log(
+                ValueError("`input_chunk_length` must be a positive integer."), logger
+            )
+        if output_chunk_length <= 0:
+            raise_log(
+                ValueError("`output_chunk_length` must be a positive integer."), logger
+            )
+        if output_chunk_shift < 0:
+            raise_log(
+                ValueError("`output_chunk_shift` must be a non-negative integer."),
+                logger,
+            )
+
+        # TiRex supports up to 2048 steps per single forecast call.
+        if output_chunk_length + output_chunk_shift > self._MAX_PREDICTION_LENGTH:
+            raise_log(
+                ValueError(
+                    "TiRex supports a maximum prediction length of "
+                    f"{self._MAX_PREDICTION_LENGTH} per call. "
+                    "Please ensure `output_chunk_length + output_chunk_shift <= 2048`."
+                ),
+                logger,
+            )
 
         super().__init__(
-            input_chunk_length=_input_chunk_length,
-            output_chunk_length=_output_chunk_length,
-            output_chunk_shift=_output_chunk_shift,
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             likelihood=likelihood,
             add_encoders=add_encoders,
         )
@@ -364,9 +398,9 @@ class TiRexModel(FoundationModel):
         # (TorchForecastingModel accesses them before `fit()`.)
         if self.pl_module_params is None:
             self.pl_module_params = {}
-        self.pl_module_params.setdefault("input_chunk_length", _input_chunk_length)
-        self.pl_module_params.setdefault("output_chunk_length", _output_chunk_length)
-        self.pl_module_params.setdefault("output_chunk_shift", _output_chunk_shift)
+        self.pl_module_params.setdefault("input_chunk_length", input_chunk_length)
+        self.pl_module_params.setdefault("output_chunk_length", output_chunk_length)
+        self.pl_module_params.setdefault("output_chunk_shift", output_chunk_shift)
 
         self.model_name = model_name
         self.device = device

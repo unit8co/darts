@@ -68,6 +68,8 @@ class TestTiRexModel:
 
     def test_default_deterministic(self):
         model = tirex_model.TiRexModel(
+            input_chunk_length=64,
+            output_chunk_length=12,
             accept_license=True,
         )
 
@@ -82,6 +84,8 @@ class TestTiRexModel:
 
     def test_probabilistic_quantiles(self):
         model = tirex_model.TiRexModel(
+            input_chunk_length=64,
+            output_chunk_length=12,
             likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
             accept_license=True,
         )
@@ -99,6 +103,8 @@ class TestTiRexModel:
 
     def test_probabilistic_sampling(self):
         model = tirex_model.TiRexModel(
+            input_chunk_length=64,
+            output_chunk_length=12,
             likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
             accept_license=True,
         )
@@ -114,6 +120,8 @@ class TestTiRexModel:
 
     def test_rejects_covariates(self):
         model = tirex_model.TiRexModel(
+            input_chunk_length=64,
+            output_chunk_length=12,
             accept_license=True,
         )
 
@@ -128,9 +136,28 @@ class TestTiRexModel:
 
     def test_rejects_multivariate(self):
         model = tirex_model.TiRexModel(
+            input_chunk_length=64,
+            output_chunk_length=12,
             accept_license=True,
         )
 
         with patch.object(tirex_model, "_require_tirex", return_value=_stub_loader):
             with pytest.raises(ValueError, match="univariate"):
                 model.fit(self.series_multi)
+
+    def test_rejects_too_long_horizon(self):
+        # max horizon in TiRex is 2048; wrapper should enforce output_chunk_length + shift
+        with pytest.raises(ValueError, match="2048"):
+            tirex_model.TiRexModel(
+                input_chunk_length=64,
+                output_chunk_length=2049,
+                accept_license=True,
+            )
+
+        with pytest.raises(ValueError, match="2048"):
+            tirex_model.TiRexModel(
+                input_chunk_length=64,
+                output_chunk_length=2048,
+                output_chunk_shift=1,
+                accept_license=True,
+            )
