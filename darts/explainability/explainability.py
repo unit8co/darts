@@ -75,7 +75,7 @@ class _ForecastingModelExplainer(ABC):
             )
         self.model = model
         # default forecasting horizon
-        self.n: int | None = getattr(self.model, "output_chunk_length", None)
+        self.n: int = getattr(self.model, "output_chunk_length", 1) or 1
 
         # check background input validity and process it
         (

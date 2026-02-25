@@ -28,7 +28,15 @@ def process_input(
     requires_input: bool = True,
     requires_covariates_encoding: bool = False,
     test_stationarity: bool = False,
-):
+) -> tuple[
+    Sequence[TimeSeries],
+    Sequence[TimeSeries] | None,
+    Sequence[TimeSeries] | None,
+    Sequence[str],
+    Sequence[str] | None,
+    Sequence[str] | None,
+    Sequence[str] | None,
+]:
     """Helper function to process and check either of the background or foreground series input to
     `_ForecastingModelExplainer`.
 
@@ -300,11 +308,7 @@ def _check_valid_input(
 ):
     """Checks that the input is valid"""
     if test_stationarity and series is not None:
-        if not _test_stationarity(series):
-            logger.warning(
-                "At least one component of the target series is not stationary. "
-                "Beware of wrong interpretation of the chosen explainability."
-            )
+        _test_stationarity(series)
 
     if input_type not in ["background", "foreground"]:
         raise_log(
@@ -364,5 +368,13 @@ def _check_valid_input(
         )
 
 
-def _test_stationarity(series: TimeSeriesLike):
-    return all([(stationarity_tests(bs[c]) for c in bs.components) for bs in series])
+def _test_stationarity(series: Sequence[TimeSeries]) -> bool:
+    for i, bs in enumerate(series):
+        for c in bs.components:
+            if not stationarity_tests(bs[c]):
+                logger.warning(
+                    f"At least component '{c}' of target series at index {i} is not stationary. "
+                    f"Beware of wrong interpretation of the chosen explainability."
+                )
+                return False
+    return True
