@@ -386,6 +386,7 @@ class _DeepShapExplainer:
         shap_values: np.ndarray = shap_explanation_tmp.values
         shap_data: np.ndarray = shap_explanation_tmp.data
         shap_base_values: np.ndarray = shap_explanation_tmp.base_values
+        # TODO: generate featue names based on the covariate types and components
         feature_names: list[str] = shap_explanation_tmp.feature_names
         print(f"shap_explanation_tmp.values.shape: {shap_explanation_tmp.values.shape}")
         print(f"shap_explanation_tmp.data.shape: {shap_explanation_tmp.data.shape}")
