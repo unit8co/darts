@@ -218,6 +218,7 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
         return list_index, bound_left + stride_idx
 
     def __getitem__(self, idx: int) -> TorchInferenceDatasetOutput:
+        idx = idx % self.len_preds
         # determine the series index, and the index + 1 (exclusive range) of the output chunk end within that series
         if self.bounds is None:
             series_idx = idx
