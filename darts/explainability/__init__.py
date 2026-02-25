@@ -18,6 +18,7 @@ from darts.utils.utils import NotImportedModule
 logger = get_logger(__name__)
 try:
     from darts.explainability.tft_explainer import TFTExplainer
+    from darts.explainability.torch_explainer import TorchExplainer
 except ModuleNotFoundError:
     logger.warning(
         "Support for Torch based explainers not available. "
@@ -25,6 +26,7 @@ except ModuleNotFoundError:
         'or "u8darts-torch" or "u8darts-all" (with conda).'
     )
     TFTExplainer = NotImportedModule(module_name="(Py)Torch", warn=False)
+    TorchExplainer = NotImportedModule(module_name="(Py)Torch", warn=False)
 
 __all__ = [
     "ShapExplainabilityResult",
@@ -32,4 +34,5 @@ __all__ = [
     "_ExplainabilityResult",
     "ShapExplainer",
     "TFTExplainer",
+    "TorchExplainer",
 ]
