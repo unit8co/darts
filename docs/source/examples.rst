@@ -216,6 +216,16 @@ Chronos-2 Foundation model example notebook:
 
    examples/25-Chronos-2-examples.ipynb
 
+TiRex Model
+=======================================
+
+TiRex Foundation model example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/26-TiRex-examples.ipynb
+
 Ensemble Models
 =============================
 

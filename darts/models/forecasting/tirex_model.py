@@ -2,7 +2,8 @@
 TiRex: Zero-Shot Forecasting across Long and Short Horizons
 -----------------------------------------------------------
 
-Darts wrapper for the pre-trained forecasting model TiRex introduced in [1].
+Darts wrapper for the pre-trained forecasting model TiRex introduced in
+https://arxiv.org/abs/2505.23719.
 The implementation is built around `tirex-ts <https://pypi.org/project/tirex-ts/>`.
 The TiRex base repo <https://github.com/NX-AI/tirex>,
 model card <https://huggingface.co/NX-AI/TiRex> and
@@ -13,9 +14,6 @@ Note: TiRex is released under the NXAI Community License. See
 Users must explicitly acknowledge the license by passing `accept_license=True` when
 constructing `TiRexModel`.
 
-References
-----------
-.. [1] https://arxiv.org/abs/2505.23719
 """
 
 from __future__ import annotations
@@ -221,7 +219,8 @@ class TiRexModel(FoundationModel):
     """
     TiRex foundation model for zero-shot time series forecasting.
 
-    This is a Darts wrapper around the TiRex model introduced in [1]_.
+    This is a Darts wrapper around the TiRex model introduced in
+    https://arxiv.org/abs/2505.23719.
     The implementation delegates all forecasting logic and weight loading
     to the optional `tirex-ts` package while exposing a standard
     :class:`FoundationModel` interface.
@@ -234,23 +233,20 @@ class TiRexModel(FoundationModel):
     :class:`~darts.utils.likelihood_models.torch.QuantileRegression`
     instance to the ``likelihood`` parameter.
 
-    Important
-    ---------
+    Notes
+    -----
     TiRex is distributed under the NXAI Community License:
-
     https://github.com/NX-AI/tirex-internal/blob/main/LICENSE
 
     You must explicitly acknowledge this license by passing
     ``accept_license=True`` when constructing the model.
 
-    Constraints (current integration)
-    ----------------------------------
-    - Univariate target series only
-    - No past or future covariates
-    - Zero-shot inference only (no fine-tuning support)
-    - TiRex supports up to 2048 steps per *single* forecast call
-      (i.e., `output_chunk_length + output_chunk_shift <= 2048`). For longer horizons,
-      Darts' autoregressive prediction loop is used when `n > output_chunk_length`.
+    Current integration constraints are: univariate target series only; no past
+    or future covariates; zero-shot inference only (no fine-tuning support);
+    and a maximum of 2048 steps per single forecast call
+    (``output_chunk_length + output_chunk_shift <= 2048``). For longer
+    horizons, Darts' autoregressive prediction loop is used when
+    ``n > output_chunk_length``.
 
     Parameters
     ----------
@@ -279,13 +275,8 @@ class TiRexModel(FoundationModel):
         Optional compilation flag passed to `tirex.load_model()`.
     add_encoders
         Optional encoders passed to :class:`FoundationModel`.
-    **tirex_kwargs
+    tirex_kwargs
         Additional keyword arguments forwarded to `tirex.load_model()`.
-
-    References
-    ----------
-    .. [1] TiRex: Zero-Shot Forecasting across Long and Short Horizons.
-           https://arxiv.org/abs/2505.23719
 
     Examples
     --------
@@ -300,7 +291,7 @@ class TiRexModel(FoundationModel):
     ...     accept_license=True,
     ... )
     >>> model.fit(train)
-    >>> forecast = model.predict(n=len(test()), series=train)
+    >>> forecast = model.predict(n=len(test), series=train)
 
     Probabilistic forecasting:
 
@@ -330,6 +321,10 @@ class TiRexModel(FoundationModel):
         add_encoders: dict | None = None,
         **tirex_kwargs,
     ):
+        """Initialize a TiRex model instance.
+
+        For parameter details, see the class docstring of :class:`TiRexModel`.
+        """
         if not accept_license:
             raise_log(
                 ValueError(
@@ -412,6 +407,14 @@ class TiRexModel(FoundationModel):
     def supports_multivariate(self) -> bool:
         return False
 
+    @property
+    def supports_past_covariates(self) -> bool:
+        return False
+
+    @property
+    def supports_future_covariates(self) -> bool:
+        return False
+
     def _create_model(self, train_sample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}
 
@@ -433,9 +436,31 @@ class TiRexModel(FoundationModel):
             **pl_module_params,
         )
 
-    def fit(self, series, past_covariates=None, future_covariates=None, verbose=None):
+    def fit(
+        self,
+        series,
+        past_covariates=None,
+        future_covariates=None,
+        val_series=None,
+        val_past_covariates=None,
+        val_future_covariates=None,
+        trainer=None,
+        verbose=None,
+        epochs: int = 0,
+        max_samples_per_ts=None,
+        dataloader_kwargs=None,
+        sample_weight=None,
+        val_sample_weight=None,
+        stride: int = 1,
+        load_best: bool = False,
+    ):
         # enforce initial integration constraints early
-        if past_covariates is not None or future_covariates is not None:
+        if (
+            past_covariates is not None
+            or future_covariates is not None
+            or val_past_covariates is not None
+            or val_future_covariates is not None
+        ):
             raise_log(
                 ValueError("TiRexModel currently does not support covariates."), logger
             )
@@ -448,9 +473,34 @@ class TiRexModel(FoundationModel):
                 logger,
             )
 
+        if val_series is not None:
+            val_series_list = (
+                [val_series]
+                if not isinstance(val_series, Sequence)
+                else list(val_series)
+            )
+            if any(s.n_components != 1 for s in val_series_list):
+                raise_log(
+                    ValueError(
+                        "TiRexModel currently supports univariate validation series only."
+                    ),
+                    logger,
+                )
+
         return super().fit(
             series=series,
             past_covariates=None,
             future_covariates=None,
+            val_series=val_series,
+            val_past_covariates=None,
+            val_future_covariates=None,
+            trainer=trainer,
             verbose=verbose,
+            epochs=epochs,
+            max_samples_per_ts=max_samples_per_ts,
+            dataloader_kwargs=dataloader_kwargs,
+            sample_weight=sample_weight,
+            val_sample_weight=val_sample_weight,
+            stride=stride,
+            load_best=load_best,
         )

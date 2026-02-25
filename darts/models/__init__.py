@@ -89,11 +89,17 @@ except ModuleNotFoundError:
 
 try:
     from darts.models.forecasting.chronos2_model import Chronos2Model
-    from darts.models.forecasting.timesfm2p5_model import TimesFM2p5Model
-    from darts.models.forecasting.tirex_model import TiRexModel
 except ModuleNotFoundError:
     Chronos2Model = NotImportedModule(module_name="(Py)Torch", warn=False)
+
+try:
+    from darts.models.forecasting.timesfm2p5_model import TimesFM2p5Model
+except ModuleNotFoundError:
     TimesFM2p5Model = NotImportedModule(module_name="(Py)Torch", warn=False)
+
+try:
+    from darts.models.forecasting.tirex_model import TiRexModel
+except ModuleNotFoundError:
     TiRexModel = NotImportedModule(module_name="(Py)Torch", warn=False)
 
 try:

@@ -82,6 +82,16 @@ class TestTiRexModel:
         assert pred.n_samples == 1
         assert pred.all_values().shape == (10, 1, 1)
 
+    def test_fit_accepts_standard_foundation_kwargs(self):
+        model = tirex_model.TiRexModel(
+            input_chunk_length=64,
+            output_chunk_length=12,
+            accept_license=True,
+        )
+
+        with patch.object(tirex_model, "_require_tirex", return_value=_stub_loader):
+            model.fit(self.series, val_series=self.series, load_best=False)
+
     def test_probabilistic_quantiles(self):
         model = tirex_model.TiRexModel(
             input_chunk_length=64,
@@ -133,6 +143,18 @@ class TestTiRexModel:
 
         with pytest.raises(ValueError, match="covariates"):
             model.predict(n=5, series=self.series, future_covariates=self.cov)
+
+        with pytest.raises(ValueError, match="covariates"):
+            model.fit(self.series, val_past_covariates=self.cov)
+
+    def test_covariate_support_flags(self):
+        model = tirex_model.TiRexModel(
+            input_chunk_length=64,
+            output_chunk_length=12,
+            accept_license=True,
+        )
+        assert not model.supports_past_covariates
+        assert not model.supports_future_covariates
 
     def test_rejects_multivariate(self):
         model = tirex_model.TiRexModel(
