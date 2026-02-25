@@ -332,39 +332,48 @@ class TestMLflow:
                     assert m.value >= 0, f"val_loss is negative: {m.value}"
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
-    def test_autolog_injects_callback(self, mlflow_tracking, autolog_context):
-        """Test that autolog injects MLflow callback into torch models"""
+    def test_autolog_pytorch_autolog_enabled(self, mlflow_tracking, autolog_context):
+        """Test that autolog enables mlflow.pytorch.autolog and logs per-epoch
+        train_loss, val_loss, and custom torch_metrics with finite non-negative values."""
+        import torchmetrics
+        from mlflow.utils.autologging_utils import autologging_is_disabled
+
+        n_epochs = 2
+
+        def assert_metric(history, key):
+            assert len(history) > 0, f"{key} not logged"
+            assert len(history) <= n_epochs, f"too many {key} entries"
+            assert all(np.isfinite(m.value) and m.value >= 0 for m in history)
+
         with autolog_context():
+            assert not autologging_is_disabled("pytorch")
+
             model = NBEATSModel(
                 input_chunk_length=4,
                 output_chunk_length=2,
-                n_epochs=2,
+                n_epochs=n_epochs,
+                torch_metrics=torchmetrics.MeanAbsoluteError(),
                 **tfm_kwargs_dev,
             )
-
-            # record initial callbacks from trainer_params (before fit)
-            initial_callbacks = model.trainer_params.get("callbacks", [])
-            initial_callback_count = len(initial_callbacks) if initial_callbacks else 0
-
             train, val = self.ts_univariate.split_before(0.7)
             model.fit(train, val_series=val)
 
-            # verify callback was injected after fit
-            final_callbacks = model.trainer_params.get("callbacks", [])
-            assert final_callbacks is not None, "Callbacks should not be None"
-            assert len(final_callbacks) > initial_callback_count, (
-                "MLflow callback should be added"
+            runs = mlflow.search_runs()
+            assert len(runs) == 1
+            run_id = runs.iloc[0]["run_id"]
+            assert runs.iloc[0]["tags.darts.model_class"] == "NBEATSModel"
+
+            client = mlflow.tracking.MlflowClient()
+            assert_metric(client.get_metric_history(run_id, "train_loss"), "train_loss")
+            assert_metric(client.get_metric_history(run_id, "val_loss"), "val_loss")
+            # custom torch_metrics: in normal use both train_/val_ prefixes are logged, but
+            # fast_dev_run suppresses the Lightning logger during traininge
+            assert_metric(
+                client.get_metric_history(run_id, "val_MeanAbsoluteError"),
+                "val_MeanAbsoluteError",
             )
 
-            # check that the _DartsMlflowCallback is present
-            from darts.utils.mlflow import _DartsMlflowCallback
-
-            has_mlflow_callback = any(
-                isinstance(cb, _DartsMlflowCallback) for cb in final_callbacks
-            )
-            assert has_mlflow_callback, (
-                f"_DartsMlflowCallback not found in {[type(cb).__name__ for cb in final_callbacks]}"
-            )
+        assert autologging_is_disabled("pytorch")
 
     def test_covariate_artifact_schema(self, mlflow_tracking):
         """Test that covariate artifact has correct JSON schema"""
@@ -426,10 +435,10 @@ class TestMLflow:
         assert run.data.params["n_static_covariates"] == "2"
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
-    def test_callback_injection_with_existing_callbacks(
+    def test_pytorch_autolog_with_existing_callbacks(
         self, mlflow_tracking, autolog_context
     ):
-        """Test callback injection when model already has callbacks"""
+        """Test pytorch autolog works when model already has callbacks"""
         # create model with existing callback
         if PL_AVAILABLE:
             import pytorch_lightning as pl
@@ -453,17 +462,22 @@ class TestMLflow:
             train, val = self.ts_univariate.split_before(0.7)
             model.fit(train, val_series=val)
 
-            # verify both callbacks present
+            # verify existing callback is still present (not removed by autolog)
             callbacks = model.trainer_params.get("callbacks", [])
-            assert len(callbacks) == 2, "Should have both existing and MLflow callbacks"
-
-            from darts.utils.mlflow import _DartsMlflowCallback
-
-            has_mlflow = any(isinstance(cb, _DartsMlflowCallback) for cb in callbacks)
             has_existing = any(
                 isinstance(cb, pl.callbacks.EarlyStopping) for cb in callbacks
             )
-            assert has_mlflow and has_existing, "Both callbacks should be present"
+            assert has_existing, "Existing EarlyStopping callback should be preserved"
+
+            # verify metrics were still logged via mlflow.pytorch.autolog
+            runs = mlflow.search_runs()
+            assert len(runs) >= 1, "Expected at least one run"
+            last_run_id = runs.iloc[0]["run_id"]
+            client = mlflow.tracking.MlflowClient()
+            train_metrics = client.get_metric_history(last_run_id, "train_loss")
+            assert len(train_metrics) > 0, (
+                "Expected train_loss metrics to be logged via pytorch autolog"
+            )
 
     def test_autolog_multiple_fits(self, mlflow_tracking, autolog_context):
         """Test that multiple fits with autolog create separate runs"""
