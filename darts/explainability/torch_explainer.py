@@ -21,6 +21,10 @@ logger = get_logger(__name__)
 MIN_BACKGROUND_SAMPLE = 10
 MAX_BACKGROUND_SAMPLE = 1000
 
+INPUT_PAST_INDICES = [0, 1, 3]
+INPUT_FUTURE_INDICES = [4]
+INPUT_STATIC_INDICES = [5]
+
 
 class _ShapMethod(Enum):
     GRADIENT = 1
@@ -154,7 +158,7 @@ class TorchExplainer(_ForecastingModelExplainer):
             if foreground_future_covariates:
                 foreground_future_cov_ts = foreground_future_covariates[idx]
 
-            foreground_X, prediction_times = self.explainer._create_shap_tensor(
+            foreground_X, prediction_times = self.explainer._create_shap_array(
                 foreground_ts,
                 foreground_past_cov_ts,
                 foreground_future_cov_ts,
@@ -236,7 +240,7 @@ class _DeepShapExplainer:
         self.background_future_covariates = background_future_covariates
 
         # TODO: support RNNModel with special handling of tensor shapes
-        self.background_X, _ = self._create_shap_tensor(
+        self.background_X, _ = self._create_shap_array(
             self.background_series,
             self.background_past_covariates,
             self.background_future_covariates,
@@ -249,6 +253,7 @@ class _DeepShapExplainer:
             model.model,
             batch_size=batch_size or model.batch_size,
         )
+        self._build_feature_names()
 
         # TODO: support static covariates with special handling
         if model._uses_static_covariates:
@@ -301,6 +306,25 @@ class _DeepShapExplainer:
 
         self.batch_size = batch_size
 
+    def _build_feature_names(self):
+        self.feature_names = []
+        for i in range(self.input_chunk_length):
+            lag = self.input_chunk_length - i
+            for t in self.target_components:
+                self.feature_names.append(f"{t}_target_lag-{lag}")
+            if self.past_covariates_components is not None:
+                for c in self.past_covariates_components:
+                    self.feature_names.append(f"{c}_past_cov_lag-{lag}")
+            if self.future_covariates_components is not None:
+                for c in self.future_covariates_components:
+                    self.feature_names.append(f"{c}_future_cov_lag-{lag}")
+
+        for i in range(self.output_chunk_length):
+            lag = i
+            if self.future_covariates_components is not None:
+                for c in self.future_covariates_components:
+                    self.feature_names.append(f"{c}_future_cov_lag_{lag}")
+
     @torch.inference_mode()
     def _func_wrapper(self, x_np: np.ndarray) -> np.ndarray:
         x = torch.from_numpy(x_np).float()
@@ -342,11 +366,10 @@ class _DeepShapExplainer:
     @staticmethod
     def _build_explainer(
         func,
-        background_tensor: torch.Tensor,
+        background_X: np.ndarray,
         shap_method: _ShapMethod,
         **kwargs,
     ):
-        background_X = background_tensor.cpu().numpy()
         # we define properly the explainer given a shap method
         if shap_method == _ShapMethod.PERMUTATION:
             explainer = shap.PermutationExplainer(func, background_X, **kwargs)
@@ -373,7 +396,7 @@ class _DeepShapExplainer:
 
     def shap_explanations(
         self,
-        foreground_tensor: torch.Tensor,
+        foreground_X: np.ndarray,
         horizons: Sequence[int],
         target_components: Sequence[str],
     ) -> dict[int, dict[str, shap.Explanation]]:
@@ -381,13 +404,10 @@ class _DeepShapExplainer:
         # native multiOutput estimators
         shap_explanations = {}
         # the native multioutput forces us to recompute all horizons and targets
-        foreground_X = foreground_tensor.cpu().numpy()
         shap_explanation_tmp: shap.Explanation = self.explainer(foreground_X)
         shap_values: np.ndarray = shap_explanation_tmp.values
         shap_data: np.ndarray = shap_explanation_tmp.data
         shap_base_values: np.ndarray = shap_explanation_tmp.base_values
-        # TODO: generate featue names based on the covariate types and components
-        feature_names: list[str] = shap_explanation_tmp.feature_names
         print(f"shap_explanation_tmp.values.shape: {shap_explanation_tmp.values.shape}")
         print(f"shap_explanation_tmp.data.shape: {shap_explanation_tmp.data.shape}")
         print(
@@ -404,7 +424,7 @@ class _DeepShapExplainer:
                     base_values=shap_base_values[
                         :, self.n_targets * (h - 1) + t_idx
                     ].ravel(),
-                    feature_names=feature_names,
+                    feature_names=self.feature_names,
                 )
 
                 tmp_n[t] = tmp_t
@@ -420,30 +440,41 @@ class _DeepShapExplainer:
         bounds = np.array([(input_chunk_length, len(s)) for s in series])
         return bounds
 
-    def _create_shap_tensor(
+    @staticmethod
+    def _batch_collate_np(batch: list[tuple], indices: list[int]) -> np.ndarray | None:
+        data = []
+        for index in indices:
+            if batch[0][index] is None:
+                continue
+            data.append(np.stack([sample[index] for sample in batch]))
+
+        if len(data) == 0:
+            return None
+        else:
+            data = np.stack(data, axis=2)
+            return data
+
+    def _create_shap_array(
         self,
         series: TimeSeriesLike,
         past_covariates: TimeSeriesLike | None,
         future_covariates: TimeSeriesLike | None,
         n_samples: int | None = None,
         train: bool = False,
-    ) -> tuple[torch.Tensor, pd.Index]:
-        series: Sequence[TimeSeries] = series2seq(series)
-        past_covariates: Sequence[TimeSeries] | None = series2seq(past_covariates)
-        future_covariates: Sequence[TimeSeries] | None = series2seq(future_covariates)
+    ) -> tuple[np.ndarray, pd.Index]:
+        # convert to sequence of TimeSeries if not already
+        series_: Sequence[TimeSeries] = series2seq(series)
+        past_covariates_: Sequence[TimeSeries] | None = series2seq(past_covariates)
+        future_covariates_: Sequence[TimeSeries] | None = series2seq(future_covariates)
 
         # create inference dataset
-        if True:
-            stride, bounds = 1, self._create_dataset_bounds(series)
-        else:
-            stride, bounds = 0, None
         dataset = self.model._build_inference_dataset(
             n=self.n,
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            stride=stride,
-            bounds=bounds,
+            series=series_,
+            past_covariates=past_covariates_,
+            future_covariates=future_covariates_,
+            stride=1,
+            bounds=self._create_dataset_bounds(series_),
         )
 
         # sample from dataset if required
@@ -492,36 +523,18 @@ class _DeepShapExplainer:
         # - historic_future_covariates
         # - future_covariates
         # - static_covariates
-        input_data_tuple = batch_aggregated[:-2]
-        prediction_times = batch_aggregated[-1]
-        prediction_times = pd.Index(prediction_times)
+        input_past = self._batch_collate_np(batch, INPUT_PAST_INDICES)
+        input_future = self._batch_collate_np(batch, INPUT_FUTURE_INDICES)
+        input_static = self._batch_collate_np(batch, INPUT_STATIC_INDICES)
+        prediction_times = pd.Index(batch_aggregated[-1])
 
-        # `PLForecastingModule._get_batch_prediction()`
-        (
-            past_target,
-            past_covariates_,
-            future_past_covariates,
-            historic_future_covariates,
-            future_covariates_,
-            static_covariates,
-        ) = input_data_tuple
-
-        input_past, input_future, input_static = self.model.model._process_input_batch((
-            past_target,
-            past_covariates_,
-            historic_future_covariates,
-            future_covariates_,
-            static_covariates,
-        ))
-        self.static_shape = input_static.shape if input_static is not None else None
-
-        shap_tensor = torch.cat(
+        shap_array = np.concatenate(
             [
-                tensor.flatten(start_dim=1)
-                for tensor in [input_past, input_future, input_static]
-                if tensor is not None
+                array.reshape(array.shape[0], -1)
+                for array in [input_past, input_future, input_static]
+                if array is not None
             ],
-            dim=-1,
+            axis=-1,
         )
 
-        return shap_tensor, prediction_times
+        return shap_array, prediction_times
