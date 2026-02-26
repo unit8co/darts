@@ -128,6 +128,7 @@ class TorchExplainer(_ForecastingModelExplainer):
         horizons: Sequence[int] | None = None,
         target_components: Sequence[str] | None = None,
     ) -> ShapExplainabilityResult:
+        fallback = foreground_series is None
         (
             foreground_series,
             foreground_past_covariates,
@@ -163,7 +164,7 @@ class TorchExplainer(_ForecastingModelExplainer):
                 foreground_ts,
                 foreground_past_cov_ts,
                 foreground_future_cov_ts,
-                train=False,
+                train=fallback,
             )
 
             shap_ = self.explainer.shap_explanations(
@@ -296,6 +297,7 @@ class TorchExplainer(_ForecastingModelExplainer):
             foreground_series_,
             foreground_past_covariates_,
             foreground_future_covariates_,
+            train=foreground_series is None,
         )
 
         shap_ = self.explainer.shap_explanations(
@@ -339,6 +341,10 @@ class _DeepShapExplainer:
         self.background_past_covariates = background_past_covariates
         self.background_future_covariates = background_future_covariates
 
+        self.input_chunk_length = model.input_chunk_length
+        self.output_chunk_length = model.output_chunk_length or 1
+        self.output_chunk_shift = model.output_chunk_shift
+
         # TODO: support RNNModel with special handling of tensor shapes
         self.background_X, _ = self._create_shap_array(
             self.background_series,
@@ -347,7 +353,6 @@ class _DeepShapExplainer:
             background_num_samples,
             train=True,
         )
-        print(f"Background X shape: {self.background_X.shape}")
 
         self._build_func_wrapper(
             model.model,
@@ -371,10 +376,6 @@ class _DeepShapExplainer:
             shap_method,
             **kwargs,
         )
-        # shap_ = self.explainer(self.background_X[:3])
-        # print(f"Initial shap_ values shape: {shap_.values.shape}")
-        # print(f"Initial shap_ data shape: {shap_.data.shape}")
-        # print(f"Initial shap_ base_values shape: {shap_.base_values.shape}")
 
     def _build_func_wrapper(
         self,
@@ -393,9 +394,6 @@ class _DeepShapExplainer:
             else 0
         )
 
-        self.input_chunk_length = model.input_chunk_length
-        self.output_chunk_length = model.output_chunk_length or 1
-        self.output_chunk_shift = model.output_chunk_shift
         self.n_targets = model.n_targets
         self.n_variables = self.n_targets + self.n_past_covs + self.n_future_covs
 
@@ -532,9 +530,10 @@ class _DeepShapExplainer:
     def _create_dataset_bounds(
         self,
         series: Sequence[TimeSeries],
+        train: bool,
     ) -> np.ndarray:
-        input_chunk_length = self.model.input_chunk_length
-        bounds = np.array([(input_chunk_length, len(s)) for s in series])
+        offset = self.output_chunk_length if train else 0
+        bounds = np.array([(self.input_chunk_length, len(s) - offset) for s in series])
         return bounds
 
     @staticmethod
@@ -548,7 +547,7 @@ class _DeepShapExplainer:
         if len(data) == 0:
             return None
         else:
-            data = np.stack(data, axis=2)
+            data = np.concatenate(data, axis=2)
             return data
 
     def _create_shap_array(
@@ -571,7 +570,7 @@ class _DeepShapExplainer:
             past_covariates=past_covariates_,
             future_covariates=future_covariates_,
             stride=1,
-            bounds=self._create_dataset_bounds(series_),
+            bounds=self._create_dataset_bounds(series_, train=train),
         )
 
         # sample from dataset if required
@@ -607,15 +606,15 @@ class _DeepShapExplainer:
         # collect batch of samples from the end of the dataset
         batch: list[TorchInferenceDatasetOutput] = []
         if train:
-            # randomly sample from the dataset if in training mode
-            indices = np.random.choice(len(dataset), size=n_samples, replace=False)
+            if n_samples < len(dataset):
+                # randomly sample from the dataset if in training mode
+                indices = np.random.choice(len(dataset), size=n_samples, replace=False)
+            else:
+                indices = range(len(dataset))
         else:
             indices = range(len(dataset) - n_samples, len(dataset))
         for i in indices:
             batch.append(dataset[i])
-
-        # collate batch and convert to tuple of tensors & metadata
-        batch_aggregated = self.model._batch_collate_fn(batch)
 
         # follow the logic of `PLForecastingModule.predict_step()`
         # to convert to 1D tensor
@@ -629,7 +628,7 @@ class _DeepShapExplainer:
         input_past = self._batch_collate_np(batch, INPUT_PAST_INDICES)
         input_future = self._batch_collate_np(batch, INPUT_FUTURE_INDICES)
         input_static = self._batch_collate_np(batch, INPUT_STATIC_INDICES)
-        prediction_times = pd.Index(batch_aggregated[-1])
+        prediction_times = pd.Index([c[-1] for c in batch])
 
         shap_array = np.concatenate(
             [

@@ -75,7 +75,7 @@ class _ForecastingModelExplainer(ABC):
             )
         self.model = model
         # default forecasting horizon
-        self.n: int = getattr(self.model, "output_chunk_length", 1) or 1
+        self.n: int = getattr(self.model, "output_chunk_length", None) or 1
 
         # check background input validity and process it
         (
@@ -87,6 +87,7 @@ class _ForecastingModelExplainer(ABC):
             self.past_covariates_components,
             self.future_covariates_components,
         ) = process_input(
+            n=self.n,
             model=model,
             input_type="background",
             series=background_series,
@@ -148,6 +149,7 @@ class _ForecastingModelExplainer(ABC):
         foreground_future_covariates: TimeSeriesLike | None = None,
     ):
         return process_input(
+            n=self.n,
             model=self.model,
             input_type="foreground",
             series=foreground_series,

@@ -16,6 +16,7 @@ logger = get_logger(__name__)
 
 
 def process_input(
+    n: int,
     model: ForecastingModel,
     input_type: str,
     series: TimeSeriesLike | None = None,
@@ -121,11 +122,21 @@ def process_input(
     # if `requires_covariates_encoding=False`)
     else:
         if model.encoders.encoding_available:
-            past_covariates, future_covariates = model.generate_fit_encodings(
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-            )
+            if input_type == "background":
+                past_covariates, future_covariates = model.generate_fit_encodings(
+                    series=series,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                )
+            else:
+                past_covariates, future_covariates = (
+                    model.generate_fit_predict_encodings(
+                        n=n,
+                        series=series,
+                        past_covariates=past_covariates,
+                        future_covariates=future_covariates,
+                    )
+                )
 
     series = series2seq(series)
     past_covariates = series2seq(past_covariates)
