@@ -28,13 +28,17 @@ INPUT_STATIC_INDICES = [5]
 
 
 class _ShapMethod(Enum):
-    GRADIENT = 1
     KERNEL = 3
     SAMPLING = 4
     PARTITION = 5
     LINEAR = 6
     PERMUTATION = 7
     ADDITIVE = 8
+    EXACT = 9
+
+
+def _available_shap_methods() -> list[str]:
+    return [method.name.lower() for method in _ShapMethod]
 
 
 class TorchExplainer(_ForecastingModelExplainer):
@@ -87,7 +91,7 @@ class TorchExplainer(_ForecastingModelExplainer):
             raise_log(
                 ValueError(
                     f"Invalid `shap_method`={shap_method}. Please choose one value among the following: "
-                    f"['partition', 'tree', 'kernel', 'sampling', 'linear', 'gradient', 'additive']."
+                    f"{_available_shap_methods()}."
                 )
             )
 
@@ -472,6 +476,7 @@ class _DeepShapExplainer:
         **kwargs,
     ):
         # we define properly the explainer given a shap method
+        # Note: DeepExplainer has some compatibility issues with torch models
         if shap_method == _ShapMethod.PERMUTATION:
             explainer = shap.PermutationExplainer(func, background_X, **kwargs)
         elif shap_method == _ShapMethod.PARTITION:
@@ -480,16 +485,15 @@ class _DeepShapExplainer:
             explainer = shap.KernelExplainer(func, background_X, **kwargs)
         elif shap_method == _ShapMethod.LINEAR:
             explainer = shap.LinearExplainer(func, background_X, **kwargs)
-        # DeepExplainer has some compatibility issues with torch models
-        # elif shap_method == _ShapMethod.DEEP:
-        #     explainer = shap.LinearExplainer(model, background_X, **kwargs)
         elif shap_method == _ShapMethod.ADDITIVE:
             explainer = shap.AdditiveExplainer(func, background_X, **kwargs)
+        elif shap_method == _ShapMethod.EXACT:
+            explainer = shap.ExactExplainer(func, background_X, **kwargs)
         else:
             raise_log(
                 ValueError(
                     f"Invalid `shap_method`={shap_method}. Please choose one value among the following: "
-                    f"['partition', 'tree', 'kernel', 'sampling', 'linear', 'gradient', 'additive']."
+                    f"{_available_shap_methods()}."
                 )
             )
 
