@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import shap
 import torch
+from matplotlib import pyplot as plt
 
 from darts import TimeSeries
 from darts.explainability.explainability import _ForecastingModelExplainer
@@ -98,8 +99,8 @@ class TorchExplainer(_ForecastingModelExplainer):
         ):
             raise_log(
                 ValueError(
-                    f"`background_num_samples` must be less than or equal to {MAX_BACKGROUND_SAMPLE}. "
-                    f"Got {background_num_samples}."
+                    f"`background_num_samples` must be less than or equal to "
+                    f"MAX_BACKGROUND_SAMPLE={MAX_BACKGROUND_SAMPLE}. Got {background_num_samples}."
                 ),
                 logger,
             )
@@ -164,8 +165,6 @@ class TorchExplainer(_ForecastingModelExplainer):
                 foreground_future_cov_ts,
                 train=False,
             )
-            print(f"Foreground X shape: {foreground_X.shape}")
-            print(f"Prediction times: {prediction_times}")
 
             shap_ = self.explainer.shap_explanations(
                 foreground_X, horizons, target_names
@@ -208,6 +207,50 @@ class TorchExplainer(_ForecastingModelExplainer):
         return ShapExplainabilityResult(
             shap_values_list, feature_values_list, shap_explanation_object_list
         )
+
+    def summary_plot(
+        self,
+        horizons: int | Sequence[int] | None = None,
+        target_components: str | Sequence[str] | None = None,
+        num_samples: int | None = None,
+        plot_type: str | None = "dot",
+        **kwargs,
+    ) -> dict[int, dict[str, shap.Explanation]]:
+        horizons, target_components = self._process_horizons_and_targets(
+            horizons, target_components
+        )
+
+        if num_samples:
+            n_background_samples = self.explainer.background_X.shape[0]
+            if num_samples > n_background_samples:
+                raise_log(
+                    ValueError(
+                        f"`num_samples` must be less than or equal to the number of samples in the background. "
+                        f"Got `num_samples={num_samples}` but background samples={n_background_samples}."
+                    )
+                )
+            foreground_X_sampled = shap.utils.sample(
+                self.explainer.background_X, num_samples
+            )
+        else:
+            foreground_X_sampled = self.explainer.background_X
+
+        shaps_ = self.explainer.shap_explanations(
+            foreground_X_sampled, horizons, target_components
+        )
+
+        for t in target_components:
+            for h in horizons:
+                plt.title(
+                    f"Target: `{t}` - Horizon: t+{h + self.model.output_chunk_shift}"
+                )
+                shap.summary_plot(
+                    shaps_[h][t],
+                    foreground_X_sampled,
+                    plot_type=plot_type,
+                    **kwargs,
+                )
+        return shaps_
 
 
 class _DeepShapExplainer:
@@ -295,6 +338,7 @@ class _DeepShapExplainer:
 
         self.input_chunk_length = model.input_chunk_length
         self.output_chunk_length = model.output_chunk_length or 1
+        self.output_chunk_shift = model.output_chunk_shift
         self.n_targets = model.n_targets
         self.n_variables = self.n_targets + self.n_past_covs + self.n_future_covs
 
@@ -320,7 +364,7 @@ class _DeepShapExplainer:
                     self.feature_names.append(f"{c}_future_cov_lag-{lag}")
 
         for i in range(self.output_chunk_length):
-            lag = i
+            lag = i + self.output_chunk_shift
             if self.future_covariates_components is not None:
                 for c in self.future_covariates_components:
                     self.feature_names.append(f"{c}_future_cov_lag_{lag}")
@@ -400,19 +444,15 @@ class _DeepShapExplainer:
         horizons: Sequence[int],
         target_components: Sequence[str],
     ) -> dict[int, dict[str, shap.Explanation]]:
-        # create a unified dictionary between multiOutputRegressor estimators and
-        # native multiOutput estimators
-        shap_explanations = {}
-        # the native multioutput forces us to recompute all horizons and targets
         shap_explanation_tmp: shap.Explanation = self.explainer(foreground_X)
         shap_values: np.ndarray = shap_explanation_tmp.values
         shap_data: np.ndarray = shap_explanation_tmp.data
         shap_base_values: np.ndarray = shap_explanation_tmp.base_values
-        print(f"shap_explanation_tmp.values.shape: {shap_explanation_tmp.values.shape}")
-        print(f"shap_explanation_tmp.data.shape: {shap_explanation_tmp.data.shape}")
-        print(
-            f"shap_explanation_tmp.base_values.shape: {shap_explanation_tmp.base_values.shape}"
-        )
+
+        # create a unified dictionary between multiOutputRegressor estimators and
+        # native multiOutput estimators
+        shap_explanations = {}
+
         for h in horizons:
             tmp_n = {}
             for t_idx, t in enumerate(self.target_components):
@@ -484,8 +524,8 @@ class _DeepShapExplainer:
             if len(dataset) < MIN_BACKGROUND_SAMPLE:
                 raise_log(
                     ValueError(
-                        f"Dataset must contain at least {MIN_BACKGROUND_SAMPLE} samples to create a valid background. "
-                        f"Got dataset length={len(dataset)}."
+                        f"Background series must contain at least {MIN_BACKGROUND_SAMPLE} samples to create a "
+                        f"valid background. Got background dataset length={len(dataset)}."
                     ),
                     logger,
                 )
@@ -498,6 +538,12 @@ class _DeepShapExplainer:
                     ),
                     logger,
                 )
+            if n_samples > MAX_BACKGROUND_SAMPLE:
+                logger.warning(
+                    f"Background series contains more than MIN_BACKGROUND_SAMPLE={MAX_BACKGROUND_SAMPLE} samples. "
+                    f"Sampling {MAX_BACKGROUND_SAMPLE} samples to create the background for SHAP explanations."
+                )
+                n_samples = MAX_BACKGROUND_SAMPLE
 
         # follow the logic of `TorchForecastingModel.predict_from_dataset()`
         # to collect samples and collate them into a sample tuple
