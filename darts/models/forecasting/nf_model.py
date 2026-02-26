@@ -349,7 +349,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         Can be used to fit any `NeuralForecast` univariate or multivariate base model.
         For a list of available base models,
         see `NeuralForecast package <https://nixtlaverse.nixtla.io/neuralforecast/docs/capabilities/overview.html>`__
-        [2]_.
+        [1]_.
 
         This converts the `NeuralForecast` base model into a ``TorchForecastingModel`` and enables full Darts
         functionality, such as covariate support, probabilistic forecasting, optimized backtesting, etc.
