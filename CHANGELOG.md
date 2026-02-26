@@ -13,12 +13,12 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - 🚀🚀 Added new forecasting model `NeuralForecastModel` to convert any of the 30+ NeuralForecast base model into a Darts `TorchForecastingModel`. This includes models such as NBEATSx, PatchTST, TimeXer, KAN, and many more. Like all Darts torch models, it supports univariate, multivariate, probabilistic forecasting, optimized backtesting and more. Depending on the base model, it also supports past, future, and static covariates. [#3002](https://github.com/unit8co/darts/pull/3002) by [Zhihao Dai](https://github.com/daidahao)
 - Created `darts.typing` to collect typical type annotation in one place. Introduced `TimeIndex` & `TimeSeriesLike` type aliases for improved readability & maintainability of the code. Commmon type annotations can be added to this file in the future. [#3021](https://github.com/unit8co/darts/pull/3021) by [Michel Zeller](https://github.com/mizeller)
-- All torch models now accept `use_reversible_instance_norm` as a flexible parameter that can be set to `True`, `False`, or a dictionary of `RINorm` hyperparameters. This allows users to customize reversible instance normalization for their models. [#3029](https://github.com/unit8co/darts/pull/3029) by [Zhihao Dai](https://github.com/daidahao).
+- All torch models now accept `use_reversible_instance_norm` as a flexible parameter that can be set to `True`, `False`, or a dictionary of `RINorm` hyperparameters. This allows users to customize `RINorm` for their models. [#3029](https://github.com/unit8co/darts/pull/3029) by [Zhihao Dai](https://github.com/daidahao).
 
 **Fixed**
 
 - Updated the restrictive type hint for the timezone parameter `tz` to `Any`. This allows the use of more timezone definitions supported by Pandas [tz_convert](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html). [#3015](https://github.com/unit8co/darts/pull/3015) by [Moritz Waldleben](https://github.com/mwaldleben).
-- Disallowed `use_reversible_instance_norm=True` or `use_reversible_instance_norm={"affine": True}` for foundation models to prevent checkpoint loading errors due to incompatible weights. [#3029](https://github.com/unit8co/darts/pull/3029) by [Zhihao Dai](https://github.com/daidahao).
+- Disallowed `use_reversible_instance_norm=True` or `{"affine": True}` for foundation models to prevent checkpoint loading errors due to incompatible weights. [#3029](https://github.com/unit8co/darts/pull/3029) by [Zhihao Dai](https://github.com/daidahao).
 
 **Dependencies**
 
