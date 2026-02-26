@@ -218,7 +218,18 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
         return list_index, bound_left + stride_idx
 
     def __getitem__(self, idx: int) -> TorchInferenceDatasetOutput:
-        idx = idx % self.len_preds
+        # validate index
+        if idx < -len(self) or idx >= len(self):
+            raise_log(
+                IndexError(
+                    f"Index {idx} is out of bounds for dataset of length {len(self)}."
+                ),
+                logger=logger,
+            )
+
+        # handle negative index and cyclic behavior
+        idx = idx % len(self)
+
         # determine the series index, and the index + 1 (exclusive range) of the output chunk end within that series
         if self.bounds is None:
             series_idx = idx
