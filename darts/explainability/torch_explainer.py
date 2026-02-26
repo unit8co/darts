@@ -38,8 +38,6 @@ class _ShapMethod(Enum):
 
 
 class TorchExplainer(_ForecastingModelExplainer):
-    model: TorchForecastingModel
-
     def __init__(
         self,
         model: TorchForecastingModel,
@@ -160,7 +158,7 @@ class TorchExplainer(_ForecastingModelExplainer):
             if foreground_future_covariates:
                 foreground_future_cov_ts = foreground_future_covariates[idx]
 
-            foreground_X, prediction_times = self.explainer._create_shap_array(
+            foreground_X, prediction_times = self.explainer.create_shap_array(
                 foreground_ts,
                 foreground_past_cov_ts,
                 foreground_future_cov_ts,
@@ -293,7 +291,7 @@ class TorchExplainer(_ForecastingModelExplainer):
         )
         horizon, target_component = horizons[0], target_components[0]
 
-        foreground_X, _ = self.explainer._create_shap_array(
+        foreground_X, _ = self.explainer.create_shap_array(
             foreground_series_,
             foreground_past_covariates_,
             foreground_future_covariates_,
@@ -346,7 +344,7 @@ class _DeepShapExplainer:
         self.output_chunk_shift = model.output_chunk_shift
 
         # TODO: support RNNModel with special handling of tensor shapes
-        self.background_X, _ = self._create_shap_array(
+        self.background_X, _ = self.create_shap_array(
             self.background_series,
             self.background_past_covariates,
             self.background_future_covariates,
@@ -445,9 +443,13 @@ class _DeepShapExplainer:
         outputs: list[torch.Tensor] = []
         for i in range(0, num_samples, self.batch_size):
             s = slice(i, i + self.batch_size)
-            batch_x_past = x_past[s]
-            batch_x_future = x_future[s] if x_future is not None else None
-            batch_x_static = x_static[s] if x_static is not None else None
+            batch_x_past = x_past[s].to(self.pl_module.device)
+            batch_x_future = (
+                x_future[s].to(self.pl_module.device) if x_future is not None else None
+            )
+            batch_x_static = (
+                x_static[s].to(self.pl_module.device) if x_static is not None else None
+            )
 
             batch_output: torch.Tensor = self.pl_module((
                 batch_x_past,
@@ -550,7 +552,7 @@ class _DeepShapExplainer:
             data = np.concatenate(data, axis=2)
             return data
 
-    def _create_shap_array(
+    def create_shap_array(
         self,
         series: TimeSeriesLike,
         past_covariates: TimeSeriesLike | None,
@@ -618,7 +620,6 @@ class _DeepShapExplainer:
 
         # follow the logic of `PLForecastingModule.predict_step()`
         # to convert to 1D tensor
-        # remove last two elements (metadata) and the remaining first six elements are:
         # - past_target
         # - past_covariates
         # - future_past_covariates
