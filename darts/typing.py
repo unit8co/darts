@@ -1,4 +1,9 @@
-"""Darts types"""
+"""
+Typing
+------
+
+This module contains custom Darts types and type aliases.
+"""
 
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, TypeAlias, Union

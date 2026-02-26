@@ -244,10 +244,10 @@ class AnomalyModel(ABC):
     def show_anomalies(
         self,
         series: TimeSeries,
-        anomalies: TimeSeries = None,
+        anomalies: TimeSeries | None = None,
         predict_kwargs: dict | None = None,
-        names_of_scorers: str | Sequence[str] = None,
-        title: str = None,
+        names_of_scorers: str | Sequence[str] | None = None,
+        title: str | None = None,
         metric: Literal["AUC_ROC", "AUC_PR"] | None = None,
         component_wise: bool = False,
         **score_kwargs,

@@ -136,7 +136,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self,
         batch_size: int = 32,
         n_epochs: int = 100,
-        model_name: str = None,
+        model_name: str | None = None,
         work_dir: str = os.path.join(os.getcwd(), DEFAULT_DARTS_FOLDER),
         log_tensorboard: bool = False,
         nr_epochs_val_period: int = 1,
@@ -2081,8 +2081,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @staticmethod
     def load_from_checkpoint(
         model_name: str,
-        work_dir: str = None,
-        file_name: str = None,
+        work_dir: str | None = None,
+        file_name: str | None = None,
         best: bool = True,
         **kwargs,
     ) -> "TorchForecastingModel":
@@ -2200,9 +2200,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def load_weights_from_checkpoint(
         self,
-        model_name: str = None,
-        work_dir: str = None,
-        file_name: str = None,
+        model_name: str | None = None,
+        work_dir: str | None = None,
+        file_name: str | None = None,
         best: bool = True,
         strict: bool = True,
         load_encoders: bool = True,

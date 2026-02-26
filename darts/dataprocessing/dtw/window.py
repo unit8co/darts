@@ -133,7 +133,7 @@ class CRWindow(Window):
     length: int
     column_ranges: array.array
 
-    def __init__(self, n: int, m: int, ranges: np.ndarray = None):
+    def __init__(self, n: int, m: int, ranges: np.ndarray | None = None):
         """
         Parameters
         ----------

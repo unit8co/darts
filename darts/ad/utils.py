@@ -300,12 +300,12 @@ def _eval_metric(
 
 def show_anomalies_from_scores(
     series: TimeSeries,
-    anomalies: TimeSeries = None,
-    pred_series: TimeSeries = None,
-    pred_scores: TimeSeriesLike = None,
+    anomalies: TimeSeries | None = None,
+    pred_series: TimeSeries | None = None,
+    pred_scores: TimeSeriesLike | None = None,
     window: int | Sequence[int] = 1,
-    names_of_scorers: str | Sequence[str] = None,
-    title: str = None,
+    names_of_scorers: str | Sequence[str] | None = None,
+    title: str | None = None,
     metric: Literal["AUC_ROC", "AUC_PR"] | None = None,
     component_wise: bool = False,
 ):

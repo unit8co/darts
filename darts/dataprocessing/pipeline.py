@@ -23,8 +23,8 @@ class Pipeline:
         self,
         transformers: Sequence[BaseDataTransformer],
         copy: bool = False,
-        verbose: bool = None,
-        n_jobs: int = None,
+        verbose: bool | None = None,
+        n_jobs: int | None = None,
     ):
         """
         Pipeline to combine multiple data transformers, chaining them together.

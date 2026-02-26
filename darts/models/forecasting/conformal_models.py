@@ -244,7 +244,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
     def predict(
         self,
         n: int,
-        series: TimeSeriesLike = None,
+        series: TimeSeriesLike | None = None,
         past_covariates: TimeSeriesLike | None = None,
         future_covariates: TimeSeriesLike | None = None,
         num_samples: int = 1,
