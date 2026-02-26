@@ -252,6 +252,63 @@ class TorchExplainer(_ForecastingModelExplainer):
                 )
         return shaps_
 
+    def force_plot_from_ts(
+        self,
+        foreground_series: TimeSeries | None = None,
+        foreground_past_covariates: TimeSeries | None = None,
+        foreground_future_covariates: TimeSeries | None = None,
+        horizon: int | None = 1,
+        target_component: str | None = None,
+        **kwargs,
+    ):
+        if target_component is None and len(self.target_components) > 1:
+            raise_log(
+                ValueError(
+                    f"`target_component` is required when the model has more than one component. "
+                    f"Please select a component from {self.target_components}."
+                ),
+                logger,
+            )
+
+        if target_component is None:
+            target_component = self.target_components[0]
+
+        (
+            foreground_series_,
+            foreground_past_covariates_,
+            foreground_future_covariates_,
+            _,
+            _,
+            _,
+            _,
+        ) = self._process_foreground(
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
+        )
+        horizons, target_components = self._process_horizons_and_targets(
+            horizon,
+            target_component,
+        )
+        horizon, target_component = horizons[0], target_components[0]
+
+        foreground_X, _ = self.explainer._create_shap_array(
+            foreground_series_,
+            foreground_past_covariates_,
+            foreground_future_covariates_,
+        )
+
+        shap_ = self.explainer.shap_explanations(
+            foreground_X, [horizon], [target_component]
+        )
+
+        return shap.force_plot(
+            base_value=shap_[horizon][target_component],
+            features=foreground_X,
+            out_names=target_component,
+            **kwargs,
+        )
+
 
 class _DeepShapExplainer:
     n_targets: int
