@@ -534,8 +534,8 @@ def generate_index(
     start: pd.Timestamp | str | int | None = None,
     end: pd.Timestamp | str | int | None = None,
     length: int | None = None,
-    freq: str | int | pd.DateOffset = None,
-    name: str = None,
+    freq: str | int | pd.DateOffset | None = None,
+    name: str | None = None,
 ) -> TimeIndex:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
     or a pandas RangeIndex. The index starts at

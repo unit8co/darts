@@ -51,7 +51,7 @@ from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
-from darts.metrics.utils import METRIC_TYPE
+from darts.metrics.utils import METRIC_OUTPUT_TYPE, METRIC_TYPE
 from darts.typing import TimeIndex
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
@@ -1641,7 +1641,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         show_warnings: bool = True,
         val_series: TimeSeries | None = None,
         use_fitted_values: bool = False,
-        metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
+        metric: Callable[[TimeSeries, TimeSeries], METRIC_OUTPUT_TYPE] = metrics.mape,
         reduction: Callable[[np.ndarray], float] = np.mean,
         verbose=False,
         n_jobs: int = 1,

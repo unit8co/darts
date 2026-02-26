@@ -3610,8 +3610,8 @@ class TimeSeries:
     def add_holidays(
         self,
         country_code: str,
-        prov: str = None,
-        state: str = None,
+        prov: str | None = None,
+        state: str | None = None,
         tz: Any = None,
     ) -> Self:
         """Return a new series with an added holiday component.

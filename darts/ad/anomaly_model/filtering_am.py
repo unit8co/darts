@@ -203,9 +203,9 @@ class FilteringAnomalyModel(AnomalyModel):
     def show_anomalies(
         self,
         series: TimeSeries,
-        anomalies: TimeSeries = None,
-        names_of_scorers: str | Sequence[str] = None,
-        title: str = None,
+        anomalies: TimeSeries | None = None,
+        names_of_scorers: str | Sequence[str] | None = None,
+        title: str | None = None,
         metric: Literal["AUC_ROC", "AUC_PR"] | None = None,
         **score_kwargs,
     ):

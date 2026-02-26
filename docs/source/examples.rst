@@ -206,6 +206,16 @@ TSMixer model example notebook:
 
    examples/21-TSMixer-examples.ipynb
 
+NeuralForecast Model Adapter
+============================
+
+NeuralForecastModel example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/26-NeuralForecast-examples.ipynb
+
 Chronos-2 Model
 =======================================
 

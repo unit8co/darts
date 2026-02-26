@@ -42,9 +42,9 @@ def constant_timeseries(
     start: pd.Timestamp | int | None = pd.Timestamp("2000-01-01"),
     end: pd.Timestamp | int | None = None,
     length: int | None = None,
-    freq: str | int = None,
+    freq: str | int | None = None,
     column_name: str | None = "constant",
-    dtype: np.dtype = np.float64,
+    dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
     """
     Creates a constant univariate TimeSeries with the given value, length (or end date), start date and frequency.
@@ -98,9 +98,9 @@ def linear_timeseries(
     start: pd.Timestamp | int | None = pd.Timestamp("2000-01-01"),
     end: pd.Timestamp | int | None = None,
     length: int | None = None,
-    freq: str | int = None,
+    freq: str | int | None = None,
     column_name: str | None = "linear",
-    dtype: np.dtype = np.float64,
+    dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
     """
     Creates a univariate TimeSeries with a starting value of `start_value` that increases linearly such that
@@ -161,9 +161,9 @@ def sine_timeseries(
     start: pd.Timestamp | int | None = pd.Timestamp("2000-01-01"),
     end: pd.Timestamp | int | None = None,
     length: int | None = None,
-    freq: str | int = None,
+    freq: str | int | None = None,
     column_name: str | None = "sine",
-    dtype: np.dtype = np.float64,
+    dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
     """
     Creates a univariate TimeSeries with a sinusoidal value progression with a given frequency, amplitude,
@@ -228,9 +228,9 @@ def gaussian_timeseries(
     start: pd.Timestamp | int | None = pd.Timestamp("2000-01-01"),
     end: pd.Timestamp | int | None = None,
     length: int | None = None,
-    freq: str | int = None,
+    freq: str | int | None = None,
     column_name: str | None = "gaussian",
-    dtype: np.dtype = np.float64,
+    dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
     """
     Creates a gaussian univariate TimeSeries by sampling all the series values independently,
@@ -308,9 +308,9 @@ def random_walk_timeseries(
     start: pd.Timestamp | int | None = pd.Timestamp("2000-01-01"),
     end: pd.Timestamp | int | None = None,
     length: int | None = None,
-    freq: str | int = None,
+    freq: str | int | None = None,
     column_name: str | None = "random_walk",
-    dtype: np.dtype = np.float64,
+    dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
     """
     Creates a random walk univariate TimeSeries, where each step is obtained by sampling a gaussian distribution
@@ -367,9 +367,9 @@ def autoregressive_timeseries(
     start: pd.Timestamp | int | None = pd.Timestamp("2000-01-01"),
     end: pd.Timestamp | int | None = None,
     length: int | None = None,
-    freq: str | int = None,
+    freq: str | int | None = None,
     column_name: str | None = "autoregressive",
-    dtype: np.dtype = np.float64,
+    dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
     """
     Creates a univariate, autoregressive TimeSeries whose values are calculated using specified coefficients `coef` and
@@ -478,12 +478,12 @@ def _extend_time_index_until(
 def holidays_timeseries(
     time_index: TimeSeries | pd.DatetimeIndex,
     country_code: str,
-    prov: str = None,
-    state: str = None,
+    prov: str | None = None,
+    state: str | None = None,
     column_name: str | None = "holidays",
     until: int | str | pd.Timestamp | None = None,
     add_length: int = 0,
-    dtype: np.dtype = np.float64,
+    dtype: np.typing.DTypeLike = np.float64,
     tz: Any = None,
 ) -> TimeSeries:
     """
@@ -757,11 +757,11 @@ def datetime_attribute_timeseries(
 def _build_forecast_series(
     points_preds: np.ndarray | Sequence[np.ndarray],
     input_series: TimeSeries,
-    custom_columns: list[str] = None,
+    custom_columns: list[str] | None = None,
     with_static_covs: bool = True,
     with_hierarchy: bool = True,
     pred_start: pd.Timestamp | int | None = None,
-    time_index: TimeIndex = None,
+    time_index: TimeIndex | None = None,
     copy: bool = False,
 ) -> TimeSeries:
     """
@@ -905,7 +905,7 @@ def _generate_new_dates(
 
 def _process_time_index(
     time_index: TimeSeries | pd.DatetimeIndex,
-    tz: Any = None,
+    tz: Any | None = None,
     until: int | str | pd.Timestamp | None = None,
     add_length: int = 0,
 ) -> tuple[pd.DatetimeIndex, pd.DatetimeIndex]:

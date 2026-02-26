@@ -145,6 +145,7 @@ dev = [
     "pre-commit>=4.5.1",
     "pytest-cov>=7.0.0",
     "testfixtures>=8.3.0",
+    "ty>=0.0.17",
 ]
 torch-cpu = ["torch>=2.0.0"]
 optional = [
@@ -213,3 +214,10 @@ replace = '__version__ = "{new_version}"'
 filename = "docs/source/conf.py"
 search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'
+
+[tool.ty.src]
+include = ["darts"]
+exclude = ["darts/tests"]
+
+[tool.ty.terminal]
+output-format = "concise"

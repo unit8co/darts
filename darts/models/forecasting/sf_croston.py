@@ -18,8 +18,8 @@ class Croston(StatsForecastModel):
     def __init__(
         self,
         version: str = "classic",
-        alpha_d: float = None,
-        alpha_p: float = None,
+        alpha_d: float | None = None,
+        alpha_p: float | None = None,
         add_encoders: dict | None = None,
         quantiles: list[float] | None = None,
         random_state: int | None = None,

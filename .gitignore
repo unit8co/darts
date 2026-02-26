@@ -12,7 +12,7 @@ darts.egg-info/
 u8darts.egg-info/
 build/
 dist/
-examples/.ipynb_checkpoints/
+*.ipynb_checkpoints/
 runs/
 .coverage*
 htmlcov

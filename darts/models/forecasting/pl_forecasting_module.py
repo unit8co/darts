@@ -90,7 +90,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         | dict[str, torchmetrics.Metric | torchmetrics.MetricCollection]
         | None = None,
         likelihood: TorchLikelihood | None = None,
-        optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
+        optimizer_cls: type[torch.optim.Optimizer] = torch.optim.Adam,
         optimizer_kwargs: dict | None = None,
         lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler | None = None,
         lr_scheduler_kwargs: dict | None = None,
