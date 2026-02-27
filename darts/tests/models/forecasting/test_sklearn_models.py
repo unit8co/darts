@@ -1727,7 +1727,7 @@ class TestSKLearnModels:
                 tg.linear_timeseries(length=100, column_name="linear"),
             )
 
-        m = model_cls(
+        m: SKLearnModel = model_cls(
             lags=lags,
             output_chunk_length=ocl,
             multi_models=multi_models,
@@ -1737,19 +1737,32 @@ class TestSKLearnModels:
         )
         m.fit(ts)
 
-        assert len(m._model_container) == len(quantiles)
-        assert sorted(list(m._model_container.keys())) == sorted(quantiles)
-        for quantile_container in m._model_container.values():
+        if m._model_container is not None:
+            assert len(m._model_container) == len(quantiles)
+            assert sorted(list(m._model_container.keys())) == sorted(quantiles)
+            for quantile_container in m._model_container.values():
+                if multi_models:
+                    # one sub-model per quantile, per component, per horizon
+                    assert len(quantile_container.estimators_) == ocl * ts.width
+                elif multi_components:
+                    # one sub-model per quantile, per component
+                    assert len(quantile_container.estimators_) == ts.width
+                else:
+                    # only one sub-model per quantile (one component, one predicted horizon)
+                    assert not isinstance(quantile_container, MultiOutputRegressor)
+                    assert not hasattr(quantile_container, "estimators_")
+        else:
+            # models with native multiquantile support do not have a model container
             if multi_models:
-                # one sub-model per quantile, per component, per horizon
-                assert len(quantile_container.estimators_) == ocl * ts.width
+                # one sub-model per component, per horizon
+                assert len(m.model.estimators_) == ocl * ts.width
             elif multi_components:
-                # one sub-model per quantile, per component
-                assert len(quantile_container.estimators_) == ts.width
+                # one sub-model per component
+                assert len(m.model.estimators_) == ts.width
             else:
-                # only one sub-model per quantile (one component, one predicted horizon)
-                assert not isinstance(quantile_container, MultiOutputRegressor)
-                assert not hasattr(quantile_container, "estimators_")
+                # only one sub-model (one component, one predicted horizon)
+                assert not isinstance(m.model, MultiOutputRegressor)
+                assert not hasattr(m.model, "estimators_")
 
         # check that retrieve sub-models prediction match the "wrapper" model predictions
         pred_input = ts[-lags:] if multi_models else ts[-lags - ocl + 1 :]
@@ -1759,16 +1772,25 @@ class TestSKLearnModels:
             num_samples=1,
             predict_likelihood_parameters=True,
         )
+        assert isinstance(pred, TimeSeries)
         for j in range(ts.width):
             for i in range(ocl):
                 if multi_models:
                     dummy_feats = pred_input.values()[:lags]
                 else:
-                    dummy_feats = pred_input.values()[i : +i + lags]
+                    dummy_feats = pred_input.values()[i : i + lags]
+                # `dummy_feats` shape is (n_samples, n_features) = (1, lags * width)
                 dummy_feats = np.expand_dims(dummy_feats.flatten(), 0)
-                for q in quantiles:
+                for k, q in enumerate(quantiles):
                     sub_model = m.get_estimator(horizon=i, target_dim=j, quantile=q)
-                    pred_sub_model = sub_model.predict(dummy_feats)[0]
+                    pred_sub_model = sub_model.predict(dummy_feats)
+                    if pred_sub_model.ndim == 2:
+                        # models with native multiquantile support give all quantiles together with shape
+                        # (n_samples, n_quantiles)
+                        pred_sub_model = pred_sub_model[0, k]
+                    else:
+                        # models without native multiquantile support give one quantile with shape (n_samples,)
+                        pred_sub_model = pred_sub_model[0]
                     assert (
                         pred_sub_model
                         == pred[f"{ts.components[j]}_q{q:.3f}"].values()[i][0]
@@ -2416,8 +2438,13 @@ class TestSKLearnModels:
             stride=stride,
             **weights_kwargs,
         )
-        # fit called 6 times (3 quantiles * 2 target features)
-        assert fit_patch.call_count == 6
+        if model._model_container is not None:
+            # fit called 6 times (3 quantiles * 2 target features)
+            assert fit_patch.call_count == 6
+        else:
+            # models with native multiquantile support give all quantiles together,
+            # so fit is called once per target feature (2 times)
+            assert fit_patch.call_count == 2
 
         X_train, y_train = fit_patch.call_args[0]
         assert len(X_train) == len(y_train) == 6 // stride

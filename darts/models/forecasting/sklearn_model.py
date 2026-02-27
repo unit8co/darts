@@ -656,11 +656,18 @@ class SKLearnModel(GlobalForecastingModel):
         """
         # TODO: update docstring for CatBoost multiquantile
         likelihood = self.likelihood
-        if (
+        if quantile is not None and not isinstance(likelihood, QuantileRegression):
+            raise_log(
+                ValueError(
+                    "`quantile` is only supported for probabilistic models that use `likelihood='quantile'`."
+                ),
+                logger=logger,
+            )
+        elif (
             isinstance(likelihood, QuantileRegression)
             and self._model_container is not None
         ):
-            # for quantile-models, the estimators are grouped by quantiles
+            # for some quantile-models, the estimators are grouped by quantiles
             if quantile is None:
                 quantile = likelihood.quantiles[likelihood._median_idx]
             elif quantile not in self._model_container:
@@ -672,13 +679,6 @@ class SKLearnModel(GlobalForecastingModel):
                     logger,
                 )
             model = self._model_container[quantile]
-        elif quantile is not None:
-            raise_log(
-                ValueError(
-                    "`quantile` is only supported for probabilistic models that use `likelihood='quantile'`."
-                ),
-                logger=logger,
-            )
         else:
             model = self.model
 
