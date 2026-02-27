@@ -649,12 +649,12 @@ class SKLearnModel(GlobalForecastingModel):
         Parameters
         ----------
         horizon
-            The index of the forecasting point within `output_chunk_length`.
+            The index of the forecasting point within ``output_chunk_length``.
         target_dim
             The index of the target component.
         quantile
-            Optionally, for probabilistic model with `likelihood="quantile"`, the desired quantile value. If `None` and
-            the model uses per-quantile estimators, returns the model predicting the median quantile.
+            Optionally, for probabilistic model with ``likelihood="quantile"``, the desired quantile value. If ``None``
+            and the model uses per-quantile estimators, returns the model predicting the median quantile.
         """
         likelihood = self.likelihood
         if quantile is not None and not isinstance(likelihood, QuantileRegression):
@@ -664,7 +664,7 @@ class SKLearnModel(GlobalForecastingModel):
                 ),
                 logger=logger,
             )
-        elif (
+        if (
             isinstance(likelihood, QuantileRegression)
             and self._model_container is not None
         ):
@@ -681,6 +681,11 @@ class SKLearnModel(GlobalForecastingModel):
                 )
             model = self._model_container[quantile]
         else:
+            if isinstance(likelihood, QuantileRegression):
+                logger.warning(
+                    "Model supports multi-quantile regression; the same estimator forecasts all quantiles jointly. "
+                    "Ignoring passed `quantile` value."
+                )
             model = self.model
 
         if not isinstance(model, MultiOutputMixin):
