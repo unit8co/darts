@@ -11,13 +11,13 @@ import torch
 import torch.nn as nn
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
-from darts.utils.data import ShiftedTorchTrainingDataset
+from darts.utils.data import ShiftedTorchTrainingDataset, TorchTrainingDataset
 from darts.utils.data.torch_datasets.utils import (
     PLModuleInput,
     TorchBatch,
@@ -115,21 +115,20 @@ class CustomRNNModule(PLForecastingModule, ABC):
         (
             past_target,
             _,  # past covariates
-            historic_future_covariates,
+            _,  # historic future covariates
             future_covariates,
             static_covariates,
         ) = input_batch
         # For the RNN we concatenate the past_target with the future_covariates
         # (they have the same length because we enforce a Shift dataset for RNNs)
-        return (
-            (
-                torch.cat([past_target, future_covariates], dim=2)
-                if future_covariates is not None
-                else past_target
-            ),
+        input_batch = (
+            past_target,
+            future_covariates,  # future covariates as past covariates for RNN input
+            None,
             None,
             static_covariates,
         )
+        return super()._process_input_batch(input_batch)
 
     def _produce_predict_output(
         self, x: PLModuleInput, last_hidden_state: torch.Tensor | None = None
@@ -160,7 +159,7 @@ class CustomRNNModule(PLForecastingModule, ABC):
             static_covariates,
         ) = input_batch
 
-        if historic_future_covariates is not None:
+        if historic_future_covariates is not None and future_covariates is not None:
             # RNNs need as inputs (target[t] and covariates[t+1]) so here we shift the covariates
             all_covariates = torch.cat(
                 [historic_future_covariates[:, 1:, :], future_covariates], dim=1
@@ -556,7 +555,7 @@ class RNNModel(DualCovariatesTorchModel):
         self.n_rnn_layers = n_rnn_layers
         self.training_length = training_length
 
-    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         # samples are made of (past target, past cov, historic future cov, future cov, static cov, future target)
         (past_target, _, _, future_covariates, _, _) = train_sample
         input_dim = past_target.shape[1] + (
@@ -587,7 +586,7 @@ class RNNModel(DualCovariatesTorchModel):
         series: Sequence[TimeSeries],
         past_covariates: Sequence[TimeSeries] | None,
         future_covariates: Sequence[TimeSeries] | None,
-        sample_weight: Sequence[TimeSeries] | None,
+        sample_weight: Sequence[TimeSeries] | str | None,
         max_samples_per_ts: int | None,
         stride: int = 1,
     ) -> ShiftedTorchTrainingDataset:
@@ -603,15 +602,23 @@ class RNNModel(DualCovariatesTorchModel):
             sample_weight=sample_weight,
         )
 
-    def _verify_train_dataset_type(self, train_dataset: ShiftedTorchTrainingDataset):
-        raise_if_not(
-            isinstance(train_dataset, ShiftedTorchTrainingDataset),
-            "RNNModel requires a training dataset of type `GenericShiftDataset`.",
-        )
-        raise_if_not(
-            train_dataset.shift == 1,
-            "RNNModel requires a shifted training dataset with shift=1.",
-        )
+    @staticmethod
+    def _verify_train_dataset_type(train_dataset: TorchTrainingDataset):
+        if not isinstance(train_dataset, ShiftedTorchTrainingDataset):
+            raise_log(
+                ValueError(
+                    "RNNModel requires a training dataset of type `GenericShiftDataset`. "
+                    f"Got {type(train_dataset)} instead."
+                ),
+                logger=logger,
+            )
+        if train_dataset.shift != 1:
+            raise_log(
+                ValueError(
+                    f"RNNModel requires a shifted training dataset with shift=1. Got shift={train_dataset.shift}."
+                ),
+                logger=logger,
+            )
 
     @property
     def min_train_samples(self) -> int:

@@ -460,6 +460,8 @@ class _DeepShapExplainer:
                 batch_x_future,
                 batch_x_static,
             ))
+            # Note: TCN has a different `first_prediction_index` than 0
+            batch_output = batch_output[:, self.pl_module.first_prediction_index :, :]
             # remove last dimension of likelihood parameters
             batch_output = batch_output.flatten(start_dim=1)
             outputs.append(batch_output)
