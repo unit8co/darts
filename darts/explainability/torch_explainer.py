@@ -12,6 +12,7 @@ from darts.explainability.explainability import _ForecastingModelExplainer
 from darts.explainability.explainability_result import ShapExplainabilityResult
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
+from darts.models.forecasting.rnn_model import CustomRNNModule
 from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 from darts.typing import TimeSeriesLike
 from darts.utils.data.torch_datasets.utils import TorchInferenceDatasetOutput
@@ -347,7 +348,6 @@ class _DeepShapExplainer:
         self.output_chunk_length = model.output_chunk_length or 1
         self.output_chunk_shift = model.output_chunk_shift
 
-        # TODO: support RNNModel with special handling of tensor shapes
         self.background_X, _ = self.create_shap_array(
             series=self.background_series,
             past_covariates=self.background_past_covariates,
@@ -356,7 +356,7 @@ class _DeepShapExplainer:
             train=True,
         )
 
-        self._build_func_wrapper(
+        self._setup_func_wrapper(
             model.model,
             batch_size=batch_size or model.batch_size,
         )
@@ -379,7 +379,7 @@ class _DeepShapExplainer:
             **kwargs,
         )
 
-    def _build_func_wrapper(
+    def _setup_func_wrapper(
         self,
         model: PLForecastingModule,
         batch_size: int,
@@ -442,6 +442,26 @@ class _DeepShapExplainer:
         else:
             x_future = None
 
+        if isinstance(self.pl_module, CustomRNNModule):
+            # handle the special case of RNN where future covariates are concatenated to
+            # past covariates with a shift in time dimension
+            if x_future is not None:
+                x_future = torch.cat(
+                    [
+                        x_past[:, 1:, -self.n_future_covs :],
+                        x_future,  # output chunk length is always 1 for RNN
+                    ],
+                    dim=1,
+                )
+                x_past = torch.cat(
+                    [
+                        x_past[:, :, : self.n_targets],
+                        x_future,
+                    ],
+                    dim=2,
+                )
+                x_future = None
+
         x_static = None
 
         # set model to eval mode to deactivate dropout layers
@@ -463,8 +483,19 @@ class _DeepShapExplainer:
                 batch_x_future,
                 batch_x_static,
             ))
-            # Note: TCN has a different `first_prediction_index` than 0
-            batch_output = batch_output[:, self.pl_module.first_prediction_index :, :]
+
+            if isinstance(self.pl_module, CustomRNNModule):
+                # Note: RNN outputs predictions and hidden states
+                batch_output = batch_output[0]
+                # RNN also outputs predictions for all time steps,
+                # but we only need the last one for SHAP explanations
+                batch_output = batch_output[:, -1:, :, :]
+            else:
+                # Note: TCN has a different `first_prediction_index` than 0
+                batch_output = batch_output[
+                    :, self.pl_module.first_prediction_index :, :
+                ]
+
             outputs.append(batch_output)
 
         output = torch.cat(outputs, dim=0)
