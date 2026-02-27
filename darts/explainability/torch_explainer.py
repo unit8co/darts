@@ -349,10 +349,10 @@ class _DeepShapExplainer:
 
         # TODO: support RNNModel with special handling of tensor shapes
         self.background_X, _ = self.create_shap_array(
-            self.background_series,
-            self.background_past_covariates,
-            self.background_future_covariates,
-            background_num_samples,
+            series=self.background_series,
+            past_covariates=self.background_past_covariates,
+            future_covariates=self.background_future_covariates,
+            n_samples=background_num_samples,
             train=True,
         )
 
@@ -444,6 +444,9 @@ class _DeepShapExplainer:
 
         x_static = None
 
+        # set model to eval mode to deactivate dropout layers
+        self.pl_module.eval()
+
         outputs: list[torch.Tensor] = []
         for i in range(0, num_samples, self.batch_size):
             s = slice(i, i + self.batch_size)
@@ -462,11 +465,11 @@ class _DeepShapExplainer:
             ))
             # Note: TCN has a different `first_prediction_index` than 0
             batch_output = batch_output[:, self.pl_module.first_prediction_index :, :]
-            # remove last dimension of likelihood parameters
-            batch_output = batch_output.flatten(start_dim=1)
             outputs.append(batch_output)
 
         output = torch.cat(outputs, dim=0)
+        # remove last dimension of likelihood parameters
+        output = output.flatten(start_dim=1)
 
         return output.cpu().numpy()
 
