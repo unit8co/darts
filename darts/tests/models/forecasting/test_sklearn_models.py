@@ -3007,7 +3007,7 @@ class TestSKLearnModels:
         lags, shift = config
         ocl = 7
         series = tg.gaussian_timeseries(
-            length=28, start=pd.Timestamp("2000-01-01"), freq="d"
+            length=28, start=pd.Timestamp("2000-01-01"), freq="D"
         )
 
         model_target_only = LinearRegressionModel(
@@ -3140,7 +3140,7 @@ class TestSKLearnModels:
         For last_points_only `True` and `False`."""
         ocl = 7
         series = tg.linear_timeseries(
-            length=28, start=pd.Timestamp("2000-01-01"), freq="d"
+            length=28, start=pd.Timestamp("2000-01-01"), freq="D"
         ).with_static_covariates(pd.Series([1.0, 2.0, 3.0]))
         static_covs = series.static_covariates.copy(deep=True)
 
