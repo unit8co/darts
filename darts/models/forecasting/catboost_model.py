@@ -217,6 +217,14 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
 
+        if likelihood == "quantile" and len(quantiles or []) == 1:
+            logger.warning(
+                f"CatBoost does not support single quantile regression. "
+                f"Received 1 quantile: {quantiles[0] if quantiles else None}. "
+                f"Likelihood will be set to None and the model will not be probabilistic. "
+            )
+            likelihood, quantiles = None, None
+
         multi_models = multi_models or output_chunk_length == 1
         self._set_likelihood(
             likelihood=likelihood,
