@@ -167,6 +167,11 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
+        # pass fine-tuning flag to the PLModule so it can set up training-specific
+        # quantile handling (separate from prediction-time likelihood)
+        if self.enable_finetuning:
+            self.pl_module_params["enable_finetuning"] = True
+
         use_reversible_instance_norm: bool | dict = self.pl_module_params.get(
             "use_reversible_instance_norm", False
         )

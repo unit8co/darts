@@ -27,7 +27,10 @@ from darts.models.components.chronos2_submodels import (
 )
 from darts.models.components.huggingface_connector import HuggingFaceConnector
 from darts.models.forecasting.foundation_model import FoundationModel
-from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
+from darts.models.forecasting.pl_forecasting_module import (
+    PLForecastingModule,
+    io_processor,
+)
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.likelihood_models.torch import QuantileRegression
 
@@ -95,7 +98,8 @@ class _Chronos2Module(PLForecastingModule):
             all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
             base class.
         """
-
+        # for fine-tuning, model should be trained on pre-trained quantiles
+        enable_finetuning = kwargs.pop("enable_finetuning", False)
         super().__init__(**kwargs)
         self.d_model = d_model
         self.d_kv = d_kv
@@ -188,13 +192,22 @@ class _Chronos2Module(PLForecastingModule):
         quantiles_tensor = torch.tensor(quantiles)
         self.register_buffer("quantiles", quantiles_tensor, persistent=False)
 
-        # gather indices of user-specified quantiles
+        # gather indices of user-specified quantiles (used at prediction time)
         user_quantiles: list[float] = (
             self.likelihood.quantiles
             if isinstance(self.likelihood, QuantileRegression)
             else [0.5]
         )
         self.user_quantile_indices = [quantiles.index(q) for q in user_quantiles]
+
+        # during fine-tuning, train on ALL pre-trained quantiles to preserve the
+        # full distribution; prediction uses only user-specified quantiles
+        if enable_finetuning:
+            self._finetuning_likelihood = QuantileRegression(quantiles)
+            self._finetuning_quantile_indices = list(range(self.num_quantiles))
+        else:
+            self._finetuning_likelihood = None
+            self._finetuning_quantile_indices = None
 
         self.output_patch_embedding = _ResidualBlock(
             in_dim=self.d_model,
@@ -457,6 +470,7 @@ class _Chronos2Module(PLForecastingModule):
     # 3. Chronos-2 uses normalized values for loss computation, while Darts uses denormalized values.
     # We need to think about how best to implement Chronos-2 `RINorm` in `io_processor()` without
     # breaking existing behavior, while also allowing fine-tuning with normalized loss.
+    @io_processor
     def forward(self, x_in: PLModuleInput, *args, **kwargs) -> Any:
         """Chronos-2 model forward pass.
 
@@ -545,17 +559,21 @@ class _Chronos2Module(PLForecastingModule):
         # select only target variables
         quantile_preds = quantile_preds[:, :, : self.n_targets, :]
 
-        # select only user-specified quantiles or median if deterministic
-        quantile_preds = quantile_preds[:, :, :, self.user_quantile_indices]
+        # during training (fine-tuning), output all pre-trained quantiles for loss;
+        # during prediction, output only user-specified quantiles
+        if self.training:
+            quantile_preds = quantile_preds[:, :, :, self._finetuning_quantile_indices]
+        else:
+            quantile_preds = quantile_preds[:, :, :, self.user_quantile_indices]
 
         return quantile_preds
 
+    def _compute_loss(self, output, target, criterion, sample_weight):
+        # compute loss on pre-trained quantiles
+        return self._finetuning_likelihood.compute_loss(output, target, sample_weight)
+
 
 class Chronos2Model(FoundationModel):
-    # Fine-tuning is turned off for now pending proper fine-tuning support
-    # and configuration.
-    _allows_finetuning = False
-
     def __init__(
         self,
         input_chunk_length: int,
@@ -631,9 +649,9 @@ class Chronos2Model(FoundationModel):
             [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9,
             0.95, 0.99].
             Default: ``None``, which will make Chronos-2 deterministic (median quantile only).
-            If fine-tuning is enable (``enable_finetuning`` is ``True`` or a dict), and ``likelihood`` is not specified,
-            it will default to all quantiles used during pre-training to avoid catastrophic forgetting and distribution
-            shift.
+            When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to
+            preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood`` parameter
+            only affects prediction output.
         hub_model_name
             The model ID on HuggingFace Hub. Default: ``"amazon/chronos-2"``. Other available variants include
             ``"autogluon/chronos-2-small"`` and ``"autogluon/chronos-2-synth"``.
@@ -810,8 +828,6 @@ class Chronos2Model(FoundationModel):
         [[1005.69617]]]
 
         .. note::
-            Fine-tuning of Chronos-2 is not supported at the moment.
-        .. note::
             Chronos-2 is licensed under the `Apache-2.0 License <https://github.com/amazon-science/chronos-forecasting/blob/main/LICENSE>`_,
             copyright Amazon.com, Inc. or its affiliates. By using this model, you agree to the terms and conditions of
             the license.
@@ -855,13 +871,6 @@ class Chronos2Model(FoundationModel):
 
         quantiles = chronos_config["quantiles"]
 
-        # handle default likelihood for fine-tuning
-        # if fine-tuning is enabled and likelihood is not specified, we use the quantiles
-        # used during pre-training to avoid catastrophic forgetting/distribution shift
-        if kwargs.get("enable_finetuning") and likelihood is None:
-            likelihood = QuantileRegression(quantiles)
-            self.model_params["likelihood"] = likelihood
-
         # by default (`likelihood=None`), model is deterministic
         # otherwise, only QuantileRegression likelihood is supported and quantiles must be
         # a subset of Chronos-2 quantiles
@@ -882,16 +891,6 @@ class Chronos2Model(FoundationModel):
                         f"must be a subset of Chronos-2 quantiles {quantiles}."
                     ),
                     logger,
-                )
-
-            if kwargs.get("enable_finetuning") and set(user_quantiles) != set(
-                quantiles
-            ):
-                logger.warning(
-                    f"You are fine-tuning on a subset of the model's original quantiles ({user_quantiles}). "
-                    f"This effectively changes the model's output definition (loss function) and might degrade "
-                    f"its pre-trained knowledge. Consider fine-tuning on all pre-trained quantiles: {quantiles}, "
-                    f"implied by default when `enable_finetuning=True` and `likelihood=None`."
                 )
 
         self.hf_connector = hf_connector

@@ -106,7 +106,8 @@ class _TimesFM2p5Module(PLForecastingModule):
             all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
             base class.
         """
-
+        # for fine-tuning, model should be trained on pre-trained quantiles
+        enable_finetuning = kwargs.pop("enable_finetuning", False)
         super().__init__(**kwargs)
 
         # default model parameters (config.json is ignored)
@@ -138,7 +139,7 @@ class _TimesFM2p5Module(PLForecastingModule):
             self.output_chunk_shift + (self.output_chunk_length or 0),
         )
 
-        # gather indices of user-specified quantiles
+        # gather indices of user-specified quantiles (used at prediction time)
         user_quantiles: list[float] = (
             self.likelihood.quantiles
             if isinstance(self.likelihood, QuantileRegression)
@@ -150,6 +151,18 @@ class _TimesFM2p5Module(PLForecastingModule):
         self.user_quantile_indices = [
             self.config.quantiles.index(q) + 1 for q in user_quantiles
         ]
+
+        # during fine-tuning, train on ALL pre-trained quantiles to preserve the
+        # full distribution; prediction uses only user-specified quantiles
+        # (indices offset by +1 because index 0 is the unused mean output)
+        if enable_finetuning:
+            self._finetuning_likelihood = QuantileRegression(self.config.quantiles)
+            self._finetuning_quantile_indices = list(
+                range(1, self.num_quantiles_plus_one)
+            )
+        else:
+            self._finetuning_likelihood = None
+            self._finetuning_quantile_indices = None
 
     def _forward(
         self,
@@ -197,7 +210,6 @@ class _TimesFM2p5Module(PLForecastingModule):
 
         return output_ts
 
-    # TODO: fine-tuning support
     @io_processor
     def forward(self, x_in: PLModuleInput, *args, **kwargs) -> Any:
         """TimesFM 2.5 model forward pass.
@@ -296,18 +308,23 @@ class _TimesFM2p5Module(PLForecastingModule):
         # -> (B, T, C, W)
         renormed_outputs = renormed_outputs[:, self.future_slice, :, :]
 
-        # select only user-specified quantiles or median if deterministic
-        # -> (B, T, C, N)
-        renormed_outputs = renormed_outputs[:, :, :, self.user_quantile_indices]
+        # during training (fine-tuning), output all pre-trained quantiles for loss;
+        # during prediction, output only user-specified quantiles
+        if self.training:
+            renormed_outputs = renormed_outputs[
+                :, :, :, self._finetuning_quantile_indices
+            ]
+        else:
+            renormed_outputs = renormed_outputs[:, :, :, self.user_quantile_indices]
 
         return renormed_outputs
 
+    def _compute_loss(self, output, target, criterion, sample_weight):
+        # compute loss on pre-trained quantiles
+        return self._finetuning_likelihood.compute_loss(output, target, sample_weight)
+
 
 class TimesFM2p5Model(FoundationModel):
-    # Fine-tuning is turned off for now pending proper fine-tuning support
-    # and configuration.
-    _allows_finetuning = False
-
     def __init__(
         self,
         input_chunk_length: int,
@@ -368,6 +385,9 @@ class TimesFM2p5Model(FoundationModel):
             the quantiles must be a subset of those used during TimesFM 2.5 pre-training:
             [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].
             Default: ``None``, which will make TimesFM 2.5 deterministic (median quantile only).
+            When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to
+            preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood`` parameter
+            only affects prediction output.
         hub_model_name
             The model ID on HuggingFace Hub. Default: ``"google/timesfm-2.5-200m-pytorch"``.
         hub_model_revision
@@ -544,8 +564,6 @@ class TimesFM2p5Model(FoundationModel):
             You can implement a similar approach externally in Darts.
             See `Issue #2976 <https://github.com/unit8co/darts/issues/2976#issuecomment-3691415141>`_ for details.
         .. note::
-            Fine-tuning of TimesFM 2.5 is not supported at the moment.
-        .. note::
             TimesFM 2.5 is licensed under the `Apache-2.0 License <https://github.com/google-research/timesfm/blob/master/LICENSE>`_,
             Copyright 2025 Google LLC. By using this model, you agree to the terms and conditions of the license.
         .. warning::
@@ -612,7 +630,7 @@ class TimesFM2p5Model(FoundationModel):
                 )
 
         self.hf_connector = hf_connector
-        super().__init__(enable_finetuning=False, **kwargs)
+        super().__init__(**kwargs)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}
