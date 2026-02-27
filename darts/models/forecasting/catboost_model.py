@@ -342,12 +342,12 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
+        val_sample_weight
+            Same as for `sample_weight` but for the evaluation dataset.
         stride
             The number of time steps between consecutive samples, applied starting from the end of the series. The same
             stride will be applied to both the training and evaluation set (if supplied and supported). This should be
             used with caution as it might introduce bias in the forecasts.
-        val_sample_weight
-            Same as for `sample_weight` but for the evaluation dataset.
         verbose
             An integer or a boolean that can be set to 1 to display catboost's default verbose output
         **kwargs

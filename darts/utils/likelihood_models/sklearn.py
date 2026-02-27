@@ -375,7 +375,7 @@ class QuantileRegression(SKLearnLikelihood):
             output: np.ndarray = model.model.predict(x, **kwargs)
 
             # `output` has two shapes depending on whether `MultiOutputRegressor` is used or not:
-            # Case 1: univariate & output_chunk_length == 1, shape if (n_series * n_samples, n_quantiles)
+            # Case 1: univariate & output_chunk_length == 1, shape is (n_series * n_samples, n_quantiles)
             # Case 2: otherwise, shape is (n_quantiles, n_series * n_samples, n_components * output_chunk_length)
             if output.ndim <= 2:
                 # Case 1 handling
