@@ -150,19 +150,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [1]_.
-            It is only applied to the features of the target series and not the covariates. When set to ``True``,
-            ``RINorm`` is applied with default hyperparameters. Default: ``False``. Alternatively, a dictionary of
-            hyperparameters is accepted, which is passed to the ``RINorm`` constructor. For example:
-
-            .. highlight:: python
-            .. code-block:: python
-
-                # default RINorm hyperparameters when `use_reversible_instance_norm=True`
-                use_reversible_instance_norm={
-                    "eps": 1e-5,
-                    "affine": True,
-                }
-            ..
+            It is only applied to the features of the target series and not the covariates. If ``True``,
+            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
+            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
 
         References
         ----------

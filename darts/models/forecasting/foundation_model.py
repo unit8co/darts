@@ -185,9 +185,10 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
             else:
                 use_reversible_instance_norm["affine"] = False
             logger.warning(
-                f"Reversible Instance Normalization (RINorm) in Darts insert affine transformation weights, which "
-                f"do not exist in foundation model checkpoints. To prevent incompatible model weights when loading "
-                f"checkpoints, `use_reversible_instance_norm` is overriden to `{use_reversible_instance_norm}`."
+                f"By default, Reversible Instance Normalization (RINorm) in Darts inserts affine transformation "
+                f"weights, which do not exist in foundation model checkpoints. To prevent incompatible model "
+                f"weights when loading checkpoints, `use_reversible_instance_norm` is overridden to "
+                f"`{use_reversible_instance_norm}`."
             )
             self.pl_module_params["use_reversible_instance_norm"] = (
                 use_reversible_instance_norm
