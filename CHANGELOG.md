@@ -15,12 +15,12 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Check out our new [NeuralForecastModel Notebook](https://unit8co.github.io/darts/examples/26-NeuralForecast-examples.html) for detailed examples. [#3026](https://github.com/unit8co/darts/pull/3026) by [Dennis Bader](https://github.com/dennisbader).
 - Created `darts.typing` to collect typical type annotation in one place. Introduced `TimeIndex` & `TimeSeriesLike` type aliases for improved readability & maintainability of the code. Commmon type annotations can be added to this file in the future. [#3021](https://github.com/unit8co/darts/pull/3021) by [Michel Zeller](https://github.com/mizeller)
 - More fine-grained control over Reversible Instance Normalization for all torch models. Apart from the boolean trigger, parameter `use_reversible_instance_norm` now also supports setting the `RINorm` hyperparameters as a dictionary. [#3029](https://github.com/unit8co/darts/pull/3029) by [Zhihao Dai](https://github.com/daidahao).
+- Added native multi-quantile support for `CatBoostModel` by using CatBoost’s `MultiQuantile` loss for faster training and inference. [#3032](https://github.com/unit8co/darts/pull/3032) by [Zhihao Dai](https://github.com/daidahao)
 
 **Fixed**
 
 - Updated the restrictive type hint for the timezone parameter `tz` to `Any`. This allows the use of more timezone definitions supported by Pandas [tz_convert](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html). [#3015](https://github.com/unit8co/darts/pull/3015) by [Moritz Waldleben](https://github.com/mwaldleben).
 - Disallowed `use_reversible_instance_norm=True` or `{"affine": True}` for foundation models to prevent checkpoint loading errors due to incompatible weights. [#3029](https://github.com/unit8co/darts/pull/3029) by [Zhihao Dai](https://github.com/daidahao).
-
 - Fixed all instances of [invalid-parameter-default](https://docs.astral.sh/ty/reference/rules/#invalid-parameter-default) errors. Improves type checker's ability to accurately reason about the code. [#3027](https://github.com/unit8co/darts/pull/3027) by [Michel Zeller](https://github.com/mizeller)
 
 **Dependencies**
