@@ -1613,9 +1613,9 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
     def __init__(
         self,
         model,
-        lags: int | list | None = None,
-        lags_past_covariates: int | list[int] | None = None,
-        lags_future_covariates: tuple[int, int] | list[int] | None = None,
+        lags: LAGS_TYPE | None = None,
+        lags_past_covariates: LAGS_TYPE | None = None,
+        lags_future_covariates: FUTURE_LAGS_TYPE | None = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         add_encoders: dict | None = None,

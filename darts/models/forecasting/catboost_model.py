@@ -158,9 +158,9 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         random_state
             Controls the randomness for reproducible forecasting.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model
-            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
-            `output_chunk_length - n` for each step `n`). Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -217,6 +217,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
 
+        multi_models = multi_models or output_chunk_length == 1
         self._set_likelihood(
             likelihood=likelihood,
             output_chunk_length=output_chunk_length,
@@ -300,7 +301,8 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         n_jobs_multioutput_wrapper: int | None = None,
         sample_weight: TimeSeriesLike | str | None = None,
         val_sample_weight: TimeSeriesLike | str | None = None,
-        verbose: int | bool | None = None,
+        stride: int = 1,
+        verbose: bool | int | None = None,
         **kwargs,
     ):
         """
