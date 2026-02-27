@@ -641,10 +641,11 @@ class SKLearnModel(GlobalForecastingModel):
         If the (quantile) model supports multi-output natively, it will return the model that can predict the entire
         horizon and all target components jointly.
 
-        Note: Internally, estimators are grouped by ``output_chunk_length`` position, then by component. For
-        probabilistic models fitting quantiles, there can be an additional abstraction layer, grouping the
-        estimators by ``quantile``. Models using a single native multi-quantile estimator (e.g. CatBoost) do
-        not use this extra quantile grouping, and ``quantile`` does not change the returned estimator.
+        .. note::
+            Internally, estimators are grouped by ``output_chunk_length`` position, then by component. For
+            probabilistic models fitting quantiles, there can be an additional abstraction layer, grouping the
+            estimators by ``quantile``. Models using a single native multi-quantile estimator (e.g. CatBoost) do
+            not use this extra quantile grouping, and ``quantile`` does not change the returned estimator.
 
         Parameters
         ----------
