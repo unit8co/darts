@@ -1,6 +1,11 @@
 """
 NeuralForecastModel
 -------------------
+
+For detailed examples and tutorials, see:
+
+* `NeuralForecast Model Examples
+  <https://unit8co.github.io/darts/examples/26-NeuralForecast-examples.html>`__
 """
 
 """
@@ -343,7 +348,8 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
 
         Can be used to fit any `NeuralForecast` univariate or multivariate base model.
         For a list of available base models,
-        see `NeuralForecast package <https://nixtlaverse.nixtla.io/neuralforecast/docs/capabilities/overview.html>`__.
+        see `NeuralForecast package <https://nixtlaverse.nixtla.io/neuralforecast/docs/capabilities/overview.html>`__
+        [1]_.
 
         This converts the `NeuralForecast` base model into a ``TorchForecastingModel`` and enables full Darts
         functionality, such as covariate support, probabilistic forecasting, optimized backtesting, etc.
@@ -459,7 +465,9 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
-            It is only applied to the features of the target series and not the covariates.
+            It is only applied to the features of the target series and not the covariates. If ``True``,
+            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
+            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs

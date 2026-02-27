@@ -166,3 +166,24 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
 
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
+
+        use_reversible_instance_norm: bool | dict = self.pl_module_params.get(
+            "use_reversible_instance_norm", False
+        )
+        if use_reversible_instance_norm is True or (
+            isinstance(use_reversible_instance_norm, dict)
+            and use_reversible_instance_norm.get("affine", True)
+        ):
+            if use_reversible_instance_norm is True:
+                use_reversible_instance_norm = dict(affine=False)
+            else:
+                use_reversible_instance_norm["affine"] = False
+            logger.warning(
+                f"By default, Reversible Instance Normalization (RINorm) in Darts inserts affine transformation "
+                f"weights, which do not exist in foundation model checkpoints. To prevent incompatible model "
+                f"weights when loading checkpoints, `use_reversible_instance_norm` is overridden to "
+                f"`{use_reversible_instance_norm}`."
+            )
+            self.pl_module_params["use_reversible_instance_norm"] = (
+                use_reversible_instance_norm
+            )

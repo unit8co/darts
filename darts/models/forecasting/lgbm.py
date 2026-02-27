@@ -366,9 +366,9 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
 class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
     def __init__(
         self,
-        lags: int | list = None,
-        lags_past_covariates: int | list[int] = None,
-        lags_future_covariates: tuple[int, int] | list[int] = None,
+        lags: int | list | None = None,
+        lags_past_covariates: int | list[int] | None = None,
+        lags_future_covariates: tuple[int, int] | list[int] | None = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         add_encoders: dict | None = None,
