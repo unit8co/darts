@@ -2906,9 +2906,10 @@ class TestTorchForecastingModelFineTuning:
         preds = model.predict(n=10, series=self.series)
         assert len(preds) == 10
 
-    def test_partial_freeze(self):
+    @pytest.mark.parametrize("freeze", [["linear_seasonal.*"], ["*linear_seasonal*"]])
+    def test_partial_freeze(self, freeze):
         model = DLinearModel(
-            enable_finetuning={"freeze": ["linear_seasonal.*"]},
+            enable_finetuning={"freeze": freeze},
             n_epochs=1,
             **self.base_kwargs,
         )

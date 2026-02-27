@@ -283,9 +283,7 @@ class TestFoundationModel:
 
         # Verify all parameters require grad
         for n, p in model.model.named_parameters():
-            assert p.requires_grad is True, (
-                f"Parameter {n} should require grad for full fine-tuning"
-            )
+            assert p.requires_grad is True
 
         # 3. Persistence (Save/Load)
         save_path = os.path.join(tmpdir, "model_full_ft.pt")
@@ -299,9 +297,7 @@ class TestFoundationModel:
         pred_orig = model.predict(n=6, series=self.series)
         pred_loaded = loaded_model.predict(n=6, series=self.series)
         # Relax tolerance slightly for floating point differences across save/load on CPU
-        assert np.allclose(pred_orig.values(), pred_loaded.values(), atol=1e-6), (
-            "Prediction of the fine-tuned model and the saved/loaded fine-tuned model should be the same"
-        )
+        assert np.allclose(pred_orig.values(), pred_loaded.values(), atol=1e-6)
 
     @patch(
         "darts.models.components.huggingface_connector.hf_hub_download",
@@ -329,15 +325,13 @@ class TestFoundationModel:
 
         for name, param in model.model.named_parameters():
             if "encoder" in name:
-                assert param.requires_grad is False, (
-                    f"Parameter {name} should be frozen"
-                )
+                assert param.requires_grad is False
                 frozen_found = True
             elif param.requires_grad:
                 trainable_found = True
 
-        assert frozen_found, "Should have found frozen parameters matching 'encoder'"
-        assert trainable_found, "Should have found some trainable parameters"
+        assert frozen_found
+        assert trainable_found
 
     @patch(
         "darts.models.components.huggingface_connector.hf_hub_download",
@@ -365,20 +359,14 @@ class TestFoundationModel:
 
         for name, param in model.model.named_parameters():
             if "encoder" in name:
-                assert param.requires_grad is True, (
-                    f"Parameter {name} should be unfrozen"
-                )
+                assert param.requires_grad is True
                 unfrozen_found = True
             else:
-                assert param.requires_grad is False, (
-                    f"Parameter {name} should be frozen"
-                )
+                assert param.requires_grad is False
                 frozen_found = True
 
-        assert unfrozen_found, (
-            "Should have found unfrozen parameters matching 'encoder'"
-        )
-        assert frozen_found, "Should have found frozen parameters (non-matching)"
+        assert unfrozen_found
+        assert frozen_found
 
     @patch(
         "darts.models.components.huggingface_connector.hf_hub_download",

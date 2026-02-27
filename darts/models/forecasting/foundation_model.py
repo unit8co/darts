@@ -17,10 +17,7 @@ logger = get_logger(__name__)
 
 
 class FoundationModel(MixedCovariatesTorchModel, ABC):
-    def __init__(
-        self,
-        **kwargs,
-    ):
+    def __init__(self, **kwargs):
         """Foundation Forecasting Model with PyTorch Lightning backend.
 
         This class is meant to be inherited to create a new foundation forecasting model.
@@ -40,6 +37,12 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
         If the model requires downloading configuration files and model weights from HuggingFace, please
         instantiate a :class:`HuggingFaceConnector` and use its methods to load the model configuration
         inside :func:`__init__()` and to load the model weights inside :func:`_create_model()`.
+
+
+        .. tip::
+            You can perform full or partial fine-tuning of the model by setting the ``enable_finetuning`` parameter.
+            Read more in the parameter description below and in the `Fine-Tuning Examples
+            <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__.
 
         Parameters
         ----------
@@ -149,13 +152,17 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
         enable_finetuning
-            Enables model fine-tuning. Only effective, if not `None`.
+            Enables model fine-tuning. Only effective if not ``None``.
             If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
-            all parameters frozen. If a dict, specifies which parameters to fine tune. Must only contain one key-value
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
             record. Can be used to:
 
-            - Unfreeze specific parameters, while keeping everything else frozen: `{"unfreeze": ["patterns.to.freeze"]}`
-            - Freeze specific parameters, while keeping everything else unfrozen: `{"freeze": ["patterns.to.freeze"]}`
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
         """
         # Set default fine-tuning to False for foundation models
         if "enable_finetuning" not in self.model_params:

@@ -269,13 +269,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
         enable_finetuning
-            Enables model fine-tuning. Only effective, if not `None`.
+            Enables model fine-tuning. Only effective if not ``None``.
             If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
-            all parameters frozen. If a dict, specifies which parameters to fine tune. Must only contain one key-value
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
             record. Can be used to:
 
-            - Unfreeze specific parameters, while keeping everything else frozen: `{"unfreeze": ["patterns.to.freeze"]}`
-            - Freeze specific parameters, while keeping everything else unfrozen: `{"freeze": ["patterns.to.freeze"]}`
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
         """
         super().__init__(add_encoders=add_encoders)
         suppress_lightning_warnings(suppress_all=not show_warnings)
@@ -2538,7 +2542,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @property
     def _requires_training(self) -> bool:
         """Whether the model should be trained when calling a `fit*` method."""
-        # no training only if fine-tuning is explicitly disabled
+        # no training if fine-tuning is explicitly disabled
         if self.enable_finetuning is False:
             return False
         return True

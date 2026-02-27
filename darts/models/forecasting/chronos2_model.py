@@ -621,6 +621,11 @@ class Chronos2Model(FoundationModel):
         below for details. It is recommended to call :func:`predict()` with ``predict_likelihood_parameters=True``
         or ``num_samples >> 1`` to get meaningful results.
 
+        .. tip::
+            You can perform full or partial fine-tuning of the model by setting the ``enable_finetuning`` parameter.
+            Read more in the parameter description below and in the `Fine-Tuning Examples
+            <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__.
+
         Parameters
         ----------
         input_chunk_length
@@ -787,6 +792,18 @@ class Chronos2Model(FoundationModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         References
         ----------
@@ -870,7 +887,6 @@ class Chronos2Model(FoundationModel):
             )
 
         quantiles = chronos_config["quantiles"]
-
         # by default (`likelihood=None`), model is deterministic
         # otherwise, only QuantileRegression likelihood is supported and quantiles must be
         # a subset of Chronos-2 quantiles
