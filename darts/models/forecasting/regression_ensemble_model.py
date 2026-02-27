@@ -175,13 +175,11 @@ class RegressionEnsembleModel(EnsembleModel):
 
         # check lags of the regression model
         if regression_model.output_chunk_shift is not None:
-            lags_future_covariates = [
-                lag + output_chunk_shift for lag in lags_future_covariates
-            ]
+            expected_lags = [lag + output_chunk_shift for lag in lags_future_covariates]
         raise_if_not(
-            regression_model.lags == {"future": lags_future_covariates},
+            regression_model.lags == {"future": expected_lags},
             f"`lags` and `lags_past_covariates` of regression model must be `None`"
-            f"and `lags_future_covariates` must be {lags_future_covariates}. Given:\n"
+            f"and `lags_future_covariates` must be {expected_lags}. Given:\n"
             f"{regression_model.lags}",
         )
 
