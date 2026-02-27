@@ -569,8 +569,13 @@ class _Chronos2Module(PLForecastingModule):
         return quantile_preds
 
     def _compute_loss(self, output, target, criterion, sample_weight):
-        # compute loss on pre-trained quantiles
-        return self._finetuning_likelihood.compute_loss(output, target, sample_weight)
+        if self.training:
+            # compute loss on pre-trained quantiles
+            return self._finetuning_likelihood.compute_loss(
+                output, target, sample_weight
+            )
+        else:
+            return super()._compute_loss(output, target, criterion, sample_weight)
 
 
 class Chronos2Model(FoundationModel):
