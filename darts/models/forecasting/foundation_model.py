@@ -150,9 +150,9 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
             your forecasting use case. Default: ``False``.
         enable_finetuning
             Enables model fine-tuning. Only effective, if not `None`.
-            If a bool, specifies whether to perform full fine tuning / training (all parameters are updated)
-            or keep all parameters frozen.
-            If a dict, specifies which parameters to fine tune. Must only contain one key-value record. Can be used to:
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine tune. Must only contain one key-value
+            record. Can be used to:
 
             - Unfreeze specific parameters, while keeping everything else frozen: `{"unfreeze": ["patterns.to.freeze"]}`
             - Freeze specific parameters, while keeping everything else unfrozen: `{"freeze": ["patterns.to.freeze"]}`

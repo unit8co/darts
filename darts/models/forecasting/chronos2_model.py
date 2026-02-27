@@ -6,7 +6,7 @@ For detailed examples and tutorials, see:
 
 * `Chronos-2 Foundation Model Examples
   <https://unit8co.github.io/darts/examples/25-Chronos-2-examples.html>`__
-* `Fine Tuning Examples
+* `Fine-Tuning Examples
   <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__
 """
 
