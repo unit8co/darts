@@ -654,12 +654,15 @@ class SKLearnModel(GlobalForecastingModel):
             Optionally, for probabilistic model with `likelihood="quantile"`, the desired quantile value. If `None` and
             `likelihood="quantile"`, returns the model predicting the median (quantile=0.5).
         """
+        # TODO: update docstring for CatBoost multiquantile
         likelihood = self.likelihood
-        if isinstance(likelihood, QuantileRegression):
+        if (
+            isinstance(likelihood, QuantileRegression)
+            and self._model_container is not None
+        ):
             # for quantile-models, the estimators are grouped by quantiles
             if quantile is None:
                 quantile = likelihood.quantiles[likelihood._median_idx]
-            # TODO: handle CatBoost multiquantile case
             elif quantile not in self._model_container:
                 raise_log(
                     ValueError(
