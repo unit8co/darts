@@ -633,16 +633,18 @@ class SKLearnModel(GlobalForecastingModel):
     def get_estimator(
         self, horizon: int, target_dim: int, quantile: float | None = None
     ):
-        """Returns the estimator that forecasts the step `horizon` of the target component `target_dim`.
+        """Returns the estimator that forecasts the step ``horizon`` of the target component ``target_dim``.
 
-        For probabilistic models fitting quantiles, a desired `quantile` can also be passed. If not passed, it will
-        return the model predicting the median (quantile=0.5).
+        For probabilistic models fitting quantiles, a desired ``quantile`` can also be passed. If not passed, it will
+        return the estimator predicting the median quantile.
 
         If the (quantile) model supports multi-output natively, it will return the model that can predict the entire
         horizon and all target components jointly.
 
-        Note: Internally, estimators are grouped by `output_chunk_length` position, then by component. For probabilistic
-        models fitting quantiles, there is an additional abstraction layer, grouping the estimators by `quantile`.
+        Note: Internally, estimators are grouped by ``output_chunk_length`` position, then by component. For
+        probabilistic models fitting quantiles, there can be an additional abstraction layer, grouping the
+        estimators by ``quantile``. Models using a single native multi-quantile estimator (e.g. CatBoost) do
+        not use this extra quantile grouping, and ``quantile`` does not change the returned estimator.
 
         Parameters
         ----------
@@ -652,9 +654,8 @@ class SKLearnModel(GlobalForecastingModel):
             The index of the target component.
         quantile
             Optionally, for probabilistic model with `likelihood="quantile"`, the desired quantile value. If `None` and
-            `likelihood="quantile"`, returns the model predicting the median (quantile=0.5).
+            the model uses per-quantile estimators, returns the model predicting the median quantile.
         """
-        # TODO: update docstring for CatBoost multiquantile
         likelihood = self.likelihood
         if quantile is not None and not isinstance(likelihood, QuantileRegression):
             raise_log(
