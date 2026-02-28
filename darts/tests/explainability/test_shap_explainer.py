@@ -47,7 +47,7 @@ class TestShapExplainer:
 
     date_start = date(2012, 12, 12)
     date_end = date(2014, 6, 5)
-    days = pd.date_range(date_start, date_end, freq="d")
+    days = pd.date_range(date_start, date_end, freq="D")
     N = len(days)
     eps_1 = np.random.normal(0, 1, N).astype("float32")
     eps_2 = np.random.normal(0, 1, N).astype("float32")
@@ -57,7 +57,7 @@ class TestShapExplainer:
     x_3 = np.zeros(N).astype("float32")
 
     days_past_cov = pd.date_range(
-        date_start, date_start + timedelta(days=N - 2), freq="d"
+        date_start, date_start + timedelta(days=N - 2), freq="D"
     )
 
     past_cov_1 = np.random.normal(0, 1, N - 1).astype("float32")
@@ -387,47 +387,48 @@ class TestShapExplainer:
             "power_target_lag-2",
             "price_target_lag-1",
             "power_target_lag-1",
-            "0_past_cov_lag-3",
-            "1_past_cov_lag-3",
-            "2_past_cov_lag-3",
-            "darts_enc_pc_cyc_month_sin_past_cov_lag-3",
-            "darts_enc_pc_cyc_month_cos_past_cov_lag-3",
-            "darts_enc_pc_cyc_day_sin_past_cov_lag-3",
-            "darts_enc_pc_cyc_day_cos_past_cov_lag-3",
-            "darts_enc_pc_pos_relative_past_cov_lag-3",
-            "darts_enc_pc_cus_custom_past_cov_lag-3",
-            "0_past_cov_lag-2",
-            "1_past_cov_lag-2",
-            "2_past_cov_lag-2",
-            "darts_enc_pc_cyc_month_sin_past_cov_lag-2",
-            "darts_enc_pc_cyc_month_cos_past_cov_lag-2",
-            "darts_enc_pc_cyc_day_sin_past_cov_lag-2",
-            "darts_enc_pc_cyc_day_cos_past_cov_lag-2",
-            "darts_enc_pc_pos_relative_past_cov_lag-2",
-            "darts_enc_pc_cus_custom_past_cov_lag-2",
-            "0_past_cov_lag-1",
-            "1_past_cov_lag-1",
-            "2_past_cov_lag-1",
-            "darts_enc_pc_cyc_month_sin_past_cov_lag-1",
-            "darts_enc_pc_cyc_month_cos_past_cov_lag-1",
-            "darts_enc_pc_cyc_day_sin_past_cov_lag-1",
-            "darts_enc_pc_cyc_day_cos_past_cov_lag-1",
-            "darts_enc_pc_pos_relative_past_cov_lag-1",
-            "darts_enc_pc_cus_custom_past_cov_lag-1",
-            "0_fut_cov_lag0",
-            "1_fut_cov_lag0",
-            "hour_fut_cov_lag0",
-            "dayofweek_fut_cov_lag0",
-            "relative_idx_fut_cov_lag0",
+            "0_pastcov_lag-3",
+            "1_pastcov_lag-3",
+            "2_pastcov_lag-3",
+            "darts_enc_pc_cyc_month_sin_pastcov_lag-3",
+            "darts_enc_pc_cyc_month_cos_pastcov_lag-3",
+            "darts_enc_pc_cyc_day_sin_pastcov_lag-3",
+            "darts_enc_pc_cyc_day_cos_pastcov_lag-3",
+            "darts_enc_pc_pos_relative_pastcov_lag-3",
+            "darts_enc_pc_cus_custom_pastcov_lag-3",
+            "0_pastcov_lag-2",
+            "1_pastcov_lag-2",
+            "2_pastcov_lag-2",
+            "darts_enc_pc_cyc_month_sin_pastcov_lag-2",
+            "darts_enc_pc_cyc_month_cos_pastcov_lag-2",
+            "darts_enc_pc_cyc_day_sin_pastcov_lag-2",
+            "darts_enc_pc_cyc_day_cos_pastcov_lag-2",
+            "darts_enc_pc_pos_relative_pastcov_lag-2",
+            "darts_enc_pc_cus_custom_pastcov_lag-2",
+            "0_pastcov_lag-1",
+            "1_pastcov_lag-1",
+            "2_pastcov_lag-1",
+            "darts_enc_pc_cyc_month_sin_pastcov_lag-1",
+            "darts_enc_pc_cyc_month_cos_pastcov_lag-1",
+            "darts_enc_pc_cyc_day_sin_pastcov_lag-1",
+            "darts_enc_pc_cyc_day_cos_pastcov_lag-1",
+            "darts_enc_pc_pos_relative_pastcov_lag-1",
+            "darts_enc_pc_cus_custom_pastcov_lag-1",
+            "0_futcov_lag0",
+            "1_futcov_lag0",
+            "darts_enc_fc_dta_hour_futcov_lag0",
+            "darts_enc_fc_dta_dayofweek_futcov_lag0",
+            "darts_enc_fc_pos_relative_futcov_lag0",
         ]
 
         results = shap_explain.explain()
 
         # all the features explained are here, in the right order
-        assert [
-            results.get_explanation(i, "price").components.to_list() == components_list
-            for i in range(1, 5)
-        ]
+        for i in range(1, 5):
+            assert (
+                results.get_explanation(i, "price").components.to_list()
+                == components_list
+            )
 
         # No past or future covariates
         m = LinearRegressionModel(
@@ -474,7 +475,7 @@ class TestShapExplainer:
         # Constructing future covariates TimeSeries that extends further into the future than the target series
         date_start = date(2012, 12, 12)
         date_end = date(2014, 6, 7)
-        days = pd.date_range(date_start, date_end, freq="d")
+        days = pd.date_range(date_start, date_end, freq="D")
         fut_cov = np.random.normal(0, 1, len(days)).astype("float32")
         fut_cov_ts = TimeSeries.from_times_and_values(days, fut_cov.reshape(-1, 1))
 
@@ -508,7 +509,7 @@ class TestShapExplainer:
         # Constructing covariates TimeSeries with older timestamps than target
         date_start = date(2012, 12, 10)
         date_end = date(2014, 6, 5)
-        days = pd.date_range(date_start, date_end, freq="d")
+        days = pd.date_range(date_start, date_end, freq="D")
         fut_cov = np.random.normal(0, 1, len(days)).astype("float32")
         fut_cov_ts = TimeSeries.from_times_and_values(days, fut_cov.reshape(-1, 1))
         past_cov = np.random.normal(0, 1, len(days)).astype("float32")
