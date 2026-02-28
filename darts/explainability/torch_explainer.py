@@ -112,6 +112,7 @@ class TorchExplainer(_ForecastingModelExplainer):
             model=self.model,
             n=self.n,
             target_components=self.target_components,
+            static_covariates_components=self.static_covariates_components,
             past_covariates_components=self.past_covariates_components,
             future_covariates_components=self.future_covariates_components,
             background_series=self.background_series,
@@ -323,6 +324,7 @@ class _DeepShapExplainer:
         model: TorchForecastingModel,
         n: int,
         target_components: Sequence[str],
+        static_covariates_components: Sequence[str] | None,
         past_covariates_components: Sequence[str] | None,
         future_covariates_components: Sequence[str] | None,
         background_series: Sequence[TimeSeries],
@@ -336,6 +338,7 @@ class _DeepShapExplainer:
         self.model = model
 
         self.target_components = target_components
+        self.static_covariates_components = static_covariates_components
         self.past_covariates_components = past_covariates_components
         self.future_covariates_components = future_covariates_components
 
@@ -395,6 +398,8 @@ class _DeepShapExplainer:
             if self.background_future_covariates is not None
             else 0
         )
+        static_covs = self.background_series[0].static_covariates_values(copy=False)
+        self.n_static_covs = static_covs.shape[1] if static_covs is not None else 0
 
         self.n_targets = model.n_targets
         self.n_variables = self.n_targets + self.n_past_covs + self.n_future_covs
@@ -404,6 +409,7 @@ class _DeepShapExplainer:
             self.past_slice.stop,
             self.past_slice.stop + self.output_chunk_length * self.n_future_covs,
         )
+        self.static_slice = slice(self.future_slice.stop, None)
 
         self.batch_size = batch_size
 
@@ -426,6 +432,17 @@ class _DeepShapExplainer:
                 for c in self.future_covariates_components:
                     self.feature_names.append(f"{c}_futcov_lag{lag}")
 
+        if self.model.uses_static_covariates:
+            static_covs = self.background_series[0].static_covariates
+            if static_covs is not None:
+                # static covariate names
+                names = static_covs.columns.tolist()
+                # target components that the static covariates reference to
+                comps = static_covs.index.tolist()
+                self.feature_names += [
+                    f"{name}_statcov_target_{comp}" for name in names for comp in comps
+                ]
+
     @torch.inference_mode()
     def _func_wrapper(self, x_np: np.ndarray) -> np.ndarray:
         x = torch.from_numpy(x_np).float()
@@ -441,6 +458,12 @@ class _DeepShapExplainer:
             )
         else:
             x_future = None
+
+        if self.n_static_covs > 0:
+            x_static = x[:, self.static_slice]
+            x_static = x_static.reshape(num_samples, -1, self.n_static_covs)
+        else:
+            x_static = None
 
         if isinstance(self.pl_module, CustomRNNModule):
             # handle the special case of RNN where future covariates are concatenated to
@@ -461,8 +484,6 @@ class _DeepShapExplainer:
                     dim=2,
                 )
                 x_future = None
-
-        x_static = None
 
         # set model to eval mode to deactivate dropout layers
         self.pl_module.eval()
