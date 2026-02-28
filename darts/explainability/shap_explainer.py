@@ -212,11 +212,11 @@ class ShapExplainer(_ForecastingModelExplainer):
         the foreground `TimeSeries` input.
 
         The component name convention of this multivariate `TimeSeries` is:
-        ``"{name}_{type_of_cov}_lag_{idx}"``, where:
+        ``"{name}_{type_of_cov}_lag{idx}"``, where:
 
         - ``{name}`` is the component name from the original foreground series (target, past, or future).
         - ``{type_of_cov}`` is the covariates type. It can take 3 different values:
-          ``"target"``, ``"past_cov"`` or ``"future_cov"``.
+          ``"target"``, ``"pastcov"`` or ``"futcov"``.
         - ``{idx}`` is the lag index.
 
         Parameters
@@ -270,13 +270,13 @@ class ShapExplainer(_ForecastingModelExplainer):
              - T_1_target_lag-1
              - T_1_target_lag-2
              - T_1_target_lag-3
-             - 0_past_cov_lag-1
-             - 0_past_cov_lag-3
-             - 1_past_cov_lag-1
-             - 1_past_cov_lag-3
-             - 2_past_cov_lag-1
-             - 2_past_cov_lag-3
-             - 0_fut_cov_lag_0
+             - 0_pastcov_lag-1
+             - 0_pastcov_lag-3
+             - 1_pastcov_lag-1
+             - 1_pastcov_lag-3
+             - 2_pastcov_lag-1
+             - 2_pastcov_lag-3
+             - 0_futcov_lag0
 
         This series has length 3, as the model can explain 5-3+1 forecasts
         (timestamp indexes 4, 5, and 6)

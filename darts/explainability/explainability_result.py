@@ -175,13 +175,13 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
     - T_1_target_lag-1
     - T_1_target_lag-2
     - T_1_target_lag-3
-    - 0_past_cov_lag-1
-    - 0_past_cov_lag-3
-    - 1_past_cov_lag-1
-    - 1_past_cov_lag-3
-    - 2_past_cov_lag-1
-    - 2_past_cov_lag-3
-    - 0_fut_cov_lag_0
+    - 0_pastcov_lag-1
+    - 0_pastcov_lag-3
+    - 1_pastcov_lag-1
+    - 1_pastcov_lag-3
+    - 2_pastcov_lag-1
+    - 2_pastcov_lag-3
+    - 0_futcov_lag0
 
     This series has length 3, as the model can explain 5-3+1 forecasts
     (timestamp indexes 4, 5, and 6)

@@ -415,16 +415,16 @@ class _DeepShapExplainer:
                 self.feature_names.append(f"{t}_target_lag-{lag}")
             if self.past_covariates_components is not None:
                 for c in self.past_covariates_components:
-                    self.feature_names.append(f"{c}_past_cov_lag-{lag}")
+                    self.feature_names.append(f"{c}_pastcov_lag-{lag}")
             if self.future_covariates_components is not None:
                 for c in self.future_covariates_components:
-                    self.feature_names.append(f"{c}_future_cov_lag-{lag}")
+                    self.feature_names.append(f"{c}_futcov_lag-{lag}")
 
         for i in range(self.output_chunk_length):
             lag = i + self.output_chunk_shift
             if self.future_covariates_components is not None:
                 for c in self.future_covariates_components:
-                    self.feature_names.append(f"{c}_future_cov_lag_{lag}")
+                    self.feature_names.append(f"{c}_futcov_lag{lag}")
 
     @torch.inference_mode()
     def _func_wrapper(self, x_np: np.ndarray) -> np.ndarray:
