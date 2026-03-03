@@ -365,16 +365,6 @@ class _DeepShapExplainer:
         )
         self._build_feature_names()
 
-        # TODO: support static covariates with special handling
-        if model._uses_static_covariates:
-            raise_log(
-                NotImplementedError(
-                    "Explainer does not currently support models with static covariates. "
-                    "Please use a `TorchForecastingModel` without static covariates."
-                ),
-                logger,
-            )
-
         self.explainer = self._build_explainer(
             self._func_wrapper,
             self.background_X,
