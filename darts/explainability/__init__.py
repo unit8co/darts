@@ -11,7 +11,7 @@ from darts.explainability.explainability_result import (
     TFTExplainabilityResult,
     _ExplainabilityResult,
 )
-from darts.explainability.shap_explainer import ShapExplainer
+from darts.explainability.shap_explainer import SKLearnExplainer
 from darts.logging import get_logger
 from darts.utils.utils import NotImportedModule
 
@@ -32,7 +32,7 @@ __all__ = [
     "ShapExplainabilityResult",
     "TFTExplainabilityResult",
     "_ExplainabilityResult",
-    "ShapExplainer",
+    "SKLearnExplainer",
     "TFTExplainer",
     "TorchExplainer",
 ]

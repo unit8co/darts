@@ -62,7 +62,7 @@ class _ShapMethod(Enum):
 ShapMethod = NewType("ShapMethod", _ShapMethod)
 
 
-class ShapExplainer(_ForecastingModelExplainer):
+class SKLearnExplainer(_ForecastingModelExplainer):
     model: SKLearnModel
 
     def __init__(
