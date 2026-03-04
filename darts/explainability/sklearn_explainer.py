@@ -19,7 +19,7 @@ each of the (lagged) series.
   background series, if foreground is not provided).
 - :func:`summary_plot() <SKLearnExplainer.summary_plot>` displays a SHAP plot summary for each horizon and each
   component dimension of the target series.
-- :func:`force_plot_from_ts() <SKLearnExplainer.force_plot_from_ts>` displays a SHAP force_plot for one target
+- :func:`force_plot() <SKLearnExplainer.force_plot>` displays a SHAP force_plot for one target
   and one horizon, for a given target series. It displays SHAP values of each lag/covariate with an additive force
   layout.
 """
@@ -120,7 +120,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         >>> explainer = SKLearnExplainer(model)
         >>> results = explainer.explain()
         >>> explainer.summary_plot()
-        >>> explainer.force_plot_from_ts()
+        >>> explainer.force_plot()
         """
 
         # TODO
@@ -369,6 +369,9 @@ class SKLearnExplainer(_ForecastingModelExplainer):
 
     def summary_plot(
         self,
+        foreground_series: TimeSeriesLike | None = None,
+        foreground_past_covariates: TimeSeriesLike | None = None,
+        foreground_future_covariates: TimeSeriesLike | None = None,
         horizons: int | Sequence[int] | None = None,
         target_components: str | Sequence[str] | None = None,
         num_samples: int | None = None,
@@ -377,21 +380,25 @@ class SKLearnExplainer(_ForecastingModelExplainer):
     ) -> dict[int, dict[str, shap.Explanation]]:
         """
         Display a SHAP plot summary for each horizon and each component dimension of the target.
-        This method reuses the initial background data as foreground (potentially sampled) to give a general importance
-        plot for each feature.
-        If no target names and/or no horizons are provided, all summary plots are produced.
 
         Parameters
         ----------
+        foreground_series
+            Optionally, one or a sequence of target ``TimeSeries`` to be explained. Can be multivariate.
+            If not provided, the background ``TimeSeries`` will be explained instead.
+        foreground_past_covariates
+            Optionally, one or a sequence of past covariates ``TimeSeries`` if required by the forecasting model.
+        foreground_future_covariates
+            Optionally, one or a sequence of future covariates ``TimeSeries`` if required by the forecasting model.
         horizons
             Optionally, an integer or sequence of integers representing which points/steps in the future to explain,
-            starting from the first prediction step at 1. `horizons` must `<=output_chunk_length` of the forecasting
-            model.
+            starting from the first prediction step at 1. Each horizon must be no greater than ``output_chunk_length``
+            of the explained forecasting model. Default: ``None``, which means that all horizons will be plotted.
         target_components
             Optionally, a string or sequence of strings with the target components to explain.
+            Default: ``None``, which means that all target components will be plotted.
         num_samples
-            Optionally, an integer for sampling the foreground series (based on the background),
-            for the sake of performance.
+            Optionally, an integer for sampling the foreground series for the sake of performance.
         plot_type
             Optionally, specify which of the SHAP library plot type to use. Can be one of ``'dot', 'bar', 'violin'``.
 
@@ -401,21 +408,33 @@ class SKLearnExplainer(_ForecastingModelExplainer):
             A nested dictionary {horizon : {component : shap.Explanation}} containing the raw Explanations for all
             the horizons and components.
         """
-        # TODO: update docstring
-
+        (
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
+            _,
+            _,
+            _,
+            _,
+        ) = self._process_foreground(
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
+        )
         horizons, target_components = self._process_horizons_and_targets(
             horizons, target_components
         )
 
-        if num_samples:
-            foreground_X_sampled = shap.utils.sample(
-                self.explainers.background_X, num_samples
-            )
-        else:
-            foreground_X_sampled = self.explainers.background_X
+        foreground_X = self.explainers._create_regression_model_shap_X(
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
+            n_samples=num_samples,
+            train=False,
+        )
 
         shaps_ = self.explainers.shap_explanations(
-            foreground_X_sampled, horizons, target_components
+            foreground_X, horizons, target_components
         )
 
         for t in target_components:
@@ -427,13 +446,13 @@ class SKLearnExplainer(_ForecastingModelExplainer):
                 )
                 shap.summary_plot(
                     shaps_[h][t],
-                    foreground_X_sampled,
+                    foreground_X,
                     plot_type=plot_type,
                     **kwargs,
                 )
         return shaps_
 
-    def force_plot_from_ts(
+    def force_plot(
         self,
         foreground_series: TimeSeries | None = None,
         foreground_past_covariates: TimeSeries | None = None,
@@ -443,10 +462,10 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         **kwargs,
     ):
         """
-        Display a SHAP force_plot for one target and one horizon, for a given foreground_series.
+        Display a SHAP "Force Plot" for one target and one horizon, for a given foreground series.
         It displays SHAP values of each lag/covariate with an additive force layout.
 
-        Once the plot is displayed, select "original sample ordering"
+        Once the plot is displayed, select **"original sample ordering"**
         to observe the time series chronologically.
 
         Parameters
@@ -468,8 +487,6 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         **kwargs
             Optionally, additional keyword arguments passed to `shap.force_plot()`.
         """
-        # TODO: update docstring
-
         raise_if(
             target_component is None and len(self.target_components) > 1,
             "The component parameter is required when the model has more than one component.",

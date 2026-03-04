@@ -563,7 +563,7 @@ class TestSKLearnExplainer:
 
         # We need at least 5 points for force_plot
         with pytest.raises(ValueError):
-            shap_explain.force_plot_from_ts(
+            shap_explain.force_plot(
                 self.target_ts[100:104],
                 self.past_cov_ts[100:104],
                 self.fut_cov_ts[100:104],
@@ -571,7 +571,7 @@ class TestSKLearnExplainer:
                 "power",
             )
 
-        fplot = shap_explain.force_plot_from_ts(
+        fplot = shap_explain.force_plot(
             self.target_ts[100:105],
             self.past_cov_ts[100:105],
             self.fut_cov_ts[100:105],
@@ -582,7 +582,7 @@ class TestSKLearnExplainer:
 
         # no component name -> multivariate error
         with pytest.raises(ValueError):
-            shap_explain.force_plot_from_ts(
+            shap_explain.force_plot(
                 self.target_ts[100:108],
                 self.past_cov_ts[100:108],
                 self.fut_cov_ts[100:108],
@@ -591,7 +591,7 @@ class TestSKLearnExplainer:
 
         # fake component
         with pytest.raises(ValueError):
-            shap_explain.force_plot_from_ts(
+            shap_explain.force_plot(
                 self.target_ts[100:108],
                 self.past_cov_ts[100:108],
                 self.fut_cov_ts[100:108],
@@ -601,7 +601,7 @@ class TestSKLearnExplainer:
 
         # horizon 0
         with pytest.raises(ValueError):
-            shap_explain.force_plot_from_ts(
+            shap_explain.force_plot(
                 self.target_ts[100:108],
                 self.past_cov_ts[100:108],
                 self.fut_cov_ts[100:108],
@@ -637,7 +637,7 @@ class TestSKLearnExplainer:
         )
 
         shap_explain = SKLearnExplainer(m)
-        fplot = shap_explain.force_plot_from_ts(
+        fplot = shap_explain.force_plot(
             foreground_series=self.target_ts[100:105],
             horizon=1,
             target_component="power",
