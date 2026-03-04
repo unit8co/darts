@@ -222,33 +222,42 @@ class TorchExplainer(_ForecastingModelExplainer):
 
     def summary_plot(
         self,
+        foreground_series: TimeSeriesLike | None = None,
+        foreground_past_covariates: TimeSeriesLike | None = None,
+        foreground_future_covariates: TimeSeriesLike | None = None,
         horizons: int | Sequence[int] | None = None,
         target_components: str | Sequence[str] | None = None,
         num_samples: int | None = None,
         plot_type: str | None = "dot",
         **kwargs,
     ) -> dict[int, dict[str, shap.Explanation]]:
+        (
+            foreground_series_,
+            foreground_past_covariates_,
+            foreground_future_covariates_,
+            _,
+            _,
+            _,
+            _,
+        ) = self._process_foreground(
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
+        )
         horizons, target_components = self._process_horizons_and_targets(
             horizons, target_components
         )
 
-        if num_samples:
-            n_background_samples = self.explainer.background_X.shape[0]
-            if num_samples > n_background_samples:
-                raise_log(
-                    ValueError(
-                        f"`num_samples` must be less than or equal to the number of samples in the background. "
-                        f"Got `num_samples={num_samples}` but background samples={n_background_samples}."
-                    )
-                )
-            foreground_X_sampled = shap.utils.sample(
-                self.explainer.background_X, num_samples
-            )
-        else:
-            foreground_X_sampled = self.explainer.background_X
+        foreground_X, _ = self.explainer.create_shap_array(
+            foreground_series_,
+            foreground_past_covariates_,
+            foreground_future_covariates_,
+            n_samples=num_samples,
+            train=foreground_series is None,
+        )
 
         shaps_ = self.explainer.shap_explanations(
-            foreground_X_sampled, horizons, target_components
+            foreground_X, horizons, target_components
         )
 
         for t in target_components:
@@ -258,13 +267,13 @@ class TorchExplainer(_ForecastingModelExplainer):
                 )
                 shap.summary_plot(
                     shaps_[h][t],
-                    foreground_X_sampled,
+                    foreground_X,
                     plot_type=plot_type,
                     **kwargs,
                 )
         return shaps_
 
-    def force_plot_from_ts(
+    def force_plot(
         self,
         foreground_series: TimeSeries | None = None,
         foreground_past_covariates: TimeSeries | None = None,
@@ -651,9 +660,8 @@ class _DeepSHAPExplainer:
         )
 
         # sample from dataset if required
-        if not train:
-            n_samples = len(dataset)
-        else:
+        n_samples = n_samples or len(dataset)
+        if train:
             if len(dataset) < MIN_BACKGROUND_SAMPLE:
                 raise_log(
                     ValueError(
@@ -662,7 +670,6 @@ class _DeepSHAPExplainer:
                     ),
                     logger,
                 )
-            n_samples = n_samples or len(dataset)
             if n_samples > len(dataset):
                 raise_log(
                     ValueError(
