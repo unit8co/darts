@@ -63,8 +63,6 @@ ShapMethod = NewType("ShapMethod", _ShapMethod)
 
 
 class SKLearnExplainer(_ForecastingModelExplainer):
-    model: SKLearnModel
-
     def __init__(
         self,
         model: SKLearnModel,
@@ -132,24 +130,6 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         # 2) a de-trend methodology for the target. It can be for
         # example target - moving_average(input_chunk_length).
 
-        if not issubclass(type(model), SKLearnModel):
-            raise_log(
-                ValueError(
-                    "Invalid `model` type. Currently, only models of type `SKLearnModel` are supported."
-                ),
-                logger,
-            )
-
-        if not model.multi_models:
-            raise_log(
-                ValueError(
-                    "Invalid `multi_models` value `False`. Currently, "
-                    "SKLearnExplainer only supports SKLearnModels "
-                    "with `multi_models=True`."
-                ),
-                logger,
-            )
-
         super().__init__(
             model=model,
             background_series=background_series,
@@ -161,7 +141,25 @@ class SKLearnExplainer(_ForecastingModelExplainer):
             test_stationarity=True,
         )
 
-        if model.supports_probabilistic_prediction:
+        if not isinstance(self.model, SKLearnModel):
+            raise_log(
+                ValueError(
+                    "Invalid `model` type. Currently, only models of type `SKLearnModel` are supported."
+                ),
+                logger,
+            )
+
+        if not self.model.multi_models:
+            raise_log(
+                ValueError(
+                    "Invalid `multi_models` value `False`. Currently, "
+                    "SKLearnExplainer only supports SKLearnModels "
+                    "with `multi_models=True`."
+                ),
+                logger,
+            )
+
+        if self.model.supports_probabilistic_prediction:
             logger.warning(
                 "The model is probabilistic, but num_samples=1 will be used for explainability."
             )
@@ -199,7 +197,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         foreground_series: TimeSeriesLike | None = None,
         foreground_past_covariates: TimeSeriesLike | None = None,
         foreground_future_covariates: TimeSeriesLike | None = None,
-        horizons: Sequence[int] | None = None,
+        horizons: int | Sequence[int] | None = None,
         target_components: Sequence[str] | None = None,
     ) -> ShapExplainabilityResult:
         """

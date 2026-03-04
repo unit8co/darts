@@ -324,7 +324,7 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
     """
     Stores the explainability results of a
     :class:`SKLearnExplainer <darts.explainability.sklearn_explainer.SKLearnExplainer>` or
-    :class:`TorchExplainer <darts.explainability.torch_explainer.TorchExplainer>` or
+    :class:`TorchExplainer <darts.explainability.torch_explainer.TorchExplainer>`
     with convenient access to the results. It extends the :class:`HorizonBasedExplainabilityResult
     <HorizonBasedExplainabilityResult>` and carries additional information specific to the Shap explainers.
     In particular, in addition to the `explained_forecasts` (shape values), it also provides access to the
