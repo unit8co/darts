@@ -12,7 +12,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
-from darts.explainability.explainability_result import ShapExplainabilityResult
+from darts.explainability.explainability_result import SHAPExplainabilityResult
 from darts.explainability.sklearn_explainer import (
     MIN_BACKGROUND_SAMPLE,
     SKLearnExplainer,
@@ -379,7 +379,7 @@ class TestSKLearnExplainer:
             results.get_feature_values(horizon=1, component="test")
 
         # right instance
-        assert isinstance(results, ShapExplainabilityResult)
+        assert isinstance(results, SHAPExplainabilityResult)
 
         components_list = [
             "price_target_lag-4",
@@ -443,7 +443,7 @@ class TestSKLearnExplainer:
         )
         shap_explain = SKLearnExplainer(m)
 
-        assert isinstance(shap_explain.explain(), ShapExplainabilityResult)
+        assert isinstance(shap_explain.explain(), SHAPExplainabilityResult)
 
     def test_explain_with_lags_future_covariates_series_of_same_length_as_target(self):
         model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel

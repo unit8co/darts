@@ -1,9 +1,8 @@
 """
-Shap Explainer for SKLearnModels
+SHAP Explainer for SKLearnModels
 --------------------------------
 
-A `shap explainer <https://github.com/slundberg/shap>`__ specifically for time series
-forecasting models.
+A `SHAP <https://github.com/slundberg/shap>`__ explainer specifically for time series forecasting models.
 
 This class explains Darts' `SKLearnModel` instances of forecasting models. It uses shap values to
 provide "explanations" of each input features. The input features are the different past lags (of the target and/or
@@ -36,7 +35,7 @@ from sklearn.multioutput import MultiOutputRegressor
 
 from darts import TimeSeries
 from darts.explainability.explainability import _ForecastingModelExplainer
-from darts.explainability.explainability_result import ShapExplainabilityResult
+from darts.explainability.explainability_result import SHAPExplainabilityResult
 from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
@@ -47,7 +46,7 @@ logger = get_logger(__name__)
 MIN_BACKGROUND_SAMPLE = 10
 
 
-class _ShapMethod(Enum):
+class _SHAPMethod(Enum):
     TREE = 0
     GRADIENT = 1
     DEEP = 2
@@ -59,7 +58,7 @@ class _ShapMethod(Enum):
     ADDITIVE = 8
 
 
-ShapMethod = NewType("ShapMethod", _ShapMethod)
+SHAPMethod = NewType("SHAPMethod", _SHAPMethod)
 
 
 class SKLearnExplainer(_ForecastingModelExplainer):
@@ -166,8 +165,8 @@ class SKLearnExplainer(_ForecastingModelExplainer):
 
         if shap_method is not None:
             shap_method = shap_method.upper()
-            if shap_method in _ShapMethod.__members__:
-                self.shap_method = _ShapMethod[shap_method]
+            if shap_method in _SHAPMethod.__members__:
+                self.shap_method = _SHAPMethod[shap_method]
             else:
                 raise_log(
                     ValueError(
@@ -178,7 +177,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         else:
             self.shap_method = None
 
-        self.explainers = _RegressionShapExplainers(
+        self.explainers = _RegressionSHAPExplainers(
             model=self.model,
             n=self.n,
             target_components=self.target_components,
@@ -199,12 +198,12 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         foreground_future_covariates: TimeSeriesLike | None = None,
         horizons: int | Sequence[int] | None = None,
         target_components: Sequence[str] | None = None,
-    ) -> ShapExplainabilityResult:
+    ) -> SHAPExplainabilityResult:
         """
-        Explains a foreground time series and returns a :class:`ShapExplainabilityResult
-        <darts.explainability.explainability_result.ShapExplainabilityResult>`.
+        Explains a foreground time series and returns a :class:`SHAPExplainabilityResult
+        <darts.explainability.explainability_result.SHAPExplainabilityResult>`.
         The results can be retrieved with method :func:`get_explanation()
-        <darts.explainability.explainability_result.ShapExplainabilityResult.get_explanation>`.
+        <darts.explainability.explainability_result.SHAPExplainabilityResult.get_explanation>`.
         The result is a multivariate `TimeSeries` instance containing the 'explanation'
         for the (horizon, target_component) forecast at any timestamp forecastable corresponding to
         the foreground `TimeSeries` input.
@@ -235,7 +234,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
 
         Returns
         -------
-        ShapExplainabilityResult
+        SHAPExplainabilityResult
             The forecast explanations
 
         Examples
@@ -358,7 +357,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
             feature_values_list = feature_values_list[0]
             shap_explanation_object_list = shap_explanation_object_list[0]
 
-        return ShapExplainabilityResult(
+        return SHAPExplainabilityResult(
             shap_values_list, feature_values_list, shap_explanation_object_list
         )
 
@@ -506,7 +505,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         )
 
 
-class _RegressionShapExplainers:
+class _RegressionSHAPExplainers:
     """
     Helper Class to wrap the different cases encountered with shap different explainers, multivariates,
     horizon etc.
@@ -516,45 +515,45 @@ class _RegressionShapExplainers:
 
     default_sklearn_shap_explainers = {
         # Gradient boosting models
-        "LGBMRegressor": _ShapMethod.TREE,
-        "CatBoostRegressor": _ShapMethod.TREE,
-        "XGBRegressor": _ShapMethod.TREE,
-        "GradientBoostingRegressor": _ShapMethod.TREE,
-        "HistGradientBoostingRegressor": _ShapMethod.TREE,
+        "LGBMRegressor": _SHAPMethod.TREE,
+        "CatBoostRegressor": _SHAPMethod.TREE,
+        "XGBRegressor": _SHAPMethod.TREE,
+        "GradientBoostingRegressor": _SHAPMethod.TREE,
+        "HistGradientBoostingRegressor": _SHAPMethod.TREE,
         # Tree models
-        "DecisionTreeRegressor": _ShapMethod.TREE,
-        "ExtraTreeRegressor": _ShapMethod.TREE,
-        "ExtraTreesRegressor": _ShapMethod.TREE,
-        "RandomForestRegressor": _ShapMethod.TREE,
+        "DecisionTreeRegressor": _SHAPMethod.TREE,
+        "ExtraTreeRegressor": _SHAPMethod.TREE,
+        "ExtraTreesRegressor": _SHAPMethod.TREE,
+        "RandomForestRegressor": _SHAPMethod.TREE,
         # Ensemble model
-        "AdaBoostRegressor": _ShapMethod.PERMUTATION,
-        "BaggingRegressor": _ShapMethod.PERMUTATION,
-        "RidgeCV": _ShapMethod.PERMUTATION,
-        "Ridge": _ShapMethod.PERMUTATION,
+        "AdaBoostRegressor": _SHAPMethod.PERMUTATION,
+        "BaggingRegressor": _SHAPMethod.PERMUTATION,
+        "RidgeCV": _SHAPMethod.PERMUTATION,
+        "Ridge": _SHAPMethod.PERMUTATION,
         # Linear models
-        "LinearRegression": _ShapMethod.LINEAR,
-        "ARDRegression": _ShapMethod.LINEAR,
-        "MultiTaskElasticNet": _ShapMethod.LINEAR,
-        "MultiTaskElasticNetCV": _ShapMethod.LINEAR,
-        "MultiTaskLasso": _ShapMethod.LINEAR,
-        "MultiTaskLassoCV": _ShapMethod.LINEAR,
-        "PassiveAggressiveRegressor": _ShapMethod.LINEAR,
-        "PoissonRegressor": _ShapMethod.LINEAR,
-        "QuantileRegressor": _ShapMethod.LINEAR,
-        "RANSACRegressor": _ShapMethod.LINEAR,
-        "GammaRegressor": _ShapMethod.LINEAR,
-        "HuberRegressor": _ShapMethod.LINEAR,
-        "BayesianRidge": _ShapMethod.LINEAR,
-        "SGDRegressor": _ShapMethod.LINEAR,
-        "TheilSenRegressor": _ShapMethod.LINEAR,
-        "TweedieRegressor": _ShapMethod.LINEAR,
+        "LinearRegression": _SHAPMethod.LINEAR,
+        "ARDRegression": _SHAPMethod.LINEAR,
+        "MultiTaskElasticNet": _SHAPMethod.LINEAR,
+        "MultiTaskElasticNetCV": _SHAPMethod.LINEAR,
+        "MultiTaskLasso": _SHAPMethod.LINEAR,
+        "MultiTaskLassoCV": _SHAPMethod.LINEAR,
+        "PassiveAggressiveRegressor": _SHAPMethod.LINEAR,
+        "PoissonRegressor": _SHAPMethod.LINEAR,
+        "QuantileRegressor": _SHAPMethod.LINEAR,
+        "RANSACRegressor": _SHAPMethod.LINEAR,
+        "GammaRegressor": _SHAPMethod.LINEAR,
+        "HuberRegressor": _SHAPMethod.LINEAR,
+        "BayesianRidge": _SHAPMethod.LINEAR,
+        "SGDRegressor": _SHAPMethod.LINEAR,
+        "TheilSenRegressor": _SHAPMethod.LINEAR,
+        "TweedieRegressor": _SHAPMethod.LINEAR,
         # Gaussian process
-        "GaussianProcessRegressor": _ShapMethod.PERMUTATION,
+        "GaussianProcessRegressor": _SHAPMethod.PERMUTATION,
         # neighbors
-        "KNeighborsRegressor": _ShapMethod.PERMUTATION,
-        "RadiusNeighborsRegressor": _ShapMethod.PERMUTATION,
+        "KNeighborsRegressor": _SHAPMethod.PERMUTATION,
+        "RadiusNeighborsRegressor": _SHAPMethod.PERMUTATION,
         # Neural network
-        "MLPRegressor": _ShapMethod.PERMUTATION,
+        "MLPRegressor": _SHAPMethod.PERMUTATION,
     }
 
     def __init__(
@@ -567,7 +566,7 @@ class _RegressionShapExplainers:
         background_series: Sequence[TimeSeries],
         background_past_covariates: Sequence[TimeSeries],
         background_future_covariates: Sequence[TimeSeries],
-        shap_method: _ShapMethod,
+        shap_method: _SHAPMethod,
         background_num_samples: int | None = None,
         **kwargs,
     ):
@@ -685,7 +684,7 @@ class _RegressionShapExplainers:
         self,
         model_sklearn,
         background_X: pd.DataFrame,
-        shap_method: ShapMethod | None = None,
+        shap_method: SHAPMethod | None = None,
         **kwargs,
     ):
         model_name = type(model_sklearn).__name__
@@ -695,36 +694,36 @@ class _RegressionShapExplainers:
             if model_name in self.default_sklearn_shap_explainers:
                 shap_method = self.default_sklearn_shap_explainers[model_name]
             else:
-                shap_method = _ShapMethod.KERNEL
+                shap_method = _SHAPMethod.KERNEL
 
         # we define properly the explainer given a shap method
-        if shap_method == _ShapMethod.TREE:
+        if shap_method == _SHAPMethod.TREE:
             if kwargs.get("feature_perturbation") == "interventional":
                 explainer = shap.TreeExplainer(model_sklearn, background_X, **kwargs)
             else:
                 explainer = shap.TreeExplainer(model_sklearn, **kwargs)
-        elif shap_method == _ShapMethod.PERMUTATION:
+        elif shap_method == _SHAPMethod.PERMUTATION:
             explainer = shap.PermutationExplainer(
                 model_sklearn.predict, background_X, **kwargs
             )
-        elif shap_method == _ShapMethod.PARTITION:
+        elif shap_method == _SHAPMethod.PARTITION:
             explainer = shap.PermutationExplainer(
                 model_sklearn.predict, background_X, **kwargs
             )
-        elif shap_method == _ShapMethod.KERNEL:
+        elif shap_method == _SHAPMethod.KERNEL:
             explainer = shap.KernelExplainer(
                 model_sklearn.predict, background_X, keep_index=True, **kwargs
             )
-        elif shap_method == _ShapMethod.LINEAR:
+        elif shap_method == _SHAPMethod.LINEAR:
             explainer = shap.LinearExplainer(model_sklearn, background_X, **kwargs)
-        elif shap_method == _ShapMethod.DEEP:
+        elif shap_method == _SHAPMethod.DEEP:
             explainer = shap.LinearExplainer(model_sklearn, background_X, **kwargs)
-        elif shap_method == _ShapMethod.ADDITIVE:
+        elif shap_method == _SHAPMethod.ADDITIVE:
             explainer = shap.AdditiveExplainer(model_sklearn, background_X, **kwargs)
         else:
             raise ValueError(
                 "shap_method must be one of the following: "
-                + ", ".join([e.value for e in _ShapMethod])
+                + ", ".join([e.value for e in _SHAPMethod])
             )
 
         logger.info("The shap method used is of type: " + str(type(explainer)))

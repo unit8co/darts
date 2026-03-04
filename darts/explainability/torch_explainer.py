@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 
 from darts import TimeSeries
 from darts.explainability.explainability import _ForecastingModelExplainer
-from darts.explainability.explainability_result import ShapExplainabilityResult
+from darts.explainability.explainability_result import SHAPExplainabilityResult
 from darts.explainability.utils import process_horizons_and_targets
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
@@ -29,7 +29,7 @@ INPUT_FUTURE_INDICES = [4]
 INPUT_STATIC_INDICES = [5]
 
 
-class _ShapMethod(Enum):
+class _SHAPMethod(Enum):
     KERNEL = 3
     SAMPLING = 4
     PARTITION = 5
@@ -40,7 +40,7 @@ class _ShapMethod(Enum):
 
 
 def _available_shap_methods() -> list[str]:
-    return [method.name.lower() for method in _ShapMethod]
+    return [method.name.lower() for method in _SHAPMethod]
 
 
 class TorchExplainer(_ForecastingModelExplainer):
@@ -77,8 +77,8 @@ class TorchExplainer(_ForecastingModelExplainer):
         )
 
         shap_method_upper = shap_method.upper()
-        if shap_method_upper in _ShapMethod.__members__:
-            self.shap_method = _ShapMethod[shap_method_upper]
+        if shap_method_upper in _SHAPMethod.__members__:
+            self.shap_method = _SHAPMethod[shap_method_upper]
         else:
             raise_log(
                 ValueError(
@@ -99,7 +99,7 @@ class TorchExplainer(_ForecastingModelExplainer):
                 logger,
             )
 
-        self.explainer = _DeepShapExplainer(
+        self.explainer = _DeepSHAPExplainer(
             model=self.model,
             n=self.n,
             target_components=self.target_components,
@@ -128,14 +128,17 @@ class TorchExplainer(_ForecastingModelExplainer):
             check_component_names=self.check_component_names,
         )
 
+    # TODO: add `explain_sample()` method to explain a single prediction.
+    # TODO: add `force_plot_sample()` method to create a force plot for a single prediction.
+
     def explain(
         self,
         foreground_series: TimeSeriesLike | None = None,
         foreground_past_covariates: TimeSeriesLike | None = None,
         foreground_future_covariates: TimeSeriesLike | None = None,
-        horizons: Sequence[int] | None = None,
+        horizons: int | Sequence[int] | None = None,
         target_components: Sequence[str] | None = None,
-    ) -> ShapExplainabilityResult:
+    ) -> SHAPExplainabilityResult:
         fallback = foreground_series is None
         (
             foreground_series,
@@ -213,7 +216,7 @@ class TorchExplainer(_ForecastingModelExplainer):
             feature_values_list = feature_values_list[0]
             shap_explanation_object_list = shap_explanation_object_list[0]
 
-        return ShapExplainabilityResult(
+        return SHAPExplainabilityResult(
             shap_values_list, feature_values_list, shap_explanation_object_list
         )
 
@@ -323,7 +326,7 @@ class TorchExplainer(_ForecastingModelExplainer):
         )
 
 
-class _DeepShapExplainer:
+class _DeepSHAPExplainer:
     n_targets: int
 
     def __init__(
@@ -338,7 +341,7 @@ class _DeepShapExplainer:
         background_past_covariates: Sequence[TimeSeries] | None,
         background_future_covariates: Sequence[TimeSeries] | None,
         background_num_samples: int | None = None,
-        shap_method: _ShapMethod = _ShapMethod.LINEAR,
+        shap_method: _SHAPMethod = _SHAPMethod.LINEAR,
         batch_size: int | None = None,
         **kwargs,
     ):
@@ -540,22 +543,22 @@ class _DeepShapExplainer:
     def _build_explainer(
         func,
         background_X: np.ndarray,
-        shap_method: _ShapMethod,
+        shap_method: _SHAPMethod,
         **kwargs,
     ):
         # we define properly the explainer given a shap method
         # Note: DeepExplainer has some compatibility issues with torch models
-        if shap_method == _ShapMethod.PERMUTATION:
+        if shap_method == _SHAPMethod.PERMUTATION:
             explainer = shap.PermutationExplainer(func, background_X, **kwargs)
-        elif shap_method == _ShapMethod.PARTITION:
+        elif shap_method == _SHAPMethod.PARTITION:
             explainer = shap.PermutationExplainer(func, background_X, **kwargs)
-        elif shap_method == _ShapMethod.KERNEL:
+        elif shap_method == _SHAPMethod.KERNEL:
             explainer = shap.KernelExplainer(func, background_X, **kwargs)
-        elif shap_method == _ShapMethod.LINEAR:
+        elif shap_method == _SHAPMethod.LINEAR:
             explainer = shap.LinearExplainer(func, background_X, **kwargs)
-        elif shap_method == _ShapMethod.ADDITIVE:
+        elif shap_method == _SHAPMethod.ADDITIVE:
             explainer = shap.AdditiveExplainer(func, background_X, **kwargs)
-        elif shap_method == _ShapMethod.EXACT:
+        elif shap_method == _SHAPMethod.EXACT:
             explainer = shap.ExactExplainer(func, background_X, **kwargs)
         else:
             raise_log(

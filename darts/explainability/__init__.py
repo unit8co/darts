@@ -7,7 +7,7 @@ model-specific explainability methods.
 """
 
 from darts.explainability.explainability_result import (
-    ShapExplainabilityResult,
+    SHAPExplainabilityResult,
     TFTExplainabilityResult,
     _ExplainabilityResult,
 )
@@ -29,7 +29,7 @@ except ModuleNotFoundError:
     TorchExplainer = NotImportedModule(module_name="(Py)Torch", warn=False)
 
 __all__ = [
-    "ShapExplainabilityResult",
+    "SHAPExplainabilityResult",
     "TFTExplainabilityResult",
     "_ExplainabilityResult",
     "SKLearnExplainer",

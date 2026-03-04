@@ -5,7 +5,7 @@ Explainability Result
 Contains the explainability results obtained from :func:`_ForecastingModelExplainer.explain()
 <darts.explainability.explainability._ForecastingModelExplainer.explain>`.
 
-- :class:`ShapExplainabilityResult <ShapExplainabilityResult>` for :class:`SKLearnExplainer
+- :class:`SHAPExplainabilityResult <SHAPExplainabilityResult>` for :class:`SKLearnExplainer
   <darts.explainability.sklearn_explainer.SKLearnExplainer>`
 - :class:`TFTExplainabilityResult <TFTExplainabilityResult>` for :class:`TFTExplainer
   <darts.explainability.tft_explainer.TFTExplainer>`
@@ -320,21 +320,21 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
         return component
 
 
-class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
+class SHAPExplainabilityResult(HorizonBasedExplainabilityResult):
     """
     Stores the explainability results of a
     :class:`SKLearnExplainer <darts.explainability.sklearn_explainer.SKLearnExplainer>` or
     :class:`TorchExplainer <darts.explainability.torch_explainer.TorchExplainer>`
     with convenient access to the results. It extends the :class:`HorizonBasedExplainabilityResult
-    <HorizonBasedExplainabilityResult>` and carries additional information specific to the Shap explainers.
+    <HorizonBasedExplainabilityResult>` and carries additional information specific to the SHAP explainers.
     In particular, in addition to the `explained_forecasts` (shape values), it also provides access to the
     corresponding `feature_values` and the underlying `shap.Explanation` object.
 
-    - :func:`get_explanation() <ShapExplainabilityResult.get_explanation>`: explained forecast for a given horizon
+    - :func:`get_explanation() <SHAPExplainabilityResult.get_explanation>`: explained forecast for a given horizon
       (and target component)
-    - :func:`get_feature_values() <ShapExplainabilityResult.get_feature_values>`: feature values for a given horizon
+    - :func:`get_feature_values() <SHAPExplainabilityResult.get_feature_values>`: feature values for a given horizon
       (and target component).
-    - :func:`get_shap_explanation_object() <ShapExplainabilityResult.get_shap_explanation_object>`: `shap.Explanation`
+    - :func:`get_shap_explanation_object() <SHAPExplainabilityResult.get_shap_explanation_object>`: `shap.Explanation`
       object for a given horizon (and target component).
 
     Examples
