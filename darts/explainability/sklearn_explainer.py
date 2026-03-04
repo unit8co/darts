@@ -5,10 +5,11 @@ SHAP Explainer for SKLearnModels
 A `SHAP <https://github.com/slundberg/shap>`__ explainer specifically for time series forecasting models.
 
 This class explains Darts' ``SKLearnModel`` instances of forecasting models. It uses SHAP values to
-provide "explanations" of each input features. The input features are the different past lags (of the target and/or
-past covariates), as well as potential future lags of future covariates used as inputs by the forecasting model to
-produce its forecasts. Furthermore, in the case of multivariate series, the features contain each dimension of
-each of the (lagged) series.
+provide "explanations" of each input feature. SHAP values (from Shapley values in game theory) represent each
+input feature's contribution to the model's prediction from a baseline prediction (the average prediction).
+
+The input features include the different past lags of the target and/or past covariates, lags of future covariates,
+and any static covariates that are used as inputs by the forecasting model to produce its forecasts.
 
 .. note::
    This explainer is subject to the usual features independence assumption used to compute SHAP values.
@@ -122,14 +123,6 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         >>> explainer.summary_plot()
         >>> explainer.force_plot()
         """
-
-        # TODO
-        # - Optional De-trend  if the timeseries is not stationary.
-        # There would be
-        # 1) a stationarity test and
-        # 2) a de-trend methodology for the target. It can be for
-        # example target - moving_average(input_chunk_length).
-
         super().__init__(
             model=model,
             background_series=background_series,
