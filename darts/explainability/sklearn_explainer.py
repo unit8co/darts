@@ -5,7 +5,7 @@ Shap Explainer for SKLearnModels
 A `shap explainer <https://github.com/slundberg/shap>`__ specifically for time series
 forecasting models.
 
-This class is (currently) limited to Darts' `SKLearnModel` instances of forecasting models. It uses shap values to
+This class explains Darts' `SKLearnModel` instances of forecasting models. It uses shap values to
 provide "explanations" of each input features. The input features are the different past lags (of the target and/or
 past covariates), as well as potential future lags of future covariates used as inputs by the forecasting model to
 produce its forecasts. Furthermore, in the case of multivariate series, the features contain each dimension of
@@ -16,11 +16,11 @@ each of the (lagged) series.
    This means that it does not capture potential indirect influence that some lags
    may have on the target by influencing other lags.
 
-- :func:`explain() <ShapExplainer.explain>` generates the explanations for a given foreground series (or
+- :func:`explain() <SKLearnExplainer.explain>` generates the explanations for a given foreground series (or
   background series, if foreground is not provided).
-- :func:`summary_plot() <ShapExplainer.summary_plot>` displays a shap plot summary for each horizon and each
+- :func:`summary_plot() <SKLearnExplainer.summary_plot>` displays a shap plot summary for each horizon and each
   component dimension of the target series.
-- :func:`force_plot_from_ts() <ShapExplainer.force_plot_from_ts>` displays a shap force_plot for one target
+- :func:`force_plot_from_ts() <SKLearnExplainer.force_plot_from_ts>` displays a shap force_plot for one target
   and one horizon, for a given target series. It displays shap values of each lag/covariate with an additive force
   layout.
 """
@@ -75,14 +75,14 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         shap_method: str | None = None,
         **kwargs,
     ):
-        """ShapExplainer
+        """SKLearnExplainer
 
         **Definitions**
 
         - A background series is a `TimeSeries` used to train the shap explainer.
         - A foreground series is a `TimeSeries` that can be explained by a shap explainer after it has been fitted.
 
-        Currently, `ShapExplainer` only works with `SKLearnModel` forecasting models.
+        Currently, ``SKLearnExplainer`` only works with `SKLearnModel` forecasting models.
         The number of explained horizons (t+1, t+2, ...) can be at most equal to `output_chunk_length` of `model`.
 
         Parameters
@@ -90,7 +90,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         model
             A `SKLearnModel` to be explained. It must be fitted first.
         background_series
-            One or several series to *train* the `ShapExplainer` along with any foreground series.
+            One or several series to *train* the ``SKLearnExplainer`` along with any foreground series.
             Consider using a reduced well-chosen background to reduce computation time.
             Optional if `model` was fit on a single target series. By default, it is the `series` used at fitting time.
             Mandatory if `model` was fit on multiple (list of) target series.
@@ -114,12 +114,12 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.explainability.shap_explainer import ShapExplainer
+        >>> from darts.explainability import SKLearnExplainer
         >>> from darts.models import LinearRegressionModel
         >>> series = AirPassengersDataset().load()
         >>> model = LinearRegressionModel(lags=12)
         >>> model.fit(series[:-36])
-        >>> shap_explain = ShapExplainer(model)
+        >>> shap_explain = SKLearnExplainer(model)
         >>> results = shap_explain.explain()
         >>> shap_explain.summary_plot()
         >>> shap_explain.force_plot_from_ts()
@@ -144,7 +144,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
             raise_log(
                 ValueError(
                     "Invalid `multi_models` value `False`. Currently, "
-                    "ShapExplainer only supports SKLearnModels "
+                    "SKLearnExplainer only supports SKLearnModels "
                     "with `multi_models=True`."
                 ),
                 logger,
@@ -262,7 +262,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         >>> shap_objects = explain_results.get_shap_explanation_objects(horizon=1, component="T_1")
 
         Then the method returns a multivariate TimeSeries containing the *explanations* of
-        the `ShapExplainer`, with the following component names:
+        the `SKLearnExplainer`, with the following component names:
 
              - T_0_target_lag-1
              - T_0_target_lag-2

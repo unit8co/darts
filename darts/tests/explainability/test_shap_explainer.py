@@ -36,7 +36,7 @@ def extract_year(index):
     return (index.year - 1950) / 50
 
 
-class TestShapExplainer:
+class TestSKLearnExplainer:
     np.random.seed(42)
 
     scaler = MinMaxScaler(feature_range=(-1, 1))

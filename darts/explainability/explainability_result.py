@@ -5,8 +5,8 @@ Explainability Result
 Contains the explainability results obtained from :func:`_ForecastingModelExplainer.explain()
 <darts.explainability.explainability._ForecastingModelExplainer.explain>`.
 
-- :class:`ShapExplainabilityResult <ShapExplainabilityResult>` for :class:`ShapExplainer
-  <darts.explainability.shap_explainer.ShapExplainer>`
+- :class:`ShapExplainabilityResult <ShapExplainabilityResult>` for :class:`SKLearnExplainer
+  <darts.explainability.sklearn_explainer.SKLearnExplainer>`
 - :class:`TFTExplainabilityResult <TFTExplainabilityResult>` for :class:`TFTExplainer
   <darts.explainability.tft_explainer.TFTExplainer>`
 - :class:`ComponentBasedExplainabilityResult <ComponentBasedExplainabilityResult>` for component based explainability
@@ -322,12 +322,13 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
 
 class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
     """
-    Stores the explainability results of a :class:`ShapExplainer <darts.explainability.shap_explainer.ShapExplainer>`
+    Stores the explainability results of a
+    :class:`SKLearnExplainer <darts.explainability.sklearn_explainer.SKLearnExplainer>` or
+    :class:`TorchExplainer <darts.explainability.torch_explainer.TorchExplainer>` or
     with convenient access to the results. It extends the :class:`HorizonBasedExplainabilityResult
     <HorizonBasedExplainabilityResult>` and carries additional information specific to the Shap explainers.
-    In particular, in addition to the `explained_forecasts` (which in the case of the `ShapExplainer` are the
-    shap values), it also provides access to the corresponding `feature_values` and the underlying `shap.Explanation`
-    object.
+    In particular, in addition to the `explained_forecasts` (shape values), it also provides access to the
+    corresponding `feature_values` and the underlying `shap.Explanation` object.
 
     - :func:`get_explanation() <ShapExplainabilityResult.get_explanation>`: explained forecast for a given horizon
       (and target component)
@@ -338,7 +339,7 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
 
     Examples
     --------
-    >>> explainer = ShapExplainer(model)  # requires `background` if model was trained on multiple series
+    >>> explainer = SKLearnExplainer(model)  # requires `background` if model was trained on multiple series
     >>> explain_results = explainer.explain()
     >>> exlained_fc = explain_results.get_explanation(horizon=1)
     >>> feature_values = explain_results.get_feature_values(horizon=1)
