@@ -4,23 +4,23 @@ SHAP Explainer for SKLearnModels
 
 A `SHAP <https://github.com/slundberg/shap>`__ explainer specifically for time series forecasting models.
 
-This class explains Darts' ``SKLearnModel`` instances of forecasting models. It uses shap values to
+This class explains Darts' ``SKLearnModel`` instances of forecasting models. It uses SHAP values to
 provide "explanations" of each input features. The input features are the different past lags (of the target and/or
 past covariates), as well as potential future lags of future covariates used as inputs by the forecasting model to
 produce its forecasts. Furthermore, in the case of multivariate series, the features contain each dimension of
 each of the (lagged) series.
 
 .. note::
-   This explainer is subject to the usual features independence assumption used to compute shap values.
+   This explainer is subject to the usual features independence assumption used to compute SHAP values.
    This means that it does not capture potential indirect influence that some lags
    may have on the target by influencing other lags.
 
 - :func:`explain() <SKLearnExplainer.explain>` generates the explanations for a given foreground series (or
   background series, if foreground is not provided).
-- :func:`summary_plot() <SKLearnExplainer.summary_plot>` displays a shap plot summary for each horizon and each
+- :func:`summary_plot() <SKLearnExplainer.summary_plot>` displays a SHAP plot summary for each horizon and each
   component dimension of the target series.
-- :func:`force_plot_from_ts() <SKLearnExplainer.force_plot_from_ts>` displays a shap force_plot for one target
-  and one horizon, for a given target series. It displays shap values of each lag/covariate with an additive force
+- :func:`force_plot_from_ts() <SKLearnExplainer.force_plot_from_ts>` displays a SHAP force_plot for one target
+  and one horizon, for a given target series. It displays SHAP values of each lag/covariate with an additive force
   layout.
 """
 
@@ -76,8 +76,8 @@ class SKLearnExplainer(_ForecastingModelExplainer):
 
         **Definitions**:
 
-        - A background series is a ``TimeSeries`` used to train the shap explainer.
-        - A foreground series is a ``TimeSeries`` that can be explained by a shap explainer after it has been fitted.
+        - A background series is a ``TimeSeries`` used to train the SHAP explainer.
+        - A foreground series is a ``TimeSeries`` that can be explained by a SHAP explainer after it has been fitted.
 
         Currently, ``SKLearnExplainer`` only works with ``SKLearnModel`` forecasting models.
         The number of explained horizons `(t+1, t+2, ...)` can be at most equal to ``output_chunk_length`` of ``model``.
@@ -102,7 +102,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
             Generally used for faster computation, especially when ``shap_method`` is
             ``"kernel"`` or ``"permutation"``.
         shap_method
-            Optionally, the shap method to apply. By default, an attempt is made
+            Optionally, the SHAP method to apply. By default, an attempt is made
             to select the most appropriate method based on a pre-defined set of known models
             internal mapping. Supported values: `""permutation"``, ``"partition"``, ``"tree"``,
             ``"kernel"``, ``"sampling"``, ``"linear"``, ``"deep"``, ``"gradient"``, and ``"additive"``.
@@ -376,7 +376,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         **kwargs,
     ) -> dict[int, dict[str, shap.Explanation]]:
         """
-        Display a shap plot summary for each horizon and each component dimension of the target.
+        Display a SHAP plot summary for each horizon and each component dimension of the target.
         This method reuses the initial background data as foreground (potentially sampled) to give a general importance
         plot for each feature.
         If no target names and/or no horizons are provided, all summary plots are produced.
@@ -393,7 +393,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
             Optionally, an integer for sampling the foreground series (based on the background),
             for the sake of performance.
         plot_type
-            Optionally, specify which of the shap library plot type to use. Can be one of ``'dot', 'bar', 'violin'``.
+            Optionally, specify which of the SHAP library plot type to use. Can be one of ``'dot', 'bar', 'violin'``.
 
         Returns
         -------
@@ -443,8 +443,8 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         **kwargs,
     ):
         """
-        Display a shap force_plot for one target and one horizon, for a given foreground_series.
-        It displays shap values of each lag/covariate with an additive force layout.
+        Display a SHAP force_plot for one target and one horizon, for a given foreground_series.
+        It displays SHAP values of each lag/covariate with an additive force layout.
 
         Once the plot is displayed, select "original sample ordering"
         to observe the time series chronologically.
@@ -515,9 +515,9 @@ class SKLearnExplainer(_ForecastingModelExplainer):
 
 class _RegressionSHAPExplainers:
     """
-    Helper Class to wrap the different cases encountered with shap different explainers, multivariates,
+    Helper Class to wrap the different cases encountered with SHAP different explainers, multivariates,
     horizon etc.
-    Aim to provide shap values for any type of SKLearnModel. Manage the MultioutputRegressor cases.
+    Aim to provide SHAP values for any type of SKLearnModel. Manage the MultioutputRegressor cases.
     For darts SKLearnModel only.
     """
 
@@ -734,7 +734,7 @@ class _RegressionSHAPExplainers:
                 + ", ".join([e.value for e in _SHAPMethod])
             )
 
-        logger.info("The shap method used is of type: " + str(type(explainer)))
+        logger.info("The SHAP method used is of type: " + str(type(explainer)))
 
         return explainer
 
@@ -747,9 +747,9 @@ class _RegressionSHAPExplainers:
         train: bool = False,
     ) -> pd.DataFrame:
         """
-        Creates the shap format input for regression models.
+        Creates the SHAP format input for regression models.
         The output is a pandas DataFrame representing all lags of different covariates, and with adequate
-        column names in order to map feature / shap values.
+        column names in order to map feature / SHAP values.
         It uses create_lagged_data also used in SKLearnModel to build the tabular dataset.
 
         """
@@ -780,7 +780,7 @@ class _RegressionSHAPExplainers:
             if len(X) <= MIN_BACKGROUND_SAMPLE:
                 raise_log(
                     ValueError(
-                        "The number of samples in the background dataset is too small to compute shap values."
+                        "The number of samples in the background dataset is too small to compute SHAP values."
                     )
                 )
         else:
