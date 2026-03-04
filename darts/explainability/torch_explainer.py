@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 from darts import TimeSeries
 from darts.explainability.explainability import _ForecastingModelExplainer
 from darts.explainability.explainability_result import ShapExplainabilityResult
+from darts.explainability.utils import process_horizons_and_targets
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.models.forecasting.rnn_model import CustomRNNModule
@@ -75,16 +76,6 @@ class TorchExplainer(_ForecastingModelExplainer):
             test_stationarity=True,
         )
 
-        # TODO: add support for probabilistic models
-        if model.likelihood is not None:
-            raise_log(
-                ValueError(
-                    "Explainer does not currently support probabilistic models. "
-                    "Please use a `TorchForecastingModel` with `likelihood=None`."
-                ),
-                logger,
-            )
-
         shap_method_upper = shap_method.upper()
         if shap_method_upper in _ShapMethod.__members__:
             self.shap_method = _ShapMethod[shap_method_upper]
@@ -122,6 +113,19 @@ class TorchExplainer(_ForecastingModelExplainer):
             shap_method=self.shap_method,
             batch_size=batch_size,
             **kwargs,
+        )
+
+    def _process_horizons_and_targets(
+        self,
+        horizons: int | Sequence[int] | None,
+        target_components: str | Sequence[str] | None,
+    ) -> tuple[Sequence[int], Sequence[str]]:
+        return process_horizons_and_targets(
+            horizons=horizons,
+            fallback_horizon=self.n,
+            target_components=target_components,
+            fallback_target_components=self.explainer.target_components_likelihood,
+            check_component_names=self.check_component_names,
         )
 
     def explain(
@@ -266,17 +270,20 @@ class TorchExplainer(_ForecastingModelExplainer):
         target_component: str | None = None,
         **kwargs,
     ):
-        if target_component is None and len(self.target_components) > 1:
+        if (
+            target_component is None
+            and len(self.explainer.target_components_likelihood) > 1
+        ):
             raise_log(
                 ValueError(
                     f"`target_component` is required when the model has more than one component. "
-                    f"Please select a component from {self.target_components}."
+                    f"Please select a component from {self.explainer.target_components_likelihood}."
                 ),
                 logger,
             )
 
         if target_component is None:
-            target_component = self.target_components[0]
+            target_component = self.explainer.target_components_likelihood[0]
 
         (
             foreground_series_,
@@ -342,6 +349,18 @@ class _DeepShapExplainer:
         self.past_covariates_components = past_covariates_components
         self.future_covariates_components = future_covariates_components
 
+        if self.model.likelihood is not None:
+            self.target_components_likelihood = self.model.likelihood.component_names(
+                components=self.target_components
+            )
+            logger.warning(
+                f"The explained model is probabilistic and the SHAP explanations will be computed for the likelihood "
+                f"parameters of the target components, which includes the following components: "
+                f"{self.target_components_likelihood}. Adjust the `target_components` argument accordingly."
+            )
+        else:
+            self.target_components_likelihood = self.target_components
+
         self.n = n
         self.background_series = background_series
         self.background_past_covariates = background_past_covariates
@@ -392,6 +411,7 @@ class _DeepShapExplainer:
         self.n_static_covs = static_covs.shape[1] if static_covs is not None else 0
 
         self.n_targets = model.n_targets
+        self.n_targets_likelihood = len(self.target_components_likelihood)
         self.n_variables = self.n_targets + self.n_past_covs + self.n_future_covs
 
         self.past_slice = slice(0, self.input_chunk_length * self.n_variables)
@@ -510,6 +530,7 @@ class _DeepShapExplainer:
             outputs.append(batch_output)
 
         output = torch.cat(outputs, dim=0)
+        # `output`: (batch, output_chunk_length, n_targets, likelihood_parameters)
         # remove last dimension of likelihood parameters
         output = output.flatten(start_dim=1)
 
@@ -563,14 +584,14 @@ class _DeepShapExplainer:
 
         for h in horizons:
             tmp_n = {}
-            for t_idx, t in enumerate(self.target_components):
+            for t_idx, t in enumerate(self.target_components_likelihood):
                 if t not in target_components:
                     continue
                 tmp_t = shap.Explanation(
-                    shap_values[:, :, self.n_targets * (h - 1) + t_idx],
+                    shap_values[:, :, self.n_targets_likelihood * (h - 1) + t_idx],
                     data=shap_data,
                     base_values=shap_base_values[
-                        :, self.n_targets * (h - 1) + t_idx
+                        :, self.n_targets_likelihood * (h - 1) + t_idx
                     ].ravel(),
                     feature_names=self.feature_names,
                 )
