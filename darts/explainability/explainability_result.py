@@ -49,6 +49,8 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
     >>> output = explain_results.get_explanation(component="some_component")
     """
 
+    # TODO: update docstring
+
     def __init__(
         self,
         explained_components: dict[str, Any] | list[dict[str, Any]],
