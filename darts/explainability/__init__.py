@@ -11,7 +11,7 @@ from darts.explainability.explainability_result import (
     TFTExplainabilityResult,
     _ExplainabilityResult,
 )
-from darts.explainability.shap_explainer import SKLearnExplainer
+from darts.explainability.sklearn_explainer import SKLearnExplainer
 from darts.logging import get_logger
 from darts.utils.utils import NotImportedModule
 
