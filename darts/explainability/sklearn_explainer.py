@@ -209,7 +209,8 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         for the (horizon, target_component) forecast at any timestamp forecastable corresponding to
         the foreground ``TimeSeries`` input.
 
-        The component name convention of this multivariate ``TimeSeries`` is:
+        The components of the returned multivariate ``TimeSeries`` correspond to the different input
+        features to produce the forecasts. They are named according to the convention:
         ``"{name}_{type_of_cov}_lag{idx}"``, where:
 
         - ``{name}`` is the component name from the original foreground series (target, past, or future).
@@ -266,7 +267,8 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         >>> # Get the raw `shap.Explanation` object for further processing
         >>> shap_objects = results.get_shap_explanation_object(horizon=1, component="T_1")
 
-        For SHAP and feature values, the component names of the returned multivariate ``TimeSeries`` are:
+        For SHAP and feature values, the components of the returned ``TimeSeries`` correspond to different lags of the
+        target and covariates (see convention above). In our example, the component names would be:
 
              - T_0_target_lag-1
              - T_0_target_lag-2
@@ -379,7 +381,11 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         **kwargs,
     ) -> dict[int, dict[str, shap.Explanation]]:
         """
-        Display a SHAP plot summary for each horizon and each component dimension of the target.
+        Display a SHAP "Summary Plot" for each horizon and each component dimension of the target.
+
+        On each summary plot, SHAP values of each input feature are plotted with dots (``plot_type="dot"``,
+        each dot corresponds to a forecasted timestamp), a bar (``plot_type="bar"``), or a violin
+        (``plot_type="violin"``). The input features are sorted by importance, defined as the mean absolute SHAP value.
 
         Parameters
         ----------
@@ -405,7 +411,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         Returns
         -------
         dict[int, dict[str, shap.Explanation]]
-            A nested dictionary {horizon : {component : shap.Explanation}} containing the raw Explanations for all
+            A nested dictionary ``{horizon : {component : shap.Explanation}}`` containing the raw Explanations for all
             the horizons and components.
         """
         (
@@ -463,10 +469,10 @@ class SKLearnExplainer(_ForecastingModelExplainer):
     ):
         """
         Display a SHAP "Force Plot" for one target and one horizon, for a given foreground series.
-        It displays SHAP values of each lag/covariate with an additive force layout.
 
-        Once the plot is displayed, select **"original sample ordering"**
-        to observe the time series chronologically.
+        It shows SHAP values of all input features with an additive force layout.
+
+        Once the plot is displayed, select **"original sample ordering"** to observe the time series chronologically.
 
         Parameters
         ----------
