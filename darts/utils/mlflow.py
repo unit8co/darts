@@ -139,28 +139,13 @@ def save_model(
     _validate_and_prepare_target_save_path(path)
     code_dir_subpath = _validate_and_copy_code_paths(code_paths, path)
 
-    data_dir = os.path.join(path, _MODEL_DATA_SUBFOLDER)
     is_torch = _is_torch_model(model)
-
-    os.makedirs(data_dir, exist_ok=True)
 
     # clean=True excludes any timeseries or callbacks from the model file
     model_file = _MODEL_FILE_TORCH if is_torch else _MODEL_FILE_STAT
-    model.save(os.path.join(data_dir, model_file), clean=True)
+    model.save(os.path.join(path, model_file), clean=True)
 
     module_path, class_name = _get_model_class_path(model)
-
-    darts_flavor_conf = {
-        "darts_version": darts.__version__,
-        "model_class_module": module_path,
-        "model_class_name": class_name,
-        "model_file": model_file,
-        "is_torch_model": is_torch,
-        "data": _MODEL_DATA_SUBFOLDER,
-    }
-
-    if code_dir_subpath is not None:
-        darts_flavor_conf["code"] = code_dir_subpath
 
     default_reqs = None if pip_requirements else get_default_pip_requirements(is_torch)
     conda_env, pip_requirements, pip_constraints = (
@@ -192,7 +177,14 @@ def save_model(
     if metadata is not None:
         mlflow_model.metadata = metadata
 
-    mlflow_model.add_flavor(FLAVOR_NAME, **darts_flavor_conf)
+    mlflow_model.add_flavor(
+        FLAVOR_NAME,
+        darts_version=darts.__version__,
+        data=model_file,
+        model_class=f"{module_path}.{class_name}",
+        code=code_dir_subpath,
+        is_torch_model=is_torch,
+    )
     mlflow_model.save(os.path.join(path, MLMODEL_FILE_NAME))
 
 
