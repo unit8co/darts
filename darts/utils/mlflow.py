@@ -20,11 +20,12 @@ import os
 import re
 from collections.abc import Callable
 from operator import itemgetter
+from typing import Any
 
 import mlflow
 import numpy as np
 import yaml
-from mlflow.models import Model
+from mlflow.models import Model, ModelInputExample, ModelSignature
 from mlflow.models.model import MLMODEL_FILE_NAME
 from mlflow.models.utils import _save_example
 from mlflow.tracking.artifact_utils import _download_artifact_from_uri
@@ -73,12 +74,12 @@ def save_model(
     path: str,
     conda_env: dict | str | None = None,
     code_paths: list[str] | None = None,
+    mlflow_model: Model | None = None,
+    signature: ModelSignature | None = None,
+    input_example: ModelInputExample | None = None,
     pip_requirements: list[str] | None = None,
     extra_pip_requirements: list[str] | None = None,
-    signature=None,
-    input_example=None,
-    metadata: dict | None = None,
-    mlflow_model: Model | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> None:
     """Save a darts forecasting model in MLflow format.
 
@@ -101,22 +102,22 @@ def save_model(
         A list of local filesystem paths to Python file dependencies (or directories
         containing file dependencies). These files are prepended to the system path
         when the model is loaded.
+    mlflow_model
+        Optional MLflow Model object to use for saving. When provided (typically by
+        ``Model.log()``), this model instance is used instead of creating a new one.
+    signature
+        *Unsupported, see notes.* An ``mlflow.models.ModelSignature`` instance describing model input/output.
+        Use ``mlflow.models.infer_signature()`` to automatically generate from example inputs.
+    input_example
+        *Unsupported, see notes.* An example input for the model (used by MLflow UI).
     pip_requirements
         A list of pip requirement strings. Overrides ``conda_env`` pip section
         when provided.
     extra_pip_requirements
         A list of additional pip requirement strings to add to the model's environment,
         in addition to the default requirements.
-    signature
-        *Unsupported, see notes.* An ``mlflow.models.ModelSignature`` instance describing model input/output.
-        Use ``mlflow.models.infer_signature()`` to automatically generate from example inputs.
-    input_example
-        *Unsupported, see notes.* An example input for the model (used by MLflow UI).
     metadata
         Optional dictionary of custom metadata to store in the ``MLmodel`` file.
-    mlflow_model
-        Optional MLflow Model object to use for saving. When provided (typically by
-        ``Model.log()``), this model instance is used instead of creating a new one.
 
     Notes
     -----
