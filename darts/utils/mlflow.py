@@ -573,36 +573,40 @@ def _autolog(
 
     # patch `fit()` for all forecasting models
     for _, cls in _get_forecasting_models():
-        try:
-            safe_patch(
-                FLAVOR_NAME,
-                cls,
-                "fit",
-                _patched_fit,
-                manage_run=manage_run,
-            )
-        except Exception as e:
-            logger.info(f"Failed to patch {cls.__name__}.fit() for autologging: {e}")
+        safe_patch(
+            FLAVOR_NAME,
+            cls,
+            "fit",
+            _patched_fit,
+            manage_run=manage_run,
+        )
 
     if log_metrics:
-        import darts.metrics as _darts_metrics
+        import darts.metrics
+
+        # TODO: To log metrics post-fitting, only patching the metric methods may not be enough.
+        # This is becuase `model.fit()` method would terminate the active MLflow run at the end of training,
+        # so any metric calls made after that would not be logged.
+        # To address this, we need to implement three things:
+        # 1. Implement a singleton `_AutologgingMetricsManager` (`mlflow.sklearn`) to maintain a mapping between fitted
+        # models and their prediction outputs.
+        # 2. Patch the `model.predict()` method to create a mapping between the model (run_id) and prediction output.
+        # 3. Patch the metric functions to find the model (run_id) from the input series, then log the metrics to
+        # the corresponding run.
+        # This way, even if the metric calls are made after `fit()` has terminated the active run, we can still log
+        # the metrics to the correct run.
 
         # patch all metric functions to log results
-        for metric_name in _darts_metrics.__all__:
-            try:
-                # metrics should not create their own runs;
-                # they log into the run started by fit(), so manage_run=False here
-                safe_patch(
-                    FLAVOR_NAME,
-                    _darts_metrics,
-                    metric_name,
-                    _make_metric_patch(metric_name),
-                    manage_run=False,
-                )
-            except Exception as e:
-                logger.info(
-                    f"Failed to patch metric '{metric_name}' on darts.metrics: {e}"
-                )
+        for metric_name in darts.metrics.__all__:
+            # metrics should not create their own runs;
+            # they log into the run started by fit(), so manage_run=False here
+            safe_patch(
+                FLAVOR_NAME,
+                darts.metrics,
+                metric_name,
+                _make_metric_patch(metric_name),
+                manage_run=False,
+            )
 
 
 def get_default_pip_requirements():
@@ -757,6 +761,8 @@ def _sanitize_mlflow_key(name: str) -> str:
 
 
 def _log_metric_result(
+    autologging_client: MlflowAutologgingQueueingClient,
+    run_id: str,
     metric_name: str,
     result,
     dataset_name: str | None = None,
@@ -804,9 +810,6 @@ def _log_metric_result(
     """
     result_arr = np.asarray(result)
 
-    if mlflow.active_run() is None:
-        return
-
     base_key = f"{metric_name}_{dataset_name}" if dataset_name else metric_name
 
     def _comp_suffix(idx: int) -> str:
@@ -814,34 +817,39 @@ def _log_metric_result(
             return _sanitize_mlflow_key(component_names[idx])
         return str(idx)
 
+    metrics = {}
+
     if result_arr.ndim == 0:
         # scalar result
-        mlflow.log_metric(base_key, float(result_arr))
+        metrics[base_key] = float(result_arr)
 
     elif result_arr.ndim == 1:
         if not input_is_list:
             # single series: log per-component
             for c_i, val in enumerate(result_arr):
-                mlflow.log_metric(f"{base_key}_{_comp_suffix(c_i)}", float(val))
+                metrics[f"{base_key}_{_comp_suffix(c_i)}"] = float(val)
         else:
             # list input, components already reduced: log per-series
             for s_i, val in enumerate(result_arr):
-                mlflow.log_metric(f"{base_key}_{s_i}", float(val))
+                metrics[f"{base_key}_{s_i}"] = float(val)
 
     elif result_arr.ndim == 2:
         # list input: log per-series and per-component
         n_series, n_components = result_arr.shape
         for s_i in range(n_series):
             for c_i in range(n_components):
-                mlflow.log_metric(
-                    f"{base_key}_{_comp_suffix(c_i)}_{s_i}",
-                    float(result_arr[s_i, c_i]),
+                metrics[f"{base_key}_{_comp_suffix(c_i)}_{s_i}"] = float(
+                    result_arr[s_i, c_i]
                 )
 
     else:
         # unexpected shape — flatten with integer indices
         for i, val in enumerate(result_arr.flatten()):
-            mlflow.log_metric(f"{base_key}_{i}", float(val))
+            metrics[f"{base_key}_{i}"] = float(val)
+
+    autologging_client.log_metrics(run_id=run_id, metrics=metrics)
+    operation = autologging_client.flush(synchronous=False)
+    operation.await_completion()
 
 
 def _make_metric_patch(metric_name: str) -> Callable:
@@ -872,10 +880,17 @@ def _make_metric_patch(metric_name: str) -> Callable:
     def _patched_metric(original, *args, **kwargs):
         result = original(*args, **kwargs)
 
-        if mlflow.active_run() is None:
+        active_run = mlflow.active_run()
+        if active_run is None:
             return result
 
-        series = args[0]
+        autologging_client = MlflowAutologgingQueueingClient()
+        run_id = active_run.info.run_id
+
+        if len(args) > 0:
+            series = args[0]
+        else:
+            series = kwargs.get("actual_series", None)
 
         # capture the variable name of actual_series for metric key
         raw = _inspect_original_var_name(series, fallback_name=None)
@@ -890,18 +905,15 @@ def _make_metric_patch(metric_name: str) -> Callable:
             single_series.components.tolist() if single_series is not None else None
         )
 
-        try:
-            _log_metric_result(
-                metric_name,
-                result,
-                dataset_name=dataset_name,
-                component_names=component_names,
-                input_is_list=input_is_list,
-            )
-        except Exception:
-            logger.info(
-                f"Failed to log metric '{metric_name}' to MLflow.", exc_info=True
-            )
+        _log_metric_result(
+            autologging_client,
+            run_id,
+            metric_name,
+            result,
+            dataset_name=dataset_name,
+            component_names=component_names,
+            input_is_list=input_is_list,
+        )
 
         return result
 
