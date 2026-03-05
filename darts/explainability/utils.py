@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.typing import TimeSeriesLike
 from darts.utils.statistics import stationarity_tests
 from darts.utils.ts_utils import series2seq
 
@@ -17,12 +18,12 @@ logger = get_logger(__name__)
 def process_input(
     model: ForecastingModel,
     input_type: str,
-    series: TimeSeries | Sequence[TimeSeries] | None = None,
-    past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-    future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-    fallback_series: TimeSeries | Sequence[TimeSeries] | None = None,
-    fallback_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-    fallback_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+    series: TimeSeriesLike | None = None,
+    past_covariates: TimeSeriesLike | None = None,
+    future_covariates: TimeSeriesLike | None = None,
+    fallback_series: TimeSeriesLike | None = None,
+    fallback_past_covariates: TimeSeriesLike | None = None,
+    fallback_future_covariates: TimeSeriesLike | None = None,
     check_component_names: bool = False,
     requires_input: bool = True,
     requires_covariates_encoding: bool = False,
@@ -363,5 +364,5 @@ def _check_valid_input(
         )
 
 
-def _test_stationarity(series: TimeSeries | Sequence[TimeSeries]):
+def _test_stationarity(series: TimeSeriesLike):
     return all([(stationarity_tests(bs[c]) for c in bs.components) for bs in series])

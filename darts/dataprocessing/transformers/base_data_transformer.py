@@ -13,6 +13,7 @@ import numpy as np
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
+from darts.typing import TimeSeriesLike
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
 
@@ -278,7 +279,7 @@ class BaseDataTransformer(ABC):
 
     def transform(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
+        series: TimeSeriesLike,
         *args,
         component_mask: np.ndarray | None = None,
         series_idx: int | Sequence[int] | None = None,
@@ -314,7 +315,7 @@ class BaseDataTransformer(ABC):
 
         Returns
         -------
-        TimeSeries | Sequence[TimeSeries]
+        TimeSeriesLike
             Transformed data.
 
         Notes
@@ -448,7 +449,7 @@ class BaseDataTransformer(ABC):
         series: TimeSeries,
         component_mask: np.ndarray | None = None,
         return_ts: bool = False,
-    ) -> TimeSeries | Sequence[TimeSeries] | np.ndarray | Sequence[np.ndarray]:
+    ) -> TimeSeriesLike | np.ndarray | Sequence[np.ndarray]:
         """
         Extracts components specified by `component_mask` from `series`
 
@@ -509,10 +510,10 @@ class BaseDataTransformer(ABC):
 
     @staticmethod
     def unapply_component_mask(
-        series: TimeSeries | Sequence[TimeSeries],
-        vals: np.ndarray | Sequence[np.ndarray] | TimeSeries | Sequence[TimeSeries],
+        series: TimeSeriesLike,
+        vals: np.ndarray | Sequence[np.ndarray] | TimeSeriesLike,
         component_mask: np.ndarray | None = None,
-    ) -> np.ndarray | Sequence[np.ndarray] | TimeSeries | Sequence[TimeSeries]:
+    ) -> np.ndarray | Sequence[np.ndarray] | TimeSeriesLike:
         """
         Adds back components previously removed by `component_mask` in `apply_component_mask` method.
 

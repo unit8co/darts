@@ -36,6 +36,7 @@ from darts.explainability import TFTExplainabilityResult
 from darts.explainability.explainability import _ForecastingModelExplainer
 from darts.logging import get_logger, raise_log
 from darts.models import TFTModel
+from darts.typing import TimeSeriesLike
 from darts.utils.ts_utils import SeriesType, get_series_seq_type
 from darts.utils.utils import generate_index
 
@@ -48,9 +49,9 @@ class TFTExplainer(_ForecastingModelExplainer):
     def __init__(
         self,
         model: TFTModel,
-        background_series: TimeSeries | Sequence[TimeSeries] | None = None,
-        background_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        background_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        background_series: TimeSeriesLike | None = None,
+        background_past_covariates: TimeSeriesLike | None = None,
+        background_future_covariates: TimeSeriesLike | None = None,
     ):
         """
         Explainer class for the `TFTModel`.
@@ -116,9 +117,9 @@ class TFTExplainer(_ForecastingModelExplainer):
 
     def explain(
         self,
-        foreground_series: TimeSeries | Sequence[TimeSeries] | None = None,
-        foreground_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        foreground_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        foreground_series: TimeSeriesLike | None = None,
+        foreground_past_covariates: TimeSeriesLike | None = None,
+        foreground_future_covariates: TimeSeriesLike | None = None,
         horizons: Sequence[int] | None = None,
         target_components: Sequence[str] | None = None,
     ) -> TFTExplainabilityResult:

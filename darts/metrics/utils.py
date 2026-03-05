@@ -667,7 +667,7 @@ def _get_values_or_raise(
 def _get_quantile_intervals(
     vals: np.ndarray,
     q: tuple[Sequence[float], Any],
-    q_interval: np.ndarray = None,
+    q_interval: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Returns the lower and upper bound values from `vals` for all quantile intervals in `q_interval`.
 

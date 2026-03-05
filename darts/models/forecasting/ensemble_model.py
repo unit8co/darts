@@ -7,7 +7,6 @@ import copy
 import os
 import sys
 from abc import abstractmethod
-from collections.abc import Sequence
 from typing import BinaryIO
 
 from darts.models.forecasting.sklearn_model import SKLearnModel
@@ -25,6 +24,7 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
     LocalForecastingModel,
 )
+from darts.typing import TimeSeriesLike
 from darts.utils.ts_utils import series2seq
 from darts.utils.utils import TORCH_AVAILABLE
 
@@ -245,9 +245,9 @@ class EnsembleModel(GlobalForecastingModel):
     @abstractmethod
     def fit(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         verbose: bool | None = None,
     ):
         """
@@ -323,14 +323,14 @@ class EnsembleModel(GlobalForecastingModel):
     def _make_multiple_predictions(
         self,
         n: int,
-        series: TimeSeries | Sequence[TimeSeries] | None = None,
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike | None = None,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         random_state: int | None = None,
         verbose: bool | None = None,
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         is_single_series = isinstance(series, TimeSeries) or series is None
         # maximize covariate usage
         predictions = [
@@ -368,15 +368,15 @@ class EnsembleModel(GlobalForecastingModel):
     def predict(
         self,
         n: int,
-        series: TimeSeries | Sequence[TimeSeries] | None = None,
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike | None = None,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         num_samples: int = 1,
         verbose: bool | None = None,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
         random_state: int | None = None,
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         # ensure forecasting models all rely on the same series during inference
         if series is None:
             series = self.training_series
@@ -432,13 +432,13 @@ class EnsembleModel(GlobalForecastingModel):
     @abstractmethod
     def ensemble(
         self,
-        predictions: TimeSeries | Sequence[TimeSeries],
-        series: TimeSeries | Sequence[TimeSeries],
+        predictions: TimeSeriesLike,
+        series: TimeSeriesLike,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         random_state: int | None = None,
         verbose: bool | None = None,
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         """
         Defines how to ensemble the individual models' predictions to produce a single prediction.
 
@@ -467,9 +467,7 @@ class EnsembleModel(GlobalForecastingModel):
         """
         pass
 
-    def _predictions_reduction(
-        self, predictions: Sequence[TimeSeries] | TimeSeries
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    def _predictions_reduction(self, predictions: TimeSeriesLike) -> TimeSeriesLike:
         """Reduce the sample dimension of the forecasting models predictions"""
         is_single_series = isinstance(predictions, TimeSeries)
         predictions = series2seq(predictions)

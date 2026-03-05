@@ -26,6 +26,7 @@ from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.metrics.metrics import _tolerance_coverages
 from darts.metrics.utils import _get_tolerance_levels
+from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.sklearn import QuantileRegression
 from darts.utils.missing_values import fill_missing_values
 from darts.utils.ts_utils import get_single_series
@@ -135,7 +136,7 @@ def _bartlett_formula(r: np.ndarray, m: int, length: int) -> float:
 
 def extract_trend_and_seasonality(
     ts: TimeSeries,
-    freq: int | Sequence[int] = None,
+    freq: int | Sequence[int] | None = None,
     model: SeasonalityMode | ModelMode = ModelMode.MULTIPLICATIVE,
     method: str = "naive",
     **kwargs,
@@ -305,7 +306,7 @@ def remove_from_series(
 
 def remove_seasonality(
     ts: TimeSeries,
-    freq: int = None,
+    freq: int | None = None,
     model: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE,
     method: str = "naive",
     **kwargs,
@@ -1097,8 +1098,8 @@ def plot_residuals_analysis(
 
 
 def plot_tolerance_curve(
-    actual_series: TimeSeries | Sequence[TimeSeries],
-    pred_series: TimeSeries | Sequence[TimeSeries],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     min_tolerance: float = 0.0,
     max_tolerance: float = 1.0,
@@ -1106,7 +1107,7 @@ def plot_tolerance_curve(
     q: float | list[float] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    fig_size: tuple[int, int] = None,
+    fig_size: tuple[int, int] | None = None,
     axis: matplotlib.axes.Axes | None = None,
 ) -> None:
     """

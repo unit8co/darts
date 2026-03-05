@@ -28,6 +28,7 @@ from darts.ad.utils import (
     eval_metric_from_binary_prediction,
 )
 from darts.logging import get_logger, raise_log
+from darts.typing import TimeSeriesLike
 from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
@@ -41,9 +42,9 @@ class Detector(ABC):
 
     def detect(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
+        series: TimeSeriesLike,
         name: str = "series",
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         """Detect anomalies on given time series.
 
         Parameters
@@ -55,7 +56,7 @@ class Detector(ABC):
 
         Returns
         -------
-        TimeSeries | Sequence[TimeSeries]
+        TimeSeriesLike
             binary prediction (1 if considered as an anomaly, 0 if not)
         """
         called_with_single_series = isinstance(series, TimeSeries)
@@ -72,8 +73,8 @@ class Detector(ABC):
 
     def eval_metric(
         self,
-        anomalies: TimeSeries | Sequence[TimeSeries],
-        pred_scores: TimeSeries | Sequence[TimeSeries],
+        anomalies: TimeSeriesLike,
+        pred_scores: TimeSeriesLike,
         window: int = 1,
         metric: Literal["recall", "precision", "f1", "accuracy"] = "recall",
     ) -> float | Sequence[float] | Sequence[Sequence[float]]:
@@ -117,13 +118,13 @@ class FittableDetector(Detector):
 
     def detect(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
+        series: TimeSeriesLike,
         name: str = "series",
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         _assert_fit_called(self._fit_called, name="Detector")
         return super().detect(series, name=name)
 
-    def fit(self, series: TimeSeries | Sequence[TimeSeries]) -> Self:
+    def fit(self, series: TimeSeriesLike) -> Self:
         """Trains the detector on the given time series.
 
         Parameters
@@ -150,9 +151,7 @@ class FittableDetector(Detector):
         self._fit_called = True
         return self
 
-    def fit_detect(
-        self, series: TimeSeries | Sequence[TimeSeries]
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    def fit_detect(self, series: TimeSeriesLike) -> TimeSeriesLike:
         """Trains the detector and detects anomalies on the same series.
 
         Parameters
@@ -162,7 +161,7 @@ class FittableDetector(Detector):
 
         Returns
         -------
-        TimeSeries | Sequence[TimeSeries]
+        TimeSeriesLike
             Binary prediction (1 if considered as an anomaly, 0 if not)
         """
         self.fit(series)

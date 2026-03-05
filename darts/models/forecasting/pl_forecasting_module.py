@@ -90,11 +90,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
         | dict[str, torchmetrics.Metric | torchmetrics.MetricCollection]
         | None = None,
         likelihood: TorchLikelihood | None = None,
-        optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
+        optimizer_cls: type[torch.optim.Optimizer] = torch.optim.Adam,
         optimizer_kwargs: dict | None = None,
         lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler | None = None,
         lr_scheduler_kwargs: dict | None = None,
-        use_reversible_instance_norm: bool = False,
+        use_reversible_instance_norm: bool | dict = False,
     ) -> None:
         """
         PyTorch Lightning-based Forecasting Module.
@@ -150,7 +150,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [1]_.
-            It is only applied to the features of the target series and not the covariates.
+            It is only applied to the features of the target series and not the covariates. If ``True``,
+            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
+            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
 
         References
         ----------
@@ -206,8 +208,10 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         # reversible instance norm
         self.use_reversible_instance_norm = use_reversible_instance_norm
-        if use_reversible_instance_norm:
+        if use_reversible_instance_norm is True:
             self.rin = RINorm(input_dim=self.n_targets)
+        elif isinstance(use_reversible_instance_norm, dict):
+            self.rin = RINorm(input_dim=self.n_targets, **use_reversible_instance_norm)
         else:
             self.rin = None
 

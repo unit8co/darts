@@ -8,11 +8,11 @@ A `_ForecastingModelExplainer` takes a fitted forecasting model as input and gen
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 
-from darts import TimeSeries
 from darts.explainability.explainability_result import _ExplainabilityResult
 from darts.explainability.utils import process_horizons_and_targets, process_input
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -24,9 +24,9 @@ class _ForecastingModelExplainer(ABC):
     def __init__(
         self,
         model: ForecastingModel,
-        background_series: TimeSeries | Sequence[TimeSeries] | None = None,
-        background_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        background_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        background_series: TimeSeriesLike | None = None,
+        background_past_covariates: TimeSeriesLike | None = None,
+        background_future_covariates: TimeSeriesLike | None = None,
         requires_background: bool = False,
         requires_covariates_encoding: bool = False,
         check_component_names: bool = False,
@@ -108,9 +108,9 @@ class _ForecastingModelExplainer(ABC):
     @abstractmethod
     def explain(
         self,
-        foreground_series: TimeSeries | Sequence[TimeSeries] | None = None,
-        foreground_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        foreground_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        foreground_series: TimeSeriesLike | None = None,
+        foreground_past_covariates: TimeSeriesLike | None = None,
+        foreground_future_covariates: TimeSeriesLike | None = None,
         horizons: Sequence[int] | None = None,
         target_components: Sequence[str] | None = None,
     ) -> _ExplainabilityResult:
@@ -143,9 +143,9 @@ class _ForecastingModelExplainer(ABC):
 
     def _process_foreground(
         self,
-        foreground_series: TimeSeries | Sequence[TimeSeries] | None = None,
-        foreground_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        foreground_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        foreground_series: TimeSeriesLike | None = None,
+        foreground_past_covariates: TimeSeriesLike | None = None,
+        foreground_future_covariates: TimeSeriesLike | None = None,
     ):
         return process_input(
             model=self.model,

@@ -11,7 +11,7 @@ import pytest
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
 from darts.metrics import mape
-from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.conftest import NF_AVAILABLE, TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 from darts.utils.timeseries_generation import linear_timeseries
 
@@ -195,6 +195,37 @@ models_cls_kwargs_errs = [
     ),
 ]
 
+if NF_AVAILABLE:
+    from darts.models.forecasting.nf_model import NeuralForecastModel
+
+    models_cls_kwargs_errs += [
+        (
+            NeuralForecastModel,
+            {
+                "model": "TiDE",
+                "model_kwargs": {
+                    "hidden_size": 128,
+                    "decoder_output_dim": 16,
+                    "temporal_decoder_dim": 32,
+                    "dropout": 0.1,
+                    "layernorm": False,
+                },
+                "n_epochs": 10,
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+            },
+            40.0,
+        ),
+        (
+            NeuralForecastModel,
+            {
+                "model": "TSMixerx",
+                "n_epochs": 10,
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+            },
+            40.0,
+        ),
+    ]
+
 
 class TestGlobalForecastingModels:
     # forecasting horizon used in runnability tests
@@ -276,13 +307,13 @@ class TestGlobalForecastingModels:
                 input_chunk_length=4,
                 hidden_dim=10,
                 batch_size=32,
-                n_epochs=10,
+                n_epochs=1,
                 **tfm_kwargs,
             ),
             TCNModel(
                 input_chunk_length=4,
                 output_chunk_length=3,
-                n_epochs=10,
+                n_epochs=1,
                 batch_size=32,
                 **tfm_kwargs,
             ),
@@ -296,7 +327,19 @@ class TestGlobalForecastingModels:
                 lags_past_covariates=[-1, -2, -3],
                 lags_future_covariates=[1, 2, 3],
             ),
-        ],
+        ]
+        + (
+            [
+                NeuralForecastModel(
+                    input_chunk_length=4,
+                    output_chunk_length=3,
+                    n_epochs=1,
+                    **tfm_kwargs,
+                )
+            ]
+            if NF_AVAILABLE
+            else []
+        ),
     )
     def test_save_load_model(self, tmpdir_fn, model):
         # check if save and load methods work and if loaded model creates same forecasts as original model

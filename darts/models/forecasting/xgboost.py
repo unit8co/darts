@@ -18,12 +18,9 @@ For detailed examples and tutorials, see:
   <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`__
 """
 
-from collections.abc import Sequence
-
 import numpy as np
 import xgboost as xgb
 
-from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
@@ -32,6 +29,7 @@ from darts.models.forecasting.sklearn_model import (
     _ClassifierMixin,
     _QuantileModelContainer,
 )
+from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import QuantileRegression, _get_likelihood
 
@@ -253,16 +251,16 @@ class XGBModel(SKLearnModel):
 
     def fit(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        val_series: TimeSeries | Sequence[TimeSeries] | None = None,
-        val_past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        val_future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        val_series: TimeSeriesLike | None = None,
+        val_past_covariates: TimeSeriesLike | None = None,
+        val_future_covariates: TimeSeriesLike | None = None,
         max_samples_per_ts: int | None = None,
         n_jobs_multioutput_wrapper: int | None = None,
-        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
-        val_sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
+        val_sample_weight: TimeSeriesLike | str | None = None,
         verbose: int | bool | None = None,
         **kwargs,
     ):
@@ -370,9 +368,9 @@ class XGBModel(SKLearnModel):
 class XGBClassifierModel(_ClassifierMixin, XGBModel):
     def __init__(
         self,
-        lags: int | list = None,
-        lags_past_covariates: int | list[int] = None,
-        lags_future_covariates: tuple[int, int] | list[int] = None,
+        lags: int | list | None = None,
+        lags_past_covariates: int | list[int] | None = None,
+        lags_future_covariates: tuple[int, int] | list[int] | None = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         add_encoders: dict | None = None,

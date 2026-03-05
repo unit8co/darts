@@ -167,6 +167,13 @@ def skip(app, what, name, obj, skip, options):
     return skip
 
 
+# auto-replace all instance of `TimeSeries` type-annotation with
+# proper links to the TimeSeries class
+autodoc_type_aliases = {
+    "TimeSeries": ":class:`~darts.timeseries.TimeSeries`",
+}
+
+
 # -- Package title and docstring extraction for API documentation ---------------
 #
 # This function uses the generated *.rst files and processes the generated API documentation to:

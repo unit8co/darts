@@ -6,12 +6,9 @@ A forecasting model using a linear regression of some of the target series' lags
 covariate series lags in order to obtain a forecast.
 """
 
-from collections.abc import Sequence
-
 from scipy.optimize import linprog
 from sklearn.linear_model import LinearRegression, PoissonRegressor, QuantileRegressor
 
-from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
@@ -19,6 +16,7 @@ from darts.models.forecasting.sklearn_model import (
     SKLearnModel,
     _QuantileModelContainer,
 )
+from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
@@ -207,12 +205,12 @@ class LinearRegressionModel(SKLearnModel):
 
     def fit(
         self,
-        series: TimeSeries | Sequence[TimeSeries],
-        past_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
-        future_covariates: TimeSeries | Sequence[TimeSeries] | None = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         max_samples_per_ts: int | None = None,
         n_jobs_multioutput_wrapper: int | None = None,
-        sample_weight: TimeSeries | Sequence[TimeSeries] | str | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
         verbose: bool | None = None,
         **kwargs,
     ):

@@ -399,9 +399,6 @@ class TimesFM2p5Model(FoundationModel):
             to using a constant learning rate. Default: ``None``.
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
-        use_reversible_instance_norm
-            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [3]_.
-            It is only applied to the features of the target series and not the covariates.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -512,8 +509,6 @@ class TimesFM2p5Model(FoundationModel):
                 arXiv https://arxiv.org/abs/2310.10688.
         .. [2] "A decoder-only foundation model for time-series forecasting", 2024. Google Research.
                 https://research.google/blog/a-decoder-only-foundation-model-for-time-series-forecasting/
-        .. [3] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
-                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
 
         Examples
         --------

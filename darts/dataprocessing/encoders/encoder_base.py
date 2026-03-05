@@ -13,9 +13,9 @@ import pandas as pd
 from darts import TimeSeries
 from darts.dataprocessing.transformers import FittableDataTransformer
 from darts.logging import get_logger, raise_if, raise_log
+from darts.typing import TimeIndex
 from darts.utils.utils import generate_index
 
-SupportedIndex = pd.DatetimeIndex | pd.RangeIndex
 EncoderOutputType = Sequence[TimeSeries] | list[TimeSeries] | None
 logger = get_logger(__name__)
 
@@ -112,7 +112,7 @@ class CovariatesIndexGenerator(ABC):
     @abstractmethod
     def generate_train_idx(
         self, target: TimeSeries, covariates: TimeSeries | None = None
-    ) -> tuple[SupportedIndex, pd.Timestamp]:
+    ) -> tuple[TimeIndex, pd.Timestamp]:
         """
         Generates/extracts time index (or integer index) for covariates at model training time.
 
@@ -131,7 +131,7 @@ class CovariatesIndexGenerator(ABC):
     @abstractmethod
     def generate_inference_idx(
         self, n: int, target: TimeSeries, covariates: TimeSeries | None = None
-    ) -> tuple[SupportedIndex, pd.Timestamp]:
+    ) -> tuple[TimeIndex, pd.Timestamp]:
         """
         Generates/extracts time index (or integer index) for covariates at model inference / prediction time.
 
@@ -152,7 +152,7 @@ class CovariatesIndexGenerator(ABC):
 
     def generate_train_inference_idx(
         self, n: int, target: TimeSeries, covariates: TimeSeries | None = None
-    ) -> tuple[SupportedIndex, pd.Timestamp]:
+    ) -> tuple[TimeIndex, pd.Timestamp]:
         """
         Generates/extracts time index (or integer index) for covariates for training and inference / prediction.
 
@@ -273,7 +273,7 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
 
     def generate_train_idx(
         self, target: TimeSeries, covariates: TimeSeries | None = None
-    ) -> tuple[SupportedIndex, pd.Timestamp]:
+    ) -> tuple[TimeIndex, pd.Timestamp]:
         super().generate_train_idx(target, covariates)
 
         # the returned index depends on the following cases:
@@ -314,7 +314,7 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
 
     def generate_inference_idx(
         self, n: int, target: TimeSeries, covariates: TimeSeries | None = None
-    ) -> tuple[SupportedIndex, pd.Timestamp]:
+    ) -> tuple[TimeIndex, pd.Timestamp]:
         super().generate_inference_idx(n, target, covariates)
 
         # for prediction (`n` is given) with past covariates the returned index depends on the following cases:
@@ -372,7 +372,7 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
 
     def generate_train_idx(
         self, target: TimeSeries, covariates: TimeSeries | None = None
-    ) -> tuple[SupportedIndex, pd.Timestamp]:
+    ) -> tuple[TimeIndex, pd.Timestamp]:
         super().generate_train_idx(target, covariates)
 
         # the returned index depends on the following cases:
@@ -422,7 +422,7 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
 
     def generate_inference_idx(
         self, n: int, target: TimeSeries, covariates: TimeSeries | None = None
-    ) -> tuple[SupportedIndex, pd.Timestamp]:
+    ) -> tuple[TimeIndex, pd.Timestamp]:
         super().generate_inference_idx(n, target, covariates)
 
         # for prediction (`n` is given) with future covariates the returned index depends on the following cases:
@@ -632,7 +632,7 @@ class SingleEncoder(Encoder, ABC):
 
     @abstractmethod
     def _encode(
-        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
+        self, index: TimeIndex, target_end: pd.Timestamp, dtype: np.dtype
     ) -> TimeSeries:
         """Single Encoders must implement an _encode() method to encode the index.
 
@@ -913,7 +913,7 @@ class SequentialEncoderTransformer:
         return self._fit_called
 
 
-def _generate_train_idx(target, steps_ahead_start, steps_ahead_end) -> SupportedIndex:
+def _generate_train_idx(target, steps_ahead_start, steps_ahead_end) -> TimeIndex:
     """The returned index depends on the following cases:
 
     case 1

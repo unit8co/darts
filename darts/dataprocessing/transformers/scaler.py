@@ -3,7 +3,7 @@ Scaler
 ------
 """
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from copy import deepcopy
 from typing import Any
 
@@ -18,6 +18,7 @@ from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
 from darts.logging import get_logger, raise_log
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -151,7 +152,7 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
 
     @staticmethod
     def ts_fit(
-        series: TimeSeries | Sequence[TimeSeries],
+        series: TimeSeriesLike,
         params: Mapping[str, Any],
         *args,
         **kwargs,

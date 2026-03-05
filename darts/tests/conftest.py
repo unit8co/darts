@@ -75,6 +75,14 @@ except ImportError:
     SF_AVAILABLE = False
 
 try:
+    import neuralforecast  # noqa: F401
+
+    NF_AVAILABLE = True
+except ImportError:
+    logger.warning("NeuralForecast not installed - Some tests will be skipped.")
+    NF_AVAILABLE = False
+
+try:
     import onnx  # noqa: F401
     import onnxruntime  # noqa: F401
 

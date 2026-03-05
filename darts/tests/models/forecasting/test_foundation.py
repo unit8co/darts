@@ -105,6 +105,52 @@ class TestFoundationModel:
         "darts.models.components.huggingface_connector.hf_hub_download",
         side_effect=mock_download,
     )
+    @pytest.mark.parametrize(
+        "user_rin, expected_rin",
+        [
+            (True, {"affine": False}),
+            ({"eps": 1e-7}, {"affine": False, "eps": 1e-7}),
+            ({"affine": True}, {"affine": False}),
+            ({"eps": 1e-9, "affine": True}, {"affine": False, "eps": 1e-9}),
+            ({"affine": False}, {"affine": False}),
+            ({"eps": 1e-8, "affine": False}, {"eps": 1e-8, "affine": False}),
+            (False, False),
+        ],
+    )
+    def test_rinorm(self, mock_method, caplog, user_rin, expected_rin):
+        """Checks that RINorm works, and that affine=True is overridden to affine=False."""
+        # `affine=True` is overridden to `affine=False`
+        affine_override = False
+        if user_rin is True or (
+            isinstance(user_rin, dict) and user_rin.get("affine", True)
+        ):
+            affine_override = True
+
+        # `use_reversible_instance_norm` is overridden to `use_reversible_instance_norm={"affine": False}`
+        with caplog.at_level(logging.WARNING):
+            model = Chronos2Model(
+                input_chunk_length=12,
+                output_chunk_length=6,
+                use_reversible_instance_norm=user_rin,
+                **tfm_kwargs,
+            )
+
+        assert (
+            "`use_reversible_instance_norm` is overridden to" in caplog.text
+        ) is affine_override
+        # RINorm affine transformation is disabled
+        assert model.pl_module_params["use_reversible_instance_norm"] == expected_rin
+        model.fit(series=self.series)
+
+        if user_rin:
+            assert model.model.rin.affine is False
+        else:
+            assert model.model.rin is None
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
     def test_local_dir(self, mock_method, caplog):
         model = Chronos2Model(
             input_chunk_length=12,
