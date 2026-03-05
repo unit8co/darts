@@ -58,6 +58,7 @@ from mlflow.utils.requirements_utils import _get_pinned_requirement
 import darts
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.utils.ts_utils import get_single_series
 
 logger = get_logger(__name__)
 
@@ -866,15 +867,10 @@ def _make_metric_patch(metric_name: str) -> Callable:
         input_is_list = not hasattr(series, "components")
 
         # extract component names from the series (or first element if list)
-        component_names = None
-        try:
-            if input_is_list:
-                # we assume that subsequent series have same component order
-                component_names = series[0].components.tolist()
-            else:
-                component_names = series.components.tolist()
-        except Exception:
-            logger.info("Could not extract component names from series.")
+        single_series = get_single_series(series)
+        component_names = (
+            single_series.components.tolist() if single_series is not None else None
+        )
 
         try:
             _log_metric_result(
