@@ -338,7 +338,7 @@ def autolog(
     log_models: bool = True,
     log_params: bool = True,
     log_metrics: bool = True,
-    inject_per_epoch_callbacks: bool = True,
+    log_torch_metrics: bool = True,
     disable: bool = False,
     silent: bool = False,
     manage_run: bool = True,
@@ -389,15 +389,10 @@ def autolog(
     log_metrics
         If ``True`` (default), patch all darts metric functions so that any
         call made inside an active MLflow run is automatically logged.
-    inject_per_epoch_callbacks
+    log_torch_metrics
         If ``True`` (default), enable ``mlflow.pytorch.autolog(log_models=False)``
         around PyTorch-based model training to automatically log per-epoch
         training and validation metrics. Only effective for PyTorch-based models.
-    extra_metrics
-        An optional list of additional Darts metric functions to log on top of
-        the defaults (``mae``, ``mse``, ``rmse``, ``mape``).  Each function
-        must follow the standard Darts metric signature
-        ``metric(actual_series, pred_series)``.
     disable
         If ``True``, restore the original ``fit()`` methods and stop
         autologging.
@@ -416,7 +411,7 @@ def autolog(
     # because the decorator short-circuits on disable=True before the function
     # body executes, and MLflow's session manager suppresses nested autolog
     # patches if called from within a safe_patch context.
-    if inject_per_epoch_callbacks and not disable:
+    if log_torch_metrics and not disable:
         try:
             import mlflow.pytorch
 
@@ -478,6 +473,7 @@ def _autolog(
     ``disable=True``.
     """
 
+    # patch `fit()` for all forecasting models
     for _, cls in _get_forecasting_models():
         try:
             safe_patch(
@@ -493,6 +489,7 @@ def _autolog(
     if log_metrics:
         import darts.metrics as _darts_metrics
 
+        # patch all metric functions to log results
         for metric_name in _darts_metrics.__all__:
             try:
                 # metrics should not create their own runs;
