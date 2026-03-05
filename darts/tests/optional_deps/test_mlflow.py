@@ -1,4 +1,3 @@
-import json
 import os
 
 import numpy as np
@@ -6,6 +5,11 @@ import pandas as pd
 import pytest
 
 import darts.utils.timeseries_generation as tg
+from darts import TimeSeries
+from darts.models.forecasting.forecasting_model import (
+    ForecastingModel,
+    GlobalForecastingModel,
+)
 from darts.tests.conftest import MLFLOW_AVAILABLE, TORCH_AVAILABLE, tfm_kwargs_dev
 from darts.utils.utils import PL_AVAILABLE
 
@@ -72,14 +76,37 @@ def assert_mlflow_artifacts_exist(path: str, is_torch: bool = False):
         assert os.path.exists(os.path.join(path, "model.pkl"))
 
 
-def assert_predictions_equal(model1, model2, n: int, decimal: int = 4, series=None):
+def assert_predictions_equal(
+    model1: ForecastingModel,
+    model2: ForecastingModel,
+    n: int,
+    decimal: int = 4,
+    is_global: bool = True,
+    series: TimeSeries | None = None,
+    past_covariates: TimeSeries | None = None,
+    future_covariates: TimeSeries | None = None,
+):
     """Assert that two models produce equivalent predictions. If series is provided,
     it will be passed to the second model's predict method (for global models that require it)."""
-    pred1 = model1.predict(n=n)
-    if series is not None:
-        pred2 = model2.predict(n=n, series=series)
+    if is_global:
+        assert isinstance(model1, GlobalForecastingModel)
+        assert isinstance(model2, GlobalForecastingModel)
+        pred1 = model1.predict(
+            n=n,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+        pred2 = model2.predict(
+            n=n,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
     else:
+        pred1 = model1.predict(n=n)
         pred2 = model2.predict(n=n)
+
     np.testing.assert_array_almost_equal(
         pred1.values(), pred2.values(), decimal=decimal
     )
@@ -107,7 +134,7 @@ class TestMLflow:
         assert_mlflow_artifacts_exist(model_path, is_torch=False)
 
         loaded_model = load_model(f"file://{model_path}")
-        assert_predictions_equal(model, loaded_model, n=5)
+        assert_predictions_equal(model, loaded_model, n=5, is_global=False)
 
     def test_save_load_regression_model(self, tmpdir_fn):
         """Test save/load round-trip for regression model"""
@@ -152,23 +179,7 @@ class TestMLflow:
             log_info = log_model(model, name="model")
 
         loaded_model = load_model(log_info.model_uri)
-        assert_predictions_equal(model, loaded_model, n=5)
-
-    def test_log_model_with_params(self, mlflow_tracking):
-        """Test that log_params=True logs model parameters"""
-        model = LinearRegressionModel(lags=5, lags_past_covariates=3)
-        model.fit(self.ts_univariate[:40], past_covariates=self.ts_past_cov[:40])
-
-        with mlflow.start_run():
-            log_model(model, name="model", log_params=True)
-            run_id = mlflow.active_run().info.run_id
-
-        run = mlflow.get_run(run_id)
-        assert run.data.params["lags"] == "5"
-        assert run.data.params["lags_past_covariates"] == "3"
-        assert run.data.params["n_past_covariates"] == "1"
-        assert run.data.params["n_future_covariates"] == "0"
-        assert run.data.params["n_static_covariates"] == "0"
+        assert_predictions_equal(model, loaded_model, n=5, is_global=False)
 
     def test_log_model_with_covariates(self, mlflow_tracking):
         """Test that covariate info is logged with correct values"""
@@ -176,44 +187,17 @@ class TestMLflow:
         model.fit(self.ts_univariate[:40], past_covariates=self.ts_past_cov[:40])
 
         with mlflow.start_run():
-            log_model(model, name="model", log_params=True)
+            log_model(model, name="model")
             run_id = mlflow.active_run().info.run_id
 
-            # get artifact while run is still active
-            artifact_uri = mlflow.get_artifact_uri("covariates.json")
-            artifact_path = artifact_uri.replace("file://", "")
-            assert os.path.exists(artifact_path), (
-                "covariates.json artifact should exist"
-            )
-
-            with open(artifact_path) as f:
-                cov_data = json.load(f)
-
-        run = mlflow.get_run(run_id)
-        # check covariate usage tags have the correct boolean values
-        assert run.data.tags["uses_past_covariates"] == "true"
-        assert run.data.tags["uses_future_covariates"] == "false"
-        assert run.data.tags["uses_static_covariates"] == "false"
-        # check covariate count params
-        assert run.data.params["n_past_covariates"] == "1"
-        assert run.data.params["n_future_covariates"] == "0"
-        assert run.data.params["n_static_covariates"] == "0"
-
-        # verify structure and content
-        assert "past_covariates" in cov_data
-        assert "future_covariates" in cov_data
-        assert "static_covariates" in cov_data
-
-        # check past covariates data
-        assert cov_data["past_covariates"]["used"] is True
-        assert cov_data["past_covariates"]["count"] == 1
-        assert len(cov_data["past_covariates"]["names"]) == 1
-
-        # check future and static covariates not used
-        assert cov_data["future_covariates"]["used"] is False
-        assert cov_data["future_covariates"]["count"] == 0
-        assert cov_data["static_covariates"]["used"] is False
-        assert cov_data["static_covariates"]["count"] == 0
+        loaded_model = load_model(f"runs:/{run_id}/model")
+        assert_predictions_equal(
+            model,
+            loaded_model,
+            n=5,
+            series=self.ts_univariate[:40],
+            past_covariates=self.ts_past_cov,
+        )
 
     def test_log_model_with_all_covariate_types(self, mlflow_tracking):
         """Test logging model with past, future, and static covariates"""
@@ -228,35 +212,18 @@ class TestMLflow:
         )
 
         with mlflow.start_run():
-            log_model(model, name="model", log_params=True)
+            log_model(model, name="model")
             run_id = mlflow.active_run().info.run_id
 
-            # get artifact while run is still active
-            artifact_uri = mlflow.get_artifact_uri("covariates.json")
-            artifact_path = artifact_uri.replace("file://", "")
-
-            with open(artifact_path) as f:
-                cov_data = json.load(f)
-
-        run = mlflow.get_run(run_id)
-
-        # verify all covariate types are tracked
-        assert run.data.tags["uses_past_covariates"] == "true"
-        assert run.data.tags["uses_future_covariates"] == "true"
-        assert run.data.tags["uses_static_covariates"] == "true"
-
-        # verify covariate counts
-        assert run.data.params["n_past_covariates"] == "1"
-        assert run.data.params["n_future_covariates"] == "1"
-        assert run.data.params["n_static_covariates"] == "1"
-
-        # all covariate types should be used
-        assert cov_data["past_covariates"]["used"] is True
-        assert cov_data["past_covariates"]["count"] == 1
-        assert cov_data["future_covariates"]["used"] is True
-        assert cov_data["future_covariates"]["count"] == 1
-        assert cov_data["static_covariates"]["used"] is True
-        assert cov_data["static_covariates"]["count"] == 1
+        loaded_model = load_model(f"runs:/{run_id}/model")
+        assert_predictions_equal(
+            model,
+            loaded_model,
+            n=5,
+            series=self.ts_with_static[:40],
+            past_covariates=self.ts_past_cov,
+            future_covariates=self.ts_future_cov,
+        )
 
     def test_autolog_enable_disable(self, mlflow_tracking, autolog_context):
         """Test autolog can be enabled and disabled"""
@@ -380,27 +347,7 @@ class TestMLflow:
         model = LinearRegressionModel(lags=5, lags_past_covariates=3)
         model.fit(self.ts_univariate[:40], past_covariates=self.ts_past_cov[:40])
 
-        with mlflow.start_run():
-            log_model(model, name="model", log_params=True)
-
-            artifact_uri = mlflow.get_artifact_uri("covariates.json")
-            artifact_path = artifact_uri.replace("file://", "")
-
-            with open(artifact_path) as f:
-                cov_data = json.load(f)
-
-        # validate schema structure
-        required_keys = ["past_covariates", "future_covariates", "static_covariates"]
-        assert all(key in cov_data for key in required_keys), (
-            "Missing required covariate keys"
-        )
-
-        for cov_type in required_keys:
-            cov_info = cov_data[cov_type]
-            assert "used" in cov_info and isinstance(cov_info["used"], bool)
-            assert "count" in cov_info and isinstance(cov_info["count"], int)
-            assert "names" in cov_info and isinstance(cov_info["names"], list)
-            assert cov_info["count"] == len(cov_info["names"])
+        # TODO: use autolog
 
     def test_multivariate_with_all_covariate_types(self, mlflow_tracking):
         """Test saving/loading multivariate series with all covariate types"""
@@ -419,20 +366,18 @@ class TestMLflow:
         )
 
         with mlflow.start_run():
-            log_model(model, name="model", log_params=True)
+            log_model(model, name="model")
             run_id = mlflow.active_run().info.run_id
 
-        run = mlflow.get_run(run_id)
-
-        # verify all covariate types detected
-        assert run.data.tags["uses_past_covariates"] == "true"
-        assert run.data.tags["uses_future_covariates"] == "true"
-        assert run.data.tags["uses_static_covariates"] == "true"
-
-        # verify correct component counts
-        assert run.data.params["n_past_covariates"] == "1"
-        assert run.data.params["n_future_covariates"] == "1"
-        assert run.data.params["n_static_covariates"] == "2"
+        loaded_model = load_model(f"runs:/{run_id}/model")
+        assert_predictions_equal(
+            loaded_model,
+            model,
+            n=5,
+            series=target[:40],
+            past_covariates=self.ts_past_cov,
+            future_covariates=self.ts_future_cov,
+        )
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_pytorch_autolog_with_existing_callbacks(
@@ -624,8 +569,10 @@ class TestMLflow:
 
         # Only pass series for global models (LinearRegressionModel)
         # Local models (ExponentialSmoothing) don't need it
-        series = self.ts_univariate if fit_kwargs else None
-        assert_predictions_equal(model, loaded, n=5, series=series)
+        if isinstance(model, GlobalForecastingModel):
+            assert_predictions_equal(model, loaded, n=5, series=self.ts_univariate)
+        else:
+            assert_predictions_equal(model, loaded, n=5, is_global=False)
 
     @pytest.mark.parametrize(
         "series,series_name",
