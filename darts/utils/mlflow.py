@@ -14,10 +14,12 @@ References:
 https://github.com/sktime/sktime/blob/main/sktime/utils/mlflow_sktime.py
 """
 
+import inspect
 import json
 import os
 import re
 from collections.abc import Callable
+from operator import itemgetter
 
 import mlflow
 import numpy as np
@@ -437,11 +439,26 @@ def autolog(
         log_models=log_models,
         log_params=log_params,
         log_metrics=log_metrics,
-        inject_per_epoch_callbacks=inject_per_epoch_callbacks,
         disable=disable,
         silent=silent,
         manage_run=manage_run,
     )
+
+
+def _get_forecasting_models():
+    """
+    Returns:
+        A list of (name, class) tuples for all forecasting models in the Darts library.
+    """
+    import darts.models
+
+    classes = inspect.getmembers(darts.models, inspect.isclass)
+
+    classes = [
+        (name, cls) for name, cls in classes if issubclass(cls, ForecastingModel)
+    ]
+
+    return sorted(set(classes), key=itemgetter(0))
 
 
 @autologging_integration(FLAVOR_NAME)
@@ -449,7 +466,6 @@ def _autolog(
     log_models: bool = True,
     log_params: bool = True,
     log_metrics: bool = True,
-    inject_per_epoch_callbacks: bool = True,
     disable: bool = False,
     silent: bool = False,
     manage_run: bool = True,
@@ -462,21 +478,7 @@ def _autolog(
     ``disable=True``.
     """
 
-    # recursively get all subclasses of ForecastingModel that override fit()
-    def get_all_subclasses(cls):
-        all_subclasses = []
-        for subclass in cls.__subclasses__():
-            all_subclasses.append(subclass)
-            all_subclasses.extend(get_all_subclasses(subclass))
-        return all_subclasses
-
-    classes_to_patch = [ForecastingModel]
-
-    for subclass in get_all_subclasses(ForecastingModel):
-        if "fit" in subclass.__dict__:
-            classes_to_patch.append(subclass)
-
-    for cls in classes_to_patch:
+    for _, cls in _get_forecasting_models():
         try:
             safe_patch(
                 FLAVOR_NAME,
@@ -508,7 +510,7 @@ def _autolog(
                 )
 
 
-def get_default_pip_requirements(is_torch: bool = False) -> list[str]:
+def get_default_pip_requirements():
     """Return the default pip requirements for logging a darts model.
 
     Returns
@@ -520,13 +522,8 @@ def get_default_pip_requirements(is_torch: bool = False) -> list[str]:
     return reqs
 
 
-def get_default_conda_env(is_torch: bool = False) -> dict:
+def get_default_conda_env():
     """Return a default conda environment dict for a darts model.
-
-    Parameters
-    ----------
-    is_torch
-        Whether the model is a PyTorch-based model.
 
     Returns
     -------
@@ -534,8 +531,7 @@ def get_default_conda_env(is_torch: bool = False) -> dict:
         A conda environment specification dictionary.
     """
     return _mlflow_conda_env(
-        additional_pip_deps=get_default_pip_requirements(is_torch),
-        additional_conda_channels=["conda-forge"],
+        additional_pip_deps=get_default_pip_requirements(),
     )
 
 
