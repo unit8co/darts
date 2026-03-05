@@ -66,10 +66,10 @@ def assert_mlflow_artifacts_exist(path: str, is_torch: bool = False):
     assert os.path.exists(os.path.join(path, "python_env.yaml"))
 
     if is_torch:
-        assert os.path.exists(os.path.join(path, "data", "model.pt"))
-        assert os.path.exists(os.path.join(path, "data", "model.pt.ckpt"))
+        assert os.path.exists(os.path.join(path, "model.pt"))
+        assert os.path.exists(os.path.join(path, "model.pt.ckpt"))
     else:
-        assert os.path.exists(os.path.join(path, "data", "model.pkl"))
+        assert os.path.exists(os.path.join(path, "model.pkl"))
 
 
 def assert_predictions_equal(model1, model2, n: int, decimal: int = 4, series=None):
@@ -595,7 +595,7 @@ class TestMLflow:
         save_model(model, model_path)
 
         # remove the model data file
-        model_data_path = os.path.join(model_path, "data", "model.pkl")
+        model_data_path = os.path.join(model_path, "model.pkl")
         os.remove(model_data_path)
 
         # loading should fail
