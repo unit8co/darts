@@ -538,15 +538,17 @@ def _autolog(
 
         run_id = mlflow.active_run().info.run_id
 
+        result = original(self, *args, **kwargs)
+
         # Set tags to identify the model class and relevant information
         autologging_client.set_tags(run_id=run_id, tags=_get_model_info_tags(self))
-
-        result = original(self, *args, **kwargs)
 
         if log_params:
             # Log the parameters for model creation
             autologging_client.log_params(run_id=run_id, params=self.model_params)
             _log_covariate_info(self)
+
+        param_logging_ops = autologging_client.flush(synchronous=False)
 
         if log_models:
             model_id = _initialize_logged_model("model", flavor=FLAVOR_NAME).model_id
@@ -564,6 +566,8 @@ def _autolog(
                     f"Failed to autolog model artifact for {type(self).__name__}.",
                     exc_info=True,
                 )
+
+        param_logging_ops.await_completion()
 
         return result
 

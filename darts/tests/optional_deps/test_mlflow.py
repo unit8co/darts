@@ -236,7 +236,7 @@ class TestMLflow:
 
             # verify the run has expected content
             last_run = runs.iloc[0]
-            assert last_run["tags.darts.model_class"] == "ExponentialSmoothing"
+            assert last_run["tags.model_name"] == "ExponentialSmoothing"
             assert last_run["tags.mlflow.runName"] is not None
 
         # after context exits, autolog should be disabled
@@ -259,7 +259,7 @@ class TestMLflow:
 
             last_run = runs.iloc[0]
             assert last_run["params.seasonal_periods"] == "12"
-            assert last_run["tags.darts.model_class"] == "ExponentialSmoothing"
+            assert last_run["tags.model_name"] == "ExponentialSmoothing"
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_autolog_torch_metrics(self, mlflow_tracking, autolog_context):
@@ -278,7 +278,7 @@ class TestMLflow:
             assert len(runs) == 1, "Expected exactly one run"
             last_run = runs.iloc[0]
             last_run_id = last_run["run_id"]
-            assert last_run["tags.darts.model_class"] == "NBEATSModel"
+            assert last_run["tags.model_name"] == "NBEATSModel"
 
             client = mlflow.tracking.MlflowClient()
 
@@ -328,7 +328,7 @@ class TestMLflow:
             runs = mlflow.search_runs()
             assert len(runs) == 1
             run_id = runs.iloc[0]["run_id"]
-            assert runs.iloc[0]["tags.darts.model_class"] == "NBEATSModel"
+            assert runs.iloc[0]["tags.model_name"] == "NBEATSModel"
 
             client = mlflow.tracking.MlflowClient()
             assert_metric(client.get_metric_history(run_id, "train_loss"), "train_loss")
@@ -440,7 +440,7 @@ class TestMLflow:
         assert len(runs) == 2, "Expected two separate runs for two fits"
 
         # verify different model classes logged
-        model_classes = set(runs["tags.darts.model_class"])
+        model_classes = set(runs["tags.model_name"])
         assert "ExponentialSmoothing" in model_classes
         assert "LinearRegressionModel" in model_classes
 
@@ -466,7 +466,7 @@ class TestMLflow:
         assert len(runs) == 2, "Expected two separate runs for two fits"
 
         for _, run in runs.iterrows():
-            assert run["tags.darts.model_class"] in [
+            assert run["tags.model_name"] in [
                 "NBEATSModel",
                 "LinearRegressionModel",
             ]
