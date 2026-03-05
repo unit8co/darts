@@ -463,28 +463,28 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         """
         Display a SHAP "Force Plot" for one target and one horizon, for a given foreground series.
 
-        It shows SHAP values of all input features with an additive force layout.
+        It shows SHAP values of all input features with an additive force layout for each forecasted timestamp. At
+        each timestamp, SHAP values of all features and the base value would sum up to the model prediction.
 
         Once the plot is displayed, select **"original sample ordering"** to observe the time series chronologically.
 
         Parameters
         ----------
         foreground_series
-            Optionally, the target series to explain. Can be multivariate. If `None`, will use the `background_series`.
+            Optionally, the target series to explain. Can be multivariate. Default: ``None``, which means that the
+            background series will be used as foreground.
         foreground_past_covariates
-            Optionally, a past covariate series if required by the forecasting model. If `None`, will use the
-            `background_past_covariates`.
+            Optionally, a past covariate series if required by the forecasting model.
         foreground_future_covariates
-            Optionally, a future covariate series if required by the forecasting model. If `None`, will use the
-            `background_future_covariates`.
+            Optionally, a future covariate series if required by the forecasting model.
         horizon
             Optionally, an integer for the point/step in the future to explain, starting from the first prediction
-            step at 1. `horizons` must not be larger than `output_chunk_length`.
+            step at 1. `Must not be larger than ``output_chunk_length``.
         target_component
             Optionally, the target component to plot. If the target series is multivariate, the target component
             must be specified.
         **kwargs
-            Optionally, additional keyword arguments passed to `shap.force_plot()`.
+            Optionally, additional keyword arguments passed to ``shap.force_plot()``.
         """
         raise_if(
             target_component is None and len(self.target_components) > 1,
