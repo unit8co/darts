@@ -224,11 +224,7 @@ def load_model(
         flavor_conf["model_class_module"], flavor_conf["model_class_name"]
     )
 
-    model_path = os.path.join(
-        local_path,
-        flavor_conf.get("data", _MODEL_DATA_SUBFOLDER),
-        flavor_conf["model_file"],
-    )
+    model_path = os.path.join(local_path, flavor_conf["data"])
 
     if flavor_conf.get("is_torch_model", False):
         return model_cls.load(model_path, **kwargs)
