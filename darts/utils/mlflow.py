@@ -32,10 +32,7 @@ from mlflow.models.utils import _save_example
 from mlflow.tracking._model_registry import DEFAULT_AWAIT_MAX_SLEEP_SECONDS
 from mlflow.tracking.artifact_utils import _download_artifact_from_uri
 from mlflow.utils import _get_fully_qualified_class_name, _inspect_original_var_name
-from mlflow.utils.autologging_utils import (
-    autologging_integration,
-    get_autologging_config,
-)
+from mlflow.utils.autologging_utils import autologging_integration
 from mlflow.utils.autologging_utils.safety import safe_patch
 from mlflow.utils.class_utils import _get_class_from_string
 from mlflow.utils.environment import (
@@ -489,6 +486,47 @@ def _autolog(
     ``disable=True``.
     """
 
+    def _patched_fit(original, self, *args, **kwargs):
+        """Patch function for ForecastingModel.fit() autologging.
+
+        Logs model parameters, class, covariates and the model itself.
+        Parameters
+        ----------
+        original
+            The original fit method being patched.
+        self
+            The model instance (ForecastingModel or TorchForecastingModel).
+        args
+            Positional arguments passed to fit.
+        kwargs
+            Keyword arguments passed to fit.
+
+        Returns
+        -------
+            The result of calling the original fit method.
+        """
+
+        mlflow.set_tag("darts.model_class", type(self).__name__)
+
+        if log_params:
+            _log_model_params(self)
+
+        result = original(self, *args, **kwargs)
+
+        if log_params:
+            _log_covariate_info(self)
+
+        if log_models:
+            try:
+                log_model(self, name="model", log_params=False)
+            except Exception:
+                logger.info(
+                    f"Failed to autolog model artifact for {type(self).__name__}.",
+                    exc_info=True,
+                )
+
+        return result
+
     # patch `fit()` for all forecasting models
     for _, cls in _get_forecasting_models():
         try:
@@ -629,7 +667,7 @@ def _log_covariate_info(model) -> None:
 
 
 def _is_torch_model(model) -> bool:
-    """Check if a model is a TorchForecastingModel.
+    """Check if a model is a `TorchForecastingModel`.
 
     Parameters
     ----------
@@ -639,7 +677,7 @@ def _is_torch_model(model) -> bool:
     Returns
     -------
     bool
-        True if the model is a TorchForecastingModel, False otherwise.
+        True if the model is a `TorchForecastingModel`, False otherwise.
     """
     method = getattr(model, "predict_from_dataset", None)
     return callable(method)
@@ -677,50 +715,6 @@ def _extract_covariate_metadata(
             info["count"] = len(names)
 
     return info
-
-
-def _patched_fit(original, self, *args, **kwargs):
-    """Patch function for ForecastingModel.fit() autologging.
-
-    Logs model parameters, class, covariates and the model itself.
-    Parameters
-    ----------
-    original
-        The original fit method being patched.
-    self
-        The model instance (ForecastingModel or TorchForecastingModel).
-    args
-        Positional arguments passed to fit.
-    kwargs
-        Keyword arguments passed to fit.
-
-    Returns
-    -------
-        The result of calling the original fit method.
-    """
-    log_models = get_autologging_config(FLAVOR_NAME, "log_models", True)
-    log_params = get_autologging_config(FLAVOR_NAME, "log_params", True)
-
-    mlflow.set_tag("darts.model_class", type(self).__name__)
-
-    if log_params:
-        _log_model_params(self)
-
-    result = original(self, *args, **kwargs)
-
-    if log_params:
-        _log_covariate_info(self)
-
-    if log_models:
-        try:
-            log_model(self, name="model", log_params=False)
-        except Exception:
-            logger.info(
-                f"Failed to autolog model artifact for {type(self).__name__}.",
-                exc_info=True,
-            )
-
-    return result
 
 
 def _sanitize_mlflow_key(name: str) -> str:
