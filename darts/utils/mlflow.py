@@ -134,6 +134,8 @@ def save_model(
         )
 
     _validate_env_arguments(conda_env, pip_requirements, extra_pip_requirements)
+
+    path = os.path.abspath(path)
     _validate_and_prepare_target_save_path(path)
     code_dir_subpath = _validate_and_copy_code_paths(code_paths, path)
 
