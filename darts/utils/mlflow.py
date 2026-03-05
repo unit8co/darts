@@ -169,7 +169,6 @@ def save_model(
         data=model_file,
         model_class=model_class,
         code=code_dir_subpath,
-        is_torch_model=is_torch,
     )
     mlflow_model.save(os.path.join(path, MLMODEL_FILE_NAME))
 
@@ -243,10 +242,7 @@ def load_model(
 
     model_path = os.path.join(local_path, flavor_conf["data"])
 
-    if flavor_conf.get("is_torch_model", False):
-        return model_cls.load(model_path, **kwargs)
-    else:
-        return model_cls.load(model_path)
+    return model_cls.load(model_path, **kwargs)
 
 
 def log_model(
@@ -645,15 +641,8 @@ def _is_torch_model(model) -> bool:
     bool
         True if the model is a TorchForecastingModel, False otherwise.
     """
-    try:
-        from darts.models.forecasting.torch_forecasting_model import (
-            TorchForecastingModel,
-        )
-
-        return isinstance(model, TorchForecastingModel)
-    except ImportError:
-        logger.info("TorchForecastingModel not available; treating model as non-torch")
-        return False
+    method = getattr(model, "predict_from_dataset", None)
+    return callable(method)
 
 
 def _extract_covariate_metadata(
