@@ -11,7 +11,6 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
 )
 from darts.tests.conftest import MLFLOW_AVAILABLE, TORCH_AVAILABLE, tfm_kwargs_dev
-from darts.utils.utils import PL_AVAILABLE
 
 if not MLFLOW_AVAILABLE:
     pytest.skip(
@@ -385,7 +384,7 @@ class TestMLflow:
     ):
         """Test pytorch autolog works when model already has callbacks"""
         # create model with existing callback
-        if PL_AVAILABLE:
+        if TORCH_AVAILABLE:
             import pytorch_lightning as pl
 
             existing_callback = pl.callbacks.EarlyStopping(monitor="train_loss")
