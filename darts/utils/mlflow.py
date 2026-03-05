@@ -14,7 +14,6 @@ References:
 https://github.com/sktime/sktime/blob/main/sktime/utils/mlflow_sktime.py
 """
 
-import importlib
 import json
 import os
 import re
@@ -27,12 +26,13 @@ from mlflow.models import Model
 from mlflow.models.model import MLMODEL_FILE_NAME
 from mlflow.models.utils import _save_example
 from mlflow.tracking.artifact_utils import _download_artifact_from_uri
-from mlflow.utils import _inspect_original_var_name
+from mlflow.utils import _get_fully_qualified_class_name, _inspect_original_var_name
 from mlflow.utils.autologging_utils import (
     autologging_integration,
     get_autologging_config,
 )
 from mlflow.utils.autologging_utils.safety import safe_patch
+from mlflow.utils.class_utils import _get_class_from_string
 from mlflow.utils.environment import (
     _CONDA_ENV_FILE_NAME,
     _CONSTRAINTS_FILE_NAME,
@@ -60,7 +60,6 @@ from darts.models.forecasting.forecasting_model import ForecastingModel
 logger = get_logger(__name__)
 
 FLAVOR_NAME = "darts"
-_MODEL_DATA_SUBFOLDER = "data"
 
 
 _MODEL_FILE_STAT = "model.pkl"
@@ -145,25 +144,7 @@ def save_model(
     model_file = _MODEL_FILE_TORCH if is_torch else _MODEL_FILE_STAT
     model.save(os.path.join(path, model_file), clean=True)
 
-    module_path, class_name = _get_model_class_path(model)
-
-    default_reqs = None if pip_requirements else get_default_pip_requirements(is_torch)
-    conda_env, pip_requirements, pip_constraints = (
-        _process_pip_requirements(
-            default_reqs, pip_requirements, extra_pip_requirements
-        )
-        if conda_env is None
-        else _process_conda_env(conda_env)
-    )
-
-    with open(os.path.join(path, _CONDA_ENV_FILE_NAME), "w") as f:
-        yaml.safe_dump(conda_env, stream=f, default_flow_style=False)
-
-    if pip_constraints:
-        write_to(os.path.join(path, _CONSTRAINTS_FILE_NAME), "\n".join(pip_constraints))
-
-    write_to(os.path.join(path, _REQUIREMENTS_FILE_NAME), "\n".join(pip_requirements))
-    _PythonEnv.current().to_yaml(os.path.join(path, _PYTHON_ENV_FILE_NAME))
+    model_class = _get_fully_qualified_class_name(model)
 
     if mlflow_model is None:
         mlflow_model = Model()
@@ -181,11 +162,35 @@ def save_model(
         FLAVOR_NAME,
         darts_version=darts.__version__,
         data=model_file,
-        model_class=f"{module_path}.{class_name}",
+        model_class=model_class,
         code=code_dir_subpath,
         is_torch_model=is_torch,
     )
     mlflow_model.save(os.path.join(path, MLMODEL_FILE_NAME))
+
+    if pip_requirements is None:
+        default_reqs = get_default_pip_requirements()
+        # TODO: `infer_pip_requirements` requires `pyfunc` flavor to be implemented.
+        # inferred_reqs = infer_pip_requirements(path, FLAVOR_NAME, fallback=default_reqs)
+        # default_reqs = sorted(set(inferred_reqs).union(default_reqs))
+    else:
+        default_reqs = None
+    conda_env, pip_requirements, pip_constraints = (
+        _process_pip_requirements(
+            default_reqs, pip_requirements, extra_pip_requirements
+        )
+        if conda_env is None
+        else _process_conda_env(conda_env)
+    )
+
+    with open(os.path.join(path, _CONDA_ENV_FILE_NAME), "w") as f:
+        yaml.safe_dump(conda_env, stream=f, default_flow_style=False)
+
+    if pip_constraints:
+        write_to(os.path.join(path, _CONSTRAINTS_FILE_NAME), "\n".join(pip_constraints))
+
+    write_to(os.path.join(path, _REQUIREMENTS_FILE_NAME), "\n".join(pip_requirements))
+    _PythonEnv.current().to_yaml(os.path.join(path, _PYTHON_ENV_FILE_NAME))
 
 
 def load_model(
@@ -220,9 +225,16 @@ def load_model(
     )
     _add_code_from_conf_to_system_path(local_path, flavor_conf)
 
-    model_cls = _import_model_class(
-        flavor_conf["model_class_module"], flavor_conf["model_class_name"]
-    )
+    model_cls_str = flavor_conf.get("model_class", None)
+    model_cls = _get_class_from_string(model_cls_str)
+
+    if not issubclass(model_cls, ForecastingModel):
+        raise_log(
+            ValueError(
+                f"Cannot load model: class `{model_cls_str}` is not a subclass of `ForecastingModel`."
+            ),
+            logger,
+        )
 
     model_path = os.path.join(local_path, flavor_conf["data"])
 
@@ -499,23 +511,12 @@ def _autolog(
 def get_default_pip_requirements(is_torch: bool = False) -> list[str]:
     """Return the default pip requirements for logging a darts model.
 
-    Parameters
-    ----------
-    is_torch
-        Whether the model is a PyTorch-based model. If ``True``, adds
-        ``torch`` and ``pytorch-lightning`` to the requirements.
-
     Returns
     -------
     list[str]
         A list of pip requirement strings.
     """
-    reqs = [_get_pinned_requirement("darts")]
-    if is_torch:
-        reqs.extend([
-            _get_pinned_requirement("torch"),
-            _get_pinned_requirement("pytorch-lightning"),
-        ])
+    reqs = [_get_pinned_requirement("darts[all]")]
     return reqs
 
 
@@ -640,48 +641,6 @@ def _is_torch_model(model) -> bool:
     except ImportError:
         logger.info("TorchForecastingModel not available; treating model as non-torch")
         return False
-
-
-def _get_model_class_path(model) -> tuple[str, str]:
-    """Extract the module path and class name from a model instance.
-
-    Parameters
-    ----------
-    model
-        A Darts forecasting model instance.
-
-    Returns
-    -------
-    tuple[str, str]
-        A tuple containing (module_path, class_name).
-    """
-    cls = type(model)
-    return cls.__module__, cls.__name__
-
-
-def _import_model_class(module_path: str, class_name: str):
-    """Dynamically import and return a model class.
-
-    Parameters
-    ----------
-    module_path : str
-        The fully qualified module path (e.g., "darts.models.exponential_smoothing").
-    class_name : str
-        The name of the class to import (e.g., "ExponentialSmoothing").
-
-    Returns
-    -------
-    type
-        The imported model class.
-    """
-    module = importlib.import_module(module_path)
-    cls = getattr(module, class_name, None)
-    if cls is None:
-        raise_log(
-            ImportError(f"Class `{class_name}` not found in module `{module_path}`"),
-            logger,
-        )
-    return cls
 
 
 def _extract_covariate_metadata(
