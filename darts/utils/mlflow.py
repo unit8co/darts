@@ -31,8 +31,13 @@ from mlflow.models.model import MLMODEL_FILE_NAME
 from mlflow.models.utils import _save_example
 from mlflow.tracking._model_registry import DEFAULT_AWAIT_MAX_SLEEP_SECONDS
 from mlflow.tracking.artifact_utils import _download_artifact_from_uri
+from mlflow.tracking.fluent import _initialize_logged_model
 from mlflow.utils import _get_fully_qualified_class_name, _inspect_original_var_name
-from mlflow.utils.autologging_utils import autologging_integration
+from mlflow.utils.autologging_utils import (
+    autologging_integration,
+    get_autologging_config,
+)
+from mlflow.utils.autologging_utils.client import MlflowAutologgingQueueingClient
 from mlflow.utils.autologging_utils.safety import safe_patch
 from mlflow.utils.class_utils import _get_class_from_string
 from mlflow.utils.environment import (
@@ -67,6 +72,27 @@ FLAVOR_NAME = "darts"
 
 _MODEL_FILE_STAT = "model.pkl"
 _MODEL_FILE_TORCH = "model.pt"
+
+_covariate_types = [
+    (
+        "past_covariates",
+        "uses_past_covariates",
+        "past_covariate_series",
+        "components",
+    ),
+    (
+        "future_covariates",
+        "uses_future_covariates",
+        "future_covariate_series",
+        "components",
+    ),
+    (
+        "static_covariates",
+        "uses_static_covariates",
+        "static_covariates",
+        "columns",
+    ),
+]
 
 
 def save_model(
@@ -507,19 +533,32 @@ def _autolog(
             The result of calling the original fit method.
         """
 
-        mlflow.set_tag("darts.model_class", type(self).__name__)
+        # Create a training session to track the training process and log information
+        autologging_client = MlflowAutologgingQueueingClient()
 
-        if log_params:
-            _log_model_params(self)
+        run_id = mlflow.active_run().info.run_id
+
+        # Set tags to identify the model class and relevant information
+        autologging_client.set_tags(run_id=run_id, tags=_get_model_info_tags(self))
 
         result = original(self, *args, **kwargs)
 
         if log_params:
+            # Log the parameters for model creation
+            autologging_client.log_params(run_id=run_id, params=self.model_params)
             _log_covariate_info(self)
 
         if log_models:
+            model_id = _initialize_logged_model("model", flavor=FLAVOR_NAME).model_id
             try:
-                log_model(self, name="model", log_params=False)
+                registered_model_name = get_autologging_config(
+                    FLAVOR_NAME, "registered_model_name", None
+                )
+                log_model(
+                    result,
+                    registered_model_name=registered_model_name,
+                    model_id=model_id,
+                )
             except Exception:
                 logger.info(
                     f"Failed to autolog model artifact for {type(self).__name__}.",
@@ -587,28 +626,26 @@ def get_default_conda_env():
     )
 
 
-def _log_model_params(model) -> None:
-    """Log model creation parameters to MLflow.
-
-    Extracts model parameters from ``model.model_params`` and logs them to the active
-    MLflow run.
-
-    Parameters
-    ----------
-    model
-        A Darts forecasting model instance with a ``model_params`` attribute.
+def _get_model_info_tags(model: ForecastingModel) -> dict[str, Any]:
     """
-    try:
-        params = model.model_params
-    except AttributeError:
-        logger.info("Model has no model_params attribute; skipping parameter logging.")
-        return
+    Returns:
+        A dictionary of MLflow run tag keys and values describing the specified model.
+    """
+    return {
+        "model_name": model.__class__.__name__,
+        "model_class": (model.__class__.__module__ + "." + model.__class__.__name__),
+        "model_likelihood": (
+            model.likelihood.__class__.__name__
+            if model.likelihood is not None
+            else None
+        ),
+        "model_uses_past_covariates": model.uses_past_covariates,
+        "model_uses_future_covariates": model.uses_future_covariates,
+        "model_uses_static_covariates": model.uses_static_covariates,
+    }
 
-    if params:
-        mlflow.log_params(params)
 
-
-def _log_covariate_info(model) -> None:
+def _log_covariate_info(model: ForecastingModel) -> None:
     """Log covariate usage information to MLflow.
 
     Extracts information about past, future, and static covariates used during
@@ -625,39 +662,16 @@ def _log_covariate_info(model) -> None:
     model
         A fitted Darts forecasting model instance.
     """
-    covariate_types = [
-        (
-            "past_covariates",
-            "_uses_past_covariates",
-            "past_covariate_series",
-            "components",
-        ),
-        (
-            "future_covariates",
-            "_uses_future_covariates",
-            "future_covariate_series",
-            "components",
-        ),
-        (
-            "static_covariates",
-            "_uses_static_covariates",
-            "static_covariates",
-            "columns",
-        ),
-    ]
 
     covariate_info = {
         cov_key: _extract_covariate_metadata(model, uses_attr, series_attr, names_attr)
-        for cov_key, uses_attr, series_attr, names_attr in covariate_types
+        for cov_key, uses_attr, series_attr, names_attr in _covariate_types
     }
 
-    for cov_key, info in covariate_info.items():
-        mlflow.set_tag(f"uses_{cov_key}", str(info["used"]).lower())
-        mlflow.log_param(f"n_{cov_key}", info["count"])
-
-        if info["names"]:
-            names_str = ",".join(info["names"])
-            mlflow.log_param(f"{cov_key.split('_')[0]}_cov_names", names_str)
+    if model.uses_static_covariates and model.static_covariates is not None:
+        covariate_info["static_covariates"]["is_global"] = len(
+            model.static_covariates
+        ) != len(model.static_covariates.columns)
 
     # log complete information as JSON artifact
     with TempDir() as tmp:
@@ -685,7 +699,7 @@ def _is_torch_model(model) -> bool:
 
 
 def _extract_covariate_metadata(
-    model, uses_attr: str, series_attr: str, names_attr: str
+    model: ForecastingModel, uses_attr: str, series_attr: str, names_attr: str
 ) -> dict:
     """Extract metadata for a single covariate type.
 
