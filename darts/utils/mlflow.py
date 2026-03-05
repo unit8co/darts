@@ -267,7 +267,6 @@ def log_model(
     model_type: str | None = None,
     step: int = 0,
     model_id: str | None = None,
-    log_params: bool = True,
     **kwargs,
 ):
     """Log a darts model to the current MLflow run.
@@ -316,9 +315,6 @@ def log_model(
         Optional step value to log with the model's metrics. Defaults to 0.
     model_id
         Optional string for the model ID.
-    log_params
-        If ``True`` (default), log the model's creation parameters via
-        ``mlflow.log_params()``.
 
     Returns
     -------
@@ -334,9 +330,6 @@ def log_model(
     simplifying potential future extensibility, and to keep in line with MLflow API
     conventions.
     """
-    if log_params:
-        _log_model_params(model)
-        _log_covariate_info(model)
 
     return Model.log(
         artifact_path=artifact_path,
@@ -357,6 +350,7 @@ def log_model(
         model_type=model_type,
         step=step,
         model_id=model_id,
+        **kwargs,
     )
 
 
