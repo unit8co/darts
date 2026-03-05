@@ -31,8 +31,8 @@ from mlflow.utils import _inspect_original_var_name
 from mlflow.utils.autologging_utils import (
     autologging_integration,
     get_autologging_config,
-    safe_patch,
 )
+from mlflow.utils.autologging_utils.safety import safe_patch
 from mlflow.utils.environment import (
     _CONDA_ENV_FILE_NAME,
     _CONSTRAINTS_FILE_NAME,
@@ -54,7 +54,7 @@ from mlflow.utils.model_utils import (
 from mlflow.utils.requirements_utils import _get_pinned_requirement
 
 import darts
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
 
 logger = get_logger(__name__)
@@ -125,11 +125,14 @@ def save_model(
     simplifying potential future extensibility, and to keep in line with MLflow API
     conventions.
     """
-    raise_if_not(
-        isinstance(model, ForecastingModel),
-        "model must be an instance of darts.models.forecasting.ForecastingModel",
-        logger,
-    )
+    if not isinstance(model, ForecastingModel):
+        raise_log(
+            ValueError(
+                "Model must be an instance of darts.models.forecasting.ForecastingModel."
+            ),
+            logger,
+        )
+
     _validate_env_arguments(conda_env, pip_requirements, extra_pip_requirements)
     _validate_and_prepare_target_save_path(path)
     code_dir_subpath = _validate_and_copy_code_paths(code_paths, path)
@@ -683,11 +686,11 @@ def _import_model_class(module_path: str, class_name: str):
     """
     module = importlib.import_module(module_path)
     cls = getattr(module, class_name, None)
-    raise_if(
-        cls is None,
-        f"Class '{class_name}' not found in module '{module_path}'",
-        logger,
-    )
+    if cls is None:
+        raise_log(
+            ImportError(f"Class `{class_name}` not found in module `{module_path}`"),
+            logger,
+        )
     return cls
 
 
