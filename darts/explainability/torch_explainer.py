@@ -20,8 +20,8 @@ Depending on the model and training data, features can include:
 - :func:`summary_plot() <TorchExplainer.summary_plot>` shows SHAP value distributions by feature.
 - :func:`force_plot() <TorchExplainer.force_plot>` shows additive SHAP contributions for one target and horizon.
 
-All methods accept optional foreground series and covariates to forecast and explain on all forecastable timestamps,
-while using background data for reference. When foreground data is not provided, background is also used as foreground.
+All methods can use optional foreground data to explain forecasts, with background data as reference.
+If foreground data is not provided, background data is used for both.
 """
 
 from collections.abc import Sequence
@@ -81,15 +81,54 @@ class TorchExplainer(_ForecastingModelExplainer):
         shap_method: str = "kernel",
         **kwargs,
     ):
-        # validate model type
-        if not issubclass(type(model), TorchForecastingModel):
-            raise_log(
-                ValueError(
-                    f"Invalid `model` type: `{type(model)}`. Only models of type `TorchForecastingModel` are supported."
-                ),
-                logger,
-            )
+        """Torch Model Explainer.
 
+        **Definitions**:
+
+        - A background series is a ``TimeSeries`` used to train the SHAP explainer.
+        - A foreground series is a ``TimeSeries`` that can be explained by a SHAP explainer after it has been fitted.
+
+        ``TorchExplainer`` only works with torch models, i.e., instances of ``TorchForecastingModel``.
+        The number of explained horizons `(t+1, t+2, ...)` can be at most equal to ``output_chunk_length`` of ``model``.
+
+        Parameters
+        ----------
+        model
+            A ``TorchForecastingModel`` to be explained. It must be fitted first.
+        background_series
+            One or several series to *train* the ``TorchExplainer`` as reference for explanations.
+            Consider using a reduced well-chosen background to reduce computation time.
+            Optional if ``model`` was fit on a single target series. By default, it is the ``series``
+            used at fitting time.
+            Mandatory if ``model`` was fit on multiple (list of) target series.
+        background_past_covariates
+            A past covariates series or list of series that the model needs once fitted.
+        background_future_covariates
+            A future covariates series or list of series that the model needs once fitted.
+        background_num_samples
+            Optionally, whether to sample a subset of the original background. Randomly picks
+            samples of the constructed training dataset.
+            Generally used for faster computation, especially when ``shap_method`` is
+            ``"kernel"`` or ``"permutation"``.
+        shap_method
+            Optionally, the SHAP method to apply. Supported values: ``"kernel"``, ``"sampling"``,
+            ``"partition"``, ``"linear"``, ``"permutation"``, ``"additive"``, and ``"exact"``.
+            Default: ``"kernel"``.
+        **kwargs
+            Optionally, additional keyword arguments passed to ``shap_method``.
+
+        Examples
+        --------
+        >>> from darts.datasets import WineDataset
+        >>> from darts.explainability import TorchExplainer
+        >>> from darts.models import TiDEModel
+        >>> series = WineDataset().load().astype("float32")
+        >>> model = TiDEModel(12, 12).fit(series[:36])
+        >>> explainer = TorchExplainer(model)
+        >>> results = explainer.explain()
+        >>> explainer.summary_plot()
+        >>> explainer.force_plot()
+        """
         # initialize the explainer with sanity checks and background validation
         super().__init__(
             model=model,
@@ -101,6 +140,15 @@ class TorchExplainer(_ForecastingModelExplainer):
             check_component_names=True,
             test_stationarity=True,
         )
+
+        # validate model type
+        if not isinstance(self.model, TorchForecastingModel):
+            raise_log(
+                ValueError(
+                    f"Invalid `model` type: `{type(model)}`. Only models of type `TorchForecastingModel` are supported."
+                ),
+                logger,
+            )
 
         shap_method_upper = shap_method.upper()
         if shap_method_upper in _SHAPMethod.__members__:

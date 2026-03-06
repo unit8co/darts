@@ -20,8 +20,8 @@ Depending on the model and training data, features can include:
 - :func:`summary_plot() <SKLearnExplainer.summary_plot>` shows SHAP value distributions by feature.
 - :func:`force_plot() <SKLearnExplainer.force_plot>` shows additive SHAP contributions for one target and horizon.
 
-All methods accept optional foreground series and covariates to forecast and explain on all forecastable timestamps,
-while using background data for reference. When foreground data is not provided, background is also used as foreground.
+All methods can use optional foreground data to explain forecasts, with background data as reference.
+If foreground data is not provided, background data is used for both.
 """
 
 from collections.abc import Sequence
@@ -87,7 +87,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         model
             A ``SKLearnModel`` to be explained. It must be fitted first.
         background_series
-            One or several series to *train* the ``SKLearnExplainer`` along with any foreground series.
+            One or several series to *train* the ``SKLearnExplainer`` as reference for explanations.
             Consider using a reduced well-chosen background to reduce computation time.
             Optional if ``model`` was fit on a single target series. By default, it is the ``series``
             used at fitting time.
@@ -107,7 +107,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
             internal mapping. Supported values: ``"permutation"``, ``"partition"``, ``"tree"``,
             ``"kernel"``, ``"sampling"``, ``"linear"``, ``"deep"``, ``"gradient"``, and ``"additive"``.
         **kwargs
-            Optionally, additional keyword arguments passed to `shap_method`.
+            Optionally, additional keyword arguments passed to ``shap_method``.
 
         Examples
         --------
@@ -115,8 +115,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         >>> from darts.explainability import SKLearnExplainer
         >>> from darts.models import LinearRegressionModel
         >>> series = AirPassengersDataset().load()
-        >>> model = LinearRegressionModel(lags=12)
-        >>> model.fit(series[:-36])
+        >>> model = LinearRegressionModel(lags=12).fit(series[:-36])
         >>> explainer = SKLearnExplainer(model)
         >>> results = explainer.explain()
         >>> explainer.summary_plot()
