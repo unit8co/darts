@@ -1,3 +1,40 @@
+"""
+SHAP Explainer for Torch Models
+-------------------------------
+
+A `SHAP <https://github.com/slundberg/shap>`__ explainer specifically for Torch forecasting models.
+
+This class explains Darts' ``TorchForecastingModel`` instances of forecasting models. It uses SHAP values to
+provide "explanations" of each input feature. SHAP values (from Shapley values in game theory) represent each
+input feature's contribution to the model's prediction from a baseline prediction (the average prediction).
+
+Input features are all the inputs that the model uses to produce forecasts. Depending on the model and training
+data, the input features may include:
+
+- lags (input chunk) of the target series,
+- lags (input chunk) of past covariates,
+- lags (input chunk and output chunk) of future covariates,
+- static covariates (global or component-specific).
+
+.. note::
+   This explainer is subject to the usual features independence assumption used to compute SHAP values.
+   This means that it does not capture potential indirect influence that some features
+   may have on the target by influencing other features.
+
+
+- :func:`explain() <TorchExplainer.explain>` generates the explanations (SHAP values) for each horizon and
+  each component dimension of the target series, given a foreground series and covariates (or background
+  series and covariates, if foreground is not provided). Each explanation is a multivariate ``TimeSeries`` of
+  SHAP values, where the time index corresponds to the forecasted timestamps and the components correspond to
+  all input features used by the model to produce the forecasts.
+- :func:`summary_plot() <TorchExplainer.summary_plot>` displays a SHAP "Summary Plot" for each horizon and each
+  component dimension of the target series. Each plot shows the distribution of SHAP values for each input feature.
+- :func:`force_plot() <TorchExplainer.force_plot>` displays a SHAP "Force Plot" for one target and one horizon,
+  for a given target series. Each plot displays SHAP values of each input feature with an additive force
+  layout for each forecasted timestamp. At each timestamp, SHAP values of all features and the base value would
+  sum up to the model prediction.
+"""
+
 from collections.abc import Sequence
 from enum import Enum
 

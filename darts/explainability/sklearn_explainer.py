@@ -1,8 +1,8 @@
 """
-SHAP Explainer for SKLearnModels
---------------------------------
+SHAP Explainer for SKLearn Models
+---------------------------------
 
-A `SHAP <https://github.com/slundberg/shap>`__ explainer specifically for time series forecasting models.
+A `SHAP <https://github.com/slundberg/shap>`__ explainer specifically for SKLearn forecasting models.
 
 This class explains Darts' ``SKLearnModel`` instances of forecasting models. It uses SHAP values to
 provide "explanations" of each input feature. SHAP values (from Shapley values in game theory) represent each
