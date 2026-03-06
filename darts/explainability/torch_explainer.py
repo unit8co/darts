@@ -89,7 +89,7 @@ class TorchExplainer(_ForecastingModelExplainer):
         - A foreground series is a ``TimeSeries`` that can be explained by a SHAP explainer after it has been fitted.
 
         ``TorchExplainer`` only works with torch models, i.e., instances of ``TorchForecastingModel``.
-        The number of explained horizons `(t+1, t+2, ...)` can be at most equal to ``output_chunk_length`` of ``model``.
+        The number of explained horizons `(t+1, t+2, ...)` cannot be greater than ``output_chunk_length`` of ``model``.
 
         Parameters
         ----------
@@ -213,6 +213,86 @@ class TorchExplainer(_ForecastingModelExplainer):
         horizons: int | Sequence[int] | None = None,
         target_components: Sequence[str] | None = None,
     ) -> SHAPExplainabilityResult:
+        """
+        Explains a foreground time series and returns a :class:`SHAPExplainabilityResult
+        <darts.explainability.explainability_result.SHAPExplainabilityResult>` of SHAP values.
+
+        The results can then be retrieved with method :func:`get_explanation()
+        <darts.explainability.explainability_result.SHAPExplainabilityResult.get_explanation>`,
+        which returns a multivariate ``TimeSeries`` instance containing the SHAP values for the
+        ``(horizon, target_component)`` forecast at any timestamp forecastable in the foreground series.
+
+        The components of the ``TimeSeries`` correspond to the input features used by the model to produce
+        the forecasts. See above for the naming convention.
+
+        Parameters
+        ----------
+        foreground_series
+            Optionally, one or a sequence of target ``TimeSeries`` to be explained. Can be multivariate.
+            If not provided, the background ``TimeSeries`` will be explained instead.
+        foreground_past_covariates
+            Optionally, one or a sequence of past covariates ``TimeSeries`` if required by the forecasting model.
+        foreground_future_covariates
+            Optionally, one or a sequence of future covariates ``TimeSeries`` if required by the forecasting model.
+        horizons
+            Optionally, an integer or sequence of integers representing the future time steps to be explained.
+            ``1`` corresponds to the first timestamp being forecasted.
+            All values must be no greater than ``output_chunk_length`` of the explained forecasting model.
+        target_components
+            Optionally, a string or sequence of strings with the target components to explain.
+
+        Returns
+        -------
+        SHAPExplainabilityResult
+            The forecast explanations of the specified horizons and target components.
+
+        Examples
+        --------
+        Say we have a ``TorchForecastingModel`` instance with:
+
+          - 2 target components named ``"T_0"`` and ``"T_1"``,
+          - 3 past covariates with default component names ``"P_0"``, ``"P_1"``, and ``"P_2"``,
+          - 1 future covariate with default component name ``"F_0"``,
+          - ``input_chunk_length=3``,
+          - ``output_chunk_length=2``.
+
+        We provide ``foreground_series``, ``foreground_past_covariates``, ``foreground_future_covariates`` (extending
+        far enough into the future) each of length 5.
+
+        >>> results = explainer.explain(
+        >>>     foreground_series=foreground_series,
+        >>>     foreground_past_covariates=foreground_past_covariates,
+        >>>     foreground_future_covariates=foreground_future_covariates)
+
+        Calling the method returns a ``SHAPExplainabilityResult`` object containing the SHAP values, feature values,
+        and raw ``shap.Explanation`` objects for each horizon and target component. They can be accessed with:
+
+        >>> # Get SHAP values for forecasting "T_1" at horizon 1 as a `TimeSeries`
+        >>> output = results.get_explanation(horizon=1, component="T_1")
+        >>> # Get feature values used for forecasting as a `TimeSeries`
+        >>> feature_values = results.get_feature_values(horizon=1, component="T_1")
+        >>> # Get the raw `shap.Explanation` object for further processing
+        >>> shap_objects = results.get_shap_explanation_object(horizon=1, component="T_1")
+
+        For SHAP and feature values, the components of the returned ``TimeSeries`` correspond to different lags of the
+        target and covariates (see convention above). In our example, the component names would be:
+
+             - T_0_target_lag-1
+             - T_0_target_lag-2
+             - T_0_target_lag-3
+             - T_1_target_lag-1
+             - T_1_target_lag-2
+             - T_1_target_lag-3
+             - P_0_pastcov_lag-1
+             - P_0_pastcov_lag-3
+             - P_1_pastcov_lag-1
+             - P_1_pastcov_lag-3
+             - P_2_pastcov_lag-1
+             - P_2_pastcov_lag-3
+             - F_0_futcov_lag0
+
+        Each series has length 3, as the model can explain 5-3+1 forecasts (timestamp indices 4, 5, and 6).
+        """
         fallback = foreground_series is None
         (
             foreground_series,

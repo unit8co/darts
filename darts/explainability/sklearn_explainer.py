@@ -14,6 +14,21 @@ Depending on the model and training data, features can include:
 - static covariates (global or component-specific).
 
 .. note::
+    Input features except static covariates are named according to the convention:
+    ``"{name}_{type_of_cov}_lag{idx}"``, where:
+
+    - ``{name}`` is the component name from the original foreground series (target, past, or future).
+    - ``{type_of_cov}`` is the covariates type. It can take 3 different values:
+      ``"target"``, ``"pastcov"``,  ``"futcov"``.
+    - ``{idx}`` is the lag index.
+
+    Static covariates are named according to the convention: ``"{name}_statcov_target_{comp}"``, where:
+
+    - ``{name}`` is the variable name of the static covariate.
+    - ``{comp}`` is the component name of the target series if static covariates are component-specific, or
+      ``"global_components"`` if they are global.
+
+.. note::
    SHAP uses a feature-independence assumption. Indirect effects between features are not captured.
 
 - :func:`explain() <SKLearnExplainer.explain>` computes SHAP values per forecast horizon and target component.
@@ -80,7 +95,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         - A foreground series is a ``TimeSeries`` that can be explained by a SHAP explainer after it has been fitted.
 
         Currently, ``SKLearnExplainer`` only works with ``SKLearnModel`` forecasting models.
-        The number of explained horizons `(t+1, t+2, ...)` can be at most equal to ``output_chunk_length`` of ``model``.
+        The number of explained horizons `(t+1, t+2, ...)` cannot be greater than ``output_chunk_length`` of ``model``.
 
         Parameters
         ----------
@@ -193,28 +208,15 @@ class SKLearnExplainer(_ForecastingModelExplainer):
     ) -> SHAPExplainabilityResult:
         """
         Explains a foreground time series and returns a :class:`SHAPExplainabilityResult
-        <darts.explainability.explainability_result.SHAPExplainabilityResult>`.
-        The results can be retrieved with method :func:`get_explanation()
-        <darts.explainability.explainability_result.SHAPExplainabilityResult.get_explanation>`.
-        The result is a multivariate ``TimeSeries`` instance containing the SHAP values
-        for the (horizon, target_component) forecast at any timestamp forecastable corresponding to
-        the foreground ``TimeSeries`` input.
+        <darts.explainability.explainability_result.SHAPExplainabilityResult>` of SHAP values.
 
-        The components of the returned multivariate ``TimeSeries`` correspond to the input features
-        used by the model to produce the forecasts. They are named according to the convention:
-        ``"{name}_{type_of_cov}_lag{idx}"``, where:
+        The results can then be retrieved with method :func:`get_explanation()
+        <darts.explainability.explainability_result.SHAPExplainabilityResult.get_explanation>`,
+        which returns a multivariate ``TimeSeries`` instance containing the SHAP values for the
+        ``(horizon, target_component)`` forecast at any timestamp forecastable in the foreground series.
 
-        - ``{name}`` is the component name from the original foreground series (target, past, or future).
-        - ``{type_of_cov}`` is the covariates type. It can take 3 different values:
-          ``"target"``, ``"pastcov"``,  ``"futcov"``.
-        - ``{idx}`` is the lag index.
-
-        If input features contain static covariates, they are named according to the convention:
-        ``"{name}_statcov_target_{comp}"``, where:
-
-        - ``{name}`` is the variable name of the static covariate.
-        - ``{comp}`` is the component name of the target series if static covariates are component-specific, or
-          ``"global_components"`` if they are global.
+        The components of the ``TimeSeries`` correspond to the input features used by the model to produce
+        the forecasts. See above for the naming convention.
 
         Parameters
         ----------
@@ -235,11 +237,11 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         Returns
         -------
         SHAPExplainabilityResult
-            The forecast explanations
+            The forecast explanations of the specified horizons and target components.
 
         Examples
         --------
-        Say we have a ``SKLearnModel`` model with:
+        Say we have a ``SKLearnModel`` instance with:
 
           - 2 target components named ``"T_0"`` and ``"T_1"``,
           - 3 past covariates with default component names ``"P_0"``, ``"P_1"``, and ``"P_2"``,
@@ -256,7 +258,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         >>>     foreground_future_covariates=foreground_future_covariates)
 
         Calling the method returns a ``SHAPExplainabilityResult`` object containing the SHAP values, feature values,
-        and raw ``shap.Explanation`` objects for each horizon and target component. Those can be accessed with:
+        and raw ``shap.Explanation`` objects for each horizon and target component. They can be accessed with:
 
         >>> # Get SHAP values for forecasting "T_1" at horizon 1 as a `TimeSeries`
         >>> output = results.get_explanation(horizon=1, component="T_1")
