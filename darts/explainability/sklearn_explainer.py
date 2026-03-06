@@ -16,13 +16,14 @@ and any static covariates that are used as inputs by the forecasting model to pr
    This means that it does not capture potential indirect influence that some lags
    may have on the target by influencing other lags.
 
-- :func:`explain() <SKLearnExplainer.explain>` generates the explanations for a given foreground series (or
-  background series, if foreground is not provided).
-- :func:`summary_plot() <SKLearnExplainer.summary_plot>` displays a SHAP plot summary for each horizon and each
-  component dimension of the target series.
-- :func:`force_plot() <SKLearnExplainer.force_plot>` displays a SHAP force_plot for one target
-  and one horizon, for a given target series. It displays SHAP values of each lag/covariate with an additive force
-  layout.
+- :func:`explain() <SKLearnExplainer.explain>` generates the explanations (SHAP values) for a given foreground
+  series (or background series, if foreground is not provided).
+- :func:`summary_plot() <SKLearnExplainer.summary_plot>` displays a SHAP "Summary Plot" for each horizon and each
+  component dimension of the target series. It shows the distribution of SHAP values for each input feature.
+- :func:`force_plot() <SKLearnExplainer.force_plot>` displays a SHAP "Force Plot" for one target
+  and one horizon, for a given target series. It displays SHAP values of each input feature with an additive force
+  layout for each forecasted timestamp. At each timestamp, SHAP values of all features and the base value would
+  sum up to the model prediction.
 """
 
 from collections.abc import Sequence
@@ -99,13 +100,13 @@ class SKLearnExplainer(_ForecastingModelExplainer):
             A future covariates series or list of series that the model needs once fitted.
         background_num_samples
             Optionally, whether to sample a subset of the original background. Randomly picks
-            samples of the constructed training dataset (using ``shap.utils.sample()``).
+            samples of the constructed training dataset.
             Generally used for faster computation, especially when ``shap_method`` is
             ``"kernel"`` or ``"permutation"``.
         shap_method
             Optionally, the SHAP method to apply. By default, an attempt is made
             to select the most appropriate method based on a pre-defined set of known models
-            internal mapping. Supported values: `""permutation"``, ``"partition"``, ``"tree"``,
+            internal mapping. Supported values: ``"permutation"``, ``"partition"``, ``"tree"``,
             ``"kernel"``, ``"sampling"``, ``"linear"``, ``"deep"``, ``"gradient"``, and ``"additive"``.
         **kwargs
             Optionally, additional keyword arguments passed to `shap_method`.
@@ -202,14 +203,21 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         for the (horizon, target_component) forecast at any timestamp forecastable corresponding to
         the foreground ``TimeSeries`` input.
 
-        The components of the returned multivariate ``TimeSeries`` correspond to the different input
-        features to produce the forecasts. They are named according to the convention:
+        The components of the returned multivariate ``TimeSeries`` correspond to the input features
+        used by the model to produce the forecasts. They are named according to the convention:
         ``"{name}_{type_of_cov}_lag{idx}"``, where:
 
         - ``{name}`` is the component name from the original foreground series (target, past, or future).
         - ``{type_of_cov}`` is the covariates type. It can take 3 different values:
-          ``"target"``, ``"pastcov"`` or ``"futcov"``.
+          ``"target"``, ``"pastcov"``,  ``"futcov"``.
         - ``{idx}`` is the lag index.
+
+        If input features contain static covariates, they are named according to the convention:
+        ``"{name}_statcov_target_{comp}"``, where:
+
+        - ``{name}`` is the variable name of the static covariate.
+        - ``{comp}`` is the component name of the target series if static covariates are component-specific, or
+          ``"global_components"`` if they are global.
 
         Parameters
         ----------
@@ -479,7 +487,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
             Optionally, a future covariate series if required by the forecasting model.
         horizon
             Optionally, an integer for the point/step in the future to explain, starting from the first prediction
-            step at 1. `Must not be larger than ``output_chunk_length``.
+            step at 1. Must not be larger than ``output_chunk_length``.
         target_component
             Optionally, the target component to plot. If the target series is multivariate, the target component
             must be specified.

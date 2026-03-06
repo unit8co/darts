@@ -138,13 +138,21 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
     The result is a multivariate `TimeSeries` instance containing the 'explanation' for the (horizon, target_component)
     forecast at any timestamp forecastable corresponding to the foreground `TimeSeries` input.
 
-    The component name convention of this multivariate `TimeSeries` is:
-    ``"{name}_{type_of_cov}_lag_{idx}"``, where:
+    The components of the returned multivariate ``TimeSeries`` correspond to the input features
+    used by the model to produce the forecasts. They are named according to the convention:
+    ``"{name}_{type_of_cov}_lag{idx}"``, where:
 
     - ``{name}`` is the component name from the original foreground series (target, past, or future).
     - ``{type_of_cov}`` is the covariates type. It can take 3 different values:
-      ``"target"``, ``"past_cov"`` or ``"future_cov"``.
+        ``"target"``, ``"pastcov"``,  ``"futcov"``.
     - ``{idx}`` is the lag index.
+
+    If input features contain static covariates, they are named according to the convention:
+    ``"{name}_statcov_target_{comp}"``, where:
+
+    - ``{name}`` is the variable name of the static covariate.
+    - ``{comp}`` is the component name of the target series if static covariates are component-specific, or
+        `"global_components"` if they are global.
 
     Examples
     --------
