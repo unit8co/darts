@@ -2,14 +2,11 @@
 SHAP Explainer for Torch Models
 -------------------------------
 
-A `SHAP <https://github.com/slundberg/shap>`__ explainer specifically for Torch forecasting models.
+A `SHAP <https://github.com/slundberg/shap>`__ explainer for Darts ``TorchForecastingModel`` instances.
+It computes SHAP values, which measure each input feature's contribution to a prediction relative to a
+baseline (average prediction).
 
-This class explains Darts' ``TorchForecastingModel`` instances of forecasting models. It uses SHAP values to
-provide "explanations" of each input feature. SHAP values (from Shapley values in game theory) represent each
-input feature's contribution to the model's prediction from a baseline prediction (the average prediction).
-
-Input features are all the inputs that the model uses to produce forecasts. Depending on the model and training
-data, the input features may include:
+Depending on the model and training data, features can include:
 
 - lags (input chunk) of the target series,
 - lags (input chunk) of past covariates,
@@ -17,22 +14,14 @@ data, the input features may include:
 - static covariates (global or component-specific).
 
 .. note::
-   This explainer is subject to the usual features independence assumption used to compute SHAP values.
-   This means that it does not capture potential indirect influence that some features
-   may have on the target by influencing other features.
+   SHAP uses a feature-independence assumption. Indirect effects between features are not captured.
 
+- :func:`explain() <TorchExplainer.explain>` computes SHAP values per forecast horizon and target component.
+- :func:`summary_plot() <TorchExplainer.summary_plot>` shows SHAP value distributions by feature.
+- :func:`force_plot() <TorchExplainer.force_plot>` shows additive SHAP contributions for one target and horizon.
 
-- :func:`explain() <TorchExplainer.explain>` generates the explanations (SHAP values) for each horizon and
-  each component dimension of the target series, given a foreground series and covariates (or background
-  series and covariates, if foreground is not provided). Each explanation is a multivariate ``TimeSeries`` of
-  SHAP values, where the time index corresponds to the forecasted timestamps and the components correspond to
-  all input features used by the model to produce the forecasts.
-- :func:`summary_plot() <TorchExplainer.summary_plot>` displays a SHAP "Summary Plot" for each horizon and each
-  component dimension of the target series. Each plot shows the distribution of SHAP values for each input feature.
-- :func:`force_plot() <TorchExplainer.force_plot>` displays a SHAP "Force Plot" for one target and one horizon,
-  for a given target series. Each plot displays SHAP values of each input feature with an additive force
-  layout for each forecasted timestamp. At each timestamp, SHAP values of all features and the base value would
-  sum up to the model prediction.
+All methods accept optional foreground series and covariates to forecast and explain on all forecastable timestamps,
+while using background data for reference. When foreground data is not provided, background is also used as foreground.
 """
 
 from collections.abc import Sequence

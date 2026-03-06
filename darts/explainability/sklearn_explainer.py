@@ -2,28 +2,26 @@
 SHAP Explainer for SKLearn Models
 ---------------------------------
 
-A `SHAP <https://github.com/slundberg/shap>`__ explainer specifically for SKLearn forecasting models.
+A `SHAP <https://github.com/slundberg/shap>`__ explainer for Darts ``SKLearnModel`` instances.
+It computes SHAP values, which measure each input feature's contribution to a prediction relative to a
+baseline (average prediction).
 
-This class explains Darts' ``SKLearnModel`` instances of forecasting models. It uses SHAP values to
-provide "explanations" of each input feature. SHAP values (from Shapley values in game theory) represent each
-input feature's contribution to the model's prediction from a baseline prediction (the average prediction).
+Depending on the model and training data, features can include:
 
-The input features include the different past lags of the target and/or past covariates, lags of future covariates,
-and any static covariates that are used as inputs by the forecasting model to produce its forecasts.
+- lags of the target series,
+- lags of past covariates,
+- lags of future covariates,
+- static covariates (global or component-specific).
 
 .. note::
-   This explainer is subject to the usual features independence assumption used to compute SHAP values.
-   This means that it does not capture potential indirect influence that some lags
-   may have on the target by influencing other lags.
+   SHAP uses a feature-independence assumption. Indirect effects between features are not captured.
 
-- :func:`explain() <SKLearnExplainer.explain>` generates the explanations (SHAP values) for a given foreground
-  series (or background series, if foreground is not provided).
-- :func:`summary_plot() <SKLearnExplainer.summary_plot>` displays a SHAP "Summary Plot" for each horizon and each
-  component dimension of the target series. It shows the distribution of SHAP values for each input feature.
-- :func:`force_plot() <SKLearnExplainer.force_plot>` displays a SHAP "Force Plot" for one target
-  and one horizon, for a given target series. It displays SHAP values of each input feature with an additive force
-  layout for each forecasted timestamp. At each timestamp, SHAP values of all features and the base value would
-  sum up to the model prediction.
+- :func:`explain() <SKLearnExplainer.explain>` computes SHAP values per forecast horizon and target component.
+- :func:`summary_plot() <SKLearnExplainer.summary_plot>` shows SHAP value distributions by feature.
+- :func:`force_plot() <SKLearnExplainer.force_plot>` shows additive SHAP contributions for one target and horizon.
+
+All methods accept optional foreground series and covariates to forecast and explain on all forecastable timestamps,
+while using background data for reference. When foreground data is not provided, background is also used as foreground.
 """
 
 from collections.abc import Sequence
