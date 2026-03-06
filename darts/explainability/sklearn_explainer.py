@@ -391,7 +391,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         ----------
         foreground_series
             Optionally, one or a sequence of target ``TimeSeries`` to be explained. Can be multivariate.
-            If not provided, the background ``TimeSeries`` will be explained instead.
+            Default: ``None``, which means that the background series will be used as foreground.
         foreground_past_covariates
             Optionally, one or a sequence of past covariates ``TimeSeries`` if required by the forecasting model.
         foreground_future_covariates
@@ -406,13 +406,14 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         num_samples
             Optionally, an integer for sampling the foreground series for the sake of performance.
         plot_type
-            Optionally, specify which of the SHAP library plot type to use. Can be one of ``'dot', 'bar', 'violin'``.
+            Optionally, specify which of the SHAP library plot type to use. Can be one of ``"dot"``, ``"bar"``,
+            ``"violin"``.
 
         Returns
         -------
         dict[int, dict[str, shap.Explanation]]
-            A nested dictionary ``{horizon : {component : shap.Explanation}}`` containing the raw Explanations for all
-            the horizons and components.
+            A nested dictionary ``{horizon : {component : shap.Explanation}}`` containing the raw Explanation objects
+            for all the horizons and components.
         """
         (
             foreground_series,
@@ -468,12 +469,15 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         **kwargs,
     ):
         """
-        Display a SHAP "Force Plot" for one target and one horizon, for a given foreground series.
+        Display a SHAP "Force Plot" for one target and one horizon.
 
-        It shows SHAP values of all input features with an additive force layout for each forecasted timestamp. At
-        each timestamp, SHAP values of all features and the base value would sum up to the model prediction.
+        It shows SHAP values of all input features with an additive force layout for each forecastable timestamp
+        in the foreground series. At each timestamp, SHAP values of all features and the base value would sum up
+        to the model prediction.
 
-        Once the plot is displayed, select **"original sample ordering"** to observe the time series chronologically.
+        .. note::
+            Once the plot is displayed, select **"original sample ordering"** to observe the forecasted timestamps
+            chronologically.
 
         Parameters
         ----------
@@ -486,7 +490,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
             Optionally, a future covariate series if required by the forecasting model.
         horizon
             Optionally, an integer for the point/step in the future to explain, starting from the first prediction
-            step at 1. Must not be larger than ``output_chunk_length``.
+            step at 1. Must not be larger than ``output_chunk_length`` of the model.
         target_component
             Optionally, the target component to plot. If the target series is multivariate, the target component
             must be specified.

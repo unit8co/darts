@@ -385,6 +385,41 @@ class TorchExplainer(_ForecastingModelExplainer):
         plot_type: str | None = "dot",
         **kwargs,
     ) -> dict[int, dict[str, shap.Explanation]]:
+        """
+        Display a SHAP "Summary Plot" for each horizon and each component dimension of the target.
+
+        On each summary plot, SHAP values of each input feature are plotted with dots (``plot_type="dot"``,
+        each dot corresponds to a forecasted timestamp), a bar (``plot_type="bar"``), or a violin
+        (``plot_type="violin"``). The input features are sorted by importance, defined as the mean absolute SHAP value.
+
+        Parameters
+        ----------
+        foreground_series
+            Optionally, one or a sequence of target ``TimeSeries`` to be explained. Can be multivariate.
+            If not provided, the background ``TimeSeries`` will be explained instead.
+        foreground_past_covariates
+            Optionally, one or a sequence of past covariates ``TimeSeries`` if required by the forecasting model.
+        foreground_future_covariates
+            Optionally, one or a sequence of future covariates ``TimeSeries`` if required by the forecasting model.
+        horizons
+            Optionally, an integer or sequence of integers representing which points/steps in the future to explain,
+            starting from the first prediction step at 1. Each horizon must be no greater than ``output_chunk_length``
+            of the explained forecasting model. Default: ``None``, which means that all horizons will be plotted.
+        target_components
+            Optionally, a string or sequence of strings with the target components to explain.
+            Default: ``None``, which means that all target components will be plotted.
+        num_samples
+            Optionally, an integer for sampling the foreground series for the sake of performance.
+        plot_type
+            Optionally, specify which of the SHAP library plot type to use. Can be one of ``"dot"``, ``"bar"``,
+            ``"violin"``.
+
+        Returns
+        -------
+        dict[int, dict[str, shap.Explanation]]
+            A nested dictionary ``{horizon : {component : shap.Explanation}}`` containing the raw Explanation objects
+            for all the horizons and components.
+        """
         (
             foreground_series_,
             foreground_past_covariates_,
@@ -436,6 +471,35 @@ class TorchExplainer(_ForecastingModelExplainer):
         target_component: str | None = None,
         **kwargs,
     ):
+        """
+        Display a SHAP "Force Plot" for one target and one horizon.
+
+        It shows SHAP values of all input features with an additive force layout for each forecastable timestamp
+        in the foreground series. At each timestamp, SHAP values of all features and the base value would sum up
+        to the model prediction.
+
+        .. note::
+            Once the plot is displayed, select **"original sample ordering"** to observe the forecasted timestamps
+            chronologically.
+
+        Parameters
+        ----------
+        foreground_series
+            Optionally, the target series to explain. Can be multivariate. Default: ``None``, which means that the
+            background series will be used as foreground.
+        foreground_past_covariates
+            Optionally, a past covariate series if required by the forecasting model.
+        foreground_future_covariates
+            Optionally, a future covariate series if required by the forecasting model.
+        horizon
+            Optionally, an integer for the point/step in the future to explain, starting from the first prediction
+            step at 1. Must not be larger than ``output_chunk_length`` of the model.
+        target_component
+            Optionally, the target component to plot. If the target series is multivariate, the target component
+            must be specified.
+        **kwargs
+            Optionally, additional keyword arguments passed to ``shap.force_plot()``.
+        """
         if (
             target_component is None
             and len(self.explainer.target_components_likelihood) > 1
