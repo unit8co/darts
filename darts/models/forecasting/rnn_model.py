@@ -1,6 +1,11 @@
 """
 Recurrent Neural Networks
 -------------------------
+.. autoclass:: CustomRNNModule
+   :members: forward
+   :no-inherited-members:
+   :no-undoc-members:
+   :no-special-members:
 """
 
 import inspect
@@ -44,13 +49,13 @@ class CustomRNNModule(PLForecastingModule, ABC):
 
         To create a new module, subclass from :class:`CustomRNNModule` and:
 
-        * Define the architecture in the module constructor (`__init__()`)
+        * Define the architecture in the module constructor (``__init__()``)
 
-        * Add the `forward()` method and define the logic of your module's forward pass
+        * Add the ``forward()`` method and define the logic of your module's forward pass
 
-        * Use the custom module class when creating a new :class:`RNNModel` with parameter `model`.
+        * Use the custom module class when creating a new :class:`RNNModel` with parameter ``model``.
 
-        You can use `darts.models.forecasting.rnn_model._RNNModule` as an example.
+        You can use ``darts.models.forecasting.rnn_model._RNNModule`` as an example.
 
         Parameters
         ----------

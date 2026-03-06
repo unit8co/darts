@@ -65,6 +65,8 @@ exclude_members = [
     "initialize_encoders",
     "SplitTimeSeriesSequence",
     "randint",
+    "CustomRNNModule",
+    "CustomBlockRNNModule",
 ]
 
 autodoc_default_options = {
