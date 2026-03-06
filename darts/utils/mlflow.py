@@ -400,9 +400,13 @@ def autolog(
 
     .. important::
 
-        ``autolog()`` must be called **before** importing metric functions from
-        ``darts.metrics``.  Metric functions imported before ``autolog()`` is
-        enabled will **not** log to MLflow.
+        Metric functions imported with ``from darts.metrics import <name>``
+        before ``autolog()`` is enabled will **not** log to MLflow (function
+        reference is copied out of the module before the patch is applied).
+
+        To avoid this restriction, use ``import darts.metrics as dm`` and call
+        ``dm.<metric>()`` instead (module attribute lookups are resolved at call
+        time and will always see the patched version).
 
     .. note::
 
@@ -810,7 +814,7 @@ def _log_metric_result(
     """
     result_arr = np.asarray(result)
 
-    base_key = f"{metric_name}_{dataset_name}" if dataset_name else metric_name
+    base_key = f"{dataset_name}_{metric_name}" if dataset_name else metric_name
 
     def _comp_suffix(idx: int) -> str:
         if component_names is not None and idx < len(component_names):
