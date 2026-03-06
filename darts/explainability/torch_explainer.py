@@ -26,6 +26,7 @@ If foreground data is not provided, background data is used for both.
 
 from collections.abc import Sequence
 from enum import Enum
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -35,7 +36,10 @@ from matplotlib import pyplot as plt
 
 from darts import TimeSeries
 from darts.explainability.explainability import _ForecastingModelExplainer
-from darts.explainability.explainability_result import SHAPExplainabilityResult
+from darts.explainability.explainability_result import (
+    SHAPExplainabilityResult,
+    SHAPSingleExplainabilityResult,
+)
 from darts.explainability.utils import process_horizons_and_targets
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
@@ -374,6 +378,73 @@ class TorchExplainer(_ForecastingModelExplainer):
             shap_values_list, feature_values_list, shap_explanation_object_list
         )
 
+    def explain_single(
+        self,
+        foreground_series: TimeSeries | None = None,
+        foreground_past_covariates: TimeSeries | None = None,
+        foreground_future_covariates: TimeSeries | None = None,
+        target_components: Sequence[str] | None = None,
+    ):
+        fallback = foreground_series is None
+        (
+            foreground_series_,
+            foreground_past_covariates_,
+            foreground_future_covariates_,
+            _,
+            _,
+            _,
+            _,
+        ) = self._process_foreground(
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
+        )
+        _, target_names = self._process_horizons_and_targets(None, target_components)
+
+        foreground_X, schemas, prediction_times = self.explainer.create_shap_array(
+            foreground_series_,
+            foreground_past_covariates_,
+            foreground_future_covariates_,
+            train=fallback,
+        )
+
+        # explain only the last forecasted timestamp
+        foreground_X = foreground_X[-1:]
+        schema = schemas[-1]
+        prediction_time = prediction_times[-1]
+
+        shap_ = self.explainer.shap_explanations_single(foreground_X, target_names)
+
+        shap_values_dict = {}
+        feature_values_dict = {}
+        shap_explanation_object_dict = {}
+        for t in target_names:
+            shap_values_dict[t] = TimeSeries(
+                times=pd.date_range(
+                    start=prediction_time,
+                    freq=schema["time_freq"],
+                    periods=shap_[t].values.shape[1],
+                ),
+                values=shap_[t].values.T,
+                components=shap_[t].feature_names,
+            )
+            feature_values_dict[t] = TimeSeries(
+                times=pd.date_range(
+                    start=prediction_time,
+                    freq=schema["time_freq"],
+                    periods=1,
+                ),
+                values=shap_[t].data,
+                components=shap_[t].feature_names,
+            )
+            shap_explanation_object_dict[t] = shap_[t]
+
+        return SHAPSingleExplainabilityResult(
+            shap_values_dict,
+            feature_values_dict,
+            shap_explanation_object_dict,
+        )
+
     def summary_plot(
         self,
         foreground_series: TimeSeriesLike | None = None,
@@ -437,7 +508,7 @@ class TorchExplainer(_ForecastingModelExplainer):
             horizons, target_components
         )
 
-        foreground_X, _ = self.explainer.create_shap_array(
+        foreground_X, _, _ = self.explainer.create_shap_array(
             foreground_series_,
             foreground_past_covariates_,
             foreground_future_covariates_,
@@ -534,7 +605,7 @@ class TorchExplainer(_ForecastingModelExplainer):
         )
         horizon, target_component = horizons[0], target_components[0]
 
-        foreground_X, _ = self.explainer.create_shap_array(
+        foreground_X, _, _ = self.explainer.create_shap_array(
             foreground_series_,
             foreground_past_covariates_,
             foreground_future_covariates_,
@@ -600,7 +671,7 @@ class _DeepSHAPExplainer:
         self.output_chunk_length = model.output_chunk_length or 1
         self.output_chunk_shift = model.output_chunk_shift
 
-        self.background_X, _ = self.create_shap_array(
+        self.background_X, _, _ = self.create_shap_array(
             series=self.background_series,
             past_covariates=self.background_past_covariates,
             future_covariates=self.background_future_covariates,
@@ -808,8 +879,8 @@ class _DeepSHAPExplainer:
         shap_data: np.ndarray = shap_explanation_tmp.data
         shap_base_values: np.ndarray = shap_explanation_tmp.base_values
 
-        # create a unified dictionary between multiOutputRegressor estimators and
-        # native multiOutput estimators
+        # create a nested dictionary {horizon : {target_component : shap.Explanation}}
+        # for better accessibility of the explanations
         shap_explanations = {}
 
         for h in horizons:
@@ -828,6 +899,36 @@ class _DeepSHAPExplainer:
 
                 tmp_n[t] = tmp_t
             shap_explanations[h] = tmp_n
+
+        return shap_explanations
+
+    def shap_explanations_single(
+        self,
+        foreground_X: np.ndarray,
+        target_components: Sequence[str],
+    ) -> dict[str, shap.Explanation]:
+        shap_explanation_tmp: shap.Explanation = self.explainer(foreground_X)
+        shap_values: np.ndarray = shap_explanation_tmp.values
+        shap_data: np.ndarray = shap_explanation_tmp.data
+        shap_base_values: np.ndarray = shap_explanation_tmp.base_values
+
+        # create a nested dictionary {target_component : shap.Explanation}
+        # for better accessibility of the explanations
+        shap_explanations = {}
+
+        for t_idx, t in enumerate(self.target_components_likelihood):
+            if t not in target_components:
+                continue
+            tmp_t = shap.Explanation(
+                shap_values[0, :, t_idx :: self.n_targets_likelihood],
+                data=shap_data,
+                base_values=shap_base_values[
+                    0, t_idx :: self.n_targets_likelihood
+                ].ravel(),
+                feature_names=self.feature_names,
+            )
+
+            shap_explanations[t] = tmp_t
 
         return shap_explanations
 
@@ -861,7 +962,7 @@ class _DeepSHAPExplainer:
         future_covariates: TimeSeriesLike | None,
         n_samples: int | None = None,
         train: bool = False,
-    ) -> tuple[np.ndarray, pd.Index]:
+    ) -> tuple[np.ndarray, list[dict[str, Any]], pd.Index]:
         # convert to sequence of TimeSeries if not already
         series_: Sequence[TimeSeries] = series2seq(series)
         past_covariates_: Sequence[TimeSeries] | None = series2seq(past_covariates)
@@ -929,6 +1030,7 @@ class _DeepSHAPExplainer:
         input_past = self._batch_collate_np(batch, INPUT_PAST_INDICES)
         input_future = self._batch_collate_np(batch, INPUT_FUTURE_INDICES)
         input_static = self._batch_collate_np(batch, INPUT_STATIC_INDICES)
+        schemas = [c[-2] for c in batch]
         prediction_times = pd.Index([c[-1] for c in batch])
 
         shap_array = np.concatenate(
@@ -940,4 +1042,4 @@ class _DeepSHAPExplainer:
             axis=-1,
         )
 
-        return shap_array, prediction_times
+        return shap_array, schemas, prediction_times

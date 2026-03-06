@@ -8,6 +8,7 @@ model-specific explainability methods.
 
 from darts.explainability.explainability_result import (
     SHAPExplainabilityResult,
+    SHAPSingleExplainabilityResult,
     TFTExplainabilityResult,
     _ExplainabilityResult,
 )
@@ -30,6 +31,7 @@ except ModuleNotFoundError:
 
 __all__ = [
     "SHAPExplainabilityResult",
+    "SHAPSingleExplainabilityResult",
     "TFTExplainabilityResult",
     "_ExplainabilityResult",
     "SKLearnExplainer",

@@ -67,9 +67,9 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
         else:
             comps_available = explained_components.keys()
         self.explained_components = explained_components
-        self.available_components = comps_available
+        self.available_components = list(comps_available)
 
-    def get_explanation(self, component) -> Any | list[Any]:
+    def get_explanation(self, component: str | None = None) -> Any | list[Any]:
         """
         Returns one or several explanations for a given component.
 
@@ -83,7 +83,7 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
     def _query_explainability_result(
         self,
         attr: dict[str, Any] | list[dict[str, Any]],
-        component: str,
+        component: str | None,
     ) -> Any:
         """
         Helper that extracts and returns the explainability result attribute for a given component.
@@ -101,7 +101,9 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
         else:
             return attr[component]
 
-    def _validate_input_for_querying_explainability_result(self, component) -> str:
+    def _validate_input_for_querying_explainability_result(
+        self, component: str | None
+    ) -> str:
         """
         Helper that validates the input parameters of a method that queries the `ComponentBasedExplainabilityResult`.
 
@@ -335,9 +337,11 @@ class SHAPExplainabilityResult(HorizonBasedExplainabilityResult):
     Stores the explainability results of a
     :class:`SKLearnExplainer <darts.explainability.sklearn_explainer.SKLearnExplainer>` or
     :class:`TorchExplainer <darts.explainability.torch_explainer.TorchExplainer>`
-    with convenient access to the results. It extends the :class:`HorizonBasedExplainabilityResult
+    with convenient access to the results.
+
+    It extends the :class:`HorizonBasedExplainabilityResult
     <HorizonBasedExplainabilityResult>` and carries additional information specific to the SHAP explainers.
-    In particular, in addition to the `explained_forecasts` (shape values), it also provides access to the
+    In particular, in addition to the `explained_forecasts` (shap values), it also provides access to the
     corresponding `feature_values` and the underlying `shap.Explanation` object.
 
     - :func:`get_explanation() <SHAPExplainabilityResult.get_explanation>`: explained forecast for a given horizon
@@ -404,6 +408,81 @@ class SHAPExplainabilityResult(HorizonBasedExplainabilityResult):
         """
         return self._query_explainability_result(
             self.shap_explanation_object, horizon, component
+        )
+
+
+class SHAPSingleExplainabilityResult(ComponentBasedExplainabilityResult):
+    def __init__(
+        self,
+        explained_components: dict[str, TimeSeries],
+        feature_values: dict[str, TimeSeries],
+        shap_explanation_object: dict[str, shap.Explanation],
+    ):
+        """
+        Stores the explainability results of a
+        :class:`SKLearnExplainer <darts.explainability.sklearn_explainer.SKLearnExplainer>` or
+        :class:`TorchExplainer <darts.explainability.torch_explainer.TorchExplainer>`
+        for a single forecast with convenient access to the results.
+
+        It extends the :class:`ComponentBasedExplainabilityResult <ComponentBasedExplainabilityResult>` and
+        carries additional information specific to the SHAP explainers.
+
+        - :func:`get_explanation() <get_explanation>`: SHAP values for a given component in multivariate ``TimeSeries``
+          format.
+        - :func:`get_feature_values() <get_feature_values>`: input feature values for a given component in
+          single-timestamp multivariate ``TimeSeries`` format.
+        - :func:`get_shap_explanation_object() <get_shap_explanation_object>`: ``shap.Explanation`` object for a given
+          component.
+        """
+        super().__init__(explained_components)
+        self.feature_values = feature_values
+        self.shap_explanation_object = shap_explanation_object
+
+    def get_explanation(self, component: str | None = None) -> TimeSeries:
+        """
+        Returns the ``TimeSeries`` representing the explanation for a given component.
+
+        The components of the ``TimeSeries`` correspond to the input features used by the model to produce the
+        forecasts. The time index contains the forecasted timestamps in the future. Therefore, the values of
+        ``TimeSeries`` are the SHAP values of the features for the forecast at each forecasted timestamp.
+
+        Parameters
+        ----------
+        component
+            The component for which to return the explanation. Only optional if the target series is univariate.
+        """
+        return self._query_explainability_result(self.explained_components, component)
+
+    def get_feature_values(self, component: str | None = None) -> TimeSeries:
+        """
+        Returns the ``TimeSeries`` representing the feature values for a given component.
+
+        The components of the ``TimeSeries`` correspond to the input features used by the model to produce the
+        forecasts. The time index contains only one timestamp, which is the first forecasted timestamp in the future.
+        The values of the ``TimeSeries`` are the feature values used by the model to produce the forecast starting
+        at that timestamp.
+
+        Parameters
+        ----------
+        component
+            The component for which to return the feature values. Only optional if the target series is univariate.
+        """
+        return self._query_explainability_result(self.feature_values, component)
+
+    def get_shap_explanation_object(
+        self, component: str | None = None
+    ) -> shap.Explanation:
+        """
+        Returns the underlying ``shap.Explanation`` object for a given component.
+
+        Parameters
+        ----------
+        component
+            The component for which to return the ``shap.Explanation`` object. Only optional if the target series is
+            univariate.
+        """
+        return self._query_explainability_result(
+            self.shap_explanation_object, component
         )
 
 
