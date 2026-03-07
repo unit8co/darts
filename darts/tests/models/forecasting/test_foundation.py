@@ -9,6 +9,7 @@ import pytest
 
 from darts import TimeSeries, concatenate
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.utils.likelihood_models import QuantileRegression
 from darts.utils.timeseries_generation import linear_timeseries
 
 if not TORCH_AVAILABLE:
@@ -17,7 +18,7 @@ if not TORCH_AVAILABLE:
         allow_module_level=True,
     )
 
-from darts.models import Chronos2Model
+from darts.models import Chronos2Model, TimesFM2p5Model
 
 
 def generate_series(n_variables: int, length: int, prefix: str):
@@ -408,3 +409,50 @@ class TestFoundationModel:
             )
 
             model.fit(self.series)
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (
+                TimesFM2p5Model,
+                "output_projection_point.hidden_layer.weight",
+                "google/timesfm-2.5-200m-pytorch",
+            ),
+            (Chronos2Model, "output_patch_embedding.*", "autogluon/chronos-2-small"),
+        ],
+    )
+    def test_finetuning_all_models(self, config):
+        """Tests fine-tuning with user-quantiles that are different to the ones the model was trained on."""
+        model_cls, pattern, model_revision = config
+        quantiles = [0.1, 0.5, 0.9]
+
+        model = model_cls(
+            input_chunk_length=12,
+            output_chunk_length=6,
+            enable_finetuning={"unfreeze": [pattern]},
+            n_epochs=1,
+            likelihood=QuantileRegression(quantiles),
+            hub_model_name=model_revision,
+            **tfm_kwargs,
+        )
+
+        # fit model with validation series (training quantile loss is different from evaluation quantile loss)
+        model.fit(self.series, val_series=self.series)
+
+        # Check requires_grad status
+        unfrozen_found = False
+        frozen_found = False
+
+        for name, param in model.model.named_parameters():
+            if pattern.replace("*", "") in name:
+                assert param.requires_grad is True
+                unfrozen_found = True
+            else:
+                assert param.requires_grad is False
+                frozen_found = True
+
+        assert unfrozen_found
+        assert frozen_found
+
+        preds = model.predict(n=6, predict_likelihood_parameters=True)
+        assert preds.shape == (6, self.series.n_components * len(quantiles), 1)
