@@ -64,7 +64,7 @@ from scipy.stats import kurtosis, skew
 
 from darts.config import get_option
 from darts.logging import get_logger, raise_log
-from darts.typing import TimeIndex
+from darts.typing import TimeIndex, TimeZone
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils._formatting import (
     format_bytes,
@@ -3558,7 +3558,7 @@ class TimeSeries:
         attribute,
         one_hot: bool = False,
         cyclic: bool = False,
-        tz: Any = None,
+        tz: TimeZone = None,
     ) -> Self:
         """Return a new series with one (or more) additional component(s) that contain an attribute of the series' time
         index.
@@ -3612,7 +3612,7 @@ class TimeSeries:
         country_code: str,
         prov: str | None = None,
         state: str | None = None,
-        tz: Any = None,
+        tz: TimeZone = None,
     ) -> Self:
         """Return a new series with an added holiday component.
 
