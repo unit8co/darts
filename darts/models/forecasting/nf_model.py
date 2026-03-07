@@ -663,16 +663,6 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
                 logger,
             )
 
-        # warn if static covariates are enabled for multivariate base models
-        if self.supports_multivariate and use_static_covariates:
-            logger.warning(
-                "Multivariate NeuralForecast models require static covariates to be the same "
-                "across time series, but may be different across target components. "
-                "If you have multiple time series, setting `use_static_covariates=True` "
-                "will use the static covariates of the first sample in each batch, instead of "
-                "providing different static covariates per time series."
-            )
-
         # consider static covariates if supported by `nf_model_class`
         self._considers_static_covariates = use_static_covariates
 
@@ -723,7 +713,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             _NF_MODEL_IGNORED_PARAMS.intersection(self.nf_model_params.keys())
         )
         if len(ignored_params_in_use) > 0:
-            logger.info(
+            logger.warning(
                 f"The following NeuralForecast model parameters will be ignored "
                 f"as they are either managed by Darts or not relevant: {ignored_params_in_use}"
             )
@@ -794,6 +784,16 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             n_past_covs = past_covariates.shape[1]
         if static_covariates is not None:
             n_stat_covs = static_covariates.shape[1]
+
+        # warn if static covariates are enabled for multivariate base models
+        if self.nf_model_class.MULTIVARIATE and n_stat_covs > 0:
+            logger.warning(
+                "Multivariate NeuralForecast models require static covariates to be the same "
+                "across time series, but may be different across target components. "
+                "If you have multiple time series, setting `use_static_covariates=True` "
+                "will use the static covariates of the first sample in each batch, instead of "
+                "providing different static covariates per time series."
+            )
 
         pl_module_params = self.pl_module_params or {}
         return _NeuralForecastModule(
