@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.41.0" />
+  <meta name="docsearch:version" content="0.42.0" />
   </head>
   
   
@@ -1077,16 +1077,6 @@
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
 
-        <span class="c1"># warn if static covariates are enabled for multivariate base models</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">supports_multivariate</span> <span class="ow">and</span> <span class="n">use_static_covariates</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="s2">&quot;Multivariate NeuralForecast models require static covariates to be the same &quot;</span>
-                <span class="s2">&quot;across time series, but may be different across target components. &quot;</span>
-                <span class="s2">&quot;If you have multiple time series, setting `use_static_covariates=True` &quot;</span>
-                <span class="s2">&quot;will use the static covariates of the first sample in each batch, instead of &quot;</span>
-                <span class="s2">&quot;providing different static covariates per time series.&quot;</span>
-            <span class="p">)</span>
-
         <span class="c1"># consider static covariates if supported by `nf_model_class`</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_considers_static_covariates</span> <span class="o">=</span> <span class="n">use_static_covariates</span>
 
@@ -1137,7 +1127,7 @@
             <span class="n">_NF_MODEL_IGNORED_PARAMS</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nf_model_params</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ignored_params_in_use</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;The following NeuralForecast model parameters will be ignored &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;as they are either managed by Darts or not relevant: </span><span class="si">{</span><span class="n">ignored_params_in_use</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
@@ -1208,6 +1198,16 @@
             <span class="n">n_past_covs</span> <span class="o">=</span> <span class="n">past_covariates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">static_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">n_stat_covs</span> <span class="o">=</span> <span class="n">static_covariates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># warn if static covariates are enabled for multivariate base models</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nf_model_class</span><span class="o">.</span><span class="n">MULTIVARIATE</span> <span class="ow">and</span> <span class="n">n_stat_covs</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Multivariate NeuralForecast models require static covariates to be the same &quot;</span>
+                <span class="s2">&quot;across time series, but may be different across target components. &quot;</span>
+                <span class="s2">&quot;If you have multiple time series, setting `use_static_covariates=True` &quot;</span>
+                <span class="s2">&quot;will use the static covariates of the first sample in each batch, instead of &quot;</span>
+                <span class="s2">&quot;providing different static covariates per time series.&quot;</span>
+            <span class="p">)</span>
 
         <span class="n">pl_module_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span> <span class="ow">or</span> <span class="p">{}</span>
         <span class="k">return</span> <span class="n">_NeuralForecastModule</span><span class="p">(</span>
