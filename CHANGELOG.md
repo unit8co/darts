@@ -28,13 +28,12 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - 🚀🚀 Added **fine-tuning** support to all `TorchForecastingModel` and `FoundationModel` (such as `Chronos2Model` and `TimesFM2p5Model`) via the new `enable_finetuning` parameter. Supports full training, and partial fine-tuning by selectively freezing or unfreezing layers by name pattern. [#2964](https://github.com/unit8co/darts/issues/2964) by [Alain Gysi](https://github.com/Kurokabe).
   - Check out our new [Fine-Tuning Notebook](https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html) for detailed examples.
 - More fine-grained control over Reversible Instance Normalization for all torch models. Apart from the boolean trigger, parameter `use_reversible_instance_norm` now also supports setting the `RINorm` hyperparameters as a dictionary. [#3029](https://github.com/unit8co/darts/pull/3029) by [Zhihao Dai](https://github.com/daidahao).
-- Created `darts.typing` module to collect typical type annotation in one place. Introduced `TimeIndex` & `TimeSeriesLike` type aliases for improved readability & maintainability of the code. Common type annotations can be added to this file in the future. [#3021](https://github.com/unit8co/darts/pull/3021) by [Michel Zeller](https://github.com/mizeller)
+- Created `darts.typing` module to collect typical type annotation in one place. Introduced `TimeIndex`, `TimeSeriesLike`, `TimeZone` type aliases for improved readability & maintainability of the code. Common type annotations can be added to this file in the future. [#3021](https://github.com/unit8co/darts/pull/3021) by [Michel Zeller](https://github.com/mizeller)
 
 **Fixed**
 
 - Disallowed `use_reversible_instance_norm=True` or `{"affine": True}` for foundation models to prevent checkpoint loading errors due to incompatible weights. [#3029](https://github.com/unit8co/darts/pull/3029) by [Zhihao Dai](https://github.com/daidahao).
-- Updated the restrictive type hint for the timezone parameter `tz` to `Any`. This allows the use of more timezone definitions supported by Pandas [tz_convert](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html). [#3015](https://github.com/unit8co/darts/pull/3015) by [Moritz Waldleben](https://github.com/mwaldleben).
-- Fixed all instances of [invalid-parameter-default](https://docs.astral.sh/ty/reference/rules/#invalid-parameter-default) errors. Improves type checker's ability to accurately reason about the code. [#3027](https://github.com/unit8co/darts/pull/3027) by [Michel Zeller](https://github.com/mizeller)
+- Updated the restrictive type hint for the timezone parameter `tz` to cover all timezone definitions supported by Pandas [tz_convert](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html). [#3015](https://github.com/unit8co/darts/pull/3015) and [#3035](https://github.com/unit8co/darts/pull/3035) by [Moritz Waldleben](https://github.com/mwaldleben).
 
 **Dependencies**
 
@@ -43,6 +42,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For developers of the library:
 
 - Updated target-version to python310, and auto-refactored source code using ruff. [#3017](https://github.com/unit8co/darts/pull/2589) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed all instances of [invalid-parameter-default](https://docs.astral.sh/ty/reference/rules/#invalid-parameter-default) errors. Improves type checker's ability to accurately reason about the code. [#3027](https://github.com/unit8co/darts/pull/3027) by [Michel Zeller](https://github.com/mizeller)
 
 ## [0.41.0](https://github.com/unit8co/darts/tree/0.41.0) (2026-02-10)
 
