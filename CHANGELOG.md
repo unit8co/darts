@@ -5,7 +5,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.42.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.42.1...master)
 
 ### For users of the library:
 
@@ -16,6 +16,14 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Dependencies**
 
 ### For developers of the library:
+
+## [0.42.1](https://github.com/unit8co/darts/tree/0.42.1) (2026-03-07)
+
+### For users of the library:
+
+**Fixed**
+
+- Removed an incorrect warning being raised by `NeuralForecastModel` regarding using static covariates with multivariate base models. [#3036](https://github.com/unit8co/darts/pull/3036) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.42.0](https://github.com/unit8co/darts/tree/0.42.0) (2026-03-07)
 
