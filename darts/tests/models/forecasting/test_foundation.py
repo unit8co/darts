@@ -1,4 +1,5 @@
 import logging
+import os
 import shutil
 from pathlib import Path
 from unittest.mock import patch
@@ -8,6 +9,7 @@ import pytest
 
 from darts import TimeSeries, concatenate
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.utils.likelihood_models import QuantileRegression
 from darts.utils.timeseries_generation import linear_timeseries
 
 if not TORCH_AVAILABLE:
@@ -16,7 +18,7 @@ if not TORCH_AVAILABLE:
         allow_module_level=True,
     )
 
-from darts.models import Chronos2Model
+from darts.models import Chronos2Model, TimesFM2p5Model
 
 
 def generate_series(n_variables: int, length: int, prefix: str):
@@ -226,3 +228,231 @@ class TestFoundationModel:
             )
         config_path.rmdir()
         test_local_dir.rmdir()
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_default_no_finetuning(self, mock_method):
+        # Default behavior: enable_finetuning=False (no training)
+        model = Chronos2Model(
+            input_chunk_length=12,
+            output_chunk_length=6,
+            **tfm_kwargs,
+        )
+        # Check that the given parameters remain unchanged, but that enable_finetuning is False
+        # (because if not specified, it is None, but we want it to be False by default for foundation models)
+        assert model.input_chunk_length == 12
+        assert model.output_chunk_length == 6
+        assert model.model_params["enable_finetuning"] is False
+        mock_method.assert_called()
+
+        # calling `fit()` should NOT use `trainer.fit()` when finetuning is disabled
+        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+            model.fit(
+                series=self.series,
+                future_covariates=self.future_cov,
+            )
+            mock_fit.assert_not_called()
+
+        # foundation model should be deterministic by default
+        assert model.model_created
+
+        # predictions should allow n > output_chunk_length (autoregressive)
+        pred = model.predict(n=10)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 10
+        assert pred.n_components == self.series.n_components
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_full_finetuning(self, mock_method, tmpdir):
+        # 1. Enable Full Fine-tuning
+        model = Chronos2Model(
+            input_chunk_length=12,
+            output_chunk_length=6,
+            enable_finetuning=True,
+            n_epochs=1,
+            **tfm_kwargs,
+        )
+        assert model.model_params["enable_finetuning"] is True
+
+        # Initialize model (this will train for 1 epoch, but that's fine for verification)
+        model.fit(self.series)
+
+        # Verify all parameters require grad
+        for n, p in model.model.named_parameters():
+            assert p.requires_grad is True
+
+        # 3. Persistence (Save/Load)
+        save_path = os.path.join(tmpdir, "model_full_ft.pt")
+        model.save(save_path)
+
+        # Load back
+        loaded_model = Chronos2Model.load(save_path)
+        assert loaded_model.model_params["enable_finetuning"] is True
+
+        # Check predictions match
+        pred_orig = model.predict(n=6, series=self.series)
+        pred_loaded = loaded_model.predict(n=6, series=self.series)
+        # Relax tolerance slightly for floating point differences across save/load on CPU
+        assert np.allclose(pred_orig.values(), pred_loaded.values(), atol=1e-6)
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_partial_finetuning_block_freeze(self, mock_method):
+        # Test freezing specific layers (partial fine-tuning)
+        # We freeze the encoder, so only other parts (like head/decoder) should be trainable
+
+        # For this test, let's freeze 'encoder'
+        model = Chronos2Model(
+            input_chunk_length=12,
+            output_chunk_length=6,
+            enable_finetuning={"freeze": ["encoder.*"]},
+            n_epochs=1,
+            **tfm_kwargs,
+        )
+
+        # Initialize model
+        model.fit(self.series)
+
+        # Check requires_grad status
+        frozen_found = False
+        trainable_found = False
+
+        for name, param in model.model.named_parameters():
+            if "encoder" in name:
+                assert param.requires_grad is False
+                frozen_found = True
+            elif param.requires_grad:
+                trainable_found = True
+
+        assert frozen_found
+        assert trainable_found
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_partial_finetuning_unfreeze(self, mock_method):
+        # Test unfreezing specific layers (partial fine-tuning)
+        # Everything is frozen EXCEPT the specified patterns
+
+        # Let's unfreeze only the 'encoder' (or part of it)
+        model = Chronos2Model(
+            input_chunk_length=12,
+            output_chunk_length=6,
+            enable_finetuning={"unfreeze": ["encoder.*"]},
+            n_epochs=1,
+            **tfm_kwargs,
+        )
+
+        # Initialize model
+        model.fit(self.series)
+
+        # Check requires_grad status
+        unfrozen_found = False
+        frozen_found = False
+
+        for name, param in model.model.named_parameters():
+            if "encoder" in name:
+                assert param.requires_grad is True
+                unfrozen_found = True
+            else:
+                assert param.requires_grad is False
+                frozen_found = True
+
+        assert unfrozen_found
+        assert frozen_found
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_finetuning_misconfiguration(self, mock_method):
+        # 1. Invalid dict key
+        with pytest.raises(
+            ValueError,
+            match="If `enable_finetuning` is a dict, it must contain exactly one key: 'freeze' or 'unfreeze'.",
+        ):
+            model = Chronos2Model(
+                input_chunk_length=12,
+                output_chunk_length=6,
+                enable_finetuning={"invalid_key": ["pattern"]},
+                **tfm_kwargs,
+            )
+
+            model.fit(self.series)
+
+        # 2. Invalid dict value type
+        with pytest.raises(ValueError, match="must be a list of strings"):
+            model = Chronos2Model(
+                input_chunk_length=12,
+                output_chunk_length=6,
+                enable_finetuning={"freeze": "not_a_list"},
+                **tfm_kwargs,
+            )
+
+            model.fit(self.series)
+
+        # 3. Both keys (impossible due to dict construction, but multiple keys)
+        with pytest.raises(ValueError, match="must contain exactly one key"):
+            model = Chronos2Model(
+                input_chunk_length=12,
+                output_chunk_length=6,
+                enable_finetuning={"freeze": ["p1"], "unfreeze": ["p2"]},
+                **tfm_kwargs,
+            )
+
+            model.fit(self.series)
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (
+                TimesFM2p5Model,
+                "output_projection_point.hidden_layer.weight",
+                "google/timesfm-2.5-200m-pytorch",
+            ),
+            (Chronos2Model, "output_patch_embedding.*", "autogluon/chronos-2-small"),
+        ],
+    )
+    def test_finetuning_all_models(self, config):
+        """Tests fine-tuning with user-quantiles that are different to the ones the model was trained on."""
+        model_cls, pattern, model_revision = config
+        quantiles = [0.1, 0.5, 0.9]
+
+        model = model_cls(
+            input_chunk_length=12,
+            output_chunk_length=6,
+            enable_finetuning={"unfreeze": [pattern]},
+            n_epochs=1,
+            likelihood=QuantileRegression(quantiles),
+            hub_model_name=model_revision,
+            **tfm_kwargs,
+        )
+
+        # fit model with validation series (training quantile loss is different from evaluation quantile loss)
+        model.fit(self.series, val_series=self.series)
+
+        # Check requires_grad status
+        unfrozen_found = False
+        frozen_found = False
+
+        for name, param in model.model.named_parameters():
+            if pattern.replace("*", "") in name:
+                assert param.requires_grad is True
+                unfrozen_found = True
+            else:
+                assert param.requires_grad is False
+                frozen_found = True
+
+        assert unfrozen_found
+        assert frozen_found
+
+        preds = model.predict(n=6, predict_likelihood_parameters=True)
+        assert preds.shape == (6, self.series.n_components * len(quantiles), 1)

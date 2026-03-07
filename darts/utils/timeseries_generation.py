@@ -19,7 +19,7 @@ from darts.timeseries import (
     TIME_AX,
     TimeSeries,
 )
-from darts.typing import TimeIndex
+from darts.typing import TimeIndex, TimeZone
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -484,7 +484,7 @@ def holidays_timeseries(
     until: int | str | pd.Timestamp | None = None,
     add_length: int = 0,
     dtype: np.typing.DTypeLike = np.float64,
-    tz: Any = None,
+    tz: TimeZone = None,
 ) -> TimeSeries:
     """
     Creates a binary univariate TimeSeries with index `time_index` that equals 1 at every index that lies within
@@ -552,7 +552,7 @@ def datetime_attribute_timeseries(
     add_length: int = 0,
     dtype=np.float64,
     with_columns: list[str] | str | None = None,
-    tz: Any = None,
+    tz: TimeZone = None,
 ) -> TimeSeries:
     """
     Returns a new TimeSeries with index `time_index` and one or more dimensions containing
@@ -905,7 +905,7 @@ def _generate_new_dates(
 
 def _process_time_index(
     time_index: TimeSeries | pd.DatetimeIndex,
-    tz: Any | None = None,
+    tz: TimeZone = None,
     until: int | str | pd.Timestamp | None = None,
     add_length: int = 0,
 ) -> tuple[pd.DatetimeIndex, pd.DatetimeIndex]:

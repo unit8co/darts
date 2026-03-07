@@ -158,7 +158,6 @@ TorchForecastingModel (this is only meant to illustrate many features at once).
 
 import copy
 from collections.abc import Callable, Sequence
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -176,7 +175,7 @@ from darts.dataprocessing.encoders.encoder_base import (
 from darts.dataprocessing.transformers import FittableDataTransformer
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.timeseries import DIMS
-from darts.typing import TimeIndex, TimeSeriesLike
+from darts.typing import TimeIndex, TimeSeriesLike, TimeZone
 from darts.utils.timeseries_generation import datetime_attribute_timeseries
 from darts.utils.ts_utils import seq2series, series2seq
 from darts.utils.utils import generate_index
@@ -204,7 +203,7 @@ class CyclicTemporalEncoder(SingleEncoder):
         self,
         index_generator: CovariatesIndexGenerator,
         attribute: str,
-        tz: Any = None,
+        tz: TimeZone = None,
     ):
         """
         Cyclic index encoding for `TimeSeries` that have a time index of type `pd.DatetimeIndex`.
@@ -274,7 +273,7 @@ class PastCyclicEncoder(CyclicTemporalEncoder):
         input_chunk_length: int | None = None,
         output_chunk_length: int | None = None,
         lags_covariates: list[int] | None = None,
-        tz: Any = None,
+        tz: TimeZone = None,
     ):
         """
         Parameters
@@ -325,7 +324,7 @@ class FutureCyclicEncoder(CyclicTemporalEncoder):
         input_chunk_length: int | None = None,
         output_chunk_length: int | None = None,
         lags_covariates: list[int] | None = None,
-        tz: Any = None,
+        tz: TimeZone = None,
     ):
         """
         Parameters
@@ -376,7 +375,7 @@ class DatetimeAttributeEncoder(SingleEncoder):
         self,
         index_generator: CovariatesIndexGenerator,
         attribute: str,
-        tz: Any = None,
+        tz: TimeZone = None,
     ):
         """
         Parameters
@@ -440,7 +439,7 @@ class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
         input_chunk_length: int | None = None,
         output_chunk_length: int | None = None,
         lags_covariates: list[int] | None = None,
-        tz: Any = None,
+        tz: TimeZone = None,
     ):
         """
         Parameters
@@ -491,7 +490,7 @@ class FutureDatetimeAttributeEncoder(DatetimeAttributeEncoder):
         input_chunk_length: int | None = None,
         output_chunk_length: int | None = None,
         lags_covariates: list[int] | None = None,
-        tz: Any = None,
+        tz: TimeZone = None,
     ):
         """
         Parameters

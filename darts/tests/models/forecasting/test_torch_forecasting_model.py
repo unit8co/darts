@@ -2854,3 +2854,220 @@ class TestTorchForecastingModel:
         params.update(tfm_kwargs)
         params.update(kwargs)
         return model_cls(**params)
+
+
+class TestTorchForecastingModelFineTuning:
+    """Tests for enable_finetuning on TorchForecastingModel using DLinearModel."""
+
+    series = tg.sine_timeseries(length=40, value_frequency=0.05).astype(np.float32)
+
+    base_kwargs = {
+        "input_chunk_length": 10,
+        "output_chunk_length": 2,
+        "random_state": 42,
+        **tfm_kwargs,
+    }
+
+    def test_full_finetuning(self):
+        model = DLinearModel(
+            enable_finetuning=True,
+            n_epochs=1,
+            **self.base_kwargs,
+        )
+        assert model.enable_finetuning is True
+        assert model._requires_training is True
+
+        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+            model.fit(self.series)
+            mock_fit.assert_called_once()
+
+        for name, p in model.model.named_parameters():
+            assert p.requires_grad is True
+
+        preds = model.predict(n=10, series=self.series)
+        assert len(preds) == 10
+
+    def test_no_training(self):
+        model = DLinearModel(
+            enable_finetuning=False,
+            n_epochs=1,
+            **self.base_kwargs,
+        )
+        assert model.enable_finetuning is False
+        assert model._requires_training is False
+
+        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+            model.fit(self.series)
+            mock_fit.assert_not_called()
+
+        for name, p in model.model.named_parameters():
+            assert p.requires_grad is False
+
+        preds = model.predict(n=10, series=self.series)
+        assert len(preds) == 10
+
+    @pytest.mark.parametrize("freeze", [["linear_seasonal.*"], ["*linear_seasonal*"]])
+    def test_partial_freeze(self, freeze):
+        model = DLinearModel(
+            enable_finetuning={"freeze": freeze},
+            n_epochs=1,
+            **self.base_kwargs,
+        )
+
+        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+            model.fit(self.series)
+            mock_fit.assert_called_once()
+
+        frozen_found = False
+        trainable_found = False
+        for name, p in model.model.named_parameters():
+            if "linear_seasonal" in name:
+                assert p.requires_grad is False
+                frozen_found = True
+            else:
+                assert p.requires_grad is True
+                trainable_found = True
+
+        assert frozen_found
+        assert trainable_found
+
+        preds = model.predict(n=10, series=self.series)
+        assert len(preds) == 10
+
+    def test_partial_unfreeze(self):
+        model = DLinearModel(
+            enable_finetuning={"unfreeze": ["linear_seasonal.*"]},
+            n_epochs=1,
+            **self.base_kwargs,
+        )
+
+        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+            model.fit(self.series)
+            mock_fit.assert_called_once()
+
+        unfrozen_found = False
+        frozen_found = False
+        for name, p in model.model.named_parameters():
+            if "linear_seasonal" in name:
+                assert p.requires_grad is True
+                unfrozen_found = True
+            else:
+                assert p.requires_grad is False
+                frozen_found = True
+
+        assert unfrozen_found
+        assert frozen_found
+
+        preds = model.predict(n=10, series=self.series)
+        assert len(preds) == 10
+
+    def test_finetuning_misconfiguration(self):
+        with pytest.raises(
+            ValueError,
+            match="must contain exactly one key: 'freeze' or 'unfreeze'",
+        ):
+            DLinearModel(
+                enable_finetuning={"invalid_key": ["pattern"]},
+                **self.base_kwargs,
+            )
+
+        with pytest.raises(ValueError, match="must be a list of strings"):
+            DLinearModel(
+                enable_finetuning={"freeze": "not_a_list"},
+                **self.base_kwargs,
+            )
+
+        with pytest.raises(ValueError, match="must contain exactly one key"):
+            DLinearModel(
+                enable_finetuning={"freeze": ["p1"], "unfreeze": ["p2"]},
+                **self.base_kwargs,
+            )
+
+    def test_save_load_roundtrip(self, tmpdir):
+        model = DLinearModel(
+            enable_finetuning=True,
+            n_epochs=1,
+            **self.base_kwargs,
+        )
+        model.fit(self.series)
+
+        pred_before = model.predict(n=2, series=self.series)
+
+        save_path = os.path.join(str(tmpdir), "finetuned_model.pt")
+        model.save(save_path)
+
+        loaded_model = DLinearModel.load(save_path)
+        assert loaded_model.enable_finetuning is True
+
+        pred_after = loaded_model.predict(n=2, series=self.series)
+        np.testing.assert_allclose(
+            pred_before.values(),
+            pred_after.values(),
+            atol=1e-6,
+        )
+
+    def test_enable_finetuning_with_load_weights(self, tmpdir):
+        # 1. Train and save a base model (no fine-tuning flags)
+        base_model = DLinearModel(
+            n_epochs=1,
+            **self.base_kwargs,
+        )
+        base_model.fit(self.series)
+        save_path = os.path.join(str(tmpdir), "base_model.pt")
+        base_model.save(save_path)
+
+        base_state = {n: p.clone() for n, p in base_model.model.named_parameters()}
+
+        # 2. Create a NEW model with enable_finetuning and load_weights
+        ft_model = DLinearModel(
+            enable_finetuning={"freeze": ["linear_seasonal.*"]},
+            n_epochs=1,
+            **self.base_kwargs,
+        )
+        ft_model.load_weights(save_path)
+
+        # 3. Verify requires_grad is correctly set after load_weights
+        frozen_found = False
+        for name, p in ft_model.model.named_parameters():
+            if "linear_seasonal" in name:
+                assert p.requires_grad is False
+                frozen_found = True
+            else:
+                assert p.requires_grad is True
+
+        assert frozen_found
+
+        # 4. Verify loaded weights match saved weights
+        for name, p in ft_model.model.named_parameters():
+            np.testing.assert_allclose(
+                p.detach().cpu().numpy(),
+                base_state[name].detach().cpu().numpy(),
+                atol=1e-6,
+            )
+
+        # 5. Fine-tune (fit) the model — only unfrozen params should change
+        frozen_before = {n: p.clone() for n, p in ft_model.model.named_parameters()}
+        ft_model.fit(self.series)
+        for name, p in ft_model.model.named_parameters():
+            if "linear_seasonal" in name:
+                np.testing.assert_allclose(
+                    p.detach().cpu().numpy(),
+                    frozen_before[name].detach().cpu().numpy(),
+                    atol=1e-6,
+                )
+            else:
+                with pytest.raises(AssertionError):
+                    np.testing.assert_allclose(
+                        p.detach().cpu().numpy(),
+                        frozen_before[name].detach().cpu().numpy(),
+                        atol=1e-6,
+                    )
+
+    def test_enable_finetuning_none_is_default(self):
+        model = DLinearModel(n_epochs=1, **self.base_kwargs)
+        assert model.enable_finetuning is None
+        assert model._requires_training is True
+
+        model.fit(self.series)
+        for _, p in model.model.named_parameters():
+            assert p.requires_grad is True

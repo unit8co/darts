@@ -19,6 +19,7 @@ This file contains several abstract classes:
 
 import copy
 import datetime
+import fnmatch
 import inspect
 import os
 import shutil
@@ -146,6 +147,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         random_state: int | None = None,
         pl_trainer_kwargs: dict | None = None,
         show_warnings: bool = False,
+        enable_finetuning: bool | dict[str, list[str]] | None = None,
     ):
         """Pytorch Lightning (PL)-based Forecasting Model.
 
@@ -266,6 +268,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
         """
         super().__init__(add_encoders=add_encoders)
         suppress_lightning_warnings(suppress_all=not show_warnings)
@@ -361,6 +375,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # pl_module_params must be set in __init__ method of TorchForecastingModel subclass
         self.pl_module_params: dict | None = None
+
+        # fine-tuning control
+        self._verify_enable_finetuning(enable_finetuning)
+        self.enable_finetuning = enable_finetuning
 
     @classmethod
     def _validate_model_params(cls, **kwargs):
@@ -499,7 +517,34 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     _get_runs_folder(self.work_dir, self.model_name), INIT_MODEL_NAME
                 )
             )
+        self._setup_finetuning(model)
         return model
+
+    def _setup_finetuning(self, model: PLForecastingModule):
+        """
+        Sets up the model for fine-tuning based on `self.enable_finetuning`.
+        """
+        # default behavior (None): all parameters are trainable
+        if self.enable_finetuning is None:
+            return
+
+        if isinstance(self.enable_finetuning, bool):
+            # boolean behavior; freeze all or none
+            patterns = []
+            make_trainable = not self.enable_finetuning
+        else:
+            # dict behavior; freeze or unfreeze only the given patterns
+            # guaranteed to only have on key-value pair from (verified at model creation)
+            mode = list(self.enable_finetuning)[0]
+            make_trainable = mode == "unfreeze"
+            patterns = self.enable_finetuning[mode]
+
+        # freeze (or unfreeze) the patterns and unfreeze (or freeze) the remaining parameters
+        for name, param in model.named_parameters():
+            if any(fnmatch.fnmatch(name, p) for p in patterns):
+                param.requires_grad = make_trainable
+            else:
+                param.requires_grad = not make_trainable
 
     def _setup_trainer(
         self,
@@ -726,6 +771,35 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     f"The model does not support {', '.join(invalid_covs)}. " + add_txt
                 ),
                 logger=logger,
+            )
+
+    @staticmethod
+    def _verify_enable_finetuning(
+        enable_finetuning: bool | dict[str, list[str]] | None,
+    ) -> None:
+        """Verify the `enable_finetuning` input."""
+        if enable_finetuning is None or isinstance(enable_finetuning, bool):
+            return
+
+        # dict
+        keys = list(enable_finetuning.keys())
+        if len(keys) != 1 or keys[0] not in ["freeze", "unfreeze"]:
+            raise_log(
+                ValueError(
+                    "If `enable_finetuning` is a dict, it must contain exactly one key: 'freeze' or 'unfreeze'."
+                ),
+                logger,
+            )
+
+        patterns = enable_finetuning[keys[0]]
+        if not isinstance(patterns, list) or not all(
+            isinstance(p, str) for p in patterns
+        ):
+            raise_log(
+                ValueError(
+                    "The value of the `enable_finetuning` dict must be a list of strings (patterns)."
+                ),
+                logger,
             )
 
     def _update_covariates_use(self):
@@ -2468,6 +2542,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @property
     def _requires_training(self) -> bool:
         """Whether the model should be trained when calling a `fit*` method."""
+        # no training if fine-tuning is explicitly disabled
+        if self.enable_finetuning is False:
+            return False
         return True
 
     def _check_optimizable_historical_forecasts(

@@ -21,7 +21,7 @@ We assume that you already know about covariates in Darts. If you're new to the 
       - [Checkpoint saving and loading](#automatic-checkpointing)
       - [Manual model saving and loading](#manual-saving-and-loading)
       - [GPU training and CPU loading](#training-and-saving-on-gpu-loading-on-cpu)
-      - [Load pre-trained model for fine-tuning](#re-training-or-fine-tuning-a-pre-trained-model)
+      - [Re-training or fine-tuning a pre-trained model](#re-training-or-fine-tuning-a-pre-trained-model)
       - [ONNX export for inference](#exporting-model-to-onnx-format-for-inference)
     - [Using callbacks](#callbacks)
       - [Early Stopping](#example-with-early-stopping)
@@ -350,6 +350,27 @@ model_finetune = SomeTorchForecastingModel(...,  # use identical parameters & va
 # load the weights from a manual save
 model_finetune.load_weights("/your/path/to/save/model.pt")
 ```
+
+Additionally, all `TorchForecastingModel` (including `FoundationModel`) support fine-tuning through the `enable_finetuning` parameter. This allows you to freeze or unfreeze specific model parameters for transfer learning:
+
+```python
+# full fine-tuning: all parameters are trainable
+model = SomeTorchForecastingModel(..., enable_finetuning=True)
+
+# partial fine-tuning: freeze specific layers
+model = SomeTorchForecastingModel(..., enable_finetuning={"freeze": ["layer.pattern.*"]})
+
+# partial fine-tuning: only unfreeze specific layers
+model = SomeTorchForecastingModel(..., enable_finetuning={"unfreeze": ["layer.pattern.*"]})
+
+# optionally, load pre-trained weights (not required for foundation models)
+model.load_weights("/your/path/to/save/model.pt")
+
+# fine-tune
+model.fit(...)
+```
+
+For a comprehensive walkthrough of fine-tuning Torch Forecasting Models and Foundation Models, check out the [Fine-Tuning example notebook](https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html).
 
 #### Exporting model to ONNX format for inference
 
