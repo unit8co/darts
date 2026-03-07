@@ -58,7 +58,7 @@
     <link rel="prev" title="Using Torch Models with GPUs and TPUs" href="gpu_and_tpu_usage.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.40.0" />
+  <meta name="docsearch:version" content="0.41.0" />
   </head>
   
   
@@ -728,22 +728,27 @@ Static attributes are powerful when working with multiple <code class="docutils 
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.chronos2_model.html#darts.models.forecasting.chronos2_model.Chronos2Model">Chronos2Model</a></p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.timesfm2p5_model.html#darts.models.forecasting.timesfm2p5_model.TimesFM2p5Model">TimesFM2p5Model</a></p></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p>Ensemble Models (g)</p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nf_model.html#darts.models.forecasting.nf_model.NeuralForecastModel">NeuralForecastModel</a> (g)</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 </tr>
-<tr class="row-even"><td><p>Conformal Prediction Models (h)</p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.chronos2_model.html#darts.models.forecasting.chronos2_model.Chronos2Model">Chronos2Model</a></p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.timesfm2p5_model.html#darts.models.forecasting.timesfm2p5_model.TimesFM2p5Model">TimesFM2p5Model</a></p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>Ensemble Models (h)</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-odd"><td><p>Conformal Prediction Models (i)</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -759,6 +764,7 @@ Static attributes are powerful when working with multiple <code class="docutils 
 <li><p>SKLearn-Like Classification Models including <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnClassifierModel">SKLearnClassifierModel</a>, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMClassifierModel">LightGBMClassifierModel</a>, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBClassifierModel">XGBClassifierModel</a>, and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostClassifierModel">CatBoostClassifierModel</a>. SKLearnClassifierModel is a special kind of GFM which can use arbitrary lags on covariates (past and/or future) and past targets to predict categorical class labels.</p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel">RNNModel</a> including <code class="docutils literal notranslate"><span class="pre">LSTM</span></code> and <code class="docutils literal notranslate"><span class="pre">GRU</span></code>; equivalent to DeepAR in its probabilistic version</p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel">BlockRNNModel</a> including <code class="docutils literal notranslate"><span class="pre">LSTM</span></code> and <code class="docutils literal notranslate"><span class="pre">GRU</span></code></p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nf_model.html#darts.models.forecasting.nf_model.NeuralForecastModel">NeuralForecastModel</a> covariate support depends on the NeuralForecast base model used. See <a class="reference external" href="https://nixtlaverse.nixtla.io/neuralforecast/docs/capabilities/overview.html">NeuralForecast model catalog</a> for more details.</p></li>
 <li><p>Ensemble Model including <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel">RegressionEnsembleModel</a>, and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel">NaiveEnsembleModel</a>. The covariate support is given by the covariate support of the ensembled forecasting models.</p></li>
 <li><p>Conformal Prediction Model including <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalNaiveModel">ConformalNaiveModel</a>, and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalQRModel">ConformalQRModel</a>. The covariate support is given by the covariate support of the underlying forecasting model.</p></li>
 </ol>
@@ -817,16 +823,16 @@ Static attributes are powerful when working with multiple <code class="docutils 
 <h2>Covariate time span requirements for Local and Global Forecasting Models<a class="headerlink" href="#covariate-time-span-requirements-for-local-and-global-forecasting-models" title="Link to this heading">#</a></h2>
 <p>There are differences in how Darts’ “Local” and “Global” Forecasting Models perform training and prediction. Specifically, how they extract/work with the data supplied during fit() and predict().</p>
 <p>Depending on the model you use and how long your forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> is, there might be different time span requirements for your covariates.</p>
-<section id="id3">
-<h3>Local Forecasting Models (LFMs):<a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
+<section id="id4">
+<h3>Local Forecasting Models (LFMs):<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
 <p>LFMs usually train on the entire <code class="docutils literal notranslate"><span class="pre">target</span></code> and <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> series (if supported) you supplied when calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code> at once. They can also predict in one go for forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> after the end of the <code class="docutils literal notranslate"><span class="pre">target</span></code>.</p>
 <p><em>Time span requirements to use the same future covariates series for both ``fit()`` and ``predict()``:</em></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>: <strong>at least</strong> the same time span as <code class="docutils literal notranslate"><span class="pre">target</span></code> plus the next <code class="docutils literal notranslate"><span class="pre">n</span></code> time steps after the end of <code class="docutils literal notranslate"><span class="pre">target</span></code></p></li>
 </ul>
 </section>
-<section id="id4">
-<h3>Global Forecasting Models (GFMs):<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
+<section id="id5">
+<h3>Global Forecasting Models (GFMs):<a class="headerlink" href="#id5" title="Link to this heading">#</a></h3>
 <p>GFMs train and predict on fixed-length chunks (sub-samples) of the <code class="docutils literal notranslate"><span class="pre">target</span></code> and <code class="docutils literal notranslate"><span class="pre">*_covariates</span></code> series (if supported). Each chunk contains an input chunk - representing the sample’s past - and an output chunk - the sample’s future. The length of these chunks has to be specified at model creation with parameters <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> (one notable exception is <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> which always uses an <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> of 1).</p>
 <p>Depending on your forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code>, the model can either predict in one go, or auto-regressively, by predicting on multiple chunks in the future. That is the reason why when predicting with <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> you have to supply additional “future values of your <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>“.</p>
 <p><strong>Time span requirements to use the same past and / or future covariates series for both ``fit()`` and ``predict()``:</strong></p>
@@ -915,8 +921,8 @@ Static attributes are powerful when working with multiple <code class="docutils 
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-guide-on-how-to-use-past-and-or-future-covariates-with-darts-forecasting-models">Quick guide on how to use past and/or future covariates with Darts’ forecasting models</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#covariate-time-span-requirements-for-local-and-global-forecasting-models">Covariate time span requirements for Local and Global Forecasting Models</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">Local Forecasting Models (LFMs):</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">Global Forecasting Models (GFMs):</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">Local Forecasting Models (LFMs):</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id5">Global Forecasting Models (GFMs):</a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#examples">Examples</a></li>

@@ -58,7 +58,7 @@
     <link rel="prev" title="PyTorch Loss Functions" href="darts.utils.losses.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.40.0" />
+  <meta name="docsearch:version" content="0.41.0" />
   </head>
   
   
@@ -645,6 +645,8 @@
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nbeats.html">N-BEATS</a></li>
 
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nf_model.html">NeuralForecastModel</a></li>
+
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nhits.html">N-HiTS</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nlinear.html">N-Linear</a></li>
@@ -898,7 +900,7 @@
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The TimeSeries to partition into sub-series</p></li>
-<li><p><strong>min_gap_size</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – The minimum number of contiguous missing values to consider a gap as significant. Defaults to 1.</p></li>
+<li><p><strong>min_gap_size</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – The minimum number of contiguous missing values to consider a gap as significant. Defaults to 1.</p></li>
 <li><p><strong>mode</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Only for multivariate TimeSeries. The definition of a gap; presence of a NaN in any column (“any”)
 or NaNs in all the columns (“all”) for a given timestamp. Defaults to “all”.</p></li>
 </ul>
@@ -927,7 +929,7 @@ or NaNs in all the columns (“all”) for a given timestamp. Defaults to “all
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The time series for which to fill missing values</p></li>
-<li><p><strong>fill</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</span>) – The value used to replace the missing values.
+<li><p><strong>fill</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The value used to replace the missing values.
 If set to ‘auto’, will auto-fill missing values using the <cite>pandas.Dataframe.interpolate()</cite> method.</p></li>
 <li><p><strong>interpolate_kwargs</strong> – Keyword arguments for <cite>pandas.Dataframe.interpolate()</cite>, only used when fit is set to ‘auto’.
 See <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.interpolate.html">the documentation</a>

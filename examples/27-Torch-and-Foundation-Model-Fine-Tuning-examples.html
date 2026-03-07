@@ -1,0 +1,1050 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Fine-Tuning PyTorch Models and Foundation Models &#8212; darts  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples';</script>
+    <link rel="icon" href="../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Ensembling Models" href="19-EnsembleModel-examples.html" />
+    <link rel="prev" title="Chronos-2 Foundation Model" href="25-Chronos-2-examples.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.41.0" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="01-multi-time-series-and-covariates.html">Multiple Time Series, Pre-trained Models and Covariates</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="02-data-processing.html">Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="15-static-covariates.html">Static Covariates</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="14-transfer-learning.html">Transfer Learning for Time Series Forecasting with Darts</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="16-hierarchical-reconciliation.html">Hierarchical Reconciliation - Example on the Australian Tourism Dataset</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="17-hyperparameter-optimization.html">Hyper-parameters Optimization for Electricity Load Forecasting</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="20-SKLearnModel-examples.html">Regression Models</a></li>
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="24-SKLearnClassifierModel-examples.html">Classification Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="23-Conformal-Prediction-examples.html">Conformal Prediction Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="03-FFT-examples.html">Fast Fourier Transform Forecasting Model (FFT)</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="04-RNN-examples.html">Recurrent Neural Networks Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="05-TCN-examples.html">Temporal Convolutional Network</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="06-Transformer-examples.html">Transformer Model</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="07-NBEATS-examples.html">N-BEATS</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="08-DeepAR-examples.html">Probabilistic RNN</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="09-DeepTCN-examples.html">DeepTCN model</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="13-TFT-examples.html">Temporal Fusion Transformer</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="18-TiDE-examples.html">TimeSeries Deep Encoder</a></li>
+
+
+
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="21-TSMixer-examples.html">Time Series Mixer (TSMixer)</a></li>
+
+
+
+
+
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="26-NeuralForecast-examples.html">NeuralForecast Model Integration</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="25-Chronos-2-examples.html">Chronos-2 Foundation Model</a></li>
+</ul>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Fine-Tuning PyTorch Models and Foundation Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="19-EnsembleModel-examples.html">Ensembling Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="10-Kalman-filter-examples.html">Filtering and predicting using the darts filters</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="11-GP-filter-examples.html">Filtering and predicting using the Gaussian Process filter</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="22-anomaly-detection-examples.html">Anomaly Detection Darts Module</a></li>
+
+
+
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="12-Dynamic-Time-Warping-example.html">Dynamic Time Warping (DTW)</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../examples.html" class="nav-link">Examples</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Fine-Tuning PyTorch Models and Foundation Models</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="Fine-Tuning-PyTorch-Models-and-Foundation-Models">
+<h1>Fine-Tuning PyTorch Models and Foundation Models<a class="headerlink" href="#Fine-Tuning-PyTorch-Models-and-Foundation-Models" title="Link to this heading">#</a></h1>
+<p>This example notebook demonstrates how to train, save, load, and fine-tune PyTorch-based models in Darts. We cover two scenarios:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#1.-Regular-TorchForecastingModel:-Training-and-Fine-Tuning"><span class="std std-ref">Regular PyTorch Models</span></a> (e.g., TiDE, N-BEATS, DLinear):</p>
+<ul>
+<li><p><strong>(Pre-)Training</strong> a model from scratch.</p></li>
+<li><p><strong>Saving and loading</strong> the model.</p></li>
+<li><p><strong>Fine-tuning</strong> the loaded model (updating weights on new data).</p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#2.-Foundation-Model:-Zero-Shot-Forecasting-and-Fine-Tuning"><span class="std std-ref">Foundation Models</span></a> (e.g., Chronos 2, TimesFM 2.5):</p>
+<ul>
+<li><p><strong>Zero-shot inference</strong> for forecasting without any training.</p></li>
+<li><p><strong>Fine-tuning</strong> the foundation model.</p></li>
+</ul>
+</li>
+</ul>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
+<span class="o">%</span><span class="k">autoreload</span> 2
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># fix python path if working locally</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
+
+<span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
+<span class="o">%</span><span class="k">matplotlib</span> inline
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_option</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span><span class="p">,</span> <span class="n">AusBeerDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mae</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Chronos2Model</span><span class="p">,</span> <span class="n">TiDEModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">TFMProgressBar</span>
+
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">disable</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
+<span class="n">set_option</span><span class="p">(</span><span class="s2">&quot;plotting.use_darts_style&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<section id="Data-Preparation">
+<h2>Data Preparation<a class="headerlink" href="#Data-Preparation" title="Link to this heading">#</a></h2>
+<p>For demonstration, we’ll just load two short time series: The Air Passengers and Australian Beer Production datasets. We will pre-train a model only on the Air Passengers series and then fine-tune it on the Beer Production dataset. We also create training, evaluation and test sets for illustration.</p>
+<div class="alert alert-success" role="alert"><p><strong>Note</strong>: Our two datasets have different frequencies (monthly and quarterly), but our torch models can handle this out of the box!</p>
+</div><div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="mi">24</span>  <span class="c1"># model input window</span>
+<span class="n">output_chunk_length</span> <span class="o">=</span> <span class="mi">12</span>  <span class="c1"># model output_window</span>
+
+<span class="c1"># load air passengers series</span>
+<span class="n">series_air</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+<span class="n">series_beer</span> <span class="o">=</span> <span class="n">AusBeerDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+
+<span class="c1"># plot everything</span>
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">ncols</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">9.6</span><span class="p">,</span> <span class="mf">4.8</span><span class="p">))</span>
+<span class="n">series_air</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax1</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;AirPassengers&quot;</span><span class="p">)</span>
+<span class="n">series_beer</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax2</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;AusBeer&quot;</span><span class="p">)</span>
+
+<span class="c1"># extract training and validation sets</span>
+<span class="n">train_air</span> <span class="o">=</span> <span class="n">series_air</span><span class="p">[:</span> <span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="n">output_chunk_length</span><span class="p">]</span>
+<span class="n">val_air</span> <span class="o">=</span> <span class="n">series_air</span><span class="p">[</span>
+    <span class="o">-</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">output_chunk_length</span> <span class="o">+</span> <span class="n">input_chunk_length</span><span class="p">)</span> <span class="p">:</span> <span class="o">-</span><span class="n">output_chunk_length</span>
+<span class="p">]</span>
+
+<span class="n">train_beer</span> <span class="o">=</span> <span class="n">series_beer</span><span class="p">[:</span> <span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="n">output_chunk_length</span><span class="p">]</span>
+<span class="n">val_beer</span> <span class="o">=</span> <span class="n">series_beer</span><span class="p">[</span>
+    <span class="o">-</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">output_chunk_length</span> <span class="o">+</span> <span class="n">input_chunk_length</span><span class="p">)</span> <span class="p">:</span> <span class="o">-</span><span class="n">output_chunk_length</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_27-Torch-and-Foundation-Model-Fine-Tuning-examples_5_0.png" src="../_images/examples_27-Torch-and-Foundation-Model-Fine-Tuning-examples_5_0.png" />
+</div>
+</div>
+</section>
+<section id="1.-Regular-TorchForecastingModel:-Training-and-Fine-Tuning">
+<h2>1. Regular TorchForecastingModel: Training and Fine Tuning<a class="headerlink" href="#1.-Regular-TorchForecastingModel:-Training-and-Fine-Tuning" title="Link to this heading">#</a></h2>
+<p>We start with a regular <code class="docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> (non-foundation model); <code class="docutils literal notranslate"><span class="pre">TiDEModel</span></code> in this case.</p>
+<section id="1.1.-Training">
+<h3>1.1. Training<a class="headerlink" href="#1.1.-Training" title="Link to this heading">#</a></h3>
+<p>First, we train the model from scratch only on the air passengers series. By default, <code class="docutils literal notranslate"><span class="pre">enable_finetuning=None</span></code>, which implies standard training for regular models (all weights are trainable).</p>
+<div class="alert alert-success" role="alert"><p><strong>Note</strong>: For demonstration purposes, we only show training and predicting on single univariate <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (one series with one column). The process is identical for multiple (a list / sequence) uni- or multivariate series.</p>
+</div><div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># setup common torch model parameters</span>
+<span class="n">model_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+    <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+    <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+    <span class="n">use_reversible_instance_norm</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;affine&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
+    <span class="n">save_checkpoints</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># store checkpoints during training to retrieve the best model</span>
+    <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;tide&quot;</span><span class="p">,</span>
+    <span class="n">force_reset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># overwrite previous model artifacts,</span>
+    <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;callbacks&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">TFMProgressBar</span><span class="p">(</span><span class="n">enable_train_bar_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)]</span>
+    <span class="p">},</span>  <span class="c1"># reduce the verbosity</span>
+<span class="p">)</span>
+
+<span class="c1"># regular training (default enable_finetuning=None)</span>
+<span class="n">model_pretrained</span> <span class="o">=</span> <span class="n">TiDEModel</span><span class="p">(</span><span class="o">**</span><span class="n">model_params</span><span class="p">)</span>
+
+<span class="c1"># fit</span>
+<span class="n">model_pretrained</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">series</span><span class="o">=</span><span class="n">train_air</span><span class="p">,</span>
+    <span class="n">val_series</span><span class="o">=</span><span class="n">val_air</span><span class="p">,</span>  <span class="c1"># use a validation set to monitor model performance</span>
+    <span class="n">load_best</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># load the best model checkpoint at the end of training</span>
+    <span class="n">epochs</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>  <span class="c1"># train for 50 epochs</span>
+<span class="p">)</span>
+
+<span class="c1"># predict after the end of the validation series</span>
+<span class="n">pred_air</span> <span class="o">=</span> <span class="n">model_pretrained</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">val_air</span><span class="p">)</span>
+
+<span class="c1"># save the pre-trained model</span>
+<span class="n">model_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;darts_logs&quot;</span><span class="p">,</span> <span class="s2">&quot;model.pt&quot;</span><span class="p">)</span>
+<span class="n">model_pretrained</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">model_path</span><span class="p">)</span>
+
+<span class="c1"># plot</span>
+<span class="n">series_air</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span> <span class="o">*</span> <span class="n">output_chunk_length</span> <span class="p">:]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Ground truth&quot;</span><span class="p">)</span>
+<span class="n">pred_air</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Forecast&quot;</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Trained TiDE model; MAE </span><span class="si">{</span><span class="n">mae</span><span class="p">(</span><span class="n">series_air</span><span class="p">,</span><span class="w"> </span><span class="n">pred_air</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "082aaee7736b442c8a8a3d8757f0d610", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_27-Torch-and-Foundation-Model-Fine-Tuning-examples_7_1.png" src="../_images/examples_27-Torch-and-Foundation-Model-Fine-Tuning-examples_7_1.png" />
+</div>
+</div>
+<p>Great, this looks like a very good forecast! Now let’s see how the model performs on the beer production series.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># predict</span>
+<span class="n">pred_beer</span> <span class="o">=</span> <span class="n">model_pretrained</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">val_beer</span><span class="p">)</span>
+
+<span class="c1"># plot</span>
+<span class="n">series_beer</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span> <span class="o">*</span> <span class="n">output_chunk_length</span> <span class="p">:]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Ground truth&quot;</span><span class="p">)</span>
+<span class="n">pred_beer</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Forecast&quot;</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Forecast on unobserved series; MAE </span><span class="si">{</span><span class="n">mae</span><span class="p">(</span><span class="n">series_beer</span><span class="p">,</span><span class="w"> </span><span class="n">pred_beer</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_27-Torch-and-Foundation-Model-Fine-Tuning-examples_9_0.png" src="../_images/examples_27-Torch-and-Foundation-Model-Fine-Tuning-examples_9_0.png" />
+</div>
+</div>
+<p>That doesn’t look very good. It seems like our model does not generalize to our new beer dataset.</p>
+</section>
+<section id="1.2.-Fine-Tuning">
+<h3>1.2. Fine-Tuning<a class="headerlink" href="#1.2.-Fine-Tuning" title="Link to this heading">#</a></h3>
+<p>Imagine the model above was a large <strong>pre-trained model</strong> and <strong>full re-training</strong> would take hours. Instead, we can also <strong>fine-tune</strong> parts of the model on this new dataset to, potentially, improve performance. For this we will:</p>
+<ol class="arabic simple">
+<li><p>Create a new <code class="docutils literal notranslate"><span class="pre">model</span></code> instance for fine-tuning with the same architectural hyperparameters, and enable fine-tuning with the <code class="docutils literal notranslate"><span class="pre">enable_finetuning</span></code> parameter. We restrict fine-tuning to only the “decoder” parameters.</p></li>
+<li><p>Load the weights of the pre-trained model with <code class="docutils literal notranslate"><span class="pre">model.load_weights()</span></code>.</p></li>
+<li><p>Fine-tune the model with <code class="docutils literal notranslate"><span class="pre">model.fit()</span></code>.</p></li>
+</ol>
+<p>The <code class="docutils literal notranslate"><span class="pre">enable_finetuning</span></code> model creation parameter controls how the model is updated during <code class="docutils literal notranslate"><span class="pre">fit()</span></code>. Possible values are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">None</span></code> (Default): <strong>Regular training</strong> for regular PyTorch models (TiDE, …) and <strong>zero-shot inference mode</strong> for foundation models (Chronos-2, …).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">False</span></code>: <strong>Zero-shot inference mode</strong>. The model weights are frozen.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">True</span></code>: <strong>Full fine-tuning / training</strong>. All weights are trainable.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{&quot;unfreeze&quot;:</span> <span class="pre">[&quot;*string.pattern.to.match*&quot;,</span> <span class="pre">...]}</span></code>: <strong>Partial fine-tuning (Unfreeze)</strong>. None of the parameters are trainable <em>except</em> the specified unfrozen ones</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{&quot;freeze&quot;:</span> <span class="pre">[&quot;*string.pattern.to.match*&quot;,</span> <span class="pre">...]}</span></code>: <strong>Partial fine-tuning (Freeze)</strong>. All parameters are trainable <em>except</em> the specified frozen ones.</p></li>
+</ul>
+<div class="alert alert-success" role="alert"><p><strong>Note</strong>: You can inspect the model’s parameters by printing the architecture with <code class="docutils literal notranslate"><span class="pre">print(model.model)</span></code> or getting the named parameters directly with <code class="docutils literal notranslate"><span class="pre">model.model.named_parameters()</span></code></p>
+</div><div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># create a new model instance for fine-tuning with the same hyperparameters but different training setup</span>
+<span class="n">model_finetune</span> <span class="o">=</span> <span class="n">TiDEModel</span><span class="p">(</span>
+    <span class="n">enable_finetuning</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;unfreeze&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;*decoder*&quot;</span><span class="p">]},</span>  <span class="c1"># only update the decoder</span>
+    <span class="n">optimizer_kwargs</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">1e-3</span>
+    <span class="p">},</span>  <span class="c1"># control the optimizer, learning rate scheduler, ...</span>
+    <span class="o">**</span><span class="n">model_params</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># load the pre-trained weights</span>
+<span class="n">model_finetune</span><span class="o">.</span><span class="n">load_weights</span><span class="p">(</span><span class="n">model_path</span><span class="p">)</span>
+
+<span class="c1"># fine-tune only for 10 epochs</span>
+<span class="n">model_finetune</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_beer</span><span class="p">,</span> <span class="n">val_series</span><span class="o">=</span><span class="n">val_beer</span><span class="p">,</span> <span class="n">load_best</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+<span class="c1"># hint: you can save the fine-tuned model with: `model_finetune.save()`</span>
+
+<span class="c1"># predict after the end of the validation series</span>
+<span class="n">pred_beer</span> <span class="o">=</span> <span class="n">model_finetune</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">val_beer</span><span class="p">)</span>
+
+<span class="c1"># plot</span>
+<span class="n">series_beer</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span> <span class="o">*</span> <span class="n">output_chunk_length</span> <span class="p">:]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Ground truth&quot;</span><span class="p">)</span>
+<span class="n">pred_beer</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Forecast&quot;</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Fine-tuned forecasts; MAE </span><span class="si">{</span><span class="n">mae</span><span class="p">(</span><span class="n">series_beer</span><span class="p">,</span><span class="w"> </span><span class="n">pred_beer</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "03ef39d0bc9e4552beefa82290cf86d1", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_27-Torch-and-Foundation-Model-Fine-Tuning-examples_11_1.png" src="../_images/examples_27-Torch-and-Foundation-Model-Fine-Tuning-examples_11_1.png" />
+</div>
+</div>
+<p>That looks much better! This demonstrates that <strong>fine-tuning can significantly improve model performance</strong> on new datasets, without having to re-train the entire model from scratch.</p>
+</section>
+</section>
+<section id="2.-Foundation-Model:-Zero-Shot-Forecasting-and-Fine-Tuning">
+<h2>2. Foundation Model: Zero Shot Forecasting and Fine Tuning<a class="headerlink" href="#2.-Foundation-Model:-Zero-Shot-Forecasting-and-Fine-Tuning" title="Link to this heading">#</a></h2>
+<p>Now we move to foundation models (e.g. Chronos-2, TimesFM 2.5, …). These models are pre-trained on large datasets and can be used for <strong>zero-shot forecasting</strong> (without training). However, <strong>fine-tuning</strong> them on your specific data <strong>often improves performance</strong>.</p>
+<section id="2.1.-Zero-Shot-Inference">
+<h3>2.1. Zero-Shot Inference<a class="headerlink" href="#2.1.-Zero-Shot-Inference" title="Link to this heading">#</a></h3>
+<p>By default, our foundation models use <code class="docutils literal notranslate"><span class="pre">enable_finetuning=False</span></code> (zero-shot inference mode). Let’s see how the model behaves on Australian Beer Production dataset without any training / fine-tuning.</p>
+<div class="alert alert-success" role="alert"><p><strong>Note</strong>:</p>
+<ol><li><p>We only load the small version of Chronos-2 to speed things up for demonstration purposes. You can always use the large model with <code class="docutils literal notranslate"><span class="pre">hub_model_name=&quot;amazon/chronos-2&quot;</span></code>.</p>
+<li><p>Foundation models were trained on much larger input- and output chunk lengths (windows) than in our example. Increasing the window sizes (especially the input window) can significantly improve performance.</p>
+</ol></div><div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+    <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+    <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
+    <span class="n">hub_model_name</span><span class="o">=</span><span class="s2">&quot;autogluon/chronos-2-small&quot;</span><span class="p">,</span>  <span class="c1"># small chronos version</span>
+<span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">Chronos2Model</span><span class="p">(</span><span class="o">**</span><span class="n">model_params</span><span class="p">)</span>
+
+<span class="c1"># by default for foundation models, `fit()` will only load the model but does not perform fine-tuning / training</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">train_beer</span><span class="p">)</span>
+
+<span class="c1"># predict</span>
+<span class="n">pred_beer</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">val_beer</span><span class="p">)</span>
+
+<span class="c1"># plot</span>
+<span class="n">series_beer</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span> <span class="o">*</span> <span class="n">output_chunk_length</span> <span class="p">:]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Ground truth&quot;</span><span class="p">)</span>
+<span class="n">pred_beer</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Forecast&quot;</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Pre-trained Chronos-2; MAE </span><span class="si">{</span><span class="n">mae</span><span class="p">(</span><span class="n">series_beer</span><span class="p">,</span><span class="w"> </span><span class="n">pred_beer</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "1984bdf276a14e46bf451780e2c056ab", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_27-Torch-and-Foundation-Model-Fine-Tuning-examples_13_1.png" src="../_images/examples_27-Torch-and-Foundation-Model-Fine-Tuning-examples_13_1.png" />
+</div>
+</div>
+<p>For a zero-shot forecast, the results are already quite decent!</p>
+</section>
+<section id="2.2.-Fine-Tuning">
+<h3>2.2. Fine-Tuning<a class="headerlink" href="#2.2.-Fine-Tuning" title="Link to this heading">#</a></h3>
+<p>And how does it look after fine-tuning the output layers of the model on the dataset?</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># setup fine-tuning; only tune the layers matching &quot;output_patch_embedding&quot;</span>
+<span class="n">model_finetune</span> <span class="o">=</span> <span class="n">Chronos2Model</span><span class="p">(</span>
+    <span class="n">enable_finetuning</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;unfreeze&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;output_patch_embedding*&quot;</span><span class="p">]},</span>
+    <span class="n">save_checkpoints</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;chronos&quot;</span><span class="p">,</span>
+    <span class="n">force_reset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">optimizer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">},</span>
+    <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+        <span class="n">check_val_every_n_epoch</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+        <span class="n">gradient_clip_val</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">TFMProgressBar</span><span class="p">(</span><span class="n">enable_train_bar_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)],</span>
+    <span class="p">),</span>
+    <span class="o">**</span><span class="n">model_params</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># fine-tune for 15 epochs</span>
+<span class="n">model_finetune</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">series</span><span class="o">=</span><span class="n">train_beer</span><span class="p">,</span>
+    <span class="n">val_series</span><span class="o">=</span><span class="n">val_beer</span><span class="p">,</span>
+    <span class="n">load_best</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">epochs</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># predict</span>
+<span class="n">pred_beer</span> <span class="o">=</span> <span class="n">model_finetune</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">val_beer</span><span class="p">)</span>
+
+<span class="c1"># hint: you can store the fine-tuned model with `model_finetune.save()`</span>
+
+<span class="c1"># plot</span>
+<span class="n">series_beer</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span> <span class="o">*</span> <span class="n">output_chunk_length</span> <span class="p">:]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Ground truth&quot;</span><span class="p">)</span>
+<span class="n">pred_beer</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Forecast&quot;</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Fine-tuned Chronos-2; MAE </span><span class="si">{</span><span class="n">mae</span><span class="p">(</span><span class="n">series_beer</span><span class="p">,</span><span class="w"> </span><span class="n">pred_beer</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "923b0b70c74d4f808b329aa9d501a1bf", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_27-Torch-and-Foundation-Model-Fine-Tuning-examples_15_1.png" src="../_images/examples_27-Torch-and-Foundation-Model-Fine-Tuning-examples_15_1.png" />
+</div>
+</div>
+<p>Again, the results are much better than before fine-tuning!</p>
+</section>
+</section>
+<section id="Conclusion-&amp;-Summary">
+<h2>Conclusion &amp; Summary<a class="headerlink" href="#Conclusion-&-Summary" title="Link to this heading">#</a></h2>
+<p>While the results on these small “toy” datasets (Air Passengers, Australian Beer Production) may vary depending on the random seed and hyperparameters, they demonstrate the flexibility and effectiveness of fine-tuning.</p>
+<p><strong>Pre-trained models</strong> and their capability to generate <strong>Zero-Shot</strong> forecasts can be quite powerful in real-world scenarios with:</p>
+<ul class="simple">
+<li><p><strong>Large datasets</strong> where training from scratch would be too complex and / or costly</p></li>
+<li><p><strong>Small datasets</strong> where not enough data is available to robustly train a model.</p></li>
+</ul>
+<p><strong>Fine-tuning</strong> allows updating a pre-trained model on new data, potentially improving the model performace while saving training time compared to retraining from scratch.</p>
+<ul class="simple">
+<li><p><strong>Full Fine-tuning</strong>: Offers the most flexibility but is computationally expensive and prone to “catastrophic forgetting”.</p></li>
+<li><p><strong>Partial Fine-tuning</strong>: Provides a good middle ground by updating only the most relevant layers (like the output head).</p></li>
+</ul>
+<p>For demonstration purposes, we only showed training and predicting on single univariate series (one series with one column). The process is identical for <strong>multiple (a list / sequence) uni- or multivariate series</strong>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+<script type="application/vnd.jupyter.widget-state+json">
+{"state": {"03ef39d0bc9e4552beefa82290cf86d1": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_26a3807238e24403b2b8cf081b647f58", "IPY_MODEL_1e3460649eb042b5b03f9bc1c3a180e8", "IPY_MODEL_f28de96e80a34f1199a1b0188c285949"], "layout": "IPY_MODEL_66f2fc789e684108ba217215fce4c6e5"}}, "0585a30408554b6491d2248c71963d07": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_da5eaf35b8f3485fbe086f5a1e718921", "max": 3, "style": "IPY_MODEL_c41b52e8a06a4f22bd39a4cf904ff1b4", "value": 3}}, "0628e6dfb60247c6bee5827ad70041fd": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "068987f9adb34eaab69a76af63510437": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "082aaee7736b442c8a8a3d8757f0d610": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_b73227d21f3245d1a05cd48aaf97c461", "IPY_MODEL_0585a30408554b6491d2248c71963d07", "IPY_MODEL_edd3ecea52844196af5bade23f8d5f67"], "layout": "IPY_MODEL_904a2572022d41559bac17b8530c74b8"}}, "0d1b0dee84914e4aa4bc8f2a916384ac": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_0fe19a735f3a4333803fded40163ad2f", "style": "IPY_MODEL_e736cc8107f4414aa912a688e7814056", "value": "Epoch\u200714:\u2007100%"}}, "0fe19a735f3a4333803fded40163ad2f": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "17ec29161af14c1b8224d0af34349f39": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "1984bdf276a14e46bf451780e2c056ab": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_46a838fc349648058333992b173e1bb9", "IPY_MODEL_64d8492d20d94172ace093d79d61ccbb", "IPY_MODEL_b7aed8b1f4a44d33a42ca97904b0ada5"], "layout": "IPY_MODEL_44bc4be9b2224e50852ff44075e88678"}}, "1e3460649eb042b5b03f9bc1c3a180e8": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_c86d5ab7ac384003ab92fad08a8147fb", "max": 5, "style": "IPY_MODEL_2913a3a69f0340e381f9d678fd1cf34b", "value": 5}}, "26a3807238e24403b2b8cf081b647f58": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_e511e7a2ff0345a38933dba28746669e", "style": "IPY_MODEL_5fc7efc906f84ac19ee997877ba9729f", "value": "Epoch\u20079:\u2007100%"}}, "2913a3a69f0340e381f9d678fd1cf34b": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "2b03ee99eef945c0b0e94ca49685871a": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "3b5ba96ce1a94140ac73da6a3ce373b5": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "44bc4be9b2224e50852ff44075e88678": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "46a838fc349648058333992b173e1bb9": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_5e26f88307e14d9282093ca0fde00534", "style": "IPY_MODEL_d9447692911a442e810e92c7ee55d35b", "value": "Predicting\u2007DataLoader\u20070:\u2007100%"}}, "592460a88ec448788e97b5f439820e87": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "5ae33a72ef7f41cf9e180499d49923a6": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_17ec29161af14c1b8224d0af34349f39", "max": 5, "style": "IPY_MODEL_068987f9adb34eaab69a76af63510437", "value": 5}}, "5e26f88307e14d9282093ca0fde00534": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "5e5a35c67a0648d19e97a4fdfbafb024": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "5fc7efc906f84ac19ee997877ba9729f": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "627f6f5bb7b6404faaa2f0b12fd96d23": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "64d8492d20d94172ace093d79d61ccbb": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_5e5a35c67a0648d19e97a4fdfbafb024", "max": 1, "style": "IPY_MODEL_dfea3da3c946498e97cc78b793e1b00c", "value": 1}}, "66f2fc789e684108ba217215fce4c6e5": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "752a1ddfbe85499aaebdb17f4b085afc": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "7d8c3cb2182544d99166848a1c124b3f": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "8500df805ec04e1c8915c78ba47f92c4": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "904a2572022d41559bac17b8530c74b8": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "923b0b70c74d4f808b329aa9d501a1bf": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_0d1b0dee84914e4aa4bc8f2a916384ac", "IPY_MODEL_5ae33a72ef7f41cf9e180499d49923a6", "IPY_MODEL_eec5ad7ce77c4c98aee2312708b51412"], "layout": "IPY_MODEL_627f6f5bb7b6404faaa2f0b12fd96d23"}}, "ade7ee27e1c74072be25b53264ebe72a": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "b73227d21f3245d1a05cd48aaf97c461": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_fa40888de5c045cc832d3d092cef0dfd", "style": "IPY_MODEL_2b03ee99eef945c0b0e94ca49685871a", "value": "Epoch\u200749:\u2007100%"}}, "b7aed8b1f4a44d33a42ca97904b0ada5": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_8500df805ec04e1c8915c78ba47f92c4", "style": "IPY_MODEL_3b5ba96ce1a94140ac73da6a3ce373b5", "value": "\u20071/1\u2007[00:00&lt;00:00,\u2007\u20077.33it/s]"}}, "c41b52e8a06a4f22bd39a4cf904ff1b4": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "c86d5ab7ac384003ab92fad08a8147fb": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "d9447692911a442e810e92c7ee55d35b": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "da5eaf35b8f3485fbe086f5a1e718921": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "dfea3da3c946498e97cc78b793e1b00c": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "e511e7a2ff0345a38933dba28746669e": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "e736cc8107f4414aa912a688e7814056": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "ec03436860d74bd5a6c774742945f431": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "edd3ecea52844196af5bade23f8d5f67": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_592460a88ec448788e97b5f439820e87", "style": "IPY_MODEL_752a1ddfbe85499aaebdb17f4b085afc", "value": "\u20073/3\u2007[00:00&lt;00:00,\u200763.08it/s,\u2007train_loss=155.0,\u2007val_loss=278.0]"}}, "eec5ad7ce77c4c98aee2312708b51412": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_0628e6dfb60247c6bee5827ad70041fd", "style": "IPY_MODEL_7d8c3cb2182544d99166848a1c124b3f", "value": "\u20075/5\u2007[00:00&lt;00:00,\u200714.76it/s,\u2007train_loss=74.40,\u2007val_loss=477.0]"}}, "f28de96e80a34f1199a1b0188c285949": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_ec03436860d74bd5a6c774742945f431", "style": "IPY_MODEL_ade7ee27e1c74072be25b53264ebe72a", "value": "\u20075/5\u2007[00:00&lt;00:00,\u2007104.84it/s,\u2007train_loss=485.0,\u2007val_loss=270.0]"}}, "fa40888de5c045cc832d3d092cef0dfd": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}}, "version_major": 2, "version_minor": 0}
+</script></section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="25-Chronos-2-examples.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Chronos-2 Foundation Model</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="19-EnsembleModel-examples.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Ensembling Models</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Data-Preparation">Data Preparation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#1.-Regular-TorchForecastingModel:-Training-and-Fine-Tuning">1. Regular TorchForecastingModel: Training and Fine Tuning</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#1.1.-Training">1.1. Training</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#1.2.-Fine-Tuning">1.2. Fine-Tuning</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#2.-Foundation-Model:-Zero-Shot-Forecasting-and-Fine-Tuning">2. Foundation Model: Zero Shot Forecasting and Fine Tuning</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#2.1.-Zero-Shot-Inference">2.1. Zero-Shot Inference</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#2.2.-Fine-Tuning">2.2. Fine-Tuning</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Conclusion-&amp;-Summary">Conclusion &amp; Summary</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2026, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

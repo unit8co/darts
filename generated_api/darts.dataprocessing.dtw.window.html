@@ -58,7 +58,7 @@
     <link rel="prev" title="Dynamic Time Warping (DTW)" href="darts.dataprocessing.dtw.dtw.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.40.0" />
+  <meta name="docsearch:version" content="0.41.0" />
   </head>
   
   
@@ -645,6 +645,8 @@
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nbeats.html">N-BEATS</a></li>
 
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nf_model.html">NeuralForecastModel</a></li>
+
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nhits.html">N-HiTS</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nlinear.html">N-Linear</a></li>
@@ -930,7 +932,7 @@ Supports efficient iterative construction and updates.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The width of the window, must be equal to the length of series1</p></li>
 <li><p><strong>m</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The height of the window, must be equal to the length of series2</p></li>
-<li><p><strong>ranges</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span>) – The ranges of active cells within a column [[start_column0, end_column0], …]
+<li><p><strong>ranges</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – The ranges of active cells within a column [[start_column0, end_column0], …]
 with shape (n, 2) and where start &gt;= 0 and end &lt;= m.</p></li>
 </ul>
 </dd>

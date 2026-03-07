@@ -58,7 +58,7 @@
     <link rel="prev" title="Overview of Forecasting Models" href="forecasting_overview.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.40.0" />
+  <meta name="docsearch:version" content="0.41.0" />
   </head>
   
   
@@ -461,7 +461,7 @@
 <li><p><a class="reference internal" href="#automatic-checkpointing"><span class="std std-ref">Checkpoint saving and loading</span></a></p></li>
 <li><p><a class="reference internal" href="#manual-saving-and-loading"><span class="std std-ref">Manual model saving and loading</span></a></p></li>
 <li><p><a class="reference internal" href="#training-and-saving-on-gpu-loading-on-cpu"><span class="std std-ref">GPU training and CPU loading</span></a></p></li>
-<li><p><a class="reference internal" href="#re-training-or-fine-tuning-a-pre-trained-model"><span class="std std-ref">Load pre-trained model for fine-tuning</span></a></p></li>
+<li><p>Re-training or fine-tuning a pre-trained model</p></li>
 <li><p><a class="reference internal" href="#exporting-model-to-onnx-format-for-inference"><span class="std std-ref">ONNX export for inference</span></a></p></li>
 </ul>
 </li>
@@ -841,8 +841,8 @@ from <a class="reference internal" href="#required-target-time-spans-for-trainin
 </pre></div>
 </div>
 </section>
-<section id="re-training-or-fine-tuning-a-pre-trained-model">
-<h4>Re-training or fine-tuning a pre-trained model<a class="headerlink" href="#re-training-or-fine-tuning-a-pre-trained-model" title="Link to this heading">#</a></h4>
+<section id="id3">
+<h4>Re-training or fine-tuning a pre-trained model<a class="headerlink" href="#id3" title="Link to this heading">#</a></h4>
 <p>To re-train or fine-tune a model using a different optimizer and/or learning rate scheduler, you can load the weights from the automatic checkpoints into a new model:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># model with identical architecture but different optimizer (default: torch.optim.Adam)</span>
 <span class="n">model_finetune</span> <span class="o">=</span> <span class="n">SomeTorchForecastingModel</span><span class="p">(</span><span class="o">...</span><span class="p">,</span>  <span class="c1"># use identical parameters &amp; values as in original model</span>
@@ -865,6 +865,24 @@ from <a class="reference internal" href="#required-target-time-spans-for-trainin
 <span class="n">model_finetune</span><span class="o">.</span><span class="n">load_weights</span><span class="p">(</span><span class="s2">&quot;/your/path/to/save/model.pt&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>Additionally, all <code class="docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> (including <code class="docutils literal notranslate"><span class="pre">FoundationModel</span></code>) support fine-tuning through the <code class="docutils literal notranslate"><span class="pre">enable_finetuning</span></code> parameter. This allows you to freeze or unfreeze specific model parameters for transfer learning:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># full fine-tuning: all parameters are trainable</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">SomeTorchForecastingModel</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">enable_finetuning</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># partial fine-tuning: freeze specific layers</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">SomeTorchForecastingModel</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">enable_finetuning</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;freeze&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;layer.pattern.*&quot;</span><span class="p">]})</span>
+
+<span class="c1"># partial fine-tuning: only unfreeze specific layers</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">SomeTorchForecastingModel</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">enable_finetuning</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;unfreeze&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;layer.pattern.*&quot;</span><span class="p">]})</span>
+
+<span class="c1"># optionally, load pre-trained weights (not required for foundation models)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">load_weights</span><span class="p">(</span><span class="s2">&quot;/your/path/to/save/model.pt&quot;</span><span class="p">)</span>
+
+<span class="c1"># fine-tune</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For a comprehensive walkthrough of fine-tuning Torch Forecasting Models and Foundation Models, check out the <a class="reference external" href="https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html">Fine-Tuning example notebook</a>.</p>
 </section>
 <section id="exporting-model-to-onnx-format-for-inference">
 <h4>Exporting model to ONNX format for inference<a class="headerlink" href="#exporting-model-to-onnx-format-for-inference" title="Link to this heading">#</a></h4>
@@ -1541,7 +1559,7 @@ We train two models; <code class="docutils literal notranslate"><span class="pre
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#automatic-checkpointing">Automatic checkpointing</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#manual-saving-and-loading">Manual saving and loading</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#training-and-saving-on-gpu-loading-on-cpu">Training and saving on GPU, loading on CPU</a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#re-training-or-fine-tuning-a-pre-trained-model">Re-training or fine-tuning a pre-trained model</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">Re-training or fine-tuning a pre-trained model</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#exporting-model-to-onnx-format-for-inference">Exporting model to ONNX format for inference</a></li>
 </ul>
 </li>

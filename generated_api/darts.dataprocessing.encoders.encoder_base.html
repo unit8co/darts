@@ -58,7 +58,7 @@
     <link rel="prev" title="Time Axis Encoders" href="darts.dataprocessing.encoders.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.40.0" />
+  <meta name="docsearch:version" content="0.41.0" />
   </head>
   
   
@@ -645,6 +645,8 @@
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nbeats.html">N-BEATS</a></li>
 
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nf_model.html">NeuralForecastModel</a></li>
+
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nhits.html">N-HiTS</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nlinear.html">N-Linear</a></li>
@@ -920,12 +922,12 @@ creation.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>input_chunk_length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optionally, the number of input target time steps per chunk. Only required in scenarios B, C.
+<li><p><strong>input_chunk_length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the number of input target time steps per chunk. Only required in scenarios B, C.
 Corresponds to <cite>input_chunk_length</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, or to the absolute minimum target
 lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
-<li><p><strong>output_chunk_length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optionally, the number of output target time steps per chunk. Only required in scenarios B, and C.
+<li><p><strong>output_chunk_length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the number of output target time steps per chunk. Only required in scenarios B, and C.
 Corresponds to <cite>output_chunk_length</cite> for both <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
-<li><p><strong>lags_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]</span>) – Optionally, a list of integers giving the covariates lags used for Darts’ SKLearnModels. Only required
+<li><p><strong>lags_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, a list of integers giving the covariates lags used for Darts’ SKLearnModels. Only required
 in scenario B. Corresponds to the lag values from <cite>lags_past_covariates</cite> for past covariates, and
 <cite>lags_future_covariates</cite> for future covariates.</p></li>
 </ul>
@@ -972,7 +974,7 @@ in scenario B. Corresponds to the lag values from <cite>lags_past_covariates</ci
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The forecasting horizon.</p></li>
 <li><p><strong>target</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The target TimeSeries used during training or passed to prediction as <cite>series</cite>.</p></li>
-<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</span>) – Optionally, the covariates used for prediction.
+<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the covariates used for prediction.
 If given, the returned time index is equal to the <cite>covariates</cite> time index. Else, the returned time index
 covers the minimum required covariate time spans for performing inference / prediction with a specific
 forecasting model. These requirements are derived from parameters set at <a class="reference internal" href="#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator" title="darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">CovariatesIndexGenerator</span></code></a>
@@ -980,7 +982,7 @@ creation.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -993,14 +995,14 @@ creation.</p></li>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>target</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The target TimeSeries used during training.</p></li>
-<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</span>) – Optionally, the covariates used for training.
+<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the covariates used for training.
 If given, the returned time index is equal to the <cite>covariates</cite> time index. Else, the returned time index
 covers the minimum required covariate time span for training a specific forecasting model. These
 requirements are derived from parameters set at <a class="reference internal" href="#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator" title="darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">CovariatesIndexGenerator</span></code></a> creation.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1014,7 +1016,7 @@ requirements are derived from parameters set at <a class="reference internal" hr
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The forecasting horizon.</p></li>
 <li><p><strong>target</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The target TimeSeries used for training and inference / prediction as <cite>series</cite>.</p></li>
-<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</span>) – Optionally, the covariates used for training and inference / prediction.
+<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the covariates used for training and inference / prediction.
 If given, the returned time index is equal to the <cite>covariates</cite> time index. Else, the returned time index
 covers the minimum required covariate time spans for performing training and inference / prediction with a
 specific forecasting model. These requirements are derived from parameters set at
@@ -1022,7 +1024,7 @@ specific forecasting model. These requirements are derived from parameters set a
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1070,7 +1072,7 @@ specific forecasting model. These requirements are derived from parameters set a
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The forecast horizon</p></li>
 <li><p><strong>target</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
-<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</span>) – Optionally, the past or future covariates used for prediction.</p></li>
+<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the past or future covariates used for prediction.</p></li>
 <li><p><strong>merge_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to merge the encoded TimeSeries with <cite>covariates</cite>.</p></li>
 </ul>
 </dd>
@@ -1088,7 +1090,7 @@ specific forecasting model. These requirements are derived from parameters set a
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>target</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The target TimeSeries used during training or passed to prediction as <cite>series</cite>.</p></li>
-<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</span>) – Optionally, the past or future covariates used for training.</p></li>
+<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the past or future covariates used for training.</p></li>
 <li><p><strong>merge_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to merge the encoded TimeSeries with <cite>covariates</cite>.</p></li>
 </ul>
 </dd>
@@ -1107,7 +1109,7 @@ specific forecasting model. These requirements are derived from parameters set a
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The forecast horizon</p></li>
 <li><p><strong>target</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The target TimeSeries used during training and prediction.</p></li>
-<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</span>) – Optionally, the past or future covariates used for training and prediction.</p></li>
+<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the past or future covariates used for training and prediction.</p></li>
 <li><p><strong>merge_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to merge the encoded TimeSeries with <cite>covariates</cite>.</p></li>
 </ul>
 </dd>
@@ -1184,12 +1186,12 @@ creation.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>input_chunk_length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optionally, the number of input target time steps per chunk. Only required in scenarios B, C.
+<li><p><strong>input_chunk_length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the number of input target time steps per chunk. Only required in scenarios B, C.
 Corresponds to <cite>input_chunk_length</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, or to the absolute minimum target
 lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
-<li><p><strong>output_chunk_length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optionally, the number of output target time steps per chunk. Only required in scenarios B, and C.
+<li><p><strong>output_chunk_length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the number of output target time steps per chunk. Only required in scenarios B, and C.
 Corresponds to <cite>output_chunk_length</cite> for both <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
-<li><p><strong>lags_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]</span>) – Optionally, a list of integers giving the covariates lags used for Darts’ SKLearnModels. Only required
+<li><p><strong>lags_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, a list of integers giving the covariates lags used for Darts’ SKLearnModels. Only required
 in scenario B. Corresponds to the lag values from <cite>lags_past_covariates</cite> for past covariates, and
 <cite>lags_future_covariates</cite> for future covariates.</p></li>
 </ul>
@@ -1236,7 +1238,7 @@ in scenario B. Corresponds to the lag values from <cite>lags_past_covariates</ci
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The forecasting horizon.</p></li>
 <li><p><strong>target</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The target TimeSeries used during training or passed to prediction as <cite>series</cite>.</p></li>
-<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</span>) – Optionally, the covariates used for prediction.
+<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the covariates used for prediction.
 If given, the returned time index is equal to the <cite>covariates</cite> time index. Else, the returned time index
 covers the minimum required covariate time spans for performing inference / prediction with a specific
 forecasting model. These requirements are derived from parameters set at <a class="reference internal" href="#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator" title="darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">CovariatesIndexGenerator</span></code></a>
@@ -1244,7 +1246,7 @@ creation.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1257,14 +1259,14 @@ creation.</p></li>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>target</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The target TimeSeries used during training.</p></li>
-<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</span>) – Optionally, the covariates used for training.
+<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the covariates used for training.
 If given, the returned time index is equal to the <cite>covariates</cite> time index. Else, the returned time index
 covers the minimum required covariate time span for training a specific forecasting model. These
 requirements are derived from parameters set at <a class="reference internal" href="#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator" title="darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">CovariatesIndexGenerator</span></code></a> creation.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1278,7 +1280,7 @@ requirements are derived from parameters set at <a class="reference internal" hr
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The forecasting horizon.</p></li>
 <li><p><strong>target</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The target TimeSeries used for training and inference / prediction as <cite>series</cite>.</p></li>
-<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</span>) – Optionally, the covariates used for training and inference / prediction.
+<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the covariates used for training and inference / prediction.
 If given, the returned time index is equal to the <cite>covariates</cite> time index. Else, the returned time index
 covers the minimum required covariate time spans for performing training and inference / prediction with a
 specific forecasting model. These requirements are derived from parameters set at
@@ -1286,7 +1288,7 @@ specific forecasting model. These requirements are derived from parameters set a
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1345,12 +1347,12 @@ creation.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>input_chunk_length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optionally, the number of input target time steps per chunk. Only required in scenarios B, C.
+<li><p><strong>input_chunk_length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the number of input target time steps per chunk. Only required in scenarios B, C.
 Corresponds to <cite>input_chunk_length</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, or to the absolute minimum target
 lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
-<li><p><strong>output_chunk_length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optionally, the number of output target time steps per chunk. Only required in scenarios B, and C.
+<li><p><strong>output_chunk_length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the number of output target time steps per chunk. Only required in scenarios B, and C.
 Corresponds to <cite>output_chunk_length</cite> for both <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
-<li><p><strong>lags_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]</span>) – Optionally, a list of integers giving the covariates lags used for Darts’ SKLearnModels. Only required
+<li><p><strong>lags_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, a list of integers giving the covariates lags used for Darts’ SKLearnModels. Only required
 in scenario B. Corresponds to the lag values from <cite>lags_past_covariates</cite> for past covariates, and
 <cite>lags_future_covariates</cite> for future covariates.</p></li>
 </ul>
@@ -1397,7 +1399,7 @@ in scenario B. Corresponds to the lag values from <cite>lags_past_covariates</ci
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The forecasting horizon.</p></li>
 <li><p><strong>target</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The target TimeSeries used during training or passed to prediction as <cite>series</cite>.</p></li>
-<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</span>) – Optionally, the covariates used for prediction.
+<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the covariates used for prediction.
 If given, the returned time index is equal to the <cite>covariates</cite> time index. Else, the returned time index
 covers the minimum required covariate time spans for performing inference / prediction with a specific
 forecasting model. These requirements are derived from parameters set at <a class="reference internal" href="#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator" title="darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">CovariatesIndexGenerator</span></code></a>
@@ -1405,7 +1407,7 @@ creation.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1418,14 +1420,14 @@ creation.</p></li>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>target</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The target TimeSeries used during training.</p></li>
-<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</span>) – Optionally, the covariates used for training.
+<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the covariates used for training.
 If given, the returned time index is equal to the <cite>covariates</cite> time index. Else, the returned time index
 covers the minimum required covariate time span for training a specific forecasting model. These
 requirements are derived from parameters set at <a class="reference internal" href="#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator" title="darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">CovariatesIndexGenerator</span></code></a> creation.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1439,7 +1441,7 @@ requirements are derived from parameters set at <a class="reference internal" hr
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The forecasting horizon.</p></li>
 <li><p><strong>target</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The target TimeSeries used for training and inference / prediction as <cite>series</cite>.</p></li>
-<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</span>) – Optionally, the covariates used for training and inference / prediction.
+<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the covariates used for training and inference / prediction.
 If given, the returned time index is equal to the <cite>covariates</cite> time index. Else, the returned time index
 covers the minimum required covariate time spans for performing training and inference / prediction with a
 specific forecasting model. These requirements are derived from parameters set at
@@ -1447,7 +1449,7 @@ specific forecasting model. These requirements are derived from parameters set a
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1682,7 +1684,7 @@ For future covariates encoders use a <cite>FutureCovariatesIndexGenerator</cite>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The forecast horizon</p></li>
 <li><p><strong>target</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
-<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</span>) – Optionally, the covariates used for prediction: past covariates if <cite>self.index_generator</cite> is a
+<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the covariates used for prediction: past covariates if <cite>self.index_generator</cite> is a
 <cite>PastCovariatesIndexGenerator</cite>, future covariates if <cite>self.index_generator</cite> is a
 <cite>FutureCovariatesIndexGenerator</cite></p></li>
 <li><p><strong>merge_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to merge the encoded TimeSeries with <cite>covariates</cite>.</p></li>
@@ -1702,7 +1704,7 @@ For future covariates encoders use a <cite>FutureCovariatesIndexGenerator</cite>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>target</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
-<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</span>) – Optionally, the covariates used for training: past covariates if <cite>self.index_generator</cite> is a
+<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the covariates used for training: past covariates if <cite>self.index_generator</cite> is a
 <cite>PastCovariatesIndexGenerator</cite>, future covariates if <cite>self.index_generator</cite> is a
 <cite>FutureCovariatesIndexGenerator</cite></p></li>
 <li><p><strong>merge_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to merge the encoded TimeSeries with <cite>covariates</cite>.</p></li>
@@ -1723,7 +1725,7 @@ For future covariates encoders use a <cite>FutureCovariatesIndexGenerator</cite>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The forecast horizon</p></li>
 <li><p><strong>target</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The target TimeSeries used during training and prediction.</p></li>
-<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</span>) – Optionally, the covariates used for training and prediction: past covariates if <cite>self.index_generator</cite> is a
+<li><p><strong>covariates</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the covariates used for training and prediction: past covariates if <cite>self.index_generator</cite> is a
 <cite>PastCovariatesIndexGenerator</cite>, future covariates if <cite>self.index_generator</cite> is a
 <cite>FutureCovariatesIndexGenerator</cite></p></li>
 <li><p><strong>merge_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to merge the encoded TimeSeries with <cite>covariates</cite>.</p></li>

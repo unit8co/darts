@@ -22,6 +22,7 @@ darts.models.forecasting
    darts.models.forecasting.lgbm
    darts.models.forecasting.linear_regression_model
    darts.models.forecasting.nbeats
+   darts.models.forecasting.nf_model
    darts.models.forecasting.nhits
    darts.models.forecasting.nlinear
    darts.models.forecasting.prophet_model
@@ -65,6 +66,7 @@ darts.models.forecasting
 - :doc:`darts.models.forecasting.lgbm <darts.models.forecasting.lgbm>`
 - :doc:`darts.models.forecasting.linear_regression_model <darts.models.forecasting.linear_regression_model>`
 - :doc:`darts.models.forecasting.nbeats <darts.models.forecasting.nbeats>`
+- :doc:`darts.models.forecasting.nf_model <darts.models.forecasting.nf_model>`
 - :doc:`darts.models.forecasting.nhits <darts.models.forecasting.nhits>`
 - :doc:`darts.models.forecasting.nlinear <darts.models.forecasting.nlinear>`
 - :doc:`darts.models.forecasting.prophet_model <darts.models.forecasting.prophet_model>`

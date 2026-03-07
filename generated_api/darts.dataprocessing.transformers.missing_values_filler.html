@@ -58,7 +58,7 @@
     <link rel="prev" title="Mixed-data sampling (MIDAS) Transformer" href="darts.dataprocessing.transformers.midas.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.40.0" />
+  <meta name="docsearch:version" content="0.41.0" />
   </head>
   
   
@@ -645,6 +645,8 @@
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nbeats.html">N-BEATS</a></li>
 
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nf_model.html">NeuralForecastModel</a></li>
+
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nhits.html">N-HiTS</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nlinear.html">N-Linear</a></li>
@@ -901,7 +903,7 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>fill</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</span>) – The value used to replace the missing values.
+<li><p><strong>fill</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The value used to replace the missing values.
 If set to ‘auto’, will auto-fill missing values using the <code class="xref py py-func docutils literal notranslate"><span class="pre">pd.Dataframe.interpolate()</span></code> method.</p></li>
 <li><p><strong>name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – A specific name for the transformer</p></li>
 <li><p><strong>n_jobs</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
@@ -976,7 +978,7 @@ required amount of time.</p></li>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – input TimeSeries to be fed into transformer.</p></li>
-<li><p><strong>component_mask</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</span>) – Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components to
+<li><p><strong>component_mask</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components to
 extract from <cite>series</cite>. The <cite>i`th component of `series</cite> is kept only if <cite>component_mask[i] = True</cite>.
 If not specified, no masking is performed.</p></li>
 <li><p><strong>return_ts</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Optionally, specifies that a <cite>TimeSeries</cite> should be returned, rather than an <cite>np.ndarray</cite>.</p></li>
@@ -1040,7 +1042,7 @@ the <cite>unstack_samples</cite> method can then be used to reshape the output. 
 on the <cite>time_index</cite> or the temporal ordering of the observations, stacking should <em>not</em> be employed.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>vals</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</span>) – <cite>Timeseries</cite> or <cite>np.ndarray</cite> of shape <cite>(n_timesteps, n_components, n_samples)</cite> to be ‘stacked’.</p>
+<dd class="field-odd"><p><strong>vals</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code> | <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – <cite>Timeseries</cite> or <cite>np.ndarray</cite> of shape <cite>(n_timesteps, n_components, n_samples)</cite> to be ‘stacked’.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><cite>np.ndarray</cite> of shape <cite>(n_timesteps * n_samples, n_components)</cite>, where the <cite>i`th column is formed
@@ -1067,12 +1069,12 @@ please refer to ‘Notes’ for further details on component masking.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]</span>) – (sequence of) series to be transformed.</p></li>
 <li><p><strong>args</strong> – Additional positional arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.ts_transform" title="darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
-<li><p><strong>component_mask</strong> (<em>Optional</em><em>[</em><em>np.ndarray</em><em>] </em><em>= None</em>) – Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies which
+<li><p><strong>component_mask</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies which
 components of the underlying <cite>series</cite> the transform should consider. If the <cite>mask_components</cite>
 attribute was set to <cite>True</cite> when instantiating <cite>BaseDataTransformer</cite>, then the component mask
 will be automatically applied to each <cite>TimeSeries</cite> input. Otherwise, <cite>component_mask</cite> will be
 provided as an addition keyword argument to <cite>ts_transform</cite>. See ‘Notes’ for further details.</p></li>
-<li><p><strong>series_idx</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, the index(es) of each series corresponding to their positions within the series used to fit
+<li><p><strong>series_idx</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the index(es) of each series corresponding to their positions within the series used to fit
 the transformer (to retrieve the appropriate transformer parameters).</p></li>
 <li><p><strong>kwargs</strong> – Additional keyword arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.ts_transform" title="darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
 </ul>
@@ -1081,7 +1083,7 @@ the transformer (to retrieve the appropriate transformer parameters).</p></li>
 <dd class="field-even"><p>Transformed data.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
+<dd class="field-odd"><p>TimeSeriesLike</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
@@ -1176,7 +1178,7 @@ bottleneck and nullify parallelisation benefits.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]</span>) – input TimeSeries that was fed into transformer.</p></li>
 <li><p><strong>vals</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]</span>) – <cite>np.ndarray</cite> or <cite>TimeSeries</cite> to ‘unmask’</p></li>
-<li><p><strong>component_mask</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</span>) – Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components were extracted
+<li><p><strong>component_mask</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components were extracted
 from <cite>series</cite>. If given, insert <cite>vals</cite> back into the columns of the original array. If not specified,
 nothing is ‘unmasked’.</p></li>
 </ul>
@@ -1201,11 +1203,11 @@ components previously removed by <cite>component_mask</cite> now ‘added back�
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>vals</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span>) – <cite>np.ndarray</cite> of shape <cite>(n_timesteps * n_samples, n_components)</cite> to be ‘unstacked’.</p></li>
-<li><p><strong>n_timesteps</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optionally, the number of timesteps in the array originally passed to <cite>stack_samples</cite>.
+<li><p><strong>n_timesteps</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the number of timesteps in the array originally passed to <cite>stack_samples</cite>.
 Does <em>not</em> need to be provided if <cite>series</cite> is specified.</p></li>
-<li><p><strong>n_samples</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optionally, the number of samples in the array originally passed to <cite>stack_samples</cite>.
+<li><p><strong>n_samples</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the number of samples in the array originally passed to <cite>stack_samples</cite>.
 Does <em>not</em> need to be provided if <cite>series</cite> is specified.</p></li>
-<li><p><strong>series</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</span>) – Optionally, the <cite>TimeSeries</cite> object used to create <cite>vals</cite>; <cite>n_samples</cite> is inferred
+<li><p><strong>series</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the <cite>TimeSeries</cite> object used to create <cite>vals</cite>; <cite>n_samples</cite> is inferred
 from this.</p></li>
 </ul>
 </dd>

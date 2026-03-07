@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.40.0" />
+  <meta name="docsearch:version" content="0.41.0" />
   </head>
   
   
@@ -418,12 +418,14 @@
 
 <span class="sd">* `Chronos-2 Foundation Model Examples</span>
 <span class="sd">  &lt;https://unit8co.github.io/darts/examples/25-Chronos-2-examples.html&gt;`__</span>
+<span class="sd">* `Fine-Tuning Examples</span>
+<span class="sd">  &lt;https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html&gt;`__</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">cast</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">cast</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
@@ -435,14 +437,11 @@
     <span class="n">_Patch</span><span class="p">,</span>
     <span class="n">_ResidualBlock</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.components.huggingface_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">HuggingFaceConnector</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.foundation_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">FoundationModel</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.components.huggingface_connector</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceConnector</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.foundation_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">FoundationModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.pl_forecasting_module</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">PLForecastingModule</span><span class="p">,</span>
+    <span class="n">io_processor</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.data.torch_datasets.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PLModuleInput</span><span class="p">,</span> <span class="n">TorchTrainingSample</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span>
@@ -476,7 +475,7 @@
         <span class="n">feed_forward_proj</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;relu&quot;</span><span class="p">,</span>
         <span class="n">rope_theta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10000.0</span><span class="p">,</span>
         <span class="n">attn_implementation</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;eager&quot;</span><span class="p">,</span> <span class="s2">&quot;sdpa&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">chronos_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">chronos_config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;PyTorch module implementing the Chronos-2 model, ported from</span>
@@ -511,7 +510,8 @@
 <span class="sd">            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`</span>
 <span class="sd">            base class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
+        <span class="c1"># for fine-tuning, model should be trained on pre-trained quantiles</span>
+        <span class="n">enable_finetuning</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;enable_finetuning&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">d_model</span> <span class="o">=</span> <span class="n">d_model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">d_kv</span> <span class="o">=</span> <span class="n">d_kv</span>
@@ -604,13 +604,22 @@
         <span class="n">quantiles_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">quantiles</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;quantiles&quot;</span><span class="p">,</span> <span class="n">quantiles_tensor</span><span class="p">,</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-        <span class="c1"># gather indices of user-specified quantiles</span>
+        <span class="c1"># gather indices of user-specified quantiles (used at prediction time)</span>
         <span class="n">user_quantiles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">quantiles</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">QuantileRegression</span><span class="p">)</span>
             <span class="k">else</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">]</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">user_quantile_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">quantiles</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">user_quantiles</span><span class="p">]</span>
+
+        <span class="c1"># during fine-tuning, train on ALL pre-trained quantiles to preserve the</span>
+        <span class="c1"># full distribution; prediction uses only user-specified quantiles</span>
+        <span class="k">if</span> <span class="n">enable_finetuning</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_finetuning_likelihood</span> <span class="o">=</span> <span class="n">QuantileRegression</span><span class="p">(</span><span class="n">quantiles</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_finetuning_quantile_indices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_quantiles</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_finetuning_likelihood</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_finetuning_quantile_indices</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">output_patch_embedding</span> <span class="o">=</span> <span class="n">_ResidualBlock</span><span class="p">(</span>
             <span class="n">in_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">d_model</span><span class="p">,</span>
@@ -873,6 +882,7 @@
     <span class="c1"># 3. Chronos-2 uses normalized values for loss computation, while Darts uses denormalized values.</span>
     <span class="c1"># We need to think about how best to implement Chronos-2 `RINorm` in `io_processor()` without</span>
     <span class="c1"># breaking existing behavior, while also allowing fine-tuning with normalized loss.</span>
+    <span class="nd">@io_processor</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">:</span> <span class="n">PLModuleInput</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Chronos-2 model forward pass.</span>
 
@@ -961,28 +971,37 @@
         <span class="c1"># select only target variables</span>
         <span class="n">quantile_preds</span> <span class="o">=</span> <span class="n">quantile_preds</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_targets</span><span class="p">,</span> <span class="p">:]</span>
 
-        <span class="c1"># select only user-specified quantiles or median if deterministic</span>
-        <span class="n">quantile_preds</span> <span class="o">=</span> <span class="n">quantile_preds</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">user_quantile_indices</span><span class="p">]</span>
+        <span class="c1"># during training (fine-tuning), output all pre-trained quantiles for loss;</span>
+        <span class="c1"># during prediction, output only user-specified quantiles</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
+            <span class="n">quantile_preds</span> <span class="o">=</span> <span class="n">quantile_preds</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_finetuning_quantile_indices</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">quantile_preds</span> <span class="o">=</span> <span class="n">quantile_preds</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">user_quantile_indices</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="n">quantile_preds</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">criterion</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
+            <span class="c1"># compute loss on pre-trained quantiles</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_finetuning_likelihood</span><span class="o">.</span><span class="n">compute_loss</span><span class="p">(</span>
+                <span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sample_weight</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_compute_loss</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">criterion</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="Chronos2Model">
 <a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.chronos2_model.html#darts.models.forecasting.chronos2_model.Chronos2Model">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Chronos2Model</span><span class="p">(</span><span class="n">FoundationModel</span><span class="p">):</span>
-    <span class="c1"># Fine-tuning is turned off for now pending proper fine-tuning support</span>
-    <span class="c1"># and configuration.</span>
-    <span class="n">_allows_finetuning</span> <span class="o">=</span> <span class="kc">False</span>
-
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">QuantileRegression</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">likelihood</span><span class="p">:</span> <span class="n">QuantileRegression</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">hub_model_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;amazon/chronos-2&quot;</span><span class="p">,</span>
-        <span class="n">hub_model_revision</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">local_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">hub_model_revision</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">local_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Chronos-2 Model for zero-shot forecasting.</span>
@@ -1021,6 +1040,11 @@
 <span class="sd">        below for details. It is recommended to call :func:`predict()` with ``predict_likelihood_parameters=True``</span>
 <span class="sd">        or ``num_samples &gt;&gt; 1`` to get meaningful results.</span>
 
+<span class="sd">        .. tip::</span>
+<span class="sd">            You can perform full or partial fine-tuning of the model by setting the ``enable_finetuning`` parameter.</span>
+<span class="sd">            Read more in the parameter description below and in the `Fine-Tuning Examples</span>
+<span class="sd">            &lt;https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html&gt;`__.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        input_chunk_length</span>
@@ -1049,6 +1073,9 @@
 <span class="sd">            [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9,</span>
 <span class="sd">            0.95, 0.99].</span>
 <span class="sd">            Default: ``None``, which will make Chronos-2 deterministic (median quantile only).</span>
+<span class="sd">            When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to</span>
+<span class="sd">            preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood`` parameter</span>
+<span class="sd">            only affects prediction output.</span>
 <span class="sd">        hub_model_name</span>
 <span class="sd">            The model ID on HuggingFace Hub. Default: ``&quot;amazon/chronos-2&quot;``. Other available variants include</span>
 <span class="sd">            ``&quot;autogluon/chronos-2-small&quot;`` and ``&quot;autogluon/chronos-2-synth&quot;``.</span>
@@ -1081,9 +1108,6 @@
 <span class="sd">            to using a constant learning rate. Default: ``None``.</span>
 <span class="sd">        lr_scheduler_kwargs</span>
 <span class="sd">            Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.</span>
-<span class="sd">        use_reversible_instance_norm</span>
-<span class="sd">            Whether to use reversible instance normalization `RINorm` against distribution shift. Ignored by</span>
-<span class="sd">            Chronos-2 as it has its own `RINorm` implementation.</span>
 <span class="sd">        batch_size</span>
 <span class="sd">            Number of time series (input and output sequences) used in each training pass. Default: ``32``.</span>
 <span class="sd">        n_epochs</span>
@@ -1187,6 +1211,18 @@
 <span class="sd">        show_warnings</span>
 <span class="sd">            whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of</span>
 <span class="sd">            your forecasting use case. Default: ``False``.</span>
+<span class="sd">        enable_finetuning</span>
+<span class="sd">            Enables model fine-tuning. Only effective if not ``None``.</span>
+<span class="sd">            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep</span>
+<span class="sd">            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value</span>
+<span class="sd">            record. Can be used to:</span>
+
+<span class="sd">            - Unfreeze specific parameters, while keeping everything else frozen:</span>
+<span class="sd">              ``{&quot;unfreeze&quot;: [&quot;param.name.patterns.*&quot;]}``</span>
+<span class="sd">            - Freeze specific parameters, while keeping everything else unfrozen:</span>
+<span class="sd">              ``{&quot;freeze&quot;: [&quot;param.name.patterns.*&quot;]}``</span>
+
+<span class="sd">            Default: ``None``.</span>
 
 <span class="sd">        References</span>
 <span class="sd">        ----------</span>
@@ -1227,8 +1263,6 @@
 <span class="sd">        [[1005.6928 ]]</span>
 <span class="sd">        [[1005.69617]]]</span>
 
-<span class="sd">        .. note::</span>
-<span class="sd">            Fine-tuning of Chronos-2 is not supported at the moment.</span>
 <span class="sd">        .. note::</span>
 <span class="sd">            Chronos-2 is licensed under the `Apache-2.0 License &lt;https://github.com/amazon-science/chronos-forecasting/blob/main/LICENSE&gt;`_,</span>
 <span class="sd">            copyright Amazon.com, Inc. or its affiliates. By using this model, you agree to the terms and conditions of</span>
@@ -1295,7 +1329,7 @@
                 <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">hf_connector</span> <span class="o">=</span> <span class="n">hf_connector</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">enable_finetuning</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">TorchTrainingSample</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PLForecastingModule</span><span class="p">:</span>
         <span class="n">pl_module_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span> <span class="ow">or</span> <span class="p">{}</span>

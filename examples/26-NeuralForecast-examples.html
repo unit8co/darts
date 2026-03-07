@@ -1,0 +1,1293 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>NeuralForecast Model Integration &#8212; darts  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/26-NeuralForecast-examples';</script>
+    <link rel="icon" href="../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Chronos-2 Foundation Model" href="25-Chronos-2-examples.html" />
+    <link rel="prev" title="Time Series Mixer (TSMixer)" href="21-TSMixer-examples.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.41.0" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="01-multi-time-series-and-covariates.html">Multiple Time Series, Pre-trained Models and Covariates</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="02-data-processing.html">Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="15-static-covariates.html">Static Covariates</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="14-transfer-learning.html">Transfer Learning for Time Series Forecasting with Darts</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="16-hierarchical-reconciliation.html">Hierarchical Reconciliation - Example on the Australian Tourism Dataset</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="17-hyperparameter-optimization.html">Hyper-parameters Optimization for Electricity Load Forecasting</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="20-SKLearnModel-examples.html">Regression Models</a></li>
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="24-SKLearnClassifierModel-examples.html">Classification Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="23-Conformal-Prediction-examples.html">Conformal Prediction Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="03-FFT-examples.html">Fast Fourier Transform Forecasting Model (FFT)</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="04-RNN-examples.html">Recurrent Neural Networks Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="05-TCN-examples.html">Temporal Convolutional Network</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="06-Transformer-examples.html">Transformer Model</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="07-NBEATS-examples.html">N-BEATS</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="08-DeepAR-examples.html">Probabilistic RNN</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="09-DeepTCN-examples.html">DeepTCN model</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="13-TFT-examples.html">Temporal Fusion Transformer</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="18-TiDE-examples.html">TimeSeries Deep Encoder</a></li>
+
+
+
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="21-TSMixer-examples.html">Time Series Mixer (TSMixer)</a></li>
+
+
+
+
+
+
+</ul>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">NeuralForecast Model Integration</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="25-Chronos-2-examples.html">Chronos-2 Foundation Model</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="27-Torch-and-Foundation-Model-Fine-Tuning-examples.html">Fine-Tuning PyTorch Models and Foundation Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="19-EnsembleModel-examples.html">Ensembling Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="10-Kalman-filter-examples.html">Filtering and predicting using the darts filters</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="11-GP-filter-examples.html">Filtering and predicting using the Gaussian Process filter</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="22-anomaly-detection-examples.html">Anomaly Detection Darts Module</a></li>
+
+
+
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="12-Dynamic-Time-Warping-example.html">Dynamic Time Warping (DTW)</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../examples.html" class="nav-link">Examples</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">NeuralForecast Model Integration</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="NeuralForecast-Model-Integration">
+<h1>NeuralForecast Model Integration<a class="headerlink" href="#NeuralForecast-Model-Integration" title="Link to this heading">#</a></h1>
+<p>This notebook demonstrates how to use <a class="reference external" href="https://nixtlaverse.nixtla.io/neuralforecast/docs/">NeuralForecast</a> models in Darts through the <code class="docutils literal notranslate"><span class="pre">NeuralForecastModel</span></code> wrapper.</p>
+<p><code class="docutils literal notranslate"><span class="pre">NeuralForecastModel</span></code> converts any of the 30+ NeuralForecast base models into a Darts <code class="docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, giving access to the full Darts torch ecosystem: covariates, probabilistic forecasting, optimized historical forecasts/backtesting, model saving/loading, and more.</p>
+<p><strong>Supported models include</strong>: TiDE, PatchTST, KAN, NBEATSx, TSMixer, TimeXer, iTransformer, FEDformer, Autoformer, Informer, and many others.</p>
+<p><strong>Installation</strong>: <code class="docutils literal notranslate"><span class="pre">NeuralForecastModel</span></code> requires the <code class="docutils literal notranslate"><span class="pre">neuralforecast</span></code> package (not included in <code class="docutils literal notranslate"><span class="pre">darts[all]</span></code>). For example you can install the package from PyPI with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;neuralforecast&gt;=3.0.0&quot;</span>
+</pre></div>
+</div>
+<p>Other installation options can be found in the <a class="reference external" href="https://nixtlaverse.nixtla.io/neuralforecast/docs/getting-started/installation.html">NeuralForeacst installation guide</a>.</p>
+<p>For more details, see the <a class="reference external" href="https://unit8co.github.io/darts/">Darts documentation</a> and the original <a class="reference external" href="https://nixtlaverse.nixtla.io/neuralforecast/docs/">NeuralForecast documentation</a>.</p>
+<p>The follwing topics are covered in this notebook:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#1.-Quick-Start:-Univariate-Forecasting"><span class="std std-ref">Quick Start: Univariate Forecasting</span></a></p></li>
+<li><p><a class="reference internal" href="#2.-Forecasting-Using-Covariates"><span class="std std-ref">Forecasting Using Covariates</span></a></p></li>
+<li><p><a class="reference internal" href="#3.-Historical-Forecasts-&amp;-Backtesting"><span class="std std-ref">Historical Forecasts &amp; Backtesting</span></a></p></li>
+<li><p><a class="reference internal" href="#4.-Multivariate-Forecasting"><span class="std std-ref">Multivariate Forecasting</span></a></p></li>
+<li><p><a class="reference internal" href="#5.-Multiple-Series-Forecasting"><span class="std std-ref">Multiple Series Forecasting</span></a></p></li>
+<li><p><a class="reference internal" href="#6.-Probabilistic-Forecasting"><span class="std std-ref">Probabilistic Forecasting</span></a></p></li>
+<li><p><a class="reference internal" href="#7.-Comparison:-Darts-TiDE-vs-NeuralForecast-TiDE"><span class="std std-ref">Comparison: Darts TiDE vs NeuralForecast TiDE</span></a></p></li>
+</ul>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
+<span class="o">%</span><span class="k">autoreload</span> 2
+<span class="o">%</span><span class="k">matplotlib</span> inline
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_option</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mae</span><span class="p">,</span> <span class="n">mape</span><span class="p">,</span> <span class="n">rmse</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NeuralForecastModel</span><span class="p">,</span> <span class="n">TiDEModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span>
+
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">disable</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
+
+<span class="n">set_option</span><span class="p">(</span><span class="s2">&quot;plotting.use_darts_style&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<section id="1.-Quick-Start:-Univariate-Forecasting">
+<h2>1. Quick Start: Univariate Forecasting<a class="headerlink" href="#1.-Quick-Start:-Univariate-Forecasting" title="Link to this heading">#</a></h2>
+<p>Let’s start with a simple univariate (single column) forecast example using the AirPassengers dataset.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+
+<span class="c1"># the models input and output windows</span>
+<span class="n">input_chunk_length</span> <span class="o">=</span> <span class="mi">24</span>
+<span class="n">output_chunk_length</span> <span class="o">=</span> <span class="mi">12</span>
+
+<span class="c1"># extract a training and validation set for illustration</span>
+<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="n">output_chunk_length</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="n">output_chunk_length</span><span class="p">:]</span>
+
+<span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
+<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;val&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Train and Test Split&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_26-NeuralForecast-examples_4_0.png" src="../_images/examples_26-NeuralForecast-examples_4_0.png" />
+</div>
+</div>
+<p>Using <code class="docutils literal notranslate"><span class="pre">NeuralForecastModel</span></code> is straightforward: set <code class="docutils literal notranslate"><span class="pre">model</span></code> to any NeuralForecast base model name (as a string) or class (see all available models <a class="reference external" href="https://nixtlaverse.nixtla.io/neuralforecast/docs/capabilities/overview.html">here</a>), and pass model-specific architectural parameters via <code class="docutils literal notranslate"><span class="pre">model_kwargs</span></code>. Everything else (training, covariates, likelihoods) works exactly like any other Darts <code class="docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>.</p>
+<div class="alert alert-success" role="alert"><p><strong>Info</strong>: Darts will take care of automatically setting non-architectural parameters for you. These parameters <strong>will be ignored</strong> in <code class="docutils literal notranslate"><span class="pre">model_kwargs</span></code>:</p>
+<ol><li><p><strong>Input and output parameters</strong>: <code class="docutils literal notranslate"><span class="pre">input_size</span></code>, <code class="docutils literal notranslate"><span class="pre">h</span></code>, and <code class="docutils literal notranslate"><span class="pre">n_series</span></code> These are automatically set to match the <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code>, <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>, and number of target series (components), respectively.</p>
+<li><p><strong>Covariate parameters</strong>: <code class="docutils literal notranslate"><span class="pre">futr_exog_list</span></code>, <code class="docutils literal notranslate"><span class="pre">hist_exog_list</span></code>, and <code class="docutils literal notranslate"><span class="pre">stat_exog_list</span></code>. These are inferred directly from the input time series passed to <code class="docutils literal notranslate"><span class="pre">fit()</span></code>.</p>
+<li><p><strong>Training and PyTorch (Lightning)-related setup</strong>: <code class="docutils literal notranslate"><span class="pre">loss</span></code>, <code class="docutils literal notranslate"><span class="pre">learning_rate</span></code>, <code class="docutils literal notranslate"><span class="pre">max_steps</span></code>, etc. are all handled by Darts. You can specify these parameters directly. You can find all parameters in the <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> parameter description <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tide_model.html#darts.models.forecasting.tide_model.TiDEModel">here</a>.</p>
+</ol></div><div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># define parameters shared by all Darts&#39; models</span>
+<span class="n">darts_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+    <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>  <span class="c1"># the model&#39;s input window</span>
+    <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>  <span class="c1"># the model&#39;s output window</span>
+    <span class="n">use_reversible_instance_norm</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># reversible instance normalization against distribution shift</span>
+    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>  <span class="c1"># train the model for 50 epochs</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
+    <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+        <span class="n">accelerator</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span>
+    <span class="p">),</span>  <span class="c1"># configure the PyTorch Lightning Trainer for advanced techniques</span>
+<span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">NeuralForecastModel</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;MLP&quot;</span><span class="p">,</span>
+    <span class="n">model_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+        <span class="n">num_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">hidden_size</span><span class="o">=</span><span class="mi">1024</span>
+    <span class="p">),</span>  <span class="c1"># set NeuralForecast model hyperparameters</span>
+    <span class="o">**</span><span class="n">darts_kwargs</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># train and predict; training only on a single series allows us to call `predict()` without having to pass a `series`.</span>
+<span class="c1"># the forecast will start after the end of that training series</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">)</span>
+
+<span class="c1"># plot</span>
+<span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span> <span class="o">*</span> <span class="n">output_chunk_length</span> <span class="p">:]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;MLP&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;NeuralForecast&#39;s MLP</span><span class="se">\n</span><span class="s2">MAE: </span><span class="si">{</span><span class="n">mae</span><span class="p">(</span><span class="n">val</span><span class="p">,</span><span class="w"> </span><span class="n">pred</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "fbf840d9bff745519f8cb07f3c9d1318", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "79911576c60d46749e918812d879ac37", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_26-NeuralForecast-examples_6_2.png" src="../_images/examples_26-NeuralForecast-examples_6_2.png" />
+</div>
+</div>
+</section>
+<section id="2.-Forecasting-Using-Covariates">
+<h2>2. Forecasting Using Covariates<a class="headerlink" href="#2.-Forecasting-Using-Covariates" title="Link to this heading">#</a></h2>
+<p>Many NeuralForecast models support covariates. The wrapper automatically detects which covariate types are supported by the chosen base model and wires them into the Darts pipeline. There is no need to specify <code class="docutils literal notranslate"><span class="pre">futr_exog_list</span></code>, <code class="docutils literal notranslate"><span class="pre">hist_exog_list</span></code>, and <code class="docutils literal notranslate"><span class="pre">stat_exog_list</span></code>. These are inferred directly from the input time series passed to <code class="docutils literal notranslate"><span class="pre">NeuralForecastModel.fit()</span></code>.</p>
+<p>Since we don’t have any future covariates at hand, let’s generate some from calendar attributes of the AirPassengers series and see whether including them has an impact on model performance.</p>
+<div class="alert alert-success" role="alert"><p><strong>Tip</strong>: For simplicity, you can also let the model generate these features for you with the <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> parameter. More info in the <a class="reference external" href="https://unit8co.github.io/darts/quickstart/00-quickstart.html#Encoders:-using-covariates-for-free">quickstart</a>.</p>
+</div><div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.timeseries_generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span>
+
+<span class="c1"># generate feature: number of days per month, and apply a MinMax scaler to scale all values into the range (0,1)</span>
+<span class="n">future_covariates</span> <span class="o">=</span> <span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s2">&quot;days_in_month&quot;</span><span class="p">)</span>
+<span class="n">future_covariates</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">future_covariates</span><span class="p">)</span>
+
+<span class="c1"># let&#39;s also add a cyclic encoding (sin + cosine wave) of the value the month</span>
+<span class="n">future_covariates</span> <span class="o">=</span> <span class="n">future_covariates</span><span class="o">.</span><span class="n">add_datetime_attribute</span><span class="p">(</span>
+    <span class="s2">&quot;month&quot;</span><span class="p">,</span> <span class="n">cyclic</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+
+<span class="c1"># finally, display everything</span>
+<span class="n">future_covariates</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Future Covariates&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_26-NeuralForecast-examples_8_0.png" src="../_images/examples_26-NeuralForecast-examples_8_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># the MLP model supports all types or covariates, let&#39;s get a fresh model instance</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">untrained_model</span><span class="p">()</span>
+
+<span class="c1"># fit and predict</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">)</span>
+<span class="n">forecast_cov</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">)</span>
+
+<span class="c1"># plot</span>
+<span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span> <span class="o">*</span> <span class="n">output_chunk_length</span> <span class="p">:]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+<span class="n">forecast_cov</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;MLP&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;MLP with Future Covariates</span><span class="se">\n</span><span class="s2">MAE: </span><span class="si">{</span><span class="n">mae</span><span class="p">(</span><span class="n">val</span><span class="p">,</span><span class="w"> </span><span class="n">forecast_cov</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "408651050784467188dac0595ff74c97", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "c9506d2454ef4201984b2c1ada98bf8e", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_26-NeuralForecast-examples_9_2.png" src="../_images/examples_26-NeuralForecast-examples_9_2.png" />
+</div>
+</div>
+<p>Great, it looks like the model performs better with the covariates and reduced the MAE from 19.52 to 15.53!</p>
+</section>
+<section id="3.-Historical-Forecasts-&amp;-Backtesting">
+<h2>3. Historical Forecasts &amp; Backtesting<a class="headerlink" href="#3.-Historical-Forecasts-&-Backtesting" title="Link to this heading">#</a></h2>
+<p>Since <code class="docutils literal notranslate"><span class="pre">NeuralForecastModel</span></code> is a Darts <code class="docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, it has access to all other Darts functionality. For <strong>more robust evaluation</strong>, we should make use of Darts’ <strong>optimized historical forecast &amp; backtesting</strong> routine (similar to NeuralForecast’s cross validation).</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># get a fresh model instance and pre-train it on everything except the last 36 points</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">untrained_model</span><span class="p">()</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">)</span>
+
+<span class="c1"># generate forecasts sequentially over the last 36 points</span>
+<span class="n">historical_forecasts</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
+    <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+    <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+    <span class="n">start</span><span class="o">=-</span><span class="mi">36</span><span class="p">,</span>
+    <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+    <span class="n">stride</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>  <span class="c1"># move 12 steps ahead after each forecast</span>
+    <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># no re-training, only apply pre-trained model</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">last_points_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">forecast</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">historical_forecasts</span><span class="p">):</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">forecast</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;forecast: </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;MLP</span><span class="se">\n</span><span class="s2">Historical Forecasts&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "3652abea73164d06af0a4ed91640b241", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "fffa8865c8264cb2933fcd0ee178437a", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "cc933cf26531475db89590216caad3b2", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_26-NeuralForecast-examples_12_3.png" src="../_images/examples_26-NeuralForecast-examples_12_3.png" />
+</div>
+</div>
+<p>And now we can compute any number of metrics on the historical forecasts (backtesting).</p>
+<div class="alert alert-success" role="alert"><p><strong>Tip</strong>: Backtesting can also generate the historical forecasts directly without us having to pre-compute them. It supports the same parameters as <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code>.</p>
+</div><div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">metrics</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span>
+    <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+    <span class="n">historical_forecasts</span><span class="o">=</span><span class="n">historical_forecasts</span><span class="p">,</span>
+    <span class="n">last_points_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">metric</span><span class="o">=</span><span class="p">[</span><span class="n">mae</span><span class="p">,</span> <span class="n">rmse</span><span class="p">,</span> <span class="n">mape</span><span class="p">],</span>
+    <span class="n">reduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># do not aggregate individual forecast scores</span>
+<span class="p">)</span>
+
+<span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="n">metrics</span><span class="p">,</span>
+    <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;MAE&quot;</span><span class="p">,</span> <span class="s2">&quot;RMSE&quot;</span><span class="p">,</span> <span class="s2">&quot;MAPE&quot;</span><span class="p">],</span>
+    <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;forecast: </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">historical_forecasts</span><span class="p">))],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>MAE</th>
+      <th>RMSE</th>
+      <th>MAPE</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>forecast: 0</th>
+      <td>48.128937</td>
+      <td>50.333076</td>
+      <td>12.857846</td>
+    </tr>
+    <tr>
+      <th>forecast: 1</th>
+      <td>25.456266</td>
+      <td>29.153017</td>
+      <td>5.779883</td>
+    </tr>
+    <tr>
+      <th>forecast: 2</th>
+      <td>37.905315</td>
+      <td>42.028625</td>
+      <td>7.934020</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</section>
+<section id="4.-Multivariate-Forecasting">
+<h2>4. Multivariate Forecasting<a class="headerlink" href="#4.-Multivariate-Forecasting" title="Link to this heading">#</a></h2>
+<p>Multivariate (multiple target columns) forecasting is supported by all base models. Simply pass a multivariate time series as <code class="docutils literal notranslate"><span class="pre">series</span></code> to <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code>.</p>
+<div class="alert alert-success" role="alert"><p><strong>Info</strong>: For <strong>univariate base models</strong>, multivariate forecasting is achieved by folding the target components into the batch dimension and repeating the covariates for each target component accordingly. This translates to <strong>global training</strong> and forecasting <strong>on multiple univariate series</strong>.</p>
+</div><div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># generate a multivariate series</span>
+<span class="n">series_multivar</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">series</span> <span class="o">*</span> <span class="o">-</span><span class="mi">1</span> <span class="o">+</span> <span class="n">series</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">series_multivar</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Multivariate Series&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_26-NeuralForecast-examples_16_0.png" src="../_images/examples_26-NeuralForecast-examples_16_0.png" />
+</div>
+</div>
+<p>Since the time index of our series hasn’t changed, we can re-use the same future covariates.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># let&#39;s use TSMixerx, a multivariate base model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">NeuralForecastModel</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;TSMixerx&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">darts_kwargs</span><span class="p">)</span>
+
+<span class="c1"># fit and predict</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">series</span><span class="o">=</span><span class="n">series_multivar</span><span class="p">[:</span><span class="o">-</span><span class="n">output_chunk_length</span><span class="p">],</span>
+    <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">)</span>
+
+<span class="c1"># plot</span>
+<span class="n">series_multivar</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span> <span class="o">*</span> <span class="n">output_chunk_length</span> <span class="p">:]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;TSMixerx&quot;</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;NeuralForecast&#39;s TSMixerx</span><span class="se">\n</span><span class="s2">Multivariate Series - MAE: </span><span class="si">{</span><span class="n">mae</span><span class="p">(</span><span class="n">series_multivar</span><span class="p">,</span><span class="w"> </span><span class="n">pred</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "188a994189fc4714980c54be08e40892", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "171b0c5c8826475497119f2ac8589514", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_26-NeuralForecast-examples_18_2.png" src="../_images/examples_26-NeuralForecast-examples_18_2.png" />
+</div>
+</div>
+</section>
+<section id="5.-Multiple-Series-Forecasting">
+<h2>5. Multiple Series Forecasting<a class="headerlink" href="#5.-Multiple-Series-Forecasting" title="Link to this heading">#</a></h2>
+<p>Global training and forecasting on multiple time series is supported by all base models. Simply pass a sequence of uni- or multivariate time series as <code class="docutils literal notranslate"><span class="pre">series</span></code> to <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code>.</p>
+<div class="alert alert-success" role="alert"><p><strong>Info</strong>: When fitting a model on <strong>multiple series</strong>, we must always <strong>pass some input series and covariates</strong> to <code class="docutils literal notranslate"><span class="pre">predict()</span></code>. The models forecast after the end of each series. These series <strong>do not</strong> have to be the ones that the model was trained on!</p>
+</div><div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># split the multivariate series into two (multiple) univariate series</span>
+<span class="n">series_multiple</span> <span class="o">=</span> <span class="p">[</span><span class="n">series_multivar</span><span class="p">[</span><span class="s2">&quot;#Passengers&quot;</span><span class="p">],</span> <span class="n">series_multivar</span><span class="p">[</span><span class="s2">&quot;#Passengers_1&quot;</span><span class="p">]]</span>
+<span class="n">series_multiple_train</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">[:</span><span class="o">-</span><span class="n">output_chunk_length</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">series_multiple</span><span class="p">]</span>
+
+<span class="c1"># since the covariates apply to both series, we can simply repeat them</span>
+<span class="n">future_covariates_multiple</span> <span class="o">=</span> <span class="p">[</span><span class="n">future_covariates</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">series_multiple</span><span class="p">)</span>
+
+<span class="c1"># get a fresh model instance</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">untrained_model</span><span class="p">()</span>
+
+<span class="c1"># fit and predict</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">series</span><span class="o">=</span><span class="n">series_multiple_train</span><span class="p">,</span>
+    <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates_multiple</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">forecasts</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+    <span class="n">n</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+    <span class="n">series</span><span class="o">=</span><span class="n">series_multiple_train</span><span class="p">,</span>
+    <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates_multiple</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># plot</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">series_multivar</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span> <span class="o">*</span> <span class="n">output_chunk_length</span> <span class="p">:]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">forecast</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">forecasts</span><span class="p">):</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">forecast</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;forecast: series </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;NeuralForecast&#39;s TSMixerx</span><span class="se">\n</span><span class="s2">Multiple Series - MAE: &quot;</span>
+    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mae</span><span class="p">(</span><span class="n">series_multiple</span><span class="p">,</span><span class="w"> </span><span class="n">forecasts</span><span class="p">,</span><span class="w"> </span><span class="n">series_reduction</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d21ed138496c407b97f9858b9c570e7d", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "8e893d9a269346a0bd207b8a1dc96b32", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_26-NeuralForecast-examples_20_2.png" src="../_images/examples_26-NeuralForecast-examples_20_2.png" />
+</div>
+</div>
+</section>
+<section id="6.-Probabilistic-Forecasting">
+<h2>6. Probabilistic Forecasting<a class="headerlink" href="#6.-Probabilistic-Forecasting" title="Link to this heading">#</a></h2>
+<p>Probabilistic forecasting is supported by all base models thanks to our <strong>Darts likelihood models</strong>.</p>
+<p>Let’s use <strong>Quantile Regression</strong> with a <strong>KAN</strong> (Kolmogorov-Arnold Network) model.</p>
+<div class="alert alert-success" role="alert"><p><strong>Info</strong>: Darts offers many other likelihood models such as Gaussian, Poisson, Laplace and more. You can find a complete list <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html">here</a>.</p>
+</div><div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># KAN model that forecasts expected quantiles [0.1, 0.5, 0.9]</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">NeuralForecastModel</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;KAN&quot;</span><span class="p">,</span>
+    <span class="n">likelihood</span><span class="o">=</span><span class="n">QuantileRegression</span><span class="p">(</span><span class="n">quantiles</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">]),</span>
+    <span class="o">**</span><span class="n">darts_kwargs</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># fit and predict</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">pred_prob</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+    <span class="n">n</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+    <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># predict quantiles directly</span>
+<span class="p">)</span>
+
+<span class="c1"># plot</span>
+<span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span> <span class="o">*</span> <span class="n">output_chunk_length</span> <span class="p">:]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+<span class="n">pred_prob</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;KAN with Quantile Regression</span><span class="se">\n</span><span class="s2">Direct Quantile Prediction&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "782a2892d8484d6d91aa432dde71ca86", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d2eae6e056264ff79933b3213228c33f", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_26-NeuralForecast-examples_22_2.png" src="../_images/examples_26-NeuralForecast-examples_22_2.png" />
+</div>
+</div>
+<p>We can also generate <strong>sampled predictions</strong>. This is especially useful when performing auto-regression (when horizon &gt; output_chunk_length), as it can model the increasing uncertainty with longer horizons. Essentially, it performs a <strong>Monte Carlo Simulation</strong> for different sample paths.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pred_prob</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+    <span class="n">n</span><span class="o">=</span><span class="mi">5</span> <span class="o">*</span> <span class="n">output_chunk_length</span><span class="p">,</span>
+    <span class="n">num_samples</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>  <span class="c1"># sampled prediction</span>
+<span class="p">)</span>
+
+<span class="c1"># plot</span>
+<span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span> <span class="o">*</span> <span class="n">output_chunk_length</span> <span class="p">:]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+<span class="n">pred_prob</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;KAN (probabilistic)&quot;</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;KAN with Quantile Regression</span><span class="se">\n</span><span class="s2">Autoregressive Prediciton with Monte Carlo Samples&quot;</span><span class="p">,</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "b8b0e3ada8374c92afd97585a8b11593", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_26-NeuralForecast-examples_24_1.png" src="../_images/examples_26-NeuralForecast-examples_24_1.png" />
+</div>
+</div>
+</section>
+<section id="7.-Comparison:-Darts-TiDE-vs-NeuralForecast-TiDE">
+<h2>7. Comparison: Darts TiDE vs NeuralForecast TiDE<a class="headerlink" href="#7.-Comparison:-Darts-TiDE-vs-NeuralForecast-TiDE" title="Link to this heading">#</a></h2>
+<p>Since Darts has its own native TiDE implementation, let’s compare it side by side with the NeuralForecast version. This helps validate the integration and shows that NeuralForecast models can achieve comparable results.</p>
+<p>We pass <code class="docutils literal notranslate"><span class="pre">model_kwargs</span></code> with similar hyperparaters as Darts’ <code class="docutils literal notranslate"><span class="pre">TiDEModel</span></code> (you can find the default parameters <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tide_model.html#darts.models.forecasting.tide_model.TiDEModel">in the API documentation</a>).</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Darts&#39; TiDE model</span>
+<span class="n">model_darts</span> <span class="o">=</span> <span class="n">TiDEModel</span><span class="p">(</span><span class="o">**</span><span class="n">darts_kwargs</span><span class="p">)</span>
+
+<span class="c1"># NeuralForecast&#39;s TiDE model</span>
+<span class="n">model_nf</span> <span class="o">=</span> <span class="n">NeuralForecastModel</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;TiDE&quot;</span><span class="p">,</span>
+    <span class="n">model_kwargs</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;hidden_size&quot;</span><span class="p">:</span> <span class="mi">128</span><span class="p">,</span>
+        <span class="s2">&quot;decoder_output_dim&quot;</span><span class="p">:</span> <span class="mi">16</span><span class="p">,</span>
+        <span class="s2">&quot;dropout&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+        <span class="s2">&quot;layernorm&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="o">**</span><span class="n">darts_kwargs</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span> <span class="o">*</span> <span class="n">output_chunk_length</span> <span class="p">:]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">model_i</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[(</span><span class="n">model_darts</span><span class="p">,</span> <span class="s2">&quot;Darts TiDE&quot;</span><span class="p">),</span> <span class="p">(</span><span class="n">model_nf</span><span class="p">,</span> <span class="s2">&quot;NF TiDE&quot;</span><span class="p">)]:</span>
+    <span class="n">model_i</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+    <span class="n">forecast</span> <span class="o">=</span> <span class="n">model_i</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">)</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">forecast</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="se">\n</span><span class="s2">MAE: </span><span class="si">{</span><span class="n">mae</span><span class="p">(</span><span class="n">val</span><span class="p">,</span><span class="w"> </span><span class="n">forecast</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Darts TiDE vs NeuralForecast TiDE&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "8ba50c0ab07d4b77a38b383118776c5c", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "bd376cb2819a4ea48b11d0e5552bec7b", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "75222b2f01ee488c8782d9ac2e54d704", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "5cd400e788b8400aab7f3c2912167ace", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_26-NeuralForecast-examples_26_4.png" src="../_images/examples_26-NeuralForecast-examples_26_4.png" />
+</div>
+</div>
+<p>The two architectures are very similar but not identical. That’s why we see a small difference in model performance. The difference should become negligible when performing robust model training.</p>
+<p>You can read about more advanced techniques in our <a class="reference external" href="https://unit8co.github.io/darts/userguide/torch_forecasting_models.html#advanced-functionnalities">TorchForecastingModel user guide</a>.</p>
+</section>
+<section id="Summary">
+<h2>Summary<a class="headerlink" href="#Summary" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">NeuralForecastModel</span></code> wrapper makes it easy to:</p>
+<ul class="simple">
+<li><p><strong>Access 30+ neural forecasting architectures</strong> through a unified interface.</p></li>
+<li><p><strong>Use all Darts torch features</strong>: Uni- &amp; multivariate forecasting, multiple series forecasting, probabilistic forecasting, covariates (past, future, static), optimized backtesting, model saving/loading, encoders, and more.</p></li>
+<li><p><strong>Quickly experiment</strong> with different architectures by simply changing the <code class="docutils literal notranslate"><span class="pre">model</span></code> parameter.</p></li>
+<li><p><strong>Advanced modelling techniques</strong> are described in our <a class="reference external" href="https://unit8co.github.io/darts/userguide/torch_forecasting_models.html#advanced-functionnalities">TorchForecastingModel user guide</a>.</p></li>
+</ul>
+<section id="Limitations">
+<h3>Limitations<a class="headerlink" href="#Limitations" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><strong>Recurrent models</strong> (GRU, LSTM, RNN, DeepAR) are not supported — Darts provides native implementations.</p></li>
+<li><p>The core <code class="docutils literal notranslate"><span class="pre">NeuralForecast</span></code> class and automatic models (e.g. <code class="docutils literal notranslate"><span class="pre">AutoInformer</span></code>) are not supported.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">neuralforecast&gt;=3.0.0</span></code> must be installed separately (see the <a class="reference external" href="https://nixtlaverse.nixtla.io/neuralforecast/docs/getting-started/installation.html">NeuralForeacst installation guide</a>).</p></li>
+</ul>
+<p>For more information, see the <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nf_model.html">NeuralForecastModel API reference</a>.</p>
+<script type="application/vnd.jupyter.widget-state+json">
+{"state": {"02678bee0bd64d9b91182f9c6fe5a401": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "0268091d13604cda829eced8ec0a4290": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_f872154da6a54bfd941e970ae86bef95", "style": "IPY_MODEL_6b4e9992120541e4bacb89a7e439e4e5", "value": "Epoch\u200749:\u2007100%"}}, "05d4b917e392406e894556d8bc93e440": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_2929a4a5936a47a0a8cd40ea0a0a2093", "max": 1, "style": "IPY_MODEL_749b850abac24532bc45ef25842d8e2c", "value": 1}}, "0601c4c406d649ec9b0b6b5770cd1b84": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "0e7785fe41c84b2189f3aeaf1da59685": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_a36a36db6af3480ab6da7033d03058c0", "style": "IPY_MODEL_d2e5f401948b42fa997472dbe49b245e", "value": "Predicting\u2007DataLoader\u20070:\u2007100%"}}, "103109ec70504e44af42f3972e96373c": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "120c67cb10854f6ba8cdc3e6412fe768": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_3ae91dccff1b4e3c8ff5e5dce4ddf81f", "max": 1, "style": "IPY_MODEL_e6e6971e70744d99b89b43d293a71a42", "value": 1}}, "12568cf9ea1c48519b75262179a4f85a": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "13a7c79be1fb43dab724aef2b712eb77": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "13e1743de8764dda8e08ee6029e237ad": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_6d6ac9086ad64a1cbce273acdfcd9c37", "style": "IPY_MODEL_a577bdcb5cb14d5c9f70cc081ccc2132", "value": "\u20071/1\u2007[00:00&lt;00:00,\u2007233.86it/s]"}}, "14a00b3d9c414ed1bc4b1763e16b0f77": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "171b0c5c8826475497119f2ac8589514": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_ebbbcedde5ce4a15aefd681d03a56e36", "IPY_MODEL_9f0c3cb67552456298dee810fcb3e252", "IPY_MODEL_9e6ce7037d9f4a9d986586bb409fddc4"], "layout": "IPY_MODEL_8f6f2600704b4a549406f4a9b9ae4671"}}, "188a994189fc4714980c54be08e40892": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_3ab2523bbf2e4a1596c7a3794099245e", "IPY_MODEL_8f7157394e8d46f58ecb2eb273523ad8", "IPY_MODEL_d208200d86464a9ea0d87b7bb0dc1243"], "layout": "IPY_MODEL_7a7f511fd15146d6a16e79bec80cd566"}}, "188e4cf4c5cb446a892cfce620f95e38": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "18d85318a96f4f81890c1a1420614c1d": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_02678bee0bd64d9b91182f9c6fe5a401", "max": 4, "style": "IPY_MODEL_54e8dcfec5bd458bb85a7da568d726de", "value": 4}}, "190f993a64a04c54aa8b824e1db177b0": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "19ba0588aca9461fbf59937682414307": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "1a226ec8277a4fafa2564bea7661588d": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "1a22f195604942b484aa5490a45660b7": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_68d653a1a0324f88828ad615a2883e9e", "style": "IPY_MODEL_1ce3f4c1acdb44afa88011ce0b554399", "value": "Epoch\u200749:\u2007100%"}}, "1a3fa0e569374e8d84dbe5428446d060": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "1b392f8dbe2143fa98e8c9762efd7dd2": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_e654f0fe63e24531891087f76a7eda95", "style": "IPY_MODEL_3c53c9414b644015a544ef1361c97bef", "value": "Predicting\u2007DataLoader\u20070:\u2007100%"}}, "1b9839c47a7d48ca8e7c8399a1ffc8c0": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "1ce3f4c1acdb44afa88011ce0b554399": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "1db6f1db5b094d9cbd392fa7f446284b": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "1e6a794304df449a96daa601070b1fdd": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "1fb6aa1f22c5498eacb005b26bb5216b": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_6c9bcfda808841ae98b46aad08c73079", "style": "IPY_MODEL_e33bdcaa202b4da58497bce29e0e12d6", "value": "Predicting\u2007DataLoader\u20070:\u2007100%"}}, "22abb1f517cc49e8afc7dfdc2459456e": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "253ecdd0fb784471b2ad1f0854bf71a7": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "256251efd3d145008aabba499412b659": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_aed23b3f98bc4b65967b4b59c0ebfd95", "max": 4, "style": "IPY_MODEL_51613879fb2c43c5a33f08b7b073ba5d", "value": 4}}, "2768d2297b2e4dc885a87164fe492df8": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_69d9849fb3424b978dd12166cbfe02ac", "max": 4, "style": "IPY_MODEL_75c34ebebd174806af118e640cd102fb", "value": 4}}, "27a819ceb8b7479598746ff3b217eeff": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_fd3be2c8249e479791c5a0d987651dc6", "style": "IPY_MODEL_57e7554fbc5b438f83180bd526657c29", "value": "\u20071/1\u2007[00:00&lt;00:00,\u200773.22it/s]"}}, "2929a4a5936a47a0a8cd40ea0a0a2093": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "2955891cb404427cae27bc503bbaa935": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "2b88d7af06d34b9e96cce7ea95844427": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "2ba02198a7fa406f8d706d56c67d5292": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_1a3fa0e569374e8d84dbe5428446d060", "style": "IPY_MODEL_a5c55c77ad654b1a900f8b73bdb9a902", "value": "\u20077/7\u2007[00:00&lt;00:00,\u200772.17it/s,\u2007train_loss=364.0]"}}, "2ec26c792af44769bdbbc3d9818bf9ee": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "2f94d95241fe490c913b09d63e20fde6": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "31e51e298eac43f19b2d52ac8fd47758": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "33ad0fc8ec5a409fbd518af111b7e27a": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_49d4db5232874d51b6ecf862c7a09b55", "max": 3, "style": "IPY_MODEL_12568cf9ea1c48519b75262179a4f85a", "value": 3}}, "345daf92b3e042af96cb63a8df93aec9": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "34fb0e55bccc441dbe00848574f4e590": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_1b9839c47a7d48ca8e7c8399a1ffc8c0", "style": "IPY_MODEL_7f62e638ed6a40d4aae34ab87792af7e", "value": "Epoch\u200749:\u2007100%"}}, "3652abea73164d06af0a4ed91640b241": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_89f5d85415044f499a65a153b78f942f", "IPY_MODEL_33ad0fc8ec5a409fbd518af111b7e27a", "IPY_MODEL_7ce53c0f0b9541bb989901dc605e1a00"], "layout": "IPY_MODEL_d8284c81f8404f5d935a679ea2ae27b0"}}, "38a5378c5b8348f7960d10dce468a971": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "3ab2523bbf2e4a1596c7a3794099245e": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_44f9f6b07c3c45558e70b56b5cecad3f", "style": "IPY_MODEL_97872e8983714e1fabc95a36fa800798", "value": "Epoch\u200749:\u2007100%"}}, "3ae91dccff1b4e3c8ff5e5dce4ddf81f": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "3b471d8f76cb49c297c144904a3528f4": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "3b76d0dcb0a04e4da2b5adc038919954": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "3bcb0a263d81424b8a398b4dd4af4ac9": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "3c53c9414b644015a544ef1361c97bef": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "3e1d9e599363486d99b7d0bbef3e1639": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "3f224a172a274a3ba1cda391e3e0152f": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "408651050784467188dac0595ff74c97": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_58c11539b7564b88ac5101de3d0d0663", "IPY_MODEL_256251efd3d145008aabba499412b659", "IPY_MODEL_cf6c8ca44f7b44b0ae21dcab84197da4"], "layout": "IPY_MODEL_7bbb73cecca24f1da98f9ade6239d4c3"}}, "44f9f6b07c3c45558e70b56b5cecad3f": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "45a631ff5af64e93ba4fa68a044e8c0c": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "45ba3885f23c44efb2d07eea57be3a3e": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_3f224a172a274a3ba1cda391e3e0152f", "style": "IPY_MODEL_e508f091161a4811ba02146940845115", "value": "Predicting\u2007DataLoader\u20070:\u2007100%"}}, "461b129ed4a1462daf07a51c0a8e43d3": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "4628dce4c8ec4790aeaea2d5f5ec43f8": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_a5f1a440f4a84f60a190d468b7e4c8d9", "max": 1, "style": "IPY_MODEL_3bcb0a263d81424b8a398b4dd4af4ac9", "value": 1}}, "4772a0f65301472ab21aa3790d81a757": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_190f993a64a04c54aa8b824e1db177b0", "style": "IPY_MODEL_96768a75fae54ae49452d50f9f727938", "value": "Epoch\u200749:\u2007100%"}}, "49934968dd1043909769d3c8e41ddac8": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "49d4db5232874d51b6ecf862c7a09b55": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "4e17157c52ed4eb99396aec97e36db95": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "4eb03233cffe477bae6de0ee597ba23a": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "4ed1840ad35547f6b085451125599276": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "51613879fb2c43c5a33f08b7b073ba5d": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "51a36f62722b4faf8d4feb92401f07b6": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_65d42b03faaf4a8abe1370a0b18d6fd9", "max": 4, "style": "IPY_MODEL_188e4cf4c5cb446a892cfce620f95e38", "value": 4}}, "5345fde73eca418ba74b9d3a86038984": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_0601c4c406d649ec9b0b6b5770cd1b84", "max": 4, "style": "IPY_MODEL_4e17157c52ed4eb99396aec97e36db95", "value": 4}}, "54111750f3f94051b63bd7d326a31fe0": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "5465a8eba2604b8a91cc1ba4884aa787": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "54e8dcfec5bd458bb85a7da568d726de": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "56456dd04f244f24b7c339cabf6c211a": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "5665e7a0e2e141b69e283aecc9b0549d": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "56c46570a66148e7b15f1d9fc8192d45": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_ba40cc70758e4296a0655e87979bdb37", "max": 3, "style": "IPY_MODEL_1db6f1db5b094d9cbd392fa7f446284b", "value": 3}}, "56cd98145a104845836fab0f2dd6db45": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "57e7554fbc5b438f83180bd526657c29": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "58c11539b7564b88ac5101de3d0d0663": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_c73b85cb0d8241e69078ca69eafb0d9e", "style": "IPY_MODEL_fea2c5ba819d4943a4692ef38c6aa362", "value": "Epoch\u200749:\u2007100%"}}, "59c8425b8a1c4eb7882800f8df55ed97": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "5cd400e788b8400aab7f3c2912167ace": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_0e7785fe41c84b2189f3aeaf1da59685", "IPY_MODEL_4628dce4c8ec4790aeaea2d5f5ec43f8", "IPY_MODEL_8cc546b4d9944328983ab590e996e831"], "layout": "IPY_MODEL_9be9a38900ee4681815f5461ed983c79"}}, "5e11ead269f847e1ba1c8100669cb612": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "5e39a02bccce4ad194802b5e75137d75": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_f5c8a6c6edd849c294912923f2f47256", "max": 7, "style": "IPY_MODEL_22abb1f517cc49e8afc7dfdc2459456e", "value": 7}}, "6160b403614b4ae688c05bf7054e821b": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "6310e384144a4df9b4b5c43ecb8026bf": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "656782e8e60c4197aff891b10123631c": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "65d42b03faaf4a8abe1370a0b18d6fd9": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "68d653a1a0324f88828ad615a2883e9e": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "69c960492ff7473cb30ca61f19b54996": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "69d9849fb3424b978dd12166cbfe02ac": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "6b4e9992120541e4bacb89a7e439e4e5": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "6c127994e36548c3b14c18a9b4dd7d73": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "6c9bcfda808841ae98b46aad08c73079": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "6d6ac9086ad64a1cbce273acdfcd9c37": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "718f4f4b44a7437290132d1a4ffb2b91": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "72f2293541cb4031aed0dc9baf99d6e2": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "736ebf09aa184bf6bfe39635b61c6cf5": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_6160b403614b4ae688c05bf7054e821b", "max": 1, "style": "IPY_MODEL_829ef863b6794a0d8d8e0c1047123b98", "value": 1}}, "74055704e6ac404fa04611286e8ebb15": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "7444cd168e484cca8d66121b72671a0b": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_4ed1840ad35547f6b085451125599276", "style": "IPY_MODEL_a042fb3203c64d02b5176fe1acbdd33a", "value": "Predicting\u2007DataLoader\u20070:\u2007100%"}}, "7494bc415fde41b59a81684c24902621": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "749b850abac24532bc45ef25842d8e2c": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "75222b2f01ee488c8782d9ac2e54d704": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_4772a0f65301472ab21aa3790d81a757", "IPY_MODEL_18d85318a96f4f81890c1a1420614c1d", "IPY_MODEL_b16bebcb193d47a9bad1ec64a653b6b8"], "layout": "IPY_MODEL_be34f0ee5aa94dd2aa061189266fb03b"}}, "75c34ebebd174806af118e640cd102fb": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "764accae2b9541fe826ca9ed46e3c663": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_8679957e10d44ec9aff1af8335890696", "max": 1, "style": "IPY_MODEL_38a5378c5b8348f7960d10dce468a971", "value": 1}}, "782a2892d8484d6d91aa432dde71ca86": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_34fb0e55bccc441dbe00848574f4e590", "IPY_MODEL_2768d2297b2e4dc885a87164fe492df8", "IPY_MODEL_f9866e23f5cc491ea5ec5f9115ed405e"], "layout": "IPY_MODEL_345daf92b3e042af96cb63a8df93aec9"}}, "79911576c60d46749e918812d879ac37": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_ef9c1ba995154b46b9aaa34424fe715b", "IPY_MODEL_120c67cb10854f6ba8cdc3e6412fe768", "IPY_MODEL_9d44abd38fe04f5a835d029509936fc7"], "layout": "IPY_MODEL_7494bc415fde41b59a81684c24902621"}}, "7a289d11880843faad17ab83e39c895b": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "7a7f511fd15146d6a16e79bec80cd566": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "7bbb73cecca24f1da98f9ade6239d4c3": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "7ca09e8d65c1452786d9daac4195c554": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_103109ec70504e44af42f3972e96373c", "style": "IPY_MODEL_2955891cb404427cae27bc503bbaa935", "value": "\u20074/4\u2007[00:00&lt;00:00,\u2007131.62it/s,\u2007train_loss=414.0]"}}, "7ce53c0f0b9541bb989901dc605e1a00": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_56cd98145a104845836fab0f2dd6db45", "style": "IPY_MODEL_fc4a27c56f6d4c5baaf603ca00661a9f", "value": "\u20073/3\u2007[00:00&lt;00:00,\u2007159.97it/s,\u2007train_loss=52.20]"}}, "7f62e638ed6a40d4aae34ab87792af7e": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "829ef863b6794a0d8d8e0c1047123b98": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "8679957e10d44ec9aff1af8335890696": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "89f5d85415044f499a65a153b78f942f": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_d7b30e824cf14d068950948603f45bef", "style": "IPY_MODEL_dcf9a5612ac64c81b35ba619adcfd6b7", "value": "Epoch\u200749:\u2007100%"}}, "8adb7f09a73940c0b6df9d8bc52c8e5a": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_e388ad75ebcf43c89a19cddb3bce93a1", "max": 1, "style": "IPY_MODEL_9c4a7654f7c947c0aaca04554ff74bb8", "value": 1}}, "8ba50c0ab07d4b77a38b383118776c5c": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_e7cd9f3e751441b885d7d7ef2430e0e4", "IPY_MODEL_51a36f62722b4faf8d4feb92401f07b6", "IPY_MODEL_7ca09e8d65c1452786d9daac4195c554"], "layout": "IPY_MODEL_461b129ed4a1462daf07a51c0a8e43d3"}}, "8c07ccbb7ab54fcda7caf5e71e18431f": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "8cc546b4d9944328983ab590e996e831": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_6310e384144a4df9b4b5c43ecb8026bf", "style": "IPY_MODEL_31e51e298eac43f19b2d52ac8fd47758", "value": "\u20071/1\u2007[00:00&lt;00:00,\u2007291.55it/s]"}}, "8e893d9a269346a0bd207b8a1dc96b32": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_1fb6aa1f22c5498eacb005b26bb5216b", "IPY_MODEL_cc5ccc41fd0c4d4c8a0add2c7d3ab900", "IPY_MODEL_27a819ceb8b7479598746ff3b217eeff"], "layout": "IPY_MODEL_cc01d27d7f134391b95cb95edda73c9a"}}, "8f6f2600704b4a549406f4a9b9ae4671": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "8f7157394e8d46f58ecb2eb273523ad8": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_f048a83afe284f63a58bddc09d4e5a29", "max": 4, "style": "IPY_MODEL_14a00b3d9c414ed1bc4b1763e16b0f77", "value": 4}}, "9223e2ca8a7849ebbea4d6b9dbcedc47": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_fb414e84028449e999c29bdd1d703108", "style": "IPY_MODEL_49934968dd1043909769d3c8e41ddac8", "value": "\u20071/1\u2007[00:00&lt;00:00,\u2007\u20073.88it/s]"}}, "96768a75fae54ae49452d50f9f727938": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "9720eab522a949bd95047bb747e34ed7": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_7a289d11880843faad17ab83e39c895b", "style": "IPY_MODEL_4eb03233cffe477bae6de0ee597ba23a", "value": "Predicting\u2007DataLoader\u20070:\u2007100%"}}, "97872e8983714e1fabc95a36fa800798": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "97e7e32462f44a55b5d40142a52f27dd": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "986772fd82614cb3a49a08cc43403353": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_d01048712ccd443dbc4987f6cae7729e", "style": "IPY_MODEL_d990309f4dcd4295a6123bf66a8e3374", "value": "\u20074/4\u2007[00:00&lt;00:00,\u2007198.35it/s,\u2007train_loss=23.20]"}}, "9a627eb8c95a4157a3953c14255394ae": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_1a226ec8277a4fafa2564bea7661588d", "style": "IPY_MODEL_c9cd5ff689234db28e889dc0ee442b32", "value": "Predicting\u2007DataLoader\u20070:\u2007100%"}}, "9be9a38900ee4681815f5461ed983c79": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "9c096c5db7f74f09b24be28f6cd63574": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "9c4a7654f7c947c0aaca04554ff74bb8": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "9d44abd38fe04f5a835d029509936fc7": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_2ec26c792af44769bdbbc3d9818bf9ee", "style": "IPY_MODEL_d2464f2ffe5f4af99ba54dcc9959f339", "value": "\u20071/1\u2007[00:00&lt;00:00,\u2007119.71it/s]"}}, "9e6ce7037d9f4a9d986586bb409fddc4": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_3b76d0dcb0a04e4da2b5adc038919954", "style": "IPY_MODEL_59c8425b8a1c4eb7882800f8df55ed97", "value": "\u20071/1\u2007[00:00&lt;00:00,\u2007136.89it/s]"}}, "9f0c3cb67552456298dee810fcb3e252": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_19ba0588aca9461fbf59937682414307", "max": 1, "style": "IPY_MODEL_5465a8eba2604b8a91cc1ba4884aa787", "value": 1}}, "a042fb3203c64d02b5176fe1acbdd33a": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "a36a36db6af3480ab6da7033d03058c0": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "a3b662986b974eeeab1c0dadb4d99137": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_1e6a794304df449a96daa601070b1fdd", "style": "IPY_MODEL_5e11ead269f847e1ba1c8100669cb612", "value": "\u20071/1\u2007[00:00&lt;00:00,\u200746.01it/s]"}}, "a577bdcb5cb14d5c9f70cc081ccc2132": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "a5c55c77ad654b1a900f8b73bdb9a902": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "a5f1a440f4a84f60a190d468b7e4c8d9": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "ace480b53c0d474b886529afd723eddc": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "aed23b3f98bc4b65967b4b59c0ebfd95": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "afd94c2de4534029bb0baac9928c809a": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "b16bebcb193d47a9bad1ec64a653b6b8": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_afd94c2de4534029bb0baac9928c809a", "style": "IPY_MODEL_3e1d9e599363486d99b7d0bbef3e1639", "value": "\u20074/4\u2007[00:00&lt;00:00,\u2007127.24it/s,\u2007train_loss=97.70]"}}, "b8b0e3ada8374c92afd97585a8b11593": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_1b392f8dbe2143fa98e8c9762efd7dd2", "IPY_MODEL_05d4b917e392406e894556d8bc93e440", "IPY_MODEL_9223e2ca8a7849ebbea4d6b9dbcedc47"], "layout": "IPY_MODEL_d281b3c61e804d9dbe29f2241a5474c4"}}, "ba40cc70758e4296a0655e87979bdb37": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "ba5d1d8a04384530a0882ec0442b1439": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "bad70626acbb43d9a33f206069e75b70": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "bd376cb2819a4ea48b11d0e5552bec7b": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_7444cd168e484cca8d66121b72671a0b", "IPY_MODEL_736ebf09aa184bf6bfe39635b61c6cf5", "IPY_MODEL_e9082fd5f01842699c254b3a2441ab49"], "layout": "IPY_MODEL_74055704e6ac404fa04611286e8ebb15"}}, "be34f0ee5aa94dd2aa061189266fb03b": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "be39732148454552b4e9c37928add4b7": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "be3b5eaf7af74fc58b544fe38f918098": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_45a631ff5af64e93ba4fa68a044e8c0c", "style": "IPY_MODEL_f8ee9397c1f94beaa456374401d9bb26", "value": "\u20071/1\u2007[00:00&lt;00:00,\u200796.50it/s]"}}, "c05d9a8a732745fbbcd182d68063a38e": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "c152107f0e054601b4478c3a1c18dd48": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "c73b85cb0d8241e69078ca69eafb0d9e": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "c9506d2454ef4201984b2c1ada98bf8e": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_9a627eb8c95a4157a3953c14255394ae", "IPY_MODEL_8adb7f09a73940c0b6df9d8bc52c8e5a", "IPY_MODEL_be3b5eaf7af74fc58b544fe38f918098"], "layout": "IPY_MODEL_56456dd04f244f24b7c339cabf6c211a"}}, "c9cd5ff689234db28e889dc0ee442b32": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "cb1fe82e93044a92bc37b3ced5fcea5c": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "cc01d27d7f134391b95cb95edda73c9a": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "cc5ccc41fd0c4d4c8a0add2c7d3ab900": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_ba5d1d8a04384530a0882ec0442b1439", "max": 1, "style": "IPY_MODEL_c152107f0e054601b4478c3a1c18dd48", "value": 1}}, "cc769b50e06f4da297877c0a27d0089a": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "FloatProgressModel", "state": {"bar_style": "success", "layout": "IPY_MODEL_f8f0aafb983b499bb039c69316916a2d", "max": 1, "style": "IPY_MODEL_69c960492ff7473cb30ca61f19b54996", "value": 1}}, "cc933cf26531475db89590216caad3b2": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_f74242d0dbc846b889bb88f747431744", "IPY_MODEL_56c46570a66148e7b15f1d9fc8192d45", "IPY_MODEL_de8c0753790d4f0d8f7662fc97a03d48"], "layout": "IPY_MODEL_bad70626acbb43d9a33f206069e75b70"}}, "cf6c8ca44f7b44b0ae21dcab84197da4": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_656782e8e60c4197aff891b10123631c", "style": "IPY_MODEL_2f94d95241fe490c913b09d63e20fde6", "value": "\u20074/4\u2007[00:00&lt;00:00,\u2007166.71it/s,\u2007train_loss=227.0]"}}, "d01048712ccd443dbc4987f6cae7729e": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "d208200d86464a9ea0d87b7bb0dc1243": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_c05d9a8a732745fbbcd182d68063a38e", "style": "IPY_MODEL_9c096c5db7f74f09b24be28f6cd63574", "value": "\u20074/4\u2007[00:00&lt;00:00,\u200772.76it/s,\u2007train_loss=341.0]"}}, "d21ed138496c407b97f9858b9c570e7d": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_0268091d13604cda829eced8ec0a4290", "IPY_MODEL_5e39a02bccce4ad194802b5e75137d75", "IPY_MODEL_2ba02198a7fa406f8d706d56c67d5292"], "layout": "IPY_MODEL_253ecdd0fb784471b2ad1f0854bf71a7"}}, "d2464f2ffe5f4af99ba54dcc9959f339": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "d281b3c61e804d9dbe29f2241a5474c4": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "d2e5f401948b42fa997472dbe49b245e": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "d2eae6e056264ff79933b3213228c33f": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_9720eab522a949bd95047bb747e34ed7", "IPY_MODEL_cc769b50e06f4da297877c0a27d0089a", "IPY_MODEL_13e1743de8764dda8e08ee6029e237ad"], "layout": "IPY_MODEL_ace480b53c0d474b886529afd723eddc"}}, "d7b30e824cf14d068950948603f45bef": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "d8284c81f8404f5d935a679ea2ae27b0": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"display": "inline-flex", "flex_flow": "row wrap", "width": "100%"}}, "d8ca29cf15cd448ab938e4bc36b7c2eb": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "d990309f4dcd4295a6123bf66a8e3374": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "dcf9a5612ac64c81b35ba619adcfd6b7": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "de8c0753790d4f0d8f7662fc97a03d48": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_72f2293541cb4031aed0dc9baf99d6e2", "style": "IPY_MODEL_fbacaf2627b5450ca370712e68bd0809", "value": "\u20073/3\u2007[00:00&lt;00:00,\u20071066.08it/s]"}}, "e33bdcaa202b4da58497bce29e0e12d6": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "e388ad75ebcf43c89a19cddb3bce93a1": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "e508f091161a4811ba02146940845115": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "e654f0fe63e24531891087f76a7eda95": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "e6e6971e70744d99b89b43d293a71a42": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "ProgressStyleModel", "state": {"description_width": ""}}, "e7cd9f3e751441b885d7d7ef2430e0e4": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_cb1fe82e93044a92bc37b3ced5fcea5c", "style": "IPY_MODEL_2b88d7af06d34b9e96cce7ea95844427", "value": "Epoch\u200749:\u2007100%"}}, "e9082fd5f01842699c254b3a2441ab49": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_f4413d2461f14fd7a46a3d4cdecae4f8", "style": "IPY_MODEL_5665e7a0e2e141b69e283aecc9b0549d", "value": "\u20071/1\u2007[00:00&lt;00:00,\u2007283.28it/s]"}}, "eb74486ef2f747e18b39b24045395042": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "ebbbcedde5ce4a15aefd681d03a56e36": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_6c127994e36548c3b14c18a9b4dd7d73", "style": "IPY_MODEL_8c07ccbb7ab54fcda7caf5e71e18431f", "value": "Predicting\u2007DataLoader\u20070:\u2007100%"}}, "ef9c1ba995154b46b9aaa34424fe715b": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_eb74486ef2f747e18b39b24045395042", "style": "IPY_MODEL_be39732148454552b4e9c37928add4b7", "value": "Predicting\u2007DataLoader\u20070:\u2007100%"}}, "f048a83afe284f63a58bddc09d4e5a29": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "f4413d2461f14fd7a46a3d4cdecae4f8": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "f5c8a6c6edd849c294912923f2f47256": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "f74242d0dbc846b889bb88f747431744": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_d8ca29cf15cd448ab938e4bc36b7c2eb", "style": "IPY_MODEL_718f4f4b44a7437290132d1a4ffb2b91", "value": "Generating\u2007TimeSeries:\u2007100%"}}, "f872154da6a54bfd941e970ae86bef95": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "f8ee9397c1f94beaa456374401d9bb26": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "f8f0aafb983b499bb039c69316916a2d": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {"flex": "2"}}, "f9866e23f5cc491ea5ec5f9115ed405e": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLModel", "state": {"layout": "IPY_MODEL_3b471d8f76cb49c297c144904a3528f4", "style": "IPY_MODEL_97e7e32462f44a55b5d40142a52f27dd", "value": "\u20074/4\u2007[00:00&lt;00:00,\u2007113.04it/s,\u2007train_loss=11.80]"}}, "fb414e84028449e999c29bdd1d703108": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "fbacaf2627b5450ca370712e68bd0809": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "fbf840d9bff745519f8cb07f3c9d1318": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_1a22f195604942b484aa5490a45660b7", "IPY_MODEL_5345fde73eca418ba74b9d3a86038984", "IPY_MODEL_986772fd82614cb3a49a08cc43403353"], "layout": "IPY_MODEL_13a7c79be1fb43dab724aef2b712eb77"}}, "fc4a27c56f6d4c5baaf603ca00661a9f": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "fd3be2c8249e479791c5a0d987651dc6": {"model_module": "@jupyter-widgets/base", "model_module_version": "2.0.0", "model_name": "LayoutModel", "state": {}}, "fea2c5ba819d4943a4692ef38c6aa362": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HTMLStyleModel", "state": {"description_width": "", "font_size": null, "text_color": null}}, "fffa8865c8264cb2933fcd0ee178437a": {"model_module": "@jupyter-widgets/controls", "model_module_version": "2.0.0", "model_name": "HBoxModel", "state": {"children": ["IPY_MODEL_45ba3885f23c44efb2d07eea57be3a3e", "IPY_MODEL_764accae2b9541fe826ca9ed46e3c663", "IPY_MODEL_a3b662986b974eeeab1c0dadb4d99137"], "layout": "IPY_MODEL_54111750f3f94051b63bd7d326a31fe0"}}}, "version_major": 2, "version_minor": 0}
+</script></section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="21-TSMixer-examples.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Time Series Mixer (TSMixer)</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="25-Chronos-2-examples.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Chronos-2 Foundation Model</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#1.-Quick-Start:-Univariate-Forecasting">1. Quick Start: Univariate Forecasting</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#2.-Forecasting-Using-Covariates">2. Forecasting Using Covariates</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#3.-Historical-Forecasts-&amp;-Backtesting">3. Historical Forecasts &amp; Backtesting</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#4.-Multivariate-Forecasting">4. Multivariate Forecasting</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#5.-Multiple-Series-Forecasting">5. Multiple Series Forecasting</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#6.-Probabilistic-Forecasting">6. Probabilistic Forecasting</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#7.-Comparison:-Darts-TiDE-vs-NeuralForecast-TiDE">7. Comparison: Darts TiDE vs NeuralForecast TiDE</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Summary">Summary</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Limitations">Limitations</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples/26-NeuralForecast-examples.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2026, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

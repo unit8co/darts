@@ -287,6 +287,10 @@ GFMs are models that can be trained on multiple target (and covariate) time seri
      - ✅
      - ✅
      - ✅
+   * - `NeuralForecastModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nf_model.html#darts.models.forecasting.nf_model.NeuralForecastModel>`_ (g)
+     - ✅
+     - ✅
+     - ✅
    * - `Chronos2Model <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.chronos2_model.html#darts.models.forecasting.chronos2_model.Chronos2Model>`_
      - ✅
      - ✅
@@ -295,11 +299,11 @@ GFMs are models that can be trained on multiple target (and covariate) time seri
      - 
      - 
      - 
-   * - Ensemble Models (g)
+   * - Ensemble Models (h)
      - ✅
      - ✅
      - ✅
-   * - Conformal Prediction Models (h)
+   * - Conformal Prediction Models (i)
      - ✅
      - ✅
      - ✅
@@ -319,9 +323,11 @@ GFMs are models that can be trained on multiple target (and covariate) time seri
 
 (f) `BlockRNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel>`_ including ``LSTM`` and ``GRU``
 
-(g) Ensemble Model including `RegressionEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel>`_\ , and `NaiveEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel>`_. The covariate support is given by the covariate support of the ensembled forecasting models.
+(g) `NeuralForecastModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nf_model.html#darts.models.forecasting.nf_model.NeuralForecastModel>`_ covariate support depends on the NeuralForecast base model used. See `NeuralForecast model catalog <https://nixtlaverse.nixtla.io/neuralforecast/docs/capabilities/overview.html>`_ for more details.
 
-(h) Conformal Prediction Model including `ConformalNaiveModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalNaiveModel>`_\ , and `ConformalQRModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalQRModel>`_. The covariate support is given by the covariate support of the underlying forecasting model.
+(h) Ensemble Model including `RegressionEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel>`_\ , and `NaiveEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel>`_. The covariate support is given by the covariate support of the ensembled forecasting models.
+
+(i) Conformal Prediction Model including `ConformalNaiveModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalNaiveModel>`_\ , and `ConformalQRModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalQRModel>`_. The covariate support is given by the covariate support of the underlying forecasting model.
 
 ----
 
