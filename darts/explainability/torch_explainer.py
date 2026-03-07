@@ -215,13 +215,13 @@ class TorchExplainer(_ForecastingModelExplainer):
         target_components: Sequence[str] | None = None,
     ) -> SHAPExplainabilityResult:
         """
-        Explains a foreground time series and returns a :class:`SHAPExplainabilityResult
+        Explains foreground time series forecasts and returns a :class:`SHAPExplainabilityResult
         <darts.explainability.explainability_result.SHAPExplainabilityResult>` of SHAP values.
 
         The results can then be retrieved with method :func:`get_explanation()
         <darts.explainability.explainability_result.SHAPExplainabilityResult.get_explanation>`,
         which returns a multivariate ``TimeSeries`` instance containing the SHAP values for the
-        ``(horizon, target_component)`` forecast at any timestamp forecastable in the foreground series.
+        ``(horizon, target_component)`` forecasts at all timestamps forecastable in the foreground series.
 
         The components of the ``TimeSeries`` correspond to the input features used by the model to produce
         the forecasts. See above for the naming convention.
@@ -285,12 +285,16 @@ class TorchExplainer(_ForecastingModelExplainer):
              - T_1_target_lag-2
              - T_1_target_lag-3
              - P_0_pastcov_lag-1
+             - P_0_pastcov_lag-2
              - P_0_pastcov_lag-3
              - P_1_pastcov_lag-1
+             - P_1_pastcov_lag-2
              - P_1_pastcov_lag-3
              - P_2_pastcov_lag-1
+             - P_2_pastcov_lag-2
              - P_2_pastcov_lag-3
              - F_0_futcov_lag0
+             - F_0_futcov_lag1
 
         Each series has length 3, as the model can explain 5-3+1 forecasts (timestamp indices 4, 5, and 6).
         """
@@ -382,7 +386,90 @@ class TorchExplainer(_ForecastingModelExplainer):
         foreground_future_covariates: TimeSeries | None = None,
         target_components: Sequence[str] | None = None,
     ):
-        # TODO: add docstring and example for this method.
+        """
+        Explains a foreground time series forecast starting from one last forecastable timestamp and returns a
+        :class:`SHAPSingleExplainabilityResult
+        <darts.explainability.explainability_result.SHAPSingleExplainabilityResult>` of SHAP values.
+
+        The results can then be retrieved with method :func:`get_explanation()
+        <darts.explainability.explainability_result.SHAPSingleExplainabilityResult.get_explanation>`,
+        which returns a multivariate ``TimeSeries`` instance containing the SHAP values for ``target_component``
+        starting from the last forecastable timestamp.
+
+        The components of the ``TimeSeries`` correspond to the input features used by the model to produce
+        the forecast. See above for the naming convention.
+
+        Parameters
+        ----------
+        foreground_series
+            Optionally, one or a sequence of target ``TimeSeries`` to be explained. Can be multivariate.
+            If not provided, the background ``TimeSeries`` will be explained instead.
+        foreground_past_covariates
+            Optionally, one or a sequence of past covariates ``TimeSeries`` if required by the forecasting model.
+        foreground_future_covariates
+            Optionally, one or a sequence of future covariates ``TimeSeries`` if required by the forecasting model.
+        target_components
+            Optionally, a string or sequence of strings with the target components to explain.
+
+        Returns
+        -------
+        SHAPSingleExplainabilityResult
+            The forecast explanations of the specified target components for the single forecasted timestamp.
+
+        Examples
+        --------
+        Say we have a ``TorchForecastingModel`` instance with:
+
+          - 2 target components named ``"T_0"`` and ``"T_1"``,
+          - 3 past covariates with default component names ``"P_0"``, ``"P_1"``, and ``"P_2"``,
+          - 1 future covariate with default component name ``"F_0"``,
+          - ``input_chunk_length=3``,
+          - ``output_chunk_length=2``.
+
+        We provide ``foreground_series``, ``foreground_past_covariates``, ``foreground_future_covariates`` (extending
+        far enough into the future) each of length 5.
+
+        >>> results = explainer.explain_single(
+        >>>     foreground_series=foreground_series,
+        >>>     foreground_past_covariates=foreground_past_covariates,
+        >>>     foreground_future_covariates=foreground_future_covariates)
+
+        Calling the method returns a ``SHAPSingleExplainabilityResult`` object containing the SHAP values,
+        feature values, and raw ``shap.Explanation`` objects for each target component at the single forecasted
+        timestamp (timestamp index 6 in our example, as it is the last forecastable).
+
+        >>> # Get SHAP values for forecasting "T_1" as a `TimeSeries`
+        >>> output = results.get_explanation(component="T_1")
+        >>> # Get feature values used for forecasting as a `TimeSeries`
+        >>> feature_values = results.get_feature_values(component="T_1")
+        >>> # Get the raw `shap.Explanation` object for further processing
+        >>> shap_objects = results.get_shap_explanation_object(component="T_1")
+
+        For SHAP and feature values, the components of the returned ``TimeSeries`` correspond to different lags of the
+        target and covariates (see convention above). In our example, the component names would be:
+
+             - T_0_target_lag-1
+             - T_0_target_lag-2
+             - T_0_target_lag-3
+             - T_1_target_lag-1
+             - T_1_target_lag-2
+             - T_1_target_lag-3
+             - P_0_pastcov_lag-1
+             - P_0_pastcov_lag-2
+             - P_0_pastcov_lag-3
+             - P_1_pastcov_lag-1
+             - P_1_pastcov_lag-2
+             - P_1_pastcov_lag-3
+             - P_2_pastcov_lag-1
+             - P_2_pastcov_lag-2
+             - P_2_pastcov_lag-3
+             - F_0_futcov_lag0
+             - F_0_futcov_lag1
+
+        The SHAP value ``TimeSeries`` has length ``output_chunk_length=2``, as the model predicts that many timestamps
+        in the future. The feature value ``TimeSeries`` has length 1, as it corresponds to the single forecasted
+        timestamp explained.
+        """
         fallback = foreground_series is None
         (
             foreground_series_,

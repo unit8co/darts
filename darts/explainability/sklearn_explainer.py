@@ -207,13 +207,13 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         target_components: Sequence[str] | None = None,
     ) -> SHAPExplainabilityResult:
         """
-        Explains a foreground time series and returns a :class:`SHAPExplainabilityResult
+        Explains foreground time series forecasts and returns a :class:`SHAPExplainabilityResult
         <darts.explainability.explainability_result.SHAPExplainabilityResult>` of SHAP values.
 
         The results can then be retrieved with method :func:`get_explanation()
         <darts.explainability.explainability_result.SHAPExplainabilityResult.get_explanation>`,
         which returns a multivariate ``TimeSeries`` instance containing the SHAP values for the
-        ``(horizon, target_component)`` forecast at any timestamp forecastable in the foreground series.
+        ``(horizon, target_component)`` forecasts at all timestamps forecastable in the foreground series.
 
         The components of the ``TimeSeries`` correspond to the input features used by the model to produce
         the forecasts. See above for the naming convention.

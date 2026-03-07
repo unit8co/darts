@@ -6,7 +6,7 @@ Contains the explainability results obtained from :func:`_ForecastingModelExplai
 <darts.explainability.explainability._ForecastingModelExplainer.explain>`.
 
 - :class:`SHAPExplainabilityResult <SHAPExplainabilityResult>` for :class:`SKLearnExplainer
-  <darts.explainability.sklearn_explainer.SKLearnExplainer>` and
+  <darts.explainability.sklearn_explainer.SKLearnExplainer>` and :class:`TorchExplainer
   <darts.explainability.torch_explainer.TorchExplainer>` explainers, which are based on SHAP values.
 - :class:`SHAPSingleExplainabilityResult <SHAPSingleExplainabilityResult>` for single-step explainability
   of :class:`SKLearnExplainer <darts.explainability.sklearn_explainer.SKLearnExplainer>` and
