@@ -206,9 +206,6 @@ class TorchExplainer(_ForecastingModelExplainer):
             check_component_names=self.check_component_names,
         )
 
-    # TODO: add `explain_sample()` method to explain a single prediction.
-    # TODO: add `force_plot_sample()` method to create a force plot for a single prediction.
-
     def explain(
         self,
         foreground_series: TimeSeriesLike | None = None,
@@ -385,6 +382,7 @@ class TorchExplainer(_ForecastingModelExplainer):
         foreground_future_covariates: TimeSeries | None = None,
         target_components: Sequence[str] | None = None,
     ):
+        # TODO: add docstring and example for this method.
         fallback = foreground_series is None
         (
             foreground_series_,
@@ -423,9 +421,9 @@ class TorchExplainer(_ForecastingModelExplainer):
                 times=pd.date_range(
                     start=prediction_time,
                     freq=schema["time_freq"],
-                    periods=shap_[t].values.shape[1],
+                    periods=shap_[t].values.shape[0],
                 ),
-                values=shap_[t].values.T,
+                values=shap_[t].values,
                 components=shap_[t].feature_names,
             )
             feature_values_dict[t] = TimeSeries(
@@ -434,7 +432,7 @@ class TorchExplainer(_ForecastingModelExplainer):
                     freq=schema["time_freq"],
                     periods=1,
                 ),
-                values=shap_[t].data,
+                values=shap_[t].data[:1],
                 components=shap_[t].feature_names,
             )
             shap_explanation_object_dict[t] = shap_[t]
@@ -916,12 +914,14 @@ class _DeepSHAPExplainer:
         # for better accessibility of the explanations
         shap_explanations = {}
 
+        horizon = self.output_chunk_length
+
         for t_idx, t in enumerate(self.target_components_likelihood):
             if t not in target_components:
                 continue
             tmp_t = shap.Explanation(
-                shap_values[0, :, t_idx :: self.n_targets_likelihood],
-                data=shap_data,
+                shap_values[0, :, t_idx :: self.n_targets_likelihood].T,
+                data=np.repeat(shap_data, repeats=horizon, axis=0),
                 base_values=shap_base_values[
                     0, t_idx :: self.n_targets_likelihood
                 ].ravel(),
