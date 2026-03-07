@@ -10,7 +10,6 @@ from darts.explainability.explainability_result import (
     SHAPExplainabilityResult,
     SHAPSingleExplainabilityResult,
     TFTExplainabilityResult,
-    _ExplainabilityResult,
 )
 from darts.explainability.sklearn_explainer import SKLearnExplainer
 from darts.logging import get_logger
@@ -33,7 +32,6 @@ __all__ = [
     "SHAPExplainabilityResult",
     "SHAPSingleExplainabilityResult",
     "TFTExplainabilityResult",
-    "_ExplainabilityResult",
     "SKLearnExplainer",
     "TFTExplainer",
     "TorchExplainer",

@@ -137,66 +137,64 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
     <darts.explainability.explainability._ForecastingModelExplainer>` with convenient access to the horizon
     based results.
 
-    The result is a multivariate `TimeSeries` instance containing the 'explanation' for the (horizon, target_component)
-    forecast at any timestamp forecastable corresponding to the foreground `TimeSeries` input.
+    The result is a multivariate ``TimeSeries`` instance containing the "explanation" for the
+    ``(horizon, target_component)`` forecast at any timestamp forecastable in the foreground series.
 
-    The components of the returned multivariate ``TimeSeries`` correspond to the input features
-    used by the model to produce the forecasts. They are named according to the convention:
+
+    The components of the ``TimeSeries`` correspond to the input features used by the model to produce
+    the forecasts. They are named according to the convention:
     ``"{name}_{type_of_cov}_lag{idx}"``, where:
 
     - ``{name}`` is the component name from the original foreground series (target, past, or future).
     - ``{type_of_cov}`` is the covariates type. It can take 3 different values:
-        ``"target"``, ``"pastcov"``,  ``"futcov"``.
+      ``"target"``, ``"pastcov"``,  ``"futcov"``.
     - ``{idx}`` is the lag index.
 
-    If input features contain static covariates, they are named according to the convention:
-    ``"{name}_statcov_target_{comp}"``, where:
+    Static covariates are named according to the convention: ``"{name}_statcov_target_{comp}"``, where:
 
     - ``{name}`` is the variable name of the static covariate.
     - ``{comp}`` is the component name of the target series if static covariates are component-specific, or
-        `"global_components"` if they are global.
+      ``"global_components"`` if they are global.
 
     Examples
     --------
+    Say we have a ``SKLearnModel`` instance with:
 
-    Say we have a model with 2 target components named ``"T_0"`` and ``"T_1"``,
-    3 past covariates with default component names ``"0"``, ``"1"``, and ``"2"``,
-    and one future covariate with default component name ``"0"``.
-    Also, ``horizons = [1, 2]``.
-    The model is a `SKLearnModel`, with ``lags = 3``, ``lags_past_covariates=[-1, -3]``,
-    ``lags_future_covariates = [0]``.
+        - 2 target components named ``"T_0"`` and ``"T_1"``,
+        - 3 past covariates with default component names ``"P_0"``, ``"P_1"``, and ``"P_2"``,
+        - 1 future covariate with default component name ``"F_0"``,
+        - ``output_chunk_length=2``,
+        - ``lags = 3``, ``lags_past_covariates=[-1, -3]``, and ``lags_future_covariates = [0]``.
 
-    We provide `foreground_series`, `foreground_past_covariates`, `foreground_future_covariates` each of length 5.
+    We provide ``foreground_series``, ``foreground_past_covariates``, ``foreground_future_covariates`` (extending
+    far enough into the future) each of length 5.
 
     >>> explainer = SomeHorizonBasedExplainer(model)
     >>> explain_results = explainer.explain(
     >>>     foreground_series=foreground_series,
     >>>     foreground_past_covariates=foreground_past_covariates,
-    >>>     foreground_future_covariates=foreground_future_covariates,
-    >>>     horizons=[1, 2],
-    >>>     target_names=["T_0", "T_1"]
+    >>>     foreground_future_covariates=foreground_future_covariates
     >>> )
     >>> output = explain_results.get_explanation(horizon=1, target="T_1")
 
-    Then the method returns a multivariate TimeSeries containing the *explanations* of
+    Calling the ``get_explanation()`` method returns a multivariate TimeSeries containing the *explanations* of
     the corresponding `_ForecastingModelExplainer`, with the following component names:
 
-    - T_0_target_lag-1
-    - T_0_target_lag-2
-    - T_0_target_lag-3
-    - T_1_target_lag-1
-    - T_1_target_lag-2
-    - T_1_target_lag-3
-    - 0_pastcov_lag-1
-    - 0_pastcov_lag-3
-    - 1_pastcov_lag-1
-    - 1_pastcov_lag-3
-    - 2_pastcov_lag-1
-    - 2_pastcov_lag-3
-    - 0_futcov_lag0
+        - T_0_target_lag-1
+        - T_0_target_lag-2
+        - T_0_target_lag-3
+        - T_1_target_lag-1
+        - T_1_target_lag-2
+        - T_1_target_lag-3
+        - P_0_pastcov_lag-1
+        - P_0_pastcov_lag-3
+        - P_1_pastcov_lag-1
+        - P_1_pastcov_lag-3
+        - P_2_pastcov_lag-1
+        - P_2_pastcov_lag-3
+        - F_0_futcov_lag0
 
-    This series has length 3, as the model can explain 5-3+1 forecasts
-    (timestamp indexes 4, 5, and 6)
+    This series has length 3, as the model can explain 5-3+1 forecasts (timestamp indices 4, 5, and 6)
     """
 
     def __init__(
@@ -243,7 +241,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
         self, horizon: int, component: str | None = None
     ) -> TimeSeries | list[TimeSeries]:
         """
-        Returns one or several `TimeSeries` representing the explanations
+        Returns one or several ``TimeSeries`` representing the explanations
         for a given horizon and component.
 
         Parameters
@@ -341,21 +339,19 @@ class SHAPExplainabilityResult(HorizonBasedExplainabilityResult):
 
     It extends the :class:`HorizonBasedExplainabilityResult
     <HorizonBasedExplainabilityResult>` and carries additional information specific to the SHAP explainers.
-    In particular, in addition to the `explained_forecasts` (shap values), it also provides access to the
-    corresponding `feature_values` and the underlying `shap.Explanation` object.
 
-    - :func:`get_explanation() <SHAPExplainabilityResult.get_explanation>`: explained forecast for a given horizon
-      (and target component)
-    - :func:`get_feature_values() <SHAPExplainabilityResult.get_feature_values>`: feature values for a given horizon
-      (and target component).
-    - :func:`get_shap_explanation_object() <SHAPExplainabilityResult.get_shap_explanation_object>`: `shap.Explanation`
-      object for a given horizon (and target component).
+    - :func:`get_explanation() <get_explanation>`: SHAP values for a given horizon and component in
+      multivariate ``TimeSeries`` format.
+    - :func:`get_feature_values() <get_feature_values>`: input feature values for a given horizon and
+      component in multivariate ``TimeSeries`` format.
+    - :func:`get_shap_explanation_object() <get_shap_explanation_object>`: ``shap.Explanation`` object for a given
+      horizon and component.
 
     Examples
     --------
     >>> explainer = SKLearnExplainer(model)  # requires `background` if model was trained on multiple series
     >>> explain_results = explainer.explain()
-    >>> exlained_fc = explain_results.get_explanation(horizon=1)
+    >>> exlained_fc = explain_results.get_explanation(horizon=1) # requires `component` if target is multivariate
     >>> feature_values = explain_results.get_feature_values(horizon=1)
     >>> shap_objects = explain_results.get_shap_explanation_objects(horizon=1)
     """
@@ -377,7 +373,7 @@ class SHAPExplainabilityResult(HorizonBasedExplainabilityResult):
         self, horizon: int, component: str | None = None
     ) -> TimeSeries | list[TimeSeries]:
         """
-        Returns one or several `TimeSeries` representing the feature values
+        Returns one or several ``TimeSeries`` representing the feature values
         for a given horizon and component.
 
         Parameters
@@ -396,14 +392,14 @@ class SHAPExplainabilityResult(HorizonBasedExplainabilityResult):
         self, horizon: int, component: str | None = None
     ) -> shap.Explanation | list[shap.Explanation]:
         """
-        Returns the underlying `shap.Explanation` object for a given horizon and component.
+        Returns the underlying ``shap.Explanation`` object for a given horizon and component.
 
         Parameters
         ----------
         horizon
-            The horizon for which to return the `shap.Explanation` object.
+            The horizon for which to return the ``shap.Explanation`` object.
         component
-            The component for which to return the `shap.Explanation` object. Does not
+            The component for which to return the ``shap.Explanation`` object. Does not
             need to be specified for univariate series.
         """
         return self._query_explainability_result(
@@ -433,6 +429,14 @@ class SHAPSingleExplainabilityResult(ComponentBasedExplainabilityResult):
           single-timestamp multivariate ``TimeSeries`` format.
         - :func:`get_shap_explanation_object() <get_shap_explanation_object>`: ``shap.Explanation`` object for a given
           component.
+
+        Examples
+        --------
+        >>> explainer = SKLearnExplainer(model)  # requires `background` if model was trained on multiple series
+        >>> explain_results = explainer.explain_single()
+        >>> exlained_fc = explain_results.get_explanation() # requires `component` if target is multivariate
+        >>> feature_values = explain_results.get_feature_values()
+        >>> shap_objects = explain_results.get_shap_explanation_objects()
         """
         super().__init__(explained_components)
         self.feature_values = feature_values
