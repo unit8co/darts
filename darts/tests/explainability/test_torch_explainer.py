@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -18,6 +19,7 @@ from darts import TimeSeries
 from darts.explainability import TorchExplainer
 from darts.models import (
     BlockRNNModel,
+    Chronos2Model,
     DLinearModel,
     NBEATSModel,
     NeuralForecastModel,
@@ -31,6 +33,15 @@ N_PAST_COVARIATES = 3
 N_FUTURE_COVARIATES = 2
 N_TARGETS = 3
 
+chronos2_local_dir = (
+    Path(__file__).parent.parent
+    / "models"
+    / "forecasting"
+    / "artefacts"
+    / "chronos2"
+    / "tiny_chronos2"
+).absolute()
+
 ALL_MODELS = [
     (RNNModel, {"model": "LSTM"}),
     (BlockRNNModel, None),
@@ -39,6 +50,7 @@ ALL_MODELS = [
     (TiDEModel, {"hidden_size": 32}),
     (DLinearModel, None),
     (TSMixerModel, {"hidden_size": 16, "ff_size": 16}),
+    (Chronos2Model, {"local_dir": chronos2_local_dir}),
 ]
 
 if NF_AVAILABLE:
@@ -69,6 +81,9 @@ kwargs = {
 
 
 class TestSKLearnExplainer:
+    # set random seed
+    np.random.seed(42)
+
     X, Y = make_regression(
         n_samples=300,
         n_features=N_PAST_COVARIATES + N_FUTURE_COVARIATES,
