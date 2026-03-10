@@ -44,17 +44,22 @@ from enum import Enum
 from typing import NewType
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import shap
 from sklearn.multioutput import MultiOutputRegressor
 
 from darts import TimeSeries
 from darts.explainability.explainability import _ForecastingModelExplainer
-from darts.explainability.explainability_result import SHAPExplainabilityResult
+from darts.explainability.explainability_result import (
+    SHAPExplainabilityResult,
+    SHAPSingleExplainabilityResult,
+)
 from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
 from darts.utils.data.tabularization import create_lagged_prediction_data
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -367,6 +372,159 @@ class SKLearnExplainer(_ForecastingModelExplainer):
 
         return SHAPExplainabilityResult(
             shap_values_list, feature_values_list, shap_explanation_object_list
+        )
+
+    def explain_single(
+        self,
+        foreground_series: TimeSeries | None = None,
+        foreground_past_covariates: TimeSeries | None = None,
+        foreground_future_covariates: TimeSeries | None = None,
+        target_components: Sequence[str] | None = None,
+    ) -> SHAPSingleExplainabilityResult:
+        """
+        Explains a foreground time series forecast starting from one last forecastable timestamp and returns a
+        :class:`SHAPSingleExplainabilityResult
+        <darts.explainability.explainability_result.SHAPSingleExplainabilityResult>` of SHAP values.
+
+        The results can then be retrieved with method :func:`get_explanation()
+        <darts.explainability.explainability_result.SHAPSingleExplainabilityResult.get_explanation>`,
+        which returns a multivariate ``TimeSeries`` instance containing the SHAP values for ``target_component``
+        starting from the last forecastable timestamp.
+
+        The components of the ``TimeSeries`` correspond to the input features used by the model to produce
+        the forecast. See above for the naming convention.
+
+        Parameters
+        ----------
+        foreground_series
+            Optionally, one or a sequence of target ``TimeSeries`` to be explained. Can be multivariate.
+            If not provided, the background ``TimeSeries`` will be explained instead.
+        foreground_past_covariates
+            Optionally, one or a sequence of past covariates ``TimeSeries`` if required by the forecasting model.
+        foreground_future_covariates
+            Optionally, one or a sequence of future covariates ``TimeSeries`` if required by the forecasting model.
+        target_components
+            Optionally, a string or sequence of strings with the target components to explain.
+
+        Returns
+        -------
+        SHAPSingleExplainabilityResult
+            The forecast explanations of the specified target components for the single forecasted timestamp.
+
+        Examples
+        --------
+        Say we have a ``SKLearnModel`` instance with:
+
+          - 2 target components named ``"T_0"`` and ``"T_1"``,
+          - 3 past covariates with default component names ``"P_0"``, ``"P_1"``, and ``"P_2"``,
+          - 1 future covariate with default component name ``"F_0"``,
+          - ``output_chunk_length=2``,
+          - ``lags = 3``, ``lags_past_covariates=[-1, -3]``, and ``lags_future_covariates = [0]``.
+
+        We provide ``foreground_series``, ``foreground_past_covariates``, ``foreground_future_covariates`` (extending
+        far enough into the future) each of length 5.
+
+        >>> results = explainer.explain_single(
+        >>>     foreground_series=foreground_series,
+        >>>     foreground_past_covariates=foreground_past_covariates,
+        >>>     foreground_future_covariates=foreground_future_covariates)
+
+        Calling the method returns a ``SHAPSingleExplainabilityResult`` object containing the SHAP values,
+        feature values, and raw ``shap.Explanation`` objects for each target component at the single forecasted
+        timestamp (timestamp index 6 in our example, as it is the last forecastable).
+
+        >>> # Get SHAP values for forecasting "T_1" as a `TimeSeries`
+        >>> output = results.get_explanation(component="T_1")
+        >>> # Get feature values used for forecasting as a `TimeSeries`
+        >>> feature_values = results.get_feature_values(component="T_1")
+        >>> # Get the raw `shap.Explanation` object for further processing
+        >>> shap_objects = results.get_shap_explanation_object(component="T_1")
+
+        For SHAP and feature values, the components of the returned ``TimeSeries`` correspond to different lags of the
+        target and covariates (see convention above). In our example, the component names would be:
+
+             - T_0_target_lag-1
+             - T_0_target_lag-2
+             - T_0_target_lag-3
+             - T_1_target_lag-1
+             - T_1_target_lag-2
+             - T_1_target_lag-3
+             - P_0_pastcov_lag-1
+             - P_0_pastcov_lag-2
+             - P_0_pastcov_lag-3
+             - P_1_pastcov_lag-1
+             - P_1_pastcov_lag-2
+             - P_1_pastcov_lag-3
+             - P_2_pastcov_lag-1
+             - P_2_pastcov_lag-2
+             - P_2_pastcov_lag-3
+             - F_0_futcov_lag0
+             - F_0_futcov_lag1
+
+        The SHAP value ``TimeSeries`` has length ``output_chunk_length=2``, as the model predicts that many timestamps
+        in the future. The feature value ``TimeSeries`` has length 1, as it corresponds to the single forecasted
+        timestamp explained.
+        """
+        (
+            foreground_series_,
+            foreground_past_covariates_,
+            foreground_future_covariates_,
+            _,
+            _,
+            _,
+            _,
+        ) = self._process_foreground(
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
+        )
+        _, target_names = self._process_horizons_and_targets(None, target_components)
+
+        foreground_X = self.explainers._create_regression_model_shap_X(
+            foreground_series_,
+            foreground_past_covariates_,
+            foreground_future_covariates_,
+            train=False,
+        )
+
+        # explain only the last forecasted timestamp
+        foreground_X = foreground_X[-1:]
+
+        shap_ = self.explainers.shap_explanations_single(foreground_X, target_names)
+
+        freq = foreground_series_[0].freq
+        prediction_time = (
+            foreground_X.index[-1] + (self.model.output_chunk_shift) * freq
+        )
+
+        shap_values_dict = {}
+        feature_values_dict = {}
+        shap_explanation_object_dict = {}
+        for t in target_names:
+            shap_values_dict[t] = TimeSeries(
+                times=generate_index(
+                    start=prediction_time,
+                    freq=freq,
+                    length=self.n,
+                ),
+                values=shap_[t].values,
+                components=shap_[t].feature_names,
+            )
+            feature_values_dict[t] = TimeSeries(
+                times=generate_index(
+                    start=prediction_time,
+                    freq=freq,
+                    length=1,
+                ),
+                values=shap_[t].data[:1],
+                components=shap_[t].feature_names,
+            )
+            shap_explanation_object_dict[t] = shap_[t]
+
+        return SHAPSingleExplainabilityResult(
+            shap_values_dict,
+            feature_values_dict,
+            shap_explanation_object_dict,
         )
 
     def summary_plot(
@@ -712,6 +870,75 @@ class _RegressionSHAPExplainers:
                     tmp_t.time_index = foreground_X.index
                     tmp_n[t] = tmp_t
                 shap_explanations[h] = tmp_n
+
+        return shap_explanations
+
+    def shap_explanations_single(
+        self,
+        foreground_X: pd.DataFrame,
+        target_components: Sequence[str],
+    ) -> dict[str, shap.Explanation]:
+        """
+        Return a dictionary of dictionaries of shap.Explanation instances:
+        - the first dimension corresponds to the n forecasts ahead we want to explain (Horizon).
+        - the second dimension corresponds to each component of the target time series.
+        Parameters
+        ----------
+        foreground_X
+            the Dataframe of lags features specific of darts SKLearnModel.
+        target_components
+            A list of strings with the target components we want to explain.
+        """
+        # create a unified dictionary {target_component : shap.Explanation}
+        # between multiOutputRegressor estimators and native multiOutput estimators
+        shap_explanations = {}
+        if isinstance(self.explainers, dict):
+            for t_idx, t in enumerate(self.target_components):
+                if t not in target_components:
+                    continue
+                shap_values_list, shap_data_list, base_values_list = [], [], []
+                feature_names = None
+                for h in range(1, self.n + 1):
+                    sub_explanation = self.explainers[h - 1][t_idx](foreground_X)
+                    shap_values_list.append(sub_explanation.values.ravel())
+                    shap_data_list.append(sub_explanation.data.ravel())
+                    base_values_list.append(sub_explanation.base_values.ravel())
+                    if feature_names is None:
+                        feature_names = sub_explanation.feature_names
+                shap_values = np.array(shap_values_list)
+                shap_data = np.array(shap_data_list)
+                base_values = np.array(base_values_list).ravel()
+                shap_explanations[t] = shap.Explanation(
+                    values=shap_values,
+                    data=shap_data,
+                    base_values=base_values,
+                    feature_names=feature_names,
+                )
+        else:
+            # the native multioutput forces us to recompute all horizons and targets
+            shap_explanation_tmp = self.explainers(foreground_X)
+            shap_values: np.ndarray = shap_explanation_tmp.values
+            shap_data: np.ndarray = shap_explanation_tmp.data
+            base_values: np.ndarray = shap_explanation_tmp.base_values
+            feature_names = shap_explanation_tmp.feature_names
+            for t_idx, t in enumerate(self.target_components):
+                if t not in target_components:
+                    continue
+                if not self.single_output:
+                    tmp_t = shap.Explanation(
+                        values=shap_values[0, :, t_idx :: self.target_dim].T,
+                        data=np.repeat(shap_data, self.n, axis=0),
+                        base_values=base_values[:, t_idx :: self.target_dim].ravel(),
+                        feature_names=feature_names,
+                    )
+                else:
+                    tmp_t = shap.Explanation(
+                        values=shap_values.reshape(1, -1),
+                        data=shap_data,
+                        base_values=base_values.ravel(),
+                        feature_names=feature_names,
+                    )
+                shap_explanations[t] = tmp_t
 
         return shap_explanations
 

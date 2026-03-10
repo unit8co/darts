@@ -710,6 +710,7 @@ class TorchExplainer(_ForecastingModelExplainer):
 
 
 class _DeepSHAPExplainer:
+    # TODO: add docstring
     n_targets: int
 
     def __init__(
