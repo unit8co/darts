@@ -496,9 +496,10 @@ class TorchExplainer(_ForecastingModelExplainer):
             The single forecast explained by this method should be equivalent to the one obtained by calling
             ``model.predict(n=output_chunk_length)`` when foreground data is provided. However, the "equivalent"
             forecast is temporally backshifted by ``output_chunk_length`` when the model uses future covariates
-            AND both foreground and background data are not provided. That is because the explainer uses training
+            AND both foreground and background data are not provided. In this case, the explainer would use training
             data as reference, whose future covariates were trimmed to match the target series during training.
-            Using trimmed future covariates as reference leads to a backshifted forecast.
+            As a result, the forecast explained would be backshifted to the last timestamp when future covariates are
+            known.
         """
         fallback = foreground_series is None
         (
@@ -759,6 +760,11 @@ class _DeepSHAPExplainer:
         batch_size: int | None = None,
         **kwargs,
     ):
+        """
+        Helper class to wrap the SHAP explainer and its interaction with the torch forecasting model.
+        It is initialized with the model and the background data, and provides methods to create SHAP arrays and
+        compute SHAP explanations for given foreground data.
+        """
         self.model = model
 
         self.target_components = target_components
@@ -813,6 +819,10 @@ class _DeepSHAPExplainer:
         model: PLForecastingModule,
         batch_size: int,
     ):
+        """
+        Sets up the parameters for the function wrapper that will be passed to the SHAP explainer.
+        See :func:`_func_wrapper()` for details on the wrapper function.
+        """
         self.pl_module = model
         self.n_past_covs = (
             self.background_past_covariates[0].n_components
@@ -841,6 +851,10 @@ class _DeepSHAPExplainer:
         self.batch_size = batch_size
 
     def _build_feature_names(self):
+        """
+        Builds the feature names for the SHAP explanations based on the input features used by the
+        torch forecasting model. See above for the naming convention.
+        """
         self.feature_names = []
         for i in range(self.input_chunk_length):
             lag = self.input_chunk_length - i
@@ -872,6 +886,32 @@ class _DeepSHAPExplainer:
 
     @torch.inference_mode()
     def _func_wrapper(self, x_np: np.ndarray) -> np.ndarray:
+        """
+        Wrapper function to adapt the SHAP explainer to the torch forecasting model. It takes as input a numpy array
+        of shape `(num_samples, num_features)` and outputs a numpy array of shape
+        `(num_samples, output_chunk_length * n_targets_likelihood)`.
+
+        Internally, it does the following steps:
+        1. Reshape the input numpy array into the format expected by the torch forecasting model, separating past
+           covariates, future covariates, and static covariates based on the slices defined
+           in :func:`_setup_func_wrapper()`.
+        2. If the model is an RNN, handle the special case where future covariates are concatenated to
+           past covariates with a shift in time dimension.
+        3. Pass the reshaped inputs to the model in batches and collect the outputs.
+        4. Concatenate the outputs and reshape them into the expected output format for SHAP, which is a 2D array where
+           each column corresponds to a target component at a specific horizon.
+
+        Parameters
+        ----------
+        x_np
+            A numpy array of shape `(num_samples, num_features)` containing the input features for SHAP explanations.
+
+        Returns
+        -------
+        np.ndarray
+            A numpy array of shape `(num_samples, output_chunk_length * n_targets_likelihood)` containing the model
+            predictions for each target component at each horizon, to be used by the SHAP explainer.
+        """
         x = torch.from_numpy(x_np).float()
         num_samples = x.shape[0]
 
@@ -946,9 +986,9 @@ class _DeepSHAPExplainer:
 
             outputs.append(batch_output)
 
-        output = torch.cat(outputs, dim=0)
         # `output`: (batch, output_chunk_length, n_targets, likelihood_parameters)
-        # remove last dimension of likelihood parameters
+        output = torch.cat(outputs, dim=0)
+        # flatten the output to shape (batch, output_chunk_length * n_targets_likelihood)
         output = output.flatten(start_dim=1)
 
         return output.cpu().numpy()
@@ -960,6 +1000,20 @@ class _DeepSHAPExplainer:
         shap_method: _SHAPMethod,
         **kwargs,
     ):
+        """
+        Builds the SHAP explainer based on the specified SHAP method.
+
+        Parameters
+        ----------
+        func
+            The function wrapper that takes a numpy array of input features and outputs model predictions, to be passed
+            to the SHAP explainer.
+        background_X
+            The background dataset in the form of a numpy array, to be passed to the SHAP explainer.
+        shap_method
+            The SHAP method to use for explanations. Must be one of the methods available in the SHAP library,
+            specified in the enum ``_SHAPMethod``.
+        """
         # we define properly the explainer given a shap method
         # Note: DeepExplainer has some compatibility issues with torch models
         if shap_method == _SHAPMethod.PERMUTATION:
@@ -990,6 +1044,31 @@ class _DeepSHAPExplainer:
         horizons: Sequence[int],
         target_components: Sequence[str],
     ) -> dict[int, dict[str, shap.Explanation]]:
+        """
+        Computes SHAP explanations for the given foreground data, horizons, and target components.
+        It returns a nested dictionary of SHAP Explanation objects for each horizon and target component, where the SHAP
+        values are extracted from the raw Explanation object returned by the SHAP explainer and reshaped
+        into the expected format for easier accessibility.
+
+        Parameters
+        ----------
+        foreground_X
+            A numpy array of shape `(num_samples, num_features)` containing the input features for SHAP explanations.
+        horizons
+            A sequence of integers representing which points/steps in the future to explain, starting from the first
+            prediction step at 1. Each horizon must be no greater than ``output_chunk_length`` of the explained
+            forecasting model.
+        target_components
+            A sequence of strings with the target components to explain. Each component must be among the target
+            components of the explained forecasting model.
+
+        Returns
+        -------
+        dict[int, dict[str, shap.Explanation]]
+            A nested dictionary ``{horizon : {target_component : shap.Explanation}}`` containing the SHAP Explanation
+            objects for each horizon and target component, where the SHAP values are extracted and reshaped for
+            easier accessibility.
+        """
         shap_explanation_tmp: shap.Explanation = self.explainer(foreground_X)
         shap_values: np.ndarray = shap_explanation_tmp.values
         shap_data: np.ndarray = shap_explanation_tmp.data
@@ -1023,6 +1102,27 @@ class _DeepSHAPExplainer:
         foreground_X: np.ndarray,
         target_components: Sequence[str],
     ) -> dict[str, shap.Explanation]:
+        """
+        Similar to :func:`shap_explanations()`, but computes SHAP explanations for only one forecasted timestamp, which
+        corresponds to the last forecastable timestamp in the foreground series. The output is a dictionary of SHAP
+        Explanation objects for each target component, where the SHAP values are extracted from the raw Explanation
+        object returned by the SHAP explainer and reshaped into the expected format for easier accessibility.
+
+        Parameters
+        ----------
+        foreground_X
+            A numpy array of shape `(1, num_features)` containing the input features for SHAP explanations for the
+            single forecasted timestamp. Must have only one sample corresponding to the single forecasted timestamp.
+        target_components
+            A sequence of strings with the target components to explain. Each component must be among the target
+            components of the explained forecasting model.
+
+        Returns
+        -------
+        dict[str, shap.Explanation]
+            A dictionary ``{target_component : shap.Explanation}`` containing the SHAP Explanation objects for each
+            target component, where the SHAP values are extracted and reshaped for easier accessibility.
+        """
         shap_explanation_tmp: shap.Explanation = self.explainer(foreground_X)
         shap_values: np.ndarray = shap_explanation_tmp.values
         shap_data: np.ndarray = shap_explanation_tmp.data
@@ -1055,12 +1155,21 @@ class _DeepSHAPExplainer:
         series: Sequence[TimeSeries],
         train: bool,
     ) -> np.ndarray:
+        """
+        Creates the bounds for the inference dataset based on the input series and whether it is for training or not.
+        """
         offset = self.output_chunk_length if train else 0
         bounds = np.array([(self.input_chunk_length, len(s) - offset) for s in series])
         return bounds
 
     @staticmethod
     def _batch_collate_np(batch: list[tuple], indices: list[int]) -> np.ndarray | None:
+        """
+        Collates a batch of samples from the inference dataset into a numpy array for SHAP explanations,
+        based on the specified indices for past covariates, future covariates, and static covariates.
+        It handles the case where some samples in the batch may have None values for certain inputs,
+        by skipping those samples when collating.
+        """
         data = []
         for index in indices:
             if batch[0][index] is None:
@@ -1081,6 +1190,29 @@ class _DeepSHAPExplainer:
         n_samples: int | None = None,
         train: bool = False,
     ) -> tuple[np.ndarray, list[dict[str, Any]], pd.Index]:
+        """
+        Creates the SHAP array for the given input series and covariates, by following the logic of the torch
+        forecasting model's inference dataset and prediction step. It returns the SHAP array, the schemas of the
+        samples, and the prediction times corresponding to each sample in the SHAP array.
+
+        Parameters
+        ----------
+        series
+            A sequence of target series to be explained. Can be a single TimeSeries or a sequence of TimeSeries.
+        past_covariates
+            Optionally, a sequence of past covariate series if required by the forecasting model. Can be a single
+            TimeSeries or a sequence of TimeSeries. Must be provided if the model uses past covariates.
+        future_covariates
+            Optionally, a sequence of future covariate series if required by the forecasting model. Can be a single
+            TimeSeries or a sequence of TimeSeries. Must be provided if the model uses future covariates.
+        n_samples
+            Optionally, an integer for sampling the dataset for the sake of performance. If ``train=True``,
+            the samples will be randomly drawn from the dataset. If ``train=False``, the last ``n_samples`` samples
+            will be taken from the dataset. Default: ``None``, which means that all samples in the dataset will be used.
+        train
+            A boolean indicating whether the SHAP array is being created for training (background) data or for
+            foreground data. This affects how the dataset is sampled and how the bounds are created. Default: ``False``.
+        """
         # convert to sequence of TimeSeries if not already
         series_: Sequence[TimeSeries] = series2seq(series)
         past_covariates_: Sequence[TimeSeries] | None = series2seq(past_covariates)
@@ -1121,6 +1253,15 @@ class _DeepSHAPExplainer:
                     f"Sampling {MAX_BACKGROUND_SAMPLE} samples to create the background for SHAP explanations."
                 )
                 n_samples = MAX_BACKGROUND_SAMPLE
+        else:
+            if n_samples > len(dataset):
+                raise_log(
+                    ValueError(
+                        f"`n_samples` must be less than or equal to the number of samples in the dataset. "
+                        f"Got `n_samples={n_samples}` but dataset length={len(dataset)}."
+                    ),
+                    logger,
+                )
 
         # follow the logic of `TorchForecastingModel.predict_from_dataset()`
         # to collect samples and collate them into a sample tuple

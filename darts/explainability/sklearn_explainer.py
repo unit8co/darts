@@ -476,9 +476,10 @@ class SKLearnExplainer(_ForecastingModelExplainer):
             The single forecast explained by this method should be equivalent to the one obtained by calling
             ``model.predict(n=output_chunk_length)`` when foreground data is provided. However, the "equivalent"
             forecast is temporally backshifted by ``output_chunk_length`` when the model uses future covariates
-            AND both foreground and background data are not provided. That is because the explainer uses training
+            AND both foreground and background data are not provided. In this case, the explainer would use training
             data as reference, whose future covariates were trimmed to match the target series during training.
-            Using trimmed future covariates as reference leads to a backshifted forecast.
+            As a result, the forecast explained would be backshifted to the last timestamp when future covariates are
+            known.
         """
         (
             foreground_series_,
