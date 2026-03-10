@@ -3,8 +3,9 @@ SHAP Explainer for SKLearn Models
 ---------------------------------
 
 A `SHAP <https://github.com/slundberg/shap>`__ explainer for Darts ``SKLearnModel`` instances.
-It computes SHAP values, which measure each input feature's contribution to a prediction relative to a
-baseline (average prediction).
+
+:class:`SKLearnExplainer` computes SHAP values, which measure each input feature's contribution to a prediction
+relative to a baseline (average prediction).
 
 Depending on the model and training data, features can include:
 
@@ -31,11 +32,16 @@ Depending on the model and training data, features can include:
 .. note::
    SHAP uses a feature-independence assumption. Indirect effects between features are not captured.
 
+:class:`SKLearnExplainer` provides the following methods for explaining forecasts in batches:
+
 - :func:`explain() <SKLearnExplainer.explain>` computes SHAP values per forecast horizon and target component.
 - :func:`summary_plot() <SKLearnExplainer.summary_plot>` shows SHAP value distributions by feature.
 - :func:`force_plot() <SKLearnExplainer.force_plot>` shows additive SHAP contributions for one target and horizon.
 
-All methods can use optional foreground data to explain forecasts, with background data as reference.
+:class:`SKLearnExplainer` also provides :func:`explain_single() <SKLearnExplainer.explain_single>` for explaining
+a single forecast (equivalent to calling ``model.predict(n=output_chunk_length)``).
+
+All above methods can use optional foreground data to explain forecasts, with background data as reference.
 If foreground data is not provided, background data is used for both.
 """
 
@@ -464,6 +470,14 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         The SHAP value ``TimeSeries`` has length ``output_chunk_length=2``, as the model predicts that many timestamps
         in the future. The feature value ``TimeSeries`` has length 1, as it corresponds to the single forecasted
         timestamp explained.
+
+        .. note::
+            The single forecast explained by this method should be equivalent to the one obtained by calling
+            ``model.predict(n=output_chunk_length)`` when foreground data is provided. However, the "equivalent"
+            forecast is temporally backshifted by ``output_chunk_length`` when the model uses future covariates
+            AND both foreground and background data are not provided. That is because the explainer uses training
+            data as reference, whose future covariates were trimmed to match the target series during training.
+            Using trimmed future covariates as reference leads to a backshifted forecast.
         """
         (
             foreground_series_,

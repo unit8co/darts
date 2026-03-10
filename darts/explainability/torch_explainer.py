@@ -3,8 +3,9 @@ SHAP Explainer for Torch Models
 -------------------------------
 
 A `SHAP <https://github.com/slundberg/shap>`__ explainer for Darts ``TorchForecastingModel`` instances.
-It computes SHAP values, which measure each input feature's contribution to a prediction relative to a
-baseline (average prediction).
+
+:class:`TorchExplainer` computes SHAP values, which measure each input feature's contribution to a prediction
+relative to a baseline (average prediction).
 
 Depending on the model and training data, features can include:
 
@@ -14,13 +15,33 @@ Depending on the model and training data, features can include:
 - static covariates (global or component-specific).
 
 .. note::
+    Input features except static covariates are named according to the convention:
+    ``"{name}_{type_of_cov}_lag{idx}"``, where:
+
+    - ``{name}`` is the component name from the original foreground series (target, past, or future).
+    - ``{type_of_cov}`` is the covariates type. It can take 3 different values:
+      ``"target"``, ``"pastcov"``,  ``"futcov"``.
+    - ``{idx}`` is the lag index.
+
+    Static covariates are named according to the convention: ``"{name}_statcov_target_{comp}"``, where:
+
+    - ``{name}`` is the variable name of the static covariate.
+    - ``{comp}`` is the component name of the target series if static covariates are component-specific, or
+      ``"global_components"`` if they are global.
+
+.. note::
    SHAP uses a feature-independence assumption. Indirect effects between features are not captured.
+
+:class:`TorchExplainer` provides the following methods for explaining forecasts in batches:
 
 - :func:`explain() <TorchExplainer.explain>` computes SHAP values per forecast horizon and target component.
 - :func:`summary_plot() <TorchExplainer.summary_plot>` shows SHAP value distributions by feature.
 - :func:`force_plot() <TorchExplainer.force_plot>` shows additive SHAP contributions for one target and horizon.
 
-All methods can use optional foreground data to explain forecasts, with background data as reference.
+:class:`TorchExplainer` also provides :func:`explain_single() <TorchExplainer.explain_single>` for explaining
+a single forecast (equivalent to calling ``model.predict(n=output_chunk_length)``).
+
+All above methods can use optional foreground data to explain forecasts, with background data as reference.
 If foreground data is not provided, background data is used for both.
 """
 
@@ -469,6 +490,14 @@ class TorchExplainer(_ForecastingModelExplainer):
         The SHAP value ``TimeSeries`` has length ``output_chunk_length=2``, as the model predicts that many timestamps
         in the future. The feature value ``TimeSeries`` has length 1, as it corresponds to the single forecasted
         timestamp explained.
+
+        .. note::
+            The single forecast explained by this method should be equivalent to the one obtained by calling
+            ``model.predict(n=output_chunk_length)`` when foreground data is provided. However, the "equivalent"
+            forecast is temporally backshifted by ``output_chunk_length`` when the model uses future covariates
+            AND both foreground and background data are not provided. That is because the explainer uses training
+            data as reference, whose future covariates were trimmed to match the target series during training.
+            Using trimmed future covariates as reference leads to a backshifted forecast.
         """
         fallback = foreground_series is None
         (
