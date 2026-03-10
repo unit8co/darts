@@ -41,8 +41,9 @@ Depending on the model and training data, features can include:
 :class:`TorchExplainer` also provides :func:`explain_single() <TorchExplainer.explain_single>` for explaining
 a single forecast (equivalent to calling ``model.predict(n=output_chunk_length)``).
 
-All above methods can use optional foreground data to explain forecasts, with background data as reference.
-If foreground data is not provided, background data is used for both.
+.. note::
+    All above methods can use optional foreground data to explain forecasts, with background data as reference.
+    If foreground data is not provided, background data is used for both.
 """
 
 from collections.abc import Sequence

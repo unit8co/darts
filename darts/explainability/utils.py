@@ -112,7 +112,7 @@ def process_input(
                 else "no `background_series` was provided at `Explainer` creation"
             )
             raise_log(
-                ValueError(f"`{input_type}_series` must be provided {error_msg}"),
+                ValueError(f"`{input_type}_series` must be provided when {error_msg}"),
                 logger,
             )
         series = fallback_series
