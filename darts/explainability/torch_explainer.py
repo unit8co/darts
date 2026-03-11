@@ -352,7 +352,7 @@ class TorchExplainer(_ForecastingModelExplainer):
             if foreground_future_covariates:
                 foreground_future_cov_ts = foreground_future_covariates[idx]
 
-            foreground_X, prediction_times = self.explainer.create_shap_array(
+            foreground_X, _, prediction_times = self.explainer.create_shap_array(
                 foreground_ts,
                 foreground_past_cov_ts,
                 foreground_future_cov_ts,
