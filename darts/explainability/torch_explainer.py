@@ -741,7 +741,6 @@ class TorchExplainer(_ForecastingModelExplainer):
 
 
 class _DeepSHAPExplainer:
-    # TODO: add docstring
     n_targets: int
 
     def __init__(
@@ -1013,6 +1012,8 @@ class _DeepSHAPExplainer:
         shap_method
             The SHAP method to use for explanations. Must be one of the methods available in the SHAP library,
             specified in the enum ``_SHAPMethod``.
+        **kwargs
+            Additional keyword arguments to be passed to the SHAP explainer constructor.
         """
         # we define properly the explainer given a shap method
         # Note: DeepExplainer has some compatibility issues with torch models

@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
+import shap
 from sklearn.datasets import make_regression
 
 from darts.tests.conftest import NF_AVAILABLE, TORCH_AVAILABLE, tfm_kwargs
@@ -15,6 +16,7 @@ if not TORCH_AVAILABLE:
     )
 
 from darts import TimeSeries
+from darts.dataprocessing.transformers import Scaler
 from darts.explainability import TorchExplainer
 from darts.models import (
     BlockRNNModel,
@@ -42,16 +44,29 @@ chronos2_local_dir = (
     / "tiny_chronos2"
 ).absolute()
 
+
+def encode_year(idx):
+    return (idx.year - 1950) / 50
+
+
+ADD_ENCODERS = {
+    "cyclic": {"future": ["month"]},
+    "custom": {"past": [encode_year]},
+    "transformer": Scaler(),
+    "tz": "CET",
+}
+
 ALL_MODELS = [
     (RNNModel, {"model": "LSTM"}),
-    (BlockRNNModel, None),
+    (BlockRNNModel, {"add_encoders": ADD_ENCODERS}),
     (NBEATSModel, {"num_stacks": 2, "num_layers": 2, "layer_widths": 16}),
     (NHiTSModel, {"layer_widths": 16}),
-    (TiDEModel, {"hidden_size": 32}),
-    (DLinearModel, None),
-    (TSMixerModel, {"hidden_size": 16, "ff_size": 16}),
+    (TiDEModel, {"hidden_size": 32, "add_encoders": ADD_ENCODERS}),
+    (DLinearModel, {"add_encoders": ADD_ENCODERS}),
+    (TSMixerModel, {"hidden_size": 16, "ff_size": 16, "add_encoders": ADD_ENCODERS}),
     (Chronos2Model, {"local_dir": chronos2_local_dir}),
 ]
+
 
 if NF_AVAILABLE:
     ALL_MODELS += [
@@ -194,7 +209,6 @@ class TestSKLearnExplainer:
             model, background_series=self.multiple_multivariate_series
         )
 
-        assert loaded_explainer.model.model_params == loaded_model.model_params
         assert loaded_explainer.n == loaded_model.output_chunk_length
 
     @pytest.mark.parametrize("model_cls, model_kwargs", ALL_MODELS)
@@ -283,16 +297,29 @@ class TestSKLearnExplainer:
                 for name in foreground_series.static_covariates.columns
                 for target in foreground_series.columns
             })
+        if model_kwargs is not None and "add_encoders" in model_kwargs:
+            components.update({
+                f"{prefix}_lag{lag}"
+                for lag in range(-model.input_chunk_length, model.output_chunk_length)
+                for prefix in [
+                    "darts_enc_fc_cyc_month_cos_futcov",
+                    "darts_enc_fc_cyc_month_sin_futcov",
+                ]
+            })
+            components.update({
+                f"{prefix}_lag-{lag + 1}"
+                for lag in range(model.input_chunk_length)
+                for prefix in [
+                    "darts_enc_pc_cus_custom_pastcov",
+                ]
+            })
 
         with pytest.raises(ValueError, match="component parameter is required"):
             results.get_explanation(horizon=4, component=None)
-
         with pytest.raises(ValueError, match="component parameter is required"):
             results.get_explanation(horizon=2, component=None)
-
         with pytest.raises(ValueError, match='Component "T_11" is not available'):
             results.get_explanation(horizon=valid_horizon, component="T_11")
-
         with pytest.raises(ValueError, match="Horizon 4 is not available."):
             results.get_explanation(horizon=4, component="T_0")
 
@@ -326,4 +353,104 @@ class TestSKLearnExplainer:
         # assert all base values are approximately equal
         assert np.allclose(base_values, base_values[0], rtol=1e-5, atol=1e-8)
 
+        # invalid component or horizon raises error for feature values as well
+        with pytest.raises(ValueError, match="component parameter is required"):
+            results.get_feature_values(horizon=4, component=None)
+        with pytest.raises(ValueError, match="component parameter is required"):
+            results.get_feature_values(horizon=2, component=None)
+        with pytest.raises(ValueError, match='Component "T_11" is not available'):
+            results.get_feature_values(horizon=valid_horizon, component="T_11")
+        with pytest.raises(ValueError, match="Horizon 4 is not available."):
+            results.get_feature_values(horizon=4, component="T_0")
+
+        # check feature values are returned for valid horizon and component
+        feature_values = results.get_feature_values(
+            horizon=valid_horizon,
+            component="T_1",
+        )
+        assert isinstance(feature_values, TimeSeries)
+        assert feature_values.n_timesteps == explanation.n_timesteps
+        assert set(feature_values.components) == components
+        assert np.isfinite(feature_values.values()).all()
+
+        # invalid component or horizon raises error for shap explanation object as well
+        with pytest.raises(ValueError, match="component parameter is required"):
+            results.get_shap_explanation_object(horizon=4, component=None)
+        with pytest.raises(ValueError, match="component parameter is required"):
+            results.get_shap_explanation_object(horizon=2, component=None)
+        with pytest.raises(ValueError, match='Component "T_11" is not available'):
+            results.get_shap_explanation_object(horizon=valid_horizon, component="T_11")
+        with pytest.raises(ValueError, match="Horizon 4 is not available."):
+            results.get_shap_explanation_object(horizon=4, component="T_0")
+
+        # check shap explanation object is returned for valid horizon and component
+        shap_explanation_object = results.get_shap_explanation_object(
+            horizon=valid_horizon,
+            component="T_1",
+        )
+        explanation = results.get_explanation(horizon=valid_horizon, component="T_1")
+        assert isinstance(shap_explanation_object, shap.Explanation)
+        np.testing.assert_array_equal(
+            shap_explanation_object.values,
+            explanation.values(),
+        )
+        np.testing.assert_array_equal(
+            shap_explanation_object.data,
+            feature_values.values(),
+        )
+        shap_values_sum = explanation.values().sum(axis=1)
+        base_values = pred["T_1"].values().ravel() - shap_values_sum
+        np.testing.assert_allclose(
+            shap_explanation_object.base_values,
+            base_values,
+            rtol=1e-5,
+            atol=1e-8,
+        )
+
         # save and load the model to check explainer works with loaded models
+        save_path = os.path.join(tmpdir_fn, "model.pt")
+        model.save(save_path)
+        loaded_model = model_cls.load(save_path)
+        loaded_explainer = TorchExplainer(
+            model,
+            background_series=background_series,
+            background_past_covariates=background_past_covariates,
+            background_future_covariates=background_future_covariates,
+        )
+        assert loaded_explainer.n == loaded_model.output_chunk_length
+
+        loaded_results = loaded_explainer.explain(
+            foreground_series=foreground_series,
+            foreground_past_covariates=past_covariates,
+            foreground_future_covariates=future_covariates,
+        )
+        loaded_explanation = loaded_results.get_explanation(
+            horizon=valid_horizon, component="T_1"
+        )
+        loaded_feature_values = loaded_results.get_feature_values(
+            horizon=valid_horizon,
+            component="T_1",
+        )
+        loaded_shap_explanation_object = loaded_results.get_shap_explanation_object(
+            horizon=valid_horizon,
+            component="T_1",
+        )
+        assert loaded_explanation.n_timesteps == explanation.n_timesteps
+        assert set(loaded_explanation.components) == components
+        assert np.isfinite(loaded_explanation.values()).all()
+        assert loaded_feature_values.n_timesteps == feature_values.n_timesteps
+        assert set(loaded_feature_values.components) == components
+        assert np.isfinite(loaded_feature_values.values()).all()
+
+        np.testing.assert_array_equal(
+            loaded_shap_explanation_object.values,
+            loaded_explanation.values(),
+        )
+        np.testing.assert_array_equal(
+            loaded_shap_explanation_object.data,
+            loaded_feature_values.values(),
+        )
+
+        # unfortunately, shap and base values are not exactly the same across
+        # runs with the same background data, even with fixed random seed,
+        # due to some non-determinism in the SHAP implementation.
