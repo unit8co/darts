@@ -23,7 +23,6 @@ from darts.models import (
     Chronos2Model,
     DLinearModel,
     NBEATSModel,
-    NeuralForecastModel,
     NHiTSModel,
     RNNModel,
     TiDEModel,
@@ -64,11 +63,13 @@ ALL_MODELS = [
     (TiDEModel, {"hidden_size": 32, "add_encoders": ADD_ENCODERS}),
     (DLinearModel, {"add_encoders": ADD_ENCODERS}),
     (TSMixerModel, {"hidden_size": 16, "ff_size": 16, "add_encoders": ADD_ENCODERS}),
-    (Chronos2Model, {"local_dir": chronos2_local_dir}),
+    (Chronos2Model, {"local_dir": chronos2_local_dir, "batch_size": 4}),
 ]
 
 
 if NF_AVAILABLE:
+    from darts.models import NeuralForecastModel
+
     ALL_MODELS += [
         (
             NeuralForecastModel,
@@ -79,7 +80,9 @@ if NF_AVAILABLE:
             {
                 "model": "PatchTST",
                 "model_kwargs": {
+                    "encoder_layers": 1,
                     "patch_len": 3,
+                    "stride": 3,
                     "n_heads": 4,
                     "hidden_size": 16,
                     "linear_hidden_size": 32,
@@ -389,6 +392,7 @@ class TestSKLearnExplainer:
             component="T_1",
         )
         explanation = results.get_explanation(horizon=valid_horizon, component="T_1")
+        assert isinstance(explanation, TimeSeries)
         assert isinstance(shap_explanation_object, shap.Explanation)
         np.testing.assert_array_equal(
             shap_explanation_object.values,
@@ -435,12 +439,15 @@ class TestSKLearnExplainer:
             horizon=valid_horizon,
             component="T_1",
         )
+        assert isinstance(loaded_explanation, TimeSeries)
         assert loaded_explanation.n_timesteps == explanation.n_timesteps
         assert set(loaded_explanation.components) == components
         assert np.isfinite(loaded_explanation.values()).all()
+        assert isinstance(loaded_feature_values, TimeSeries)
         assert loaded_feature_values.n_timesteps == feature_values.n_timesteps
         assert set(loaded_feature_values.components) == components
         assert np.isfinite(loaded_feature_values.values()).all()
+        assert isinstance(loaded_shap_explanation_object, shap.Explanation)
 
         np.testing.assert_array_equal(
             loaded_shap_explanation_object.values,
