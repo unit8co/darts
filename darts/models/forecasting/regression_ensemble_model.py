@@ -245,7 +245,7 @@ class RegressionEnsembleModel(EnsembleModel):
             # - if yes -> pass
             # - if any of the generated forecasts are shorter than train_n_points -> truncate all and raise warning
 
-            if model.output_chunk_length % train_n_points != 0:
+            if model.output_chunk_length % train_n_points != 0 or n_ocl_back == 0:
                 n_ocl_back += 1
 
             start_hist_forecasts = n_ocl_back * model.output_chunk_length
