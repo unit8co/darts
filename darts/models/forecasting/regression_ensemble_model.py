@@ -118,30 +118,23 @@ class RegressionEnsembleModel(EnsembleModel):
             "All the base forecasting models must have the same `output_chunk_shift`",
         )
         output_chunk_shift = shifts[0] if shifts[0] else 0
-        output_chunk_lengths = [
-            model.output_chunk_length
-            for model in forecasting_models
-            if model.output_chunk_length is not None
-        ]
-        if len(set(output_chunk_lengths)) > 1:
-            output_chunk_length = min([
+        if output_chunk_shift > 0:
+            output_chunk_lengths = [
                 model.output_chunk_length
                 for model in forecasting_models
                 if model.output_chunk_length is not None
-            ])
-        elif len(set(output_chunk_lengths)) == 1:
-            output_chunk_length = output_chunk_lengths[0]
+            ]
+            output_chunk_length = min(output_chunk_lengths)
+            lags_future_covariates = list(range(output_chunk_length))
         else:
-            output_chunk_length = 0
-
-        lags_future_covariates = list(range(output_chunk_length))
-        if not len(set(lags_future_covariates)) > 1:
+            output_chunk_length = 1
             lags_future_covariates = [0]
 
         if regression_model is None:
             regression_model = LinearRegressionModel(
                 lags=None,
                 lags_future_covariates=lags_future_covariates,
+                output_chunk_length=output_chunk_length,
                 output_chunk_shift=output_chunk_shift,
                 fit_intercept=False,
             )
@@ -157,13 +150,14 @@ class RegressionEnsembleModel(EnsembleModel):
                 f"initialized with the same one. Base model `output_chunk_shift` : {output_chunk_shift}, regression"
                 f"model `output_chunk_shift` : {regression_model.output_chunk_shift}",
             )
-            raise_if(
-                regression_model.output_chunk_length != output_chunk_length,
-                "In case base models have a different `output_chunk_length`, the regression model "
-                f"`output_chunk_length` should be equal to the minimum of the one of the base models. Minimum base "
-                f"model `output_chunk_length` : {output_chunk_length}, regression model `output_chunk_length` : "
-                f"{regression_model.output_chunk_length}",
-            )
+            if output_chunk_shift > 0:
+                raise_if(
+                    regression_model.output_chunk_length != output_chunk_length,
+                    "In case base models have a different `output_chunk_length`, the regression model "
+                    f"`output_chunk_length` should be equal to the minimum of the one of the base models. Minimum base "
+                    f"model `output_chunk_length` : {output_chunk_length}, regression model `output_chunk_length` : "
+                    f"{regression_model.output_chunk_length}",
+                )
             regression_model = regression_model
         else:
             # scikit-learn like model
@@ -175,7 +169,9 @@ class RegressionEnsembleModel(EnsembleModel):
 
         # check lags of the regression model
         if regression_model.output_chunk_shift is not None:
-            expected_lags = [lag + output_chunk_shift for lag in lags_future_covariates]
+            expected_lags = lags_future_covariates
+        else:
+            expected_lags = [0]
         raise_if_not(
             regression_model.lags == {"future": expected_lags},
             f"`lags` and `lags_past_covariates` of regression model must be `None`"
@@ -242,11 +238,15 @@ class RegressionEnsembleModel(EnsembleModel):
             # we start historical fc at multiple of the output length before the end.
             n_ocl_back = train_n_points // model.output_chunk_length
 
-            raise_if(
-                n_ocl_back == 0,
-                "The number of forecast models' training points should be greater than their "
-                "`output_chunk_length` with `train_using_historical_forecasts = True`.",
-            )
+            # TODO:
+            # - check if ocl is roumd-multip of train-npoints
+            # - if not -> n_ocl+=1
+            #   - the generated forecasts might have to be truncated to trainnpoints
+            # - if yes -> pass
+            # - if any of the generated forecasts are shorter than train_n_points -> truncate all and raise warning
+
+            if model.output_chunk_length % train_n_points != 0:
+                n_ocl_back += 1
 
             start_hist_forecasts = n_ocl_back * model.output_chunk_length
 
@@ -277,13 +277,20 @@ class RegressionEnsembleModel(EnsembleModel):
             )
             # concatenate the stridden predictions of output_chunk_length values each
             tmp_pred = [concatenate(sub_pred, axis=0) for sub_pred in tmp_pred]
-
+            if len(tmp_pred) > train_n_points:
+                tmp_pred = tmp_pred[-train_n_points:]
+            elif len(tmp_pred) < train_n_points and self.show_warnings:
+                logger.warning(
+                    f"Model {m_idx} generated fewer forecasts than the requested {train_n_points}."
+                )
             predictions.append(tmp_pred)
-
+        min_length = min([len(prediction[0]) for prediction in predictions])
         tmp_predictions = []
         # slice the forecasts, training series-wise, to align them
         for prediction in predictions:
-            tmp_predictions.append([ts for idx, ts in enumerate(prediction)])
+            tmp_predictions.append([
+                ts[-min_length:] for idx, ts in enumerate(prediction)
+            ])
         predictions = [seq2series(prediction) for prediction in tmp_predictions]
 
         # reduce the probabilistics series
