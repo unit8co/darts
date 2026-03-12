@@ -1331,7 +1331,136 @@ class TestSKLearnExplainer:
             atol=1e-8,
         )
 
-    # TODO: add test_explain_single_without_foreground
+    def test_explain_single_without_foreground(self):
+        model_kwargs = {"add_encoders": ADD_ENCODERS}
+        model = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=5,
+            **(model_kwargs or {}),
+            **kwargs,
+        )
+
+        series = self.multivariate_series
+        past_covariates = self.past_covariates
+        future_covariates = self.future_covariates
+
+        background_series = series[-20:]
+        background_past_covariates = (
+            past_covariates[-20:] if past_covariates is not None else None
+        )
+        _, background_future_covariates = future_covariates.split_before(
+            background_series.start_time()
+        )
+
+        model.fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+        explainer = TorchExplainer(
+            model,
+            background_series=background_series,
+            background_past_covariates=background_past_covariates,
+            background_future_covariates=background_future_covariates,
+        )
+        results = explainer.explain_single()
+
+        components = {
+            f"{name}_target_lag-{lag + 1}"
+            for name in background_series.columns
+            for lag in range(model.input_chunk_length)
+        }
+        components.update({
+            f"{name}_pastcov_lag-{lag + 1}"
+            for name in background_past_covariates.columns
+            for lag in range(model.input_chunk_length)
+        })
+        components.update({
+            f"{name}_futcov_lag{lag}"
+            for name in background_future_covariates.columns
+            for lag in range(-model.input_chunk_length, model.output_chunk_length)
+        })
+        if background_series.static_covariates is not None:
+            components.update({
+                f"{name}_statcov_target_{target}"
+                for name in background_series.static_covariates.columns
+                for target in background_series.columns
+            })
+        components.update({
+            f"{prefix}_lag{lag}"
+            for lag in range(-model.input_chunk_length, model.output_chunk_length)
+            for prefix in [
+                "darts_enc_fc_cyc_month_cos_futcov",
+                "darts_enc_fc_cyc_month_sin_futcov",
+            ]
+        })
+        components.update({
+            f"{prefix}_lag-{lag + 1}"
+            for lag in range(model.input_chunk_length)
+            for prefix in ["darts_enc_pc_cus_custom_pastcov"]
+        })
+
+        with pytest.raises(ValueError, match="component parameter is required"):
+            results.get_explanation(component=None)
+        with pytest.raises(ValueError, match='Component "T_11" is not available'):
+            results.get_explanation(component="T_11")
+
+        explanation = results.get_explanation(component="T_0")
+        assert isinstance(explanation, TimeSeries)
+        assert explanation.n_timesteps == model.output_chunk_length
+        assert set(explanation.components) == components
+        assert np.isfinite(explanation.values()).all()
+
+        # for single explanation without foreground, the equivalent prediction
+        # is backshifted by `output_chunk_length` since the explanation is based
+        # on the background data where future covariates are only available up
+        # to the end of the background series.
+        prediction = model.predict(
+            n=model.output_chunk_length,
+            series=background_series[: -model.output_chunk_length],
+            past_covariates=background_past_covariates[: -model.output_chunk_length],
+            future_covariates=background_future_covariates,
+        )
+        assert isinstance(prediction, TimeSeries)
+        assert prediction.n_timesteps == explanation.n_timesteps
+
+        with pytest.raises(ValueError, match="component parameter is required"):
+            results.get_feature_values(component=None)
+        with pytest.raises(ValueError, match='Component "T_11" is not available'):
+            results.get_feature_values(component="T_11")
+
+        feature_values = results.get_feature_values(component="T_1")
+        assert isinstance(feature_values, TimeSeries)
+        assert feature_values.n_timesteps == 1
+        assert set(feature_values.components) == components
+        assert np.isfinite(feature_values.values()).all()
+
+        with pytest.raises(ValueError, match="component parameter is required"):
+            results.get_shap_explanation_object(component=None)
+        with pytest.raises(ValueError, match='Component "T_11" is not available'):
+            results.get_shap_explanation_object(component="T_11")
+
+        shap_explanation_object = results.get_shap_explanation_object(component="T_1")
+        explanation = results.get_explanation(component="T_1")
+        assert isinstance(shap_explanation_object, shap.Explanation)
+        np.testing.assert_array_equal(
+            shap_explanation_object.values,
+            explanation.values(),
+        )
+        np.testing.assert_array_equal(
+            shap_explanation_object.data[:1],
+            feature_values.values(),
+        )
+        shap_values_sum = explanation.values().sum(axis=1)
+        base_values = prediction["T_1"].values().ravel() - shap_values_sum
+        np.testing.assert_allclose(
+            shap_explanation_object.base_values,
+            base_values,
+            rtol=1e-5,
+            atol=1e-8,
+        )
+
     # TODO: add test_explain_shap_methods
     # TODO: add test_explain_single_probabilistic_model
     # TODO: add test_summary_plot
