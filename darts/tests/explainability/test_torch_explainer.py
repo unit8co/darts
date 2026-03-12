@@ -1079,3 +1079,130 @@ class TestSKLearnExplainer:
             rtol=1e-4,
             atol=1e-8,
         )
+
+    def test_explain_multiple_series(self):
+        model_kwargs = {"add_encoders": ADD_ENCODERS}
+        model = DLinearModel(
+            input_chunk_length=6,
+            output_chunk_length=3,
+            **(model_kwargs or {}),
+            **kwargs,
+        )
+
+        series = self.multiple_multivariate_series
+        past_covariates = [self.past_covariates, self.past_covariates + 1]
+        future_covariates = [self.future_covariates, self.future_covariates + 1]
+
+        background_series = [ts[-20:] for ts in series]
+        background_past_covariates = [ts[-20:] for ts in past_covariates]
+        background_future_covariates = [
+            future_cov.split_before(background.start_time())[1]
+            for future_cov, background in zip(future_covariates, background_series)
+        ]
+
+        foreground_series = [ts[-10:] for ts in series]
+
+        model.fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+        explainer = TorchExplainer(
+            model,
+            background_series=background_series,
+            background_past_covariates=background_past_covariates,
+            background_future_covariates=background_future_covariates,
+        )
+        results = explainer.explain(
+            foreground_series=foreground_series,
+            foreground_past_covariates=past_covariates,
+            foreground_future_covariates=future_covariates,
+        )
+
+        explanation = results.get_explanation(horizon=2, component="T_0")
+        feature_values = results.get_feature_values(horizon=2, component="T_0")
+        shap_explanation_object = results.get_shap_explanation_object(
+            horizon=2, component="T_0"
+        )
+        assert isinstance(explanation, list)
+        assert isinstance(feature_values, list)
+        assert isinstance(shap_explanation_object, list)
+        assert len(explanation) == len(series)
+        assert len(feature_values) == len(series)
+        assert len(shap_explanation_object) == len(series)
+
+        components = {
+            f"{name}_target_lag-{lag + 1}"
+            for name in foreground_series[0].columns
+            for lag in range(model.input_chunk_length)
+        }
+        if past_covariates is not None:
+            components.update({
+                f"{name}_pastcov_lag-{lag + 1}"
+                for name in past_covariates[0].columns
+                for lag in range(model.input_chunk_length)
+            })
+        if future_covariates is not None:
+            components.update({
+                f"{name}_futcov_lag{lag}"
+                for name in future_covariates[0].columns
+                for lag in range(-model.input_chunk_length, model.output_chunk_length)
+            })
+        if (
+            model.supports_static_covariates
+            and foreground_series[0].static_covariates is not None
+        ):
+            components.update({
+                f"{name}_statcov_target_{target}"
+                for name in foreground_series[0].static_covariates.columns
+                for target in foreground_series[0].columns
+            })
+        if model_kwargs is not None and "add_encoders" in model_kwargs:
+            components.update({
+                f"{prefix}_lag{lag}"
+                for lag in range(-model.input_chunk_length, model.output_chunk_length)
+                for prefix in [
+                    "darts_enc_fc_cyc_month_cos_futcov",
+                    "darts_enc_fc_cyc_month_sin_futcov",
+                ]
+            })
+            components.update({
+                f"{prefix}_lag-{lag + 1}"
+                for lag in range(model.input_chunk_length)
+                for prefix in [
+                    "darts_enc_pc_cus_custom_pastcov",
+                ]
+            })
+
+        for i in range(len(series)):
+            assert isinstance(explanation[i], TimeSeries)
+            assert (
+                explanation[i].n_timesteps
+                == foreground_series[i].n_timesteps - model.input_chunk_length + 1
+            )
+            assert np.isfinite(explanation[i].values()).all()
+            assert set(explanation[i].components) == components
+
+            assert isinstance(feature_values[i], TimeSeries)
+            assert feature_values[i].n_timesteps == explanation[i].n_timesteps
+            assert np.isfinite(feature_values[i].values()).all()
+            assert set(feature_values[i].components) == components
+
+            assert isinstance(shap_explanation_object[i], shap.Explanation)
+            np.testing.assert_array_equal(
+                shap_explanation_object[i].values,
+                explanation[i].values(),
+            )
+            np.testing.assert_array_equal(
+                shap_explanation_object[i].data,
+                feature_values[i].values(),
+            )
+
+    # TODO: add test_explain_single
+    # TODO: add test_explain_single_without_foreground
+    # TODO: add test_explain_shap_methods
+    # TODO: add test_explain_single_probabilistic_model
+    # TODO: add test_summary_plot
+    # TODO: add test_force_plot
+    # TODO: add test_waterfall_plot
