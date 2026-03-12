@@ -1461,7 +1461,128 @@ class TestSKLearnExplainer:
             atol=1e-8,
         )
 
-    # TODO: add test_explain_shap_methods
+    @pytest.mark.parametrize("shap_method", SHAP_METHODS)
+    def test_explain_single_shap_methods(
+        self,
+        shap_method: str,
+    ):
+        model_kwargs = {"add_encoders": ADD_ENCODERS}
+        model = DLinearModel(
+            input_chunk_length=6,
+            output_chunk_length=3,
+            **(model_kwargs or {}),
+            **kwargs,
+        )
+
+        series = self.multivariate_series
+        past_covariates = self.past_covariates
+        future_covariates = self.future_covariates
+
+        background_series = series[-20:]
+        background_past_covariates = (
+            past_covariates[-20:] if past_covariates is not None else None
+        )
+        _, background_future_covariates = future_covariates.split_before(
+            background_series.start_time()
+        )
+
+        foreground_series = series[-10:]
+
+        model.fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+        explainer = TorchExplainer(
+            model,
+            background_series=background_series,
+            background_past_covariates=background_past_covariates,
+            background_future_covariates=background_future_covariates,
+            shap_method=shap_method,
+        )
+        results = explainer.explain_single(
+            foreground_series=foreground_series,
+            foreground_past_covariates=past_covariates,
+            foreground_future_covariates=future_covariates,
+        )
+
+        components = {
+            f"{name}_target_lag-{lag + 1}"
+            for name in foreground_series.columns
+            for lag in range(model.input_chunk_length)
+        }
+        components.update({
+            f"{name}_pastcov_lag-{lag + 1}"
+            for name in past_covariates.columns
+            for lag in range(model.input_chunk_length)
+        })
+        components.update({
+            f"{name}_futcov_lag{lag}"
+            for name in future_covariates.columns
+            for lag in range(-model.input_chunk_length, model.output_chunk_length)
+        })
+        if foreground_series.static_covariates is not None:
+            components.update({
+                f"{name}_statcov_target_{target}"
+                for name in foreground_series.static_covariates.columns
+                for target in foreground_series.columns
+            })
+        components.update({
+            f"{prefix}_lag{lag}"
+            for lag in range(-model.input_chunk_length, model.output_chunk_length)
+            for prefix in [
+                "darts_enc_fc_cyc_month_cos_futcov",
+                "darts_enc_fc_cyc_month_sin_futcov",
+            ]
+        })
+        components.update({
+            f"{prefix}_lag-{lag + 1}"
+            for lag in range(model.input_chunk_length)
+            for prefix in ["darts_enc_pc_cus_custom_pastcov"]
+        })
+
+        explanation = results.get_explanation(component="T_0")
+        assert isinstance(explanation, TimeSeries)
+        assert explanation.n_timesteps == model.output_chunk_length
+        assert set(explanation.components) == components
+        assert np.isfinite(explanation.values()).all()
+
+        prediction = model.predict(
+            n=model.output_chunk_length,
+            series=foreground_series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+        assert isinstance(prediction, TimeSeries)
+        assert prediction.n_timesteps == explanation.n_timesteps
+
+        feature_values = results.get_feature_values(component="T_1")
+        assert isinstance(feature_values, TimeSeries)
+        assert feature_values.n_timesteps == 1
+        assert set(feature_values.components) == components
+        assert np.isfinite(feature_values.values()).all()
+
+        shap_explanation_object = results.get_shap_explanation_object(component="T_1")
+        explanation = results.get_explanation(component="T_1")
+        assert isinstance(shap_explanation_object, shap.Explanation)
+        np.testing.assert_array_equal(
+            shap_explanation_object.values,
+            explanation.values(),
+        )
+        np.testing.assert_array_equal(
+            shap_explanation_object.data[:1],
+            feature_values.values(),
+        )
+        shap_values_sum = explanation.values().sum(axis=1)
+        base_values = prediction["T_1"].values().ravel() - shap_values_sum
+        np.testing.assert_allclose(
+            shap_explanation_object.base_values,
+            base_values,
+            rtol=1e-5,
+            atol=1e-8,
+        )
+
     # TODO: add test_explain_single_probabilistic_model
     # TODO: add test_summary_plot
     # TODO: add test_force_plot

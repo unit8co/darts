@@ -1120,6 +1120,13 @@ class _DeepSHAPExplainer:
         shap_values: np.ndarray = shap_explanation_tmp.values
         shap_data: np.ndarray = shap_explanation_tmp.data
         shap_base_values: np.ndarray = shap_explanation_tmp.base_values
+        if shap_base_values.ndim == 1:
+            # for unknown reasons, some SHAP explainers (`shap.SamplingExplainer`) returns 1D base values, which
+            # need to be reshaped and repeated to match the expected shape for accessibility
+            shap_base_values = shap_base_values[np.newaxis, :]
+            shap_base_values = np.repeat(
+                shap_base_values, repeats=shap_values.shape[0], axis=0
+            )
 
         # create a nested dictionary {target_component : shap.Explanation}
         # for better accessibility of the explanations
