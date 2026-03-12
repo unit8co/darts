@@ -78,7 +78,6 @@ class _SHAPMethod(Enum):
     GRADIENT = 1
     DEEP = 2
     KERNEL = 3
-    SAMPLING = 4
     PARTITION = 5
     LINEAR = 6
     PERMUTATION = 7

@@ -85,10 +85,7 @@ class _SHAPMethod(Enum):
     KERNEL = 3
     SAMPLING = 4
     PARTITION = 5
-    LINEAR = 6
     PERMUTATION = 7
-    ADDITIVE = 8
-    EXACT = 9
 
 
 def _available_shap_methods() -> list[str]:
@@ -138,8 +135,7 @@ class TorchExplainer(_ForecastingModelExplainer):
             ``"kernel"`` or ``"permutation"``.
         shap_method
             Optionally, the SHAP method to apply. Supported values: ``"kernel"``, ``"sampling"``,
-            ``"partition"``, ``"linear"``, ``"permutation"``, ``"additive"``, and ``"exact"``.
-            Default: ``"kernel"``.
+            ``"partition"``, and ``"permutation"``. Default: ``"kernel"``.
         **kwargs
             Optionally, additional keyword arguments passed to ``shap_method``.
 
@@ -755,7 +751,7 @@ class _DeepSHAPExplainer:
         background_past_covariates: Sequence[TimeSeries] | None,
         background_future_covariates: Sequence[TimeSeries] | None,
         background_num_samples: int | None = None,
-        shap_method: _SHAPMethod = _SHAPMethod.LINEAR,
+        shap_method: _SHAPMethod = _SHAPMethod.KERNEL,
         batch_size: int | None = None,
         **kwargs,
     ):
@@ -1017,25 +1013,14 @@ class _DeepSHAPExplainer:
         """
         # we define properly the explainer given a shap method
         # Note: DeepExplainer has some compatibility issues with torch models
-        if shap_method == _SHAPMethod.PERMUTATION:
-            explainer = shap.PermutationExplainer(func, background_X, **kwargs)
+        if shap_method == _SHAPMethod.KERNEL:
+            explainer = shap.KernelExplainer(func, background_X, **kwargs)
+        elif shap_method == _SHAPMethod.SAMPLING:
+            explainer = shap.SamplingExplainer(func, background_X, **kwargs)
         elif shap_method == _SHAPMethod.PARTITION:
             explainer = shap.PermutationExplainer(func, background_X, **kwargs)
-        elif shap_method == _SHAPMethod.KERNEL:
-            explainer = shap.KernelExplainer(func, background_X, **kwargs)
-        elif shap_method == _SHAPMethod.LINEAR:
-            explainer = shap.LinearExplainer(func, background_X, **kwargs)
-        elif shap_method == _SHAPMethod.ADDITIVE:
-            explainer = shap.AdditiveExplainer(func, background_X, **kwargs)
-        elif shap_method == _SHAPMethod.EXACT:
-            explainer = shap.ExactExplainer(func, background_X, **kwargs)
-        else:
-            raise_log(
-                ValueError(
-                    f"Invalid `shap_method`={shap_method}. Please choose one value among the following: "
-                    f"{_available_shap_methods()}."
-                )
-            )
+        if shap_method == _SHAPMethod.PERMUTATION:
+            explainer = shap.PermutationExplainer(func, background_X, **kwargs)
 
         return explainer
 
@@ -1074,6 +1059,13 @@ class _DeepSHAPExplainer:
         shap_values: np.ndarray = shap_explanation_tmp.values
         shap_data: np.ndarray = shap_explanation_tmp.data
         shap_base_values: np.ndarray = shap_explanation_tmp.base_values
+        if shap_base_values.ndim == 1:
+            # for unknown reasons, some SHAP explainers (`shap.SamplingExplainer`) returns 1D base values, which
+            # need to be reshaped and repeated to match the expected shape for accessibility
+            shap_base_values = shap_base_values[np.newaxis, :]
+            shap_base_values = np.repeat(
+                shap_base_values, repeats=shap_values.shape[0], axis=0
+            )
 
         # create a nested dictionary {horizon : {target_component : shap.Explanation}}
         # for better accessibility of the explanations
