@@ -2038,6 +2038,83 @@ class TestSKLearnExplainer:
 
         assert explainer.explainer._batch_collate_np([(None,)], [0]) is None
 
+    def test_helper_sampling_and_single_target_filtering(self):
+        model = DLinearModel(
+            input_chunk_length=6,
+            output_chunk_length=3,
+            add_encoders=ADD_ENCODERS,
+            **kwargs,
+        )
+
+        series = self.multivariate_series
+        past_covariates = self.past_covariates
+        future_covariates = self.future_covariates
+
+        model.fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+        background_series = series[-20:]
+        background_past_covariates = past_covariates[-20:]
+        _, background_future_covariates = future_covariates.split_before(
+            background_series.start_time()
+        )
+
+        explainer = TorchExplainer(
+            model,
+            background_series=background_series,
+            background_past_covariates=background_past_covariates,
+            background_future_covariates=background_future_covariates,
+            background_num_samples=10,
+        )
+
+        long_length = (
+            model.input_chunk_length
+            + model.output_chunk_length
+            + MAX_BACKGROUND_SAMPLE
+            + 25
+        )
+        times = pd.date_range("20210101", periods=long_length, freq="D")
+        long_background_series = TimeSeries.from_times_and_values(
+            times=times,
+            values=np.tile(series.values(copy=False), (16, 1))[:long_length],
+            columns=series.components,
+        ).with_static_covariates(series.static_covariates)
+        long_background_past_covariates = TimeSeries.from_times_and_values(
+            times=times,
+            values=np.tile(past_covariates.values(copy=False), (16, 1))[:long_length],
+            columns=past_covariates.components,
+        )
+        long_background_future_covariates = TimeSeries.from_times_and_values(
+            times=pd.date_range("20210101", periods=long_length + 20, freq="D"),
+            values=np.tile(future_covariates.values(copy=False), (16, 1))[
+                : long_length + 20
+            ],
+            columns=future_covariates.components,
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="`background_num_samples` must be less than or equal to the number of samples in the dataset",
+        ):
+            explainer.explainer.create_shap_array(
+                long_background_series,
+                long_background_past_covariates,
+                long_background_future_covariates,
+                n_samples=MAX_BACKGROUND_SAMPLE + 100,
+                train=True,
+            )
+
+        sampled_background, _, _ = explainer.explainer.create_shap_array(
+            long_background_series,
+            long_background_past_covariates,
+            long_background_future_covariates,
+            train=True,
+        )
+        assert sampled_background.shape[0] == MAX_BACKGROUND_SAMPLE
+
     def test_invalid_model_type_check(self):
         with pytest.raises(
             ValueError,
