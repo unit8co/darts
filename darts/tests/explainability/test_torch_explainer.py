@@ -1798,5 +1798,83 @@ class TestSKLearnExplainer:
                 target_components=["T_0"],
             )
 
-    # TODO: add test_force_plot
+    def test_force_plot(self):
+        model_kwargs = {"add_encoders": ADD_ENCODERS}
+        model = DLinearModel(
+            input_chunk_length=6,
+            output_chunk_length=3,
+            **(model_kwargs or {}),
+            **kwargs,
+        )
+
+        series = self.multivariate_series
+        past_covariates = self.past_covariates
+        future_covariates = self.future_covariates
+
+        background_series = series[-20:]
+        background_past_covariates = past_covariates[-20:]
+        _, background_future_covariates = future_covariates.split_before(
+            background_series.start_time()
+        )
+
+        foreground_series = series[-10:]
+
+        model.fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+        explainer = TorchExplainer(
+            model,
+            background_series=background_series,
+            background_past_covariates=background_past_covariates,
+            background_future_covariates=background_future_covariates,
+            background_num_samples=10,
+        )
+
+        force_plot = explainer.force_plot(
+            foreground_series=foreground_series,
+            foreground_past_covariates=past_covariates,
+            foreground_future_covariates=future_covariates,
+            horizon=2,
+            target_component="T_0",
+        )
+        assert isinstance(force_plot, shap.plots._force.BaseVisualizer)
+
+        with pytest.raises(ValueError, match=r"`target_component` is required"):
+            explainer.force_plot(
+                foreground_series=foreground_series,
+                foreground_past_covariates=past_covariates,
+                foreground_future_covariates=future_covariates,
+                horizon=1,
+            )
+        with pytest.raises(ValueError, match="Invalid `target_components`"):
+            explainer.force_plot(
+                foreground_series=foreground_series,
+                foreground_past_covariates=past_covariates,
+                foreground_future_covariates=future_covariates,
+                horizon=1,
+                target_component="test",
+            )
+        with pytest.raises(ValueError, match=r"All `horizons` must be `>=1`\."):
+            explainer.force_plot(
+                foreground_series=foreground_series,
+                foreground_past_covariates=past_covariates,
+                foreground_future_covariates=future_covariates,
+                horizon=0,
+                target_component="T_0",
+            )
+        with pytest.raises(
+            ValueError,
+            match=r"At least one of the `horizons` is larger than `output_chunk_length`\.",
+        ):
+            explainer.force_plot(
+                foreground_series=foreground_series,
+                foreground_past_covariates=past_covariates,
+                foreground_future_covariates=future_covariates,
+                horizon=model.output_chunk_length + 1,
+                target_component="T_0",
+            )
+
     # TODO: add test_waterfall_plot
