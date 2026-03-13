@@ -939,8 +939,6 @@ class TestSKLearnExplainer:
         assert set(feature_values.components) == components
         assert np.isfinite(feature_values.values()).all()
 
-        with pytest.raises(ValueError, match="component parameter is required"):
-            results.get_shap_explanation_object(component=None)
         with pytest.raises(ValueError, match='Component "test" is not available'):
             results.get_shap_explanation_object(component="test")
 
@@ -958,3 +956,99 @@ class TestSKLearnExplainer:
             rtol=1e-5,
             atol=1e-8,
         )
+
+    def test_explain_single_univariate_target(self):
+        model = LinearRegressionModel(
+            lags=4,
+            output_chunk_length=3,
+        )
+        series = self.target_ts["price"]
+        foreground_series = series[-10:]
+
+        model.fit(series=series)
+        explainer = SKLearnExplainer(model)
+        results = explainer.explain_single(foreground_series=foreground_series)
+
+        explanation = results.get_explanation()
+        feature_values = results.get_feature_values()
+        shap_explanation_object = results.get_shap_explanation_object()
+
+        expected_components = {
+            f"price_target_lag-{lag + 1}"
+            for lag in range(abs(min(model.lags["target"])))
+        }
+
+        assert isinstance(explanation, TimeSeries)
+        assert explanation.n_timesteps == model.output_chunk_length
+        assert set(explanation.components) == expected_components
+        assert np.isfinite(explanation.values()).all()
+
+        assert isinstance(feature_values, TimeSeries)
+        assert feature_values.n_timesteps == 1
+        assert set(feature_values.components) == expected_components
+        assert np.isfinite(feature_values.values()).all()
+
+        assert isinstance(shap_explanation_object, shap.Explanation)
+        assert_array_equal(shap_explanation_object.values, explanation.values())
+        assert_array_equal(
+            shap_explanation_object.data,
+            np.repeat(feature_values.values(), model.output_chunk_length, axis=0),
+        )
+
+        prediction = model.predict(
+            n=model.output_chunk_length, series=foreground_series
+        )
+        shap_values_sum = explanation.values().sum(axis=1)
+        base_values = prediction.values().ravel() - shap_values_sum
+        np.testing.assert_allclose(
+            shap_explanation_object.base_values,
+            base_values,
+            rtol=1e-5,
+            atol=1e-8,
+        )
+
+    def test_regression_shap_explainer_builder_and_background_sampling(self):
+        series = self.target_ts["price"]
+
+        linear_model = LinearRegressionModel(lags=1, output_chunk_length=1)
+        linear_model.fit(series=series)
+
+        too_small_background = linear_timeseries(
+            start_value=1,
+            end_value=MIN_BACKGROUND_SAMPLE,
+            length=MIN_BACKGROUND_SAMPLE,
+            column_name="price",
+        )
+        with pytest.raises(ValueError, match="background dataset is too small"):
+            SKLearnExplainer(
+                linear_model,
+                background_series=too_small_background,
+                shap_method="linear",
+            )
+
+        linear_explainer = SKLearnExplainer(
+            linear_model,
+            background_series=series[-20:],
+            background_num_samples=1,
+            shap_method="linear",
+        )
+        assert isinstance(
+            linear_explainer.explainers.explainers, shap.explainers.Linear
+        )
+        assert len(linear_explainer.explainers.background_X) == 1
+
+        kernel_model = SKLearnModel(
+            lags=1,
+            output_chunk_length=1,
+            model=sklearn.dummy.DummyRegressor(),
+        )
+        kernel_model.fit(series=series)
+        kernel_explainer = SKLearnExplainer(
+            kernel_model,
+            background_series=series[-20:],
+            background_num_samples=1,
+        )
+        assert isinstance(
+            kernel_explainer.explainers.explainers, shap.explainers.Kernel
+        )
+        assert len(kernel_explainer.explainers.background_X) == 1
