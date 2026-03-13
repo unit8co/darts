@@ -129,8 +129,8 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         shap_method
             Optionally, the SHAP method to apply. By default, an attempt is made
             to select the most appropriate method based on a pre-defined set of known models
-            internal mapping. Supported values: ``"permutation"``, ``"partition"``, ``"tree"``,
-            ``"kernel"``, ``"sampling"``, ``"linear"``, ``"deep"``, ``"gradient"``, and ``"additive"``.
+            internal mapping. Supported values: ``"tree"``, ``"deep"``, ``"kernel"``,
+            ``"partition"``, ``"linear"``, ``"permutation"``, and ``"additive"``.
         **kwargs
             Optionally, additional keyword arguments passed to ``shap_method``.
 
@@ -187,8 +187,8 @@ class SKLearnExplainer(_ForecastingModelExplainer):
             else:
                 raise_log(
                     ValueError(
-                        "Invalid `shap_method`. Please choose one value among the following: ['partition', 'tree', "
-                        "'kernel', 'sampling', 'linear', 'deep', 'gradient', 'additive']."
+                        f"Invalid `shap_method`. Please choose one value among the following:"
+                        f" {', '.join([e.name.lower() for e in _SHAPMethod])}."
                     )
                 )
         else:
@@ -996,11 +996,6 @@ class _RegressionSHAPExplainers:
             explainer = shap.LinearExplainer(model_sklearn, background_X, **kwargs)
         elif shap_method == _SHAPMethod.ADDITIVE:
             explainer = shap.AdditiveExplainer(model_sklearn, background_X, **kwargs)
-        else:
-            raise ValueError(
-                "shap_method must be one of the following: "
-                + ", ".join([e.value for e in _SHAPMethod])
-            )
 
         logger.info("The SHAP method used is of type: " + str(type(explainer)))
 

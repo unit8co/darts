@@ -8,6 +8,7 @@ import shap
 import sklearn
 from dateutil.relativedelta import relativedelta
 from numpy.testing import assert_array_equal
+from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.preprocessing import MinMaxScaler
 
 from darts import TimeSeries
@@ -34,6 +35,20 @@ from darts.utils.timeseries_generation import linear_timeseries
 def extract_year(index):
     """Return year of time index entry, normalized"""
     return (index.year - 1950) / 50
+
+
+class CallableAdditiveRegressor(BaseEstimator, RegressorMixin):
+    def fit(self, X, y):
+        self.n_features_in_ = X.shape[1]
+        self.bias_ = float(np.mean(y))
+        return self
+
+    def predict(self, X):
+        X = np.asarray(X)
+        return self.bias_ + X.sum(axis=1)
+
+    def __call__(self, X):
+        return self.predict(X)
 
 
 class TestSKLearnExplainer:
@@ -1030,7 +1045,9 @@ class TestSKLearnExplainer:
         assert_array_equal(shap_explanation_object.data, feature_values.values())
 
     def test_explain_single_multioutput_regressor(self):
-        series = linear_timeseries(length=40, column_name="price")
+        series = linear_timeseries(length=40, column_name="price").stack(
+            linear_timeseries(length=40, start_value=50, column_name="power")
+        )
         model = SKLearnModel(
             lags=2,
             output_chunk_length=2,
@@ -1043,12 +1060,16 @@ class TestSKLearnExplainer:
             background_series=series[-20:],
             shap_method="permutation",
         )
-        results = explainer.explain_single(foreground_series=series[-10:])
+        results = explainer.explain_single(
+            foreground_series=series[-10:],
+            target_components=["price"],
+        )
 
         explanation = results.get_explanation()
         feature_values = results.get_feature_values()
         shap_explanation_object = results.get_shap_explanation_object()
 
+        assert results.available_components == ["price"]
         assert explanation.n_timesteps == model.output_chunk_length
         assert feature_values.n_timesteps == 1
         assert isinstance(shap_explanation_object, shap.Explanation)
@@ -1087,6 +1108,16 @@ class TestSKLearnExplainer:
                 {"feature_perturbation": "interventional"},
                 shap.explainers.Tree,
             ),
+            (
+                SKLearnModel(
+                    lags=2,
+                    output_chunk_length=1,
+                    model=CallableAdditiveRegressor(),
+                ),
+                "additive",
+                {},
+                shap.explainers.Additive,
+            ),
         ],
     )
     def test_explicit_shap_methods(
@@ -1103,6 +1134,22 @@ class TestSKLearnExplainer:
         )
 
         assert isinstance(explainer.explainers.explainers, expected_explainer)
+
+    def test_gradient_shap_method_raises_builder_error(self):
+        series = linear_timeseries(length=40, column_name="price")
+        model = SKLearnModel(
+            lags=2,
+            output_chunk_length=1,
+            model=sklearn.dummy.DummyRegressor(),
+        )
+        model.fit(series=series)
+
+        with pytest.raises(ValueError, match="Invalid `shap_method`"):
+            SKLearnExplainer(
+                model,
+                background_series=series[-20:],
+                shap_method="gradient",
+            )
 
     def test_force_plot_defaults_to_single_component(self):
         series = self.target_ts["price"]
