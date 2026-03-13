@@ -885,3 +885,68 @@ class TestSKLearnExplainer:
         for comp in ts.components:
             comps_out = explanation_results.explained_forecasts[1][comp].columns
             assert all(comps_out == expected_columns)
+
+    def test_explain_single(self):
+        model = LinearRegressionModel(
+            lags=4,
+            output_chunk_length=3,
+        )
+        model.fit(series=self.target_ts)
+
+        explainer = SKLearnExplainer(model)
+        foreground_series = self.target_ts[-10:]
+        results = explainer.explain_single(foreground_series=foreground_series)
+
+        components = {
+            f"{name}_target_lag-{lag + 1}"
+            for name in foreground_series.columns
+            for lag in range(abs(min(model.lags["target"])))
+        }
+
+        with pytest.raises(ValueError, match="component parameter is required"):
+            results.get_explanation(component=None)
+        with pytest.raises(ValueError, match='Component "test" is not available'):
+            results.get_explanation(component="test")
+
+        explanation = results.get_explanation(component="price")
+        assert isinstance(explanation, TimeSeries)
+        assert explanation.n_timesteps == model.output_chunk_length
+        assert set(explanation.components) == components
+        assert np.isfinite(explanation.values()).all()
+
+        prediction = model.predict(
+            n=model.output_chunk_length, series=foreground_series
+        )
+        assert isinstance(prediction, TimeSeries)
+        assert prediction.n_timesteps == explanation.n_timesteps
+
+        with pytest.raises(ValueError, match="component parameter is required"):
+            results.get_feature_values(component=None)
+        with pytest.raises(ValueError, match='Component "test" is not available'):
+            results.get_feature_values(component="test")
+
+        feature_values = results.get_feature_values(component="power")
+        assert isinstance(feature_values, TimeSeries)
+        assert feature_values.n_timesteps == 1
+        assert set(feature_values.components) == components
+        assert np.isfinite(feature_values.values()).all()
+
+        with pytest.raises(ValueError, match="component parameter is required"):
+            results.get_shap_explanation_object(component=None)
+        with pytest.raises(ValueError, match='Component "test" is not available'):
+            results.get_shap_explanation_object(component="test")
+
+        shap_explanation_object = results.get_shap_explanation_object(component="power")
+        explanation = results.get_explanation(component="power")
+        assert isinstance(shap_explanation_object, shap.Explanation)
+        assert_array_equal(shap_explanation_object.values, explanation.values())
+        assert_array_equal(shap_explanation_object.data[:1], feature_values.values())
+
+        shap_values_sum = explanation.values().sum(axis=1)
+        base_values = prediction["power"].values().ravel() - shap_values_sum
+        np.testing.assert_allclose(
+            shap_explanation_object.base_values,
+            base_values,
+            rtol=1e-5,
+            atol=1e-8,
+        )
