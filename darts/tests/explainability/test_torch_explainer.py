@@ -1735,6 +1735,68 @@ class TestSKLearnExplainer:
             atol=1e-8,
         )
 
-    # TODO: add test_summary_plot
+    def test_summary_plot(self):
+        model_kwargs = {"add_encoders": ADD_ENCODERS}
+        model = DLinearModel(
+            input_chunk_length=6,
+            output_chunk_length=3,
+            **(model_kwargs or {}),
+            **kwargs,
+        )
+
+        series = self.multivariate_series
+        past_covariates = self.past_covariates
+        future_covariates = self.future_covariates
+
+        background_series = series[-20:]
+        background_past_covariates = past_covariates[-20:]
+        _, background_future_covariates = future_covariates.split_before(
+            background_series.start_time()
+        )
+
+        foreground_series = series[-10:]
+
+        model.fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+        explainer = TorchExplainer(
+            model,
+            background_series=background_series,
+            background_past_covariates=background_past_covariates,
+            background_future_covariates=background_future_covariates,
+            background_num_samples=10,
+        )
+
+        dict_shap_values = explainer.summary_plot(
+            foreground_series=foreground_series,
+            foreground_past_covariates=past_covariates,
+            foreground_future_covariates=future_covariates,
+            num_samples=2,
+            show=False,
+        )
+        assert len(dict_shap_values) == model.output_chunk_length
+        for horizon in range(1, model.output_chunk_length + 1):
+            assert len(dict_shap_values[horizon]) == series.width
+            for component in series.components:
+                assert isinstance(
+                    dict_shap_values[horizon][component], shap.Explanation
+                )
+
+        with pytest.raises(ValueError, match="Invalid `target_components`"):
+            explainer.summary_plot(horizons=[1], target_components=["test"])
+        with pytest.raises(ValueError, match=r"All `horizons` must be `>=1`\."):
+            explainer.summary_plot(horizons=[0], target_components=["T_0"])
+        with pytest.raises(
+            ValueError,
+            match=r"At least one of the `horizons` is larger than `output_chunk_length`\.",
+        ):
+            explainer.summary_plot(
+                horizons=[model.output_chunk_length + 1],
+                target_components=["T_0"],
+            )
+
     # TODO: add test_force_plot
     # TODO: add test_waterfall_plot
