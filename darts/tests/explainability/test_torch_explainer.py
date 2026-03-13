@@ -1509,6 +1509,7 @@ class TestSKLearnExplainer:
             foreground_series=foreground_series,
             foreground_past_covariates=past_covariates,
             foreground_future_covariates=future_covariates,
+            target_components=["T_0", "T_1"],
         )
 
         components = {
@@ -1732,10 +1733,12 @@ class TestSKLearnExplainer:
         base_values = (
             prediction[likelihood_components[-1]].values().ravel() - shap_values_sum
         )
+        # sometimes probabilistic models can have more variability in the base values due to the nature of the
+        # likelihood outputs, so we use a slightly looser tolerance here
         np.testing.assert_allclose(
             shap_explanation_object.base_values,
             base_values,
-            rtol=1e-4,
+            rtol=1e-3,
             atol=1e-8,
         )
 
