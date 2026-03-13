@@ -2032,11 +2032,12 @@ class TestSKLearnExplainer:
         assert isinstance(force_plot, shap.plots._force.BaseVisualizer)
 
         with pytest.raises(ValueError, match="`n_samples` must be less than or equal"):
-            explainer.explainer.create_shap_array(
-                series[-10:],
-                past_covariates,
-                future_covariates,
-                n_samples=1000,
+            explainer.summary_plot(
+                foreground_series=series[-10:],
+                foreground_past_covariates=past_covariates,
+                foreground_future_covariates=future_covariates,
+                num_samples=1000,
+                show=False,
             )
 
         assert explainer.explainer._batch_collate_np([(None,)], [0]) is None

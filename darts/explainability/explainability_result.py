@@ -39,7 +39,6 @@ class _ExplainabilityResult(ABC):
     @abstractmethod
     def get_explanation(self, *args, **kwargs):
         """Returns one or multiple explanations based on some input parameters."""
-        pass
 
 
 class ComponentBasedExplainabilityResult(_ExplainabilityResult):
@@ -52,8 +51,6 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
     >>> explain_results = explainer.explain()
     >>> output = explain_results.get_explanation(component="some_component")
     """
-
-    # TODO: update docstring
 
     def __init__(
         self,
