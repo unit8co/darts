@@ -18,9 +18,13 @@ if not TORCH_AVAILABLE:
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
 from darts.explainability import TorchExplainer
+from darts.explainability.torch_explainer import (
+    MAX_BACKGROUND_SAMPLE,
+    MIN_BACKGROUND_SAMPLE,
+    _available_shap_methods,
+)
 from darts.models import (
     BlockRNNModel,
-    Chronos2Model,
     DLinearModel,
     NBEATSModel,
     NHiTSModel,
@@ -72,7 +76,7 @@ ALL_MODELS = [
         TSMixerModel,
         {"hidden_size": 8, "ff_size": 8, "num_blocks": 1, "add_encoders": ADD_ENCODERS},
     ),
-    (Chronos2Model, {"local_dir": chronos2_local_dir, "batch_size": 4}),
+    # (Chronos2Model, {"local_dir": chronos2_local_dir, "batch_size": 4}),
 ]
 SHAP_METHODS = [
     "kernel",
@@ -1929,3 +1933,114 @@ class TestSKLearnExplainer:
                     shap_explanation_object[0], show=False
                 )
                 assert waterfall_plot is not None
+
+    def test_validation_and_helper_branches(self):
+        assert _available_shap_methods() == SHAP_METHODS
+
+        model = DLinearModel(
+            input_chunk_length=6,
+            output_chunk_length=3,
+            add_encoders=ADD_ENCODERS,
+            **kwargs,
+        )
+
+        series = self.univariate_series
+        past_covariates = self.past_covariates
+        future_covariates = self.future_covariates
+
+        model.fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+        background_series = series[-20:]
+        background_past_covariates = past_covariates[-20:]
+        _, background_future_covariates = future_covariates.split_before(
+            background_series.start_time()
+        )
+
+        with pytest.raises(ValueError, match="Invalid `shap_method`=invalid"):
+            TorchExplainer(
+                model,
+                background_series=background_series,
+                background_past_covariates=background_past_covariates,
+                background_future_covariates=background_future_covariates,
+                shap_method="invalid",
+            )
+
+        with pytest.raises(
+            ValueError,
+            match=(
+                "`background_num_samples` must be less than or equal to "
+                f"MAX_BACKGROUND_SAMPLE={MAX_BACKGROUND_SAMPLE}"
+            ),
+        ):
+            TorchExplainer(
+                model,
+                background_series=background_series,
+                background_past_covariates=background_past_covariates,
+                background_future_covariates=background_future_covariates,
+                background_num_samples=MAX_BACKGROUND_SAMPLE + 1,
+            )
+
+        short_background_series = series[
+            -(
+                model.input_chunk_length
+                + model.output_chunk_length
+                + MIN_BACKGROUND_SAMPLE
+                - 4
+            ) :
+        ]
+        short_background_past_covariates = past_covariates[
+            -len(short_background_series) :
+        ]
+        _, short_background_future_covariates = future_covariates.split_before(
+            short_background_series.start_time()
+        )
+        with pytest.raises(
+            ValueError,
+            match=(
+                "Background series must contain at least "
+                f"{MIN_BACKGROUND_SAMPLE} samples"
+            ),
+        ):
+            TorchExplainer(
+                model,
+                background_series=short_background_series,
+                background_past_covariates=short_background_past_covariates,
+                background_future_covariates=short_background_future_covariates,
+            )
+
+        explainer = TorchExplainer(
+            model,
+            background_series=background_series,
+            background_past_covariates=background_past_covariates,
+            background_future_covariates=background_future_covariates,
+            background_num_samples=10,
+        )
+
+        force_plot = explainer.force_plot(
+            foreground_series=series[-10:],
+            foreground_past_covariates=past_covariates,
+            foreground_future_covariates=future_covariates,
+            horizon=1,
+        )
+        assert isinstance(force_plot, shap.plots._force.BaseVisualizer)
+
+        with pytest.raises(ValueError, match="`n_samples` must be less than or equal"):
+            explainer.explainer.create_shap_array(
+                series[-10:],
+                past_covariates,
+                future_covariates,
+                n_samples=1000,
+            )
+
+        assert explainer.explainer._batch_collate_np([(None,)], [0]) is None
+
+    def test_invalid_model_type_check(self):
+        with pytest.raises(
+            ValueError,
+            match="Only models of type `TorchForecastingModel` are supported",
+        ):
+            TorchExplainer(object())

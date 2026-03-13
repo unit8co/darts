@@ -151,6 +151,15 @@ class TorchExplainer(_ForecastingModelExplainer):
         >>> explainer.summary_plot()
         >>> explainer.force_plot()
         """
+        # validate model type
+        if not isinstance(model, TorchForecastingModel):
+            raise_log(
+                ValueError(
+                    f"Invalid `model` type: `{type(model)}`. Only models of type `TorchForecastingModel` are supported."
+                ),
+                logger,
+            )
+
         # initialize the explainer with sanity checks and background validation
         super().__init__(
             model=model,
@@ -162,15 +171,6 @@ class TorchExplainer(_ForecastingModelExplainer):
             check_component_names=True,
             test_stationarity=True,
         )
-
-        # validate model type
-        if not isinstance(self.model, TorchForecastingModel):
-            raise_log(
-                ValueError(
-                    f"Invalid `model` type: `{type(model)}`. Only models of type `TorchForecastingModel` are supported."
-                ),
-                logger,
-            )
 
         shap_method_upper = shap_method.upper()
         if shap_method_upper in _SHAPMethod.__members__:
@@ -799,6 +799,7 @@ class _DeepSHAPExplainer:
         self._setup_func_wrapper(
             model.model,
             batch_size=batch_size or model.batch_size,
+            uses_static_covariates=model.uses_static_covariates,
         )
         self._build_feature_names()
 
@@ -813,6 +814,7 @@ class _DeepSHAPExplainer:
         self,
         model: PLForecastingModule,
         batch_size: int,
+        uses_static_covariates: bool,
     ):
         """
         Sets up the parameters for the function wrapper that will be passed to the SHAP explainer.
@@ -830,7 +832,11 @@ class _DeepSHAPExplainer:
             else 0
         )
         static_covs = self.background_series[0].static_covariates_values(copy=False)
-        self.n_static_covs = static_covs.shape[1] if static_covs is not None else 0
+        self.n_static_covs = (
+            static_covs.shape[1]
+            if static_covs is not None and uses_static_covariates
+            else 0
+        )
 
         self.n_targets = model.n_targets
         self.n_targets_likelihood = len(self.target_components_likelihood)
