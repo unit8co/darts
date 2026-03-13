@@ -1007,6 +1007,120 @@ class TestSKLearnExplainer:
             atol=1e-8,
         )
 
+    def test_explain_single_univariate_single_output(self):
+        model = LinearRegressionModel(
+            lags=4,
+            output_chunk_length=1,
+        )
+        series = self.target_ts["price"]
+        foreground_series = series[-10:]
+
+        model.fit(series=series)
+        explainer = SKLearnExplainer(model)
+        results = explainer.explain_single(foreground_series=foreground_series)
+
+        explanation = results.get_explanation()
+        feature_values = results.get_feature_values()
+        shap_explanation_object = results.get_shap_explanation_object()
+
+        assert explanation.n_timesteps == 1
+        assert feature_values.n_timesteps == 1
+        assert isinstance(shap_explanation_object, shap.Explanation)
+        assert_array_equal(shap_explanation_object.values, explanation.values())
+        assert_array_equal(shap_explanation_object.data, feature_values.values())
+
+    def test_explain_single_multioutput_regressor(self):
+        series = linear_timeseries(length=40, column_name="price")
+        model = SKLearnModel(
+            lags=2,
+            output_chunk_length=2,
+            model=sklearn.svm.LinearSVR(),
+        )
+        model.fit(series=series)
+
+        explainer = SKLearnExplainer(
+            model,
+            background_series=series[-20:],
+            shap_method="permutation",
+        )
+        results = explainer.explain_single(foreground_series=series[-10:])
+
+        explanation = results.get_explanation()
+        feature_values = results.get_feature_values()
+        shap_explanation_object = results.get_shap_explanation_object()
+
+        assert explanation.n_timesteps == model.output_chunk_length
+        assert feature_values.n_timesteps == 1
+        assert isinstance(shap_explanation_object, shap.Explanation)
+        assert_array_equal(shap_explanation_object.values, explanation.values())
+        assert_array_equal(shap_explanation_object.data[:1], feature_values.values())
+        assert shap_explanation_object.base_values.shape == (model.output_chunk_length,)
+
+    @pytest.mark.parametrize(
+        ("model", "shap_method", "kwargs", "expected_explainer"),
+        [
+            (
+                LinearRegressionModel(lags=2, output_chunk_length=1),
+                "deep",
+                {},
+                shap.explainers.Linear,
+            ),
+            (
+                LinearRegressionModel(lags=2, output_chunk_length=1),
+                "permutation",
+                {},
+                shap.explainers.Permutation,
+            ),
+            (
+                LinearRegressionModel(lags=2, output_chunk_length=1),
+                "partition",
+                {},
+                shap.explainers.Permutation,
+            ),
+            (
+                SKLearnModel(
+                    lags=2,
+                    output_chunk_length=1,
+                    model=sklearn.tree.DecisionTreeRegressor(),
+                ),
+                "tree",
+                {"feature_perturbation": "interventional"},
+                shap.explainers.Tree,
+            ),
+        ],
+    )
+    def test_explicit_shap_methods(
+        self, model, shap_method, kwargs, expected_explainer
+    ):
+        series = linear_timeseries(length=40, column_name="price")
+        model.fit(series=series)
+
+        explainer = SKLearnExplainer(
+            model,
+            background_series=series[-20:],
+            shap_method=shap_method,
+            **kwargs,
+        )
+
+        assert isinstance(explainer.explainers.explainers, expected_explainer)
+
+    def test_force_plot_defaults_to_single_component(self):
+        series = self.target_ts["price"]
+        model = LinearRegressionModel(
+            lags=4,
+            output_chunk_length=1,
+        )
+        model.fit(series=series)
+
+        shap_explain = SKLearnExplainer(model)
+        fplot = shap_explain.force_plot(
+            foreground_series=series[100:105],
+            horizon=1,
+        )
+
+        assert isinstance(fplot, shap.plots._force.BaseVisualizer)
+        plt.close()
+
     def test_regression_shap_explainer_builder_and_background_sampling(self):
         series = self.target_ts["price"]
 

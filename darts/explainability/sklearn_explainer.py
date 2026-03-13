@@ -75,7 +75,6 @@ MIN_BACKGROUND_SAMPLE = 10
 
 class _SHAPMethod(Enum):
     TREE = 0
-    GRADIENT = 1
     DEEP = 2
     KERNEL = 3
     PARTITION = 5
