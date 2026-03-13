@@ -895,7 +895,10 @@ class TestSKLearnExplainer:
 
         explainer = SKLearnExplainer(model)
         foreground_series = self.target_ts[-10:]
-        results = explainer.explain_single(foreground_series=foreground_series)
+        results = explainer.explain_single(
+            foreground_series=foreground_series,
+            target_components=["price", "power"],
+        )
 
         components = {
             f"{name}_target_lag-{lag + 1}"
@@ -924,6 +927,11 @@ class TestSKLearnExplainer:
             results.get_feature_values(component=None)
         with pytest.raises(ValueError, match='Component "test" is not available'):
             results.get_feature_values(component="test")
+
+        results = explainer.explain_single(
+            foreground_series=foreground_series,
+            target_components=["power"],
+        )
 
         feature_values = results.get_feature_values(component="power")
         assert isinstance(feature_values, TimeSeries)
