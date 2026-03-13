@@ -1877,4 +1877,55 @@ class TestSKLearnExplainer:
                 target_component="T_0",
             )
 
-    # TODO: add test_waterfall_plot
+    def test_waterfall_plot(self):
+        model_kwargs = {"add_encoders": ADD_ENCODERS}
+        model = DLinearModel(
+            input_chunk_length=7,
+            output_chunk_length=4,
+            **(model_kwargs or {}),
+            **kwargs,
+        )
+
+        series = self.multivariate_series
+        past_covariates = self.past_covariates
+        future_covariates = self.future_covariates
+
+        background_series = series[-20:]
+        background_past_covariates = past_covariates[-20:]
+        _, background_future_covariates = future_covariates.split_before(
+            background_series.start_time()
+        )
+
+        foreground_series = series[-10:]
+
+        model.fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+        explainer = TorchExplainer(
+            model,
+            background_series=background_series,
+            background_past_covariates=background_past_covariates,
+            background_future_covariates=background_future_covariates,
+            background_num_samples=10,
+        )
+
+        results = explainer.explain(
+            foreground_series=foreground_series,
+            foreground_past_covariates=past_covariates,
+            foreground_future_covariates=future_covariates,
+        )
+
+        for horizon in range(1, model.output_chunk_length + 1):
+            for component in series.components:
+                shap_explanation_object = results.get_shap_explanation_object(
+                    horizon=horizon, component=component
+                )
+                assert isinstance(shap_explanation_object, shap.Explanation)
+
+                waterfall_plot = shap.plots.waterfall(
+                    shap_explanation_object[0], show=False
+                )
+                assert waterfall_plot is not None
