@@ -1379,6 +1379,67 @@ class TestSKLearnExplainer:
                 feature_values[i].values(),
             )
 
+    def test_explain_when_future_covariates_too_short(
+        self,
+    ):
+        model_kwargs = {"add_encoders": ADD_ENCODERS}
+        model = DLinearModel(
+            input_chunk_length=3,
+            output_chunk_length=4,
+            output_chunk_shift=2,
+            **(model_kwargs or {}),
+            **kwargs,
+        )
+
+        series = self.multivariate_series
+        past_covariates = self.past_covariates
+        future_covariates = self.future_covariates
+
+        # prepare background data
+        background_series = series[-20:]
+        background_past_covariates = (
+            past_covariates[-20:] if past_covariates is not None else None
+        )
+        _, background_future_covariates = future_covariates.split_before(
+            background_series.start_time()
+        )
+
+        # prepare foreground data
+        foreground_series = series[-15:]
+        foreground_past_covariates = past_covariates.slice_intersect(foreground_series)
+        foreground_future_covariates = future_covariates.slice_intersect(
+            foreground_series
+        )
+
+        model.fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+        explainer = TorchExplainer(
+            model,
+            background_series=background_series,
+            background_past_covariates=background_past_covariates,
+            background_future_covariates=background_future_covariates,
+        )
+        results = explainer.explain(
+            foreground_series=foreground_series,
+            foreground_past_covariates=foreground_past_covariates,
+            foreground_future_covariates=foreground_future_covariates,
+        )
+        explanation = results.get_explanation(horizon=1, component="T_0")
+
+        trimmed_foreground_series = foreground_series[
+            : -model.output_chunk_length - model.output_chunk_shift
+        ]
+        expected_n_timesteps = (
+            trimmed_foreground_series.n_timesteps - model.input_chunk_length + 1
+        )
+
+        assert isinstance(explanation, TimeSeries)
+        assert explanation.n_timesteps == expected_n_timesteps
+
     def test_explain_single(self):
         model_kwargs = {"add_encoders": ADD_ENCODERS}
         model = DLinearModel(

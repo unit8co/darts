@@ -1224,6 +1224,19 @@ class _DeepSHAPExplainer:
         past_covariates_: Sequence[TimeSeries] | None = series2seq(past_covariates)
         future_covariates_: Sequence[TimeSeries] | None = series2seq(future_covariates)
 
+        # if future covariates are used, trim the series if the last timestamp of the series where making a forecast
+        # is possible is before the end of the series. This is to avoid creating samples in the dataset that would not
+        # be able to make a forecast.
+        if future_covariates_ is not None:
+            for i in range(len(series_)):
+                shift = self.output_chunk_length + self.output_chunk_shift
+                end_time = (
+                    future_covariates_[i].end_time()
+                    - shift * future_covariates_[i].freq
+                )
+                if end_time < series_[i].end_time():
+                    series_[i] = series_[i][:end_time]
+
         # create inference dataset
         dataset = self.model._build_inference_dataset(
             n=self.n,
