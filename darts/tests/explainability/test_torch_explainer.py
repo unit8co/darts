@@ -122,7 +122,7 @@ kwargs = {
 }
 
 
-class TestSKLearnExplainer:
+class TestTorchExplainer:
     # set random seed
     np.random.seed(42)
 

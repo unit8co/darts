@@ -1229,7 +1229,10 @@ class _DeepSHAPExplainer:
         # be able to make a forecast.
         if future_covariates_ is not None:
             for i in range(len(series_)):
-                shift = self.output_chunk_length + self.output_chunk_shift
+                if train:
+                    shift = 0
+                else:
+                    shift = self.output_chunk_length + self.output_chunk_shift
                 end_time = (
                     future_covariates_[i].end_time()
                     - shift * future_covariates_[i].freq
