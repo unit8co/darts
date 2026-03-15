@@ -129,8 +129,8 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         shap_method
             Optionally, the SHAP method to apply. By default, an attempt is made
             to select the most appropriate method based on a pre-defined set of known models
-            internal mapping. Supported values: ``"tree"``, ``"deep"``, ``"kernel"``,
-            ``"partition"``, ``"linear"``, ``"permutation"``, and ``"additive"``.
+            internal mapping. Supported values: ``"tree"``, ``"kernel"``, ``"partition"``,
+            ``"linear"``, ``"permutation"``, and ``"additive"``.
         **kwargs
             Optionally, additional keyword arguments passed to ``shap_method``.
 
@@ -983,7 +983,7 @@ class _RegressionSHAPExplainers:
                 model_sklearn.predict, background_X, **kwargs
             )
         elif shap_method == _SHAPMethod.PARTITION:
-            explainer = shap.PermutationExplainer(
+            explainer = shap.PartitionExplainer(
                 model_sklearn.predict, background_X, **kwargs
             )
         elif shap_method == _SHAPMethod.KERNEL:
@@ -991,8 +991,6 @@ class _RegressionSHAPExplainers:
                 model_sklearn.predict, background_X, keep_index=True, **kwargs
             )
         elif shap_method == _SHAPMethod.LINEAR:
-            explainer = shap.LinearExplainer(model_sklearn, background_X, **kwargs)
-        elif shap_method == _SHAPMethod.DEEP:
             explainer = shap.LinearExplainer(model_sklearn, background_X, **kwargs)
         elif shap_method == _SHAPMethod.ADDITIVE:
             explainer = shap.AdditiveExplainer(model_sklearn, background_X, **kwargs)
