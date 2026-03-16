@@ -355,10 +355,6 @@ class BaseDataTransformer(ABC):
 
         Alternatively, if the `columns` parameter was specified when instantiating the transformer,
         the `component_mask` is automatically generated to target only the specified column names.
-
-        If `mask_components` was set to `False` when instantiating `BaseDataTransformer`, then any provided
-        `component_masks` will be passed as a keyword argument `ts_transform`; the user can then manually specify
-        how the `component_mask` should be applied to each series.
         """
 
         desc = f"Transform ({self._name})"

@@ -206,7 +206,7 @@ class TestLocalFittableInvertibleDataTransformer:
         )
         assert transformed == transformed_copy
 
-    @pytest.mark.parametrize("col_names", [["A"], ["B"], ["A", "B"]])
+    @pytest.mark.parametrize("col_names", ["A", None, ["A"], ["B"], ["A", "B"]])
     def test_columns_subset(self, col_names):
         """
         Tests if the `columns` argument correctly applies the transform and
@@ -240,7 +240,7 @@ class TestLocalFittableInvertibleDataTransformer:
                 value=2, length=10, column_name="B"
             )
 
-        assert test_input == test_input_copy
+        assert mock.inverse_transform(transformed) == test_input
         assert test_input == test_input_copy
 
     def test_input_transformed_multiple_series(self):

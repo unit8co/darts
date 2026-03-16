@@ -154,7 +154,7 @@ class TestBaseDataTransformer:
     def test_columns_validation(self):
         """
         Tests that string columns are converted to lists, and that
-        passing a contradictory `mask_components=False` and zcolumns` argument raises a ValueError.
+        passing a contradictory `mask_components=False` and `columns` argument raises a ValueError.
         """
         mock_string = self.DataTransformerMock(scale=2, translation=2, columns="A")
         assert mock_string._columns == ["A"]
