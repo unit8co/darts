@@ -25,4 +25,3 @@ docs_env
 .venv
 
 uv.lock
-.python-version
