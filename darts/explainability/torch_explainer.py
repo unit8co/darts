@@ -689,7 +689,7 @@ class TorchExplainer(_ForecastingModelExplainer):
         ):
             raise_log(
                 ValueError(
-                    f"`target_component` is required when the model has more than one component. "
+                    f"The `target_component` parameter is required when the model has more than one component. "
                     f"Please select a component from {self.explainer.target_components_likelihood}."
                 ),
                 logger,

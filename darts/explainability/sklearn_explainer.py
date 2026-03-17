@@ -62,7 +62,7 @@ from darts.explainability.explainability_result import (
     SHAPExplainabilityResult,
     SHAPSingleExplainabilityResult,
 )
-from darts.logging import get_logger, raise_if, raise_log
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
 from darts.utils.data.tabularization import create_lagged_prediction_data
@@ -669,10 +669,14 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         **kwargs
             Optionally, additional keyword arguments passed to ``shap.force_plot()``.
         """
-        raise_if(
-            target_component is None and len(self.target_components) > 1,
-            "The component parameter is required when the model has more than one component.",
-        )
+        if target_component is None and len(self.target_components) > 1:
+            raise_log(
+                ValueError(
+                    f"The `target_component` parameter is required when the model has more than one component. "
+                    f"Please select a component from {self.target_components}."
+                ),
+                logger,
+            )
 
         if target_component is None:
             target_component = self.target_components[0]
