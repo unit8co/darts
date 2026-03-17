@@ -1,6 +1,6 @@
 """
-SHAP Explainer for Torch Models
--------------------------------
+SHAP Explainer for PyTorch Models
+---------------------------------
 
 A `SHAP <https://github.com/slundberg/shap>`__ explainer for Darts ``TorchForecastingModel`` instances.
 
