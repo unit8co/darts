@@ -360,7 +360,9 @@ class TestTFTExplainer:
         assert ((stc_imp.round(decimals=1) - stc_expected).abs() <= 0.1).all().all()
 
         with patch("matplotlib.pyplot.show") as _:
-            _ = explainer.plot_variable_selection(results)
+            axes = explainer.plot_variable_selection(results)
+        assert isinstance(axes, np.ndarray)
+        assert len(axes) == 3
 
     def test_attention_explanation(self):
         """Test attention (feature importance) explanation results and plotting."""

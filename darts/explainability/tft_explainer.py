@@ -243,7 +243,7 @@ class TFTExplainer(_ForecastingModelExplainer):
         expl_result: TFTExplainabilityResult,
         fig_size=None,
         max_nr_series: int = 5,
-    ):
+    ) -> np.ndarray | list[np.ndarray]:
         """Plots the variable selection / feature importances of the `TFTModel` based on the input.
         The figure includes three subplots:
 
@@ -260,6 +260,12 @@ class TFTExplainer(_ForecastingModelExplainer):
             The size of the figure to be plotted.
         max_nr_series
             The maximum number of plots to show in case `expl_result` was computed on multiple series.
+
+        Returns
+        -------
+        np.ndarray | list[np.ndarray]
+            The matplotlib axes used for plotting. Returns a single array of axes when plotting one series,
+            and a list of axes arrays when plotting multiple series.
         """
         encoder_importance = expl_result.get_encoder_importance()
         decoder_importance = expl_result.get_decoder_importance()
@@ -269,6 +275,7 @@ class TFTExplainer(_ForecastingModelExplainer):
             decoder_importance = [decoder_importance]
             static_covariates_importance = [static_covariates_importance]
 
+        plotted_axes: list[np.ndarray] = []
         uses_static_covariates = not static_covariates_importance[0].empty
         for idx, (enc_imp, dec_imp, stc_imp) in enumerate(
             zip(encoder_importance, decoder_importance, static_covariates_importance)
@@ -293,9 +300,16 @@ class TFTExplainer(_ForecastingModelExplainer):
                 )
             fig.tight_layout()
             plt.show()
+            plotted_axes.append(axes)
 
             if idx + 1 == max_nr_series:
                 break
+
+        if not plotted_axes:
+            return []
+        if len(plotted_axes) == 1:
+            return plotted_axes[0]
+        return plotted_axes
 
     def plot_attention(
         self,
