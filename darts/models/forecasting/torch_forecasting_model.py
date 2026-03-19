@@ -802,6 +802,51 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 logger,
             )
 
+    def _verify_dtypes(
+        self,
+        series,
+        past_covariates,
+        future_covariates,
+        val_series,
+        val_past_covariates,
+        val_future_covariates,
+    ):
+        """Verify that all input series share the same dtype as the target series."""
+        target_dtype = series[0].dtype
+        inputs = [
+            ("past_covariates", past_covariates),
+            ("future_covariates", future_covariates),
+            ("val_series", val_series),
+            ("val_past_covariates", val_past_covariates),
+            ("val_future_covariates", val_future_covariates),
+        ]
+        for name, cov_list in inputs:
+            if cov_list is None:
+                continue
+            for cov in cov_list:
+                if cov.dtype != target_dtype:
+                    raise_log(
+                        ValueError(
+                            f"`{name}` dtype `{cov.dtype}` does not match target `series` dtype "
+                            f"`{target_dtype}`. All series must have the same dtype. Consider casting "
+                            f"with `TimeSeries.astype()`."
+                        ),
+                        logger,
+                    )
+        all_series = list(series) + list(val_series or [])
+        for s in all_series:
+            if s.static_covariates is not None:
+                sc_dtype = s.static_covariates_values(copy=False).dtype
+                if sc_dtype != target_dtype:
+                    raise_log(
+                        ValueError(
+                            f"`static_covariates` dtype `{sc_dtype}` does not match target `series` dtype "
+                            f"`{target_dtype}`. All series must have the same dtype. Consider casting "
+                            f"with `TimeSeries.astype()`."
+                        ),
+                        logger,
+                    )
+
     def _update_covariates_use(self):
         """Based on the Forecasting class and the training_sample attribute, update the
         uses_[past/future/static]_covariates attributes."""
@@ -1110,6 +1155,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 val_past_covariates=val_past_covariates,
                 val_future_covariates=val_future_covariates,
             )
+        )
+
+        self._verify_dtypes(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            val_series=val_series,
+            val_past_covariates=val_past_covariates,
+            val_future_covariates=val_future_covariates,
         )
 
         train_dataset = self._build_train_dataset(
