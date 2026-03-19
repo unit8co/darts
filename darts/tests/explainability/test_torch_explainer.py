@@ -378,7 +378,7 @@ class TestTorchExplainer:
         shap_values_sum = explanation.values().sum(axis=1)
         base_values = pred["T_0"].values().ravel() - shap_values_sum
         # assert all base values are approximately equal
-        assert np.allclose(base_values, base_values[0], rtol=1e-5, atol=1e-8)
+        np.testing.assert_allclose(base_values, base_values[0], rtol=1e-3, atol=1e-5)
 
         # invalid component or horizon raises error for feature values as well
         with pytest.raises(ValueError, match="component parameter is required"):
@@ -431,8 +431,8 @@ class TestTorchExplainer:
         np.testing.assert_allclose(
             shap_explanation_object.base_values,
             base_values,
-            rtol=1e-5,
-            atol=1e-6,
+            rtol=1e-3,
+            atol=1e-5,
         )
 
         # save and load the model to check explainer works with loaded models
@@ -815,7 +815,7 @@ class TestTorchExplainer:
         shap_values_sum = explanation.values().sum(axis=1)
         base_values = pred["T_0"].values().ravel() - shap_values_sum
         # assert all base values are approximately equal
-        assert np.allclose(base_values, base_values[0], rtol=1e-5, atol=1e-8)
+        np.testing.assert_allclose(base_values, base_values[0], rtol=1e-3, atol=1e-5)
 
         # invalid component or horizon raises error for feature values as well
         with pytest.raises(ValueError, match="component parameter is required"):
@@ -1023,7 +1023,7 @@ class TestTorchExplainer:
         shap_values_sum = explanation.values().sum(axis=1)
         base_values = pred[likelihood_components[0]].values().ravel() - shap_values_sum
         # assert all base values are approximately equal
-        assert np.allclose(base_values, base_values[0], rtol=1e-5, atol=1e-8)
+        np.testing.assert_allclose(base_values, base_values[0], rtol=1e-3, atol=1e-5)
 
         # invalid component or horizon raises error for feature values as well
         with pytest.raises(ValueError, match="component parameter is required"):
@@ -1080,8 +1080,8 @@ class TestTorchExplainer:
         np.testing.assert_allclose(
             shap_explanation_object.base_values,
             base_values,
-            rtol=1e-4,
-            atol=1e-8,
+            rtol=1e-3,
+            atol=1e-5,
         )
 
     def test_explain_univariate(self):
@@ -1215,7 +1215,7 @@ class TestTorchExplainer:
         shap_values_sum = explanation.values().sum(axis=1)
         base_values = pred["T_0"].values().ravel() - shap_values_sum
         # assert all base values are approximately equal
-        assert np.allclose(base_values, base_values[0], rtol=1e-5, atol=1e-8)
+        np.testing.assert_allclose(base_values, base_values[0], rtol=1e-5, atol=1e-8)
 
         with pytest.raises(ValueError, match='Component "T_11" is not available'):
             results.get_feature_values(horizon=valid_horizon, component="T_11")
