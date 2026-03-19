@@ -53,7 +53,7 @@ a single forecast (equivalent to calling ``model.predict(n=output_chunk_length)`
 
 from collections.abc import Sequence
 from enum import Enum
-from typing import NewType
+from typing import Any, NewType
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -220,6 +220,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         foreground_future_covariates: TimeSeriesLike | None = None,
         horizons: int | Sequence[int] | None = None,
         target_components: Sequence[str] | None = None,
+        **kwargs,
     ) -> SHAPExplainabilityResult:
         """
         Explains foreground time series forecasts and returns a :class:`SHAPExplainabilityResult
@@ -248,6 +249,8 @@ class SKLearnExplainer(_ForecastingModelExplainer):
             All values must be no greater than ``output_chunk_length`` of the explained forecasting model.
         target_components
             Optionally, a string or sequence of strings with the target components to explain.
+        **kwargs
+            Other keyword arguments to be passed to the SHAP explainer.
 
         Returns
         -------
@@ -343,7 +346,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
             )
 
             shap_ = self.explainers.shap_explanations(
-                foreground_X, horizons, target_names
+                foreground_X, horizons, target_names, **kwargs
             )
 
             shap_values_dict = {}
@@ -390,6 +393,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         foreground_past_covariates: TimeSeries | None = None,
         foreground_future_covariates: TimeSeries | None = None,
         target_components: Sequence[str] | None = None,
+        **kwargs,
     ) -> SHAPSingleExplainabilityResult:
         """
         Explains a foreground time series forecast starting from one last forecastable timestamp and returns a
@@ -415,6 +419,8 @@ class SKLearnExplainer(_ForecastingModelExplainer):
             Optionally, one or a sequence of future covariates ``TimeSeries`` if required by the forecasting model.
         target_components
             Optionally, a string or sequence of strings with the target components to explain.
+        **kwargs
+            Other keyword arguments to be passed to the SHAP explainer.
 
         Returns
         -------
@@ -509,7 +515,9 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         # explain only the last forecasted timestamp
         foreground_X = foreground_X[-1:]
 
-        shap_ = self.explainers.shap_explanations_single(foreground_X, target_names)
+        shap_ = self.explainers.shap_explanations_single(
+            foreground_X, target_names, **kwargs
+        )
 
         freq = foreground_series_[0].freq
         prediction_time = (
@@ -555,6 +563,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         target_components: str | Sequence[str] | None = None,
         num_samples: int | None = None,
         plot_type: str | None = "dot",
+        plot_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ) -> dict[int, dict[str, shap.Explanation]]:
         """
@@ -585,6 +594,10 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         plot_type
             Optionally, specify which of the SHAP library plot type to use. Can be one of ``"dot"``, ``"bar"``,
             ``"violin"``.
+        plot_kwargs
+            Optionally, a dictionary of keyword arguments to be passed to ``shap.summary_plot()``.
+        **kwargs
+            Other keyword arguments to be passed to the SHAP explainer.
 
         Returns
         -------
@@ -618,7 +631,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         )
 
         shaps_ = self.explainers.shap_explanations(
-            foreground_X, horizons, target_components
+            foreground_X, horizons, target_components, **kwargs
         )
 
         for t in target_components:
@@ -632,7 +645,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
                     shaps_[h][t],
                     foreground_X,
                     plot_type=plot_type,
-                    **kwargs,
+                    **(plot_kwargs or {}),
                 )
         return shaps_
 
@@ -643,6 +656,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         foreground_future_covariates: TimeSeries | None = None,
         horizon: int | None = 1,
         target_component: str | None = None,
+        plot_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ):
         """
@@ -671,8 +685,10 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         target_component
             Optionally, the target component to plot. If the target series is multivariate, the target component
             must be specified.
+        plot_kwargs
+            Optionally, a dictionary of keyword arguments to be passed to ``shap.force_plot()``.
         **kwargs
-            Optionally, additional keyword arguments passed to ``shap.force_plot()``.
+            Other keyword arguments to be passed to the SHAP explainer.
         """
         if target_component is None and len(self.target_components) > 1:
             raise_log(
@@ -710,14 +726,14 @@ class SKLearnExplainer(_ForecastingModelExplainer):
         )
 
         shap_ = self.explainers.shap_explanations(
-            foreground_X, [horizon], [target_component]
+            foreground_X, [horizon], [target_component], **kwargs
         )
 
         return shap.force_plot(
             base_value=shap_[horizon][target_component],
             features=foreground_X,
             out_names=target_component,
-            **kwargs,
+            **(plot_kwargs or {}),
         )
 
 
@@ -835,6 +851,7 @@ class _RegressionSHAPExplainers:
         foreground_X: pd.DataFrame,
         horizons: Sequence[int] | None = None,
         target_components: Sequence[str] | None = None,
+        **kwargs,
     ) -> dict[int, dict[str, shap.Explanation]]:
         """
         Return a dictionary of dictionaries of shap.Explanation instances:
@@ -850,6 +867,8 @@ class _RegressionSHAPExplainers:
             provide an `output_chunk_length` parameter. `horizons` must not be larger than `output_chunk_length`.
         target_components
             Optionally, a list of strings with the target components we want to explain.
+        **kwargs
+            Other keyword arguments to be passed to the SHAP explainer.
 
         """
 
@@ -862,14 +881,14 @@ class _RegressionSHAPExplainers:
                 for t_idx, t in enumerate(self.target_components):
                     if t not in target_components:
                         continue
-                    explainer = self.explainers[h - 1][t_idx](foreground_X)
+                    explainer = self.explainers[h - 1][t_idx](foreground_X, **kwargs)
                     explainer.base_values = explainer.base_values.ravel()
                     explainer.time_index = foreground_X.index
                     tmp_n[t] = explainer
                 shap_explanations[h] = tmp_n
         else:
             # the native multioutput forces us to recompute all horizons and targets
-            shap_explanation_tmp = self.explainers(foreground_X)
+            shap_explanation_tmp = self.explainers(foreground_X, **kwargs)
             for h in horizons:
                 tmp_n = {}
                 for t_idx, t in enumerate(self.target_components):
@@ -900,6 +919,7 @@ class _RegressionSHAPExplainers:
         self,
         foreground_X: pd.DataFrame,
         target_components: Sequence[str],
+        **kwargs,
     ) -> dict[str, shap.Explanation]:
         """
         Return a dictionary of dictionaries of shap.Explanation instances:
@@ -911,6 +931,8 @@ class _RegressionSHAPExplainers:
             the Dataframe of lags features specific of darts SKLearnModel.
         target_components
             A list of strings with the target components we want to explain.
+        **kwargs
+            Other keyword arguments to be passed to the SHAP explainer.
         """
         # create a unified dictionary {target_component : shap.Explanation}
         # between multiOutputRegressor estimators and native multiOutput estimators
@@ -922,7 +944,9 @@ class _RegressionSHAPExplainers:
                 shap_values_list, shap_data_list, base_values_list = [], [], []
                 feature_names = None
                 for h in range(1, self.n + 1):
-                    sub_explanation = self.explainers[h - 1][t_idx](foreground_X)
+                    sub_explanation = self.explainers[h - 1][t_idx](
+                        foreground_X, **kwargs
+                    )
                     shap_values_list.append(sub_explanation.values.ravel())
                     shap_data_list.append(sub_explanation.data.ravel())
                     base_values_list.append(sub_explanation.base_values.ravel())
@@ -939,7 +963,7 @@ class _RegressionSHAPExplainers:
                 )
         else:
             # the native multioutput forces us to recompute all horizons and targets
-            shap_explanation_tmp = self.explainers(foreground_X)
+            shap_explanation_tmp = self.explainers(foreground_X, **kwargs)
             shap_values: np.ndarray = shap_explanation_tmp.values
             shap_data: np.ndarray = shap_explanation_tmp.data
             base_values: np.ndarray = shap_explanation_tmp.base_values

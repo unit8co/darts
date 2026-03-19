@@ -236,6 +236,7 @@ class TorchExplainer(_ForecastingModelExplainer):
         foreground_future_covariates: TimeSeriesLike | None = None,
         horizons: int | Sequence[int] | None = None,
         target_components: Sequence[str] | None = None,
+        **kwargs,
     ) -> SHAPExplainabilityResult:
         """
         Explains foreground time series forecasts and returns a :class:`SHAPExplainabilityResult
@@ -264,6 +265,9 @@ class TorchExplainer(_ForecastingModelExplainer):
             All values must be no greater than ``output_chunk_length`` of the explained forecasting model.
         target_components
             Optionally, a string or sequence of strings with the target components to explain.
+        **kwargs
+            Additional keyword arguments to be passed to the SHAP explainer when calling it for explanations, e.g.,
+            `npermutations` for the default permutation explainer.
 
         Returns
         -------
@@ -361,7 +365,7 @@ class TorchExplainer(_ForecastingModelExplainer):
             )
 
             shap_ = self.explainer.shap_explanations(
-                foreground_X, horizons, target_names
+                foreground_X, horizons, target_names, **kwargs
             )
 
             shap_values_dict = {}
@@ -408,6 +412,7 @@ class TorchExplainer(_ForecastingModelExplainer):
         foreground_past_covariates: TimeSeries | None = None,
         foreground_future_covariates: TimeSeries | None = None,
         target_components: Sequence[str] | None = None,
+        **kwargs,
     ):
         """
         Explains a foreground time series forecast starting from one last forecastable timestamp and returns a
@@ -433,6 +438,9 @@ class TorchExplainer(_ForecastingModelExplainer):
             Optionally, one or a sequence of future covariates ``TimeSeries`` if required by the forecasting model.
         target_components
             Optionally, a string or sequence of strings with the target components to explain.
+        **kwargs
+            Additional keyword arguments to be passed to the SHAP explainer when calling it for explanations, e.g.,
+            `npermutations` for the default permutation explainer.
 
         Returns
         -------
@@ -530,7 +538,9 @@ class TorchExplainer(_ForecastingModelExplainer):
         schema = schemas[-1]
         prediction_time = prediction_times[-1]
 
-        shap_ = self.explainer.shap_explanations_single(foreground_X, target_names)
+        shap_ = self.explainer.shap_explanations_single(
+            foreground_X, target_names, **kwargs
+        )
 
         shap_values_dict = {}
         feature_values_dict = {}
@@ -571,6 +581,7 @@ class TorchExplainer(_ForecastingModelExplainer):
         target_components: str | Sequence[str] | None = None,
         num_samples: int | None = None,
         plot_type: str | None = "dot",
+        plot_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ) -> dict[int, dict[str, shap.Explanation]]:
         """
@@ -601,6 +612,11 @@ class TorchExplainer(_ForecastingModelExplainer):
         plot_type
             Optionally, specify which of the SHAP library plot type to use. Can be one of ``"dot"``, ``"bar"``,
             ``"violin"``.
+        plot_kwargs
+            Optionally, a dictionary of keyword arguments to be passed to ``shap.summary_plot()``.
+        **kwargs
+            Additional keyword arguments to be passed to the SHAP explainer when calling it for explanations, e.g.,
+            `npermutations` for the default permutation explainer.
 
         Returns
         -------
@@ -634,7 +650,7 @@ class TorchExplainer(_ForecastingModelExplainer):
         )
 
         shaps_ = self.explainer.shap_explanations(
-            foreground_X, horizons, target_components
+            foreground_X, horizons, target_components, **kwargs
         )
 
         for t in target_components:
@@ -646,7 +662,7 @@ class TorchExplainer(_ForecastingModelExplainer):
                     shaps_[h][t],
                     foreground_X,
                     plot_type=plot_type,
-                    **kwargs,
+                    **(plot_kwargs or {}),
                 )
         return shaps_
 
@@ -657,6 +673,7 @@ class TorchExplainer(_ForecastingModelExplainer):
         foreground_future_covariates: TimeSeries | None = None,
         horizon: int | None = 1,
         target_component: str | None = None,
+        plot_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ):
         """
@@ -685,8 +702,11 @@ class TorchExplainer(_ForecastingModelExplainer):
         target_component
             Optionally, the target component to plot. If the target series is multivariate, the target component
             must be specified.
+        plot_kwargs
+            Optionally, a dictionary of keyword arguments to be passed to ``shap.force_plot()``.
         **kwargs
-            Optionally, additional keyword arguments passed to ``shap.force_plot()``.
+            Additional keyword arguments to be passed to the SHAP explainer when calling it for explanations, e.g.,
+            `npermutations` for the default permutation explainer.
         """
         if (
             target_component is None
@@ -730,14 +750,14 @@ class TorchExplainer(_ForecastingModelExplainer):
         )
 
         shap_ = self.explainer.shap_explanations(
-            foreground_X, [horizon], [target_component]
+            foreground_X, [horizon], [target_component], **kwargs
         )
 
         return shap.force_plot(
             base_value=shap_[horizon][target_component],
             features=foreground_X,
             out_names=target_component,
-            **kwargs,
+            **(plot_kwargs or {}),
         )
 
 
@@ -1040,6 +1060,7 @@ class _DeepSHAPExplainer:
         foreground_X: np.ndarray,
         horizons: Sequence[int],
         target_components: Sequence[str],
+        **kwargs,
     ) -> dict[int, dict[str, shap.Explanation]]:
         """
         Computes SHAP explanations for the given foreground data, horizons, and target components.
@@ -1058,6 +1079,9 @@ class _DeepSHAPExplainer:
         target_components
             A sequence of strings with the target components to explain. Each component must be among the target
             components of the explained forecasting model.
+        **kwargs
+            Additional keyword arguments to be passed to the SHAP explainer when calling it for explanations.
+             This can include parameters for sampling or approximation methods used by some SHAP explainers.
 
         Returns
         -------
@@ -1066,7 +1090,7 @@ class _DeepSHAPExplainer:
             objects for each horizon and target component, where the SHAP values are extracted and reshaped for
             easier accessibility.
         """
-        shap_explanation_tmp: shap.Explanation = self.explainer(foreground_X)
+        shap_explanation_tmp: shap.Explanation = self.explainer(foreground_X, **kwargs)
         shap_values: np.ndarray = shap_explanation_tmp.values
         shap_data: np.ndarray = shap_explanation_tmp.data
         shap_base_values: np.ndarray = shap_explanation_tmp.base_values
@@ -1105,6 +1129,7 @@ class _DeepSHAPExplainer:
         self,
         foreground_X: np.ndarray,
         target_components: Sequence[str],
+        **kwargs,
     ) -> dict[str, shap.Explanation]:
         """
         Similar to :func:`shap_explanations()`, but computes SHAP explanations for only one forecasted timestamp, which
@@ -1120,6 +1145,9 @@ class _DeepSHAPExplainer:
         target_components
             A sequence of strings with the target components to explain. Each component must be among the target
             components of the explained forecasting model.
+        **kwargs
+            Additional keyword arguments to be passed to the SHAP explainer when calling it for explanations.
+            This can include parameters for sampling or approximation methods used by some SHAP explainers.
 
         Returns
         -------
@@ -1127,7 +1155,7 @@ class _DeepSHAPExplainer:
             A dictionary ``{target_component : shap.Explanation}`` containing the SHAP Explanation objects for each
             target component, where the SHAP values are extracted and reshaped for easier accessibility.
         """
-        shap_explanation_tmp: shap.Explanation = self.explainer(foreground_X)
+        shap_explanation_tmp: shap.Explanation = self.explainer(foreground_X, **kwargs)
         shap_values: np.ndarray = shap_explanation_tmp.values
         shap_data: np.ndarray = shap_explanation_tmp.data
         shap_base_values: np.ndarray = shap_explanation_tmp.base_values
