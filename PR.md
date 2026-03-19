@@ -57,6 +57,11 @@ For torch models, we need a new explainer that can handle the different model ar
     - returns predictions also in a flattened 2D format, which is then passed to SHAP explainer.
 - It constructs SHAP result objects with the same structure as `SKLearnExplainer` for consistency in querying and visualization.
 
+### API Reference
+- [PermutationExplainer](https://shap.readthedocs.io/en/latest/generated/shap.PermutationExplainer.html#shap.PermutationExplainer) is the default SHAP method for `TorchExplainer`. Other SHAP explainers have similar class signatures.
+- [`PLForecastingModule._get_batch_prediction()`](https://github.com/unit8co/darts/blob/fdce8f2cf1349974ad6c0d81ffc121e72288a75b/darts/models/forecasting/pl_forecasting_module.py#L583) is incorporated into `TorchExplainer._func_wrapper()` for SHAP, which handles the conversion between flat numpy arrays and the torch tensors expected by the module.
+- [`create_lagged_component_names()`](https://github.com/unit8co/darts/blob/fdce8f2cf1349974ad6c0d81ffc121e72288a75b/darts/utils/data/tabularization/tabularization.py#L829) is the ground-truth for feature naming conventions in Darts.
+
 ## Differences to SKLearnExplainer
 
 - Scope: `TorchForecastingModel` vs `SKLearnModel`.
