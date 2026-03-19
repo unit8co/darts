@@ -101,7 +101,7 @@ class TorchExplainer(_ForecastingModelExplainer):
         background_future_covariates: TimeSeriesLike | None = None,
         background_num_samples: int | None = None,
         batch_size: int | None = None,
-        shap_method: str = "kernel",
+        shap_method: str = "permutation",
         **kwargs,
     ):
         """Torch Model Explainer.
@@ -135,7 +135,7 @@ class TorchExplainer(_ForecastingModelExplainer):
             ``"kernel"`` or ``"permutation"``.
         shap_method
             Optionally, the SHAP method to apply. Supported values: ``"kernel"``, ``"sampling"``,
-            ``"partition"``, and ``"permutation"``. Default: ``"kernel"``.
+            ``"partition"``, and ``"permutation"``. Default: ``"permutation"``.
         **kwargs
             Optionally, additional keyword arguments passed to ``shap_method``.
 
@@ -751,7 +751,7 @@ class _DeepSHAPExplainer:
         background_past_covariates: Sequence[TimeSeries] | None,
         background_future_covariates: Sequence[TimeSeries] | None,
         background_num_samples: int | None = None,
-        shap_method: _SHAPMethod = _SHAPMethod.KERNEL,
+        shap_method: _SHAPMethod = _SHAPMethod.PERMUTATION,
         batch_size: int | None = None,
         **kwargs,
     ):
