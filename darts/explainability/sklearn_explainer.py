@@ -4,6 +4,11 @@ SHAP Explainer for SKLearn Models
 
 A `SHAP <https://github.com/slundberg/shap>`__ explainer for Darts ``SKLearnModel`` instances.
 
+For detailed examples and tutorials, see:
+
+* `Explainability of Forecasting Models
+  <https://unit8co.github.io/darts/examples/29-Explainability-examples.html>`__.
+
 :class:`SKLearnExplainer` computes SHAP values, which measure each input feature's contribution to a prediction
 relative to a baseline (average prediction).
 

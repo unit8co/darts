@@ -4,6 +4,11 @@ SHAP Explainer for PyTorch Models
 
 A `SHAP <https://github.com/slundberg/shap>`__ explainer for Darts ``TorchForecastingModel`` instances.
 
+For detailed examples and tutorials, see:
+
+* `Explainability of Forecasting Models
+  <https://unit8co.github.io/darts/examples/29-Explainability-examples.html>`__.
+
 :class:`TorchExplainer` computes SHAP values, which measure each input feature's contribution to a prediction
 relative to a baseline (average prediction).
 
