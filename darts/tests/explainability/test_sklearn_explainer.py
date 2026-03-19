@@ -1082,7 +1082,7 @@ class TestSKLearnExplainer:
         [
             (
                 LinearRegressionModel(lags=2, output_chunk_length=1),
-                "deep",
+                "linear",
                 {},
                 shap.explainers.Linear,
             ),
@@ -1096,7 +1096,7 @@ class TestSKLearnExplainer:
                 LinearRegressionModel(lags=2, output_chunk_length=1),
                 "partition",
                 {},
-                shap.explainers.Permutation,
+                shap.explainers.Partition,
             ),
             (
                 SKLearnModel(

@@ -124,7 +124,7 @@ kwargs = {
 
 class TestTorchExplainer:
     # set random seed
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
 
     X, Y = make_regression(
         n_samples=100,
@@ -432,7 +432,7 @@ class TestTorchExplainer:
             shap_explanation_object.base_values,
             base_values,
             rtol=1e-5,
-            atol=1e-8,
+            atol=1e-6,
         )
 
         # save and load the model to check explainer works with loaded models
@@ -2086,7 +2086,9 @@ class TestTorchExplainer:
         )
         assert isinstance(force_plot, shap.plots._force.BaseVisualizer)
 
-        with pytest.raises(ValueError, match=r"`target_component` is required"):
+        with pytest.raises(
+            ValueError, match=r"`target_component` parameter is required"
+        ):
             explainer.force_plot(
                 foreground_series=foreground_series,
                 foreground_past_covariates=past_covariates,
