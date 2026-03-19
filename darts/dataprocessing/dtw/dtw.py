@@ -38,9 +38,9 @@ def _dtw_cost_matrix(
     return dtw
 
 
-def _dtw_path(dtw: CostMatrix) -> np.ndarray:
-    i = dtw.n
-    j = dtw.m
+def _dtw_path(dtw: CostMatrix, n: int, m: int) -> np.ndarray:
+    i = n
+    j = m
 
     path = []
 
@@ -133,7 +133,7 @@ def _fast_dtw(
     half_y = _down_sample(y)
 
     low_res_cost = _fast_dtw(half_x, half_y, dist, radius, depth + 1)
-    low_res_path = _dtw_path(low_res_cost)
+    low_res_path = _dtw_path(low_res_cost, n, m)
     window = _expand_window(low_res_path, len(x), len(y), radius)
     cost = _dtw_cost_matrix(x, y, dist, window)
 
@@ -189,7 +189,7 @@ class DTWAlignment:
 
         if hasattr(self, "_path"):
             return self._path
-        self._path = _dtw_path(self.cost)
+        self._path = _dtw_path(self.cost, self.n, self.m)
         return self._path
 
     def distance(self) -> float:
