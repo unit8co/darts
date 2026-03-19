@@ -2019,7 +2019,7 @@ class TestTorchExplainer:
             foreground_past_covariates=past_covariates,
             foreground_future_covariates=future_covariates,
             num_samples=2,
-            show=False,
+            plot_kwargs={"show": False},
         )
         assert len(dict_shap_values) == model.output_chunk_length
         for horizon in range(1, model.output_chunk_length + 1):
@@ -2276,7 +2276,7 @@ class TestTorchExplainer:
                 foreground_past_covariates=past_covariates,
                 foreground_future_covariates=future_covariates,
                 num_samples=1000,
-                show=False,
+                plot_kwargs={"show": False},
             )
 
         assert explainer.explainer._batch_collate_np([(None,)], [0]) is None

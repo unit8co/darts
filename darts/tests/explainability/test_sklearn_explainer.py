@@ -625,7 +625,7 @@ class TestSKLearnExplainer:
             )
 
         # Check the dimensions of returned values
-        dict_shap_values = shap_explain.summary_plot(show=False)
+        dict_shap_values = shap_explain.summary_plot(plot_kwargs={"show": False})
         # One nested dict per horizon
         assert len(dict_shap_values) == m_0.output_chunk_length
         # Size of nested dict match number of component
