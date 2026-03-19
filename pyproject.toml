@@ -1,5 +1,8 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = [
+    "setuptools>=61.0",
+    "pybind11>=2.10.0",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -104,6 +107,9 @@ exclude = ["examples*", "datasets*", "docs*", "darts.tests*"]
 
 [tool.setuptools.package-data]
 darts = ["py.typed"]
+
+[tool.cibuildwheel]
+archs = "all"
 
 [tool.pytest.ini_options]
 addopts = [

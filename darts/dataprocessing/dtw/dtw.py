@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from darts import TimeSeries
+from darts._internal import dtw_cost_matrix_no_window_1d
 from darts.dataprocessing.dtw.cost_matrix import CostMatrix
 from darts.dataprocessing.dtw.window import CRWindow, NoWindow, Window
 from darts.logging import get_logger, raise_if, raise_if_not
@@ -362,6 +363,9 @@ def dtw(
             logger,
         )
         cost_matrix = _fast_dtw(values_x, values_y, distance, multi_grid_radius)
+    elif isinstance(window, NoWindow) and both_univariate:
+        cost_matrix = np.full((len(values_x) + 1, len(values_y) + 1), np.inf)
+        dtw_cost_matrix_no_window_1d(values_x, values_y, cost_matrix)
     else:
         cost_matrix = _dtw_cost_matrix(values_x, values_y, distance, window)
 
