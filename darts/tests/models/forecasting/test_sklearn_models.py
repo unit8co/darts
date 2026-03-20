@@ -1795,7 +1795,10 @@ class TestSKLearnModels:
     @pytest.mark.parametrize("multi_models", [True, False])
     @pytest.mark.parametrize("multi_components", [True, False])
     def test_get_estimator_multiquantile(
-        self, multi_models: bool, multi_components: bool
+        self,
+        multi_models: bool,
+        multi_components: bool,
+        caplog,
     ):
         """Check estimator getter when using quantile value"""
         ocl = 3
@@ -1828,6 +1831,10 @@ class TestSKLearnModels:
             # only one sub-model per quantile (one component, one predicted horizon)
             assert not isinstance(model.model, MultiOutputRegressor)
             assert not hasattr(model.model, "estimators_")
+
+        with caplog.at_level(logging.WARNING):
+            _ = model.get_estimator(horizon=0, target_dim=0, quantile=0.5)
+            assert "the same estimator forecasts all quantiles jointly" in caplog.text
 
         # check that retrieve sub-models prediction match the "wrapper" model predictions
         pred_input = ts[-lags:] if multi_models else ts[-lags - ocl + 1 :]
