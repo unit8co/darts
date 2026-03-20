@@ -67,7 +67,7 @@ jobs:
       - name: "Clone repository"
         uses: actions/checkout@v4
         with:
-          fetch-tags: true  # Fetch all tags
+          fetch-depth: 0  # Fetch all history and tags
 
       - name: "Get latest version tag"
         id: get_version

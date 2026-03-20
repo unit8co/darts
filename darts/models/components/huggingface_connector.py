@@ -12,9 +12,7 @@ from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
 
 from darts.logging import get_logger, raise_log
-from darts.models.forecasting.pl_forecasting_module import (
-    PLForecastingModule,
-)
+from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 
 logger = get_logger(__name__)
 

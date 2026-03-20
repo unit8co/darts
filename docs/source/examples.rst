@@ -187,7 +187,7 @@ TFT model example notebook:
    examples/13-TFT-examples.ipynb
 
 TimeSeries Dense Encoder (TiDE) Model
-=======================================
+=====================================
 
 TiDE model example notebook:
 
@@ -197,7 +197,7 @@ TiDE model example notebook:
    examples/18-TiDE-examples.ipynb
 
 TimeSeries Mixer (TSMixer) Model
-=======================================
+================================
 
 TSMixer model example notebook:
 
@@ -217,7 +217,7 @@ NeuralForecastModel example notebook:
    examples/26-NeuralForecast-examples.ipynb
 
 Chronos-2 Model
-=======================================
+===============
 
 Chronos-2 Foundation model example notebook:
 
@@ -226,8 +226,18 @@ Chronos-2 Foundation model example notebook:
 
    examples/25-Chronos-2-examples.ipynb
 
+Torch and Foundation Model Fine-Tuning
+======================================
+
+Torch and Foundation model fine-tuning example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.ipynb
+
 Ensemble Models
-=============================
+===============
 
 Ensemble models example notebook:
 
@@ -257,7 +267,7 @@ Gaussian process filter model example notebook:
    examples/11-GP-filter-examples.ipynb
 
 Anomaly Detection
-=======================================
+=================
 
 Anomaly detection example notebook:
 
@@ -267,7 +277,7 @@ Anomaly detection example notebook:
    examples/22-anomaly-detection-examples.ipynb
 
 Dynamic Time Warping (DTW)
-=============================
+==========================
 
 Dynamic time warping example notebook:
 
