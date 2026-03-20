@@ -1189,6 +1189,60 @@ class TestRegressionEnsembleModels:
                 ),
             )
 
+    def test_output_chunk_shift_auto_propagation(self):
+        shift = 1
+        ocl = 2
+        m1 = LinearRegressionModel(
+            lags=5, output_chunk_length=ocl, output_chunk_shift=shift
+        )
+        m2 = LinearRegressionModel(
+            lags=5, output_chunk_length=ocl, output_chunk_shift=shift
+        )
+
+        ensemble = RegressionEnsembleModel(
+            forecasting_models=[m1, m2], regression_train_n_points=10
+        )
+
+        assert ensemble.ensemble_model.output_chunk_shift == shift
+        assert ensemble.ensemble_model.lags == {"future": [1, 2]}
+
+    def test_shift_mismatch_validation(self):
+        m1 = LinearRegressionModel(lags=2, output_chunk_shift=5)
+        custom_regr = SKLearnModel(lags_future_covariates=[0], output_chunk_shift=0)
+
+        # Removed "the" to make regex broader and match the 'should beinitialized' typo in the source
+        with pytest.raises(ValueError, match="regression model should be"):
+            RegressionEnsembleModel(
+                forecasting_models=[m1],
+                regression_train_n_points=5,
+                regression_model=custom_regr,
+            )
+
+    def test_predict_with_historical_forecasts_unsupported_shift(self):
+        m1 = LinearRegressionModel(lags=2, output_chunk_shift=0)
+
+        ensemble = RegressionEnsembleModel(
+            forecasting_models=[m1],
+            regression_train_n_points=5,
+            train_using_historical_forecasts=False,
+        )
+        ensemble.fit(self.sine_series)
+        assert ensemble.ensemble_model._fit_called
+        assert ensemble.ensemble_model._fit_called
+
+    def test_train_n_points_entire_series_auto_calc(self):
+        m1 = LinearRegressionModel(lags=2)
+        m1.fit(self.sine_series)
+
+        ensemble = RegressionEnsembleModel(
+            forecasting_models=[m1],
+            regression_train_n_points=-1,
+            train_forecasting_models=False,
+        )
+
+        ensemble.fit(self.sine_series)
+        assert ensemble.train_n_points == 48
+
     @staticmethod
     def get_probabilistic_global_model(
         lags: Union[int, list[int]],

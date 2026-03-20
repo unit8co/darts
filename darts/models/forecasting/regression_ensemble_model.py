@@ -169,7 +169,10 @@ class RegressionEnsembleModel(EnsembleModel):
 
         # check lags of the regression model
         if regression_model.output_chunk_shift is not None:
-            expected_lags = lags_future_covariates
+            expected_lags = [
+                lag + regression_model.output_chunk_shift
+                for lag in lags_future_covariates
+            ]
         else:
             expected_lags = [0]
         raise_if_not(
@@ -237,22 +240,9 @@ class RegressionEnsembleModel(EnsembleModel):
 
             # we start historical fc at multiple of the output length before the end.
             n_ocl_back = train_n_points // model.output_chunk_length
-
-            # TODO:
-            # - check if ocl is roumd-multip of train-npoints
-            # - if not -> n_ocl+=1
-            #   - the generated forecasts might have to be truncated to trainnpoints
-            # - if yes -> pass
-            # - if any of the generated forecasts are shorter than train_n_points -> truncate all and raise warning
-
-            if model.output_chunk_length % train_n_points != 0 or n_ocl_back == 0:
-                n_ocl_back += 1
+            n_ocl_back = max(1, n_ocl_back)
 
             start_hist_forecasts = n_ocl_back * model.output_chunk_length
-
-            # we use the precomputed `direct_prediction` to fill any missing prediction
-            # timesteps at the beginning (if train_n_points is not perfectly divisible by output length)
-
             tmp_pred = model.historical_forecasts(
                 series=series,
                 past_covariates=(
@@ -405,6 +395,15 @@ class RegressionEnsembleModel(EnsembleModel):
             )
 
         else:
+            if self.output_chunk_shift == 0:
+                self._make_multiple_predictions(
+                    n=self.train_n_points,
+                    series=forecast_training,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                    num_samples=self.train_num_samples,
+                    verbose=verbose,
+                )
             predictions = self._make_multiple_historical_forecasts(
                 train_n_points=self.train_n_points,
                 series=series,
