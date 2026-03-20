@@ -252,6 +252,8 @@ class PoissonLikelihood(SKLearnLikelihood):
 
 
 class QuantileRegression(SKLearnLikelihood):
+    _LIKELIHOOD_TYPE = LikelihoodType.Quantile
+
     def __init__(
         self,
         n_outputs: int,
@@ -291,7 +293,7 @@ class QuantileRegression(SKLearnLikelihood):
         self._median_idx = quantiles.index(0.5)
 
         super().__init__(
-            likelihood_type=LikelihoodType.Quantile,
+            likelihood_type=self._LIKELIHOOD_TYPE,
             parameter_names=quantile_names(self.quantiles),
             n_outputs=n_outputs,
         )
@@ -393,6 +395,8 @@ class QuantileRegression(SKLearnLikelihood):
 
 
 class MultiQuantileRegression(QuantileRegression):
+    _LIKELIHOOD_TYPE = LikelihoodType.MultiQuantile
+
     def __init__(
         self,
         n_outputs: int,

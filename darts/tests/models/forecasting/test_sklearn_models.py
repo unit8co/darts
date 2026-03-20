@@ -4302,6 +4302,27 @@ class TestProbabilisticSKLearnModels:
                 CatBoostModel,
                 {
                     "lags": 2,
+                    "likelihood": "multiquantile",
+                    "multi_models": True,
+                    **cb_test_params,
+                },
+                0.05,
+            ),
+            (
+                CatBoostModel,
+                {
+                    "lags": 2,
+                    "likelihood": "multiquantile",
+                    "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
+                    "multi_models": True,
+                    **cb_test_params,
+                },
+                0.05,
+            ),
+            (
+                CatBoostModel,
+                {
+                    "lags": 2,
                     "likelihood": "poisson",
                     "multi_models": True,
                     **cb_test_params,
