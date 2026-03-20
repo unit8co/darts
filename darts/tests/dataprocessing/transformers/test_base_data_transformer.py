@@ -180,11 +180,19 @@ class TestBaseDataTransformer:
         ts = ts_a.stack(ts_b)
 
         # When both `component_mask` and `columns` are provided
+        mock = self.DataTransformerMock(scale=2, translation=10, columns=["A"])
         with pytest.raises(ValueError) as exc_info:
-            BaseDataTransformer._generate_component_mask(
-                series=ts, component_mask=np.array([True, False]), columns=["A"]
+            mock.transform(
+                series=ts,
+                component_mask=np.array([True, False]),
             )
         assert "Cannot pass `columns` and `component_mask`" in str(exc_info.value)
+
+        # When a specified column is not in the series a `ValueError` should be thrown
+        mock = self.DataTransformerMock(scale=2, translation=10, columns=["A", "C"])
+        with pytest.raises(ValueError) as exc_info:
+            mock.transform(series=ts)
+        assert "do not exist in the `TimeSeries` components" in str(exc_info.value)
 
         # When `columns` is `None` the result should be the provided `component_mask`
         dummy_mask = np.array([False, True])
@@ -192,15 +200,6 @@ class TestBaseDataTransformer:
             series=ts, component_mask=dummy_mask, columns=None
         )
         np.testing.assert_array_equal(result, dummy_mask)
-
-        # When a specified column is not in the series a `ValueError` should be thrown
-        with pytest.raises(ValueError) as exc_info:
-            BaseDataTransformer._generate_component_mask(
-                series=ts,
-                component_mask=None,
-                columns=["A", "C"],
-            )
-        assert "do not exist in the `TimeSeries` components" in str(exc_info.value)
 
         # Valid configuration of `columns` and `component_mask`
         res_happy = BaseDataTransformer._generate_component_mask(
