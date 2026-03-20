@@ -294,11 +294,14 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             "poisson": "Poisson",
             "gaussian": "RMSEWithUncertainty",
         }
-        if isinstance(self._likelihood, QuantileRegression):
-            self._model_container = _QuantileModelContainer()
-        elif isinstance(self._likelihood, MultiQuantileRegression):
+        # set `loss_function` and `._model_container` as per the likelihood instance
+        if isinstance(self._likelihood, MultiQuantileRegression):
+            # this condition must come before `QuantileRegression` because
+            # `MultiQuantileRegression` is a subclass of `QuantileRegression`
             quantiles_str = ", ".join(f"{q:.3f}" for q in self._likelihood.quantiles)
             self.kwargs["loss_function"] = f"MultiQuantile:alpha={quantiles_str}"
+        elif isinstance(self._likelihood, QuantileRegression):
+            self._model_container = _QuantileModelContainer()
         else:
             self.kwargs["loss_function"] = likelihood_map[likelihood]
 

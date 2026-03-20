@@ -303,6 +303,12 @@ class TestSKLearnModels:
             quantiles=[0.05, 0.5, 0.95],
             **cb_test_params,
         )
+        MultiQuantileCatBoostModel = partialclass(
+            CatBoostModel,
+            likelihood="multiquantile",
+            quantiles=[0.05, 0.5, 0.95],
+            **cb_test_params,
+        )
         PoissonCatBoostModel = partialclass(
             CatBoostModel,
             likelihood="poisson",
@@ -316,24 +322,28 @@ class TestSKLearnModels:
         models += [
             RegularCatBoostModel,
             QuantileCatBoostModel,
+            MultiQuantileCatBoostModel,
             PoissonCatBoostModel,
             NormalCatBoostModel,
         ]
         univariate_accuracies += [
             0.75,  # CatBoostModel
             0.75,  # QuantileCatBoostModel
+            0.75,  # MultiQuantileCatBoostModel
             0.9,  # PoissonCatBoostModel
             0.75,  # NormalCatBoostModel
         ]
         multivariate_accuracies += [
             0.75,  # CatBoostModel
             0.75,  # QuantileCatBoostModel
+            0.75,  # MultiQuantileCatBoostModel
             0.86,  # PoissonCatBoostModel
             0.75,  # NormalCatBoostModel
         ]
         multivariate_multiseries_accuracies += [
             0.75,  # CatBoostModel
             0.75,  # QuantileCatBoostModel
+            0.75,  # MultiQuantileCatBoostModel
             1.2,  # PoissonCatBoostModel
             0.75,  # NormalCatBoostModel
         ]
