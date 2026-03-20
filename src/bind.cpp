@@ -5,7 +5,7 @@
 namespace py = pybind11;
 
 
-PYBIND11_MODULE(_internal, m) {
+PYBIND11_MODULE(_internal, m, py::mod_gil_not_used()) {
     m.doc() = R"pbdoc(
         Internal C++ implementation of DARTS algorithms.
     )pbdoc";
