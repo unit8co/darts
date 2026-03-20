@@ -1766,19 +1766,12 @@ class TestSKLearnModels:
                 if multi_models:
                     dummy_feats = pred_input.values()[:lags]
                 else:
-                    dummy_feats = pred_input.values()[i : i + lags]
-                # `dummy_feats` shape is (n_samples, n_features) = (1, lags * width)
+                    dummy_feats = pred_input.values()[i : +i + lags]
                 dummy_feats = np.expand_dims(dummy_feats.flatten(), 0)
-                for k, q in enumerate(quantiles):
+                for q in quantiles:
                     sub_model = m.get_estimator(horizon=i, target_dim=j, quantile=q)
-                    pred_sub_model = sub_model.predict(dummy_feats)
-                    if pred_sub_model.ndim == 2:
-                        # models with native multiquantile support give all quantiles together with shape
-                        # (n_samples, n_quantiles)
-                        pred_sub_model = pred_sub_model[0, k]
-                    else:
-                        # models without native multiquantile support give one quantile with shape (n_samples,)
-                        pred_sub_model = pred_sub_model[0]
+                    assert sub_model is not None
+                    pred_sub_model = sub_model.predict(dummy_feats)[0]
                     assert (
                         pred_sub_model
                         == pred[f"{ts.components[j]}_q{q:.3f}"].values()[i][0]

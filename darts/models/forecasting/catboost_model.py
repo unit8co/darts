@@ -390,6 +390,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
                     n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
                     sample_weight=sample_weight,
                     val_sample_weight=val_sample_weight,
+                    stride=stride,
                     verbose=verbose,
                     **kwargs,
                 )
