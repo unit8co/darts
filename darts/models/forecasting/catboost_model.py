@@ -147,15 +147,14 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
                 To enable past and / or future encodings for any `SKLearnModel`, you must also define the
                 corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
-            Can be set to ``"multiquantile"``, ``"poisson"`` or ``"gaussian"``, or ``"quantile"``. If set,
-            the model will be probabilistic, allowing sampling at prediction time. When set to ``"multiquantile"``,
-            CatBoost's `"MultiQuantile"` loss function will be used to fit the model to multiple quantiles at once.
-            When set to ``"gaussian"``, the model will use CatBoost's `"RMSEWithUncertainty"`` loss function.
-            When using this loss function, CatBoost returns a mean and variance couple, which capture data (aleatoric)
-            uncertainty. This will overwrite any `objective` parameter.
+            One of ``"multiquantile"``, ``"quantile"``, ``"poisson"``, or ``"gaussian"``. If set, the model
+            becomes probabilistic and supports sampling at prediction time. ``"multiquantile"`` uses CatBoost's
+            ``"MultiQuantile"`` loss, and ``"gaussian"`` uses ``"RMSEWithUncertainty"`` to predict mean and
+            variance (aleatoric uncertainty). This overrides any ``objective`` parameter. Default is ``None``.
         quantiles
-            Fit the model to these quantiles if the `likelihood` is set to `quantile`. Default is `None` and
-            will use :class:`~darts.utils.likelihood_models.sklearn.QuantileRegression`'s default quantiles.
+            Fit the model to these quantiles if the ``likelihood`` is set to ``"quantile"`` or ``"multiquantile"``.
+            Default is ``None`` and will use :class:`~darts.utils.likelihood_models.sklearn.QuantileRegression`'s
+            default quantiles.
         random_state
             Controls the randomness for reproducible forecasting.
         multi_models
