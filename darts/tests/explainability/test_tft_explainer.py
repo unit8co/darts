@@ -1,7 +1,6 @@
 import itertools
-from unittest.mock import patch
 
-import matplotlib.pyplot as plt
+import matplotlib.figure
 import numpy as np
 import pandas as pd
 import pytest
@@ -301,19 +300,34 @@ class TestTFTExplainer:
             "or equal to the model's batch size (32)."
         )
 
-    def test_variable_selection_explanation(self):
+    @pytest.mark.parametrize("n_series", [1, 2])
+    def test_variable_selection_explanation(self, n_series, mpl_safe_plotting):
         """Test variable selection (feature importance) explanation results and plotting."""
         model = self.helper_create_model(use_encoders=True, add_relative_idx=True)
         series, pc, fc = self.helper_get_input(series_option="multivariate")
         model.fit(series, past_covariates=pc, future_covariates=fc)
         explainer = TFTExplainer(model)
-        results = explainer.explain()
+        results = explainer.explain(
+            foreground_series=series if n_series == 1 else [series] * 2,
+            foreground_past_covariates=pc if n_series == 1 else [pc] * 2,
+            foreground_future_covariates=fc if n_series == 1 else [fc] * 2,
+        )
 
         imps = results.get_feature_importances()
         enc_imp = results.get_encoder_importance()
         dec_imp = results.get_decoder_importance()
         stc_imp = results.get_static_covariates_importance()
         imps_direct = [enc_imp, dec_imp, stc_imp]
+
+        # check that all importances are the same across series (since the series have identical values)
+        if n_series > 1:
+            for imp in imps.values():
+                np.testing.assert_array_almost_equal(imp[0].values, imp[1].values)
+            for imp in imps_direct:
+                np.testing.assert_array_almost_equal(imp[0].values, imp[1].values)
+
+            imps = {k: v[0] for k, v in imps.items()}
+            imps_direct = [imp[0] for imp in imps_direct]
 
         imp_names = [
             "encoder_importance",
@@ -339,6 +353,7 @@ class TestTFTExplainer:
             index=[0],
         )
         # relaxed comparison because M1 chip gives slightly different results than intel chip
+        enc_imp = imps_direct[0]
         assert ((enc_imp.round(decimals=1) - enc_expected).abs() <= 3).all().all()
 
         dec_expected = pd.DataFrame(
@@ -350,19 +365,26 @@ class TestTFTExplainer:
             },
             index=[0],
         )
+        dec_imp = imps_direct[1]
         # relaxed comparison because M1 chip gives slightly different results than intel chip
         assert ((dec_imp.round(decimals=1) - dec_expected).abs() <= 0.6).all().all()
 
         stc_expected = pd.DataFrame(
             {"num_statcov": 11.9, "cat_statcov": 88.1}, index=[0]
         )
+        stc_imp = imps_direct[2]
         # relaxed comparison because M1 chip gives slightly different results than intel chip
         assert ((stc_imp.round(decimals=1) - stc_expected).abs() <= 0.1).all().all()
 
-        with patch("matplotlib.pyplot.show") as _:
-            _ = explainer.plot_variable_selection(results)
+        figs = explainer.plot_variable_selection(results)
+        if n_series == 1:
+            figs = [figs]
+        for fig in figs:
+            assert isinstance(fig, matplotlib.figure.Figure)
+            assert len(fig.get_axes()) == 3
 
-    def test_attention_explanation(self):
+    @pytest.mark.parametrize("n_series", [1, 2])
+    def test_attention_explanation(self, n_series, mpl_safe_plotting):
         """Test attention (feature importance) explanation results and plotting."""
         # past attention (full_attention=False) on attends to values in the past relative to each horizon
         # (look at the last 0 values in the array)
@@ -397,42 +419,40 @@ class TestTFTExplainer:
             series, pc, fc = self.helper_get_input(series_option="multivariate")
             model.fit(series, past_covariates=pc, future_covariates=fc)
             explainer = TFTExplainer(model)
-            results = explainer.explain()
+            results = explainer.explain(
+                foreground_series=series if n_series == 1 else [series] * 2,
+                foreground_past_covariates=pc if n_series == 1 else [pc] * 2,
+                foreground_future_covariates=fc if n_series == 1 else [fc] * 2,
+            )
 
-            att = results.get_attention()
+            attns = results.get_attention()
             # relaxed comparison because M1 chip gives slightly different results than intel chip
-            assert np.all(np.abs(np.round(att.values(), decimals=1) - att_exp) <= 0.2)
-            assert att.columns.tolist() == ["horizon 1", "horizon 2"]
-            with patch("matplotlib.pyplot.show") as _:
-                _ = explainer.plot_attention(
-                    results, plot_type="all", show_index_as="relative"
+            if n_series == 1:
+                attns = [attns]
+
+            for att in attns:
+                assert np.all(
+                    np.abs(np.round(att.values(), decimals=1) - att_exp) <= 0.2
                 )
-                plt.close()
-            with patch("matplotlib.pyplot.show") as _:
-                _ = explainer.plot_attention(
-                    results, plot_type="all", show_index_as="time"
-                )
-                plt.close()
-            with patch("matplotlib.pyplot.show") as _:
-                _ = explainer.plot_attention(
-                    results, plot_type="time", show_index_as="relative"
-                )
-                plt.close()
-            with patch("matplotlib.pyplot.show") as _:
-                _ = explainer.plot_attention(
-                    results, plot_type="time", show_index_as="time"
-                )
-                plt.close()
-            with patch("matplotlib.pyplot.show") as _:
-                _ = explainer.plot_attention(
-                    results, plot_type="heatmap", show_index_as="relative"
-                )
-                plt.close()
-            with patch("matplotlib.pyplot.show") as _:
-                _ = explainer.plot_attention(
-                    results, plot_type="heatmap", show_index_as="time"
-                )
-                plt.close()
+                assert att.columns.tolist() == ["horizon 1", "horizon 2"]
+
+            def _check_plot(n_figs_expected, n_axes_expected, **kwargs):
+                figs = explainer.plot_attention(results, **kwargs)
+                if n_figs_expected == 1:
+                    figs = [figs]
+                for fig in figs:
+                    assert isinstance(fig, matplotlib.figure.Figure)
+                    assert isinstance(fig, matplotlib.figure.Figure)
+                    assert len(fig.get_axes()) == n_axes_expected
+
+            # only a single axis should be plotted
+            _check_plot(n_series, 1, plot_type="all", show_index_as="relative")
+            _check_plot(n_series, 1, plot_type="all", show_index_as="time")
+            _check_plot(n_series, 1, plot_type="time", show_index_as="relative")
+            _check_plot(n_series, 1, plot_type="time", show_index_as="time")
+            # heatmap also plot colorbar axis
+            _check_plot(n_series, 2, plot_type="heatmap", show_index_as="relative")
+            _check_plot(n_series, 2, plot_type="heatmap", show_index_as="time")
 
     def helper_create_model(
         self, use_encoders=True, add_relative_idx=True, full_attention=False

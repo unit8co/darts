@@ -824,7 +824,7 @@ class TestAnomalyDetectionScorer:
             scorer.score_from_prediction(self.probabilistic, self.train)
         )
 
-    def test_WassersteinScorer(self):
+    def test_WassersteinScorer(self, mpl_safe_plotting):
         # Check parameters and inputs
         self.component_wise_parameter(WassersteinScorer)
         self.helper_window_parameter(WassersteinScorer)
