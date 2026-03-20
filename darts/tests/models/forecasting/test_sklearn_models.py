@@ -1791,6 +1791,69 @@ class TestSKLearnModels:
                         == pred[f"{ts.components[j]}_q{q:.3f}"].values()[i][0]
                     )
 
+    @pytest.mark.skipif(not CB_AVAILABLE, reason="CatBoost is required for this test")
+    @pytest.mark.parametrize("multi_models", [True, False])
+    @pytest.mark.parametrize("multi_components", [True, False])
+    def test_get_estimator_multiquantile(
+        self, multi_models: bool, multi_components: bool
+    ):
+        """Check estimator getter when using quantile value"""
+        ocl = 3
+        lags = 3
+        quantiles = [0.01, 0.5, 0.99]
+        ts = tg.sine_timeseries(length=100, column_name="sine")
+        if multi_components:
+            ts = ts.stack(
+                tg.linear_timeseries(length=100, column_name="linear"),
+            )
+
+        model = CatBoostModel(
+            lags=lags,
+            output_chunk_length=ocl,
+            multi_models=multi_models,
+            likelihood="multiquantile",
+            quantiles=quantiles,
+            **cb_test_params,
+        )
+        model.fit(ts)
+
+        assert model._model_container is None
+        if multi_models:
+            # one sub-model per component, per horizon
+            assert len(model.model.estimators_) == ocl * ts.width
+        elif multi_components:
+            # one sub-model per component
+            assert len(model.model.estimators_) == ts.width
+        else:
+            # only one sub-model per quantile (one component, one predicted horizon)
+            assert not isinstance(model.model, MultiOutputRegressor)
+            assert not hasattr(model.model, "estimators_")
+
+        # check that retrieve sub-models prediction match the "wrapper" model predictions
+        pred_input = ts[-lags:] if multi_models else ts[-lags - ocl + 1 :]
+        pred = model.predict(
+            n=ocl,
+            series=pred_input,
+            num_samples=1,
+            predict_likelihood_parameters=True,
+        )
+        assert isinstance(pred, TimeSeries)
+        for j in range(ts.width):
+            pred_j = pred.values()[:, j * len(quantiles) : (j + 1) * len(quantiles)]
+            for i in range(ocl):
+                if multi_models:
+                    dummy_feats = pred_input.values()[:lags]
+                else:
+                    dummy_feats = pred_input.values()[i : i + lags]
+                dummy_feats = np.expand_dims(dummy_feats.flatten(), 0)
+                # CatBoost with "Multiquantile" loss does not use a model container but directly
+                # implements multi-quantile support in the main model
+                sub_model = model.get_estimator(horizon=i, target_dim=j)
+                assert sub_model is not None
+                # the sub-model prediction is in shape (1, n_quantiles)
+                pred_sub_model = sub_model.predict(dummy_feats)[0]
+                np.testing.assert_array_equal(pred_sub_model, pred_j[i])
+
     def test_get_estimator_exceptions(self, caplog):
         """Check that all the corner-cases are properly covered by the method"""
         ts = TimeSeries.from_values(

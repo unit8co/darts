@@ -89,6 +89,7 @@ from darts.utils.historical_forecasts import (
 )
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import (
+    MultiQuantileRegression,
     QuantileRegression,
     SKLearnLikelihood,
     _get_likelihood,
@@ -683,7 +684,7 @@ class SKLearnModel(GlobalForecastingModel):
                 )
             model = self._model_container[quantile]
         else:
-            if isinstance(likelihood, QuantileRegression):
+            if isinstance(likelihood, MultiQuantileRegression) and quantile is not None:
                 logger.warning(
                     "Model supports multi-quantile regression; the same estimator forecasts all quantiles jointly. "
                     "Ignoring passed `quantile` value."
