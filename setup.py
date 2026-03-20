@@ -17,6 +17,7 @@ ext_modules = [
     Pybind11Extension(
         "darts._internal",
         sources=glob.glob("src/*.cpp"),
+        include_dirs=["include"],
         cxx_std=17,
     ),
 ]
