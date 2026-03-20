@@ -35,10 +35,12 @@ from darts.models.forecasting.sklearn_model import (
     LAGS_TYPE,
     SKLearnModelWithCategoricalFeatures,
     _ClassifierMixin,
+    _QuantileModelContainer,
 )
 from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import (
+    MultiQuantileRegression,
     QuantileRegression,
     _get_likelihood,
 )
@@ -47,8 +49,6 @@ logger = get_logger(__name__)
 
 
 class CatBoostModel(SKLearnModelWithCategoricalFeatures):
-    model: CatBoostRegressor
-
     def __init__(
         self,
         lags: LAGS_TYPE | None = None,
@@ -147,11 +147,12 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
                 To enable past and / or future encodings for any `SKLearnModel`, you must also define the
                 corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
-            Can be set to 'quantile', 'poisson' or 'gaussian'. If set, the model will be probabilistic,
-            allowing sampling at prediction time. When set to 'gaussian', the model will use CatBoost's
-            'RMSEWithUncertainty' loss function. When using this loss function, CatBoost returns a mean
-            and variance couple, which capture data (aleatoric) uncertainty.
-            This will overwrite any `objective` parameter.
+            Can be set to ``"multiquantile"``, ``"poisson"`` or ``"gaussian"``, or ``"quantile"``. If set,
+            the model will be probabilistic, allowing sampling at prediction time. When set to ``"multiquantile"``,
+            CatBoost's `"MultiQuantile"` loss function will be used to fit the model to multiple quantiles at once.
+            When set to ``"gaussian"``, the model will use CatBoost's `"RMSEWithUncertainty"`` loss function.
+            When using this loss function, CatBoost returns a mean and variance couple, which capture data (aleatoric)
+            uncertainty. This will overwrite any `objective` parameter.
         quantiles
             Fit the model to these quantiles if the `likelihood` is set to `quantile`. Default is `None` and
             will use :class:`~darts.utils.likelihood_models.sklearn.QuantileRegression`'s default quantiles.
@@ -217,13 +218,14 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
 
-        if likelihood == "quantile" and len(quantiles or []) == 1:
-            logger.warning(
-                f"CatBoost does not support single quantile regression. "
-                f"Received 1 quantile: {quantiles[0] if quantiles else None}. "
-                f"Likelihood will be set to None and the model will not be probabilistic. "
+        if likelihood == "multiquantile" and len(quantiles or []) == 1:
+            raise_log(
+                ValueError(
+                    "CatBoost with MultiQuantile loss does not support single quantile regression. "
+                    "Please provide multiple quantiles."
+                ),
+                logger,
             )
-            likelihood, quantiles = None, None
 
         multi_models = multi_models or output_chunk_length == 1
         self._set_likelihood(
@@ -280,6 +282,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
                 LikelihoodType.Gaussian,
                 LikelihoodType.Poisson,
                 LikelihoodType.Quantile,
+                LikelihoodType.MultiQuantile,
             ],
         )
 
@@ -292,6 +295,8 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             "gaussian": "RMSEWithUncertainty",
         }
         if isinstance(self._likelihood, QuantileRegression):
+            self._model_container = _QuantileModelContainer()
+        elif isinstance(self._likelihood, MultiQuantileRegression):
             quantiles_str = ", ".join(f"{q:.3f}" for q in self._likelihood.quantiles)
             self.kwargs["loss_function"] = f"MultiQuantile:alpha={quantiles_str}"
         else:
@@ -362,6 +367,35 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             Additional kwargs passed to `catboost.CatBoostRegressor.fit()`
         """
         verbose = verbose if verbose is not None else 0
+        likelihood = self.likelihood
+        if (
+            isinstance(likelihood, QuantileRegression)
+            and self._model_container is not None
+        ):
+            # empty model container in case of multiple calls to fit, e.g. when backtesting
+            self._model_container.clear()
+            for quantile in likelihood.quantiles:
+                this_quantile = str(quantile)
+                # translating to catboost argument
+                self.kwargs["loss_function"] = f"Quantile:alpha={this_quantile}"
+                self.model = self._create_model(**self.kwargs)
+                super().fit(
+                    series=series,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                    val_series=val_series,
+                    val_past_covariates=val_past_covariates,
+                    val_future_covariates=val_future_covariates,
+                    max_samples_per_ts=max_samples_per_ts,
+                    n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
+                    sample_weight=sample_weight,
+                    val_sample_weight=val_sample_weight,
+                    verbose=verbose,
+                    **kwargs,
+                )
+                # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
+                self._model_container[quantile] = self.model
+            return self
 
         super().fit(
             series=series,
@@ -448,12 +482,12 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         If categorical features are specified, the samples are converted into a pandas DataFrame and categorical
         columns are cast to integer.
         """
-        outputs, labels = super()._format_samples(samples, labels=labels)
+        samples_, labels = super()._format_samples(samples, labels=labels)
         if len(self._categorical_indices) != 0:
             # transform into pandas df and cast categorical columns to int
-            outputs = pd.DataFrame(outputs)
-            outputs = outputs.astype({col: int for col in self._categorical_indices})
-        return outputs, labels
+            samples_ = pd.DataFrame(samples_)
+            samples_ = samples_.astype({col: int for col in self._categorical_indices})
+        return samples_, labels
 
 
 class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):

@@ -370,32 +370,14 @@ class QuantileRegression(SKLearnLikelihood):
     ) -> np.ndarray:
         # `x` is of shape (n_series * n_samples, n_regression_features)
         k = x.shape[0]
-        if model._model_container is None:
-            # using CatBoost's native multi-quantile support
-            output: np.ndarray = model.model.predict(x, **kwargs)
-
-            # `output` has two shapes depending on whether `MultiOutputRegressor` is used or not:
-            # Case 1: univariate & output_chunk_length == 1, shape is (n_series * n_samples, n_quantiles)
-            # Case 2: otherwise, shape is (n_quantiles, n_series * n_samples, n_components * output_chunk_length)
-            if output.ndim <= 2:
-                # Case 1 handling
-                # -> (n_series * n_samples, 1, 1, n_quantiles)
-                output = output.reshape(k, 1, 1, -1)
-            else:
-                # Case 2 handling
-                # -> (n_quantiles, n_series * n_samples, output_chunk_length, n_components)
-                output = output.reshape(output.shape[0], k, self._n_outputs, -1)
-                # -> (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
-                output = output.transpose(1, 2, 3, 0)
-        else:
-            model_outputs = []
-            for quantile, fitted in model._model_container.items():
-                # model output has shape (n_series * n_samples, output_chunk_length, n_components)
-                model_output = fitted.predict(x, **kwargs)
-                model_output = model_output.reshape(k, self._n_outputs, -1)
-                model_outputs.append(model_output)
-            # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
-            output = np.stack(model_outputs, axis=-1)
+        model_outputs = []
+        for quantile, fitted in model._model_container.items():
+            # model output has shape (n_series * n_samples, output_chunk_length, n_components)
+            model_output = fitted.predict(x, **kwargs)
+            model_output = model_output.reshape(k, self._n_outputs, -1)
+            model_outputs.append(model_output)
+        # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
+        output = np.stack(model_outputs, axis=-1)
 
         return output
 
@@ -408,6 +390,61 @@ class QuantileRegression(SKLearnLikelihood):
         return model_output[:, :, :, component_medians].reshape(
             k, n_times, n_components
         )
+
+
+class MultiQuantileRegression(QuantileRegression):
+    def __init__(
+        self,
+        n_outputs: int,
+        quantiles: list[float] | None = None,
+    ):
+        """
+        Multi-output Quantile Regression [1]_.
+
+        This is an extension of :class:`QuantileRegression` for scikit-learn models that natively supports
+        multi-quantile prediction (e.g. CatBoost).
+
+        Parameters
+        ----------
+        n_outputs
+            The number of predicted outputs per model call. ``1`` if ``multi_models=False``, otherwise
+            ``output_chunk_length``.
+        quantiles
+            A list of quantiles. Default: ``[0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99]``.
+
+        References
+        ----------
+        .. [1] https://en.wikipedia.org/wiki/Quantile_regression
+        """
+        super().__init__(n_outputs=n_outputs, quantiles=quantiles)
+
+    def _estimator_predict(
+        self,
+        model,
+        x: np.ndarray,
+        **kwargs,
+    ) -> np.ndarray:
+        # `x` is of shape (n_series * n_samples, n_regression_features)
+        k = x.shape[0]
+
+        # using CatBoost's native multi-quantile support
+        output: np.ndarray = model.model.predict(x, **kwargs)
+
+        # `output` has two shapes depending on whether `MultiOutputRegressor` is used or not:
+        # Case 1: univariate & output_chunk_length == 1, shape is (n_series * n_samples, n_quantiles)
+        # Case 2: otherwise, shape is (n_quantiles, n_series * n_samples, n_components * output_chunk_length)
+        if output.ndim <= 2:
+            # Case 1 handling
+            # -> (n_series * n_samples, 1, 1, n_quantiles)
+            output = output.reshape(k, 1, 1, -1)
+        else:
+            # Case 2 handling
+            # -> (n_quantiles, n_series * n_samples, output_chunk_length, n_components)
+            output = output.reshape(output.shape[0], k, self._n_outputs, -1)
+            # -> (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
+            output = output.transpose(1, 2, 3, 0)
+
+        return output
 
 
 class ClassProbabilityLikelihood(SKLearnLikelihood):
@@ -669,6 +706,8 @@ def _get_likelihood(
         return PoissonLikelihood(n_outputs=n_outputs)
     elif likelihood == LikelihoodType.Quantile.value:
         return QuantileRegression(n_outputs=n_outputs, quantiles=quantiles)
+    elif likelihood == LikelihoodType.MultiQuantile.value:
+        return MultiQuantileRegression(n_outputs=n_outputs, quantiles=quantiles)
     elif likelihood == LikelihoodType.ClassProbability.value:
         return ClassProbabilityLikelihood(n_outputs=n_outputs)
     else:

@@ -1737,32 +1737,20 @@ class TestSKLearnModels:
         )
         m.fit(ts)
 
-        if m._model_container is not None:
-            assert len(m._model_container) == len(quantiles)
-            assert sorted(list(m._model_container.keys())) == sorted(quantiles)
-            for quantile_container in m._model_container.values():
-                if multi_models:
-                    # one sub-model per quantile, per component, per horizon
-                    assert len(quantile_container.estimators_) == ocl * ts.width
-                elif multi_components:
-                    # one sub-model per quantile, per component
-                    assert len(quantile_container.estimators_) == ts.width
-                else:
-                    # only one sub-model per quantile (one component, one predicted horizon)
-                    assert not isinstance(quantile_container, MultiOutputRegressor)
-                    assert not hasattr(quantile_container, "estimators_")
-        else:
-            # models with native multiquantile support do not have a model container
+        assert m._model_container is not None
+        assert len(m._model_container) == len(quantiles)
+        assert sorted(list(m._model_container.keys())) == sorted(quantiles)
+        for quantile_container in m._model_container.values():
             if multi_models:
-                # one sub-model per component, per horizon
-                assert len(m.model.estimators_) == ocl * ts.width
+                # one sub-model per quantile, per component, per horizon
+                assert len(quantile_container.estimators_) == ocl * ts.width
             elif multi_components:
-                # one sub-model per component
-                assert len(m.model.estimators_) == ts.width
+                # one sub-model per quantile, per component
+                assert len(quantile_container.estimators_) == ts.width
             else:
-                # only one sub-model (one component, one predicted horizon)
-                assert not isinstance(m.model, MultiOutputRegressor)
-                assert not hasattr(m.model, "estimators_")
+                # only one sub-model per quantile (one component, one predicted horizon)
+                assert not isinstance(quantile_container, MultiOutputRegressor)
+                assert not hasattr(quantile_container, "estimators_")
 
         # check that retrieve sub-models prediction match the "wrapper" model predictions
         pred_input = ts[-lags:] if multi_models else ts[-lags - ocl + 1 :]
@@ -2438,13 +2426,8 @@ class TestSKLearnModels:
             stride=stride,
             **weights_kwargs,
         )
-        if model._model_container is not None:
-            # fit called 6 times (3 quantiles * 2 target features)
-            assert fit_patch.call_count == 6
-        else:
-            # models with native multiquantile support give all quantiles together,
-            # so fit is called once per target feature (2 times)
-            assert fit_patch.call_count == 2
+        # fit called 6 times (3 quantiles * 2 target features)
+        assert fit_patch.call_count == 6
 
         X_train, y_train = fit_patch.call_args[0]
         assert len(X_train) == len(y_train) == 6 // stride
