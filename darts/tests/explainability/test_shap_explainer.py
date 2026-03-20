@@ -1,7 +1,6 @@
 import copy
 from datetime import date, timedelta
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
@@ -541,7 +540,7 @@ class TestShapExplainer:
             # that at the start of the target series we have sufficient information to explain the prediction.
             assert explanation.start_time() == self.target_ts.start_time()
 
-    def test_plot(self):
+    def test_plot(self, mpl_safe_plotting):
         model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
         m_0 = model_cls(
             lags=4,
@@ -576,7 +575,6 @@ class TestShapExplainer:
             "power",
         )
         assert isinstance(fplot, shap.plots._force.BaseVisualizer)
-        plt.close()
 
         # no component name -> multivariate error
         with pytest.raises(ValueError):
@@ -641,7 +639,6 @@ class TestShapExplainer:
             target_component="power",
         )
         assert isinstance(fplot, shap.plots._force.BaseVisualizer)
-        plt.close()
 
     def test_feature_values_align_with_input(self):
         model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
@@ -839,7 +836,7 @@ class TestShapExplainer:
             comps_out = explained_forecast[1]["price"].columns.tolist()
             assert comps_out[-1] == "type_statcov_target_price"
 
-    def test_shap_regressor_component_specific_lags(self):
+    def test_shap_regressor_component_specific_lags(self, mpl_safe_plotting):
         model = LinearRegressionModel(
             lags={"price": [-3, -2], "power": [-1]},
             output_chunk_length=1,
@@ -881,7 +878,6 @@ class TestShapExplainer:
 
         # check that explain() can be called
         explanation_results = shap_explain.explain()
-        plt.close()
         for comp in ts.components:
             comps_out = explanation_results.explained_forecasts[1][comp].columns
             assert all(comps_out == expected_columns)

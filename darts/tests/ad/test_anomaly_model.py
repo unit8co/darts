@@ -1365,7 +1365,7 @@ class TestAnomalyDetectionModel:
         )
         np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=1)
 
-    def test_visualization(self):
+    def test_visualization(self, mpl_safe_plotting):
         # test function show_anomalies() and show_anomalies_from_scores()
         forecasting_anomaly_model = ForecastingAnomalyModel(
             model=SKLearnModel(lags=10), scorer=Norm()

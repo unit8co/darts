@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -238,17 +236,13 @@ class TestSeasonalDecompose:
 class TestPlot:
     series = AirPassengersDataset().load()
 
-    def test_statistics_plot(self):
+    def test_statistics_plot(self, mpl_safe_plotting):
         plot_residuals_analysis(self.series)
-        plt.close()
         plot_residuals_analysis(self.series, acf_max_lag=10)
-        plt.close()
         plot_residuals_analysis(self.series[:10])
-        plt.close()
         plot_acf(self.series)
         plot_pacf(self.series)
         plot_ccf(self.series, self.series)
-        plt.close()
 
 
 class TestPlotToleranceCurve:
@@ -288,7 +282,6 @@ class TestPlotToleranceCurve:
         columns=QuantileRegression(1, [0.1, 0.5, 0.9]).component_names(actual_multi),
     )
 
-    @patch("matplotlib.pyplot.show")
     @pytest.mark.parametrize(
         "actual,pred,kwargs",
         [
@@ -310,14 +303,9 @@ class TestPlotToleranceCurve:
             ("actual_uni", "pred_uni", {"step": 0.05}),
         ],
     )
-    def test_plot_tolerance_curve_params(self, mock_show, actual, pred, kwargs):
+    def test_plot_tolerance_curve_params(self, mpl_safe_plotting, actual, pred, kwargs):
         plot_tolerance_curve(getattr(self, actual), getattr(self, pred), **kwargs)
-        plt.show()
-        plt.close()
 
-    @patch("matplotlib.pyplot.show")
-    def test_plot_tolerance_curve_with_axis(self, mock_show):
+    def test_plot_tolerance_curve_with_axis(self, mpl_safe_plotting):
         _, ax = plt.subplots()
         plot_tolerance_curve(self.actual_uni, self.pred_uni, axis=ax)
-        plt.show()
-        plt.close()

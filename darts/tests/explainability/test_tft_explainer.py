@@ -1,8 +1,6 @@
 import itertools
-from unittest.mock import patch
 
 import matplotlib.figure
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
@@ -303,7 +301,7 @@ class TestTFTExplainer:
         )
 
     @pytest.mark.parametrize("n_series", [1, 2])
-    def test_variable_selection_explanation(self, n_series):
+    def test_variable_selection_explanation(self, n_series, mpl_safe_plotting):
         """Test variable selection (feature importance) explanation results and plotting."""
         model = self.helper_create_model(use_encoders=True, add_relative_idx=True)
         series, pc, fc = self.helper_get_input(series_option="multivariate")
@@ -378,17 +376,15 @@ class TestTFTExplainer:
         # relaxed comparison because M1 chip gives slightly different results than intel chip
         assert ((stc_imp.round(decimals=1) - stc_expected).abs() <= 0.1).all().all()
 
-        with patch("matplotlib.pyplot.show") as _:
-            figs = explainer.plot_variable_selection(results)
-            if n_series == 1:
-                figs = [figs]
-            for fig in figs:
-                assert isinstance(fig, matplotlib.figure.Figure)
-                assert len(fig.get_axes()) == 3
-            plt.close()
+        figs = explainer.plot_variable_selection(results)
+        if n_series == 1:
+            figs = [figs]
+        for fig in figs:
+            assert isinstance(fig, matplotlib.figure.Figure)
+            assert len(fig.get_axes()) == 3
 
     @pytest.mark.parametrize("n_series", [1, 2])
-    def test_attention_explanation(self, n_series):
+    def test_attention_explanation(self, n_series, mpl_safe_plotting):
         """Test attention (feature importance) explanation results and plotting."""
         # past attention (full_attention=False) on attends to values in the past relative to each horizon
         # (look at the last 0 values in the array)
@@ -441,15 +437,13 @@ class TestTFTExplainer:
                 assert att.columns.tolist() == ["horizon 1", "horizon 2"]
 
             def _check_plot(n_figs_expected, n_axes_expected, **kwargs):
-                with patch("matplotlib.pyplot.show") as _:
-                    figs = explainer.plot_attention(results, **kwargs)
-                    if n_figs_expected == 1:
-                        figs = [figs]
-                    for fig in figs:
-                        assert isinstance(fig, matplotlib.figure.Figure)
-                        assert isinstance(fig, matplotlib.figure.Figure)
-                        assert len(fig.get_axes()) == n_axes_expected
-                    plt.close()
+                figs = explainer.plot_attention(results, **kwargs)
+                if n_figs_expected == 1:
+                    figs = [figs]
+                for fig in figs:
+                    assert isinstance(fig, matplotlib.figure.Figure)
+                    assert isinstance(fig, matplotlib.figure.Figure)
+                    assert len(fig.get_axes()) == n_axes_expected
 
             # only a single axis should be plotted
             _check_plot(n_series, 1, plot_type="all", show_index_as="relative")

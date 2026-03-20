@@ -3,7 +3,9 @@ import os
 import shutil
 import tempfile
 from typing import Any
+from unittest.mock import patch
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
 from packaging import version
@@ -184,3 +186,11 @@ def tmpdir_fn():
     os.chdir(cwd)
     # remove temp dir
     shutil.rmtree(temp_work_dir)
+
+
+@pytest.fixture(scope="function")
+def mpl_safe_plotting():
+    """Patches plt.show() and closes all plots / figures from memory at the end of the test."""
+    with patch("matplotlib.pyplot.show") as patched_show:
+        yield patched_show
+    plt.close("all")
