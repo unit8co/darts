@@ -154,7 +154,9 @@ class XGBModel(SKLearnModel):
             Can be set to `poisson` or `quantile`. If set, the model will be probabilistic, allowing sampling at
             prediction time. This will overwrite any `objective` parameter.
         quantiles
-            Fit the model to these quantiles if the `likelihood` is set to `quantile`.
+            Fit the model to these quantiles if the ``likelihood`` is set to ``"quantile"``.
+            Default is ``None`` and will use :class:`~darts.utils.likelihood_models.sklearn.QuantileRegression`'s
+            default quantiles.
         random_state
             Controls the randomness for reproducible forecasting.
         multi_models

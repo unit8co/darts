@@ -126,7 +126,9 @@ class LinearRegressionModel(SKLearnModel):
             prediction time. If set to `quantile`, the `sklearn.linear_model.QuantileRegressor` is used. Similarly, if
             set to `poisson`, the `sklearn.linear_model.PoissonRegressor` is used.
         quantiles
-            Fit the model to these quantiles if the `likelihood` is set to `quantile`.
+            Fit the model to these quantiles if the ``likelihood`` is set to ``"quantile"``.
+            Default is ``None`` and will use :class:`~darts.utils.likelihood_models.sklearn.QuantileRegression`'s
+            default quantiles.
         random_state
             Controls the randomness for reproducible forecasting.
         multi_models
