@@ -5,6 +5,7 @@ import logging
 import math
 from copy import deepcopy
 from itertools import product
+from typing import Any
 from unittest.mock import patch
 
 import numpy as np
@@ -39,7 +40,10 @@ from darts.tests.conftest import (
 )
 from darts.utils import timeseries_generation as tg
 from darts.utils.likelihood_models.base import Likelihood, LikelihoodType
-from darts.utils.likelihood_models.sklearn import _get_likelihood
+from darts.utils.likelihood_models.sklearn import (
+    MultiQuantileRegression,
+    _get_likelihood,
+)
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import generate_index
 
@@ -163,20 +167,20 @@ def partialclass(cls, *args, **kwargs):
     return NewCls
 
 
-xgb_test_params = {
+xgb_test_params: dict[str, Any] = {
     "n_estimators": 1,
     "max_depth": 1,
     "max_leaves": 1,
     "random_state": 42,
 }
-lgbm_test_params = {
+lgbm_test_params: dict[str, Any] = {
     "n_estimators": 1,
     "max_depth": 1,
     "num_leaves": 2,
     "verbosity": -1,
     "random_state": 42,
 }
-cb_test_params = {
+cb_test_params: dict[str, Any] = {
     "iterations": 1,
     "depth": 1,
     "verbose": -1,
@@ -4380,6 +4384,30 @@ class TestProbabilisticSKLearnModels:
             str(exc.value)
             == "Invalid `likelihood='does_not_exist'`. Must be one of ['gaussian', 'poisson', 'quantile']"
         )
+
+    @pytest.mark.skipif(not CB_AVAILABLE, reason="CatBoostModel required for this test")
+    def test_model_construction_multiquantile(self):
+        with pytest.raises(
+            ValueError, match="does not support single quantile regression"
+        ):
+            _ = CatBoostModel(
+                lags=2,
+                likelihood="multiquantile",
+                quantiles=[0.3],
+                **cb_test_params,
+            )
+
+        model = CatBoostModel(
+            lags=2,
+            likelihood="multiquantile",
+            quantiles=[0.1, 0.3, 0.5, 0.7, 0.9],
+            **cb_test_params,
+        )
+        likelihood = model.likelihood
+        assert likelihood is not None
+        assert likelihood.type == LikelihoodType.MultiQuantile
+        assert isinstance(likelihood, MultiQuantileRegression)
+        assert likelihood.quantiles == [0.1, 0.3, 0.5, 0.7, 0.9]
 
     @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))
     def test_fit_predict_determinism(self, config):
