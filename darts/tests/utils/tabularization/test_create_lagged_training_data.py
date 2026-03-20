@@ -2,7 +2,7 @@ import itertools
 import warnings
 from collections.abc import Sequence
 from itertools import product
-from typing import Any, Optional, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -16,7 +16,7 @@ from darts.utils.data.tabularization import (
     create_lagged_training_data,
 )
 from darts.utils.timeseries_generation import linear_timeseries
-from darts.utils.utils import freqs, generate_index
+from darts.utils.utils import generate_index, n_steps_between
 
 
 def helper_create_multivariate_linear_timeseries(
@@ -66,11 +66,11 @@ class TestCreateLaggedTrainingData:
         target: TimeSeries,
         past: TimeSeries,
         future: TimeSeries,
-        lags: Optional[Sequence[int]],
-        lags_past: Optional[Sequence[int]],
-        lags_future: Optional[Sequence[int]],
-        output_chunk_length: Optional[int],
-        max_samples_per_ts: Optional[int],
+        lags: Sequence[int] | None,
+        lags_past: Sequence[int] | None,
+        lags_future: Sequence[int] | None,
+        output_chunk_length: int | None,
+        max_samples_per_ts: int | None,
         output_chunk_shift: int,
         stride: int,
     ) -> pd.Index:
@@ -114,7 +114,7 @@ class TestCreateLaggedTrainingData:
     @staticmethod
     def get_feature_times_target(
         target_series: TimeSeries,
-        lags: Optional[Sequence[int]],
+        lags: Sequence[int] | None,
         output_chunk_length: int,
         output_chunk_shift: int,
     ) -> pd.Index:
@@ -256,7 +256,7 @@ class TestCreateLaggedTrainingData:
 
     @staticmethod
     def construct_X_block(
-        series: TimeSeries, feature_times: pd.Index, lags: Optional[Sequence[int]]
+        series: TimeSeries, feature_times: pd.Index, lags: Sequence[int] | None
     ) -> np.array:
         """
         Helper function that creates the lagged features 'block' of a specific
@@ -310,7 +310,9 @@ class TestCreateLaggedTrainingData:
                         start=series_times[0], end=feature_times[-1], freq=series.freq
                     )
             elif add_to_start:
-                num_prepended = (series_times[0] - feature_times[0]) // series.freq
+                num_prepended = n_steps_between(
+                    start=feature_times[0], end=series_times[0], freq=series.freq
+                )
                 if is_range_idx:
                     # `+ 1` since `stop` index is exclusive:
                     series_times = pd.RangeIndex(
@@ -428,16 +430,16 @@ class TestCreateLaggedTrainingData:
 
     def helper_create_expected_lagged_data(
         self,
-        target: Optional[Union[TimeSeries, list[TimeSeries]]],
-        past: Optional[Union[TimeSeries, list[TimeSeries]]],
-        future: Optional[Union[TimeSeries, list[TimeSeries]]],
-        lags: Optional[Union[list[int], dict[str, list[int]]]],
-        lags_past: Optional[Union[list[int], dict[str, list[int]]]],
-        lags_future: Optional[Union[list[int], dict[str, list[int]]]],
+        target: TimeSeries | list[TimeSeries] | None,
+        past: TimeSeries | list[TimeSeries] | None,
+        future: TimeSeries | list[TimeSeries] | None,
+        lags: list[int] | dict[str, list[int]] | None,
+        lags_past: list[int] | dict[str, list[int]] | None,
+        lags_future: list[int] | dict[str, list[int]] | None,
         output_chunk_length: int,
         output_chunk_shift: int,
         multi_models: bool,
-        max_samples_per_ts: Optional[int],
+        max_samples_per_ts: int | None,
         stride: int,
     ) -> tuple[np.ndarray, np.ndarray, Any]:
         """Helper function to create the X and y arrays by building them block by block (one per covariates)."""
@@ -481,17 +483,17 @@ class TestCreateLaggedTrainingData:
         expected_y: np.ndarray,
         expected_times_x,
         expected_times_y,
-        target: Optional[Union[TimeSeries, list[TimeSeries]]],
-        past_cov: Optional[Union[TimeSeries, list[TimeSeries]]],
-        future_cov: Optional[Union[TimeSeries, list[TimeSeries]]],
-        lags: Optional[Union[list[int], dict[str, list[int]]]],
-        lags_past: Optional[Union[list[int], dict[str, list[int]]]],
-        lags_future: Optional[Union[list[int], dict[str, list[int]]]],
+        target: TimeSeries | list[TimeSeries] | None,
+        past_cov: TimeSeries | list[TimeSeries] | None,
+        future_cov: TimeSeries | list[TimeSeries] | None,
+        lags: list[int] | dict[str, list[int]] | None,
+        lags_past: list[int] | dict[str, list[int]] | None,
+        lags_future: list[int] | dict[str, list[int]] | None,
         output_chunk_length: int,
         output_chunk_shift: int,
         use_static_covariates: bool,
         multi_models: bool,
-        max_samples_per_ts: Optional[int],
+        max_samples_per_ts: int | None,
         use_moving_windows: bool,
         concatenate: bool,
         stride: int,
@@ -1140,7 +1142,7 @@ class TestCreateLaggedTrainingData:
         itertools.product(
             [0, 1, 3],
             [False, True],
-            list(itertools.product(["datetime"], ["D", "2D", freqs["ms"], freqs["YE"]]))
+            list(itertools.product(["datetime"], ["D", "2D", "ms", "YE"]))
             + list(itertools.product(["integer"], [1, 2])),
         ),
     )

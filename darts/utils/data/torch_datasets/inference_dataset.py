@@ -8,13 +8,11 @@ Inference Datasets
 
 import bisect
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
-from typing import Optional, Union
 
 import numpy as np
 
-from darts import TimeSeries
 from darts.logging import get_logger, raise_log
+from darts.typing import TimeSeriesLike
 from darts.utils.data.torch_datasets.dataset import TorchDataset
 from darts.utils.data.torch_datasets.utils import TorchInferenceDatasetOutput
 from darts.utils.data.utils import FeatureType
@@ -61,12 +59,12 @@ class TorchInferenceDataset(TorchDataset, ABC):
 class SequentialTorchInferenceDataset(TorchInferenceDataset):
     def __init__(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         n: int = 1,
         stride: int = 0,
-        bounds: Optional[np.ndarray] = None,
+        bounds: np.ndarray | None = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,

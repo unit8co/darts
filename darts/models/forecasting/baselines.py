@@ -6,7 +6,6 @@ A collection of simple benchmark models for single uni- and multivariate series.
 """
 
 from collections.abc import Sequence
-from typing import Optional, Union
 
 import numpy as np
 
@@ -17,6 +16,7 @@ from darts.models.forecasting.forecasting_model import (
     ForecastingModel,
     LocalForecastingModel,
 )
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -51,7 +51,7 @@ class NaiveMean(LocalForecastingModel):
     def supports_multivariate(self) -> bool:
         return True
 
-    def fit(self, series: TimeSeries, verbose: Optional[bool] = None):
+    def fit(self, series: TimeSeries, verbose: bool | None = None):
         super().fit(series, verbose=verbose)
 
         self.mean_val = np.mean(series.values(copy=False), axis=0)
@@ -61,9 +61,9 @@ class NaiveMean(LocalForecastingModel):
         self,
         n: int,
         num_samples: int = 1,
-        verbose: Optional[bool] = None,
+        verbose: bool | None = None,
         show_warnings: bool = True,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ):
         super().predict(n, num_samples, verbose=verbose)
         forecast = np.tile(self.mean_val, (n, 1))
@@ -112,7 +112,7 @@ class NaiveSeasonal(LocalForecastingModel):
     def _target_window_lengths(self):
         return max(self.K, 3), 0
 
-    def fit(self, series: TimeSeries, verbose: Optional[bool] = None):
+    def fit(self, series: TimeSeries, verbose: bool | None = None):
         super().fit(series, verbose=verbose)
 
         raise_if_not(
@@ -127,9 +127,9 @@ class NaiveSeasonal(LocalForecastingModel):
         self,
         n: int,
         num_samples: int = 1,
-        verbose: Optional[bool] = None,
+        verbose: bool | None = None,
         show_warnings: bool = True,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ):
         super().predict(n, num_samples, verbose=verbose)
         forecast = np.array([self.last_k_vals[i % self.K, :] for i in range(n)])
@@ -167,7 +167,7 @@ class NaiveDrift(LocalForecastingModel):
     def supports_multivariate(self) -> bool:
         return True
 
-    def fit(self, series: TimeSeries, verbose: Optional[bool] = None):
+    def fit(self, series: TimeSeries, verbose: bool | None = None):
         super().fit(series, verbose=verbose)
         assert series.n_samples == 1, "This model expects deterministic time series"
         return self
@@ -176,9 +176,9 @@ class NaiveDrift(LocalForecastingModel):
         self,
         n: int,
         num_samples: int = 1,
-        verbose: Optional[bool] = None,
+        verbose: bool | None = None,
         show_warnings: bool = True,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ):
         super().predict(n, num_samples, verbose=verbose)
         first, last = (
@@ -233,7 +233,7 @@ class NaiveMovingAverage(LocalForecastingModel):
     def __str__(self):
         return f"NaiveMovingAverage({self.input_chunk_length})"
 
-    def fit(self, series: TimeSeries, verbose: Optional[bool] = None):
+    def fit(self, series: TimeSeries, verbose: bool | None = None):
         super().fit(series, verbose=verbose)
         raise_if_not(
             series.is_deterministic,
@@ -248,9 +248,9 @@ class NaiveMovingAverage(LocalForecastingModel):
         self,
         n: int,
         num_samples: int = 1,
-        verbose: Optional[bool] = None,
+        verbose: bool | None = None,
         show_warnings: bool = True,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ):
         super().predict(n, num_samples, verbose=verbose)
 
@@ -328,11 +328,11 @@ class NaiveEnsembleModel(EnsembleModel):
 
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-        verbose: Optional[bool] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
+        verbose: bool | None = None,
     ):
         super().fit(
             series=series,
@@ -359,13 +359,13 @@ class NaiveEnsembleModel(EnsembleModel):
 
     def ensemble(
         self,
-        predictions: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        predictions: TimeSeriesLike,
+        series: TimeSeriesLike,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
-        random_state: Optional[int] = None,
-        verbose: Optional[bool] = None,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        random_state: int | None = None,
+        verbose: bool | None = None,
+    ) -> TimeSeriesLike:
         """Average the `forecasting_models` predictions, component-wise"""
         raise_if(
             predict_likelihood_parameters

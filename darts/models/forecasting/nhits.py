@@ -3,8 +3,6 @@ N-HiTS
 ------
 """
 
-from typing import Optional, Union
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -471,9 +469,9 @@ class NHiTSModel(PastCovariatesTorchModel):
         num_stacks: int = 3,
         num_blocks: int = 1,
         num_layers: int = 2,
-        layer_widths: Union[int, list[int]] = 512,
-        pooling_kernel_sizes: Optional[tuple[tuple[int]]] = None,
-        n_freq_downsample: Optional[tuple[tuple[int]]] = None,
+        layer_widths: int | list[int] = 512,
+        pooling_kernel_sizes: tuple[tuple[int]] | None = None,
+        n_freq_downsample: tuple[tuple[int]] | None = None,
         dropout: float = 0.1,
         activation: str = "ReLU",
         MaxPool1d: bool = True,
@@ -575,7 +573,9 @@ class NHiTSModel(PastCovariatesTorchModel):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
-            It is only applied to the features of the target series and not the covariates.
+            It is only applied to the features of the target series and not the covariates. If ``True``,
+            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
+            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -679,6 +679,18 @@ class NHiTSModel(PastCovariatesTorchModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         References
         ----------

@@ -11,16 +11,12 @@ import copy
 import sys
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Optional, Union
+from typing import Literal
 
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
 
 import numpy as np
 
@@ -34,6 +30,7 @@ from darts.ad.utils import (
 )
 from darts.logging import get_logger, raise_log
 from darts.metrics.utils import METRIC_TYPE
+from darts.typing import TimeSeriesLike
 from darts.utils.data.tabularization import create_lagged_data
 from darts.utils.ts_utils import series2seq
 from darts.utils.utils import _build_tqdm_iterator, _parallel_apply
@@ -69,9 +66,9 @@ class AnomalyScorer(ABC):
 
     def score_from_prediction(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        series: TimeSeriesLike,
+        pred_series: TimeSeriesLike,
+    ) -> TimeSeriesLike:
         """Computes the anomaly score on the two (sequence of) series.
 
         If a pair of sequences is given, they must contain the same number
@@ -87,7 +84,7 @@ class AnomalyScorer(ABC):
 
         Returns
         -------
-        Union[TimeSeries, Sequence[TimeSeries]]
+        TimeSeriesLike
             (Sequence of) anomaly score time series
         """
         called_with_single_series = isinstance(series, TimeSeries)
@@ -127,11 +124,11 @@ class AnomalyScorer(ABC):
 
     def eval_metric_from_prediction(
         self,
-        anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+        anomalies: TimeSeriesLike,
+        series: TimeSeriesLike,
+        pred_series: TimeSeriesLike,
         metric: Literal["AUC_ROC", "AUC_PR"] = "AUC_ROC",
-    ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
+    ) -> float | Sequence[float] | Sequence[Sequence[float]]:
         """Computes the anomaly score between `series` and `pred_series`, and returns the score
         of an agnostic threshold metric.
 
@@ -174,10 +171,10 @@ class AnomalyScorer(ABC):
         self,
         series: TimeSeries,
         pred_series: TimeSeries,
-        scorer_name: str = None,
-        anomalies: TimeSeries = None,
-        title: str = None,
-        metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,
+        scorer_name: str | None = None,
+        anomalies: TimeSeries | None = None,
+        title: str | None = None,
+        metric: Literal["AUC_ROC", "AUC_PR"] | None = None,
         component_wise: bool = False,
     ):
         """Plot the results of the scorer.
@@ -266,9 +263,7 @@ class AnomalyScorer(ABC):
     ) -> np.ndarray:
         pass
 
-    def _check_univariate_scorer(
-        self, anomalies: Union[TimeSeries, Sequence[TimeSeries]]
-    ):
+    def _check_univariate_scorer(self, anomalies: TimeSeriesLike):
         """Checks if `anomalies` contains only univariate series when the scorer has the
         parameter 'is_univariate' set to True.
 
@@ -396,11 +391,11 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         # indicates if the scorer has been trained yet
         self._fit_called = False
-        self.width_trained_on: Optional[int] = None
+        self.width_trained_on: int | None = None
 
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeriesLike,
     ) -> Self:
         """Fits the scorer on the given time series.
 
@@ -432,8 +427,8 @@ class FittableAnomalyScorer(AnomalyScorer):
 
     def fit_from_prediction(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeriesLike,
+        pred_series: TimeSeriesLike,
     ):
         """Fits the scorer on the two (sequences of) series.
 
@@ -469,8 +464,8 @@ class FittableAnomalyScorer(AnomalyScorer):
 
     def score(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        series: TimeSeriesLike,
+    ) -> TimeSeriesLike:
         """Computes the anomaly score on the given series.
 
         If a sequence of series is given, the scorer will score each series independently
@@ -483,7 +478,7 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         Returns
         -------
-        Union[TimeSeries, Sequence[TimeSeries]]
+        TimeSeriesLike
             (Sequence of) anomaly score time series
         """
         self._check_fit_called()
@@ -499,9 +494,9 @@ class FittableAnomalyScorer(AnomalyScorer):
 
     def score_from_prediction(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        series: TimeSeriesLike,
+        pred_series: TimeSeriesLike,
+    ) -> TimeSeriesLike:
         """Computes the anomaly score on the two (sequence of) series.
 
         The function `diff_fn` passed as a parameter to the scorer, will transform `pred_series` and `series`
@@ -522,7 +517,7 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         Returns
         -------
-        Union[TimeSeries, Sequence[TimeSeries]]
+        TimeSeriesLike
             (Sequence of) anomaly score time series
         """
         self._check_fit_called()
@@ -537,10 +532,10 @@ class FittableAnomalyScorer(AnomalyScorer):
 
     def eval_metric(
         self,
-        anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        anomalies: TimeSeriesLike,
+        series: TimeSeriesLike,
         metric: Literal["AUC_ROC", "AUC_PR"] = "AUC_ROC",
-    ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
+    ) -> float | Sequence[float] | Sequence[Sequence[float]]:
         """Computes the anomaly score of the given time series, and returns the score
         of an agnostic threshold metric.
 
@@ -582,10 +577,10 @@ class FittableAnomalyScorer(AnomalyScorer):
     def show_anomalies(
         self,
         series: TimeSeries,
-        anomalies: TimeSeries = None,
-        scorer_name: str = None,
-        title: str = None,
-        metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,
+        anomalies: TimeSeries | None = None,
+        scorer_name: str | None = None,
+        title: str | None = None,
+        metric: Literal["AUC_ROC", "AUC_PR"] | None = None,
         component_wise: bool = False,
     ):
         """Plot the results of the scorer.

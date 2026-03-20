@@ -4,7 +4,6 @@ Base Torch Dataset
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Union
 
 from torch.utils.data import Dataset
 
@@ -21,7 +20,7 @@ from darts.utils.data.utils import (
 
 logger = get_logger(__name__)
 
-_SampleIndexType = dict[FeatureType, tuple[Optional[int], Optional[int]]]
+_SampleIndexType = dict[FeatureType, tuple[int | None, int | None]]
 
 
 class TorchDataset(ABC, Dataset):
@@ -41,7 +40,7 @@ class TorchDataset(ABC, Dataset):
     @abstractmethod
     def __getitem__(
         self, idx: int
-    ) -> Union[TorchTrainingDatasetOutput, TorchInferenceDatasetOutput]:
+    ) -> TorchTrainingDatasetOutput | TorchInferenceDatasetOutput:
         """Returns a sample drawn from this dataset."""
 
     def _memory_indexer(
@@ -52,10 +51,10 @@ class TorchDataset(ABC, Dataset):
         input_chunk_length: int,
         output_chunk_length: int,
         end_of_output_idx: int,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
-        sample_weight: Optional[TimeSeries],
-        n: Optional[int],
+        past_covariates: TimeSeries | None,
+        future_covariates: TimeSeries | None,
+        sample_weight: TimeSeries | None,
+        n: int | None,
     ) -> _SampleIndexType:
         """Returns dict with feature names and (start, end) index ranges.
 

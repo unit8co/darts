@@ -4,7 +4,7 @@ N-BEATS
 """
 
 from enum import Enum
-from typing import NewType, Union
+from typing import NewType
 
 import numpy as np
 import torch
@@ -545,7 +545,7 @@ class NBEATSModel(PastCovariatesTorchModel):
         num_stacks: int = 30,
         num_blocks: int = 1,
         num_layers: int = 4,
-        layer_widths: Union[int, list[int]] = 256,
+        layer_widths: int | list[int] = 256,
         expansion_coefficient_dim: int = 5,
         trend_polynomial_degree: int = 2,
         dropout: float = 0.0,
@@ -639,7 +639,9 @@ class NBEATSModel(PastCovariatesTorchModel):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
-            It is only applied to the features of the target series and not the covariates.
+            It is only applied to the features of the target series and not the covariates. If ``True``,
+            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
+            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -743,6 +745,18 @@ class NBEATSModel(PastCovariatesTorchModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         References
         ----------

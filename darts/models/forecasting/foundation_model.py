@@ -6,27 +6,18 @@ This file contains several abstract classes:
 
     * FoundationModel: base class for foundation forecasting models with PyTorch Lightning backend,
         inheriting from :class:`MixedCovariatesTorchModel` and :class:`TorchForecastingModel`.
-    * HuggingFaceModelMixin: mixin class for loading model configuration and weights from HuggingFace Hub.
 """
 
 from abc import ABC
 
-from darts.logging import get_logger, raise_log
-from darts.models.forecasting.torch_forecasting_model import (
-    MixedCovariatesTorchModel,
-)
+from darts.logging import get_logger
+from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 
 logger = get_logger(__name__)
 
 
 class FoundationModel(MixedCovariatesTorchModel, ABC):
-    _allows_finetuning: bool = False
-
-    def __init__(
-        self,
-        enable_finetuning: bool = False,
-        **kwargs,
-    ):
+    def __init__(self, **kwargs):
         """Foundation Forecasting Model with PyTorch Lightning backend.
 
         This class is meant to be inherited to create a new foundation forecasting model.
@@ -44,14 +35,17 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
         super().__init__(**kwargs). Also, please implement the abstract method :func:`_create_model()`.
 
         If the model requires downloading configuration files and model weights from HuggingFace, please
-        also inherit from :class:`HuggingFaceModelMixin` and use its methods to load the model configuration
+        instantiate a :class:`HuggingFaceConnector` and use its methods to load the model configuration
         inside :func:`__init__()` and to load the model weights inside :func:`_create_model()`.
+
+
+        .. tip::
+            You can perform full or partial fine-tuning of the model by setting the ``enable_finetuning`` parameter.
+            Read more in the parameter description below and in the `Fine-Tuning Examples
+            <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__.
 
         Parameters
         ----------
-        enable_finetuning
-            Whether to enable fine-tuning of the foundation model. If set to ``True``, calling :func:`fit()` will
-            update the model weights. Default: ``False``.
         batch_size
             Number of time series (input and output sequences) used in each fine-tuning pass. Default: ``32``.
         n_epochs
@@ -157,25 +151,51 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
         """
+        # Set default fine-tuning to False for foundation models
+        if "enable_finetuning" not in self.model_params:
+            self.model_params["enable_finetuning"] = False
+
         # initialize `TorchForecastingModel` base class
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
-        # validate and set fine-tuning flag
-        if enable_finetuning and not self._allows_finetuning:
-            raise_log(
-                ValueError(
-                    f"Fine-tuning is not supported for {self.__class__.__name__}."
-                    " Please set `enable_finetuning=False`."
-                ),
-                logger,
+        # pass fine-tuning flag to the PLModule so it can set up training-specific
+        # quantile handling (separate from prediction-time likelihood)
+        if self.enable_finetuning:
+            self.pl_module_params["enable_finetuning"] = True
+
+        use_reversible_instance_norm: bool | dict = self.pl_module_params.get(
+            "use_reversible_instance_norm", False
+        )
+        if use_reversible_instance_norm is True or (
+            isinstance(use_reversible_instance_norm, dict)
+            and use_reversible_instance_norm.get("affine", True)
+        ):
+            if use_reversible_instance_norm is True:
+                use_reversible_instance_norm = dict(affine=False)
+            else:
+                use_reversible_instance_norm["affine"] = False
+            logger.warning(
+                f"By default, Reversible Instance Normalization (RINorm) in Darts inserts affine transformation "
+                f"weights, which do not exist in foundation model checkpoints. To prevent incompatible model "
+                f"weights when loading checkpoints, `use_reversible_instance_norm` is overridden to "
+                f"`{use_reversible_instance_norm}`."
             )
-
-        self._enable_finetuning = enable_finetuning
-
-    @property
-    def _requires_training(self) -> bool:
-        return self._enable_finetuning
+            self.pl_module_params["use_reversible_instance_norm"] = (
+                use_reversible_instance_norm
+            )

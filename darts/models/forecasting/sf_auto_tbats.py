@@ -3,8 +3,6 @@ AutoTBATS
 ---------
 """
 
-from typing import Optional
-
 from statsforecast.models import AutoTBATS as SFAutoTBATS
 
 from darts.models.forecasting.sf_model import StatsForecastModel
@@ -14,9 +12,9 @@ class AutoTBATS(StatsForecastModel):
     def __init__(
         self,
         *args,
-        add_encoders: Optional[dict] = None,
-        quantiles: Optional[list[float]] = None,
-        random_state: Optional[int] = None,
+        add_encoders: dict | None = None,
+        quantiles: list[float] | None = None,
+        random_state: int | None = None,
         **kwargs,
     ):
         """Auto-TBATS based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`__.

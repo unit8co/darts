@@ -3,8 +3,8 @@ Mapper and InvertibleMapper
 ---------------------------
 """
 
-from collections.abc import Mapping
-from typing import Any, Callable, Union
+from collections.abc import Callable, Mapping
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -18,18 +18,16 @@ from darts.logging import get_logger
 
 logger = get_logger(__name__)
 
-MapperFn = Union[
-    Callable[[np.number], np.number], Callable[[pd.Timestamp, np.number], np.number]
-]
+MapperFn = (
+    Callable[[np.number], np.number] | Callable[[pd.Timestamp, np.number], np.number]
+)
 
 
 class Mapper(BaseDataTransformer):
     def __init__(
         self,
-        fn: Union[
-            Callable[[np.number], np.number],
-            Callable[[pd.Timestamp, np.number], np.number],
-        ],
+        fn: Callable[[np.number], np.number]
+        | Callable[[pd.Timestamp, np.number], np.number],
         name: str = "Mapper",
         n_jobs: int = 1,
         verbose: bool = False,
@@ -82,14 +80,10 @@ class Mapper(BaseDataTransformer):
 class InvertibleMapper(InvertibleDataTransformer):
     def __init__(
         self,
-        fn: Union[
-            Callable[[np.number], np.number],
-            Callable[[pd.Timestamp, np.number], np.number],
-        ],
-        inverse_fn: Union[
-            Callable[[np.number], np.number],
-            Callable[[pd.Timestamp, np.number], np.number],
-        ],
+        fn: Callable[[np.number], np.number]
+        | Callable[[pd.Timestamp, np.number], np.number],
+        inverse_fn: Callable[[np.number], np.number]
+        | Callable[[pd.Timestamp, np.number], np.number],
         name: str = "InvertibleMapper",
         n_jobs: int = 1,
         verbose: bool = False,

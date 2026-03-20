@@ -651,6 +651,12 @@ Our regression models are designed to predict continuous numerical values, makin
      - ✅ ✅
      - ✅
      - `TSMixer paper <https://arxiv.org/pdf/2303.06053.pdf>`_, `PyTorch Implementation <https://github.com/ditschuk/pytorch-tsmixer>`_
+   * - `NeuralForecastModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nf_model.html#darts.models.forecasting.nf_model.NeuralForecastModel>`_: wrapper around any `NeuralForecast <https://nixtlaverse.nixtla.io/neuralforecast/docs/capabilities/overview.html>`_ base model
+     - ✅ ✅
+     - ✅ ✅ ✅
+     - ✅ ✅
+     - ✅
+     - `NeuralForecast Documentation <https://nixtlaverse.nixtla.io/neuralforecast/docs/>`_
    * - **Foundation Models** (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_): No training required
      -
      -
@@ -663,6 +669,12 @@ Our regression models are designed to predict continuous numerical values, makin
      - ✅ ✅
      - ✅
      - `Chronos-2 report <https://arxiv.org/abs/2510.15821>`_, `Amazon blog post <https://www.amazon.science/blog/introducing-chronos-2-from-univariate-to-universal-forecasting>`_
+   * - `TimesFM2p5Model <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.timesfm2p5_model.html#darts.models.forecasting.timesfm2p5_model.TimesFM2p5Model>`_
+     - ✅ ✅
+     - 🔴 🔴 🔴
+     - ✅ ✅
+     - ✅
+     - `TimesFM 1.0 paper <https://arxiv.org/abs/2310.10688>`_, `Google blog post <https://research.google/blog/a-decoder-only-foundation-model-for-time-series-forecasting>`_
    * - **Ensemble Models** (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_): Model support is dependent on ensembled forecasting models and the ensemble model itself
      -
      -

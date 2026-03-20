@@ -5,37 +5,108 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.40.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.42.1...master)
 
 ### For users of the library:
 
 **Improved**
 
-- `TimeSeries.to_json()` and `from_json()` now support serialization and deserialization of static covariates, metadata, and hierarchy. The optional parameters in `from_json()` can still be used to override or provide these values if they are not present in the JSON string. [#2996](https://github.com/unit8co/darts/pull/2996) by [Tiberiu Sabau](https://github.com/tibisabau).
-- Added new time aggregated metric `autc()` (Area Under Tolerance Curve): The tolerance curve gives the fraction of predicted target values within tolerance bands of the actual target values across a range of tolerances (defined as % of target range). The AUTC is the normalized area under this tolerance curve and given as a score between [0, 1]. Higher scores are better. [#2994](https://github.com/unit8co/darts/pull/2994) by [Jakub Chłapek](https://github.com/jakubchlapek)
-- Added new plotting function `darts.utils.statistics.plot_tolerance_curve()` to plot the tolerance curve described above. [#2994](https://github.com/unit8co/darts/pull/2994) by [Jakub Chłapek](https://github.com/jakubchlapek)
-- Added `TimeSeries.plotly()` method for interactive time series visualization using Plotly backend. [#2977](https://github.com/unit8co/darts/pull/2977) by [Dustin Brunner](https://github.com/brunnedu).
-  - Provides interactive plotting with zoom, pan, hover tooltips, and legend interactions
-  - Maintains API consistency with the existing `plot()` method for easy adoption
-  - Supports deterministic and stochastic, univariate and multivariate series
-  - Allows overlaying multiple series on the same figure via the `fig` parameter
-  - Customizable trace styling via `**kwargs`
-  - Includes automatic downsampling for large series (configurable via `downsample_threshold` parameter) to avoid crashes when plotting large series
-  - Integrates seamlessly with `plotting.use_darts_style` which now affects both `TimeSeries.plot()` and `TimeSeries.plotly()`
-  - Plotly remains an optional dependency and can be installed with `pip install plotly`
+- `TFTExplainer` plotting improvements: [#3039](https://github.com/unit8co/darts/pull/3039) by [ReinerBRO](https://github.com/ReinerBRO).
+  - `plot_variable_selection()` now returns the matplotlib figures for downstream usage (saving, editing, ...). It returns a single figure when explaining a single TimeSeries. Otherwise, it returns a list of figures.
+  - `plot_variable_selection()` now accepts a `show_plot: bool = True` parameter that allows to suppress showing the plot.
+  - 🔴 `plot_attention()` now also returns the matplotlib figures for all explained series, instead of only the matplotlib axis for the last series.
+-  Better handling of `output_chunk_shift` in `RegressionEnsembleModel : [#2773](https://github.com/unit8co/darts/issues/2773) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
+    -   Shift Propagation: Added logic to automatically detect and propagate `output_chunk_shift` from base forecasting models to the ensembling regression model.
+    - Historical Forecast Alignment: Re-implemented `_make_multiple_historical_forecasts` to ensure all base model predictions are perfectly aligned using a `min_length` trimming approach, preventing misaligned features during regressor training.
 
 **Fixed**
 
-- Fixed bug in `StaticCovariatesTransformer` where one-hot encoded column names were incorrectly assigned when the order of columns specified in `cols_cat` differed from the actual data column order. This caused silent data corruption where column names combined wrong feature names with wrong category values (e.g., `City_US` instead of `Country_US`). [#2989](https://github.com/unit8co/darts/pull/2989) by [Dustin Brunner](https://github.com/brunnedu).
+**Dependencies**
+
+### For developers of the library:
+
+## [0.42.1](https://github.com/unit8co/darts/tree/0.42.1) (2026-03-07)
+
+### For users of the library:
+
+**Fixed**
+
+- Removed an incorrect warning being raised by `NeuralForecastModel` regarding using static covariates with multivariate base models. [#3036](https://github.com/unit8co/darts/pull/3036) by [Dennis Bader](https://github.com/dennisbader).
+
+## [0.42.0](https://github.com/unit8co/darts/tree/0.42.0) (2026-03-07)
+
+### For users of the library:
+
+**Improved**
+
+- 🚀🚀 Added new forecasting model `NeuralForecastModel` to convert any of the **30+ NeuralForecast base models** into a Darts `TorchForecastingModel`. This includes models such as NBEATSx, PatchTST, TimeXer, KAN, and many more. Like all Darts torch models, it supports univariate, multivariate, probabilistic forecasting, optimized backtesting and more. Depending on the base model, it also supports past, future, and static covariates. [#3002](https://github.com/unit8co/darts/pull/3002) by [Zhihao Dai](https://github.com/daidahao)
+  - Check out our new [NeuralForecastModel Notebook](https://unit8co.github.io/darts/examples/26-NeuralForecast-examples.html) for detailed examples. [#3026](https://github.com/unit8co/darts/pull/3026) by [Dennis Bader](https://github.com/dennisbader).
+- 🚀🚀 Added **fine-tuning** support to all `TorchForecastingModel` and `FoundationModel` (such as `Chronos2Model` and `TimesFM2p5Model`) via the new `enable_finetuning` parameter. Supports full training, and partial fine-tuning by selectively freezing or unfreezing layers by name pattern. [#2964](https://github.com/unit8co/darts/issues/2964) by [Alain Gysi](https://github.com/Kurokabe).
+  - Check out our new [Fine-Tuning Notebook](https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html) for detailed examples.
+- More fine-grained control over Reversible Instance Normalization for all torch models. Apart from the boolean trigger, parameter `use_reversible_instance_norm` now also supports setting the `RINorm` hyperparameters as a dictionary. [#3029](https://github.com/unit8co/darts/pull/3029) by [Zhihao Dai](https://github.com/daidahao).
+- Created `darts.typing` module to collect typical type annotation in one place. Introduced `TimeIndex`, `TimeSeriesLike`, `TimeZone` type aliases for improved readability & maintainability of the code. Common type annotations can be added to this file in the future. [#3021](https://github.com/unit8co/darts/pull/3021) by [Michel Zeller](https://github.com/mizeller)
+
+**Fixed**
+
+- Disallowed `use_reversible_instance_norm=True` or `{"affine": True}` for foundation models to prevent checkpoint loading errors due to incompatible weights. [#3029](https://github.com/unit8co/darts/pull/3029) by [Zhihao Dai](https://github.com/daidahao).
+- Updated the restrictive type hint for the timezone parameter `tz` to cover all timezone definitions supported by Pandas [tz_convert](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html). [#3015](https://github.com/unit8co/darts/pull/3015) and [#3035](https://github.com/unit8co/darts/pull/3035) by [Moritz Waldleben](https://github.com/mwaldleben).
+
+**Dependencies**
+
+- Removed the upper version cap on `scikit-learn<1.8.0` since `catboost` added support in version `1.2.10`. [#3025](https://github.com/unit8co/darts/pull/3025) by [Simon Michau](https://github.com/simonmichau).
+
+### For developers of the library:
+
+- Updated target-version to python310, and auto-refactored source code using ruff. [#3017](https://github.com/unit8co/darts/pull/2589) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed all instances of [invalid-parameter-default](https://docs.astral.sh/ty/reference/rules/#invalid-parameter-default) errors. Improves type checker's ability to accurately reason about the code. [#3027](https://github.com/unit8co/darts/pull/3027) by [Michel Zeller](https://github.com/mizeller)
+
+## [0.41.0](https://github.com/unit8co/darts/tree/0.41.0) (2026-02-10)
+
+### For users of the library:
+
+**Migration from PyPI "u8darts" package to "darts" package**
+
+- The `darts` PyPI package now replaces `u8darts` with the same installation options (e.g. `darts`, `darts[torch]`, `darts[notorch]`, `darts[all]`). No code changes are required. See the [migration guide](https://github.com/unit8co/darts/blob/master/INSTALL.md#important-darts-pypi-package-changes-as-of-version-0410) for details.
+  - If you have been using `darts` before: switch to `pip install "darts[torch]>=0.41.0"` and replace `darts` by `darts[torch]>=0.41.0` in your project requirements.
+  - If you have been using `u8darts` before: switch to `pip install "darts>=0.41.0"` and replace `u8darts` by `darts>=0.41.0` in your project requirements.
+
+**Improved**
+
+- Improvements to forecasting models:
+  - 🚀🚀 Added new forecasting model `TimesFM2p5Model`: Google's pre-trained 200M-parameter foundational model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series forecasting without training and can output deterministic or probabilistic forecasts. [#2980](https://github.com/unit8co/darts/pull/2980) by [Zhihao Dai](https://github.com/daidahao).
+- Improvements to `TimeSeries` :
+  - 🚀🚀 Added method `TimeSeries.plotly()` method for interactive time series visualization using Plotly backend. [#2977](https://github.com/unit8co/darts/pull/2977) by [Dustin Brunner](https://github.com/brunnedu).
+    - Provides interactive plotting with zoom, pan, hover tooltips, and legend interactions
+    - Maintains API consistency with the existing `plot()` method for easy adoption
+    - Supports deterministic and stochastic, univariate and multivariate series
+    - Allows overlaying multiple series on the same figure via the `fig` parameter
+    - Customizable trace styling via `**kwargs`
+    - Includes automatic downsampling for large series (configurable via `downsample_threshold` parameter) to avoid crashes when plotting large series
+    - Integrates seamlessly with `plotting.use_darts_style` which now affects both `TimeSeries.plot()` and `TimeSeries.plotly()`
+    - Plotly remains an optional dependency and can be installed with `pip install plotly`
+  - Methods `TimeSeries.to_json()` and `TimeSeries.from_json()` now support serialization and deserialization of static covariates, metadata, and hierarchy. The optional parameters in `from_json()` can still be used to override or provide these values if they are not present in the JSON string. [#2996](https://github.com/unit8co/darts/pull/2996) by [Tiberiu Sabau](https://github.com/tibisabau).
+  - Method `TimeSeries.to_dataframe()` now supports fine-grained control over adding the time series' metadata and static covariates to the output DataFrame with the new parameters `add_static_cov` and `add_metadata`. [#2965](https://github.com/unit8co/darts/issues/2965) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
+- New Top-level functions:
+  - Added method `darts.to_group_dataframe()` to convert a list of time series into a long DataFrame (pandas, polars, ...) - e.g. into the DataFrame format that is used as input for `from_group_dataframe()`. [#2965](https://github.com/unit8co/darts/issues/2965) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
+- Improvements to metrics and evaluation:
+  - Added new time aggregated metric `autc()` (Area Under Tolerance Curve): The tolerance curve gives the fraction of predicted target values within tolerance bands of the actual target values across a range of tolerances (defined as % of target range). The AUTC is the normalized area under this tolerance curve and given as a score between [0, 1]. Higher scores are better. [#2994](https://github.com/unit8co/darts/pull/2994) by [Jakub Chłapek](https://github.com/jakubchlapek)
+  - Added new plotting function `darts.utils.statistics.plot_tolerance_curve()` to plot the tolerance curve described above. [#2994](https://github.com/unit8co/darts/pull/2994) by [Jakub Chłapek](https://github.com/jakubchlapek)
+
+**Fixed**
+
+- Fixed a bug in `StaticCovariatesTransformer` where one-hot encoded column names were incorrectly assigned when the order of columns specified in `cols_cat` differed from the actual data column order. This caused silent data corruption where column names combined wrong feature names with wrong category values (e.g., `City_US` instead of `Country_US`). [#2989](https://github.com/unit8co/darts/pull/2989) by [Dustin Brunner](https://github.com/brunnedu).
 - Fixed a bug in `TorchTrainingDataset` where `max_samples_per_ts` was not acting as an upper bound on the number of samples per time series. Now `max_samples_per_ts` correctly acts as an upper bound, capping the dataset size at the actual number of samples that can be extracted from the longest series. [#2987](https://github.com/unit8co/darts/pull/2987) by [Dustin Brunner](https://github.com/brunnedu).
-- Updated s(m)ape to not raise a ValueError when actuals and predictions are zero for the same timestep. [#2984](https://github.com/unit8co/darts/pull/2984) by [eschibli](https://github.com/eschibli).
+- Updated metrics `sape`and `smape` to not raise a ValueError when actuals and predictions are zero for the same timestep. [#2984](https://github.com/unit8co/darts/pull/2984) by [eschibli](https://github.com/eschibli).
 - Updated outdated links to [holidays package](https://holidays.readthedocs.io/en/latest/#available-countries) in `TimeSeries`, `holidays_timeseries()`, and `Prophet`. [#2999](https://github.com/unit8co/darts/pull/2999) by [Zhihao Dai](https://github.com/daidahao).
 
 **Dependencies**
 
-- We set an upper version cap on `pandas<3.0.0` until we officially support it. [#2995](https://github.com/unit8co/darts/pull/2995) by [Dennis Bader](https://github.com/dennisbader).
+- Added support for `pandas>=3.0.0`, bumped minimum supported Pandas version to `pandas>=2.2.0`, bumped minimum supported NumPy version to `numpy>=2.2.0`. [#3004](https://github.com/unit8co/darts/pull/3004) by [Jakub Chłapek](https://github.com/jakubchlapek)
 
 ### For developers of the library:
+
+- Migrated the dependency management and tooling to [uv](https://docs.astral.sh/uv/). Use `uv sync --group dev-all --upgrade` to setup your development environment; See the [contribution guide](https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md) for further information. [#2993](https://github.com/unit8co/darts/pull/2993) by [Jules Authier](https://github.com/authierj).
+- Removed unit tests from the package distribution (PyPI and conda-forge) to reduce package size. [#2979](https://github.com/unit8co/darts/pull/2979) and [u8darts-feedstock#59](https://github.com/conda-forge/u8darts-feedstock/pull/59) by [Zhihao Dai](https://github.com/daidahao).
 
 ## [0.40.0](https://github.com/unit8co/darts/tree/0.40.0) (2025-12-23)
 
@@ -84,7 +155,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improvements to forecasting models:
   - 🚀🚀 Added new forecasting model `Chronos2Model`: Amazon's pre-trained 120M-parameter foundational model for zero-shot forecasting. `Chronos2Model` can be used for univariate, multivariate, and multiple time series forecasting without any training. It supports past and future covariates and can output deterministic or probabilistic forecasts. Check out the new [Chronos-2 Foundation Model Notebook](https://unit8co.github.io/darts/examples/25-Chronos-2-examples.html) for examples and usage of Chronos-2. [#2944](https://github.com/unit8co/darts/pull/2944) by [Zhihao Dai](https://github.com/daidahao).
 
-- Improvements to `TimeSeries`
+- Improvements to `TimeSeries`:
   - 🚀 Revamped how TimeSeries are displayed in notebooks and consoles to provide a cleaner and more informative summary. Values are now shown in tabular / DataFrame format. If available, static covariates, hierarchy, and metadata are shown in dedicated formatted sections. [#2931](https://github.com/unit8co/darts/pull/2931) by [Jakub Chłapek](https://github.com/jakubchlapek)
   - 🔴 Improved the performance of the `TimeSeries.map()` method for functions that take two arguments. The mapping is now applied on the entire time index and values array which requires users to reshape the time index explicitly within the function. See more information in the `TimeSeries.map()` method documentation. [#2911](https://github.com/unit8co/darts/pull/2911) by [Jakub Chłapek](https://github.com/jakubchlapek)
 

@@ -22,7 +22,7 @@ Time-Series Mixer (TSMixer)
 # portions of the Software.
 # '
 
-from typing import Callable, Optional, Union
+from collections.abc import Callable
 
 import torch
 from torch import nn
@@ -298,9 +298,7 @@ class _ConditionalMixerLayer(nn.Module):
             norm_type=norm_type,
         )
 
-    def forward(
-        self, x: torch.Tensor, x_static: Optional[torch.Tensor]
-    ) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, x_static: torch.Tensor | None) -> torch.Tensor:
         if self.feature_mixing_static is not None:
             x_static_mixed = self.feature_mixing_static(x_static)
             x = torch.cat([x, x_static_mixed], dim=-1)
@@ -323,7 +321,7 @@ class _TSMixerModule(PLForecastingModule):
         num_blocks: int,
         activation: str,
         dropout: float,
-        norm_type: Union[str, nn.Module],
+        norm_type: str | nn.Module,
         normalize_before: bool,
         **kwargs,
     ) -> None:
@@ -528,7 +526,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
         num_blocks: int = 2,
         activation: str = "ReLU",
         dropout: float = 0.1,
-        norm_type: Union[str, nn.Module] = "LayerNorm",
+        norm_type: str | nn.Module = "LayerNorm",
         normalize_before: bool = False,
         use_static_covariates: bool = True,
         **kwargs,
@@ -617,7 +615,9 @@ class TSMixerModel(MixedCovariatesTorchModel):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
-            It is only applied to the features of the target series and not the covariates.
+            It is only applied to the features of the target series and not the covariates. If ``True``,
+            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
+            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -721,6 +721,18 @@ class TSMixerModel(MixedCovariatesTorchModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         References
         ----------

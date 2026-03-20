@@ -3,7 +3,7 @@ Exponential Smoothing
 ---------------------
 """
 
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
@@ -21,14 +21,14 @@ class ExponentialSmoothing(LocalForecastingModel):
     @random_method
     def __init__(
         self,
-        trend: Optional[ModelMode] = ModelMode.ADDITIVE,
-        damped: Optional[bool] = False,
-        seasonal: Optional[SeasonalityMode] = SeasonalityMode.ADDITIVE,
-        seasonal_periods: Optional[int] = None,
-        error: Optional[str] = "add",
-        random_errors: Optional[Any] = None,
-        random_state: Optional[int] = None,
-        kwargs: Optional[dict[str, Any]] = None,
+        trend: ModelMode | None = ModelMode.ADDITIVE,
+        damped: bool | None = False,
+        seasonal: SeasonalityMode | None = SeasonalityMode.ADDITIVE,
+        seasonal_periods: int | None = None,
+        error: str | None = "add",
+        random_errors: Any | None = None,
+        random_state: int | None = None,
+        kwargs: dict[str, Any] | None = None,
         **fit_kwargs,
     ):
         """Exponential Smoothing
@@ -119,7 +119,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         self.fit_kwargs = fit_kwargs
         self.model = None
 
-    def fit(self, series: TimeSeries, verbose: Optional[bool] = None):
+    def fit(self, series: TimeSeries, verbose: bool | None = None):
         super().fit(series, verbose=verbose)
         self._assert_univariate(series)
         series = self.training_series
@@ -159,9 +159,9 @@ class ExponentialSmoothing(LocalForecastingModel):
         self,
         n: int,
         num_samples: int = 1,
-        verbose: Optional[bool] = None,
+        verbose: bool | None = None,
         show_warnings: bool = True,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ):
         super().predict(n, num_samples, verbose=verbose)
 

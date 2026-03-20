@@ -6,7 +6,6 @@ An ensemble model which uses a regression model to compute the ensemble forecast
 """
 
 from collections.abc import Sequence
-from typing import Optional, Union
 
 from darts import TimeSeries, concatenate
 from darts.logging import get_logger, raise_if, raise_if_not
@@ -14,6 +13,7 @@ from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.sklearn_model import SKLearnModel
+from darts.typing import TimeSeriesLike
 from darts.utils.ts_utils import seq2series, series2seq
 
 logger = get_logger(__name__)
@@ -26,7 +26,7 @@ class RegressionEnsembleModel(EnsembleModel):
         regression_train_n_points: int,
         regression_model=None,
         regression_train_num_samples: int = 1,
-        regression_train_samples_reduction: Optional[Union[str, float]] = "median",
+        regression_train_samples_reduction: str | float | None = "median",
         train_forecasting_models: bool = True,
         train_using_historical_forecasts: bool = False,
         show_warnings: bool = True,
@@ -202,7 +202,7 @@ class RegressionEnsembleModel(EnsembleModel):
         self.train_using_historical_forecasts = train_using_historical_forecasts
 
     def _split_multi_ts_sequence(
-        self, n: Union[int, list[int]], ts_sequence: Sequence[TimeSeries]
+        self, n: int | list[int], ts_sequence: Sequence[TimeSeries]
     ) -> tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
         if isinstance(n, int):
             n = [n] * len(ts_sequence)
@@ -213,12 +213,12 @@ class RegressionEnsembleModel(EnsembleModel):
     def _make_multiple_historical_forecasts(
         self,
         train_n_points: int,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         num_samples: int = 1,
-        verbose: Optional[bool] = None,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        verbose: bool | None = None,
+    ) -> TimeSeriesLike:
         """
         For GlobalForecastingModel, when predicting n > output_chunk_length, `historical_forecasts()` generally
         produce better forecasts than `predict()`.
@@ -297,11 +297,11 @@ class RegressionEnsembleModel(EnsembleModel):
 
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-        verbose: Optional[bool] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
+        verbose: bool | None = None,
     ):
         """
         Fits the forecasting models with the entire series except the last `regression_train_n_points` values, which
@@ -445,13 +445,13 @@ class RegressionEnsembleModel(EnsembleModel):
 
     def ensemble(
         self,
-        predictions: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        predictions: TimeSeriesLike,
+        series: TimeSeriesLike,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
-        random_state: Optional[int] = None,
-        verbose: Optional[bool] = None,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        random_state: int | None = None,
+        verbose: bool | None = None,
+    ) -> TimeSeriesLike:
         is_single_series = isinstance(series, TimeSeries) or series is None
         predictions = series2seq(predictions)
         series = series2seq(series) if series is not None else [None]

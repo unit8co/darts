@@ -5,7 +5,7 @@ Models
 A comprehensive collection of forecasting and filtering models, including baseline models
 (NaiveSeasonal, NaiveMovingAverage, ...), statistical models (ARIMA, exponential smoothing, ...),
 machine learning models (LightGBM, CatBoost, sklearn-based, ...), neural network models (RNN,
-N-BEATS, TiDE...), and foundation models (Chronos2).
+N-BEATS, TiDE...), and foundation models (Chronos-2, TimesFM 2.5).
 """
 
 from darts.logging import get_logger
@@ -69,7 +69,7 @@ try:
 except ModuleNotFoundError:
     logger.warning(
         "Support for Torch based models not available. "
-        'To enable them, install "darts", "u8darts[torch]" or "u8darts[all]" (with pip); '
+        'To enable them, install "darts[torch]" or "darts[all]" (with pip); '
         'or "u8darts-torch" or "u8darts-all" (with conda).'
     )
     BlockRNNModel = NotImportedModule(module_name="(Py)Torch", warn=False)
@@ -89,8 +89,15 @@ except ModuleNotFoundError:
 
 try:
     from darts.models.forecasting.chronos2_model import Chronos2Model
+    from darts.models.forecasting.timesfm2p5_model import TimesFM2p5Model
 except ModuleNotFoundError:
     Chronos2Model = NotImportedModule(module_name="(Py)Torch", warn=False)
+    TimesFM2p5Model = NotImportedModule(module_name="(Py)Torch", warn=False)
+
+try:
+    from darts.models.forecasting.nf_model import NeuralForecastModel
+except ModuleNotFoundError:
+    NeuralForecastModel = NotImportedModule(module_name="NeuralForecast", warn=False)
 
 try:
     from darts.models.forecasting.prophet_model import Prophet
@@ -138,8 +145,8 @@ except ImportError:
 try:
     from darts.models.forecasting.xgboost import XGBClassifierModel, XGBModel
 except ImportError:
-    XGBModel = NotImportedModule(module_name="XGBoost")
-    XGBClassifierModel = NotImportedModule(module_name="XGBoost")
+    XGBModel = NotImportedModule(module_name="XGBoost", warn=False)
+    XGBClassifierModel = NotImportedModule(module_name="XGBoost", warn=False)
 
 # Filtering
 from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter
@@ -203,4 +210,6 @@ __all__ = [
     "ConformalNaiveModel",
     "ConformalQRModel",
     "Chronos2Model",
+    "TimesFM2p5Model",
+    "NeuralForecastModel",
 ]

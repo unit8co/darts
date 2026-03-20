@@ -4,7 +4,7 @@ Missing Values Filler
 """
 
 from collections.abc import Mapping
-from typing import Any, Union
+from typing import Any
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers.base_data_transformer import BaseDataTransformer
@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 class MissingValuesFiller(BaseDataTransformer):
     def __init__(
         self,
-        fill: Union[str, float] = "auto",
+        fill: str | float = "auto",
         name: str = "MissingValuesFiller",
         n_jobs: int = 1,
         verbose: bool = False,

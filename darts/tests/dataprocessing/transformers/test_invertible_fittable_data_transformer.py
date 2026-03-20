@@ -1,5 +1,5 @@
 from collections.abc import Mapping, Sequence
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 import pytest
@@ -11,6 +11,7 @@ from darts.dataprocessing.transformers.fittable_data_transformer import (
 from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
+from darts.typing import TimeSeriesLike
 from darts.utils.timeseries_generation import constant_timeseries
 
 
@@ -33,7 +34,7 @@ class TestLocalFittableInvertibleDataTransformer:
             translation: float,
             stack_samples: bool = False,
             mask_components: bool = True,
-            parallel_params: Union[bool, Sequence[str]] = False,
+            parallel_params: bool | Sequence[str] = False,
         ):
             """
             Applies the (invertible) transform `transformed_series = scale * series + translation`.
@@ -488,7 +489,7 @@ class TestGlobalFittableInvertibleDataTransformer:
 
         @staticmethod
         def ts_fit(
-            series: Union[TimeSeries, Sequence[TimeSeries]],
+            series: TimeSeriesLike,
             params: Mapping[str, Any],
             **kwargs,
         ):

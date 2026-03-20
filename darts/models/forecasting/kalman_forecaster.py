@@ -10,8 +10,6 @@ to obtain forecasts.
 This implementation accepts an optional control signal (future covariates).
 """
 
-from typing import Optional
-
 import numpy as np
 from nfoursid.kalman import Kalman
 
@@ -31,9 +29,9 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
     def __init__(
         self,
         dim_x: int = 1,
-        kf: Optional[Kalman] = None,
-        add_encoders: Optional[dict] = None,
-        random_state: Optional[int] = None,
+        kf: Kalman | None = None,
+        add_encoders: dict | None = None,
+        random_state: int | None = None,
     ):
         """Kalman filter Forecaster
 
@@ -118,8 +116,8 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
     def _fit(
         self,
         series: TimeSeries,
-        future_covariates: Optional[TimeSeries] = None,
-        verbose: Optional[bool] = None,
+        future_covariates: TimeSeries | None = None,
+        verbose: bool | None = None,
     ):
         super()._fit(series, future_covariates, verbose=verbose)
         if self.kf is None:
@@ -130,13 +128,13 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
     def predict(
         self,
         n: int,
-        series: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
-        verbose: Optional[bool] = None,
+        verbose: bool | None = None,
         show_warnings: bool = True,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
         **kwargs,
     ) -> TimeSeries:
         # we override `predict()` to pass a non-None `series`, so that historic_future_covariates
@@ -156,13 +154,13 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
     def _predict(
         self,
         n: int,
-        series: Optional[TimeSeries] = None,
-        historic_future_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: TimeSeries | None = None,
+        historic_future_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ) -> TimeSeries:
         super()._predict(
             n=n,

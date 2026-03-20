@@ -18,7 +18,6 @@ from darts.tests.test_timeseries import (
     helper_test_slice,
     helper_test_split,
 )
-from darts.utils.utils import freqs
 
 if POLARS_AVAILABLE:
     import polars as pl
@@ -276,9 +275,7 @@ class TestTimeSeriesMultivariate:
         assert seriesA.width == 3
 
         # testing hourly time series
-        times = pd.date_range(
-            start=pd.Timestamp("20201224"), periods=50, freq=freqs["h"]
-        )
+        times = pd.date_range(start=pd.Timestamp("20201224"), periods=50, freq="h")
         seriesB = TimeSeries.from_times_and_values(times, range(len(times)))
         seriesB = seriesB.add_holidays("US")
         last_column = seriesB.to_dataframe().iloc[:, seriesB.width - 1]

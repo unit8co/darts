@@ -4,7 +4,6 @@ Croston Method
 """
 
 import copy
-from typing import Optional
 
 from statsforecast.models import TSB as CrostonTSB
 from statsforecast.models import CrostonClassic, CrostonOptimized, CrostonSBA
@@ -19,11 +18,11 @@ class Croston(StatsForecastModel):
     def __init__(
         self,
         version: str = "classic",
-        alpha_d: float = None,
-        alpha_p: float = None,
-        add_encoders: Optional[dict] = None,
-        quantiles: Optional[list[float]] = None,
-        random_state: Optional[int] = None,
+        alpha_d: float | None = None,
+        alpha_p: float | None = None,
+        add_encoders: dict | None = None,
+        quantiles: list[float] | None = None,
+        random_state: int | None = None,
         **kwargs,
     ):
         """Croston method as presented `in this paper <https://otexts.com/fpp3/counts.html>`__ and based on the

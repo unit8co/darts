@@ -19,14 +19,15 @@ This file contains several abstract classes:
 
 import copy
 import datetime
+import fnmatch
 import inspect
 import os
 import shutil
 import sys
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from glob import glob
-from typing import Any, Callable, Literal, Optional, Union
+from typing import Any, Literal
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -56,6 +57,7 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
 )
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
+from darts.typing import TimeSeriesLike
 from darts.utils.data import (
     SequentialTorchInferenceDataset,
     SequentialTorchTrainingDataset,
@@ -135,16 +137,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self,
         batch_size: int = 32,
         n_epochs: int = 100,
-        model_name: str = None,
+        model_name: str | None = None,
         work_dir: str = os.path.join(os.getcwd(), DEFAULT_DARTS_FOLDER),
         log_tensorboard: bool = False,
         nr_epochs_val_period: int = 1,
         force_reset: bool = False,
         save_checkpoints: bool = False,
-        add_encoders: Optional[dict] = None,
-        random_state: Optional[int] = None,
-        pl_trainer_kwargs: Optional[dict] = None,
+        add_encoders: dict | None = None,
+        random_state: int | None = None,
+        pl_trainer_kwargs: dict | None = None,
         show_warnings: bool = False,
+        enable_finetuning: bool | dict[str, list[str]] | None = None,
     ):
         """Pytorch Lightning (PL)-based Forecasting Model.
 
@@ -265,19 +268,31 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
         """
         super().__init__(add_encoders=add_encoders)
         suppress_lightning_warnings(suppress_all=not show_warnings)
 
         # model will get created in first call of fit_from_dataset()
-        self.model: Optional[PLForecastingModule] = None
+        self.model: PLForecastingModule | None = None
         # to retrieve the PLForecastingModule upon loading, we store the module path, and class name
         self._module_path = self.__module__
         # class name will be set in fit_from_dataset()
-        self._module_name: Optional[str] = ""
+        self._module_name: str | None = ""
 
-        self.train_sample: Optional[TorchTrainingSample] = None
-        self.output_dim: Optional[int] = None
+        self.train_sample: TorchTrainingSample | None = None
+        self.output_dim: int | None = None
 
         self.n_epochs = n_epochs
         self.batch_size = batch_size
@@ -355,11 +370,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # pytorch lightning trainer will be created at training time
         # keep a reference of the trainer, to avoid weak reference errors
-        self.trainer: Optional[pl.Trainer] = None
-        self.load_ckpt_path: Optional[str] = None
+        self.trainer: pl.Trainer | None = None
+        self.load_ckpt_path: str | None = None
 
         # pl_module_params must be set in __init__ method of TorchForecastingModel subclass
-        self.pl_module_params: Optional[dict] = None
+        self.pl_module_params: dict | None = None
+
+        # fine-tuning control
+        self._verify_enable_finetuning(enable_finetuning)
+        self.enable_finetuning = enable_finetuning
 
     @classmethod
     def _validate_model_params(cls, **kwargs):
@@ -427,7 +446,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.model = None
         self.train_sample = None
 
-    def _init_model(self, trainer: Optional[pl.Trainer] = None) -> PLForecastingModule:
+    def _init_model(self, trainer: pl.Trainer | None = None) -> PLForecastingModule:
         """Initializes model and trainer based on examples of input/output tensors (to get the sizes right):"""
 
         raise_if(
@@ -498,13 +517,40 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     _get_runs_folder(self.work_dir, self.model_name), INIT_MODEL_NAME
                 )
             )
+        self._setup_finetuning(model)
         return model
+
+    def _setup_finetuning(self, model: PLForecastingModule):
+        """
+        Sets up the model for fine-tuning based on `self.enable_finetuning`.
+        """
+        # default behavior (None): all parameters are trainable
+        if self.enable_finetuning is None:
+            return
+
+        if isinstance(self.enable_finetuning, bool):
+            # boolean behavior; freeze all or none
+            patterns = []
+            make_trainable = not self.enable_finetuning
+        else:
+            # dict behavior; freeze or unfreeze only the given patterns
+            # guaranteed to only have on key-value pair from (verified at model creation)
+            mode = list(self.enable_finetuning)[0]
+            make_trainable = mode == "unfreeze"
+            patterns = self.enable_finetuning[mode]
+
+        # freeze (or unfreeze) the patterns and unfreeze (or freeze) the remaining parameters
+        for name, param in model.named_parameters():
+            if any(fnmatch.fnmatch(name, p) for p in patterns):
+                param.requires_grad = make_trainable
+            else:
+                param.requires_grad = not make_trainable
 
     def _setup_trainer(
         self,
-        trainer: Optional[pl.Trainer],
+        trainer: pl.Trainer | None,
         model: PLForecastingModule,
-        verbose: Optional[bool] = None,
+        verbose: bool | None = None,
         epochs: int = 0,
     ) -> pl.Trainer:
         """Sets up a PyTorch-Lightning trainer (if not already provided) for training or prediction."""
@@ -526,7 +572,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @staticmethod
     def _init_trainer(
-        trainer_params: dict, max_epochs: Optional[int] = None
+        trainer_params: dict, max_epochs: int | None = None
     ) -> pl.Trainer:
         """Initializes a PyTorch-Lightning trainer for training or prediction from `trainer_params`."""
         trainer_params_copy = {key: val for key, val in trainer_params.items()}
@@ -550,10 +596,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _build_train_dataset(
         self,
         series: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        sample_weight: Optional[Union[Sequence[TimeSeries], str]],
-        max_samples_per_ts: Optional[int],
+        past_covariates: Sequence[TimeSeries] | None,
+        future_covariates: Sequence[TimeSeries] | None,
+        sample_weight: Sequence[TimeSeries] | str | None,
+        max_samples_per_ts: int | None,
         stride: int = 1,
     ) -> TorchTrainingDataset:
         """
@@ -576,10 +622,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self,
         n: int,
         series: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
+        past_covariates: Sequence[TimeSeries] | None,
+        future_covariates: Sequence[TimeSeries] | None,
         stride: int = 0,
-        bounds: Optional[np.ndarray] = None,
+        bounds: np.ndarray | None = None,
     ) -> TorchInferenceDataset:
         """
         Models can override this method to return a custom `TorchInferenceDataset`.
@@ -727,6 +773,35 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 logger=logger,
             )
 
+    @staticmethod
+    def _verify_enable_finetuning(
+        enable_finetuning: bool | dict[str, list[str]] | None,
+    ) -> None:
+        """Verify the `enable_finetuning` input."""
+        if enable_finetuning is None or isinstance(enable_finetuning, bool):
+            return
+
+        # dict
+        keys = list(enable_finetuning.keys())
+        if len(keys) != 1 or keys[0] not in ["freeze", "unfreeze"]:
+            raise_log(
+                ValueError(
+                    "If `enable_finetuning` is a dict, it must contain exactly one key: 'freeze' or 'unfreeze'."
+                ),
+                logger,
+            )
+
+        patterns = enable_finetuning[keys[0]]
+        if not isinstance(patterns, list) or not all(
+            isinstance(p, str) for p in patterns
+        ):
+            raise_log(
+                ValueError(
+                    "The value of the `enable_finetuning` dict must be a list of strings (patterns)."
+                ),
+                logger,
+            )
+
     def _update_covariates_use(self):
         """Based on the Forecasting class and the training_sample attribute, update the
         uses_[past/future/static]_covariates attributes."""
@@ -745,7 +820,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             self.uses_static_covariates and self.static_covariates is None
         )
 
-    def to_onnx(self, path: Optional[str] = None, **kwargs):
+    def to_onnx(self, path: str | None = None, **kwargs):
         """Export model to ONNX format for optimized inference, wrapping around PyTorch Lightning's
         :func:`torch.onnx.export` method (`official documentation <https://lightning.ai/docs/pytorch/
         stable/common/lightning_module.html#to-onnx>`__).
@@ -787,7 +862,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             path = self._default_save_path() + ".onnx"
 
         # last dimension in train_sample_shape is the expected target
-        def _randomize(shape) -> Optional[torch.Tensor]:
+        def _randomize(shape) -> torch.Tensor | None:
             return torch.rand((1,) + shape, dtype=self.model.dtype) if shape else None
 
         # type warning if we do not create the mocked `mock_batch` explicitly
@@ -821,21 +896,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @random_method
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        trainer: Optional[pl.Trainer] = None,
-        verbose: Optional[bool] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        val_series: TimeSeriesLike | None = None,
+        val_past_covariates: TimeSeriesLike | None = None,
+        val_future_covariates: TimeSeriesLike | None = None,
+        trainer: pl.Trainer | None = None,
+        verbose: bool | None = None,
         epochs: int = 0,
-        max_samples_per_ts: Optional[int] = None,
-        dataloader_kwargs: Optional[dict[str, Any]] = None,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-        val_sample_weight: Optional[
-            Union[TimeSeries, Sequence[TimeSeries], str]
-        ] = None,
+        max_samples_per_ts: int | None = None,
+        dataloader_kwargs: dict[str, Any] | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
+        val_sample_weight: TimeSeriesLike | str | None = None,
         stride: int = 1,
         load_best: bool = False,
     ) -> "TorchForecastingModel":
@@ -959,36 +1032,34 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _setup_for_fit_from_dataset(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
         stride: int = 1,
-        val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_sample_weight: Optional[
-            Union[TimeSeries, Sequence[TimeSeries], str]
-        ] = None,
-        trainer: Optional[pl.Trainer] = None,
-        verbose: Optional[bool] = None,
+        val_series: TimeSeriesLike | None = None,
+        val_past_covariates: TimeSeriesLike | None = None,
+        val_future_covariates: TimeSeriesLike | None = None,
+        val_sample_weight: TimeSeriesLike | str | None = None,
+        trainer: pl.Trainer | None = None,
+        verbose: bool | None = None,
         epochs: int = 0,
-        max_samples_per_ts: Optional[int] = None,
-        dataloader_kwargs: Optional[dict[str, Any]] = None,
+        max_samples_per_ts: int | None = None,
+        dataloader_kwargs: dict[str, Any] | None = None,
         load_best: bool = False,
     ) -> tuple[
         tuple[
             Sequence[TimeSeries],
-            Optional[Sequence[TimeSeries]],
-            Optional[Sequence[TimeSeries]],
+            Sequence[TimeSeries] | None,
+            Sequence[TimeSeries] | None,
         ],
         tuple[
             TorchTrainingDataset,
-            Optional[TorchTrainingDataset],
-            Optional[pl.Trainer],
-            Optional[bool],
+            TorchTrainingDataset | None,
+            pl.Trainer | None,
+            bool | None,
             int,
-            Optional[dict[str, Any]],
+            dict[str, Any] | None,
             bool,
         ],
     ]:
@@ -1092,11 +1163,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def fit_from_dataset(
         self,
         train_dataset: TorchTrainingDataset,
-        val_dataset: Optional[TorchTrainingDataset] = None,
-        trainer: Optional[pl.Trainer] = None,
-        verbose: Optional[bool] = None,
+        val_dataset: TorchTrainingDataset | None = None,
+        trainer: pl.Trainer | None = None,
+        verbose: bool | None = None,
         epochs: int = 0,
-        dataloader_kwargs: Optional[dict[str, Any]] = None,
+        dataloader_kwargs: dict[str, Any] | None = None,
         load_best: bool = False,
     ) -> "TorchForecastingModel":
         """
@@ -1162,13 +1233,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _setup_for_train(
         self,
         train_dataset: TorchTrainingDataset,
-        val_dataset: Optional[TorchTrainingDataset] = None,
-        trainer: Optional[pl.Trainer] = None,
-        verbose: Optional[bool] = None,
+        val_dataset: TorchTrainingDataset | None = None,
+        trainer: pl.Trainer | None = None,
+        verbose: bool | None = None,
         epochs: int = 0,
-        dataloader_kwargs: Optional[dict[str, Any]] = None,
+        dataloader_kwargs: dict[str, Any] | None = None,
         load_best: bool = False,
-    ) -> tuple[pl.Trainer, PLForecastingModule, DataLoader, Optional[DataLoader], bool]:
+    ) -> tuple[pl.Trainer, PLForecastingModule, DataLoader, DataLoader | None, bool]:
         """This method acts on `TorchTrainingDataset` inputs. It performs sanity checks, and sets up / returns the
         trainer, model, and dataset loaders required for training the model with `_train()`.
         """
@@ -1321,7 +1392,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         trainer: pl.Trainer,
         model: PLForecastingModule,
         train_loader: DataLoader,
-        val_loader: Optional[DataLoader],
+        val_loader: DataLoader | None,
         load_best: bool = False,
     ) -> None:
         """
@@ -1344,7 +1415,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.load_ckpt_path = None
 
         if load_best:
-            ckpt_callback: Optional[pl.callbacks.ModelCheckpoint] = (
+            ckpt_callback: pl.callbacks.ModelCheckpoint | None = (
                 trainer.checkpoint_callback
             )
             ckpt_activated = ckpt_callback is not None and hasattr(
@@ -1382,21 +1453,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @random_method
     def lr_find(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-        val_sample_weight: Optional[
-            Union[TimeSeries, Sequence[TimeSeries], str]
-        ] = None,
-        trainer: Optional[pl.Trainer] = None,
-        verbose: Optional[bool] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        val_series: TimeSeriesLike | None = None,
+        val_past_covariates: TimeSeriesLike | None = None,
+        val_future_covariates: TimeSeriesLike | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
+        val_sample_weight: TimeSeriesLike | str | None = None,
+        trainer: pl.Trainer | None = None,
+        verbose: bool | None = None,
         epochs: int = 0,
-        max_samples_per_ts: Optional[int] = None,
-        dataloader_kwargs: Optional[dict[str, Any]] = None,
+        max_samples_per_ts: int | None = None,
+        dataloader_kwargs: dict[str, Any] | None = None,
         min_lr: float = 1e-08,
         max_lr: float = 1,
         num_training: int = 100,
@@ -1539,21 +1608,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def predict(
         self,
         n: int,
-        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        trainer: Optional[pl.Trainer] = None,
-        batch_size: Optional[int] = None,
-        verbose: Optional[bool] = None,
+        series: TimeSeriesLike | None = None,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        trainer: pl.Trainer | None = None,
+        batch_size: int | None = None,
+        verbose: bool | None = None,
         n_jobs: int = 1,
-        roll_size: Optional[int] = None,
+        roll_size: int | None = None,
         num_samples: int = 1,
-        dataloader_kwargs: Optional[dict[str, Any]] = None,
+        dataloader_kwargs: dict[str, Any] | None = None,
         mc_dropout: bool = False,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
-        random_state: Optional[int] = None,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        random_state: int | None = None,
+    ) -> TimeSeriesLike:
         """Predict the ``n`` time step following the end of the training series, or of the specified ``series``.
 
         Prediction is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
@@ -1630,7 +1699,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         Returns
         -------
-        Union[TimeSeries, Sequence[TimeSeries]]
+        TimeSeriesLike
             One or several time series containing the forecasts of ``series``, or the forecast of the training series
             if ``series`` is not specified and the model has been trained on a single series.
         """
@@ -1717,16 +1786,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self,
         n: int,
         dataset: TorchInferenceDataset,
-        trainer: Optional[pl.Trainer] = None,
-        batch_size: Optional[int] = None,
-        verbose: Optional[bool] = None,
+        trainer: pl.Trainer | None = None,
+        batch_size: int | None = None,
+        verbose: bool | None = None,
         n_jobs: int = 1,
-        roll_size: Optional[int] = None,
+        roll_size: int | None = None,
         num_samples: int = 1,
-        dataloader_kwargs: Optional[dict[str, Any]] = None,
+        dataloader_kwargs: dict[str, Any] | None = None,
         mc_dropout: bool = False,
         predict_likelihood_parameters: bool = False,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
         values_only: bool = False,
     ) -> Sequence[TimeSeries]:
         """
@@ -1782,7 +1851,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Controls the randomness of probabilistic predictions.
         values_only
             Whether to return the predicted values only. If `False`, will return `TimeSeries` objects. Otherwise, will
-            return a tuple of `(np.ndarray, list[dict[str, Any]], list[Union[pd.Timestamp, int]])`. The first element
+            return a tuple of `(np.ndarray, list[dict[str, Any]], list[pd.Timestamp | int])`. The first element
             represents the predictions with shape `(num_predictions, n, columns, num_samples)`. The second element
             represents the schemas of forecasted target `TimeSeries`. The third element represents the prediction start
             times.
@@ -1941,7 +2010,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def save(
         self,
-        path: Optional[str] = None,
+        path: str | None = None,
         clean: bool = False,
     ) -> None:
         """
@@ -2008,7 +2077,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @staticmethod
     def load(
-        path: str, pl_trainer_kwargs: Optional[dict] = None, **kwargs
+        path: str, pl_trainer_kwargs: dict | None = None, **kwargs
     ) -> "TorchForecastingModel":
         """
         Loads a model from a given file path.
@@ -2086,8 +2155,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @staticmethod
     def load_from_checkpoint(
         model_name: str,
-        work_dir: str = None,
-        file_name: str = None,
+        work_dir: str | None = None,
+        file_name: str | None = None,
         best: bool = True,
         **kwargs,
     ) -> "TorchForecastingModel":
@@ -2205,9 +2274,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def load_weights_from_checkpoint(
         self,
-        model_name: str = None,
-        work_dir: str = None,
-        file_name: str = None,
+        model_name: str | None = None,
+        work_dir: str | None = None,
+        file_name: str | None = None,
         best: bool = True,
         strict: bool = True,
         load_encoders: bool = True,
@@ -2418,7 +2487,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return self.model.epochs_trained if self.model_created else 0
 
     @property
-    def likelihood(self) -> Optional[TorchLikelihood]:
+    def likelihood(self) -> TorchLikelihood | None:
         return (
             self.model.likelihood
             if self.model_created
@@ -2473,22 +2542,25 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @property
     def _requires_training(self) -> bool:
         """Whether the model should be trained when calling a `fit*` method."""
+        # no training if fine-tuning is explicitly disabled
+        if self.enable_finetuning is False:
+            return False
         return True
 
     def _check_optimizable_historical_forecasts(
         self,
-        retrain: Union[bool, int, Callable[..., bool]],
+        retrain: bool | int | Callable[..., bool],
     ) -> bool:
         """Historical forecast can be optimized if no re-training is involved"""
         return _check_optimizable_historical_forecasts_global_models(retrain)
 
     def _optimized_historical_forecasts(
         self,
-        series: Union[Sequence[TimeSeries]],
-        past_covariates: Optional[Sequence[TimeSeries]] = None,
-        future_covariates: Optional[Sequence[TimeSeries]] = None,
+        series: Sequence[TimeSeries],
+        past_covariates: Sequence[TimeSeries] | None = None,
+        future_covariates: Sequence[TimeSeries] | None = None,
         num_samples: int = 1,
-        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start: pd.Timestamp | float | int | None = None,
         start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
         stride: int = 1,
@@ -2497,9 +2569,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
-        random_state: Optional[int] = None,
-        predict_kwargs: Optional[dict[str, Any]] = None,
-    ) -> Union[Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
+        random_state: int | None = None,
+        predict_kwargs: dict[str, Any] | None = None,
+    ) -> Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]]:
         """
         For TorchForecastingModels we use a strided inference dataset to avoid having to recreate trainers and
         datasets for each forecastable index and series.
@@ -2534,7 +2606,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @property
     def _model_encoder_settings(
         self,
-    ) -> tuple[int, int, bool, bool, Optional[list[int]], Optional[list[int]]]:
+    ) -> tuple[int, int, bool, bool, list[int] | None, list[int] | None]:
         return (
             self.input_chunk_length,
             self.output_chunk_length + self.output_chunk_shift,
@@ -2738,12 +2810,12 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
     def extreme_lags(
         self,
     ) -> tuple[
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
+        int | None,
+        int | None,
+        int | None,
+        int | None,
+        int | None,
+        int | None,
         int,
     ]:
         return (
@@ -2770,12 +2842,12 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
     def extreme_lags(
         self,
     ) -> tuple[
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
+        int | None,
+        int | None,
+        int | None,
+        int | None,
+        int | None,
+        int | None,
         int,
     ]:
         return (
@@ -2802,12 +2874,12 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
     def extreme_lags(
         self,
     ) -> tuple[
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
+        int | None,
+        int | None,
+        int | None,
+        int | None,
+        int | None,
+        int | None,
         int,
     ]:
         return (
@@ -2834,12 +2906,12 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
     def extreme_lags(
         self,
     ) -> tuple[
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
+        int | None,
+        int | None,
+        int | None,
+        int | None,
+        int | None,
+        int | None,
         int,
     ]:
         return (
@@ -2866,12 +2938,12 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
     def extreme_lags(
         self,
     ) -> tuple[
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
+        int | None,
+        int | None,
+        int | None,
+        int | None,
+        int | None,
+        int | None,
         int,
     ]:
         return (

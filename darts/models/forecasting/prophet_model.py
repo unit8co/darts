@@ -5,8 +5,8 @@ Facebook Prophet
 
 import logging
 import re
-from collections.abc import Sequence
-from typing import Any, Callable, Optional, Union
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -17,6 +17,7 @@ from darts.logging import execute_and_suppress_output, get_logger, raise_if, rai
 from darts.models.forecasting.forecasting_model import (
     FutureCovariatesLocalForecastingModel,
 )
+from darts.typing import TimeIndex
 from darts.utils.utils import random_method
 
 logger = get_logger(__name__)
@@ -27,23 +28,13 @@ class Prophet(FutureCovariatesLocalForecastingModel):
     @random_method
     def __init__(
         self,
-        add_seasonalities: Optional[Union[dict, list[dict]]] = None,
-        add_regressor_configs: Optional[dict[str, dict[str, Any]]] = None,
-        country_holidays: Optional[str] = None,
-        cap: Optional[
-            Union[
-                float,
-                Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]],
-            ]
-        ] = None,
-        floor: Optional[
-            Union[
-                float,
-                Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]],
-            ]
-        ] = None,
-        add_encoders: Optional[dict] = None,
-        random_state: Optional[int] = None,
+        add_seasonalities: dict | list[dict] | None = None,
+        add_regressor_configs: dict[str, dict[str, Any]] | None = None,
+        country_holidays: str | None = None,
+        cap: float | Callable[[TimeIndex], Sequence[float]] | None = None,
+        floor: float | Callable[[TimeIndex], Sequence[float]] | None = None,
+        add_encoders: dict | None = None,
+        random_state: int | None = None,
         suppress_stdout_stderror: bool = True,
         **prophet_kwargs,
     ):
@@ -64,10 +55,10 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
                 dict({
                     'name': str  # (name of the seasonality component),
-                    'seasonal_periods': Union[int, float]  # (nr of steps composing a season),
+                    'seasonal_periods': int | float  # (nr of steps composing a season),
                     'fourier_order': int  # (number of Fourier components to use),
-                    'prior_scale': Optional[float]  # (a prior scale for this component),
-                    'mode': Optional[str]  # ('additive' or 'multiplicative')
+                    'prior_scale': float | None  # (a prior scale for this component),
+                    'mode': str | None  # ('additive' or 'multiplicative')
                 })
             ..
 
@@ -225,8 +216,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
     def _fit(
         self,
         series: TimeSeries,
-        future_covariates: Optional[TimeSeries] = None,
-        verbose: Optional[bool] = None,
+        future_covariates: TimeSeries | None = None,
+        verbose: bool | None = None,
     ):
         super()._fit(series, future_covariates, verbose=verbose)
         self._assert_univariate(series)
@@ -301,11 +292,11 @@ class Prophet(FutureCovariatesLocalForecastingModel):
     def _predict(
         self,
         n: int,
-        future_covariates: Optional[TimeSeries] = None,
+        future_covariates: TimeSeries | None = None,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
         **kwargs,
     ) -> TimeSeries:
         _ = self._check_seasonality_conditions(future_covariates=future_covariates)
@@ -345,7 +336,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         return df
 
     def _generate_predict_df(
-        self, n: int, future_covariates: Optional[TimeSeries] = None
+        self, n: int, future_covariates: TimeSeries | None = None
     ) -> pd.DataFrame:
         """Returns a pandas DataFrame in the format required for Prophet.predict() with `n` dates after the end of
         the fitted TimeSeries"""
@@ -363,7 +354,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         return predict_df
 
     def _check_seasonality_conditions(
-        self, future_covariates: Optional[TimeSeries] = None
+        self, future_covariates: TimeSeries | None = None
     ) -> list[str]:
         """
         Checks if the conditions for custom conditional seasonalities are met. Each custom seasonality that has a
@@ -471,8 +462,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
     def predict_raw(
         self,
         n: int,
-        future_covariates: Optional[TimeSeries] = None,
-        verbose: Optional[bool] = None,
+        future_covariates: TimeSeries | None = None,
+        verbose: bool | None = None,
     ) -> pd.DataFrame:
         """Returns the output of the base Facebook Prophet model in form of a pandas DataFrame. Note however,
         that the output of this method is not supported for further processing with the Darts API.
@@ -488,11 +479,11 @@ class Prophet(FutureCovariatesLocalForecastingModel):
     def add_seasonality(
         self,
         name: str,
-        seasonal_periods: Union[int, float],
+        seasonal_periods: int | float,
         fourier_order: int,
-        prior_scale: Optional[float] = None,
-        mode: Optional[str] = None,
-        condition_name: Optional[str] = None,
+        prior_scale: float | None = None,
+        mode: str | None = None,
+        condition_name: str | None = None,
     ) -> None:
         """Adds a custom seasonality to the model that repeats after every n `seasonal_periods` timesteps.
         An example for `seasonal_periods`: If you have hourly data (frequency='H') and your seasonal cycle repeats
@@ -539,9 +530,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         }
         self._store_add_seasonality_call(seasonality_call=function_call)
 
-    def _store_add_seasonality_call(
-        self, seasonality_call: Optional[dict] = None
-    ) -> None:
+    def _store_add_seasonality_call(self, seasonality_call: dict | None = None) -> None:
         """Checks the validity of an add_seasonality() call and stores valid calls.
         As the actual model is only created at fitting time, and seasonalities are added pre-fit,
         the add_seasonality calls must be stored and checked on Darts' side.
@@ -637,7 +626,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         Parameters
         ----------
         freq
-            frequency string of the underlying TimeSeries's time index (pd.DateTimeIndex.freq_str)
+            frequency string of the underlying TimeSeries's time index (pd.DatetimeIndex.freqstr).
         """
 
         # this regex extracts all digits from `freq`: exp: '30S' -> 30
@@ -650,37 +639,36 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         seconds_per_day = 86400
         days = 0
-        if freq in ["A", "BA", "Y", "BY", "RE"] or freq.startswith((
-            "A",
-            "BA",
+        if freq.startswith((
             "Y",
             "BY",
             "RE",
         )):  # year
             days = 365.25
-        elif freq in ["Q", "BQ", "REQ"] or freq.startswith((
+        elif freq.startswith((
             "Q",
             "BQ",
             "REQ",
         )):  # quarter
             days = 3 * 30.4375
-        elif freq in [
+        elif freq.startswith((
             "M",
             "BM",
             "CBM",
-            "SM",
-            "LWOM",
             "WOM",
-        ] or freq.startswith(("M", "BME", "BS", "CBM", "SM", "LWOM", "WOM")):  # month
+            "LWOM",
+        )):  # month
             days = 30.4375
-        elif freq == "W" or freq.startswith("W-"):  # week
+        elif freq.startswith("SM"):  # semi-month
+            days = 30.4375 / 2
+        elif freq.startswith("W"):  # week
             days = 7.0
         elif freq in ["B", "C"]:  # business day
             days = 1 * 7 / 5
         elif freq in ["D"]:  # day
             days = 1.0
         else:
-            # all freqs higher than "D" are lower case in pandas >= 2.2.0
+            # all freqs higher than "D" are lower case
             freq_lower = freq.lower()
             if freq_lower in ["h", "bh", "cbh"]:  # hour
                 days = 1 / 24

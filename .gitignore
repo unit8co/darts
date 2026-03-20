@@ -12,7 +12,7 @@ darts.egg-info/
 u8darts.egg-info/
 build/
 dist/
-examples/.ipynb_checkpoints/
+*.ipynb_checkpoints/
 runs/
 .coverage*
 htmlcov
@@ -24,5 +24,4 @@ docs_env
 .gradle
 .venv
 
-# used by CI to build with latest versions of dependencies
-requirements-latest.txt
+uv.lock

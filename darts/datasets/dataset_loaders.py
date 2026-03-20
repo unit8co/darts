@@ -8,9 +8,9 @@ import os
 import tempfile
 import zipfile
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Optional, Union
 
 import pandas as pd
 import requests
@@ -30,18 +30,18 @@ class DatasetLoaderMetadata:
     # md5 hash of the file to be downloaded
     hash: str
     # used to parse the dataset file
-    header_time: Optional[str]
+    header_time: str | None
     # used to convert the string date to pd.Datetime
     # https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
-    format_time: Optional[str] = None
+    format_time: str | None = None
     # used to indicate the freq when we already know it
-    freq: Optional[str] = None
+    freq: str | None = None
     # a custom function handling non-csv based datasets
-    pre_process_zipped_csv_fn: Optional[Callable] = None
+    pre_process_zipped_csv_fn: Callable | None = None
     # a custom function handling csv based datasets
-    pre_process_csv_fn: Optional[Callable] = None
+    pre_process_csv_fn: Callable | None = None
     # multivariate
-    multivariate: Optional[bool] = None
+    multivariate: bool | None = None
 
 
 class DatasetLoadingException(BaseException):
@@ -56,9 +56,7 @@ class DatasetLoader(ABC):
 
     _DEFAULT_DIRECTORY = Path(os.path.join(Path.home(), Path(".darts/datasets/")))
 
-    def __init__(
-        self, metadata: DatasetLoaderMetadata, root_path: Optional[Path] = None
-    ):
+    def __init__(self, metadata: DatasetLoaderMetadata, root_path: Path | None = None):
         self._metadata: DatasetLoaderMetadata = metadata
         if root_path is None:
             self._root_path: Path = DatasetLoader._DEFAULT_DIRECTORY
@@ -201,14 +199,12 @@ class DatasetLoader(ABC):
 
 
 class DatasetLoaderCSV(DatasetLoader):
-    def __init__(
-        self, metadata: DatasetLoaderMetadata, root_path: Optional[Path] = None
-    ):
+    def __init__(self, metadata: DatasetLoaderMetadata, root_path: Path | None = None):
         super().__init__(metadata, root_path)
 
     def _load_from_disk(
         self, path_to_file: Path, metadata: DatasetLoaderMetadata
-    ) -> Union[TimeSeries, list[TimeSeries]]:
+    ) -> TimeSeries | list[TimeSeries]:
         df = pd.read_csv(path_to_file)
         if metadata.header_time is not None:
             df = self._format_time_column(df)

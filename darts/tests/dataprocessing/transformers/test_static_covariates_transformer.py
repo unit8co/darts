@@ -17,7 +17,7 @@ class TestStaticCovariatesTransformer:
             "cont2": [0.1, 0.2, 0.3],
             "cat2": ["a", "b", "c"],
         }
-    ).astype(dtype={"cat1": "O", "cat2": "O"})
+    ).astype(dtype={"cat1": "O"})
     series1 = TimeSeries.from_times_and_values(
         times=series.time_index,
         values=np.concatenate([series.values()] * 3, axis=1),
@@ -32,8 +32,7 @@ class TestStaticCovariatesTransformer:
             "cont2": [0.3, 0.4, 0.5],
             "cat2": ["c", "d", "e"],
         }
-    )
-    static_covs2["cat1"] = static_covs2["cat1"].astype("O")
+    ).astype(dtype={"cat1": "O"})
     series2 = TimeSeries.from_times_and_values(
         times=series.time_index,
         values=np.concatenate([series.values()] * 3, axis=1),

@@ -7,12 +7,13 @@ import copy
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from functools import wraps
-from typing import Any, Optional, Union
+from typing import Any
 
 import numpy as np
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
+from darts.typing import TimeSeriesLike
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
 
@@ -62,7 +63,7 @@ class BaseDataTransformer(ABC):
         name: str = "BaseDataTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
-        parallel_params: Union[bool, Sequence[str]] = False,
+        parallel_params: bool | Sequence[str] = False,
         mask_components: bool = True,
     ):
         """Abstract class for data transformers.
@@ -278,12 +279,12 @@ class BaseDataTransformer(ABC):
 
     def transform(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeriesLike,
         *args,
-        component_mask: Optional[np.array] = None,
-        series_idx: Optional[Union[int, Sequence[int]]] = None,
+        component_mask: np.ndarray | None = None,
+        series_idx: int | Sequence[int] | None = None,
         **kwargs,
-    ) -> Union[TimeSeries, list[TimeSeries]]:
+    ) -> TimeSeries | list[TimeSeries]:
         """Transforms a (sequence of) of series by calling the user-implemeneted `ts_transform` method.
 
         In case a ``Sequence[TimeSeries]`` is passed as input data, this function takes care of
@@ -300,7 +301,7 @@ class BaseDataTransformer(ABC):
             (sequence of) series to be transformed.
         args
             Additional positional arguments for each :func:`ts_transform()` method call
-        component_mask : Optional[np.ndarray] = None
+        component_mask
             Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies which
             components of the underlying `series` the transform should consider. If the `mask_components`
             attribute was set to `True` when instantiating `BaseDataTransformer`, then the component mask
@@ -314,7 +315,7 @@ class BaseDataTransformer(ABC):
 
         Returns
         -------
-        Union[TimeSeries, List[TimeSeries]]
+        TimeSeriesLike
             Transformed data.
 
         Notes
@@ -436,7 +437,7 @@ class BaseDataTransformer(ABC):
         return None
 
     @staticmethod
-    def _process_series_idx(series_idx: Union[int, Sequence[int]]) -> Sequence[int]:
+    def _process_series_idx(series_idx: int | Sequence[int]) -> Sequence[int]:
         """Convert the `series_idx` to a Sequence[int].
 
         Note: the validity of the entries in series_idx is checked in _get_params().
@@ -446,9 +447,9 @@ class BaseDataTransformer(ABC):
     @staticmethod
     def apply_component_mask(
         series: TimeSeries,
-        component_mask: Optional[np.ndarray] = None,
+        component_mask: np.ndarray | None = None,
         return_ts: bool = False,
-    ) -> Union[TimeSeries, Sequence[TimeSeries], np.ndarray, Sequence[np.ndarray]]:
+    ) -> TimeSeriesLike | np.ndarray | Sequence[np.ndarray]:
         """
         Extracts components specified by `component_mask` from `series`
 
@@ -509,10 +510,10 @@ class BaseDataTransformer(ABC):
 
     @staticmethod
     def unapply_component_mask(
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        vals: Union[np.ndarray, Sequence[np.ndarray], TimeSeries, Sequence[TimeSeries]],
-        component_mask: Optional[np.ndarray] = None,
-    ) -> Union[np.ndarray, Sequence[np.ndarray], TimeSeries, Sequence[TimeSeries]]:
+        series: TimeSeriesLike,
+        vals: np.ndarray | Sequence[np.ndarray] | TimeSeriesLike,
+        component_mask: np.ndarray | None = None,
+    ) -> np.ndarray | Sequence[np.ndarray] | TimeSeriesLike:
         """
         Adds back components previously removed by `component_mask` in `apply_component_mask` method.
 
@@ -575,7 +576,7 @@ class BaseDataTransformer(ABC):
         return out[0] if called_with_single_series else out
 
     @staticmethod
-    def stack_samples(vals: Union[np.ndarray, TimeSeries]) -> np.ndarray:
+    def stack_samples(vals: np.ndarray | TimeSeries) -> np.ndarray:
         """
         Creates an array of shape `(n_timesteps * n_samples, n_components)` from
         either a `TimeSeries` or the `array_values` of a `TimeSeries`.
@@ -614,9 +615,9 @@ class BaseDataTransformer(ABC):
     @staticmethod
     def unstack_samples(
         vals: np.ndarray,
-        n_timesteps: Optional[int] = None,
-        n_samples: Optional[int] = None,
-        series: Optional[TimeSeries] = None,
+        n_timesteps: int | None = None,
+        n_samples: int | None = None,
+        series: TimeSeries | None = None,
     ) -> np.ndarray:
         """
         Reshapes the 2D array returned by `stack_samples` back into an array of shape

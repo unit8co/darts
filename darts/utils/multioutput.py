@@ -4,7 +4,6 @@ Multi-Output Models for SKLearnModel
 """
 
 import inspect
-from typing import Optional
 
 from sklearn.base import is_classifier
 from sklearn.multioutput import MultiOutputClassifier as sk_MultiOutputClassifier
@@ -33,9 +32,9 @@ class MultiOutputMixin:
     def __init__(
         self,
         estimator,
-        eval_set_name: Optional[str] = None,
-        eval_weight_name: Optional[str] = None,
-        output_chunk_length: Optional[int] = None,
+        eval_set_name: str | None = None,
+        eval_weight_name: str | None = None,
+        output_chunk_length: int | None = None,
         **kwargs,
     ):
         super().__init__(estimator=estimator, **kwargs)

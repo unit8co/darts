@@ -4,11 +4,12 @@ Additional util functions
 """
 
 import contextlib
-from collections.abc import Iterator
+import math
+from collections.abc import Callable, Iterator
 from enum import Enum
 from functools import wraps
 from inspect import Parameter, getcallargs, signature
-from typing import Any, Callable, Optional, TypeVar, Union
+from typing import Any, TypeVar
 
 import narwhals as nw
 import numpy as np
@@ -21,6 +22,7 @@ from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.typing import TimeIndex
 
 logger = get_logger(__name__)
 
@@ -102,30 +104,6 @@ class ModelMode(Enum):
     MULTIPLICATIVE = "multiplicative"
     ADDITIVE = "additive"
     NONE = None
-
-
-# TODO: remove this at some point when we set a lower cap on pandas v2.2.0
-pd_above_v22 = pd.__version__ >= "2.2"
-freqs = {
-    "YE": "YE" if pd_above_v22 else "A",
-    "YS": "YS" if pd_above_v22 else "AS",
-    "BYS": "BYS" if pd_above_v22 else "BAS",
-    "BYE": "BYE" if pd_above_v22 else "BA",
-    "QE": "QE" if pd_above_v22 else "Q",
-    "BQE": "BQE" if pd_above_v22 else "BQ",
-    "ME": "ME" if pd_above_v22 else "M",
-    "SME": "SME" if pd_above_v22 else "SM",
-    "BME": "BME" if pd_above_v22 else "BM",
-    "CBME": "CBME" if pd_above_v22 else "CBM",
-    "h": "h" if pd_above_v22 else "H",
-    "bh": "bh" if pd_above_v22 else "BH",
-    "cbh": "cbh" if pd_above_v22 else "CBH",
-    "min": "min" if pd_above_v22 else "T",
-    "s": "s" if pd_above_v22 else "S",
-    "ms": "ms" if pd_above_v22 else "L",
-    "us": "us" if pd_above_v22 else "U",
-    "ns": "ns" if pd_above_v22 else "N",
-}
 
 
 def _build_tqdm_iterator(iterable, verbose, **kwargs):
@@ -306,10 +284,10 @@ def _check_quantiles(quantiles):
 
 
 def slice_index(
-    index: Union[pd.RangeIndex, pd.DatetimeIndex],
-    start: Union[int, pd.Timestamp],
-    end: Union[int, pd.Timestamp],
-) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
+    index: TimeIndex,
+    start: int | pd.Timestamp,
+    end: int | pd.Timestamp,
+) -> TimeIndex:
     """
     Returns a new Index with the same type as the input `index`, containing the values between `start`
     and `end` included. If start and end are not in the index, the closest values are used instead.
@@ -328,7 +306,7 @@ def slice_index(
 
     Returns
     -------
-    Union[pd.RangeIndex, pd.DatetimeIndex]
+    pd.RangeIndex | pd.DatetimeIndex
         A new index with the same type as the input `index`, but with only the values between `start` and `end`
         included.
     """
@@ -365,9 +343,9 @@ def slice_index(
 
 
 def drop_before_index(
-    index: Union[pd.RangeIndex, pd.DatetimeIndex],
-    split_point: Union[int, pd.Timestamp],
-) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
+    index: TimeIndex,
+    split_point: int | pd.Timestamp,
+) -> TimeIndex:
     """
     Drops everything before the provided time `split_point` (excluded) from the index.
 
@@ -380,16 +358,16 @@ def drop_before_index(
 
     Returns
     -------
-    Union[pd.RangeIndex, pd.DatetimeIndex]
+    TimeIndex
         A new index with values before `split_point` dropped.
     """
     return slice_index(index, split_point, index[-1])
 
 
 def drop_after_index(
-    index: Union[pd.RangeIndex, pd.DatetimeIndex],
-    split_point: Union[int, pd.Timestamp],
-) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
+    index: TimeIndex,
+    split_point: int | pd.Timestamp,
+) -> TimeIndex:
     """
     Drops everything after the provided time `split_point` (excluded) from the index.
 
@@ -402,7 +380,7 @@ def drop_after_index(
 
     Returns
     -------
-    Union[pd.RangeIndex, pd.DatetimeIndex]
+    TimeIndex
         A new index with values after `split_point` dropped.
     """
 
@@ -410,9 +388,9 @@ def drop_after_index(
 
 
 def n_steps_between(
-    end: Union[pd.Timestamp, int],
-    start: Union[pd.Timestamp, int],
-    freq: Union[pd.DateOffset, int, str],
+    end: pd.Timestamp | int,
+    start: pd.Timestamp | int,
+    freq: pd.DateOffset | int | str,
 ) -> int:
     """Get the number of time steps with a given frequency `freq` between `end` and `start`.
     Works for both integers and time stamps.
@@ -468,8 +446,9 @@ def n_steps_between(
             ),
             logger=logger,
         )
-    # Series frequency represents a non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’, 'W')
-    if pd.to_timedelta(freq, errors="coerce") is not pd.NaT:
+
+    # frequency has a fixed period (e.g. non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’, 'W'), or integer step)
+    if isinstance(freq, int) or pd.to_timedelta(freq, errors="coerce") is not pd.NaT:
         diff = end - start
         if abs(diff) != diff:
             # (A) when diff is negative, not perfectly divisible by freq, and freq is a multiple of a base frequency
@@ -506,13 +485,58 @@ def n_steps_between(
     return n_steps
 
 
+def infer_freq_intersection(
+    freq: int | str | pd.tseries.offsets.DateOffset,
+    other: int | str | pd.tseries.offsets.DateOffset,
+) -> int | pd.tseries.offsets.DateOffset:
+    """Infers the frequency at which two frequencies `freq` and `other` intersect.
+
+    Parameters
+    ----------
+    freq
+        The first frequency.
+    other
+        The other frequency.
+
+    Raises
+    ------
+    ValueError
+        If the intersecting frequency cannot be inferred.
+    """
+    freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
+    other = pd.tseries.frequencies.to_offset(other) if isinstance(other, str) else other
+
+    if freq == other:
+        return freq
+
+    if isinstance(freq, int):
+        # e.g. (4, 1), (24, 3)
+        n_freq, n_other = freq, other
+    elif freq.base == other.base:
+        # e.g. (4W-MON, W-MON), (24h, 3h); frequency with the same base frequency
+        n_freq, n_other = freq.n, other.n
+    else:
+        try:
+            # e.g. (4D, 2h), (24h, 3min); only frequency with constant / fixed period
+            n_freq, n_other = freq.nanos, other.nanos
+        except ValueError as exc:
+            # e.g. (W-MON, MS, ...); frequencies with non-fixed period
+            raise_log(
+                ValueError(
+                    f"Cannot find intersecting frequency between ({freq}, {other}): {exc}"
+                ),
+                logger=logger,
+            )
+    return freq * (math.lcm(n_freq, n_other) // n_freq)
+
+
 def generate_index(
-    start: Optional[Union[pd.Timestamp, str, int]] = None,
-    end: Optional[Union[pd.Timestamp, str, int]] = None,
-    length: Optional[int] = None,
-    freq: Union[str, int, pd.DateOffset] = None,
-    name: str = None,
-) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
+    start: pd.Timestamp | str | int | None = None,
+    end: pd.Timestamp | str | int | None = None,
+    length: int | None = None,
+    freq: str | int | pd.DateOffset | None = None,
+    name: str | None = None,
+) -> TimeIndex:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
     or a pandas RangeIndex. The index starts at
 
@@ -549,18 +573,29 @@ def generate_index(
         f"`start` to None.",
         logger,
     )
+
+    start = pd.Timestamp(start) if isinstance(start, str) else start
+    end = pd.Timestamp(end) if isinstance(end, str) else end
+
     raise_if(
         end is not None and start is not None and type(start) is not type(end),
         "index generation with `start` and `end` requires equal object types of `start` and `end`",
         logger,
     )
 
-    start = pd.Timestamp(start) if isinstance(start, str) else start
-    end = pd.Timestamp(end) if isinstance(end, str) else end
-
     if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
         freq = "D" if freq is None else freq
         freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
+
+        # performance notes: rolling a timestamp is only costly if the timestamp does not intersect
+        # with the offset (frequency)
+        if start is not None:
+            # adjust `start` so that it intersects with `freq`
+            start = freq.rollforward(start) if freq.n >= 0 else freq.rollback(start)
+        if end is not None:
+            # adjust `end` so that it intersects with `freq`
+            end = freq.rollback(end) if freq.n >= 0 else freq.rollforward(end)
+
         index = pd.date_range(
             start=start,
             end=end,
@@ -568,14 +603,6 @@ def generate_index(
             freq=freq,
             name=name,
         )
-        if freq.n < 0:
-            if start is not None and not freq.is_on_offset(start):
-                # for anchored negative frequencies, and `start` does not intersect with `freq`:
-                # pandas (v2.2.1) generates an index that starts one step before `start` -> remove this step
-                index = index[1:]
-            elif end is not None and not freq.is_on_offset(end):
-                # if `start` intersects with `freq`, then the same can happen for `end` -> remove this step
-                index = index[:-1]
     else:  # int
         step = 1 if freq is None else freq
         if start is None:
@@ -737,7 +764,7 @@ class ModelType(Enum):
 def dataframe_col_to_time_index(
     df: DataFrame,
     time_col: str,
-) -> Union[pd.Index, pd.DatetimeIndex]:
+) -> pd.Index | pd.DatetimeIndex:
     """Convert a dataframe column to a pandas Index or DatetimeIndex.
 
     Parameters
