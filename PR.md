@@ -32,7 +32,7 @@ It supports target, past covariates, future covariates, and static covariates (i
 ## Motivation
 An increasing number of models in Darts are torch-based (recently #3002, #2980, #2944) and users need a consistent way to explain their forecasts.
 
-For scikit-learn models, the existing `SHAPExplainer` (now `SKLearnExplainer`) provides SHAP-based explanations with method selection based on model type.
+For scikit-learn models, the existing `ShapExplainer` (now `SKLearnExplainer`) provides SHAP-based explanations with method selection based on model type.
 For torch models, we need a new explainer that can handle the different model architectures, while conforming to existing explainability API patterns.
 
 - **Why SHAP?** SHAP gives additive, model-agnostic feature attributions that are consistent across explainers.
