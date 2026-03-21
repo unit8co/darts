@@ -85,6 +85,7 @@ required-environments = [
     "sys_platform == 'linux'",
     "sys_platform == 'win32'",
 ]
+cache-keys = [ {file = "src/*.cpp"}, {file = "include/*.h"} ]
 
 [tool.uv.pip]
 # Use only binary dependency wheels to prevent arbitrary code execution

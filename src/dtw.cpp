@@ -10,8 +10,8 @@ namespace py = pybind11;
 
 void dtw_cost_matrix_no_window_1d(py::array_t<double> x, py::array_t<double> y, py::array_t<double> cost_matrix) {
     // use direct access to the underlying data of the numpy arrays
-    auto x_ptr = x.unchecked<1>();  // 2D array
-    auto y_ptr = y.unchecked<1>();  // 2D array
+    auto x_ptr = x.unchecked<1>();  // 1D array
+    auto y_ptr = y.unchecked<1>();  // 1D array
     auto cost_ptr = cost_matrix.mutable_unchecked<2>();  // 2D array
     // initialize the first values of the cost matrix
     cost_ptr(0, 0) = 0.0;
