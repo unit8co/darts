@@ -10,7 +10,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For users of the library:
 
 **Improved**
-
+- 🚀🚀 Added new forecasting model `TiRexModel`: NX-AI's 35M-parameter pre-trained foundational model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series forecasting without training and can output deterministic or probabilistic forecasts. [#3038](https://github.com/unit8co/darts/pull/3038) by [Lukas Fischer](https://github.com/lukfischer) and [Zhihao Dai](https://github.com/daidahao).
+  - Check out the new [TiRex Foundation Model Notebook](https://unit8co.github.io/darts/examples/28-TiRex-examples.html) for examples and usage of TiRex.
 - `TFTExplainer` plotting improvements: [#3039](https://github.com/unit8co/darts/pull/3039) by [ReinerBRO](https://github.com/ReinerBRO).
   - `plot_variable_selection()` now returns the matplotlib figures for downstream usage (saving, editing, ...). It returns a single figure when explaining a single TimeSeries. Otherwise, it returns a list of figures.
   - `plot_variable_selection()` now accepts a `show_plot: bool = True` parameter that allows to suppress showing the plot.
