@@ -414,6 +414,12 @@ class TiRexModel(FoundationModel):
                 logger,
             )
 
+        if kwargs.get("enable_finetuning", False) not in (None, False):
+            raise_log(
+                ValueError("Fine-tuning is not supported for TiRexModel."),
+                logger,
+            )
+
         super().__init__(**kwargs)
 
         hf_kwargs = {
