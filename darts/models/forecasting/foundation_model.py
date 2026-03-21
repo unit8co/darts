@@ -165,7 +165,7 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
             Default: ``None``.
         """
         # Set default fine-tuning to False for foundation models
-        if "enable_finetuning" not in self.model_params:
+        if self.model_params.get("enable_finetuning", None) is None:
             self.model_params["enable_finetuning"] = False
 
         # initialize `TorchForecastingModel` base class
