@@ -1,18 +1,11 @@
 """
-TiRex: Zero-Shot Forecasting across Long and Short Horizons
------------------------------------------------------------
+TiRex: Zero-Shot Forecasting
+----------------------------
 
-Darts wrapper for the pre-trained forecasting model TiRex introduced in
-https://arxiv.org/abs/2505.23719.
-The implementation is built around `tirex-ts <https://pypi.org/project/tirex-ts/>`.
-The TiRex base repo <https://github.com/NX-AI/tirex>,
-model card <https://huggingface.co/NX-AI/TiRex> and
-docs <https://nx-ai.github.io/tirex/> provide more details.
+For detailed examples and tutorials, see:
 
-Note: TiRex is released under the NXAI Community License. See
-<https://github.com/NX-AI/tirex/blob/main/LICENSE> for details.
-Users must explicitly acknowledge the license by passing `accept_license=True` when
-constructing `TiRexModel`.
+* `TiRex Foundation Model Examples
+  <https://unit8co.github.io/darts/examples/28-TiRex-examples.html>`__
 
 """
 
@@ -214,8 +207,9 @@ class TiRexModel(FoundationModel):
         TiRex foundation model for zero-shot time series forecasting.
 
         This is a Darts wrapper around the TiRex model introduced in Auer et al. (2025) [1]_. The implementation
-        delegates all forecasting logic and weight loading to the optional `tirex-ts` package while exposing a standard
-        :class:`TorchForecastingModel` interface.
+        delegates all forecasting logic and weight loading to the optional
+        `tirex-ts <https://pypi.org/project/tirex-ts>`_ package while exposing a standard :class:`TorchForecastingModel`
+        interface.
 
         TiRex is a pre-trained foundation model designed for zero-shot forecasting across both short and long horizons.
 
@@ -226,6 +220,9 @@ class TiRexModel(FoundationModel):
         :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the ``likelihood`` parameter.
         It is recommended to call :func:`predict()` with ``predict_likelihood_parameters=True`` or ``num_samples >> 1``
         to get meaningful results.
+
+        For more details on the TiRex model, see the original paper [1]_, the `TiRex base repo <https://github.com/NX-AI/tirex>`_,
+        `model card <https://huggingface.co/NX-AI/TiRex>`_, and `docs <https://nx-ai.github.io/tirex/>`_.
 
         .. note::
             TiRex is distributed under the `NXAI Community License <https://github.com/NX-AI/tirex/blob/main/LICENSE>`_.
