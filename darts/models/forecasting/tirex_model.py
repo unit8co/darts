@@ -302,6 +302,63 @@ class TiRexModel(FoundationModel):
             Optional encoders passed to :class:`FoundationModel`.
         tirex_kwargs
             Additional keyword arguments forwarded to ``tirex.load_model()``.
+        **kwargs
+            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
+            Darts' :class:`TorchForecastingModel`.
+
+        batch_size
+            Number of time series (input and output sequences) used in each training pass. Default: ``32``.
+        random_state
+            Controls the randomness of the weights initialization and reproducible forecasting.
+        pl_trainer_kwargs
+            By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
+            that performs the training, validation and prediction processes. These presets include automatic
+            checkpointing, tensorboard logging, setting the torch device and more.
+            With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
+            object. Check the `PL Trainer documentation
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
+            supported kwargs. Default: ``None``.
+            Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
+            "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
+            dict:
+
+            - ``{"accelerator": "cpu"}`` for CPU,
+            - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+
+            For more info, see here:
+            https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
+            https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus
+
+            With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
+            :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
+            The model will stop training early if the validation loss `val_loss` does not improve beyond
+            specifications. For more information on callbacks, visit:
+            `PyTorch Lightning Callbacks
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+
+                # stop training when validation loss does not decrease more than 0.05 (`min_delta`) over
+                # a period of 5 epochs (`patience`)
+                my_stopper = EarlyStopping(
+                    monitor="val_loss",
+                    patience=5,
+                    min_delta=0.05,
+                    mode='min',
+                )
+
+                pl_trainer_kwargs={"callbacks": [my_stopper]}
+            ..
+
+            Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional
+            parameter ``trainer`` in :func:`fit()` and :func:`predict()`.
+        show_warnings
+            whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
+            your forecasting use case. Default: ``False``.
 
         References
         ----------
@@ -375,16 +432,17 @@ class TiRexModel(FoundationModel):
 
         super().__init__(**kwargs)
 
+        hf_kwargs = {
+            **(
+                {"revision": hub_model_revision}
+                if hub_model_revision is not None
+                else {}
+            ),
+            **({"local_dir": local_dir} if local_dir is not None else {}),
+        }
         self.tirex_kwargs = {
             "path": hub_model_name,
-            "hf_kwargs": {
-                **(
-                    {"revision": hub_model_revision}
-                    if hub_model_revision is not None
-                    else {}
-                ),
-                **({"local_dir": local_dir} if local_dir is not None else {}),
-            },
+            **({"hf_kwargs": hf_kwargs} if hf_kwargs else {}),
             **({"device": device} if device is not None else {}),
             **({"backend": backend} if backend is not None else {}),
             **({"compile": compile} if compile is not None else {}),
