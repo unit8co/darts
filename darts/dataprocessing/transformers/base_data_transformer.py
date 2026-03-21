@@ -180,15 +180,6 @@ class BaseDataTransformer(ABC):
 
         self._mask_components = mask_components
         self._columns = [columns] if isinstance(columns, str) else columns
-        if self._columns is not None and not self._mask_components:
-            raise_log(
-                ValueError(
-                    "Contradictory arguments: `columns` was provided, but `mask_components` "
-                    "is set to False. If you want to transform specific columns, "
-                    "`mask_components` must be True."
-                ),
-                logger=logger,
-            )
 
     def set_verbose(self, value: bool):
         """Set the verbosity status.

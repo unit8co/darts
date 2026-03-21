@@ -1,3 +1,4 @@
+import itertools
 from collections.abc import Sequence
 from copy import deepcopy
 
@@ -200,20 +201,51 @@ class TestDiff:
             self.assert_series_equal(series, series_back, equal_nan=(not dropna))
             assert new_series == new_series_copy
 
-    def test_diff_dropna_and_component_mask_specified(self):
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [True, False],
+            [True, False],
+            [[1], [1, 2]],
+        ),
+    )
+    def test_diff_with_component_mask_or_columns(self, config):
         """
-        Tests that `Diff` throws error during `fit` if `component_mask` is specified
-        when `dropna = True`; can't allow this since undifferenced components will be different
-        length to differenced components.
+        Tests that `Diff` works with columns or component masks in combination with other parameters.
         """
-        diff = Diff(lags=1, dropna=True)
-        with pytest.raises(ValueError) as e:
-            diff.fit(self.sine_series, component_mask=np.array([1, 0, 1], dtype=bool))
-        assert (
-            "Cannot specify `component_mask` with `dropna = True`, "
-            "since differenced and undifferenced components will be "
-            "of different lengths."
-        ) == str(e.value)
+        dropna, mask_components, lags = config
+
+        mask = np.array([1, 0, 1], dtype=bool)
+
+        kwargs = (
+            dict(columns=self.sine_series.columns[mask])
+            if not mask_components
+            else dict()
+        )
+        tf_kwargs = dict(component_mask=mask) if mask_components else dict()
+        diff = Diff(lags=lags, dropna=dropna, **kwargs)
+
+        series_tf = diff.fit_transform(self.sine_series, **tf_kwargs)
+
+        vals_orig, vals_tf = self.sine_series.values(), series_tf.values()
+        vals_tf_slice = slice(None) if dropna else slice(sum(lags), None)
+
+        # non-transformed columns must be equal
+        np.testing.assert_array_almost_equal(
+            vals_tf[vals_tf_slice, ~mask], vals_orig[sum(lags) :, ~mask]
+        )
+
+        # transformed columns must be diffed
+        vals_expected = vals_orig.copy()[:, mask]
+        for idx, lag in enumerate(lags):
+            vals_expected = vals_expected[lag:] - vals_expected[:-lag]
+        np.testing.assert_array_almost_equal(
+            vals_tf[vals_tf_slice, mask], vals_expected
+        )
+
+        # inverse transformed must be equal to original values
+        series_inv_tf = diff.inverse_transform(series_tf, **tf_kwargs)
+        np.testing.assert_array_almost_equal(series_inv_tf.values(), vals_orig)
 
     def test_diff_series_too_short(self):
         """

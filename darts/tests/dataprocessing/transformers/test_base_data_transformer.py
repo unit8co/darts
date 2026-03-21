@@ -151,23 +151,6 @@ class TestBaseDataTransformer:
 
         assert test_input == test_input_copy
 
-    def test_columns_validation(self):
-        """
-        Tests that string columns are converted to lists, and that
-        passing a contradictory `mask_components=False` and `columns` argument raises a ValueError.
-        """
-        mock_string = self.DataTransformerMock(scale=2, translation=2, columns="A")
-        assert mock_string._columns == ["A"]
-
-        with pytest.raises(ValueError) as exc_info:
-            # Should raise a ValueError warning the user that `mask_compoents` needs to be `True`
-            # for the `columns` argument to work.
-            self.DataTransformerMock(
-                scale=2, translation=2, columns=["A"], mask_components=False
-            )
-
-        assert "Contradictory arguments" in str(exc_info.value)
-
     def test_generate_component_mask(self):
         """
         Test if all behaviours of `_generate_component_mask` are correct.

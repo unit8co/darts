@@ -12,6 +12,7 @@ from darts.dataprocessing.transformers import (
     InvertibleDataTransformer,
     InvertibleMapper,
     Mapper,
+    Scaler,
 )
 from darts.typing import TimeSeriesLike
 from darts.utils.timeseries_generation import constant_timeseries
@@ -534,3 +535,23 @@ class TestPipeline:
 
         for transformer in pipeline:
             assert transformer._n_jobs == n_jobs_value
+
+    def test_pipeline_on_columns_subset(self):
+        """Test pipeline with transformers acting only on a subset of columns."""
+        # shape = (10, 3, 2)
+        vals = np.array([np.arange(6).reshape(3, 2)] * 10)
+
+        # scalers should only consider True columns
+        s = TimeSeries.from_values(vals)
+        columns = s.columns[[True, False, True]]
+
+        pipeline = Pipeline(transformers=[Scaler(columns=col) for col in columns])
+        scaler = Scaler(columns=columns)
+
+        ss_pipeline = pipeline.fit_transform(s)
+        ss_sc = scaler.fit_transform(s)
+        assert ss_pipeline == ss_sc
+
+        ss_i_pipeline = pipeline.inverse_transform(ss_pipeline)
+        ss_i_sc = scaler.inverse_transform(ss_sc)
+        assert ss_i_pipeline == ss_i_sc == s
