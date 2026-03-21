@@ -16,10 +16,10 @@ constructing `TiRexModel`.
 
 """
 
-from __future__ import annotations
-
+import os
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Any
 
 import torch
 
@@ -225,13 +225,16 @@ class TiRexModel(FoundationModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        model_name: str = "NX-AI/TiRex",
-        likelihood: QuantileRegression | None = None,
         accept_license: bool = False,
+        likelihood: QuantileRegression | None = None,
+        hub_model_name: str = "NX-AI/TiRex",
+        hub_model_revision: str | None = None,
+        local_dir: str | os.PathLike | None = None,
         device: str | None = None,
         backend: str | None = None,
         compile: bool | None = None,
-        **tirex_kwargs,
+        tirex_kwargs: dict[str, Any] | None = None,
+        **kwargs,
     ):
         """
         TiRex foundation model for zero-shot time series forecasting.
@@ -259,8 +262,6 @@ class TiRexModel(FoundationModel):
 
         Parameters
         ----------
-        model_name
-            Identifier passed to `tirex.load_model()`. Default: ``"NX-AI/TiRex"``.
         input_chunk_length
             Number of time steps in the past to take as a model input (per chunk). Applies to the target
             series.
@@ -268,7 +269,7 @@ class TiRexModel(FoundationModel):
             Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
             horizon `n` used in `predict()`, which is the desired number of prediction points generated using
             either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents auto-regression.
-            For TiRex, `output_chunk_length + output_chunk_shift` must be less than or equal to 2,048.
+            For TiRex, `output_chunk_length + output_chunk_shift` must be less than or equal to ``2048``.
         output_chunk_shift
             Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
             input chunk end). This will create a gap between the input and output. Predictions will start
@@ -278,18 +279,29 @@ class TiRexModel(FoundationModel):
             The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of
             :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. Requested quantiles must be a subset of
             TiRex's default quantiles: [0.1, 0.2, ..., 0.9]. Default: ``None`` (deterministic; median forecast only).
+        model_name
+            Model identifier passed to ``tirex.load_model()``. Default: ``"NX-AI/TiRex"``.
         accept_license
             Must be set to ``True`` to confirm acceptance of the NXAI Community License. Default: ``False``.
+        hub_model_name
+            The model ID on HuggingFace Hub. Default: ``"NX-AI/TiRex"``.
+        hub_model_revision
+            The model version to use. This can be a branch name, tag name, or commit hash. Default is ``None``, which
+            will use the default branch from ``hub_model_name``.
+        local_dir
+            Optional local directory to load the pre-downloaded model. If specified and the directory is empty, the
+            model will be downloaded from HuggingFace Hub and saved to this directory. Default is ``None``, which will
+            use a cache directory managed by ``huggingface_hub`` instead.
         device
-            Optional device passed to `tirex.load_model()`.
+            Optional device passed to ``tirex.load_model()``.
         backend
-            Optional backend passed to `tirex.load_model()`.
+            Optional backend passed to ``tirex.load_model()``.
         compile
-            Optional compilation flag passed to `tirex.load_model()`.
+            Optional compilation flag passed to ``tirex.load_model()``.
         add_encoders
             Optional encoders passed to :class:`FoundationModel`.
         tirex_kwargs
-            Additional keyword arguments forwarded to `tirex.load_model()`.
+            Additional keyword arguments forwarded to ``tirex.load_model()``.
 
         References
         ----------
@@ -330,16 +342,16 @@ class TiRexModel(FoundationModel):
                 logger,
             )
 
-        if likelihood is not None and not isinstance(likelihood, QuantileRegression):
-            raise_log(
-                ValueError(
-                    "Only QuantileRegression likelihood is supported for TiRexModel."
-                ),
-                logger,
-            )
-
-        # validate that requested quantiles are a subset of TiRex quantiles
         if likelihood is not None:
+            if not isinstance(likelihood, QuantileRegression):
+                raise_log(
+                    ValueError(
+                        "Only QuantileRegression likelihood is supported for TiRexModel."
+                    ),
+                    logger,
+                )
+
+            # validate that requested quantiles are a subset of TiRex quantiles
             req = tuple(float(q) for q in likelihood.quantiles)
             if not set(req).issubset(set(self._DEFAULT_QUANTILES)):
                 raise_log(
@@ -350,52 +362,34 @@ class TiRexModel(FoundationModel):
                     logger,
                 )
 
-        # Validate chunk lengths. Darts uses these values to build training/prediction batches.
-        if input_chunk_length <= 0:
-            raise_log(
-                ValueError("`input_chunk_length` must be a positive integer."), logger
-            )
-        if output_chunk_length <= 0:
-            raise_log(
-                ValueError("`output_chunk_length` must be a positive integer."), logger
-            )
-        if output_chunk_shift < 0:
-            raise_log(
-                ValueError("`output_chunk_shift` must be a non-negative integer."),
-                logger,
-            )
-
         # TiRex supports up to 2048 steps per single forecast call.
         if output_chunk_length + output_chunk_shift > self._MAX_PREDICTION_LENGTH:
             raise_log(
                 ValueError(
                     "TiRex supports a maximum prediction length of "
                     f"{self._MAX_PREDICTION_LENGTH} per call. "
-                    "Please ensure `output_chunk_length + output_chunk_shift <= 2048`."
+                    "Please ensure `output_chunk_length + output_chunk_shift <= {self._MAX_PREDICTION_LENGTH}`."
                 ),
                 logger,
             )
 
-        super().__init__(
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
-            output_chunk_shift=output_chunk_shift,
-            likelihood=likelihood,
-        )
+        super().__init__(**kwargs)
 
-        # Make sure these keys exist even if the parent class does not populate them.
-        # (TorchForecastingModel accesses them before `fit()`.)
-        if self.pl_module_params is None:
-            self.pl_module_params = {}
-        self.pl_module_params.setdefault("input_chunk_length", input_chunk_length)
-        self.pl_module_params.setdefault("output_chunk_length", output_chunk_length)
-        self.pl_module_params.setdefault("output_chunk_shift", output_chunk_shift)
-
-        self.model_name = model_name
-        self.device = device
-        self.backend = backend
-        self.compile = compile
-        self.tirex_kwargs = tirex_kwargs
+        self.tirex_kwargs = {
+            "path": hub_model_name,
+            "hf_kwargs": {
+                **(
+                    {"revision": hub_model_revision}
+                    if hub_model_revision is not None
+                    else {}
+                ),
+                **({"local_dir": local_dir} if local_dir is not None else {}),
+            },
+            **({"device": device} if device is not None else {}),
+            **({"backend": backend} if backend is not None else {}),
+            **({"compile": compile} if compile is not None else {}),
+            **(tirex_kwargs or {}),
+        }
 
     @property
     def supports_multivariate(self) -> bool:
@@ -414,15 +408,7 @@ class TiRexModel(FoundationModel):
 
         load_model = _require_tirex()
 
-        kwargs = dict(self.tirex_kwargs)
-        if self.device is not None:
-            kwargs["device"] = self.device
-        if self.backend is not None:
-            kwargs["backend"] = self.backend
-        if self.compile is not None:
-            kwargs["compile"] = self.compile
-
-        tirex_pipeline = load_model(self.model_name, **kwargs)
+        tirex_pipeline = load_model(**self.tirex_kwargs)
 
         return _TiRexModule(
             tirex_pipeline=tirex_pipeline,
