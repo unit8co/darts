@@ -232,7 +232,7 @@ TiRex Model
 .. toctree::
    :maxdepth: 1
 
-   examples/26-TiRex-examples.ipynb
+   examples/28-TiRex-examples.ipynb
 
 Torch and Foundation Model Fine-Tuning
 =======================================
