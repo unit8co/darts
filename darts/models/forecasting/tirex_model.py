@@ -50,9 +50,9 @@ def _require_tirex():
         If `tirex-ts` is not installed.
     """
     try:
-        from tirex import load_model  # type: ignore
+        from tirex import load_model
 
-    except Exception as e:  # pragma: no cover
+    except ModuleNotFoundError:
         raise_log(
             ImportError(
                 "Optional dependency `tirex-ts` is required to use TiRexModel. "
@@ -61,7 +61,6 @@ def _require_tirex():
             ),
             logger,
         )
-        raise e
 
     return load_model
 
