@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 project = "darts"
 copyright = f"2020 - {datetime.now().year}, Unit8 SA (Apache 2.0 License)"
 author = "Unit8 SA"
-version = "0.41.0"
+version = "0.42.1"
 
 
 # -- General configuration ---------------------------------------------------
@@ -165,6 +165,13 @@ def skip(app, what, name, obj, skip, options):
     if name in include_private_methods:
         return False
     return skip
+
+
+# auto-replace all instance of `TimeSeries` type-annotation with
+# proper links to the TimeSeries class
+autodoc_type_aliases = {
+    "TimeSeries": ":class:`~darts.timeseries.TimeSeries`",
+}
 
 
 # -- Package title and docstring extraction for API documentation ---------------

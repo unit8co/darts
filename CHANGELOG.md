@@ -5,11 +5,16 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.41.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.42.1...master)
 
 ### For users of the library:
 
 **Improved**
+
+- `TFTExplainer` plotting improvements: [#3039](https://github.com/unit8co/darts/pull/3039) by [ReinerBRO](https://github.com/ReinerBRO).
+  - `plot_variable_selection()` now returns the matplotlib figures for downstream usage (saving, editing, ...). It returns a single figure when explaining a single TimeSeries. Otherwise, it returns a list of figures.
+  - `plot_variable_selection()` now accepts a `show_plot: bool = True` parameter that allows to suppress showing the plot.
+  - 🔴 `plot_attention()` now also returns the matplotlib figures for all explained series, instead of only the matplotlib axis for the last series.
 
 **Fixed**
 
@@ -17,11 +22,46 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For developers of the library:
 
-## [0.41.0](https://github.com/unit8co/darts/tree/0.41.0) (2025-02-10)
+## [0.42.1](https://github.com/unit8co/darts/tree/0.42.1) (2026-03-07)
 
 ### For users of the library:
 
-**Migration from PyPI `u8darts` package to `darts` package**
+**Fixed**
+
+- Removed an incorrect warning being raised by `NeuralForecastModel` regarding using static covariates with multivariate base models. [#3036](https://github.com/unit8co/darts/pull/3036) by [Dennis Bader](https://github.com/dennisbader).
+
+## [0.42.0](https://github.com/unit8co/darts/tree/0.42.0) (2026-03-07)
+
+### For users of the library:
+
+**Improved**
+
+- 🚀🚀 Added new forecasting model `NeuralForecastModel` to convert any of the **30+ NeuralForecast base models** into a Darts `TorchForecastingModel`. This includes models such as NBEATSx, PatchTST, TimeXer, KAN, and many more. Like all Darts torch models, it supports univariate, multivariate, probabilistic forecasting, optimized backtesting and more. Depending on the base model, it also supports past, future, and static covariates. [#3002](https://github.com/unit8co/darts/pull/3002) by [Zhihao Dai](https://github.com/daidahao)
+  - Check out our new [NeuralForecastModel Notebook](https://unit8co.github.io/darts/examples/26-NeuralForecast-examples.html) for detailed examples. [#3026](https://github.com/unit8co/darts/pull/3026) by [Dennis Bader](https://github.com/dennisbader).
+- 🚀🚀 Added **fine-tuning** support to all `TorchForecastingModel` and `FoundationModel` (such as `Chronos2Model` and `TimesFM2p5Model`) via the new `enable_finetuning` parameter. Supports full training, and partial fine-tuning by selectively freezing or unfreezing layers by name pattern. [#2964](https://github.com/unit8co/darts/issues/2964) by [Alain Gysi](https://github.com/Kurokabe).
+  - Check out our new [Fine-Tuning Notebook](https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html) for detailed examples.
+- More fine-grained control over Reversible Instance Normalization for all torch models. Apart from the boolean trigger, parameter `use_reversible_instance_norm` now also supports setting the `RINorm` hyperparameters as a dictionary. [#3029](https://github.com/unit8co/darts/pull/3029) by [Zhihao Dai](https://github.com/daidahao).
+- Created `darts.typing` module to collect typical type annotation in one place. Introduced `TimeIndex`, `TimeSeriesLike`, `TimeZone` type aliases for improved readability & maintainability of the code. Common type annotations can be added to this file in the future. [#3021](https://github.com/unit8co/darts/pull/3021) by [Michel Zeller](https://github.com/mizeller)
+
+**Fixed**
+
+- Disallowed `use_reversible_instance_norm=True` or `{"affine": True}` for foundation models to prevent checkpoint loading errors due to incompatible weights. [#3029](https://github.com/unit8co/darts/pull/3029) by [Zhihao Dai](https://github.com/daidahao).
+- Updated the restrictive type hint for the timezone parameter `tz` to cover all timezone definitions supported by Pandas [tz_convert](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html). [#3015](https://github.com/unit8co/darts/pull/3015) and [#3035](https://github.com/unit8co/darts/pull/3035) by [Moritz Waldleben](https://github.com/mwaldleben).
+
+**Dependencies**
+
+- Removed the upper version cap on `scikit-learn<1.8.0` since `catboost` added support in version `1.2.10`. [#3025](https://github.com/unit8co/darts/pull/3025) by [Simon Michau](https://github.com/simonmichau).
+
+### For developers of the library:
+
+- Updated target-version to python310, and auto-refactored source code using ruff. [#3017](https://github.com/unit8co/darts/pull/2589) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed all instances of [invalid-parameter-default](https://docs.astral.sh/ty/reference/rules/#invalid-parameter-default) errors. Improves type checker's ability to accurately reason about the code. [#3027](https://github.com/unit8co/darts/pull/3027) by [Michel Zeller](https://github.com/mizeller)
+
+## [0.41.0](https://github.com/unit8co/darts/tree/0.41.0) (2026-02-10)
+
+### For users of the library:
+
+**Migration from PyPI "u8darts" package to "darts" package**
 
 - The `darts` PyPI package now replaces `u8darts` with the same installation options (e.g. `darts`, `darts[torch]`, `darts[notorch]`, `darts[all]`). No code changes are required. See the [migration guide](https://github.com/unit8co/darts/blob/master/INSTALL.md#important-darts-pypi-package-changes-as-of-version-0410) for details.
   - If you have been using `darts` before: switch to `pip install "darts[torch]>=0.41.0"` and replace `darts` by `darts[torch]>=0.41.0` in your project requirements.

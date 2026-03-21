@@ -5,7 +5,7 @@ Optimized Historical Forecasts for SKLearnModel
 
 import inspect
 from collections.abc import Sequence
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -13,6 +13,7 @@ from numpy.lib.stride_tricks import sliding_window_view
 
 from darts import TimeSeries
 from darts.logging import get_logger
+from darts.typing import TimeSeriesLike
 from darts.utils import _build_tqdm_iterator
 from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
@@ -25,10 +26,10 @@ logger = get_logger(__name__)
 def _optimized_historical_forecasts_regression(
     model,
     series: Sequence[TimeSeries],
-    past_covariates: Optional[Sequence[TimeSeries]] = None,
-    future_covariates: Optional[Sequence[TimeSeries]] = None,
+    past_covariates: Sequence[TimeSeries] | None = None,
+    future_covariates: Sequence[TimeSeries] | None = None,
     num_samples: int = 1,
-    start: Optional[Union[pd.Timestamp, float, int]] = None,
+    start: pd.Timestamp | float | int | None = None,
     start_format: Literal["position", "value"] = "value",
     forecast_horizon: int = 1,
     stride: int = 1,
@@ -36,10 +37,10 @@ def _optimized_historical_forecasts_regression(
     show_warnings: bool = True,
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
-    random_state: Optional[int] = None,
-    predict_kwargs: Optional[dict[str, Any]] = None,
+    random_state: int | None = None,
+    predict_kwargs: dict[str, Any] | None = None,
     last_points_only: bool = False,
-) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
+) -> TimeSeriesLike | Sequence[Sequence[TimeSeries]]:
     """
     Optimized historical forecasts for SKLearnModel.
 

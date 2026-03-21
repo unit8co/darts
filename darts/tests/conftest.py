@@ -3,7 +3,9 @@ import os
 import shutil
 import tempfile
 from typing import Any
+from unittest.mock import patch
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
 from packaging import version
@@ -73,6 +75,14 @@ try:
 except ImportError:
     logger.warning("StatsForecast not installed - Some tests will be skipped.")
     SF_AVAILABLE = False
+
+try:
+    import neuralforecast  # noqa: F401
+
+    NF_AVAILABLE = True
+except ImportError:
+    logger.warning("NeuralForecast not installed - Some tests will be skipped.")
+    NF_AVAILABLE = False
 
 try:
     import onnx  # noqa: F401
@@ -176,3 +186,11 @@ def tmpdir_fn():
     os.chdir(cwd)
     # remove temp dir
     shutil.rmtree(temp_work_dir)
+
+
+@pytest.fixture(scope="function")
+def mpl_safe_plotting():
+    """Patches plt.show() and closes all plots / figures from memory at the end of the test."""
+    with patch("matplotlib.pyplot.show") as patched_show:
+        yield patched_show
+    plt.close("all")

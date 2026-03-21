@@ -18,13 +18,9 @@ For detailed examples and tutorials, see:
   <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`__
 """
 
-from collections.abc import Sequence
-from typing import Optional, Union
-
 import numpy as np
 import xgboost as xgb
 
-from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
@@ -33,6 +29,7 @@ from darts.models.forecasting.sklearn_model import (
     _ClassifierMixin,
     _QuantileModelContainer,
 )
+from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import QuantileRegression, _get_likelihood
 
@@ -61,16 +58,16 @@ def xgb_quantile_loss(labels: np.ndarray, preds: np.ndarray, quantile: float):
 class XGBModel(SKLearnModel):
     def __init__(
         self,
-        lags: Optional[LAGS_TYPE] = None,
-        lags_past_covariates: Optional[LAGS_TYPE] = None,
-        lags_future_covariates: Optional[FUTURE_LAGS_TYPE] = None,
+        lags: LAGS_TYPE | None = None,
+        lags_past_covariates: LAGS_TYPE | None = None,
+        lags_future_covariates: FUTURE_LAGS_TYPE | None = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
-        add_encoders: Optional[dict] = None,
-        likelihood: Optional[str] = None,
-        quantiles: Optional[list[float]] = None,
-        random_state: Optional[int] = None,
-        multi_models: Optional[bool] = True,
+        add_encoders: dict | None = None,
+        likelihood: str | None = None,
+        quantiles: list[float] | None = None,
+        random_state: int | None = None,
+        multi_models: bool | None = True,
         use_static_covariates: bool = True,
         **kwargs,
     ):
@@ -231,10 +228,10 @@ class XGBModel(SKLearnModel):
 
     def _set_likelihood(
         self,
-        likelihood: Optional[str],
+        likelihood: str | None,
         output_chunk_length: int,
         multi_models: bool,
-        quantiles: Optional[list[float]] = None,
+        quantiles: list[float] | None = None,
     ):
         self._likelihood = _get_likelihood(
             likelihood=likelihood,
@@ -254,19 +251,17 @@ class XGBModel(SKLearnModel):
 
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        max_samples_per_ts: Optional[int] = None,
-        n_jobs_multioutput_wrapper: Optional[int] = None,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-        val_sample_weight: Optional[
-            Union[TimeSeries, Sequence[TimeSeries], str]
-        ] = None,
-        verbose: Optional[Union[int, bool]] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        val_series: TimeSeriesLike | None = None,
+        val_past_covariates: TimeSeriesLike | None = None,
+        val_future_covariates: TimeSeriesLike | None = None,
+        max_samples_per_ts: int | None = None,
+        n_jobs_multioutput_wrapper: int | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
+        val_sample_weight: TimeSeriesLike | str | None = None,
+        verbose: int | bool | None = None,
         **kwargs,
     ):
         """
@@ -361,7 +356,7 @@ class XGBModel(SKLearnModel):
         return True
 
     @property
-    def val_set_params(self) -> tuple[Optional[str], Optional[str]]:
+    def val_set_params(self) -> tuple[str | None, str | None]:
         return "eval_set", "sample_weight_eval_set"
 
     @property
@@ -373,15 +368,15 @@ class XGBModel(SKLearnModel):
 class XGBClassifierModel(_ClassifierMixin, XGBModel):
     def __init__(
         self,
-        lags: Union[int, list] = None,
-        lags_past_covariates: Union[int, list[int]] = None,
-        lags_future_covariates: Union[tuple[int, int], list[int]] = None,
+        lags: int | list | None = None,
+        lags_past_covariates: int | list[int] | None = None,
+        lags_future_covariates: tuple[int, int] | list[int] | None = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
-        add_encoders: Optional[dict] = None,
-        likelihood: Optional[str] = LikelihoodType.ClassProbability.value,
-        random_state: Optional[int] = None,
-        multi_models: Optional[bool] = True,
+        add_encoders: dict | None = None,
+        likelihood: str | None = LikelihoodType.ClassProbability.value,
+        random_state: int | None = None,
+        multi_models: bool | None = True,
         use_static_covariates: bool = True,
         **kwargs,
     ):
@@ -535,10 +530,10 @@ class XGBClassifierModel(_ClassifierMixin, XGBModel):
 
     def _set_likelihood(
         self,
-        likelihood: Optional[str],
+        likelihood: str | None,
         output_chunk_length: int,
         multi_models: bool,
-        quantiles: Optional[list[float]] = None,
+        quantiles: list[float] | None = None,
     ):
         self._likelihood = _get_likelihood(
             likelihood=likelihood,

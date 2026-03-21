@@ -3,8 +3,8 @@ Utils for TimeSeries generation
 -------------------------------
 """
 
-from collections.abc import Sequence
-from typing import Any, Callable, Optional, Union
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import holidays
 import numpy as np
@@ -19,6 +19,7 @@ from darts.timeseries import (
     TIME_AX,
     TimeSeries,
 )
+from darts.typing import TimeIndex, TimeZone
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -38,12 +39,12 @@ TIMES_NAME = DIMS[TIME_AX]
 
 def constant_timeseries(
     value: float = 1,
-    start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
-    end: Optional[Union[pd.Timestamp, int]] = None,
-    length: Optional[int] = None,
-    freq: Union[str, int] = None,
-    column_name: Optional[str] = "constant",
-    dtype: np.dtype = np.float64,
+    start: pd.Timestamp | int | None = pd.Timestamp("2000-01-01"),
+    end: pd.Timestamp | int | None = None,
+    length: int | None = None,
+    freq: str | int | None = None,
+    column_name: str | None = "constant",
+    dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
     """
     Creates a constant univariate TimeSeries with the given value, length (or end date), start date and frequency.
@@ -94,12 +95,12 @@ def constant_timeseries(
 def linear_timeseries(
     start_value: float = 0,
     end_value: float = 1,
-    start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
-    end: Optional[Union[pd.Timestamp, int]] = None,
-    length: Optional[int] = None,
-    freq: Union[str, int] = None,
-    column_name: Optional[str] = "linear",
-    dtype: np.dtype = np.float64,
+    start: pd.Timestamp | int | None = pd.Timestamp("2000-01-01"),
+    end: pd.Timestamp | int | None = None,
+    length: int | None = None,
+    freq: str | int | None = None,
+    column_name: str | None = "linear",
+    dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
     """
     Creates a univariate TimeSeries with a starting value of `start_value` that increases linearly such that
@@ -157,12 +158,12 @@ def sine_timeseries(
     value_amplitude: float = 1.0,
     value_phase: float = 0.0,
     value_y_offset: float = 0.0,
-    start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
-    end: Optional[Union[pd.Timestamp, int]] = None,
-    length: Optional[int] = None,
-    freq: Union[str, int] = None,
-    column_name: Optional[str] = "sine",
-    dtype: np.dtype = np.float64,
+    start: pd.Timestamp | int | None = pd.Timestamp("2000-01-01"),
+    end: pd.Timestamp | int | None = None,
+    length: int | None = None,
+    freq: str | int | None = None,
+    column_name: str | None = "sine",
+    dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
     """
     Creates a univariate TimeSeries with a sinusoidal value progression with a given frequency, amplitude,
@@ -222,14 +223,14 @@ def sine_timeseries(
 
 
 def gaussian_timeseries(
-    mean: Union[float, np.ndarray] = 0.0,
-    std: Union[float, np.ndarray] = 1.0,
-    start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
-    end: Optional[Union[pd.Timestamp, int]] = None,
-    length: Optional[int] = None,
-    freq: Union[str, int] = None,
-    column_name: Optional[str] = "gaussian",
-    dtype: np.dtype = np.float64,
+    mean: float | np.ndarray = 0.0,
+    std: float | np.ndarray = 1.0,
+    start: pd.Timestamp | int | None = pd.Timestamp("2000-01-01"),
+    end: pd.Timestamp | int | None = None,
+    length: int | None = None,
+    freq: str | int | None = None,
+    column_name: str | None = "gaussian",
+    dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
     """
     Creates a gaussian univariate TimeSeries by sampling all the series values independently,
@@ -304,12 +305,12 @@ def gaussian_timeseries(
 def random_walk_timeseries(
     mean: float = 0.0,
     std: float = 1.0,
-    start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
-    end: Optional[Union[pd.Timestamp, int]] = None,
-    length: Optional[int] = None,
-    freq: Union[str, int] = None,
-    column_name: Optional[str] = "random_walk",
-    dtype: np.dtype = np.float64,
+    start: pd.Timestamp | int | None = pd.Timestamp("2000-01-01"),
+    end: pd.Timestamp | int | None = None,
+    length: int | None = None,
+    freq: str | int | None = None,
+    column_name: str | None = "random_walk",
+    dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
     """
     Creates a random walk univariate TimeSeries, where each step is obtained by sampling a gaussian distribution
@@ -362,13 +363,13 @@ def random_walk_timeseries(
 
 def autoregressive_timeseries(
     coef: Sequence[float],
-    start_values: Optional[Sequence[float]] = None,
-    start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
-    end: Optional[Union[pd.Timestamp, int]] = None,
-    length: Optional[int] = None,
-    freq: Union[str, int] = None,
-    column_name: Optional[str] = "autoregressive",
-    dtype: np.dtype = np.float64,
+    start_values: Sequence[float] | None = None,
+    start: pd.Timestamp | int | None = pd.Timestamp("2000-01-01"),
+    end: pd.Timestamp | int | None = None,
+    length: int | None = None,
+    freq: str | int | None = None,
+    column_name: str | None = "autoregressive",
+    dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
     """
     Creates a univariate, autoregressive TimeSeries whose values are calculated using specified coefficients `coef` and
@@ -437,8 +438,8 @@ def autoregressive_timeseries(
 
 
 def _extend_time_index_until(
-    time_index: Union[pd.DatetimeIndex, pd.RangeIndex],
-    until: Optional[Union[int, str, pd.Timestamp]],
+    time_index: TimeIndex,
+    until: int | str | pd.Timestamp | None,
     add_length: int,
     name,
 ) -> pd.DatetimeIndex:
@@ -475,15 +476,15 @@ def _extend_time_index_until(
 
 
 def holidays_timeseries(
-    time_index: Union[TimeSeries, pd.DatetimeIndex],
+    time_index: TimeSeries | pd.DatetimeIndex,
     country_code: str,
-    prov: str = None,
-    state: str = None,
-    column_name: Optional[str] = "holidays",
-    until: Optional[Union[int, str, pd.Timestamp]] = None,
+    prov: str | None = None,
+    state: str | None = None,
+    column_name: str | None = "holidays",
+    until: int | str | pd.Timestamp | None = None,
     add_length: int = 0,
-    dtype: np.dtype = np.float64,
-    tz: Optional[str] = None,
+    dtype: np.typing.DTypeLike = np.float64,
+    tz: TimeZone = None,
 ) -> TimeSeries:
     """
     Creates a binary univariate TimeSeries with index `time_index` that equals 1 at every index that lies within
@@ -512,7 +513,9 @@ def holidays_timeseries(
     dtype
         The desired NumPy dtype (np.float32 or np.float64) for the resulting series.
     tz
-        Optionally, a time zone to convert the time index to before generating the holidays.
+        Optionally, a time zone to convert the time index before computing attributes.
+        Supports any type handled by pandas
+        `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
 
     Returns
     -------
@@ -541,15 +544,15 @@ def holidays_timeseries(
 
 
 def datetime_attribute_timeseries(
-    time_index: Union[pd.DatetimeIndex, TimeSeries],
+    time_index: pd.DatetimeIndex | TimeSeries,
     attribute: str,
     one_hot: bool = False,
     cyclic: bool = False,
-    until: Optional[Union[int, str, pd.Timestamp]] = None,
+    until: int | str | pd.Timestamp | None = None,
     add_length: int = 0,
     dtype=np.float64,
-    with_columns: Optional[Union[list[str], str]] = None,
-    tz: Optional[str] = None,
+    with_columns: list[str] | str | None = None,
+    tz: TimeZone = None,
 ) -> TimeSeries:
     """
     Returns a new TimeSeries with index `time_index` and one or more dimensions containing
@@ -590,7 +593,9 @@ def datetime_attribute_timeseries(
         - If `one_hot` is ``True``, must be a list of strings of the same length as the generated one hot encoded
           features.
     tz
-        Optionally, a time zone to convert the time index to before computing the attributes.
+        Optionally, a time zone to convert the time index before computing attributes.
+        Supports any type handled by pandas
+        `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
 
     Returns
     -------
@@ -750,13 +755,13 @@ def datetime_attribute_timeseries(
 
 
 def _build_forecast_series(
-    points_preds: Union[np.ndarray, Sequence[np.ndarray]],
+    points_preds: np.ndarray | Sequence[np.ndarray],
     input_series: TimeSeries,
-    custom_columns: list[str] = None,
+    custom_columns: list[str] | None = None,
     with_static_covs: bool = True,
     with_hierarchy: bool = True,
-    pred_start: Optional[Union[pd.Timestamp, int]] = None,
-    time_index: Union[pd.DatetimeIndex, pd.RangeIndex] = None,
+    pred_start: pd.Timestamp | int | None = None,
+    time_index: TimeIndex | None = None,
     copy: bool = False,
 ) -> TimeSeries:
     """
@@ -818,9 +823,9 @@ def _build_forecast_series(
 def _build_forecast_series_from_schema(
     values: np.ndarray,
     schema: dict[str, Any],
-    pred_start: Union[pd.Timestamp, int],
+    pred_start: pd.Timestamp | int,
     predict_likelihood_parameters: bool,
-    likelihood_component_names_fn: Optional[Callable] = None,
+    likelihood_component_names_fn: Callable | None = None,
     copy: bool = False,
 ) -> TimeSeries:
     """
@@ -882,8 +887,8 @@ def _build_forecast_series_from_schema(
 
 
 def _generate_new_dates(
-    n: int, input_series: TimeSeries, start: Optional[Union[pd.Timestamp, int]] = None
-) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
+    n: int, input_series: TimeSeries, start: pd.Timestamp | int | None = None
+) -> TimeIndex:
     """
     Generates `n` new dates after the end of the specified series
     """
@@ -899,9 +904,9 @@ def _generate_new_dates(
 
 
 def _process_time_index(
-    time_index: Union[TimeSeries, pd.DatetimeIndex],
-    tz: Optional[str] = None,
-    until: Optional[Union[int, str, pd.Timestamp]] = None,
+    time_index: TimeSeries | pd.DatetimeIndex,
+    tz: TimeZone = None,
+    until: int | str | pd.Timestamp | None = None,
     add_length: int = 0,
 ) -> tuple[pd.DatetimeIndex, pd.DatetimeIndex]:
     """

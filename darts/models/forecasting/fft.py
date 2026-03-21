@@ -3,7 +3,7 @@ Fast Fourier Transform
 ----------------------
 """
 
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import numpy as np
 import pandas as pd
@@ -167,7 +167,7 @@ def _compare_timestamps_on_attributes(
 
 
 def _crop_to_match_seasons(
-    series: TimeSeries, required_matches: Optional[set]
+    series: TimeSeries, required_matches: set | None
 ) -> TimeSeries:
     """Crops TimeSeries instance to contain full periods.
 
@@ -213,9 +213,9 @@ def _crop_to_match_seasons(
 class FFT(LocalForecastingModel):
     def __init__(
         self,
-        nr_freqs_to_keep: Optional[int] = 10,
-        required_matches: Optional[set] = None,
-        trend: Optional[str] = None,
+        nr_freqs_to_keep: int | None = 10,
+        required_matches: set | None = None,
+        trend: str | None = None,
         trend_poly_degree: int = 3,
     ):
         """Fast Fourier Transform Model
@@ -303,7 +303,7 @@ class FFT(LocalForecastingModel):
         """Helper function, used to make FFT model pickable."""
         return 0
 
-    def fit(self, series: TimeSeries, verbose: Optional[bool] = None):
+    def fit(self, series: TimeSeries, verbose: bool | None = None):
         series = fill_missing_values(series)
         super().fit(series, verbose=verbose)
         self._assert_univariate(series)
@@ -371,9 +371,9 @@ class FFT(LocalForecastingModel):
         self,
         n: int,
         num_samples: int = 1,
-        verbose: Optional[bool] = None,
+        verbose: bool | None = None,
         show_warnings: bool = True,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ):
         super().predict(n, num_samples, verbose=verbose)
         trend_forecast = np.array([

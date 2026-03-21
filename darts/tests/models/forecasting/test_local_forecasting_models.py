@@ -3,7 +3,7 @@ import itertools
 import math
 import os
 import pathlib
-from typing import Callable
+from collections.abc import Callable
 from unittest.mock import patch
 
 import numpy as np
@@ -674,7 +674,7 @@ class TestLocalForecastingModels:
             retrain_patched = True
 
         if (
-            not isinstance(retrain, (int, bool, Callable))
+            not isinstance(retrain, int | bool | Callable)
             or (isinstance(retrain, int) and retrain < 0)
             or (isinstance(retrain, (Callable)) and (not retrainable))
             or ((retrain != 1) and (not retrainable))

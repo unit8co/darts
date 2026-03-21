@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "darts"
-version = "0.41.0"
+version = "0.42.1"
 description = "A python library for easy manipulation and forecasting of time series."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -39,7 +39,7 @@ dependencies = [
     "pandas>=2.2.0",
     "pyod>=0.9.5",
     "requests>=2.22.0",
-    "scikit-learn>=1.6.0,<1.8.0",
+    "scikit-learn>=1.6.0",
     "scipy>=1.3.2",
     "shap>=0.40.0",
     "statsmodels>=0.14.0",
@@ -101,7 +101,7 @@ markers = [
 
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py310"
 line-length = 88
 
 [tool.ruff.format]
@@ -145,6 +145,7 @@ dev = [
     "pre-commit>=4.5.1",
     "pytest-cov>=7.0.0",
     "testfixtures>=8.3.0",
+    "ty>=0.0.17",
 ]
 torch-cpu = ["torch>=2.0.0"]
 optional = [
@@ -156,7 +157,8 @@ optional = [
     "polars>=1.37.1",
     "pydantic>=2.12.5",
     "ray>=2.53.0",
-    "plotly>=6.5.2"
+    "plotly>=6.5.2",
+    "neuralforecast>=3.0.0",
 ]
 release = [
     "bump-my-version>=1.2.5",
@@ -190,7 +192,7 @@ dev-all = [
 ]
 
 [tool.bumpversion]
-current_version = "0.41.0"
+current_version = "0.42.1"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
 serialize = ["{major}.{minor}.{patch}"]
 commit = true
@@ -212,3 +214,10 @@ replace = '__version__ = "{new_version}"'
 filename = "docs/source/conf.py"
 search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'
+
+[tool.ty.src]
+include = ["darts"]
+exclude = ["darts/tests"]
+
+[tool.ty.terminal]
+output-format = "concise"

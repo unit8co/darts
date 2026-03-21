@@ -79,7 +79,8 @@ generate-api:
         ../darts/utils/likelihood_models/base.py \
         ../darts/utils/multioutput.py \
         ../darts/utils/onnx_utils.py \
-        ../darts/utils/ts_utils.py
+        ../darts/utils/ts_utils.py \
+    	../darts/typing.py \
 
 html:
 	# Note: this target has to be called "html" because its name is given as an argument to Sphinx

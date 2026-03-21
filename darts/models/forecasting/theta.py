@@ -4,7 +4,6 @@ Theta Method
 """
 
 import math
-from typing import Optional
 
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
@@ -29,7 +28,7 @@ class Theta(LocalForecastingModel):
     def __init__(
         self,
         theta: int = 2,
-        seasonality_period: Optional[int] = None,
+        seasonality_period: int | None = None,
         season_mode: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE,
     ):
         """
@@ -99,7 +98,7 @@ class Theta(LocalForecastingModel):
         if self.theta == 0:
             raise_log(ValueError("The parameter theta cannot be equal to 0."), logger)
 
-    def fit(self, series: TimeSeries, verbose: Optional[bool] = False):
+    def fit(self, series: TimeSeries, verbose: bool | None = False):
         super().fit(series, verbose=verbose)
         self._assert_univariate(series)
         ts = self.training_series
@@ -156,9 +155,9 @@ class Theta(LocalForecastingModel):
         self,
         n: int,
         num_samples: int = 1,
-        verbose: Optional[bool] = None,
+        verbose: bool | None = None,
         show_warnings: bool = True,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ) -> "TimeSeries":
         super().predict(n, num_samples, verbose=verbose)
 
@@ -206,7 +205,7 @@ class FourTheta(LocalForecastingModel):
     def __init__(
         self,
         theta: int = 2,
-        seasonality_period: Optional[int] = None,
+        seasonality_period: int | None = None,
         season_mode: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE,
         model_mode: ModelMode = ModelMode.ADDITIVE,
         trend_mode: TrendMode = TrendMode.LINEAR,
@@ -308,7 +307,7 @@ class FourTheta(LocalForecastingModel):
             logger,
         )
 
-    def fit(self, series, verbose: Optional[bool] = False):
+    def fit(self, series, verbose: bool | None = False):
         super().fit(series, verbose=verbose)
 
         self.length = len(series)
@@ -406,7 +405,7 @@ class FourTheta(LocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ) -> "TimeSeries":
         super().predict(n, num_samples, verbose=verbose)
 
@@ -442,8 +441,8 @@ class FourTheta(LocalForecastingModel):
     @staticmethod
     def select_best_model(
         ts: TimeSeries,
-        thetas: Optional[list[int]] = None,
-        m: Optional[int] = None,
+        thetas: list[int] | None = None,
+        m: int | None = None,
         normalization: bool = True,
         n_jobs: int = 1,
     ) -> "FourTheta":

@@ -10,8 +10,7 @@ A collection of simple benchmark models working with univariate, multivariate, s
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
-from typing import Callable, Optional, Union
+from collections.abc import Callable, Sequence
 
 import torch
 
@@ -25,6 +24,7 @@ from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
     TorchForecastingModel,
 )
+from darts.typing import TimeSeriesLike
 from darts.utils.data import (
     SequentialTorchTrainingDataset,
     TorchTrainingDataset,
@@ -73,7 +73,7 @@ class _GlobalNaiveModule(PLForecastingModule, ABC):
 
     @io_processor
     def forward(
-        self, x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
+        self, x_in: tuple[torch.Tensor, torch.Tensor | None, torch.Tensor | None]
     ) -> torch.Tensor:
         """Naive model forward pass.
 
@@ -152,9 +152,9 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
 
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         *args,
         **kwargs,
     ) -> TorchForecastingModel:
@@ -187,8 +187,8 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
     @staticmethod
     def load_from_checkpoint(
         model_name: str,
-        work_dir: str = None,
-        file_name: str = None,
+        work_dir: str | None = None,
+        file_name: str | None = None,
         best: bool = True,
         **kwargs,
     ) -> "TorchForecastingModel":
@@ -201,9 +201,9 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
 
     def load_weights_from_checkpoint(
         self,
-        model_name: str = None,
-        work_dir: str = None,
-        file_name: str = None,
+        model_name: str | None = None,
+        work_dir: str | None = None,
+        file_name: str | None = None,
         best: bool = True,
         strict: bool = True,
         load_encoders: bool = True,
@@ -242,10 +242,10 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
     def _build_train_dataset(
         self,
         series: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        sample_weight: Optional[Sequence[TimeSeries]],
-        max_samples_per_ts: Optional[int],
+        past_covariates: Sequence[TimeSeries] | None,
+        future_covariates: Sequence[TimeSeries] | None,
+        sample_weight: Sequence[TimeSeries] | None,
+        max_samples_per_ts: int | None,
         stride: int = 1,
     ) -> TorchTrainingDataset:
         return SequentialTorchTrainingDataset(
@@ -295,7 +295,7 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        agg_fn: Union[str, Callable[[torch.Tensor, int], torch.Tensor]] = "mean",
+        agg_fn: str | Callable[[torch.Tensor, int], torch.Tensor] = "mean",
         **kwargs,
     ):
         """Global Naive Aggregate Model.

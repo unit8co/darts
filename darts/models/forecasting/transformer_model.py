@@ -4,7 +4,6 @@ Transformer Model
 """
 
 import math
-from typing import Optional, Union
 
 import torch
 import torch.nn as nn
@@ -131,9 +130,9 @@ class _TransformerModule(PLForecastingModule):
         dim_feedforward: int,
         dropout: float,
         activation: str,
-        norm_type: Union[str, nn.Module, None] = None,
-        custom_encoder: Optional[nn.Module] = None,
-        custom_decoder: Optional[nn.Module] = None,
+        norm_type: str | nn.Module | None = None,
+        custom_encoder: nn.Module | None = None,
+        custom_decoder: nn.Module | None = None,
         **kwargs,
     ):
         """PyTorch module implementing a Transformer to be used in `TransformerModel`.
@@ -338,9 +337,9 @@ class TransformerModel(PastCovariatesTorchModel):
         dim_feedforward: int = 512,
         dropout: float = 0.1,
         activation: str = "relu",
-        norm_type: Union[str, nn.Module, None] = None,
-        custom_encoder: Optional[nn.Module] = None,
-        custom_decoder: Optional[nn.Module] = None,
+        norm_type: str | nn.Module | None = None,
+        custom_encoder: nn.Module | None = None,
+        custom_decoder: nn.Module | None = None,
         **kwargs,
     ):
         """Transformer model
@@ -427,7 +426,9 @@ class TransformerModel(PastCovariatesTorchModel):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [3]_.
-            It is only applied to the features of the target series and not the covariates.
+            It is only applied to the features of the target series and not the covariates. If ``True``,
+            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
+            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -531,6 +532,18 @@ class TransformerModel(PastCovariatesTorchModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         References
         ----------

@@ -3,8 +3,6 @@ StatsForecastModel
 ------------------
 """
 
-from typing import Optional
-
 import numpy as np
 from statsforecast.models import _TS
 
@@ -26,9 +24,9 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
     def __init__(
         self,
         model: _TS,
-        add_encoders: Optional[dict] = None,
-        quantiles: Optional[list[float]] = None,
-        random_state: Optional[int] = None,
+        add_encoders: dict | None = None,
+        quantiles: list[float] | None = None,
+        random_state: int | None = None,
     ):
         """StatsForecast Model.
 
@@ -132,14 +130,14 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         self._likelihood = QuantilePrediction(quantiles=quantiles)
 
         # future covariates support can be added through the use of a linear model
-        self._linreg: Optional[LinearRegressionModel] = None
+        self._linreg: LinearRegressionModel | None = None
         super().__init__(add_encoders=add_encoders)
 
     def _fit(
         self,
         series: TimeSeries,
-        future_covariates: Optional[TimeSeries] = None,
-        verbose: Optional[bool] = None,
+        future_covariates: TimeSeries | None = None,
+        verbose: bool | None = None,
     ):
         super()._fit(series, future_covariates, verbose=verbose)
         self._assert_univariate(series)
@@ -173,13 +171,13 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
     def _predict(
         self,
         n: int,
-        series: Optional[TimeSeries] = None,
-        historic_future_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: TimeSeries | None = None,
+        historic_future_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ) -> TimeSeries:
         super()._predict(
             n=n,
@@ -264,10 +262,10 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
     def _estimator_predict(
         self,
         n: int,
-        series: Optional[TimeSeries],
-        historic_future_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
-        levels: Optional[list[float]],
+        series: TimeSeries | None,
+        historic_future_covariates: TimeSeries | None,
+        future_covariates: TimeSeries | None,
+        levels: list[float] | None,
     ) -> np.ndarray:
         """
         Computes the model output.
@@ -393,7 +391,7 @@ class _SFModel(_TS):
 
 def _unpack_sf_dict(
     forecast_dict: dict,
-    levels: Optional[list[float]],
+    levels: list[float] | None,
 ) -> np.ndarray:
     """Unpack the dictionary that is returned by the StatsForecast 'predict()' method.
 

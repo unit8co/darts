@@ -3,8 +3,6 @@ Time-series Dense Encoder (TiDE)
 --------------------------------
 """
 
-from typing import Optional
-
 import torch
 import torch.nn as nn
 
@@ -77,8 +75,8 @@ class _TideModule(PLForecastingModule):
         temporal_width_future: int,
         use_layer_norm: bool,
         dropout: float,
-        temporal_hidden_size_past: Optional[int] = None,
-        temporal_hidden_size_future: Optional[int] = None,
+        temporal_hidden_size_past: int | None = None,
+        temporal_hidden_size_future: int | None = None,
         **kwargs,
     ):
         """Pytorch module implementing the TiDE architecture.
@@ -377,8 +375,8 @@ class TiDEModel(MixedCovariatesTorchModel):
         hidden_size: int = 128,
         temporal_width_past: int = 4,
         temporal_width_future: int = 4,
-        temporal_hidden_size_past: int = None,
-        temporal_hidden_size_future: int = None,
+        temporal_hidden_size_past: int | None = None,
+        temporal_hidden_size_future: int | None = None,
         temporal_decoder_hidden: int = 32,
         use_layer_norm: bool = False,
         dropout: float = 0.1,
@@ -480,7 +478,9 @@ class TiDEModel(MixedCovariatesTorchModel):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
-            It is only applied to the features of the target series and not the covariates.
+            It is only applied to the features of the target series and not the covariates. If ``True``,
+            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
+            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -584,6 +584,18 @@ class TiDEModel(MixedCovariatesTorchModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         References
         ----------

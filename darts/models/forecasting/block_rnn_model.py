@@ -5,7 +5,6 @@ Block Recurrent Neural Networks
 
 import inspect
 from abc import ABC, abstractmethod
-from typing import Optional, Union
 
 import torch
 import torch.nn as nn
@@ -32,7 +31,7 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
         num_layers: int,
         target_size: int,
         nr_params: int,
-        num_layers_out_fc: Optional[list] = None,
+        num_layers_out_fc: list | None = None,
         dropout: float = 0.0,
         activation: str = "ReLU",
         **kwargs,
@@ -114,7 +113,7 @@ class _BlockRNNModule(CustomBlockRNNModule):
     def __init__(
         self,
         name: str,
-        activation: Optional[str] = None,
+        activation: str | None = None,
         **kwargs,
     ):
         """PyTorch module implementing a block RNN to be used in `BlockRNNModel`.
@@ -260,10 +259,10 @@ class BlockRNNModel(MixedCovariatesTorchModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        model: Union[str, type[CustomBlockRNNModule]] = "RNN",
+        model: str | type[CustomBlockRNNModule] = "RNN",
         hidden_dim: int = 25,
         n_rnn_layers: int = 1,
-        hidden_fc_sizes: Optional[list] = None,
+        hidden_fc_sizes: list | None = None,
         dropout: float = 0.0,
         activation: str = "ReLU",
         use_static_covariates: bool = True,
@@ -349,7 +348,9 @@ class BlockRNNModel(MixedCovariatesTorchModel):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [1]_.
-            It is only applied to the features of the target series and not the covariates.
+            It is only applied to the features of the target series and not the covariates. If ``True``,
+            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
+            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -453,6 +454,18 @@ class BlockRNNModel(MixedCovariatesTorchModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         References
         ----------

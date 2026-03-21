@@ -10,14 +10,8 @@ References
 .. [1] https://wikipedia.org/wiki/Autoregressive_integrated_moving_average
 """
 
-import sys
 from collections.abc import Sequence
-from typing import Literal, Optional, Union
-
-if sys.version_info >= (3, 10):
-    from typing import TypeAlias
-else:
-    from typing_extensions import TypeAlias
+from typing import Literal, TypeAlias
 
 from sklearn.utils import check_random_state
 from statsmodels.tsa.arima.model import ARIMA as staARIMA
@@ -32,7 +26,7 @@ from darts.utils.utils import random_method
 logger = get_logger(__name__)
 
 
-IntOrIntSequence: TypeAlias = Union[int, Sequence[int]]
+IntOrIntSequence: TypeAlias = int | Sequence[int]
 
 
 class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
@@ -48,9 +42,9 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
             0,
             0,
         ),
-        trend: Optional[Union[Literal["n", "c", "t", "ct"], list[int]]] = None,
-        random_state: Optional[int] = None,
-        add_encoders: Optional[dict] = None,
+        trend: Literal["n", "c", "t", "ct"] | list[int] | None = None,
+        random_state: int | None = None,
+        add_encoders: dict | None = None,
     ):
         """ARIMA
         ARIMA-type models extensible with exogenous variables (future covariates)
@@ -145,8 +139,8 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
     def _fit(
         self,
         series: TimeSeries,
-        future_covariates: Optional[TimeSeries] = None,
-        verbose: Optional[bool] = None,
+        future_covariates: TimeSeries | None = None,
+        verbose: bool | None = None,
     ):
         super()._fit(series, future_covariates, verbose=verbose)
 
@@ -170,13 +164,13 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
     def _predict(
         self,
         n: int,
-        series: Optional[TimeSeries] = None,
-        historic_future_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: TimeSeries | None = None,
+        historic_future_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ) -> TimeSeries:
         if num_samples > 1 and self.trend:
             logger.warning(

@@ -1,5 +1,4 @@
 from itertools import product
-from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -1191,10 +1190,10 @@ class TestRegressionEnsembleModels:
 
     @staticmethod
     def get_probabilistic_global_model(
-        lags: Union[int, list[int]],
+        lags: int | list[int],
         output_chunk_length: int = 1,
         likelihood: str = "quantile",
-        quantiles: Union[None, list[float]] = [0.05, 0.5, 0.95],
+        quantiles: None | list[float] = [0.05, 0.5, 0.95],
         random_state: int = 42,
     ) -> LinearRegressionModel:
         return LinearRegressionModel(
@@ -1206,6 +1205,6 @@ class TestRegressionEnsembleModels:
 
     @staticmethod
     def get_deterministic_global_model(
-        lags: Union[int, list[int]], random_state: int = 13
+        lags: int | list[int], random_state: int = 13
     ) -> LinearRegressionModel:
         return LinearRegressionModel(lags=lags, random_state=random_state)
