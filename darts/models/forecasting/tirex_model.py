@@ -17,7 +17,6 @@ constructing `TiRexModel`.
 """
 
 import os
-from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -113,6 +112,8 @@ class _TiRexModule(PLForecastingModule):
         # load the TiRex pipeline (this will download weights if not cached locally)
         self.tirex_pipeline = load_model(**tirex_kwargs)
 
+        self.future_len = (self.output_chunk_length or 0) + self.output_chunk_shift
+
         # gather indices of user-specified quantiles (used at prediction time)
         user_q: list[float] = (
             self.likelihood.quantiles
@@ -145,57 +146,48 @@ class _TiRexModule(PLForecastingModule):
             If deterministic (`likelihood=None`), only the median (0.5) quantile
             is returned.
         """
-        # PLModuleInput is typically a tuple: (x_past, x_future, x_static)
-        x_past, x_future, _ = x_in
+        # Dimension notation in comments below:
+        #   B: batch size
+        #   L: input chunk length
+        #   T: output chunk length
+        #   S: output chunk shift
+        #   H: forecast horizon = T + S
+        #   C: target components
+        #   Q = 9: likelihood quantiles returned by TiRex
+        #   N: likelihood quantiles (user-specified, 1 if deterministic)
 
-        # TiRex initial integration: no covariates
-        if x_future is not None:
-            # some datasets may provide an empty tensor; tolerate that
-            if not (torch.is_tensor(x_future) and x_future.numel() == 0):
-                raise ValueError("TiRexModel does not support future covariates.")
-
-        # x_past: (B, T, C). Enforce univariate.
-        if x_past.shape[-1] != 1:
-            raise ValueError("TiRexModel currently supports univariate targets only.")
-
-        context = x_past[..., 0]  # (B, T)
+        # `x_past`: (B, L, C)
+        x_past, _, _ = x_in
+        # fold target component into batch dimension to support multivariate forecasting
+        # -> (B, C, L) -> (B * C, L)
+        x_past = x_past.transpose(1, 2).flatten(start_dim=0, end_dim=1)
 
         # TiRex should forecast output_chunk_shift + output_chunk_length steps,
         # then we slice away the shift to match Darts' output_chunk_length.
-        future_len = self.output_chunk_shift + self.output_chunk_length
 
-        batch_size = x_past.shape[0]
-        quantiles, mean = self.tirex_pipeline.forecast(
-            context=context,
-            prediction_length=future_len,
-            batch_size=batch_size,
+        # `quantiles`: (B * C, H, Q)
+        quantiles, _ = self.tirex_pipeline.forecast(
+            context=x_past,
+            prediction_length=self.future_len,
+            batch_size=x_past.shape[0],
+            output_device=x_past.device,
         )
 
-        # Support both numpy arrays and torch tensors (tirex-ts supports both).
-        if not torch.is_tensor(quantiles):
-            quantiles = torch.as_tensor(quantiles)
-        if not torch.is_tensor(mean):
-            mean = torch.as_tensor(mean)
+        # slice away output_chunk_shift -> (B * C, T, Q)
+        quantiles = quantiles[:, self.output_chunk_shift :, :]
 
-        quantiles = quantiles.to(device=context.device, dtype=torch.float32)
-        mean = mean.to(device=context.device, dtype=torch.float32)
+        # select user-requested quantiles (or median) -> (B * C, T, N)
+        q_sel: torch.Tensor = quantiles.index_select(
+            dim=-1, index=self._user_quantile_indices
+        )
 
-        # Expect TiRex outputs: quantiles (B, H, Q), mean (B, H)
-        if quantiles.ndim != 3:
-            raise ValueError(
-                f"Unexpected TiRex quantiles shape: {tuple(quantiles.shape)}"
-            )
-        if mean.ndim != 2:
-            raise ValueError(f"Unexpected TiRex mean shape: {tuple(mean.shape)}")
+        # unfold batch dimension to separate target components -> (B, C, T, N)
+        q_sel = q_sel.unflatten(dim=0, sizes=(-1, self.n_targets))
 
-        # slice away output_chunk_shift
-        quantiles = quantiles[:, self.output_chunk_shift : future_len, :]
+        # permute to Darts' expected output shape -> (B, T, C, N)
+        q_sel = q_sel.permute(0, 2, 1, 3)
 
-        # select user-requested quantiles (or median)
-        q_sel = quantiles.index_select(dim=-1, index=self._user_quantile_indices)
-
-        # Darts expects output shape: (B, H, n_targets, n_quantiles)
-        return q_sel.unsqueeze(2)
+        return q_sel
 
 
 class TiRexModel(FoundationModel):
@@ -430,10 +422,6 @@ class TiRexModel(FoundationModel):
         }
 
     @property
-    def supports_multivariate(self) -> bool:
-        return False
-
-    @property
     def supports_past_covariates(self) -> bool:
         return False
 
@@ -448,73 +436,4 @@ class TiRexModel(FoundationModel):
             tirex_kwargs=self.tirex_kwargs,
             all_quantiles=self._DEFAULT_QUANTILES,
             **pl_module_params,
-        )
-
-    def fit(
-        self,
-        series,
-        past_covariates=None,
-        future_covariates=None,
-        val_series=None,
-        val_past_covariates=None,
-        val_future_covariates=None,
-        trainer=None,
-        verbose=None,
-        epochs: int = 0,
-        max_samples_per_ts=None,
-        dataloader_kwargs=None,
-        sample_weight=None,
-        val_sample_weight=None,
-        stride: int = 1,
-        load_best: bool = False,
-    ):
-        # enforce initial integration constraints early
-        if (
-            past_covariates is not None
-            or future_covariates is not None
-            or val_past_covariates is not None
-            or val_future_covariates is not None
-        ):
-            raise_log(
-                ValueError("TiRexModel currently does not support covariates."), logger
-            )
-
-        # univariate-only
-        series_list = [series] if not isinstance(series, Sequence) else list(series)
-        if any(s.n_components != 1 for s in series_list):
-            raise_log(
-                ValueError("TiRexModel currently supports univariate series only."),
-                logger,
-            )
-
-        if val_series is not None:
-            val_series_list = (
-                [val_series]
-                if not isinstance(val_series, Sequence)
-                else list(val_series)
-            )
-            if any(s.n_components != 1 for s in val_series_list):
-                raise_log(
-                    ValueError(
-                        "TiRexModel currently supports univariate validation series only."
-                    ),
-                    logger,
-                )
-
-        return super().fit(
-            series=series,
-            past_covariates=None,
-            future_covariates=None,
-            val_series=val_series,
-            val_past_covariates=None,
-            val_future_covariates=None,
-            trainer=trainer,
-            verbose=verbose,
-            epochs=epochs,
-            max_samples_per_ts=max_samples_per_ts,
-            dataloader_kwargs=dataloader_kwargs,
-            sample_weight=sample_weight,
-            val_sample_weight=val_sample_weight,
-            stride=stride,
-            load_best=load_best,
         )
