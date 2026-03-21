@@ -74,6 +74,7 @@ class _TiRexQuantiles:
 
 
 class _TiRexModule(PLForecastingModule):
+    _user_quantile_indices: torch.Tensor
     """
     PyTorch Lightning module wrapping a pre-loaded TiRex pipeline.
 
@@ -99,46 +100,30 @@ class _TiRexModule(PLForecastingModule):
 
     def __init__(
         self,
-        tirex_pipeline,
+        tirex_kwargs: dict[str, Any],
         all_quantiles: tuple[float, ...],
         **kwargs,
     ):
-        # `kwargs` must include PLForecastingModule args (incl. output_chunk_length,
-        # output_chunk_shift, likelihood, etc.)
         super().__init__(**kwargs)
-        # Do not store the TiRex pipeline inside Lightning hyperparameters/checkpoints.
-        # It is re-loadable via `tirex.load_model(...)` and can be large / non-serializable.
-        self.save_hyperparameters(ignore=["tirex_pipeline"])
 
-        self.tirex_pipeline = tirex_pipeline
-        self.register_buffer(
-            "_all_quantiles", torch.tensor(all_quantiles, dtype=torch.float32)
+        load_model = _require_tirex()
+
+        # ensure that the TiRex pipeline is loaded on the same device as the PL module
+        tirex_kwargs["device"] = str(self.device)
+        # load the TiRex pipeline (this will download weights if not cached locally)
+        self.tirex_pipeline = load_model(**tirex_kwargs)
+
+        # gather indices of user-specified quantiles (used at prediction time)
+        user_q: list[float] = (
+            self.likelihood.quantiles
+            if isinstance(self.likelihood, QuantileRegression)
+            else [0.5]
         )
-
-        if self.likelihood is None:
-            median_idx = (self._all_quantiles == 0.5).nonzero(as_tuple=True)[0]
-            if len(median_idx) != 1:
-                raise ValueError(
-                    "Expected exactly one median quantile (0.5) in TiRex quantiles."
-                )
-            self.register_buffer(
-                "_user_quantile_indices", median_idx.to(dtype=torch.long)
-            )
-        else:
-            user_q = torch.tensor(self.likelihood.quantiles, dtype=torch.float32)
-            indices: list[int] = []
-            for q in user_q.tolist():
-                matches = (
-                    self._all_quantiles == torch.tensor(q, dtype=torch.float32)
-                ).nonzero(as_tuple=True)[0]
-                if len(matches) != 1:
-                    raise ValueError(
-                        f"Requested quantile {q} is not available in TiRex quantiles {all_quantiles}."
-                    )
-                indices.append(int(matches.item()))
-            self.register_buffer(
-                "_user_quantile_indices", torch.tensor(indices, dtype=torch.long)
-            )
+        user_quantile_indices = [all_quantiles.index(q) for q in user_q]
+        self.register_buffer(
+            "_user_quantile_indices",
+            torch.tensor(user_quantile_indices, dtype=torch.long, device=self.device),
+        )
 
     def forward(self, x_in, *args, **kwargs):
         """
@@ -179,9 +164,11 @@ class _TiRexModule(PLForecastingModule):
         # then we slice away the shift to match Darts' output_chunk_length.
         future_len = self.output_chunk_shift + self.output_chunk_length
 
+        batch_size = x_past.shape[0]
         quantiles, mean = self.tirex_pipeline.forecast(
             context=context,
             prediction_length=future_len,
+            batch_size=batch_size,
         )
 
         # Support both numpy arrays and torch tensors (tirex-ts supports both).
@@ -205,11 +192,7 @@ class _TiRexModule(PLForecastingModule):
         quantiles = quantiles[:, self.output_chunk_shift : future_len, :]
 
         # select user-requested quantiles (or median)
-        idx = self._user_quantile_indices
-        if idx.device != quantiles.device:
-            idx = idx.to(device=quantiles.device)
-        idx = idx.to(dtype=torch.long).contiguous().clone()
-        q_sel = quantiles.index_select(dim=-1, index=idx)
+        q_sel = quantiles.index_select(dim=-1, index=self._user_quantile_indices)
 
         # Darts expects output shape: (B, H, n_targets, n_quantiles)
         return q_sel.unsqueeze(2)
@@ -230,7 +213,6 @@ class TiRexModel(FoundationModel):
         hub_model_name: str = "NX-AI/TiRex",
         hub_model_revision: str | None = None,
         local_dir: str | os.PathLike | None = None,
-        device: str | None = None,
         backend: str | None = None,
         compile: bool | None = None,
         tirex_kwargs: dict[str, Any] | None = None,
@@ -286,20 +268,19 @@ class TiRexModel(FoundationModel):
         hub_model_name
             The model ID on HuggingFace Hub. Default: ``"NX-AI/TiRex"``.
         hub_model_revision
-            The model version to use. This can be a branch name, tag name, or commit hash. Default is ``None``, which
+            The model version to use. This can be a branch name, tag name, or commit hash. Default: ``None``, which
             will use the default branch from ``hub_model_name``.
         local_dir
             Optional local directory to load the pre-downloaded model. If specified and the directory is empty, the
-            model will be downloaded from HuggingFace Hub and saved to this directory. Default is ``None``, which will
+            model will be downloaded from HuggingFace Hub and saved to this directory. Default: ``None``, which will
             use a cache directory managed by ``huggingface_hub`` instead.
-        device
-            Optional device passed to ``tirex.load_model()``.
         backend
-            Optional backend passed to ``tirex.load_model()``.
+            Optional inference engine argument passed to ``tirex.load_model()``, either ``"torch"`` or ``"cuda"``.
+            If set to ``"cuda"``, `xlstm` package must be installed and the model will use custom CUDA kernels.
+            Otherwise, torch backend will be used. Default: ``None`` (torch backend).
         compile
-            Optional compilation flag passed to ``tirex.load_model()``.
-        add_encoders
-            Optional encoders passed to :class:`FoundationModel`.
+            Optional compilation flag passed to ``tirex.load_model()``. If ``True``, the model will be compiled with
+            `torch.compile()`. Default: ``None`` (no compilation).
         tirex_kwargs
             Additional keyword arguments forwarded to ``tirex.load_model()``.
         **kwargs
@@ -309,7 +290,7 @@ class TiRexModel(FoundationModel):
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         random_state
-            Controls the randomness of the weights initialization and reproducible forecasting.
+            Controls the randomness of reproducible forecasting.
         pl_trainer_kwargs
             By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
             that performs the training, validation and prediction processes. These presets include automatic
@@ -443,7 +424,6 @@ class TiRexModel(FoundationModel):
         self.tirex_kwargs = {
             "path": hub_model_name,
             **({"hf_kwargs": hf_kwargs} if hf_kwargs else {}),
-            **({"device": device} if device is not None else {}),
             **({"backend": backend} if backend is not None else {}),
             **({"compile": compile} if compile is not None else {}),
             **(tirex_kwargs or {}),
@@ -464,12 +444,8 @@ class TiRexModel(FoundationModel):
     def _create_model(self, train_sample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}
 
-        load_model = _require_tirex()
-
-        tirex_pipeline = load_model(**self.tirex_kwargs)
-
         return _TiRexModule(
-            tirex_pipeline=tirex_pipeline,
+            tirex_kwargs=self.tirex_kwargs,
             all_quantiles=self._DEFAULT_QUANTILES,
             **pl_module_params,
         )
