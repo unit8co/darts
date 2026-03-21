@@ -10,7 +10,7 @@ model card <https://huggingface.co/NX-AI/TiRex> and
 docs <https://nx-ai.github.io/tirex/> provide more details.
 
 Note: TiRex is released under the NXAI Community License. See
-<https://github.com/NX-AI/tirex-internal/blob/main/LICENSE> for details.
+<https://github.com/NX-AI/tirex/blob/main/LICENSE> for details.
 Users must explicitly acknowledge the license by passing `accept_license=True` when
 constructing `TiRexModel`.
 
@@ -216,121 +216,116 @@ class _TiRexModule(PLForecastingModule):
 
 
 class TiRexModel(FoundationModel):
-    """
-    TiRex foundation model for zero-shot time series forecasting.
-
-    This is a Darts wrapper around the TiRex model introduced in
-    https://arxiv.org/abs/2505.23719.
-    The implementation delegates all forecasting logic and weight loading
-    to the optional `tirex-ts` package while exposing a standard
-    :class:`FoundationModel` interface.
-
-    TiRex is a pre-trained time series foundation model designed for
-    zero-shot forecasting across both short and long horizons.
-
-    By default, the model is deterministic (median forecast only).
-    To enable probabilistic forecasts, pass a
-    :class:`~darts.utils.likelihood_models.torch.QuantileRegression`
-    instance to the ``likelihood`` parameter.
-
-    Notes
-    -----
-    TiRex is distributed under the NXAI Community License:
-    https://github.com/NX-AI/tirex-internal/blob/main/LICENSE
-
-    You must explicitly acknowledge this license by passing
-    ``accept_license=True`` when constructing the model.
-
-    Current integration constraints are: univariate target series only; no past
-    or future covariates; zero-shot inference only (no fine-tuning support);
-    and a maximum of 2048 steps per single forecast call
-    (``output_chunk_length + output_chunk_shift <= 2048``). For longer
-    horizons, Darts' autoregressive prediction loop is used when
-    ``n > output_chunk_length``.
-
-    Parameters
-    ----------
-    model_name
-        Identifier passed to `tirex.load_model()`. Default: ``"NX-AI/TiRex"``.
-    input_chunk_length
-        Length of the past context window (number of past time steps) used for each forecast.
-        Default: ``64``.
-    output_chunk_length
-        Number of time steps to forecast in each call. Default: ``12``.
-    output_chunk_shift
-        Number of time steps to shift the output window (forecasting starts after this many steps).
-        Default: ``0``.
-    likelihood
-        Must be ``None`` or an instance of
-        :class:`~darts.utils.likelihood_models.torch.QuantileRegression`.
-        Requested quantiles must be a subset of TiRex's default quantiles:
-        (0.1, 0.2, ..., 0.9).
-    accept_license
-        Must be set to ``True`` to confirm acceptance of the NXAI Community License.
-    device
-        Optional device passed to `tirex.load_model()`.
-    backend
-        Optional backend passed to `tirex.load_model()`.
-    compile
-        Optional compilation flag passed to `tirex.load_model()`.
-    add_encoders
-        Optional encoders passed to :class:`FoundationModel`.
-    tirex_kwargs
-        Additional keyword arguments forwarded to `tirex.load_model()`.
-
-    Examples
-    --------
-    >>> from darts.models import TiRexModel
-    >>> from darts.utils.likelihood_models.torch import QuantileRegression
-    >>> from darts.datasets import AirPassengersDataset
-
-    >>> series = AirPassengersDataset().load().astype("float32")
-    >>> train, test = series.split_after(0.72)
-
-    >>> model = TiRexModel(
-    ...     accept_license=True,
-    ... )
-    >>> model.fit(train)
-    >>> forecast = model.predict(n=len(test), series=train)
-
-    Probabilistic forecasting:
-
-    >>> model = TiRexModel(
-    ...     likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
-    ...     accept_license=True,
-    ... )
-    >>> model.fit(train)
-    >>> forecast = model.predict(n=len(test), series=train, num_samples=50)
-    """
-
     # TiRex quantiles returned by default (0.1..0.9)
     _DEFAULT_QUANTILES = _TiRexQuantiles().quantiles
     _MAX_PREDICTION_LENGTH = 2048
 
     def __init__(
         self,
-        model_name: str = "NX-AI/TiRex",
-        input_chunk_length: int = 64,
-        output_chunk_length: int = 12,
+        input_chunk_length: int,
+        output_chunk_length: int,
         output_chunk_shift: int = 0,
+        model_name: str = "NX-AI/TiRex",
         likelihood: QuantileRegression | None = None,
         accept_license: bool = False,
         device: str | None = None,
         backend: str | None = None,
         compile: bool | None = None,
-        add_encoders: dict | None = None,
         **tirex_kwargs,
     ):
-        """Initialize a TiRex model instance.
+        """
+        TiRex foundation model for zero-shot time series forecasting.
 
-        For parameter details, see the class docstring of :class:`TiRexModel`.
+        This is a Darts wrapper around the TiRex model introduced in Auer et al. (2025) [1]_. The implementation
+        delegates all forecasting logic and weight loading to the optional `tirex-ts` package while exposing a standard
+        :class:`TorchForecastingModel` interface.
+
+        TiRex is a pre-trained foundation model designed for zero-shot forecasting across both short and long horizons.
+
+        This model supports either univariate or multivariate time series, but does not support covariates.
+        For multivariate time series, the model is applied independently to each component.
+
+        By default, the model is deterministic (median forecast only). To enable probabilistic forecasts, pass a
+        :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the ``likelihood`` parameter.
+        It is recommended to call :func:`predict()` with ``predict_likelihood_parameters=True`` or ``num_samples >> 1``
+        to get meaningful results.
+
+        .. note::
+            TiRex is distributed under the `NXAI Community License <https://github.com/NX-AI/tirex/blob/main/LICENSE>`_.
+            You must explicitly acknowledge this license by passing ``accept_license=True`` when constructing the model.
+
+        .. warning::
+            Fine-tuning is not supported in Darts. Visit `TiRex Docs <https://nx-ai.github.io/tirex/>`_ for details.
+
+        Parameters
+        ----------
+        model_name
+            Identifier passed to `tirex.load_model()`. Default: ``"NX-AI/TiRex"``.
+        input_chunk_length
+            Number of time steps in the past to take as a model input (per chunk). Applies to the target
+            series.
+        output_chunk_length
+            Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
+            horizon `n` used in `predict()`, which is the desired number of prediction points generated using
+            either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents auto-regression.
+            For TiRex, `output_chunk_length + output_chunk_shift` must be less than or equal to 2,048.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate autoregressive predictions (`n > output_chunk_length`). Default: ``0``.
+        likelihood
+            The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of
+            :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. Requested quantiles must be a subset of
+            TiRex's default quantiles: [0.1, 0.2, ..., 0.9]. Default: ``None`` (deterministic; median forecast only).
+        accept_license
+            Must be set to ``True`` to confirm acceptance of the NXAI Community License. Default: ``False``.
+        device
+            Optional device passed to `tirex.load_model()`.
+        backend
+            Optional backend passed to `tirex.load_model()`.
+        compile
+            Optional compilation flag passed to `tirex.load_model()`.
+        add_encoders
+            Optional encoders passed to :class:`FoundationModel`.
+        tirex_kwargs
+            Additional keyword arguments forwarded to `tirex.load_model()`.
+
+        References
+        ----------
+        .. [1] A. Auer et al., "TiRex: Zero-Shot Forecasting Across Long and Short Horizons with Enhanced In-Context
+        Learning", NeurIPS 2025. https://arxiv.org/abs/2505.23719.
+
+        Examples
+        --------
+        >>> from darts.models import TiRexModel
+        >>> from darts.utils.likelihood_models.torch import QuantileRegression
+        >>> from darts.datasets import AirPassengersDataset
+
+        >>> series = AirPassengersDataset().load().astype("float32")
+        >>> train, test = series.split_after(0.72)
+
+        >>> model = TiRexModel(
+        ...     accept_license=True,
+        ... )
+        >>> model.fit(train)
+        >>> forecast = model.predict(n=len(test), series=train)
+
+        Probabilistic forecasting:
+
+        >>> model = TiRexModel(
+        ...     likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
+        ...     accept_license=True,
+        ... )
+        >>> model.fit(train)
+        >>> forecast = model.predict(n=len(test), series=train, num_samples=50)
         """
         if not accept_license:
             raise_log(
                 ValueError(
                     "TiRex is distributed under the NXAI Community License. "
                     "Set `accept_license=True` to confirm you have reviewed and accept the terms: "
-                    "https://github.com/NX-AI/tirex-internal/blob/main/LICENSE"
+                    "https://github.com/NX-AI/tirex/blob/main/LICENSE"
                 ),
                 logger,
             )
@@ -386,7 +381,6 @@ class TiRexModel(FoundationModel):
             output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
             likelihood=likelihood,
-            add_encoders=add_encoders,
         )
 
         # Make sure these keys exist even if the parent class does not populate them.
