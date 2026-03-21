@@ -207,6 +207,7 @@ class TiRexModel(FoundationModel):
         local_dir: str | os.PathLike | None = None,
         backend: str | None = None,
         compile: bool | None = None,
+        hf_kwargs: dict[str, Any] | None = None,
         tirex_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ):
@@ -273,6 +274,8 @@ class TiRexModel(FoundationModel):
         compile
             Optional compilation flag passed to ``tirex.load_model()``. If ``True``, the model will be compiled with
             `torch.compile()`. Default: ``None`` (no compilation).
+        hf_kwargs
+            Optional HuggingFace Hub arguments passed to ``tirex.load_model()`` for loading the model weights.
         tirex_kwargs
             Additional keyword arguments forwarded to ``tirex.load_model()``.
         **kwargs
@@ -412,12 +415,13 @@ class TiRexModel(FoundationModel):
                 else {}
             ),
             **({"local_dir": local_dir} if local_dir is not None else {}),
+            **(hf_kwargs or {}),
         }
         self.tirex_kwargs = {
             "path": hub_model_name,
-            **({"hf_kwargs": hf_kwargs} if hf_kwargs else {}),
             **({"backend": backend} if backend is not None else {}),
             **({"compile": compile} if compile is not None else {}),
+            **({"hf_kwargs": hf_kwargs} if hf_kwargs else {}),
             **(tirex_kwargs or {}),
         }
 
