@@ -1,10 +1,10 @@
 Checklist before merging this PR:
 - [x] Mentioned all issues that this PR fixes or addresses.
 - [x] Summarized the updates of this PR under **Summary**.
-- [ ] Added an entry under **Unreleased** in the [Changelog](../CHANGELOG.md).
+- [x] Added an entry under **Unreleased** in the [Changelog](../CHANGELOG.md).
 
 <!-- Please mention an issue this pull request addresses. -->
-Fixes #871.
+Fixes #871. Fixes #2788. Fixes #2296. Fixes #2571. Fixes #1262. Fixes #2566. Fixes #1332.
 
 ### Summary
 
