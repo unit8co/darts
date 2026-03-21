@@ -233,7 +233,8 @@ class TiRexModel(FoundationModel):
             You must explicitly acknowledge this license by passing ``accept_license=True`` when constructing the model.
 
         .. warning::
-            Fine-tuning is not supported in Darts. Visit `TiRex Docs <https://nx-ai.github.io/tirex/>`_ for details.
+            Fine-tuning TiRex is not supported in Darts. Visit `TiRex Docs <https://nx-ai.github.io/tirex/>`_ for
+            details.
 
         Parameters
         ----------
@@ -339,31 +340,42 @@ class TiRexModel(FoundationModel):
         References
         ----------
         .. [1] A. Auer et al., "TiRex: Zero-Shot Forecasting Across Long and Short Horizons with Enhanced In-Context
-        Learning", NeurIPS 2025. https://arxiv.org/abs/2505.23719.
+                Learning", NeurIPS 2025. https://arxiv.org/abs/2505.23719.
 
         Examples
         --------
         >>> from darts.models import TiRexModel
-        >>> from darts.utils.likelihood_models.torch import QuantileRegression
         >>> from darts.datasets import AirPassengersDataset
-
+        >>> # load data in float32 format
         >>> series = AirPassengersDataset().load().astype("float32")
-        >>> train, test = series.split_after(0.72)
-
+        >>> # you must explicitly accept the license to use the model
         >>> model = TiRexModel(
+        ...     input_chunk_length=12,
+        ...     output_chunk_length=6,
         ...     accept_license=True,
         ... )
-        >>> model.fit(train)
-        >>> forecast = model.predict(n=len(test), series=train)
+        >>> # fit the model (data is validated but TiRex is not actually trained)
+        >>> model.fit(series)
+        >>> pred = model.predict(n=6)
+        >>> print(pred.all_values())
+        [[[440.2505 ]]
+        [[444.44373]]
+        [[447.36362]]
+        [[451.50375]]
+        [[458.05853]]
+        [[461.98694]]]
 
         Probabilistic forecasting:
 
+        >>> from darts.utils.likelihood_models import QuantileRegression
         >>> model = TiRexModel(
+        ...     input_chunk_length=12,
+        ...     output_chunk_length=6,
         ...     likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
         ...     accept_license=True,
         ... )
-        >>> model.fit(train)
-        >>> forecast = model.predict(n=len(test), series=train, num_samples=50)
+        >>> model.fit(series)
+        >>> pred = model.predict(n=6, num_samples=50)
         """
         if not accept_license:
             raise_log(
