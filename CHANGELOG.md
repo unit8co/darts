@@ -12,6 +12,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 - Added native multi-quantile support for `CatBoostModel` by using CatBoost’s `MultiQuantile` loss for faster training and inference. Set `likelihood="multiquantile"` to enable this feature. [#3032](https://github.com/unit8co/darts/pull/3032) by [Zhihao Dai](https://github.com/daidahao)
 
+- Added parameter `columns` to all data transformers (e.g. `Scaler`, `Diff`, `BoxCox`, ...) to apply the transformations only on subset of components. This makes it much easier to build multivariate pipelines where different components require different transformations. [#3023](https://github.com/unit8co/darts/pull/3023) by [Krzsztof Pęczek](https://github.com/u8-krpeczek)
 - `TFTExplainer` plotting improvements: [#3039](https://github.com/unit8co/darts/pull/3039) by [ReinerBRO](https://github.com/ReinerBRO).
   - `plot_variable_selection()` now returns the matplotlib figures for downstream usage (saving, editing, ...). It returns a single figure when explaining a single TimeSeries. Otherwise, it returns a list of figures.
   - `plot_variable_selection()` now accepts a `show_plot: bool = True` parameter that allows to suppress showing the plot.

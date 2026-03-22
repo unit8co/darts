@@ -29,6 +29,7 @@ class FittableDataTransformer(BaseDataTransformer):
         verbose: bool = False,
         parallel_params: bool | Sequence[str] = False,
         mask_components: bool = True,
+        columns: str | list[str] | None = None,
         global_fit: bool = False,
     ):
         """Base class for fittable transformers.
@@ -67,6 +68,11 @@ class FittableDataTransformer(BaseDataTransformer):
             'unmasked' in the returned `TimeSeries`. If `False`, then `component_mask` (if provided) will
             be passed as a keyword argument, but won't automatically be applied to the input timeseries.
             See `apply_component_mask` method of `BaseDataTransformer` for further details.
+        columns
+            Optionally, a string or list of strings specifying the names of the components (columns)
+            to transform. If specified, only these components will be transformed, and the remaining
+            components will be kept untouched. For more information refer to the `BaseDataTransformer`
+            documentation.
         global_fit
             Optionally, whether all `TimeSeries` passed to the `fit()` method should be used to fit
             a *single* set of parameters, or if a different set of parameters should be independently fitted
@@ -147,6 +153,7 @@ class FittableDataTransformer(BaseDataTransformer):
             verbose=verbose,
             parallel_params=parallel_params,
             mask_components=mask_components,
+            columns=columns,
         )
 
         self._fit_called = False
@@ -259,6 +266,12 @@ class FittableDataTransformer(BaseDataTransformer):
         n_jobs = len(data) if not self._global_fit else 1
         input_iterator = _build_tqdm_iterator(
             fit_iterator, verbose=self._verbose, desc=desc, total=n_jobs
+        )
+
+        component_mask = BaseDataTransformer._generate_component_mask(
+            series=data[0],
+            component_mask=component_mask,
+            columns=self._columns,
         )
 
         # apply component masking to the fit method

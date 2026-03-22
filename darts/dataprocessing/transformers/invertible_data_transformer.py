@@ -29,6 +29,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
         verbose: bool = False,
         parallel_params: bool | Sequence[str] = False,
         mask_components: bool = True,
+        columns: str | list[str] | None = None,
     ):
         """Abstract class for invertible transformers.
 
@@ -76,6 +77,11 @@ class InvertibleDataTransformer(BaseDataTransformer):
             'unmasked' in the returned `TimeSeries`. If `False`, then `component_mask` (if provided) will
             be passed as a keyword argument, but won't automatically be applied to the input timeseries.
             See `apply_component_mask` method of `BaseDataTransformer` for further details.
+        columns
+            Optionally, a string or list of strings specifying the names of the components (columns)
+            to transform. If specified, only these components will be transformed, and the remaining
+            components will be kept untouched. For more information refer to the `BaseDataTransformer`
+            documentation.
 
         Notes
         -----
@@ -137,6 +143,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
             verbose=verbose,
             parallel_params=parallel_params,
             mask_components=mask_components,
+            columns=columns,
         )
 
     @classmethod
@@ -330,6 +337,12 @@ class InvertibleDataTransformer(BaseDataTransformer):
             verbose=self._verbose,
             desc=desc,
             total=len(transformer_selector),
+        )
+
+        component_mask = BaseDataTransformer._generate_component_mask(
+            series=data[0],
+            component_mask=component_mask,
+            columns=self._columns,
         )
 
         # apply & unapply component masking to the transform method
