@@ -235,7 +235,7 @@ TiRex Model
    examples/28-TiRex-examples.ipynb
 
 Torch and Foundation Model Fine-Tuning
-=======================================
+======================================
 
 Torch and Foundation model fine-tuning example notebook:
 
