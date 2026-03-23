@@ -58,7 +58,7 @@
     <link rel="prev" title="Scaler" href="darts.dataprocessing.transformers.scaler.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.0" />
+  <meta name="docsearch:version" content="0.42.1" />
   </head>
   
   
@@ -1262,6 +1262,8 @@ and untransformed components are unable to be concatenated back together along t
 <p>If <cite>mask_components</cite> was set to <cite>False</cite> when instantiating <cite>BaseDataTransformer</cite>, then any provided
 <cite>component_masks</cite> will be passed as a keyword argument <cite>ts_transform</cite>; the user can then manually specify
 how the <cite>component_mask</cite> should be applied to each series.</p>
+<p>Alternatively, if the <cite>columns</cite> parameter was specified when instantiating the transformer,
+the <cite>component_mask</cite> is automatically generated to target only the specified column names.</p>
 </dd></dl>
 
 <dl class="py method">

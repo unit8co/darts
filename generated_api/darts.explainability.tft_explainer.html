@@ -58,7 +58,7 @@
     <link rel="prev" title="Shap Explainer for SKLearnModels" href="darts.explainability.shap_explainer.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.0" />
+  <meta name="docsearch:version" content="0.42.1" />
   </head>
   
   
@@ -1041,15 +1041,19 @@ If “time”, will plot the x-axis with the actual time index (or range index) 
 <li><p><strong>show_plot</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to show the plot.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code></span></p>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The matplotlib figures used for plotting. Returns a single Figure when explaining a single series,
+and a list of Figures when explaining multiple series.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Figure | list[Figure]</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.explainability.tft_explainer.TFTExplainer.plot_variable_selection">
-<span class="sig-name descname"><span class="pre">plot_variable_selection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expl_result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_nr_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/explainability/tft_explainer.html#TFTExplainer.plot_variable_selection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.explainability.tft_explainer.TFTExplainer.plot_variable_selection" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">plot_variable_selection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expl_result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_nr_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/explainability/tft_explainer.html#TFTExplainer.plot_variable_selection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.explainability.tft_explainer.TFTExplainer.plot_variable_selection" title="Link to this definition">#</a></dt>
 <dd><p>Plots the variable selection / feature importances of the <cite>TFTModel</cite> based on the input.
 The figure includes three subplots:</p>
 <ul class="simple">
@@ -1064,7 +1068,15 @@ on the encoder (input chunk)</p></li>
 <li><p><strong>expl_result</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.explainability.explainability_result.html#darts.explainability.explainability_result.TFTExplainabilityResult" title="darts.explainability.explainability_result.TFTExplainabilityResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">TFTExplainabilityResult</span></code></a></span>) – A <cite>TFTExplainabilityResult</cite> object. Corresponds to the output of <a class="reference internal" href="#darts.explainability.tft_explainer.TFTExplainer.explain" title="darts.explainability.tft_explainer.TFTExplainer.explain"><code class="xref py py-func docutils literal notranslate"><span class="pre">explain()</span></code></a>.</p></li>
 <li><p><strong>fig_size</strong> – The size of the figure to be plotted.</p></li>
 <li><p><strong>max_nr_series</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The maximum number of plots to show in case <cite>expl_result</cite> was computed on multiple series.</p></li>
+<li><p><strong>show_plot</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to show the plot.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The matplotlib figures used for plotting. Returns a single Figure when explaining a single series,
+and a list of Figures when explaining multiple series.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Figure | list[Figure]</p>
 </dd>
 </dl>
 </dd></dl>

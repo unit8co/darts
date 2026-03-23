@@ -60,7 +60,7 @@
     <link rel="prev" title="Box-Cox Transformer" href="darts.dataprocessing.transformers.boxcox.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.0" />
+  <meta name="docsearch:version" content="0.42.1" />
   </head>
   
   
@@ -899,7 +899,7 @@
 </section>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.diff.Diff">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.diff.</span></span><span class="sig-name descname"><span class="pre">Diff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dropna</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Diff'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/diff.html#Diff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.diff.Diff" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.diff.</span></span><span class="sig-name descname"><span class="pre">Diff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dropna</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Diff'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/diff.html#Diff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.diff.Diff" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">FittableDataTransformer</span></code></a>, <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">InvertibleDataTransformer</span></code></a></p>
 <p>Differencing data transformer.</p>
 <p>Differencing is typically applied to a time series to make it stationary; see <a class="reference internal" href="#r24a31a9d97d0-1" id="id1">[1]</a> for further details.
@@ -936,6 +936,10 @@ passed as input, parallelising operations regarding different <code class="docut
 Note: for a small amount of data, the parallelisation overhead could end up increasing the total
 required amount of time.</p></li>
 <li><p><strong>verbose</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to print operations progress</p></li>
+<li><p><strong>columns</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, a string or list of strings specifying the names of the components (columns)
+to transform. If specified, only these components will be transformed, and the remaining
+components will be kept untouched. For more information refer to the <cite>BaseDataTransformer</cite>
+documentation.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1273,6 +1277,8 @@ and untransformed components are unable to be concatenated back together along t
 <p>If <cite>mask_components</cite> was set to <cite>False</cite> when instantiating <cite>BaseDataTransformer</cite>, then any provided
 <cite>component_masks</cite> will be passed as a keyword argument <cite>ts_transform</cite>; the user can then manually specify
 how the <cite>component_mask</cite> should be applied to each series.</p>
+<p>Alternatively, if the <cite>columns</cite> parameter was specified when instantiating the transformer,
+the <cite>component_mask</cite> is automatically generated to target only the specified column names.</p>
 </dd></dl>
 
 <dl class="py method">

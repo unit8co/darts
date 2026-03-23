@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.0" />
+  <meta name="docsearch:version" content="0.42.1" />
   </head>
   
   
@@ -441,6 +441,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.figure</span><span class="w"> </span><span class="kn">import</span> <span class="n">Figure</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tensor</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
@@ -662,7 +663,8 @@
         <span class="n">expl_result</span><span class="p">:</span> <span class="n">TFTExplainabilityResult</span><span class="p">,</span>
         <span class="n">fig_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">max_nr_series</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
-    <span class="p">):</span>
+        <span class="n">show_plot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Figure</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">Figure</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Plots the variable selection / feature importances of the `TFTModel` based on the input.</span>
 <span class="sd">        The figure includes three subplots:</span>
 
@@ -679,6 +681,14 @@
 <span class="sd">            The size of the figure to be plotted.</span>
 <span class="sd">        max_nr_series</span>
 <span class="sd">            The maximum number of plots to show in case `expl_result` was computed on multiple series.</span>
+<span class="sd">        show_plot</span>
+<span class="sd">            Whether to show the plot.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Figure | list[Figure]</span>
+<span class="sd">            The matplotlib figures used for plotting. Returns a single Figure when explaining a single series,</span>
+<span class="sd">            and a list of Figures when explaining multiple series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">encoder_importance</span> <span class="o">=</span> <span class="n">expl_result</span><span class="o">.</span><span class="n">get_encoder_importance</span><span class="p">()</span>
         <span class="n">decoder_importance</span> <span class="o">=</span> <span class="n">expl_result</span><span class="o">.</span><span class="n">get_decoder_importance</span><span class="p">()</span>
@@ -688,6 +698,7 @@
             <span class="n">decoder_importance</span> <span class="o">=</span> <span class="p">[</span><span class="n">decoder_importance</span><span class="p">]</span>
             <span class="n">static_covariates_importance</span> <span class="o">=</span> <span class="p">[</span><span class="n">static_covariates_importance</span><span class="p">]</span>
 
+        <span class="n">plotted_figures</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Figure</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">uses_static_covariates</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">static_covariates_importance</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">empty</span>
         <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">enc_imp</span><span class="p">,</span> <span class="n">dec_imp</span><span class="p">,</span> <span class="n">stc_imp</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
             <span class="nb">zip</span><span class="p">(</span><span class="n">encoder_importance</span><span class="p">,</span> <span class="n">decoder_importance</span><span class="p">,</span> <span class="n">static_covariates_importance</span><span class="p">)</span>
@@ -711,10 +722,16 @@
                     <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
                 <span class="p">)</span>
             <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">show_plot</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+            <span class="n">plotted_figures</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">==</span> <span class="n">max_nr_series</span><span class="p">:</span>
-                <span class="k">break</span></div>
+                <span class="k">break</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">plotted_figures</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">plotted_figures</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">plotted_figures</span></div>
 
 
 <div class="viewcode-block" id="TFTExplainer.plot_attention">
@@ -727,7 +744,7 @@
         <span class="n">ax</span><span class="p">:</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">Axes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">max_nr_series</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
         <span class="n">show_plot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">Axes</span><span class="p">:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Figure</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">Figure</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Plots the attention heads of the `TFTModel`.</span>
 
 <span class="sd">        Parameters</span>
@@ -753,6 +770,12 @@
 <span class="sd">            The maximum number of plots to show in case `expl_result` was computed on multiple series.</span>
 <span class="sd">        show_plot</span>
 <span class="sd">            Whether to show the plot.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Figure | list[Figure]</span>
+<span class="sd">            The matplotlib figures used for plotting. Returns a single Figure when explaining a single series,</span>
+<span class="sd">            and a list of Figures when explaining multiple series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">single_series</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="n">attentions</span> <span class="o">=</span> <span class="n">expl_result</span><span class="o">.</span><span class="n">get_explanation</span><span class="p">(</span><span class="n">component</span><span class="o">=</span><span class="s2">&quot;attention&quot;</span><span class="p">)</span>
@@ -760,9 +783,13 @@
             <span class="n">attentions</span> <span class="o">=</span> <span class="p">[</span><span class="n">attentions</span><span class="p">]</span>
             <span class="n">single_series</span> <span class="o">=</span> <span class="kc">True</span>
 
+        <span class="n">plotted_figures</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Figure</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">attention</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">attentions</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">single_series</span><span class="p">:</span>
                 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fig</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_figure</span><span class="p">()</span>
+
             <span class="k">if</span> <span class="n">show_index_as</span> <span class="o">==</span> <span class="s2">&quot;relative&quot;</span><span class="p">:</span>
                 <span class="n">x_ticks</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span>
                     <span class="n">start</span><span class="o">=-</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span>
@@ -828,9 +855,14 @@
             <span class="k">if</span> <span class="n">show_plot</span><span class="p">:</span>
                 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 
+            <span class="n">plotted_figures</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
             <span class="k">if</span> <span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">==</span> <span class="n">max_nr_series</span><span class="p">:</span>
                 <span class="k">break</span>
-        <span class="k">return</span> <span class="n">ax</span></div>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">plotted_figures</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">plotted_figures</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">plotted_figures</span></div>
 
 
     <span class="nd">@property</span>

@@ -61,7 +61,7 @@
     <link rel="prev" title="DeepTCN model" href="09-DeepTCN-examples.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.0" />
+  <meta name="docsearch:version" content="0.42.1" />
   </head>
   
   
@@ -919,7 +919,7 @@ MAPE: 4.90%
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">series_ice_heater</span> <span class="o">=</span> <span class="n">IceCreamHeaterDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">series_ice_heater</span> <span class="o">=</span> <span class="n">IceCreamHeaterDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
 <span class="n">series_ice_heater</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
@@ -1222,7 +1222,7 @@ MAPE: 5.32%
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">explainer</span><span class="o">.</span><span class="n">plot_variable_selection</span><span class="p">(</span><span class="n">explainability_result</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">explainer</span><span class="o">.</span><span class="n">plot_variable_selection</span><span class="p">(</span><span class="n">explainability_result</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -1251,7 +1251,7 @@ MAPE: 5.32%
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">explainer</span><span class="o">.</span><span class="n">plot_attention</span><span class="p">(</span><span class="n">explainability_result</span><span class="p">,</span> <span class="n">plot_type</span><span class="o">=</span><span class="s2">&quot;time&quot;</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">explainer</span><span class="o">.</span><span class="n">plot_attention</span><span class="p">(</span><span class="n">explainability_result</span><span class="p">,</span> <span class="n">plot_type</span><span class="o">=</span><span class="s2">&quot;time&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -1282,7 +1282,7 @@ MAPE: 5.32%
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">explainer</span><span class="o">.</span><span class="n">plot_attention</span><span class="p">(</span><span class="n">explainability_result</span><span class="p">,</span> <span class="n">plot_type</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">explainer</span><span class="o">.</span><span class="n">plot_attention</span><span class="p">(</span><span class="n">explainability_result</span><span class="p">,</span> <span class="n">plot_type</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -1307,7 +1307,7 @@ MAPE: 5.32%
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">explainer</span><span class="o">.</span><span class="n">plot_attention</span><span class="p">(</span><span class="n">explainability_result</span><span class="p">,</span> <span class="n">plot_type</span><span class="o">=</span><span class="s2">&quot;heatmap&quot;</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">explainer</span><span class="o">.</span><span class="n">plot_attention</span><span class="p">(</span><span class="n">explainability_result</span><span class="p">,</span> <span class="n">plot_type</span><span class="o">=</span><span class="s2">&quot;heatmap&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>

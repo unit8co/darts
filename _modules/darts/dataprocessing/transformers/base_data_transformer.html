@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.0" />
+  <meta name="docsearch:version" content="0.42.1" />
   </head>
   
   
@@ -482,6 +482,7 @@
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">parallel_params</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">mask_components</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">columns</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Abstract class for data transformers.</span>
 
@@ -542,6 +543,11 @@
 <span class="sd">            &#39;unmasked&#39; in the returned `TimeSeries`. If `False`, then `component_mask` (if provided) will</span>
 <span class="sd">            be passed as a keyword argument, but won&#39;t automatically be applied to the input timeseries.</span>
 <span class="sd">            See `apply_component_mask` for further details.</span>
+<span class="sd">        columns</span>
+<span class="sd">            Optionally, a string or list of strings specifying the names of the components (columns)</span>
+<span class="sd">            to transform. If specified, only these components will be transformed, and the remaining</span>
+<span class="sd">            components will be kept untouched. If `None`, all components are transformed. Note that</span>
+<span class="sd">            if `columns` is provided, the `mask_components` attribute must be set to `True`.</span>
 
 <span class="sd">        Example</span>
 <span class="sd">        --------</span>
@@ -585,10 +591,12 @@
         <span class="k">elif</span> <span class="ow">not</span> <span class="n">parallel_params</span><span class="p">:</span>
             <span class="n">parallel_params</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_parallel_params</span> <span class="o">=</span> <span class="n">parallel_params</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_mask_components</span> <span class="o">=</span> <span class="n">mask_components</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span> <span class="o">=</span> <span class="n">verbose</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_n_jobs</span> <span class="o">=</span> <span class="n">n_jobs</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mask_components</span> <span class="o">=</span> <span class="n">mask_components</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">columns</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">columns</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">columns</span>
 
 <div class="viewcode-block" id="BaseDataTransformer.set_verbose">
 <a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer.set_verbose">[docs]</a>
@@ -763,6 +771,9 @@
 <span class="sd">        If `mask_components` was set to `False` when instantiating `BaseDataTransformer`, then any provided</span>
 <span class="sd">        `component_masks` will be passed as a keyword argument `ts_transform`; the user can then manually specify</span>
 <span class="sd">        how the `component_mask` should be applied to each series.</span>
+
+<span class="sd">        Alternatively, if the `columns` parameter was specified when instantiating the transformer,</span>
+<span class="sd">        the `component_mask` is automatically generated to target only the specified column names.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">desc</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Transform (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="si">}</span><span class="s2">)&quot;</span>
@@ -793,6 +804,14 @@
             <span class="n">verbose</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">,</span>
             <span class="n">desc</span><span class="o">=</span><span class="n">desc</span><span class="p">,</span>
             <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="c1"># This assumes all TimeSeries in the Sequence have the exact same</span>
+        <span class="c1"># component names and ordering.</span>
+        <span class="n">component_mask</span> <span class="o">=</span> <span class="n">BaseDataTransformer</span><span class="o">.</span><span class="n">_generate_component_mask</span><span class="p">(</span>
+            <span class="n">series</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">component_mask</span><span class="o">=</span><span class="n">component_mask</span><span class="p">,</span>
+            <span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_columns</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># apply &amp; unapply component masking to the transform method</span>
@@ -872,6 +891,34 @@
 <span class="sd">        Note: the validity of the entries in series_idx is checked in _get_params().</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">series_idx</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series_idx</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">series_idx</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_component_mask</span><span class="p">(</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">component_mask</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">columns</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the existing `component_mask` or generates a new component mask based on `columns`.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">columns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">component_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Cannot pass `columns` and `component_mask` at the same time.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">columns</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">component_mask</span>
+        <span class="n">component_mask</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">component_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Columns </span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span><span class="si">}</span><span class="s2"> specified in &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;`columns` do not exist in the `TimeSeries` components: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">component_mask</span>
 
 <div class="viewcode-block" id="BaseDataTransformer.apply_component_mask">
 <a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer.apply_component_mask">[docs]</a>
