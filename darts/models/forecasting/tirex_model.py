@@ -251,8 +251,6 @@ class TiRexModel(FoundationModel):
             The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of
             :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. Requested quantiles must be a subset of
             TiRex's default quantiles: [0.1, 0.2, ..., 0.9]. Default: ``None`` (deterministic; median forecast only).
-        model_name
-            Model identifier passed to ``tirex.load_model()``. Default: ``"NX-AI/TiRex"``.
         accept_license
             Must be set to ``True`` to confirm acceptance of the NXAI Community License. Default: ``False``.
         hub_model_name
