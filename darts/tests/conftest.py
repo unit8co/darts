@@ -85,6 +85,14 @@ except ImportError:
     NF_AVAILABLE = False
 
 try:
+    import tirex  # noqa: F401
+
+    TIREX_AVAILABLE = True
+except ImportError:
+    logger.warning("TiRex not installed - Some tests will be skipped.")
+    TIREX_AVAILABLE = False
+
+try:
     import onnx  # noqa: F401
     import onnxruntime  # noqa: F401
 

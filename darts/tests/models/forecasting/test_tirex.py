@@ -1,15 +1,9 @@
-from __future__ import annotations
-
 from unittest.mock import patch
 
 import numpy as np
 import pytest
-import torch
 
-from darts.models.forecasting import tirex_model
-from darts.tests.conftest import TORCH_AVAILABLE
-from darts.utils.likelihood_models import QuantileRegression
-from darts.utils.timeseries_generation import linear_timeseries
+from darts.tests.conftest import TIREX_AVAILABLE, TORCH_AVAILABLE
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -17,8 +11,20 @@ if not TORCH_AVAILABLE:
         allow_module_level=True,
     )
 
+if not TIREX_AVAILABLE:
+    pytest.skip(
+        f"TiRex not available. {__name__} tests will be skipped.",
+        allow_module_level=True,
+    )
+
 # TiRex default quantiles used by the wrapper
 ALL_QUANTILES = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
+
+import torch
+
+from darts.models.forecasting import tirex_model
+from darts.utils.likelihood_models import QuantileRegression
+from darts.utils.timeseries_generation import linear_timeseries
 
 
 class _StubTiRexPipeline:
