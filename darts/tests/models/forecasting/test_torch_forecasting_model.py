@@ -2689,6 +2689,83 @@ class TestTorchForecastingModel:
         # also check that prediction works
         model.predict(n=1)
 
+    @pytest.mark.parametrize(
+        "cov_type, expect_warning",
+        [
+            ("past_covariates", False),
+            ("past_covariates", True),
+            # future_covariates covers both fc and hfc (historic part) since they come from the same series
+            ("future_covariates", False),
+            ("future_covariates", True),
+            # static_covariates are cast to the target series dtype on creation via with_static_covariates,
+            # so a dtype mismatch cannot occur through the normal API
+        ],
+    )
+    def test_verify_dtypes_warning(self, caplog, cov_type, expect_warning):
+        """Tests that a warning is raised when covariate dtype doesn't match the target series dtype."""
+        target_dtype = np.float32
+        cov_dtype = np.float64 if expect_warning else np.float32
+
+        series = tg.sine_timeseries(length=50).astype(target_dtype)
+        fit_kwargs = {
+            "series": series,
+            cov_type: tg.sine_timeseries(length=50).astype(cov_dtype),
+        }
+
+        model = NLinearModel(
+            input_chunk_length=12, output_chunk_length=1, **tfm_kwargs_dev
+        )
+
+        with caplog.at_level(logging.WARNING):
+            try:
+                model.fit(**fit_kwargs)
+            except Exception:
+                pass  # dtype mismatch warning already captured; downstream error is expected
+
+        assert ("does not match target `series` dtype" in caplog.text) == expect_warning
+
+    @pytest.mark.parametrize(
+        "cov_type, expect_warning",
+        [
+            ("past_covariates", False),
+            ("past_covariates", True),
+            # future_covariates covers both fc and hfc (historic part) since they come from the same series
+            ("future_covariates", False),
+            ("future_covariates", True),
+            # static_covariates are cast to the target series dtype on creation via with_static_covariates,
+            # so a dtype mismatch cannot occur through the normal API
+        ],
+    )
+    def test_verify_dtypes_warning_predict(self, caplog, cov_type, expect_warning):
+        """Tests that a warning is raised during predict when covariate dtype doesn't match the target series dtype."""
+        target_dtype = np.float32
+        cov_dtype = np.float64 if expect_warning else np.float32
+        n = 5
+
+        series = tg.sine_timeseries(length=50).astype(target_dtype)
+        # future_covariates must extend n steps beyond end of series for predict
+        covariates_fit = tg.sine_timeseries(length=60).astype(target_dtype)
+
+        fit_kwargs = {"series": series, cov_type: covariates_fit}
+        predict_kwargs = {
+            "n": n,
+            "series": series,
+            cov_type: covariates_fit.astype(cov_dtype),
+        }
+
+        model = NLinearModel(
+            input_chunk_length=12, output_chunk_length=1, **tfm_kwargs_dev
+        )
+        model.fit(**fit_kwargs)
+
+        with caplog.at_level(logging.WARNING):
+            try:
+                model.predict(**predict_kwargs)
+            except Exception:
+                pass  # dtype mismatch warning already captured; downstream error is expected
+
+        assert ("does not match target `series` dtype" in caplog.text) == expect_warning
+
     def helper_predict_raise_on_missing_input(
         self, model, fn: str, series, pc, fc, **kwargs
     ):

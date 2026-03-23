@@ -804,48 +804,42 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _verify_dtypes(
         self,
-        series,
-        past_covariates,
-        future_covariates,
-        val_series,
-        val_past_covariates,
-        val_future_covariates,
+        sample,
+        predict_sample=False,
     ):
-        """Verify that all input series share the same dtype as the target series."""
-        target_dtype = series[0].dtype
-        inputs = [
-            ("past_covariates", past_covariates),
-            ("future_covariates", future_covariates),
-            ("val_series", val_series),
-            ("val_past_covariates", val_past_covariates),
-            ("val_future_covariates", val_future_covariates),
+        if predict_sample:
+            # TorchInferenceDatasetOutput:
+            # (past target, past cov, future past cov, historic future cov,
+            #  future cov, static cov, target schema, pred time)
+            pt, pc, _, hfc, fc, sc, _, _ = sample
+        else:
+            # TorchTrainingDatasetOutput:
+            # (past target, past cov, historic future cov, future cov,
+            #  static cov, sample weight, future target)
+            pt, pc, hfc, fc, sc, _, _ = sample
+
+        # Test dtypes against past target only
+        if pt is None:
+            return
+
+        target_dtype = pt.dtype
+
+        # Testing covs
+        covs = [
+            ("past_covariates", pc),
+            ("historic_future_cov", hfc),
+            ("future_covariates", fc),
+            ("static_cov", sc),
         ]
-        for name, cov_list in inputs:
-            if cov_list is None:
+        for name, cov in covs:
+            if cov is None:
                 continue
-            for cov in cov_list:
-                if cov.dtype != target_dtype:
-                    raise_log(
-                        ValueError(
-                            f"`{name}` dtype `{cov.dtype}` does not match target `series` dtype "
-                            f"`{target_dtype}`. All series must have the same dtype. Consider casting "
-                            f"with `TimeSeries.astype()`."
-                        ),
-                        logger,
-                    )
-        all_series = list(series) + list(val_series or [])
-        for s in all_series:
-            if s.static_covariates is not None:
-                sc_dtype = s.static_covariates_values(copy=False).dtype
-                if sc_dtype != target_dtype:
-                    raise_log(
-                        ValueError(
-                            f"`static_covariates` dtype `{sc_dtype}` does not match target `series` dtype "
-                            f"`{target_dtype}`. All series must have the same dtype. Consider casting "
-                            f"with `TimeSeries.astype()`."
-                        ),
-                        logger,
-                    )
+            if cov.dtype != target_dtype:
+                logger.warning(
+                    f"`{name}` dtype `{cov.dtype}` does not match target `series` dtype "
+                    + f"`{target_dtype}`. All series must have the same dtype. Consider casting "
+                    + "with `TimeSeries.astype()`."
+                )
 
     def _update_covariates_use(self):
         """Based on the Forecasting class and the training_sample attribute, update the
@@ -1157,15 +1151,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
         )
 
-        self._verify_dtypes(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            val_series=val_series,
-            val_past_covariates=val_past_covariates,
-            val_future_covariates=val_future_covariates,
-        )
-
         train_dataset = self._build_train_dataset(
             series=series,
             past_covariates=past_covariates,
@@ -1325,6 +1310,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         train_sample = train_dataset[0]
         # ignore sample weights [-2] for model dimensions
         train_sample_no_weight = train_sample[:-2] + train_sample[-1:]
+
+        # Test dtypes of sample
+        self._verify_dtypes(train_sample)
+
         if self.model is None:
             # build model based on the dimensions of the first series in the train set.
             self.train_sample = train_sample_no_weight
@@ -1925,6 +1914,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self._validate_predict_sample(
             train_sample=self.train_sample, predict_sample=dataset[0]
         )
+
+        # check dtype consistency within predict sample
+        self._verify_dtypes(dataset[0], predict_sample=True)
 
         if roll_size is None:
             roll_size = self.output_chunk_length

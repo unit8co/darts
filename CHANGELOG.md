@@ -10,6 +10,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For users of the library:
 
 **Improved**
+- `TorchForecastingModel` now warns when covariate dtypes don't match the target series dtype, checked at the sample level during both training and inference. [#2969](https://github.com/unit8co/darts/issues/2960) by [Oswald Zink](https://github.com/ozink-u8)
 
 **Fixed**
 
