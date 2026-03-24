@@ -1242,6 +1242,55 @@ class TestRegressionEnsembleModels:
         ensemble.fit(self.sine_series)
         assert ensemble.train_n_points == 48
 
+    def test_coverage_hfc_slicing(self):
+        m1 = LinearRegressionModel(lags=1, output_chunk_length=1)
+        series = self.sine_series[:20]
+
+        ensemble = RegressionEnsembleModel(
+            forecasting_models=[m1],
+            regression_train_n_points=2,
+            train_using_historical_forecasts=True,
+        )
+        # Fitting will trigger _make_multiple_historical_forecasts
+        ensemble.fit(series)
+        assert len(ensemble.ensemble_model.training_series) == 2
+
+    def test_coverage_expected_lags_zero(self):
+        from sklearn.linear_model import LinearRegression as SkLinearRegression
+
+        m1 = LinearRegressionModel(lags=2)
+        ensemble = RegressionEnsembleModel(
+            forecasting_models=[m1],
+            regression_train_n_points=5,
+            regression_model=SkLinearRegression(),
+        )
+        assert ensemble.ensemble_model.lags == {"future": [0]}
+
+    def test_coverage_mismatched_ocl_validation(self):
+        shift = 1
+        ocl_base = 2
+        # Base models have min OCL of 2
+        m1 = LinearRegressionModel(
+            lags=2, output_chunk_length=ocl_base, output_chunk_shift=shift
+        )
+
+        # We provide a regression model with OCL of 5 (mismatch)
+        mismatched_regr = SKLearnModel(
+            lags_future_covariates=[1, 2],
+            output_chunk_length=5,
+            output_chunk_shift=shift,
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="regression model `output_chunk_length` should be equal to the minimum",
+        ):
+            RegressionEnsembleModel(
+                forecasting_models=[m1],
+                regression_train_n_points=5,
+                regression_model=mismatched_regr,
+            )
+
     @staticmethod
     def get_probabilistic_global_model(
         lags: int | list[int],
