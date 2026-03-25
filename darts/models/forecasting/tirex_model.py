@@ -158,10 +158,9 @@ class _TiRexModule(PLForecastingModule):
         # then we slice away the shift to match Darts' output_chunk_length.
 
         # `quantiles`: (B * C, H, Q)
-        quantiles, _ = self.tirex_pipeline.forecast(
+        quantiles, _ = self.tirex_pipeline._forecast_quantiles(
             context=x_past,
             prediction_length=self.future_len,
-            batch_size=x_past.shape[0],
             output_device=x_past.device,
         )
 
