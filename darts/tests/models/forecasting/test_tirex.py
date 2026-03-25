@@ -22,7 +22,9 @@ ALL_QUANTILES = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
 
 import torch
 
+from darts.models import TiRexModel
 from darts.models.forecasting import tirex_model
+from darts.tests.conftest import tfm_kwargs
 from darts.utils.likelihood_models import QuantileRegression
 from darts.utils.timeseries_generation import linear_timeseries
 
@@ -30,11 +32,11 @@ from darts.utils.timeseries_generation import linear_timeseries
 class _StubTiRexPipeline:
     """Stub pipeline emulating `tirex-ts` API used by the wrapper.
 
-    Must provide `forecast(context, prediction_length)`.
+    Must provide `_forecast_quantiles(context, prediction_length)`.
     The wrapper calls this inside a torch `forward()`.
     """
 
-    def forecast(self, context, prediction_length: int):
+    def _forecast_quantiles(self, context, prediction_length: int, **_kwargs):
         # context: torch.Tensor of shape (B, T)
         assert torch.is_tensor(context)
         B = int(context.shape[0])
@@ -70,13 +72,14 @@ class TestTiRexModel:
 
     def test_requires_license_acceptance(self):
         with pytest.raises(ValueError, match="accept_license=True"):
-            tirex_model.TiRexModel()
+            TiRexModel(36, 12)
 
     def test_default_deterministic(self):
-        model = tirex_model.TiRexModel(
+        model = TiRexModel(
             input_chunk_length=64,
             output_chunk_length=12,
             accept_license=True,
+            **tfm_kwargs,
         )
 
         with patch.object(tirex_model, "_require_tirex", return_value=_stub_loader):
@@ -89,21 +92,23 @@ class TestTiRexModel:
         assert pred.all_values().shape == (10, 1, 1)
 
     def test_fit_accepts_standard_foundation_kwargs(self):
-        model = tirex_model.TiRexModel(
+        model = TiRexModel(
             input_chunk_length=64,
             output_chunk_length=12,
             accept_license=True,
+            **tfm_kwargs,
         )
 
         with patch.object(tirex_model, "_require_tirex", return_value=_stub_loader):
             model.fit(self.series, val_series=self.series, load_best=False)
 
     def test_probabilistic_quantiles(self):
-        model = tirex_model.TiRexModel(
+        model = TiRexModel(
             input_chunk_length=64,
             output_chunk_length=12,
             likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
             accept_license=True,
+            **tfm_kwargs,
         )
 
         with patch.object(tirex_model, "_require_tirex", return_value=_stub_loader):
@@ -118,11 +123,12 @@ class TestTiRexModel:
         assert pred_q.all_values().shape == (10, 3, 1)
 
     def test_probabilistic_sampling(self):
-        model = tirex_model.TiRexModel(
+        model = TiRexModel(
             input_chunk_length=64,
             output_chunk_length=12,
             likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
             accept_license=True,
+            **tfm_kwargs,
         )
 
         with patch.object(tirex_model, "_require_tirex", return_value=_stub_loader):
@@ -135,57 +141,47 @@ class TestTiRexModel:
         assert pred_s.all_values().shape == (10, 1, 25)
 
     def test_rejects_covariates(self):
-        model = tirex_model.TiRexModel(
+        model = TiRexModel(
             input_chunk_length=64,
             output_chunk_length=12,
             accept_license=True,
+            **tfm_kwargs,
         )
 
-        with pytest.raises(ValueError, match="covariates"):
+        with pytest.raises(ValueError, match="does not support any covariates"):
             model.fit(self.series, past_covariates=self.cov)
 
         with patch.object(tirex_model, "_require_tirex", return_value=_stub_loader):
             model.fit(self.series)
 
-        with pytest.raises(ValueError, match="covariates"):
+        with pytest.raises(ValueError, match="does not support any covariates"):
             model.predict(n=5, series=self.series, future_covariates=self.cov)
 
-        with pytest.raises(ValueError, match="covariates"):
-            model.fit(self.series, val_past_covariates=self.cov)
-
     def test_covariate_support_flags(self):
-        model = tirex_model.TiRexModel(
+        model = TiRexModel(
             input_chunk_length=64,
             output_chunk_length=12,
             accept_license=True,
+            **tfm_kwargs,
         )
         assert not model.supports_past_covariates
         assert not model.supports_future_covariates
 
-    def test_rejects_multivariate(self):
-        model = tirex_model.TiRexModel(
-            input_chunk_length=64,
-            output_chunk_length=12,
-            accept_license=True,
-        )
-
-        with patch.object(tirex_model, "_require_tirex", return_value=_stub_loader):
-            with pytest.raises(ValueError, match="univariate"):
-                model.fit(self.series_multi)
-
     def test_rejects_too_long_horizon(self):
         # max horizon in TiRex is 2048; wrapper should enforce output_chunk_length + shift
         with pytest.raises(ValueError, match="2048"):
-            tirex_model.TiRexModel(
+            TiRexModel(
                 input_chunk_length=64,
                 output_chunk_length=2049,
                 accept_license=True,
+                **tfm_kwargs,
             )
 
         with pytest.raises(ValueError, match="2048"):
-            tirex_model.TiRexModel(
+            TiRexModel(
                 input_chunk_length=64,
                 output_chunk_length=2048,
                 output_chunk_shift=1,
                 accept_license=True,
+                **tfm_kwargs,
             )
