@@ -31,6 +31,7 @@ class Mapper(BaseDataTransformer):
         name: str = "Mapper",
         n_jobs: int = 1,
         verbose: bool = False,
+        columns: str | list[str] | None = None,
     ):
         """
         Data transformer to apply a custom function to a (sequence of) ``TimeSeries``
@@ -54,6 +55,11 @@ class Mapper(BaseDataTransformer):
             required amount of time.
         verbose
             Optionally, whether to print operations progress
+        columns
+            Optionally, a string or list of strings specifying the names of the components (columns)
+            to transform. If specified, only these components will be transformed, and the remaining
+            components will be kept untouched. For more information refer to the `BaseDataTransformer`
+            documentation.
 
         Examples
         --------
@@ -70,7 +76,7 @@ class Mapper(BaseDataTransformer):
         """
         # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self._fn = fn
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
+        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose, columns=columns)
 
     @staticmethod
     def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
@@ -87,6 +93,7 @@ class InvertibleMapper(InvertibleDataTransformer):
         name: str = "InvertibleMapper",
         n_jobs: int = 1,
         verbose: bool = False,
+        columns: str | list[str] | None = None,
     ):
         """
         Data transformer to apply a custom function and its inverse to a (sequence of) ``TimeSeries``
@@ -134,7 +141,7 @@ class InvertibleMapper(InvertibleDataTransformer):
 
         self._fn = fn
         self._inverse_fn = inverse_fn
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
+        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose, columns=columns)
 
     @staticmethod
     def ts_transform(
