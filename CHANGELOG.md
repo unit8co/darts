@@ -9,6 +9,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 
+- Added native multi-quantile support for `CatBoostModel` by using CatBoost’s `MultiQuantile` loss for faster training and inference. Set `likelihood="multiquantile"` to enable this feature. [#3032](https://github.com/unit8co/darts/pull/3032) by [Zhihao Dai](https://github.com/daidahao)
+
 ### For developers of the library:
 
 ## [0.43.0](https://github.com/unit8co/darts/tree/0.43.0) (2026-03-23)
@@ -16,7 +18,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For users of the library:
 
 **Improved**
-- Added native multi-quantile support for `CatBoostModel` by using CatBoost’s `MultiQuantile` loss for faster training and inference. Set `likelihood="multiquantile"` to enable this feature. [#3032](https://github.com/unit8co/darts/pull/3032) by [Zhihao Dai](https://github.com/daidahao)
 
 - Improvements to data transformers:  [#3023](https://github.com/unit8co/darts/pull/3023) by [Krzsztof Pęczek](https://github.com/u8-krpeczek)
   - Added parameter `columns` to all data transformers (e.g. `Scaler`, `Diff`, `BoxCox`, ...) to apply the transformations only on subset of components. This makes it much easier to build multivariate pipelines where different components require different transformations.
