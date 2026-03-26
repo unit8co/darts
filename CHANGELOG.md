@@ -5,18 +5,25 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.42.1...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.43.0...master)
+
+### For users of the library:
+
+### For developers of the library:
+
+## [0.43.0](https://github.com/unit8co/darts/tree/0.43.0) (2026-03-23)
 
 ### For users of the library:
 
 **Improved**
 - `TorchForecastingModel` now warns when covariate dtypes don't match the target series dtype, checked at the sample level during both training and inference. [#2969](https://github.com/unit8co/darts/issues/2960) by [Oswald Zink](https://github.com/ozink-u8)
 
-**Fixed**
-
-**Dependencies**
-
-### For developers of the library:
+- Improvements to data transformers:  [#3023](https://github.com/unit8co/darts/pull/3023) by [Krzsztof Pęczek](https://github.com/u8-krpeczek)
+  - Added parameter `columns` to all data transformers (e.g. `Scaler`, `Diff`, `BoxCox`, ...) to apply the transformations only on subset of components. This makes it much easier to build multivariate pipelines where different components require different transformations.
+- Improvements to `TFTExplainer` : [#3039](https://github.com/unit8co/darts/pull/3039) by [ReinerBRO](https://github.com/ReinerBRO).
+  - `plot_variable_selection()` now returns the matplotlib figures for downstream usage (saving, editing, ...). It returns a single figure when explaining a single TimeSeries. Otherwise, it returns a list of figures.
+  - `plot_variable_selection()` now accepts a `show_plot: bool = True` parameter that allows to suppress showing the plot.
+  - 🔴 `plot_attention()` now also returns the matplotlib figures for all explained series, instead of only the matplotlib axis for the last series.
 
 ## [0.42.1](https://github.com/unit8co/darts/tree/0.42.1) (2026-03-07)
 

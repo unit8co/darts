@@ -423,9 +423,7 @@ class TestTorchForecastingModel:
         assert model_32_loaded.predict(n=4, series=series_32) == model_32.predict(n=4)
         with pytest.raises(ValueError) as err:
             model_32_loaded.predict(n=4, series=series_64)
-        assert str(err.value) == (
-            "input must have the type torch.float32, got type torch.float64"
-        )
+        assert all(el in str(err.value) for el in ["torch.float32", "torch.float64"])
 
     def test_load_accelerator(self, tmpdir_fn):
         pass

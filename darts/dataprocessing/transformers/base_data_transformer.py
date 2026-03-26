@@ -65,6 +65,7 @@ class BaseDataTransformer(ABC):
         verbose: bool = False,
         parallel_params: bool | Sequence[str] = False,
         mask_components: bool = True,
+        columns: str | list[str] | None = None,
     ):
         """Abstract class for data transformers.
 
@@ -125,6 +126,11 @@ class BaseDataTransformer(ABC):
             'unmasked' in the returned `TimeSeries`. If `False`, then `component_mask` (if provided) will
             be passed as a keyword argument, but won't automatically be applied to the input timeseries.
             See `apply_component_mask` for further details.
+        columns
+            Optionally, a string or list of strings specifying the names of the components (columns)
+            to transform. If specified, only these components will be transformed, and the remaining
+            components will be kept untouched. If `None`, all components are transformed. Note that
+            if `columns` is provided, the `mask_components` attribute must be set to `True`.
 
         Example
         --------
@@ -168,10 +174,12 @@ class BaseDataTransformer(ABC):
         elif not parallel_params:
             parallel_params = tuple()
         self._parallel_params = parallel_params
-        self._mask_components = mask_components
         self._name = name
         self._verbose = verbose
         self._n_jobs = n_jobs
+
+        self._mask_components = mask_components
+        self._columns = [columns] if isinstance(columns, str) else columns
 
     def set_verbose(self, value: bool):
         """Set the verbosity status.
@@ -335,6 +343,9 @@ class BaseDataTransformer(ABC):
         If `mask_components` was set to `False` when instantiating `BaseDataTransformer`, then any provided
         `component_masks` will be passed as a keyword argument `ts_transform`; the user can then manually specify
         how the `component_mask` should be applied to each series.
+
+        Alternatively, if the `columns` parameter was specified when instantiating the transformer,
+        the `component_mask` is automatically generated to target only the specified column names.
         """
 
         desc = f"Transform ({self._name})"
@@ -365,6 +376,14 @@ class BaseDataTransformer(ABC):
             verbose=self._verbose,
             desc=desc,
             total=len(data),
+        )
+
+        # This assumes all TimeSeries in the Sequence have the exact same
+        # component names and ordering.
+        component_mask = BaseDataTransformer._generate_component_mask(
+            series=data[0],
+            component_mask=component_mask,
+            columns=self._columns,
         )
 
         # apply & unapply component masking to the transform method
@@ -443,6 +462,34 @@ class BaseDataTransformer(ABC):
         Note: the validity of the entries in series_idx is checked in _get_params().
         """
         return [series_idx] if isinstance(series_idx, int) else series_idx
+
+    @staticmethod
+    def _generate_component_mask(
+        series: TimeSeries,
+        component_mask: np.ndarray | None,
+        columns: list[str] | None,
+    ) -> np.ndarray | None:
+        """Returns the existing `component_mask` or generates a new component mask based on `columns`."""
+        if columns is not None and component_mask is not None:
+            raise_log(
+                ValueError(
+                    "Cannot pass `columns` and `component_mask` at the same time."
+                ),
+                logger=logger,
+            )
+        if columns is None:
+            return component_mask
+        component_mask = series.columns.isin(columns)
+        if component_mask.sum() != len(columns):
+            raise_log(
+                ValueError(
+                    f"Columns {set(columns) - set(series.columns)} specified in "
+                    f"`columns` do not exist in the `TimeSeries` components: "
+                    f"{series.columns}"
+                ),
+                logger=logger,
+            )
+        return component_mask
 
     @staticmethod
     def apply_component_mask(

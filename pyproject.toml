@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "darts"
-version = "0.42.1"
+version = "0.43.0"
 description = "A python library for easy manipulation and forecasting of time series."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -192,7 +192,7 @@ dev-all = [
 ]
 
 [tool.bumpversion]
-current_version = "0.42.1"
+current_version = "0.43.0"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
 serialize = ["{major}.{minor}.{patch}"]
 commit = true
