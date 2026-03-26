@@ -1,6 +1,8 @@
+from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from darts.tests.conftest import TIREX_AVAILABLE, TORCH_AVAILABLE
@@ -22,11 +24,23 @@ ALL_QUANTILES = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
 
 import torch
 
+from darts import TimeSeries
+from darts.datasets import ElectricityConsumptionZurichDataset
 from darts.models import TiRexModel
 from darts.models.forecasting import tirex_model
 from darts.tests.conftest import tfm_kwargs
 from darts.utils.likelihood_models import QuantileRegression
 from darts.utils.timeseries_generation import linear_timeseries
+
+
+def load_validation_inputs():
+    """Load validation inputs for TiRexModel fidelity tests."""
+    # convert to float32 due to MPS not supporting float64
+    ts_energy = ElectricityConsumptionZurichDataset().load().astype(np.float32)
+    ts_energy = ts_energy[["Value_NE5", "Value_NE7"]]
+    validation_cutoff = pd.Timestamp("2022-01-01")
+    ts_energy_train, ts_energy_val = ts_energy.split_after(validation_cutoff)
+    return ts_energy_train, ts_energy_val
 
 
 class _StubTiRexPipeline:
@@ -64,11 +78,98 @@ class TestTiRexModel:
     # set random seed
     np.random.seed(42)
 
+    # ---- Fidelity Tests ---- #
+    # load validation inputs once for fidelity tests
+    ts_energy_train, ts_energy_val = load_validation_inputs()
+    # maximum prediction length w/o triggering auto-regression
+    max_prediction_length = 512
+
+    # ---- Dummy Tests ---- #
     series = linear_timeseries(length=200, dtype=np.float32, column_name="A")
     series_multi = linear_timeseries(
         length=200, dtype=np.float32, column_name="A"
     ).stack(linear_timeseries(length=200, dtype=np.float32, column_name="B"))
     cov = linear_timeseries(length=200, dtype=np.float32, column_name="C")
+
+    @pytest.mark.slow
+    @pytest.mark.parametrize("probabilistic", [True, False])
+    def test_fidelity(self, probabilistic: bool):
+        """Test TiRexModel predictions against the original tirex-ts implementation.
+        The test passes if the predictions match up to a certain numerical tolerance.
+        Original predictions were generated with the following code:
+
+        ```python
+        from pathlib import Path
+        import numpy as np
+        import pandas as pd
+        import torch
+        from darts.datasets import ElectricityConsumptionZurichDataset
+        from tirex import load_model
+
+        ts_energy = ElectricityConsumptionZurichDataset().load().astype(np.float32)
+        ts_energy = ts_energy[["Value_NE5", "Value_NE7"]]
+        ts_energy_train, _ = ts_energy.split_after(pd.Timestamp("2022-01-01"))
+
+        pipeline = load_model("NX-AI/TiRex")
+
+        prediction_length = 512
+
+        # context: each variable as its own batch item -> (n_variables, T)
+        context = torch.tensor(ts_energy_train.values().T, dtype=torch.float32)
+
+        # quantiles: (B, H, Q) where B=2, H=512, Q=9
+        quantiles, _ = pipeline._forecast_quantiles(
+            context=context,
+            prediction_length=prediction_length,
+            output_device=context.device,
+        )
+        # (B, H, Q) -> (H, B, Q) = (time, variables, quantiles)
+        pred_np = quantiles.cpu().numpy().transpose(1, 0, 2)
+
+        np.savez_compressed("tirex.npz", pred=pred_np)
+        ```
+
+        Code accessed from https://github.com/NX-AI/tirex commit used on 26 March 2026.
+
+        """
+        model = TiRexModel(
+            input_chunk_length=2048,  # use generous context
+            output_chunk_length=self.max_prediction_length,  # no auto-regression
+            likelihood=(
+                QuantileRegression(quantiles=list(ALL_QUANTILES))
+                if probabilistic
+                else None
+            ),
+            accept_license=True,
+            **tfm_kwargs,
+        )
+        # fit w/o fine-tuning
+        model.fit(series=self.ts_energy_train)
+
+        pred = model.predict(
+            n=self.max_prediction_length,
+            predict_likelihood_parameters=probabilistic,
+        )
+        assert isinstance(pred, TimeSeries)
+        # reshape to (time, variables, quantiles)
+        pred_np = pred.values().reshape(
+            self.max_prediction_length, self.ts_energy_train.n_components, -1
+        )
+
+        # load reference predictions
+        path = (
+            Path(__file__).parent
+            / "artefacts"
+            / "tirex"
+            / "tirex_prediction"
+            / "tirex.npz"
+        )
+        original = np.load(path)["pred"]
+
+        if not probabilistic:
+            original = original[:, :, [4]]  # median quantile (index 4 = 0.5)
+
+        np.testing.assert_allclose(pred_np, original, rtol=1e-5, atol=1e-5)
 
     def test_requires_license_acceptance(self):
         with pytest.raises(ValueError, match="accept_license=True"):
