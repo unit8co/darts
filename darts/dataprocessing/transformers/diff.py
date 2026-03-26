@@ -16,6 +16,7 @@ from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
 from darts.logging import get_logger, raise_log
+from darts.timeseries import concatenate
 
 logger = get_logger(__name__)
 
@@ -177,6 +178,8 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
     ) -> TimeSeries:
         lags, dropna = params["fixed"]["_lags"], params["fixed"]["_dropna"]
         start_vals, fit_component_mask, start_time, freq = params["fitted"]
+        insample: TimeSeries | None = kwargs.pop("insample", None)
+
         if series.freq != freq:
             raise_log(
                 ValueError(
@@ -187,20 +190,90 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
             )
         # Start dates 'missing' from differenced series if dropna = True, so need to shift forward:
         expected_start = start_time + sum(lags) * series.freq if dropna else start_time
-        if series.start_time() != expected_start:
-            raise_log(
-                ValueError(
-                    f"Expected series to begin at time {expected_start}; "
-                    f"instead, it begins at time {series.start_time()}."
-                ),
-                logger,
-            )
+
         component_mask = kwargs.get("component_mask")
         if np.any(fit_component_mask != component_mask):
             raise_log(
                 ValueError(
                     "Provided `component_mask` does not match "
                     "`component_mask` specified when `fit` was called."
+                ),
+                logger,
+            )
+
+        if insample is not None:
+            # `insample` must be the direct output of fit_transform() on the training series,
+            # i.e. the transformed series in the same space as `series` (the forecast).
+            # We prepend the relevant suffix of `insample` to `series` so that the combined
+            # series starts at `expected_start`, satisfying the standard inverse-transform
+            # entry condition, then slice back to only the forecast window.
+            if insample.freq != freq:
+                raise_log(
+                    ValueError(
+                        f"insample is of frequency {insample.freq}, but "
+                        f"transform was fitted to data of frequency {freq}."
+                    ),
+                    logger,
+                )
+            if insample.start_time() > expected_start:
+                raise_log(
+                    ValueError(
+                        f"Expected insample to begin at or before time {expected_start}; "
+                        f"instead, it begins at {insample.start_time()}. "
+                        "insample must be the direct output of fit_transform() "
+                        "applied to the training series."
+                    ),
+                    logger,
+                )
+            elif insample.start_time() < expected_start:
+                # Trim to expected_start — this can happen during rolling-window retrain
+                # when insample covers history prior to the current fit window.
+                insample = insample.drop_before(expected_start, keep_point=True)
+            if insample.n_components != series.n_components:
+                raise_log(
+                    ValueError(
+                        f"Expected insample to have {series.n_components} components; "
+                        f"instead, it has {insample.n_components}."
+                    ),
+                    logger,
+                )
+            if insample.n_samples != series.n_samples:
+                raise_log(
+                    ValueError(
+                        f"Expected insample to have {series.n_samples} samples; "
+                        f"instead, it has {insample.n_samples}."
+                    ),
+                    logger,
+                )
+            forecast_start = series.start_time()
+            # Keep only the part of insample that strictly precedes the forecast.
+            # When insample already ends before the forecast (the common case), use it
+            # as-is to avoid an out-of-bounds error from drop_after().
+            if insample.end_time() < forecast_start:
+                suffix = insample
+            else:
+                suffix = insample.drop_after(forecast_start)
+            if suffix.n_timesteps == 0:
+                raise_log(
+                    ValueError(
+                        "insample must contain at least one timestep strictly "
+                        f"before the forecast start {forecast_start}; "
+                        f"insample ends at {insample.end_time()}."
+                    ),
+                    logger,
+                )
+            # combined starts at expected_start, satisfying the standard entry condition.
+            combined = concatenate([suffix, series], axis=0)
+            # kwargs no longer contains 'insample' (already popped), so this won't recurse.
+            result = Diff.ts_inverse_transform(combined, params, **kwargs)
+            # Return only the forecast portion of the undifferenced result.
+            return result.drop_before(forecast_start, keep_point=True)
+
+        if series.start_time() != expected_start:
+            raise_log(
+                ValueError(
+                    f"Expected series to begin at time {expected_start}; "
+                    f"instead, it begins at time {series.start_time()}."
                 ),
                 logger,
             )

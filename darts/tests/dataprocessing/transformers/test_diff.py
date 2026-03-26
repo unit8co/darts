@@ -8,7 +8,10 @@ import pytest
 
 from darts import TimeSeries
 from darts import concatenate as darts_concat
+from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import Diff
+from darts.dataprocessing.transformers.scaler import Scaler
+from darts.datasets import AirPassengersDataset
 from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 
 
@@ -354,3 +357,279 @@ class TestDiff:
         startvals2 = deepcopy(diff._fitted_params)[0][0]
 
         assert not np.allclose(startvals1, startvals2)
+
+
+class TestDiffInsample:
+    """Tests for `Diff.inverse_transform(..., insample=...)` using AirPassengersDataset."""
+
+    @pytest.fixture(autouse=True)
+    def _load_air_passengers(self):
+        """Load AirPassengers once per test; split into train/test halves."""
+        full = AirPassengersDataset().load()
+        # Split at the halfway point along the time axis.
+        split = len(full) // 2
+        self.train = full[:split]
+        self.test = full[split:]
+        self.full = full
+        self.train_end = self.train.end_time()
+
+    # ------------------------------------------------------------------
+    # helper
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _split_diff(full_diff: TimeSeries, train_end) -> tuple[TimeSeries, TimeSeries]:
+        """Split a differenced series at `train_end` using the original time boundary.
+
+        Returns ``(train_diff, test_diff)`` where:
+        - ``train_diff`` covers everything up to and including ``train_end``.
+        - ``test_diff`` covers everything strictly after ``train_end``.
+        """
+        train_diff = full_diff.drop_after(train_end, keep_point=True)
+        test_diff = full_diff.drop_before(train_end)
+        return train_diff, test_diff
+
+    # ------------------------------------------------------------------
+    # 1. Parity: insample path == direct full-series path (sliced to test)
+    # ------------------------------------------------------------------
+    @pytest.mark.parametrize(
+        "lags,dropna",
+        [
+            (1, True),
+            (1, False),
+            ([1, 2], True),
+            ([1, 2], False),
+            ([1, 12], True),
+        ],
+    )
+    def test_insample_parity_with_full_series(self, lags, dropna):
+        """
+        Inverting the test-half diff with insample=train_half must give the same
+        result as inverting the full differenced series and slicing the test window.
+        """
+        diff = Diff(lags=lags, dropna=dropna)
+        full_diff = diff.fit_transform(self.full)
+
+        train_diff, test_diff = self._split_diff(full_diff, self.train_end)
+
+        # Baseline: full inverse then slice to test window.
+        result_full = diff.inverse_transform(full_diff)
+        expected = result_full.drop_before(self.test.start_time(), keep_point=True)
+
+        # New insample path.
+        actual = diff.inverse_transform(test_diff, insample=train_diff)
+
+        np.testing.assert_allclose(
+            expected.all_values(),
+            actual.all_values(),
+            atol=1e-8,
+            equal_nan=True,
+        )
+        assert expected.time_index.equals(actual.time_index)
+
+    # ------------------------------------------------------------------
+    # 2. Forecast-only inverse: result matches the original level series
+    # ------------------------------------------------------------------
+    @pytest.mark.parametrize(
+        "lags,dropna",
+        [
+            (1, True),
+            (1, False),
+            ([1, 2], True),
+            ([1, 2], False),
+            ([1, 12], True),
+            ([1, 12], False),
+        ],
+    )
+    def test_insample_forecast_recovers_original(self, lags, dropna):
+        """
+        Diff.inverse_transform(test_diff, insample=train_diff) must recover
+        the original level test series exactly, without any manual concatenation.
+        """
+        diff = Diff(lags=lags, dropna=dropna)
+        # Fit only on the training half; transform the entire series in diff-space.
+        diff.fit(self.train)
+        full_diff = diff.transform(self.full)
+
+        train_diff, test_diff = self._split_diff(full_diff, self.train_end)
+
+        recovered = diff.inverse_transform(test_diff, insample=train_diff)
+
+        np.testing.assert_allclose(
+            self.test.all_values(),
+            recovered.all_values(),
+            atol=1e-6,
+            equal_nan=True,
+        )
+        assert self.test.time_index.equals(recovered.time_index)
+
+    # ------------------------------------------------------------------
+    # 3. Equivalence: insample path == old manual-concat workaround
+    # ------------------------------------------------------------------
+    @pytest.mark.parametrize("lags,dropna", [(1, True), ([1, 12], True)])
+    def test_insample_equivalent_to_manual_concat(self, lags, dropna):
+        """
+        The insample path must produce exactly the same result as the manual
+        workaround: concatenate(train_diff, test_diff) then inverse_transform,
+        sliced back to the test window.
+        """
+        diff = Diff(lags=lags, dropna=dropna)
+        diff.fit(self.train)
+        full_diff = diff.transform(self.full)
+
+        train_diff, test_diff = self._split_diff(full_diff, self.train_end)
+
+        # Old manual workaround.
+        manual_concat = darts_concat([train_diff, test_diff], axis=0)
+        result_manual = diff.inverse_transform(manual_concat)
+        result_manual = result_manual.drop_before(
+            self.test.start_time(), keep_point=True
+        )
+
+        # New insample path.
+        result_insample = diff.inverse_transform(test_diff, insample=train_diff)
+
+        np.testing.assert_allclose(
+            result_manual.all_values(),
+            result_insample.all_values(),
+            atol=1e-8,
+        )
+        assert result_manual.time_index.equals(result_insample.time_index)
+
+    # ------------------------------------------------------------------
+    # 4. Component mask respected
+    # ------------------------------------------------------------------
+    def test_insample_with_component_mask(self):
+        """
+        When a component_mask is supplied only the masked components are
+        inverse-differenced; unmasked components must pass through unchanged.
+        """
+        multi = darts_concat([AirPassengersDataset().load()] * 3, axis=1)
+        mask = np.array([True, False, True])
+
+        diff = Diff(lags=1, dropna=False)
+        transformed = diff.fit_transform(multi, component_mask=mask)
+
+        train_end = multi[: len(multi) // 2].end_time()
+        train_diff, test_diff = self._split_diff(transformed, train_end)
+
+        recovered = diff.inverse_transform(
+            test_diff, component_mask=mask, insample=train_diff
+        )
+
+        np.testing.assert_allclose(
+            multi[len(multi) // 2 :].all_values(),
+            recovered.all_values(),
+            atol=1e-6,
+        )
+
+    # ------------------------------------------------------------------
+    # 5. Validation errors
+    # ------------------------------------------------------------------
+    def test_insample_wrong_freq_raises(self):
+        """insample with a different frequency must raise ValueError."""
+        diff = Diff(lags=1, dropna=True)
+        full_diff = diff.fit_transform(self.full)
+        _, test_diff = self._split_diff(full_diff, self.train_end)
+
+        # Build an insample-shaped series with quarterly frequency (wrong).
+        bad_insample = TimeSeries.from_times_and_values(
+            times=pd.date_range(start=full_diff.start_time(), periods=10, freq="QE"),
+            values=np.zeros((10, 1)),
+        )
+        with pytest.raises(ValueError, match="insample is of frequency"):
+            diff.inverse_transform(test_diff, insample=bad_insample)
+
+    def test_insample_wrong_start_raises(self):
+        """insample that does not start at expected_start must raise ValueError."""
+        diff = Diff(lags=1, dropna=True)
+        train_diff = diff.fit_transform(self.train)
+        full_diff = diff.transform(self.full)
+        _, test_diff = self._split_diff(full_diff, self.train_end)
+
+        # Trim one step from the front so start_time shifts by one period.
+        bad_insample = train_diff.drop_before(train_diff.start_time())
+
+        with pytest.raises(
+            ValueError, match="Expected insample to begin at or before time"
+        ):
+            diff.inverse_transform(test_diff, insample=bad_insample)
+
+    def test_insample_too_short_raises(self):
+        """insample must contain at least one timestep strictly before the forecast.
+
+        We trigger this by making the forecast start exactly at expected_start, so
+        that drop_after(forecast_start) removes all of insample.
+        """
+        diff = Diff(lags=1, dropna=True)
+        full_diff = diff.fit_transform(self.full)
+        expected_start = full_diff.start_time()
+
+        # Forecast that starts at expected_start — no room for suffix in insample.
+        forecast_at_expected_start = TimeSeries.from_times_and_values(
+            times=pd.date_range(start=expected_start, periods=5, freq=full_diff.freq),
+            values=np.zeros((5, 1)),
+        )
+        with pytest.raises(ValueError, match="insample must contain at least one"):
+            diff.inverse_transform(forecast_at_expected_start, insample=full_diff)
+
+    # ------------------------------------------------------------------
+    # 6. Pipeline: [Diff → Scaler] — insample threads through both stages
+    # ------------------------------------------------------------------
+    @pytest.mark.parametrize("lags,dropna", [(1, True), ([1, 12], True)])
+    def test_pipeline_insample(self, lags, dropna):
+        """
+        Pipeline([Diff, Scaler]).inverse_transform(test_tf, insample=train_tf)
+        must recover the original level test series end-to-end.
+        """
+        pipeline = Pipeline([Diff(lags=lags, dropna=dropna), Scaler()])
+        full_transformed = pipeline.fit_transform(self.full)
+
+        # Use the original train/test time boundary to split the transformed output.
+        train_tf, test_tf = self._split_diff(full_transformed, self.train_end)
+
+        recovered = pipeline.inverse_transform(test_tf, insample=train_tf)
+
+        np.testing.assert_allclose(
+            self.test.all_values(),
+            recovered.all_values(),
+            atol=1e-4,
+        )
+        assert self.test.time_index.equals(recovered.time_index)
+
+    # ------------------------------------------------------------------
+    # 7. Stochastic (multi-sample) series
+    # ------------------------------------------------------------------
+    def test_insample_stochastic(self):
+        """insample path must work correctly for stochastic (multi-sample) series."""
+        rng = np.random.default_rng(42)
+        n_samples = 20
+        base = AirPassengersDataset().load()
+
+        # Build a stochastic series: base level + independent noise per sample.
+        base_vals = base.all_values()  # (T, 1, 1)
+        # Broadcast to (T, 1, n_samples) then add per-sample noise.
+        stochastic_vals = np.broadcast_to(base_vals, (len(base), 1, n_samples)).copy()
+        stochastic_vals += rng.normal(0, 3.0, stochastic_vals.shape)
+        stochastic = TimeSeries.from_times_and_values(
+            times=base.time_index,
+            values=stochastic_vals,
+        )
+
+        train_end = stochastic[: len(stochastic) // 2].end_time()
+
+        diff = Diff(lags=1, dropna=True)
+        diff.fit(stochastic[: len(stochastic) // 2])
+        full_diff = diff.transform(stochastic)
+
+        train_diff, test_diff = self._split_diff(full_diff, train_end)
+
+        recovered = diff.inverse_transform(test_diff, insample=train_diff)
+
+        np.testing.assert_allclose(
+            stochastic[len(stochastic) // 2 :].all_values(),
+            recovered.all_values(),
+            atol=1e-5,
+        )
+        assert stochastic[len(stochastic) // 2 :].time_index.equals(
+            recovered.time_index
+        )

@@ -5,6 +5,7 @@ Pipeline
 
 from collections.abc import Iterator, Sequence
 from copy import deepcopy
+from typing import TypeAlias, cast
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import (
@@ -12,10 +13,16 @@ from darts.dataprocessing.transformers import (
     FittableDataTransformer,
     InvertibleDataTransformer,
 )
+from darts.dataprocessing.transformers.invertible_data_transformer import (
+    ts_inverse_accepts_insample,
+)
 from darts.logging import get_logger, raise_if_not
 from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
+
+# Input/output shape for one step of :meth:`Pipeline.inverse_transform` (matches ``InvertibleDataTransformer``).
+_PipelineInverseStepData: TypeAlias = TimeSeriesLike | list[list[TimeSeries]]
 
 
 class Pipeline:
@@ -75,7 +82,7 @@ class Pipeline:
 
         if transformers is None or len(transformers) == 0:
             logger.warning("Empty pipeline created")
-            self._transformers: Sequence[BaseDataTransformer[TimeSeries]] = []
+            self._transformers: Sequence[BaseDataTransformer] = []
         elif copy:
             self._transformers = deepcopy(transformers)
         else:
@@ -180,6 +187,7 @@ class Pipeline:
         self,
         data: TimeSeriesLike,
         partial: bool = False,
+        insample: TimeSeries | None = None,
         series_idx: int | Sequence[int] | None = None,
     ) -> TimeSeriesLike:
         """
@@ -195,6 +203,14 @@ class Pipeline:
         partial
             If set to `True`, the inverse transformation is applied even if the pipeline is not fully invertible,
             calling `inverse_transform()` only on transformers of type `InvertibleDataTransformer`.
+        insample
+            Optionally, the transformed in-sample series produced by :func:`fit_transform()` on the full
+            pipeline (i.e. in the same transformed space as ``data``). When provided, it is threaded
+            backward through the pipeline so that each stage always receives its own in-sample context.
+            After each stage ``t``, ``insample`` is itself inverse-transformed by ``t`` (without an
+            ``insample`` argument) so that it moves into the next stage's input space, matching what
+            the next transformer expects.  Transformers that do not need the context (e.g.
+            :class:`~darts.dataprocessing.transformers.Scaler`) simply ignore it.
         series_idx
             Optionally, the index(es) of each series corresponding to their positions within the series used to fit
             the transformer (to retrieve the appropriate transformer parameters).
@@ -211,16 +227,53 @@ class Pipeline:
                 logger,
             )
 
+            insample_tail = insample
+            running: _PipelineInverseStepData = data
             for transformer in reversed(self._transformers):
-                data = transformer.inverse_transform(data, series_idx=series_idx)
-            return data
+                inv_t = cast(InvertibleDataTransformer, transformer)
+                if insample_tail is not None and ts_inverse_accepts_insample(
+                    inv_t.__class__
+                ):
+                    running = inv_t.inverse_transform(
+                        running,
+                        series_idx=series_idx,
+                        insample=insample_tail,
+                    )
+                else:
+                    running = inv_t.inverse_transform(running, series_idx=series_idx)
+                if insample_tail is not None:
+                    insample_tail = cast(
+                        TimeSeries | None,
+                        inv_t.inverse_transform(insample_tail, series_idx=series_idx),
+                    )
+            return cast(TimeSeriesLike, running)
         else:
+            insample_tail = insample
             for transformer in reversed(self._transformers):
                 if isinstance(transformer, InvertibleDataTransformer):
-                    data = transformer.inverse_transform(
-                        data,
-                        series_idx=series_idx,
-                    )
+                    if insample_tail is not None and ts_inverse_accepts_insample(
+                        transformer.__class__
+                    ):
+                        data = cast(
+                            TimeSeriesLike,
+                            transformer.inverse_transform(
+                                data,
+                                series_idx=series_idx,
+                                insample=insample_tail,
+                            ),
+                        )
+                    else:
+                        data = cast(
+                            TimeSeriesLike,
+                            transformer.inverse_transform(data, series_idx=series_idx),
+                        )
+                    if insample_tail is not None:
+                        insample_tail = cast(
+                            TimeSeries | None,
+                            transformer.inverse_transform(
+                                insample_tail, series_idx=series_idx
+                            ),
+                        )
             return data
 
     @property
@@ -288,15 +341,15 @@ class Pipeline:
         if isinstance(key, int):
             transformers = [self._transformers[key]]
         else:
-            transformers = self._transformers[key]
+            transformers = list(self._transformers[key])
         return Pipeline(transformers, copy=True)
 
     def __iter__(self) -> Iterator[BaseDataTransformer]:
         """
-        Returns
+           Returns
         -------
-        Iterator
-            Iterator on sequence of data transformers
+           Iterator
+               Iterator on sequence of data transformers
         """
         return self._transformers.__iter__()
 

@@ -6,7 +6,7 @@ Optimized Historical Forecasts Utils
 import inspect
 from collections.abc import Callable, Sequence
 from types import SimpleNamespace
-from typing import Any, Literal, TypeAlias, TypeVar
+from typing import Any, Literal, TypeAlias, TypeVar, cast
 
 import numpy as np
 import pandas as pd
@@ -1444,8 +1444,16 @@ def _apply_inverse_data_transformers(
         called_with_single_series = get_series_seq_type(series) == SeriesType.SINGLE
         if called_with_single_series:
             forecasts = [forecasts]
+        # Pass the transformed target series as `insample` so that transformers such as
+        # `Diff` can recover the original scale from the forecast-only series without
+        # requiring the caller to manually prepend history.  For multi-series (global)
+        # calls we leave `insample=None` because the per-series pairing is not yet
+        # supported in the base `inverse_transform` signature.
+        insample: TimeSeries | None = (
+            cast(TimeSeries, series) if called_with_single_series else None
+        )
         forecasts = data_transformers["series"].inverse_transform(
-            forecasts, series_idx=series_idx
+            forecasts, series_idx=series_idx, insample=insample
         )
         return forecasts[0] if called_with_single_series else forecasts
     else:

@@ -3,6 +3,7 @@ Invertible Data Transformer Base Class
 --------------------------------------
 """
 
+import inspect
 from abc import abstractmethod
 from collections.abc import Mapping, Sequence
 from typing import Any
@@ -19,6 +20,14 @@ from darts.typing import TimeSeriesLike
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 
 logger = get_logger(__name__)
+
+
+def ts_inverse_accepts_insample(cls: type) -> bool:
+    """Whether ``cls.ts_inverse_transform`` can receive an ``insample`` keyword argument."""
+    sig = inspect.signature(cls.ts_inverse_transform)
+    if "insample" in sig.parameters:
+        return True
+    return any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
 
 
 class InvertibleDataTransformer(BaseDataTransformer):
@@ -231,6 +240,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
         series: TimeSeriesLike | Sequence[Sequence[TimeSeries]],
         *args,
         component_mask: np.ndarray | None = None,
+        insample: TimeSeries | None = None,
         series_idx: int | Sequence[int] | None = None,
         **kwargs,
     ) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]]:
@@ -260,6 +270,15 @@ class InvertibleDataTransformer(BaseDataTransformer):
         component_mask
             Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies
             which components of the underlying `series` the inverse transform should consider.
+        insample
+            Optionally, the transformed in-sample series (i.e. the direct output of
+            :func:`fit_transform()` applied to the training series) in the same transformed space as
+            ``series``. When provided, transformers that require historical context to invert a
+            forecast — such as :class:`Diff` — will use ``insample`` to seed the inverse
+            transformation instead of requiring the full transformed series from the fit start.
+            Transformers that do not need this context simply ignore the parameter.
+            For a sequence input to ``series``, the same ``insample`` is broadcast to every element;
+            call :func:`inverse_transform` individually for per-series in-sample data.
         series_idx
             Optionally, the index(es) of each series corresponding to their positions within the series used to fit
             the transformer (to retrieve the appropriate transformer parameters).
@@ -346,9 +365,14 @@ class InvertibleDataTransformer(BaseDataTransformer):
         )
 
         # apply & unapply component masking to the transform method
+        # Drop any stray ``insample`` from caller ``**kwargs``; many ``ts_inverse_transform``
+        # implementations (e.g. MIDAS) do not accept ``**kwargs`` and would raise on it.
+        kwargs.pop("insample", None)
         kwargs["mask_components"] = self._mask_components
         kwargs["mask_components_apply_only"] = False
         kwargs["component_mask"] = component_mask
+        if insample is not None and ts_inverse_accepts_insample(self.__class__):
+            kwargs["insample"] = insample
 
         transformed_data = _parallel_apply(
             input_iterator,
