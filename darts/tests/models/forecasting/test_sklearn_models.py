@@ -1820,6 +1820,7 @@ class TestSKLearnModels:
         )
         model.fit(ts)
 
+        # model container only used with `QuantileRegression` (not multi-quantile)
         assert model._model_container is None
         if multi_models:
             # one sub-model per component, per horizon
@@ -4458,12 +4459,13 @@ class TestProbabilisticSKLearnModels:
     @pytest.mark.skipif(not CB_AVAILABLE, reason="CatBoostModel required for this test")
     def test_model_construction_multiquantile(self):
         with pytest.raises(
-            ValueError, match="does not support single quantile regression"
+            ValueError,
+            match="'multiquantile' likelihood only supports multiple quantiles.",
         ):
             _ = CatBoostModel(
                 lags=2,
                 likelihood="multiquantile",
-                quantiles=[0.3],
+                quantiles=[0.5],
                 **cb_test_params,
             )
 
@@ -4474,9 +4476,8 @@ class TestProbabilisticSKLearnModels:
             **cb_test_params,
         )
         likelihood = model.likelihood
-        assert likelihood is not None
-        assert likelihood.type == LikelihoodType.MultiQuantile
         assert isinstance(likelihood, MultiQuantileRegression)
+        assert likelihood.type == LikelihoodType.MultiQuantile
         assert likelihood.quantiles == [0.1, 0.3, 0.5, 0.7, 0.9]
 
     @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))

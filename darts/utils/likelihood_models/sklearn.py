@@ -375,13 +375,11 @@ class QuantileRegression(SKLearnLikelihood):
         model_outputs = []
         for quantile, fitted in model._model_container.items():
             # model output has shape (n_series * n_samples, output_chunk_length, n_components)
-            model_output = fitted.predict(x, **kwargs)
-            model_output = model_output.reshape(k, self._n_outputs, -1)
+            model_output = fitted.predict(x, **kwargs).reshape(k, self._n_outputs, -1)
             model_outputs.append(model_output)
+        model_outputs = np.stack(model_outputs, axis=-1)
         # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
-        output = np.stack(model_outputs, axis=-1)
-
-        return output
+        return model_outputs
 
     def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
         # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
@@ -422,6 +420,15 @@ class MultiQuantileRegression(QuantileRegression):
         """
         super().__init__(n_outputs=n_outputs, quantiles=quantiles)
 
+        if len(self.quantiles) == 1:
+            raise_log(
+                ValueError(
+                    "'multiquantile' likelihood only supports multiple quantiles. "
+                    "For example `quantiles=[0.05, 0.50, 0.95]`."
+                ),
+                logger,
+            )
+
     def _estimator_predict(
         self,
         model,
@@ -435,14 +442,12 @@ class MultiQuantileRegression(QuantileRegression):
         output: np.ndarray = model.model.predict(x, **kwargs)
 
         # `output` has two shapes depending on whether `MultiOutputRegressor` is used or not:
-        # Case 1: univariate & output_chunk_length == 1, shape is (n_series * n_samples, n_quantiles)
-        # Case 2: otherwise, shape is (n_quantiles, n_series * n_samples, n_components * output_chunk_length)
         if output.ndim <= 2:
-            # Case 1 handling
+            # Case 1: univariate & output_chunk_length == 1, shape is (n_series * n_samples, n_quantiles)
             # -> (n_series * n_samples, 1, 1, n_quantiles)
             output = output.reshape(k, 1, 1, -1)
         else:
-            # Case 2 handling
+            # Case 2: otherwise, shape is (n_quantiles, n_series * n_samples, n_components * output_chunk_length)
             # -> (n_quantiles, n_series * n_samples, output_chunk_length, n_components)
             output = output.reshape(output.shape[0], k, self._n_outputs, -1)
             # -> (n_series * n_samples, output_chunk_length, n_components, n_quantiles)

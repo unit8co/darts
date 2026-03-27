@@ -205,9 +205,9 @@ class SKLearnModel(GlobalForecastingModel):
             will be used per component in the multivariate series.
             If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model
-            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
-            `output_chunk_length - n` for each step `n`). Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -660,18 +660,23 @@ class SKLearnModel(GlobalForecastingModel):
             and the model uses per-quantile estimators, returns the model predicting the median quantile.
         """
         likelihood = self.likelihood
-        if quantile is not None and not isinstance(likelihood, QuantileRegression):
-            raise_log(
-                ValueError(
-                    "`quantile` is only supported for probabilistic models that use `likelihood='quantile'`."
-                ),
-                logger=logger,
-            )
-        if (
-            isinstance(likelihood, QuantileRegression)
-            and self._model_container is not None
-        ):
-            # for some quantile-models, the estimators are grouped by quantiles
+        if quantile is not None:
+            if not isinstance(likelihood, QuantileRegression):
+                raise_log(
+                    ValueError(
+                        "`quantile` is only supported for probabilistic models that use `likelihood='quantile'`."
+                    ),
+                    logger=logger,
+                )
+            if isinstance(likelihood, MultiQuantileRegression):
+                logger.warning(
+                    "Model supports multi-quantile regression; the same estimator forecasts all quantiles jointly. "
+                    "Ignoring passed `quantile` value."
+                )
+
+        if type(likelihood) is QuantileRegression:
+            # check for type `QuantileRegression` to ignore subclass `MultiQuantileRegression`.
+            # the estimators are grouped by quantiles
             if quantile is None:
                 quantile = likelihood.quantiles[likelihood._median_idx]
             elif quantile not in self._model_container:
@@ -684,11 +689,6 @@ class SKLearnModel(GlobalForecastingModel):
                 )
             model = self._model_container[quantile]
         else:
-            if isinstance(likelihood, MultiQuantileRegression) and quantile is not None:
-                logger.warning(
-                    "Model supports multi-quantile regression; the same estimator forecasts all quantiles jointly. "
-                    "Ignoring passed `quantile` value."
-                )
             model = self.model
 
         if not isinstance(model, MultiOutputMixin):
@@ -1723,8 +1723,9 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
                 To enable past and / or future encodings for any `SKLearnModel`, you must also define the
                 corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model is
-            trained to predict at step 'output_chunk_length' in the future. Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -2045,9 +2046,9 @@ class RegressionModel(SKLearnModel):
             will be used per component in the multivariate series.
             If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model
-            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
-            `output_chunk_length - n` for each step `n`). Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce

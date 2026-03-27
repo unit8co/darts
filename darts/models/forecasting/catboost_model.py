@@ -26,7 +26,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from catboost import CatBoost, CatBoostClassifier, CatBoostRegressor, Pool
+from catboost import CatBoostClassifier, CatBoostRegressor, Pool
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
@@ -217,16 +217,6 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
 
-        if likelihood == "multiquantile" and len(quantiles or []) == 1:
-            raise_log(
-                ValueError(
-                    "CatBoost with MultiQuantile loss does not support single quantile regression. "
-                    "Please provide multiple quantiles."
-                ),
-                logger,
-            )
-
-        multi_models = multi_models or output_chunk_length == 1
         self._set_likelihood(
             likelihood=likelihood,
             output_chunk_length=output_chunk_length,
@@ -258,8 +248,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         self.kwargs["loss_function"] = self.model.get_params().get("loss_function")
 
     @staticmethod
-    def _create_model(**kwargs) -> CatBoost:
-        """Instantiate the underlying CatBoostRegressor model"""
+    def _create_model(**kwargs):
         return CatBoostRegressor(**kwargs)
 
     def _set_likelihood(
@@ -317,7 +306,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         sample_weight: TimeSeriesLike | str | None = None,
         val_sample_weight: TimeSeriesLike | str | None = None,
         stride: int = 1,
-        verbose: bool | int | None = None,
+        verbose: int | bool | None = None,
         **kwargs,
     ):
         """
@@ -370,10 +359,8 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         """
         verbose = verbose if verbose is not None else 0
         likelihood = self.likelihood
-        if (
-            isinstance(likelihood, QuantileRegression)
-            and self._model_container is not None
-        ):
+        if type(likelihood) is QuantileRegression:
+            # must check for type `QuantileRegression` to not include subclass `MultiQuantileRegression`
             # empty model container in case of multiple calls to fit, e.g. when backtesting
             self._model_container.clear()
             for quantile in likelihood.quantiles:
@@ -485,12 +472,12 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         If categorical features are specified, the samples are converted into a pandas DataFrame and categorical
         columns are cast to integer.
         """
-        samples_, labels = super()._format_samples(samples, labels=labels)
+        samples, labels = super()._format_samples(samples, labels=labels)
         if len(self._categorical_indices) != 0:
             # transform into pandas df and cast categorical columns to int
-            samples_ = pd.DataFrame(samples_)
-            samples_ = samples_.astype({col: int for col in self._categorical_indices})
-        return samples_, labels
+            samples = pd.DataFrame(samples)
+            samples = samples.astype({col: int for col in self._categorical_indices})
+        return samples, labels
 
 
 class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
@@ -598,9 +585,9 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
         random_state
             Controls the randomness for reproducible forecasting.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model
-            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
-            `output_chunk_length - n` for each step `n`). Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -673,7 +660,7 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
         )
 
     @staticmethod
-    def _create_model(**kwargs) -> CatBoostClassifier:
+    def _create_model(**kwargs):
         """Instantiate the underlying CatBoostClassifier model"""
 
         # `CatBoostClassifier.predict` lacks a dimension when the task is binary classification compared to multi-class

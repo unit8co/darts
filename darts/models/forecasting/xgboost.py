@@ -160,9 +160,9 @@ class XGBModel(SKLearnModel):
         random_state
             Controls the randomness for reproducible forecasting.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model
-            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
-            `output_chunk_length - n` for each step `n`). Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -263,6 +263,7 @@ class XGBModel(SKLearnModel):
         n_jobs_multioutput_wrapper: int | None = None,
         sample_weight: TimeSeriesLike | str | None = None,
         val_sample_weight: TimeSeriesLike | str | None = None,
+        stride: int = 1,
         verbose: int | bool | None = None,
         **kwargs,
     ):
@@ -305,12 +306,16 @@ class XGBModel(SKLearnModel):
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         val_sample_weight
             Same as for `sample_weight` but for the evaluation dataset.
+        stride
+            The number of time steps between consecutive samples, applied starting from the end of the series. The same
+            stride will be applied to both the training and evaluation set (if supplied and supported). This should be
+            used with caution as it might introduce bias in the forecasts.
         verbose
             Optionally, set the fit verbosity. Not effective for all models.
         **kwargs
             Additional kwargs passed to `xgb.XGBRegressor.fit()`
         """
-        # TODO: XGBRegressor supports multi quantile reqression which we could leverage in the future
+        # TODO: XGBRegressor supports multi quantile regression which we could leverage in the future
         #  see https://xgboost.readthedocs.io/en/latest/python/examples/quantile_regression.html
         likelihood = self.likelihood
         if isinstance(likelihood, QuantileRegression):
@@ -330,6 +335,7 @@ class XGBModel(SKLearnModel):
                     n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
                     sample_weight=sample_weight,
                     val_sample_weight=val_sample_weight,
+                    stride=stride,
                     verbose=verbose,
                     **kwargs,
                 )
@@ -348,6 +354,7 @@ class XGBModel(SKLearnModel):
             n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
             sample_weight=sample_weight,
             val_sample_weight=val_sample_weight,
+            stride=stride,
             verbose=verbose,
             **kwargs,
         )
@@ -470,9 +477,9 @@ class XGBClassifierModel(_ClassifierMixin, XGBModel):
         random_state
             Controls the randomness for reproducible forecasting.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model
-            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
-            `output_chunk_length - n` for each step `n`). Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
