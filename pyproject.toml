@@ -57,7 +57,10 @@ Repository = "https://github.com/unit8co/darts"
 [project.optional-dependencies]
 # Main feature sets - pip installable with: pip install "darts[torch]"
 torch = [
-    "torch>=2.0.0",
+    # torch-2.11 bundled libomp is not compatible with lightgbm 4.6.0 on macOS arm64
+    # causing segmentation faults.
+    "torch>=2.0.0,<=2.10; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "torch>=2.0.0; sys_platform != 'darwin' or platform_machine != 'arm64'",
     "pytorch-lightning>=2.0.0,<2.5.3",
     "tensorboardx>=2.1",
     "huggingface-hub>=0.35.3",
