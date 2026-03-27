@@ -9,21 +9,21 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 
-- 🚀🚀 Added SHAP-based explainer `TorchExplainer` for torch forecasting models. This allows for explaining the predictions of any `TorchForecastingModel` with SHAP permutation explainer and others, in a consistent API with existing `SKLearnExplainer`. It supports global and local explanations and can output SHAP values for further analysis. []() by [Zhihao Dai](https://github.com/daidahao).
+- 🚀🚀 Added SHAP-based explainer `TorchExplainer` for torch forecasting models. This allows for explaining the predictions of any `TorchForecastingModel` with SHAP permutation explainer and others, in a consistent API with existing `SKLearnExplainer`. It supports global and local explanations and can output SHAP values for further analysis. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
   - Check out the new [Explainability of Forecasting Models Notebook](https://unit8co.github.io/darts/examples/29-Explainability-examples.html) for usage of `SKLearnExplainer` and `TorchExplainer`.
-- 🔴 Renamed `ShapExplainer` to `SKLearnExplainer` to better reflect its scope of explaining sklearn-based models. []() by [Zhihao Dai](https://github.com/daidahao).
-- Added `explain_single()` method to `SKLearnExplainer` and `TorchExplainer` to allow explaining a single forecast instance, in addition to the existing batched method `explain()`. This is useful for local explanations of individual predictions with reduced computational cost. []() by [Zhihao Dai](https://github.com/daidahao).
+- 🔴 Renamed `ShapExplainer` to `SKLearnExplainer` to better reflect its scope of explaining sklearn-based models. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+- Added `explain_single()` method to `SKLearnExplainer` and `TorchExplainer` to allow explaining a single forecast instance, in addition to the existing batched method `explain()`. This is useful for local explanations of individual predictions with reduced computational cost. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 - Added native multi-quantile support for `CatBoostModel` by using CatBoost’s `MultiQuantile` loss for faster training and inference. Set `likelihood="multiquantile"` to enable this feature. [#3032](https://github.com/unit8co/darts/pull/3032) by [Zhihao Dai](https://github.com/daidahao)
 
-- Fixed several bugs in `SKLearnExplainer` including mismatched SHAP method enum values, feature naming conventions, inconsistent instance count in `explain()`. []() by [Zhihao Dai](https://github.com/daidahao).
-- Fixed a bug in explainability utils where stationarity tests were not properly conducted due to usage of `all()`. []() by [Zhihao Dai](https://github.com/daidahao).
-- Fixed rendering issues of `CustomBlockRNNModule` and `CustomRNNModule` in the documentation. []() by [Zhihao Dai](https://github.com/daidahao).
-- Fixed rendering issues of `20-SKLearnModel-examples` notebook in the documentation. []() by [Zhihao Dai](https://github.com/daidahao).
+- Fixed several bugs in `SKLearnExplainer` including mismatched SHAP method enum values, feature naming conventions, inconsistent instance count in `explain()`. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+- Fixed a bug in explainability utils where stationarity tests were not properly conducted due to usage of `all()`. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+- Fixed rendering issues of `CustomBlockRNNModule` and `CustomRNNModule` in the documentation. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+- Fixed rendering issues of `20-SKLearnModel-examples` notebook in the documentation. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 
 ### For developers of the library:
 
-- Added `SHAPSingleExplainabilityResult` class as the return type of `explain_single()` method in `SKLearnExplainer` and `TorchExplainer` and to store the SHAP results of a single instance explanation. This is in contrast to the existing `SHAPExplainabilityResult` which stores results for batched explanations. []() by [Zhihao Dai](https://github.com/daidahao).
-- Sped up the documentation build by utilizing multiple CPU cores. []() by [Zhihao Dai](https://github.com/daidahao).
+- Added `SHAPSingleExplainabilityResult` class as the return type of `explain_single()` method in `SKLearnExplainer` and `TorchExplainer` and to store the SHAP results of a single instance explanation. This is in contrast to the existing `SHAPExplainabilityResult` which stores results for batched explanations. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+- Sped up the documentation build by utilizing multiple CPU cores. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 
 ## [0.43.0](https://github.com/unit8co/darts/tree/0.43.0) (2026-03-23)
 
