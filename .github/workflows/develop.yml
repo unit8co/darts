@@ -69,11 +69,6 @@ jobs:
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
       - name: "Run tests"
-        env:
-          # Prevent OpenMP deadlock on macOS ARM64 when multiple libraries (e.g. PyTorch and
-          # LightGBM) each bundle their own libomp.dylib. Without this flag, macOS's dyld
-          # aborts/deadlocks the process as soon as a second OpenMP runtime is loaded.
-          KMP_DUPLICATE_LIB_OK: "TRUE"
         run: |
           uv run pytest --durations=50 --timeout=900 --cov=darts --cov-config=.coveragerc --cov-report=xml darts/tests
 
