@@ -366,7 +366,7 @@ class SHAPExplainabilityResult(HorizonBasedExplainabilityResult):
     --------
     >>> explainer = SKLearnExplainer(model)  # requires `background` if model was trained on multiple series
     >>> explain_results = explainer.explain()
-    >>> exlained_fc = explain_results.get_explanation(horizon=1) # requires `component` if target is multivariate
+    >>> explained_fc = explain_results.get_explanation(horizon=1) # requires `component` if target is multivariate
     >>> feature_values = explain_results.get_feature_values(horizon=1)
     >>> shap_objects = explain_results.get_shap_explanation_objects(horizon=1)
     """
@@ -449,7 +449,7 @@ class SHAPSingleExplainabilityResult(ComponentBasedExplainabilityResult):
         --------
         >>> explainer = SKLearnExplainer(model)  # requires `background` if model was trained on multiple series
         >>> explain_results = explainer.explain_single()
-        >>> exlained_fc = explain_results.get_explanation() # requires `component` if target is multivariate
+        >>> explained_fc = explain_results.get_explanation() # requires `component` if target is multivariate
         >>> feature_values = explain_results.get_feature_values()
         >>> shap_objects = explain_results.get_shap_explanation_objects()
         """
