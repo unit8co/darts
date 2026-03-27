@@ -86,11 +86,13 @@ class EnsembleModel(GlobalForecastingModel):
     ):
         super().__init__()
 
-        raise_if_not(
-            isinstance(forecasting_models, list) and forecasting_models,
-            "Cannot instantiate EnsembleModel with an empty list of `forecasting_models`",
-            logger,
-        )
+        if not isinstance(forecasting_models, list) or len(forecasting_models) == 0:
+            raise_log(
+                ValueError(
+                    "`forecasting_models` must be a non-empty list of forecasting models."
+                ),
+                logger,
+            )
 
         is_local_model = [
             isinstance(model, LocalForecastingModel) for model in forecasting_models

@@ -25,8 +25,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - `plot_variable_selection()` now returns the matplotlib figures for downstream usage (saving, editing, ...). It returns a single figure when explaining a single TimeSeries. Otherwise, it returns a list of figures.
   - `plot_variable_selection()` now accepts a `show_plot: bool = True` parameter that allows to suppress showing the plot.
   - 🔴 `plot_attention()` now also returns the matplotlib figures for all explained series, instead of only the matplotlib axis for the last series.
--  Better handling of `output_chunk_shift` in `RegressionEnsembleModel : [#2773](https://github.com/unit8co/darts/issues/2773) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
-    -   Shift Propagation: Added logic to automatically detect and propagate `output_chunk_shift` from base forecasting models to the ensembling regression model.
+- Improvements to `RegressionEnsembleModel` : [#2773](https://github.com/unit8co/darts/issues/2773) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
+  - Better handling of `output_chunk_shift`
+    - Shift Propagation: Added logic to automatically detect and propagate `output_chunk_shift` from base forecasting models to the ensembling regression model.
     - Historical Forecast Alignment: Re-implemented `_make_multiple_historical_forecasts` to ensure all base model predictions are perfectly aligned using a `min_length` trimming approach, preventing misaligned features during regressor training.
 
 ## [0.42.1](https://github.com/unit8co/darts/tree/0.42.1) (2026-03-07)

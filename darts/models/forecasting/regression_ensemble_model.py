@@ -8,7 +8,7 @@ An ensemble model which uses a regression model to compute the ensemble forecast
 from collections.abc import Sequence
 
 from darts import TimeSeries, concatenate
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
@@ -112,19 +112,28 @@ class RegressionEnsembleModel(EnsembleModel):
          [557.35256055]
          [630.24334385]]
         """
+        if not isinstance(forecasting_models, list) or len(forecasting_models) == 0:
+            raise_log(
+                ValueError(
+                    "`forecasting_models` must be a non-empty list of forecasting models."
+                ),
+                logger,
+            )
+
         shifts = [model.output_chunk_shift for model in forecasting_models]
-        raise_if(
-            len(set(shifts)) > 1,
-            "All the base forecasting models must have the same `output_chunk_shift`",
-        )
-        output_chunk_shift = shifts[0] if shifts[0] else 0
+        if len(set(shifts)) != 1:
+            raise_log(
+                ValueError(
+                    "All base forecasting models must have the same `output_chunk_shift`. "
+                    f"Observed shifts: {set(shifts)}."
+                )
+            )
+
+        output_chunk_shift = shifts[0] or 0
         if output_chunk_shift > 0:
-            output_chunk_lengths = [
-                model.output_chunk_length
-                for model in forecasting_models
-                if model.output_chunk_length is not None
-            ]
-            output_chunk_length = min(output_chunk_lengths)
+            output_chunk_length = min([
+                model.output_chunk_length or 1 for model in forecasting_models
+            ])
             lags_future_covariates = list(range(output_chunk_length))
         else:
             output_chunk_length = 1
@@ -139,25 +148,6 @@ class RegressionEnsembleModel(EnsembleModel):
                 fit_intercept=False,
             )
         elif isinstance(regression_model, SKLearnModel):
-            raise_if_not(
-                regression_model.multi_models,
-                "Cannot use `regression_model` that was created with `multi_models = False`.",
-                logger,
-            )
-            raise_if(
-                regression_model.output_chunk_shift != output_chunk_shift,
-                "In case base models have a specified `output_chunk_shift`, the regression model should be"
-                f"initialized with the same one. Base model `output_chunk_shift` : {output_chunk_shift}, regression"
-                f"model `output_chunk_shift` : {regression_model.output_chunk_shift}",
-            )
-            if output_chunk_shift > 0:
-                raise_if(
-                    regression_model.output_chunk_length != output_chunk_length,
-                    "In case base models have a different `output_chunk_length`, the regression model "
-                    f"`output_chunk_length` should be equal to the minimum of the one of the base models. Minimum base "
-                    f"model `output_chunk_length` : {output_chunk_length}, regression model `output_chunk_length` : "
-                    f"{regression_model.output_chunk_length}",
-                )
             regression_model = regression_model
         else:
             # scikit-learn like model
@@ -167,20 +157,57 @@ class RegressionEnsembleModel(EnsembleModel):
                 model=regression_model,
             )
 
+        if not regression_model.multi_models:
+            raise_log(
+                ValueError(
+                    "Cannot use `regression_model` that was created with `multi_models = False`."
+                ),
+                logger,
+            )
+        if regression_model.output_chunk_shift != output_chunk_shift:
+            raise_log(
+                ValueError(
+                    f"`regression_model` must use the same `output_chunk_shift` as the base "
+                    f"forecasting models. "
+                    f"Observed `output_chunk_shift`: `{regression_model.output_chunk_shift}`, "
+                    f"expected: {output_chunk_shift}."
+                ),
+                logger,
+            )
+        if output_chunk_shift > 0 and (
+            regression_model.output_chunk_length != output_chunk_length
+        ):
+            raise_log(
+                ValueError(
+                    f"With `output_chunk_shift>0`, `regression_model` must use the minimum "
+                    f"`output_chunk_length` of all base forecasting models. "
+                    f"Observed `output_chunk_length`: `{regression_model.output_chunk_length}`, "
+                    f"expected: {output_chunk_length}."
+                ),
+                logger,
+            )
+
         # check lags of the regression model
-        if regression_model.output_chunk_shift is not None:
-            expected_lags = [
-                lag + regression_model.output_chunk_shift
-                for lag in lags_future_covariates
-            ]
-        else:
-            expected_lags = [0]
-        raise_if_not(
-            regression_model.lags == {"future": expected_lags},
-            f"`lags` and `lags_past_covariates` of regression model must be `None`"
-            f"and `lags_future_covariates` must be {expected_lags}. Given:\n"
-            f"{regression_model.lags}",
-        )
+        if list(regression_model.lags.keys()) != ["future"]:
+            raise_log(
+                ValueError(
+                    "`lags` and `lags_past_covariates` of `regression_model` must be `None`."
+                ),
+                logger,
+            )
+        min_lag, max_lag = 0, output_chunk_length - 1
+        lags_observed = [
+            lag - output_chunk_shift for lag in regression_model.lags["future"]
+        ]
+        if any([max_lag < lag < min_lag for lag in lags_observed]):
+            raise_log(
+                ValueError(
+                    f"All lags in `lags_future_covariates` must be `0<=lag<={max_lag}`, "
+                    f"where the upper bound is given by `(output_chunk_length-1)`. "
+                    f"Received lags: {lags_observed}."
+                ),
+                logger,
+            )
 
         super().__init__(
             forecasting_models=forecasting_models,
@@ -192,12 +219,14 @@ class RegressionEnsembleModel(EnsembleModel):
             show_warnings=show_warnings,
         )
 
-        raise_if(
-            train_using_historical_forecasts and not self.is_global_ensemble,
-            "`train_using_historical_forecasts=True` is only available when all "
-            "`forecasting_models` are global models.",
-            logger,
-        )
+        if train_using_historical_forecasts and not self.is_global_ensemble:
+            raise_log(
+                ValueError(
+                    "`train_using_historical_forecasts=True` is only available when all "
+                    "`forecasting_models` are global models."
+                ),
+                logger,
+            )
 
         self.train_using_historical_forecasts = train_using_historical_forecasts
 
@@ -380,10 +409,14 @@ class RegressionEnsembleModel(EnsembleModel):
         # we can call direct prediction in any case. Even if we overwrite with historical
         # forecasts later on, it serves as input validation
         if not self.train_using_historical_forecasts:
-            raise_if(
-                self.ensemble_model.output_chunk_shift > 0,
-                "Can not use normal predictions from base models when `output_chunk_shift` is not 0.",
-            )
+            if self.ensemble_model.output_chunk_shift > 0:
+                raise_log(
+                    ValueError(
+                        "Can not use normal predictions from base models when `output_chunk_shift` "
+                        "is not 0."
+                    ),
+                    logger,
+                )
 
             predictions = self._make_multiple_predictions(
                 n=self.train_n_points,

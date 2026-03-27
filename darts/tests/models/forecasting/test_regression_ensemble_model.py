@@ -1209,8 +1209,10 @@ class TestRegressionEnsembleModels:
         m1 = LinearRegressionModel(lags=2, output_chunk_shift=5)
         custom_regr = SKLearnModel(lags_future_covariates=[0], output_chunk_shift=0)
 
-        # Removed "the" to make regex broader and match the 'should beinitialized' typo in the source
-        with pytest.raises(ValueError, match="regression model should be"):
+        with pytest.raises(
+            ValueError,
+            match="`regression_model` must use the same `output_chunk_shift`",
+        ):
             RegressionEnsembleModel(
                 forecasting_models=[m1],
                 regression_train_n_points=5,
@@ -1283,7 +1285,7 @@ class TestRegressionEnsembleModels:
 
         with pytest.raises(
             ValueError,
-            match="regression model `output_chunk_length` should be equal to the minimum",
+            match="`regression_model` must use the minimum `output_chunk_length`",
         ):
             RegressionEnsembleModel(
                 forecasting_models=[m1],
