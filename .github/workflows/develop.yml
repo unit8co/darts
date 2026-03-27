@@ -75,7 +75,7 @@ jobs:
           # aborts/deadlocks the process as soon as a second OpenMP runtime is loaded.
           KMP_DUPLICATE_LIB_OK: "TRUE"
         run: |
-          uv run pytest --durations=50 --cov=darts --cov-config=.coveragerc --cov-report=xml darts/tests
+          uv run pytest --durations=50 --timeout=900 --cov=darts --cov-config=.coveragerc --cov-report=xml darts/tests
 
       - name: "Codecov upload"
         if: ${{ matrix.flavour == 'all' }}
