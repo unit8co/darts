@@ -80,9 +80,9 @@ jobs:
       - name: "Run tests"
         run: |
           if [ "${{ matrix.flavour }}" == "all" ]; then
-            uv run pytest --durations=50 --cov=darts --cov-config=.coveragerc --cov-report=xml darts/tests
+            uv run pytest --durations=50 --timeout=900 --cov=darts --cov-config=.coveragerc --cov-report=xml darts/tests
           else
-            uv run pytest --durations=50
+            uv run pytest --durations=50 --timeout=900
           fi
 
       - name: "Codecov upload"

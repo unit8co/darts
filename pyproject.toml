@@ -144,6 +144,7 @@ max-line-length = 120
 dev = [
     "pre-commit>=4.5.1",
     "pytest-cov>=7.0.0",
+    "pytest-timeout>=2.3.0",
     "testfixtures>=8.3.0",
     "ty>=0.0.17",
 ]

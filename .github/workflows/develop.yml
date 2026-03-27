@@ -70,7 +70,7 @@ jobs:
 
       - name: "Run tests"
         run: |
-          uv run pytest --durations=50 --cov=darts --cov-config=.coveragerc --cov-report=xml darts/tests
+          uv run pytest --durations=50 --timeout=900 --cov=darts --cov-config=.coveragerc --cov-report=xml darts/tests
 
       - name: "Codecov upload"
         if: ${{ matrix.flavour == 'all' }}

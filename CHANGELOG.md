@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - 🚀🚀 Added new forecasting model `TiRexModel`: NX-AI's 35M-parameter pre-trained foundational model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series forecasting without training and can output deterministic or probabilistic forecasts. [#3038](https://github.com/unit8co/darts/pull/3038) by [Lukas Fischer](https://github.com/lukfischer) and [Zhihao Dai](https://github.com/daidahao).
   - Check out the new [TiRex Foundation Model Notebook](https://unit8co.github.io/darts/examples/28-TiRex-examples.html) for examples and usage of TiRex.
 
+- Added native multi-quantile support for `CatBoostModel` by using CatBoost’s `MultiQuantile` loss for faster training and inference. Set `likelihood="multiquantile"` to enable this feature. [#3032](https://github.com/unit8co/darts/pull/3032) by [Zhihao Dai](https://github.com/daidahao)
+
 ### For developers of the library:
 
 ## [0.43.0](https://github.com/unit8co/darts/tree/0.43.0) (2026-03-23)
