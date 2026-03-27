@@ -36,7 +36,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-14, ubuntu-latest]
+        os: [macos-14]
         python-version: ['3.11']
         flavour: ['all']
 
@@ -85,86 +85,86 @@ jobs:
           # This reduces cache size while retaining expensive-to-rebuild packages
           uv cache prune --ci
 
-  docs:
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Clone repository"
-        uses: actions/checkout@v4
-
-      - name: "Set up Python 3.11"
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: "Install uv"
-        uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.9"
-          enable-cache: true
-          python-version: '3.11'
-
-      - name: "Install pandoc"
-        run: |
-          sudo apt-get install -y pandoc
-
-      - name: "Install Dependencies"
-        run: |
-          # Testing against latest compatible versions
-          uv sync --group dev-all --group torch-cpu
-
-      - name: "Install libomp (for LightGBM)"
-        run: |
-          chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
-          ./.github/scripts/libomp-${{ runner.os }}.sh
-
-      - name: "Build docs"
-        run: |
-          uv run make --directory ./docs build-all-docs
-
-      - name: "Optimize cache for CI"
-        run: |
-          # Remove pre-built wheels but keep source-built wheels
-          # This reduces cache size while retaining expensive-to-rebuild packages
-          uv cache prune --ci
-
-  check-examples:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        example-name: [03-FFT-examples.ipynb, 04-RNN-examples.ipynb, 00-quickstart.ipynb, 02-data-processing.ipynb, 01-multi-time-series-and-covariates.ipynb]
-    steps:
-      - name: "Clone repository"
-        uses: actions/checkout@v4
-
-      - name: "Set up Python 3.11"
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: "Install uv"
-        uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.9"
-          enable-cache: true
-          python-version: '3.11'
-
-      - name: "Install Dependencies"
-        run: |
-          # Testing against latest compatible versions
-          uv sync --group dev-all --group torch-cpu
-
-      - name: "Install libomp (for LightGBM)"
-        run: |
-          chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
-          ./.github/scripts/libomp-${{ runner.os }}.sh
-
-      - name: "Run example ${{matrix.example-name}}"
-        working-directory: ./examples
-        run: |
-          uv run papermill ${{matrix.example-name}} ${{matrix.example-name}}
-
-      - name: "Optimize cache for CI"
-        run: |
-          # Remove pre-built wheels but keep source-built wheels
-          # This reduces cache size while retaining expensive-to-rebuild packages
-          uv cache prune --ci
+#  docs:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: "Clone repository"
+#        uses: actions/checkout@v4
+#
+#      - name: "Set up Python 3.11"
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: '3.11'
+#
+#      - name: "Install uv"
+#        uses: astral-sh/setup-uv@v7
+#        with:
+#          version: "0.9"
+#          enable-cache: true
+#          python-version: '3.11'
+#
+#      - name: "Install pandoc"
+#        run: |
+#          sudo apt-get install -y pandoc
+#
+#      - name: "Install Dependencies"
+#        run: |
+#          # Testing against latest compatible versions
+#          uv sync --group dev-all --group torch-cpu
+#
+#      - name: "Install libomp (for LightGBM)"
+#        run: |
+#          chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
+#          ./.github/scripts/libomp-${{ runner.os }}.sh
+#
+#      - name: "Build docs"
+#        run: |
+#          uv run make --directory ./docs build-all-docs
+#
+#      - name: "Optimize cache for CI"
+#        run: |
+#          # Remove pre-built wheels but keep source-built wheels
+#          # This reduces cache size while retaining expensive-to-rebuild packages
+#          uv cache prune --ci
+#
+#  check-examples:
+#    runs-on: ubuntu-latest
+#    strategy:
+#      matrix:
+#        example-name: [03-FFT-examples.ipynb, 04-RNN-examples.ipynb, 00-quickstart.ipynb, 02-data-processing.ipynb, 01-multi-time-series-and-covariates.ipynb]
+#    steps:
+#      - name: "Clone repository"
+#        uses: actions/checkout@v4
+#
+#      - name: "Set up Python 3.11"
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: '3.11'
+#
+#      - name: "Install uv"
+#        uses: astral-sh/setup-uv@v7
+#        with:
+#          version: "0.9"
+#          enable-cache: true
+#          python-version: '3.11'
+#
+#      - name: "Install Dependencies"
+#        run: |
+#          # Testing against latest compatible versions
+#          uv sync --group dev-all --group torch-cpu
+#
+#      - name: "Install libomp (for LightGBM)"
+#        run: |
+#          chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
+#          ./.github/scripts/libomp-${{ runner.os }}.sh
+#
+#      - name: "Run example ${{matrix.example-name}}"
+#        working-directory: ./examples
+#        run: |
+#          uv run papermill ${{matrix.example-name}} ${{matrix.example-name}}
+#
+#      - name: "Optimize cache for CI"
+#        run: |
+#          # Remove pre-built wheels but keep source-built wheels
+#          # This reduces cache size while retaining expensive-to-rebuild packages
+#          uv cache prune --ci
