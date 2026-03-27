@@ -67,6 +67,7 @@ from darts.utils.data import (
 from darts.utils.data.torch_datasets.utils import (
     TorchBatch,
     TorchInferenceDatasetOutput,
+    TorchTrainingDatasetOutput,
     TorchTrainingSample,
 )
 from darts.utils.historical_forecasts import (
@@ -657,9 +658,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         _raise_if_wrong_type(inference_dataset, TorchInferenceDataset)
 
-    @staticmethod
     def _validate_predict_sample(
-        train_sample: TorchTrainingSample, predict_sample: TorchInferenceDatasetOutput
+        self,
+        train_sample: TorchTrainingSample,
+        predict_sample: TorchInferenceDatasetOutput,
     ):
         """Validates that the predict sample matches a sample that the model was trained on.
 
@@ -742,6 +744,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         logger=logger,
                     )
 
+        # check dtype consistency within predict sample
+        self._verify_dtypes(predict_sample)
+
     def _verify_past_future_covariates(self, past_covariates, future_covariates):
         """
         Verify that any non-None covariates comply with the model type.
@@ -804,42 +809,37 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _verify_dtypes(
         self,
-        sample,
-        predict_sample=False,
+        sample: TorchTrainingDatasetOutput | TorchInferenceDatasetOutput,
     ):
-        if predict_sample:
-            # TorchInferenceDatasetOutput:
-            # (past target, past cov, future past cov, historic future cov,
-            #  future cov, static cov, target schema, pred time)
-            pt, pc, _, hfc, fc, sc, _, _ = sample
-        else:
-            # TorchTrainingDatasetOutput:
-            # (past target, past cov, historic future cov, future cov,
-            #  static cov, sample weight, future target)
-            pt, pc, hfc, fc, sc, _, _ = sample
+        """Dataset output dtype checks.
 
-        # Test dtypes against past target only
-        if pt is None:
+        Checks that all dataset output arrays have the same dtype, and whether the dtype matches
+        the one of the training dataset
+        """
+        observed_dtypes = set([el.dtype for el in sample if isinstance(el, np.ndarray)])
+        if len(observed_dtypes) != 1:
+            logger.warning(
+                f"Observed mixed data types in the dataset output: {observed_dtypes}. "
+                f"This might cause downstream issues when running the model. If so, make "
+                f"sure all your input data share the same data type (TimeSeries, static covariates, ...)."
+            )
             return
 
-        target_dtype = pt.dtype
-
-        # Testing covs
-        covs = [
-            ("past_covariates", pc),
-            ("historic_future_cov", hfc),
-            ("future_covariates", fc),
-            ("static_cov", sc),
-        ]
-        for name, cov in covs:
-            if cov is None:
-                continue
-            if cov.dtype != target_dtype:
+        if self.train_sample is not None:
+            expected_dtype = (
+                self.train_sample[0].dtype
+                if isinstance(self.train_sample[0], np.ndarray)
+                else None
+            )
+            current_dtype = observed_dtypes.pop()
+            if current_dtype is not expected_dtype:
                 logger.warning(
-                    f"`{name}` dtype `{cov.dtype}` does not match target `series` dtype "
-                    + f"`{target_dtype}`. All series must have the same dtype. Consider casting "
-                    + "with `TimeSeries.astype()`."
+                    f"Dataset output has a different data type than the dataset the model was trained on; "
+                    f"current data type: {current_dtype}, expected data type: {expected_dtype}. "
+                    f"This might cause downstream issues when running the model. If so, make "
+                    f"sure all your input data have the expected data type (TimeSeries, static covariates, ...)."
                 )
+        return
 
     def _update_covariates_use(self):
         """Based on the Forecasting class and the training_sample attribute, update the
@@ -1914,9 +1914,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self._validate_predict_sample(
             train_sample=self.train_sample, predict_sample=dataset[0]
         )
-
-        # check dtype consistency within predict sample
-        self._verify_dtypes(dataset[0], predict_sample=True)
 
         if roll_size is None:
             roll_size = self.output_chunk_length

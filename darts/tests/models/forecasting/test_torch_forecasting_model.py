@@ -2704,10 +2704,10 @@ class TestTorchForecastingModel:
         target_dtype = np.float32
         cov_dtype = np.float64 if expect_warning else np.float32
 
-        series = tg.sine_timeseries(length=50).astype(target_dtype)
+        series = tg.sine_timeseries(length=13).astype(target_dtype)
         fit_kwargs = {
             "series": series,
-            cov_type: tg.sine_timeseries(length=50).astype(cov_dtype),
+            cov_type: tg.sine_timeseries(length=14).astype(cov_dtype),
         }
 
         model = NLinearModel(
@@ -2715,12 +2715,36 @@ class TestTorchForecastingModel:
         )
 
         with caplog.at_level(logging.WARNING):
-            try:
+            if expect_warning:
+                # user is warned before downstream model exception is raised
+                with pytest.raises(RuntimeError):
+                    model.fit(**fit_kwargs)
+            else:
                 model.fit(**fit_kwargs)
-            except Exception:
-                pass  # dtype mismatch warning already captured; downstream error is expected
 
-        assert ("does not match target `series` dtype" in caplog.text) == expect_warning
+        assert (
+            "Observed mixed data types in the dataset output" in caplog.text
+        ) == expect_warning
+        caplog.clear()
+
+        if expect_warning:
+            return
+
+        # also warn if prediction input does not have the same dtype as the data the model was trained on
+        with caplog.at_level(logging.WARNING):
+            with pytest.raises(RuntimeError):
+                _ = model.predict(
+                    n=1, **{k: v.astype("float64") for k, v in fit_kwargs.items()}
+                )
+        assert "Dataset output has a different data type" in caplog.text
+        caplog.clear()
+
+        # if everything is okay, there is no warning
+        with caplog.at_level(logging.WARNING):
+            _ = model.predict(
+                n=1, **{k: v.astype("float32") for k, v in fit_kwargs.items()}
+            )
+        assert "Dataset output has a different data type" not in caplog.text
 
     @pytest.mark.parametrize(
         "cov_type, expect_warning",

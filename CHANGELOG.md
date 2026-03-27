@@ -18,7 +18,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For users of the library:
 
 **Improved**
-- `TorchForecastingModel` now warns when covariate dtypes don't match the target series dtype, checked at the sample level during both training and inference. [#2969](https://github.com/unit8co/darts/issues/2960) by [Oswald Zink](https://github.com/ozink-u8)
 
 - Improvements to data transformers:  [#3023](https://github.com/unit8co/darts/pull/3023) by [Krzsztof Pęczek](https://github.com/u8-krpeczek)
   - Added parameter `columns` to all data transformers (e.g. `Scaler`, `Diff`, `BoxCox`, ...) to apply the transformations only on subset of components. This makes it much easier to build multivariate pipelines where different components require different transformations.
@@ -26,6 +25,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - `plot_variable_selection()` now returns the matplotlib figures for downstream usage (saving, editing, ...). It returns a single figure when explaining a single TimeSeries. Otherwise, it returns a list of figures.
   - `plot_variable_selection()` now accepts a `show_plot: bool = True` parameter that allows to suppress showing the plot.
   - 🔴 `plot_attention()` now also returns the matplotlib figures for all explained series, instead of only the matplotlib axis for the last series.
+- `TorchForecastingModel` now raises a warning when the input series have mixed data types, or the prediction series do not have the same data type as the series used for training. [#3043](https://github.com/unit8co/darts/pull/3043) by [Oswald Zink](https://github.com/ozink-u8)
 
 ## [0.42.1](https://github.com/unit8co/darts/tree/0.42.1) (2026-03-07)
 
