@@ -23,5 +23,5 @@ docs_env
 .DS_Store
 .gradle
 .venv
-
+.env
 uv.lock
