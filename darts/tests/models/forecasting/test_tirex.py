@@ -81,8 +81,8 @@ class TestTiRexModel:
     # ---- Fidelity Tests ---- #
     # load validation inputs once for fidelity tests
     ts_energy_train, ts_energy_val = load_validation_inputs()
-    # maximum prediction length w/o triggering auto-regression
-    max_prediction_length = 512
+    # prediction length for fidelity test
+    prediction_length = 2048
 
     # ---- Dummy Tests ---- #
     series = linear_timeseries(length=200, dtype=np.float32, column_name="A")
@@ -99,7 +99,6 @@ class TestTiRexModel:
         Original predictions were generated with the following code:
 
         ```python
-        from pathlib import Path
         import numpy as np
         import pandas as pd
         import torch
@@ -112,10 +111,12 @@ class TestTiRexModel:
 
         pipeline = load_model("NX-AI/TiRex")
 
+        context_length = 2048
         prediction_length = 512
 
         # context: each variable as its own batch item -> (n_variables, T)
         context = torch.tensor(ts_energy_train.values().T, dtype=torch.float32)
+        context = context[:, -context_length:]
 
         # quantiles: (B, H, Q) where B=2, H=512, Q=9
         quantiles, _ = pipeline._forecast_quantiles(
@@ -134,7 +135,7 @@ class TestTiRexModel:
         """
         model = TiRexModel(
             input_chunk_length=2048,  # use generous context
-            output_chunk_length=self.max_prediction_length,  # no auto-regression
+            output_chunk_length=self.prediction_length,  # no auto-regression
             likelihood=(
                 QuantileRegression(quantiles=list(ALL_QUANTILES))
                 if probabilistic
@@ -147,13 +148,13 @@ class TestTiRexModel:
         model.fit(series=self.ts_energy_train)
 
         pred = model.predict(
-            n=self.max_prediction_length,
+            n=self.prediction_length,
             predict_likelihood_parameters=probabilistic,
         )
         assert isinstance(pred, TimeSeries)
         # reshape to (time, variables, quantiles)
         pred_np = pred.values().reshape(
-            self.max_prediction_length, self.ts_energy_train.n_components, -1
+            self.prediction_length, self.ts_energy_train.n_components, -1
         )
 
         # load reference predictions
