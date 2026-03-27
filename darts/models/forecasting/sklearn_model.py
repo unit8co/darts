@@ -89,6 +89,7 @@ from darts.utils.historical_forecasts import (
 )
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import (
+    MultiQuantileRegression,
     QuantileRegression,
     SKLearnLikelihood,
     _get_likelihood,
@@ -204,9 +205,9 @@ class SKLearnModel(GlobalForecastingModel):
             will be used per component in the multivariate series.
             If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model
-            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
-            `output_chunk_length - n` for each step `n`). Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -633,30 +634,49 @@ class SKLearnModel(GlobalForecastingModel):
     def get_estimator(
         self, horizon: int, target_dim: int, quantile: float | None = None
     ):
-        """Returns the estimator that forecasts the step `horizon` of the target component `target_dim`.
+        """Returns the estimator that forecasts the step ``horizon`` of the target component ``target_dim``.
 
-        For probabilistic models fitting quantiles, a desired `quantile` can also be passed. If not passed, it will
-        return the model predicting the median (quantile=0.5).
+        For probabilistic models fitting quantiles, a desired ``quantile`` can also be passed. If not passed, it will
+        return the estimator predicting the median quantile.
 
         If the (quantile) model supports multi-output natively, it will return the model that can predict the entire
         horizon and all target components jointly.
 
-        Note: Internally, estimators are grouped by `output_chunk_length` position, then by component. For probabilistic
-        models fitting quantiles, there is an additional abstraction layer, grouping the estimators by `quantile`.
+        .. note::
+            Internally, estimators are grouped by ``output_chunk_length`` position, then by component. For
+            probabilistic models fitting quantiles (``likelihood="quantile"``), there will be an additional
+            abstraction layer, grouping the estimators by ``quantile``. Models using a single native multi-quantile
+            estimator (``likelihood="multiquantile"``) do not use this extra quantile grouping, and ``quantile``
+            must be set to ``None`` to obtain the correct estimator.
 
         Parameters
         ----------
         horizon
-            The index of the forecasting point within `output_chunk_length`.
+            The index of the forecasting point within ``output_chunk_length``.
         target_dim
             The index of the target component.
         quantile
-            Optionally, for probabilistic model with `likelihood="quantile"`, the desired quantile value. If `None` and
-            `likelihood="quantile"`, returns the model predicting the median (quantile=0.5).
+            Optionally, for probabilistic model with ``likelihood="quantile"``, the desired quantile value. If ``None``
+            and the model uses per-quantile estimators, returns the model predicting the median quantile.
         """
         likelihood = self.likelihood
-        if isinstance(likelihood, QuantileRegression):
-            # for quantile-models, the estimators are grouped by quantiles
+        if quantile is not None:
+            if not isinstance(likelihood, QuantileRegression):
+                raise_log(
+                    ValueError(
+                        "`quantile` is only supported for probabilistic models that use `likelihood='quantile'`."
+                    ),
+                    logger=logger,
+                )
+            if isinstance(likelihood, MultiQuantileRegression):
+                logger.warning(
+                    "Model supports multi-quantile regression; the same estimator forecasts all quantiles jointly. "
+                    "Ignoring passed `quantile` value."
+                )
+
+        if type(likelihood) is QuantileRegression:
+            # check for type `QuantileRegression` to ignore subclass `MultiQuantileRegression`.
+            # the estimators are grouped by quantiles
             if quantile is None:
                 quantile = likelihood.quantiles[likelihood._median_idx]
             elif quantile not in self._model_container:
@@ -668,13 +688,6 @@ class SKLearnModel(GlobalForecastingModel):
                     logger,
                 )
             model = self._model_container[quantile]
-        elif quantile is not None:
-            raise_log(
-                ValueError(
-                    "`quantile` is only supported for probabilistic models that use `likelihood='quantile'`."
-                ),
-                logger=logger,
-            )
         else:
             model = self.model
 
@@ -1612,9 +1625,9 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
     def __init__(
         self,
         model,
-        lags: int | list | None = None,
-        lags_past_covariates: int | list[int] | None = None,
-        lags_future_covariates: tuple[int, int] | list[int] | None = None,
+        lags: LAGS_TYPE | None = None,
+        lags_past_covariates: LAGS_TYPE | None = None,
+        lags_future_covariates: FUTURE_LAGS_TYPE | None = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         add_encoders: dict | None = None,
@@ -1710,8 +1723,9 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
                 To enable past and / or future encodings for any `SKLearnModel`, you must also define the
                 corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model is
-            trained to predict at step 'output_chunk_length' in the future. Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -2032,9 +2046,9 @@ class RegressionModel(SKLearnModel):
             will be used per component in the multivariate series.
             If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model
-            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
-            `output_chunk_length - n` for each step `n`). Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce

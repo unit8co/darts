@@ -39,7 +39,11 @@ from darts.models.forecasting.sklearn_model import (
 )
 from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
-from darts.utils.likelihood_models.sklearn import QuantileRegression, _get_likelihood
+from darts.utils.likelihood_models.sklearn import (
+    MultiQuantileRegression,
+    QuantileRegression,
+    _get_likelihood,
+)
 
 logger = get_logger(__name__)
 
@@ -143,19 +147,20 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
                 To enable past and / or future encodings for any `SKLearnModel`, you must also define the
                 corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
-            Can be set to 'quantile', 'poisson' or 'gaussian'. If set, the model will be probabilistic,
-            allowing sampling at prediction time. When set to 'gaussian', the model will use CatBoost's
-            'RMSEWithUncertainty' loss function. When using this loss function, CatBoost returns a mean
-            and variance couple, which capture data (aleatoric) uncertainty.
-            This will overwrite any `objective` parameter.
+            One of ``"multiquantile"``, ``"quantile"``, ``"poisson"``, or ``"gaussian"``. If set, the model
+            becomes probabilistic and supports sampling at prediction time. ``"multiquantile"`` uses CatBoost's
+            ``"MultiQuantile"`` loss, and ``"gaussian"`` uses ``"RMSEWithUncertainty"`` to predict mean and
+            variance (aleatoric uncertainty). This overrides any ``objective`` parameter. Default is ``None``.
         quantiles
-            Fit the model to these quantiles if the `likelihood` is set to `quantile`.
+            Fit the model to these quantiles if the ``likelihood`` is set to ``"quantile"`` or ``"multiquantile"``.
+            Default is ``None`` and will use :class:`~darts.utils.likelihood_models.sklearn.QuantileRegression`'s
+            default quantiles.
         random_state
             Controls the randomness for reproducible forecasting.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model
-            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
-            `output_chunk_length - n` for each step `n`). Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -164,7 +169,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             Optionally, component name or list of component names specifying the past covariates that should be treated
             as categorical by the underlying `CatBoostRegressor`. The components that are specified as categorical
             must be integer-encoded. For more information on how CatBoost handles categorical features,
-            visit: `Categorical feature support documentatio
+            visit: `Categorical feature support documentation
             <https://catboost.ai/docs/en/features/categorical-features>`__.
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
@@ -265,6 +270,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
                 LikelihoodType.Gaussian,
                 LikelihoodType.Poisson,
                 LikelihoodType.Quantile,
+                LikelihoodType.MultiQuantile,
             ],
         )
 
@@ -276,7 +282,13 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             "poisson": "Poisson",
             "gaussian": "RMSEWithUncertainty",
         }
-        if likelihood == LikelihoodType.Quantile.value:
+        # set `loss_function` and `._model_container` as per the likelihood instance
+        if isinstance(self._likelihood, MultiQuantileRegression):
+            # this condition must come before `QuantileRegression` because
+            # `MultiQuantileRegression` is a subclass of `QuantileRegression`
+            quantiles_str = ", ".join(f"{q:.3f}" for q in self._likelihood.quantiles)
+            self.kwargs["loss_function"] = f"MultiQuantile:alpha={quantiles_str}"
+        elif isinstance(self._likelihood, QuantileRegression):
             self._model_container = _QuantileModelContainer()
         else:
             self.kwargs["loss_function"] = likelihood_map[likelihood]
@@ -293,6 +305,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         n_jobs_multioutput_wrapper: int | None = None,
         sample_weight: TimeSeriesLike | str | None = None,
         val_sample_weight: TimeSeriesLike | str | None = None,
+        stride: int = 1,
         verbose: int | bool | None = None,
         **kwargs,
     ):
@@ -335,14 +348,19 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         val_sample_weight
             Same as for `sample_weight` but for the evaluation dataset.
+        stride
+            The number of time steps between consecutive samples, applied starting from the end of the series. The same
+            stride will be applied to both the training and evaluation set (if supplied and supported). This should be
+            used with caution as it might introduce bias in the forecasts.
         verbose
             An integer or a boolean that can be set to 1 to display catboost's default verbose output
         **kwargs
-            Additional kwargs passed to `catboost.CatboostRegressor.fit()`
+            Additional kwargs passed to `catboost.CatBoostRegressor.fit()`
         """
         verbose = verbose if verbose is not None else 0
         likelihood = self.likelihood
-        if isinstance(likelihood, QuantileRegression):
+        if type(likelihood) is QuantileRegression:
+            # must check for type `QuantileRegression` to not include subclass `MultiQuantileRegression`
             # empty model container in case of multiple calls to fit, e.g. when backtesting
             self._model_container.clear()
             for quantile in likelihood.quantiles:
@@ -361,6 +379,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
                     n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
                     sample_weight=sample_weight,
                     val_sample_weight=val_sample_weight,
+                    stride=stride,
                     verbose=verbose,
                     **kwargs,
                 )
@@ -379,6 +398,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
             sample_weight=sample_weight,
             val_sample_weight=val_sample_weight,
+            stride=stride,
             verbose=verbose,
             **kwargs,
         )
@@ -565,9 +585,9 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
         random_state
             Controls the randomness for reproducible forecasting.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model
-            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
-            `output_chunk_length - n` for each step `n`). Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce

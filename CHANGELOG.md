@@ -9,6 +9,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 
+- Added native multi-quantile support for `CatBoostModel` by using CatBoost’s `MultiQuantile` loss for faster training and inference. Set `likelihood="multiquantile"` to enable this feature. [#3032](https://github.com/unit8co/darts/pull/3032) by [Zhihao Dai](https://github.com/daidahao)
+
 ### For developers of the library:
 
 ## [0.43.0](https://github.com/unit8co/darts/tree/0.43.0) (2026-03-23)
