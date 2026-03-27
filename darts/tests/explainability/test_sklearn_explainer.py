@@ -1166,7 +1166,6 @@ class TestSKLearnExplainer:
         )
 
         assert isinstance(fplot, shap.plots._force.BaseVisualizer)
-        plt.close()
 
     def test_regression_shap_explainer_builder_and_background_sampling(self):
         series = self.target_ts["price"]
