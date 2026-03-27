@@ -5,6 +5,7 @@ import logging
 import math
 from copy import deepcopy
 from itertools import product
+from typing import Any
 from unittest.mock import patch
 
 import numpy as np
@@ -39,7 +40,10 @@ from darts.tests.conftest import (
 )
 from darts.utils import timeseries_generation as tg
 from darts.utils.likelihood_models.base import Likelihood, LikelihoodType
-from darts.utils.likelihood_models.sklearn import _get_likelihood
+from darts.utils.likelihood_models.sklearn import (
+    MultiQuantileRegression,
+    _get_likelihood,
+)
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import generate_index
 
@@ -163,20 +167,20 @@ def partialclass(cls, *args, **kwargs):
     return NewCls
 
 
-xgb_test_params = {
+xgb_test_params: dict[str, Any] = {
     "n_estimators": 1,
     "max_depth": 1,
     "max_leaves": 1,
     "random_state": 42,
 }
-lgbm_test_params = {
+lgbm_test_params: dict[str, Any] = {
     "n_estimators": 1,
     "max_depth": 1,
     "num_leaves": 2,
     "verbosity": -1,
     "random_state": 42,
 }
-cb_test_params = {
+cb_test_params: dict[str, Any] = {
     "iterations": 1,
     "depth": 1,
     "verbose": -1,
@@ -303,6 +307,12 @@ class TestSKLearnModels:
             quantiles=[0.05, 0.5, 0.95],
             **cb_test_params,
         )
+        MultiQuantileCatBoostModel = partialclass(
+            CatBoostModel,
+            likelihood="multiquantile",
+            quantiles=[0.05, 0.5, 0.95],
+            **cb_test_params,
+        )
         PoissonCatBoostModel = partialclass(
             CatBoostModel,
             likelihood="poisson",
@@ -316,24 +326,28 @@ class TestSKLearnModels:
         models += [
             RegularCatBoostModel,
             QuantileCatBoostModel,
+            MultiQuantileCatBoostModel,
             PoissonCatBoostModel,
             NormalCatBoostModel,
         ]
         univariate_accuracies += [
             0.75,  # CatBoostModel
             0.75,  # QuantileCatBoostModel
+            0.75,  # MultiQuantileCatBoostModel
             0.9,  # PoissonCatBoostModel
             0.75,  # NormalCatBoostModel
         ]
         multivariate_accuracies += [
             0.75,  # CatBoostModel
             0.75,  # QuantileCatBoostModel
+            0.75,  # MultiQuantileCatBoostModel
             0.86,  # PoissonCatBoostModel
             0.75,  # NormalCatBoostModel
         ]
         multivariate_multiseries_accuracies += [
             0.75,  # CatBoostModel
             0.75,  # QuantileCatBoostModel
+            0.75,  # MultiQuantileCatBoostModel
             1.2,  # PoissonCatBoostModel
             0.75,  # NormalCatBoostModel
         ]
@@ -1727,7 +1741,7 @@ class TestSKLearnModels:
                 tg.linear_timeseries(length=100, column_name="linear"),
             )
 
-        m = model_cls(
+        m: SKLearnModel = model_cls(
             lags=lags,
             output_chunk_length=ocl,
             multi_models=multi_models,
@@ -1737,6 +1751,7 @@ class TestSKLearnModels:
         )
         m.fit(ts)
 
+        assert m._model_container is not None
         assert len(m._model_container) == len(quantiles)
         assert sorted(list(m._model_container.keys())) == sorted(quantiles)
         for quantile_container in m._model_container.values():
@@ -1759,6 +1774,7 @@ class TestSKLearnModels:
             num_samples=1,
             predict_likelihood_parameters=True,
         )
+        assert isinstance(pred, TimeSeries)
         for j in range(ts.width):
             for i in range(ocl):
                 if multi_models:
@@ -1768,11 +1784,83 @@ class TestSKLearnModels:
                 dummy_feats = np.expand_dims(dummy_feats.flatten(), 0)
                 for q in quantiles:
                     sub_model = m.get_estimator(horizon=i, target_dim=j, quantile=q)
+                    assert sub_model is not None
                     pred_sub_model = sub_model.predict(dummy_feats)[0]
                     assert (
                         pred_sub_model
                         == pred[f"{ts.components[j]}_q{q:.3f}"].values()[i][0]
                     )
+
+    @pytest.mark.skipif(not CB_AVAILABLE, reason="CatBoost is required for this test")
+    @pytest.mark.parametrize("multi_models", [True, False])
+    @pytest.mark.parametrize("multi_components", [True, False])
+    def test_get_estimator_multiquantile(
+        self,
+        multi_models: bool,
+        multi_components: bool,
+        caplog,
+    ):
+        """Check estimator getter when using quantile value"""
+        ocl = 3
+        lags = 3
+        quantiles = [0.01, 0.5, 0.99]
+        ts = tg.sine_timeseries(length=100, column_name="sine")
+        if multi_components:
+            ts = ts.stack(
+                tg.linear_timeseries(length=100, column_name="linear"),
+            )
+
+        model = CatBoostModel(
+            lags=lags,
+            output_chunk_length=ocl,
+            multi_models=multi_models,
+            likelihood="multiquantile",
+            quantiles=quantiles,
+            **cb_test_params,
+        )
+        model.fit(ts)
+
+        # model container only used with `QuantileRegression` (not multi-quantile)
+        assert model._model_container is None
+        if multi_models:
+            # one sub-model per component, per horizon
+            assert len(model.model.estimators_) == ocl * ts.width
+        elif multi_components:
+            # one sub-model per component
+            assert len(model.model.estimators_) == ts.width
+        else:
+            # only one sub-model per quantile (one component, one predicted horizon)
+            assert not isinstance(model.model, MultiOutputRegressor)
+            assert not hasattr(model.model, "estimators_")
+
+        with caplog.at_level(logging.WARNING):
+            _ = model.get_estimator(horizon=0, target_dim=0, quantile=0.5)
+            assert "the same estimator forecasts all quantiles jointly" in caplog.text
+
+        # check that retrieve sub-models prediction match the "wrapper" model predictions
+        pred_input = ts[-lags:] if multi_models else ts[-lags - ocl + 1 :]
+        pred = model.predict(
+            n=ocl,
+            series=pred_input,
+            num_samples=1,
+            predict_likelihood_parameters=True,
+        )
+        assert isinstance(pred, TimeSeries)
+        for j in range(ts.width):
+            pred_j = pred.values()[:, j * len(quantiles) : (j + 1) * len(quantiles)]
+            for i in range(ocl):
+                if multi_models:
+                    dummy_feats = pred_input.values()[:lags]
+                else:
+                    dummy_feats = pred_input.values()[i : i + lags]
+                dummy_feats = np.expand_dims(dummy_feats.flatten(), 0)
+                # CatBoost with "Multiquantile" loss does not use a model container but directly
+                # implements multi-quantile support in the main model
+                sub_model = model.get_estimator(horizon=i, target_dim=j)
+                assert sub_model is not None
+                # the sub-model prediction is in shape (1, n_quantiles)
+                pred_sub_model = sub_model.predict(dummy_feats)[0]
+                np.testing.assert_array_equal(pred_sub_model, pred_j[i])
 
     def test_get_estimator_exceptions(self, caplog):
         """Check that all the corner-cases are properly covered by the method"""
@@ -2980,7 +3068,7 @@ class TestSKLearnModels:
         lags, shift = config
         ocl = 7
         series = tg.gaussian_timeseries(
-            length=28, start=pd.Timestamp("2000-01-01"), freq="d"
+            length=28, start=pd.Timestamp("2000-01-01"), freq="D"
         )
 
         model_target_only = LinearRegressionModel(
@@ -3113,7 +3201,7 @@ class TestSKLearnModels:
         For last_points_only `True` and `False`."""
         ocl = 7
         series = tg.linear_timeseries(
-            length=28, start=pd.Timestamp("2000-01-01"), freq="d"
+            length=28, start=pd.Timestamp("2000-01-01"), freq="D"
         ).with_static_covariates(pd.Series([1.0, 2.0, 3.0]))
         static_covs = series.static_covariates.copy(deep=True)
 
@@ -4289,6 +4377,27 @@ class TestProbabilisticSKLearnModels:
                 CatBoostModel,
                 {
                     "lags": 2,
+                    "likelihood": "multiquantile",
+                    "multi_models": True,
+                    **cb_test_params,
+                },
+                0.05,
+            ),
+            (
+                CatBoostModel,
+                {
+                    "lags": 2,
+                    "likelihood": "multiquantile",
+                    "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
+                    "multi_models": True,
+                    **cb_test_params,
+                },
+                0.05,
+            ),
+            (
+                CatBoostModel,
+                {
+                    "lags": 2,
                     "likelihood": "poisson",
                     "multi_models": True,
                     **cb_test_params,
@@ -4346,6 +4455,30 @@ class TestProbabilisticSKLearnModels:
             str(exc.value)
             == "Invalid `likelihood='does_not_exist'`. Must be one of ['gaussian', 'poisson', 'quantile']"
         )
+
+    @pytest.mark.skipif(not CB_AVAILABLE, reason="CatBoostModel required for this test")
+    def test_model_construction_multiquantile(self):
+        with pytest.raises(
+            ValueError,
+            match="'multiquantile' likelihood only supports multiple quantiles.",
+        ):
+            _ = CatBoostModel(
+                lags=2,
+                likelihood="multiquantile",
+                quantiles=[0.5],
+                **cb_test_params,
+            )
+
+        model = CatBoostModel(
+            lags=2,
+            likelihood="multiquantile",
+            quantiles=[0.1, 0.3, 0.5, 0.7, 0.9],
+            **cb_test_params,
+        )
+        likelihood = model.likelihood
+        assert isinstance(likelihood, MultiQuantileRegression)
+        assert likelihood.type == LikelihoodType.MultiQuantile
+        assert likelihood.quantiles == [0.1, 0.3, 0.5, 0.7, 0.9]
 
     @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))
     def test_fit_predict_determinism(self, config):
