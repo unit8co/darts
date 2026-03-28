@@ -11,9 +11,9 @@ namespace dtw {
     void dtw_cost_matrix_no_window_1d(nb::ndarray<double, nb::ndim<1>> x,
                                     nb::ndarray<double, nb::ndim<1>> y,
                                     nb::ndarray<double, nb::ndim<2>> cost_matrix) {
-        auto x_view = x.view();
-        auto y_view = y.view();
-        auto cost_view = cost_matrix.view();
+        auto x_view = x.view<double, nb::ndim<1>>();
+        auto y_view = y.view<double, nb::ndim<1>>();
+        auto cost_view = cost_matrix.view<double, nb::ndim<2>>();
         // initialize the first values of the cost matrix
         cost_view(0, 0) = 0.0;
         double cost = 0.0, min_prev_cost = 0.0;
