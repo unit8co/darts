@@ -1,15 +1,15 @@
-#include <pybind11/pybind11.h>
 #include "dtw.h"
+#include <nanobind/nanobind.h>
 
-namespace py = pybind11;
+namespace nb = nanobind;
 
+using namespace nb::literals;
 
-PYBIND11_MODULE(_internal, m, py::mod_gil_not_used()) {
-    m.doc() = R"pbdoc(
-        Internal C++ implementation of DARTS algorithms.
-    )pbdoc";
-
-    m.def("dtw_cost_matrix_no_window_1d", &dtw::dtw_cost_matrix_no_window_1d, R"pbdoc(
+NB_MODULE(_ext, m) {
+    m.doc() = "Internal C++ implementation of Darts algorithms.";
+    m.def("add", [](int a, int b) { return a + b; }, "a"_a, "b"_a);
+    m.def("dtw_cost_matrix_no_window_1d", &dtw::dtw_cost_matrix_no_window_1d, "x"_a, "y"_a, "cost_matrix"_a,
+        R"pbdoc(
         Compute the cost matrix for Dynamic Time Warping (DTW) without any window constraints.
 
         Parameters

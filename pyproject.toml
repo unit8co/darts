@@ -1,9 +1,6 @@
 [build-system]
-requires = [
-    "setuptools>=61.0",
-    "pybind11>=2.10.0",
-]
-build-backend = "setuptools.build_meta"
+requires = ["scikit-build-core >=0.10", "nanobind >=1.3.2"]
+build-backend = "scikit_build_core.build"
 
 [project]
 name = "darts"
@@ -106,11 +103,35 @@ zip-safe = false
 [tool.setuptools.packages.find]
 exclude = ["examples*", "datasets*", "docs*", "darts.tests*"]
 
+[tool.scikit-build]
+# Protect the configuration against future changes in scikit-build-core
+minimum-version = "build-system.requires"
+
+# Setuptools-style build caching in a local directory
+build-dir = "build/{wheel_tag}"
+
+# Build stable ABI wheels for CPython 3.12+
+wheel.py-api = "cp312"
+
 [tool.setuptools.package-data]
 darts = ["py.typed"]
 
 [tool.cibuildwheel]
 archs = "all"
+
+# Necessary to see build output from the actual compilation
+build-verbosity = 1
+
+# # Run pytest to ensure that the package was correctly built
+# test-command = "pytest {project}/tests"
+# test-requires = "pytest"
+
+# # Don't test Python 3.8 wheels on macOS/arm64
+# test-skip="cp38-macosx_*:arm64"
+
+# Needed for full C++17 support
+[tool.cibuildwheel.macos.environment]
+MACOSX_DEPLOYMENT_TARGET = "10.14"
 
 [tool.pytest.ini_options]
 addopts = [

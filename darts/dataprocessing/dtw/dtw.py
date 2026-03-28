@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from darts import TimeSeries
-from darts._internal import dtw_cost_matrix_no_window_1d
+from darts._ext import dtw_cost_matrix_no_window_1d
 from darts.dataprocessing.dtw.cost_matrix import CostMatrix
 from darts.dataprocessing.dtw.window import CRWindow, NoWindow, Window
 from darts.logging import get_logger, raise_if, raise_if_not
