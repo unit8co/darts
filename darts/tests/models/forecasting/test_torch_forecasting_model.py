@@ -2687,6 +2687,65 @@ class TestTorchForecastingModel:
         # also check that prediction works
         model.predict(n=1)
 
+    @pytest.mark.parametrize(
+        "cov_type, expect_warning",
+        [
+            ("past_covariates", False),
+            ("past_covariates", True),
+            # future_covariates covers both fc and hfc (historic part) since they come from the same series
+            ("future_covariates", False),
+            ("future_covariates", True),
+            # static_covariates are cast to the target series dtype on creation via with_static_covariates,
+            # so a dtype mismatch cannot occur through the normal API
+        ],
+    )
+    def test_verify_dtypes_warning(self, caplog, cov_type, expect_warning):
+        """Tests that a warning is raised when input data have mixed dtypes."""
+        target_dtype = np.float32
+        cov_dtype = np.float64 if expect_warning else np.float32
+
+        series = tg.sine_timeseries(length=13).astype(target_dtype)
+        fit_kwargs = {
+            "series": series,
+            cov_type: tg.sine_timeseries(length=14).astype(cov_dtype),
+        }
+
+        model = NLinearModel(
+            input_chunk_length=12, output_chunk_length=1, **tfm_kwargs_dev
+        )
+
+        with caplog.at_level(logging.WARNING):
+            if expect_warning:
+                # user is warned before downstream model exception is raised
+                with pytest.raises(RuntimeError):
+                    model.fit(**fit_kwargs)
+            else:
+                model.fit(**fit_kwargs)
+
+        assert (
+            "Observed mixed data types in the dataset output" in caplog.text
+        ) == expect_warning
+        caplog.clear()
+
+        if expect_warning:
+            return
+
+        # also warn if prediction input does not have the same dtype as the data the model was trained on
+        with caplog.at_level(logging.WARNING):
+            with pytest.raises(RuntimeError):
+                _ = model.predict(
+                    n=1, **{k: v.astype("float64") for k, v in fit_kwargs.items()}
+                )
+        assert "Dataset output has a different data type" in caplog.text
+        caplog.clear()
+
+        # if everything is okay, there is no warning
+        with caplog.at_level(logging.WARNING):
+            _ = model.predict(
+                n=1, **{k: v.astype("float32") for k, v in fit_kwargs.items()}
+            )
+        assert "Dataset output has a different data type" not in caplog.text
+
     def helper_predict_raise_on_missing_input(
         self, model, fn: str, series, pc, fc, **kwargs
     ):

@@ -25,6 +25,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - `plot_variable_selection()` now returns the matplotlib figures for downstream usage (saving, editing, ...). It returns a single figure when explaining a single TimeSeries. Otherwise, it returns a list of figures.
   - `plot_variable_selection()` now accepts a `show_plot: bool = True` parameter that allows to suppress showing the plot.
   - 🔴 `plot_attention()` now also returns the matplotlib figures for all explained series, instead of only the matplotlib axis for the last series.
+- `TorchForecastingModel` now raises a warning when the input series have mixed data types, or the prediction series do not have the same data type as the series used for training. [#3043](https://github.com/unit8co/darts/pull/3043) by [Oswald Zink](https://github.com/ozink-u8)
 - Improvements to `RegressionEnsembleModel` : [#2773](https://github.com/unit8co/darts/issues/2773) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
   - Better handling of `output_chunk_shift`
     - Shift Propagation: Added logic to automatically detect and propagate `output_chunk_shift` from base forecasting models to the ensembling regression model.
