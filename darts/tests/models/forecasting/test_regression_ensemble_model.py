@@ -1206,7 +1206,7 @@ class TestRegressionEnsembleModels:
         assert ensemble.ensemble_model.lags == {"future": [1, 2]}
 
     def test_shift_mismatch_validation(self):
-        m1 = LinearRegressionModel(lags=2, output_chunk_shift=5)
+        m1 = LinearRegressionModel(lags=2, output_chunk_shift=1)
         custom_regr = SKLearnModel(lags_future_covariates=[0], output_chunk_shift=0)
 
         with pytest.raises(
@@ -1220,16 +1220,20 @@ class TestRegressionEnsembleModels:
             )
 
     def test_predict_with_historical_forecasts_unsupported_shift(self):
-        m1 = LinearRegressionModel(lags=2, output_chunk_shift=0)
-
-        ensemble = RegressionEnsembleModel(
-            forecasting_models=[m1],
-            regression_train_n_points=5,
-            train_using_historical_forecasts=False,
+        train_n_points = 5
+        m1 = LinearRegressionModel(
+            lags=2, output_chunk_shift=1, output_chunk_length=train_n_points
         )
-        ensemble.fit(self.sine_series)
-        assert ensemble.ensemble_model._fit_called
-        assert ensemble.ensemble_model._fit_called
+
+        with pytest.raises(
+            ValueError,
+            match="`train_using_historical_forecasts` must be `True` when base models use `output_chunk_shift>0`",
+        ):
+            _ = RegressionEnsembleModel(
+                forecasting_models=[m1],
+                regression_train_n_points=train_n_points,
+                train_using_historical_forecasts=False,
+            )
 
     def test_train_n_points_entire_series_auto_calc(self):
         m1 = LinearRegressionModel(lags=2)

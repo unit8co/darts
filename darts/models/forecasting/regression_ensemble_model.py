@@ -138,6 +138,14 @@ class RegressionEnsembleModel(EnsembleModel):
 
         output_chunk_shift = shifts[0] or 0
         if output_chunk_shift > 0:
+            if not train_using_historical_forecasts:
+                raise_log(
+                    ValueError(
+                        "`train_using_historical_forecasts` must be `True` when base models use `output_chunk_shift>0`."
+                    ),
+                    logger,
+                )
+
             output_chunk_length = min([
                 model.output_chunk_length or 1 for model in forecasting_models
             ])
