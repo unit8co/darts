@@ -18,7 +18,7 @@ else:
     from typing_extensions import Self
 
 from darts import TimeSeries, concatenate
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import (
     ForecastingModel,
     GlobalForecastingModel,
@@ -104,15 +104,17 @@ class EnsembleModel(GlobalForecastingModel):
         self.is_local_ensemble = all(is_local_model)
         self.is_global_ensemble = all(is_global_model)
 
-        raise_if_not(
-            all([
-                local_model or global_model
-                for local_model, global_model in zip(is_local_model, is_global_model)
-            ]),
-            "All models must be of type `GlobalForecastingModel`, or `LocalForecastingModel`. "
-            "Also, make sure that all `forecasting_models` are instantiated.",
-            logger,
-        )
+        if not all([
+            local_model or global_model
+            for local_model, global_model in zip(is_local_model, is_global_model)
+        ]):
+            raise_log(
+                ValueError(
+                    "All models must be of type `GlobalForecastingModel`, or `LocalForecastingModel`. "
+                    "Also, make sure that all `forecasting_models` are instantiated."
+                ),
+                logger,
+            )
 
         model_fit_status = [m._fit_called for m in forecasting_models]
         self.all_trained = all(model_fit_status)
@@ -139,49 +141,61 @@ class EnsembleModel(GlobalForecastingModel):
 
         if train_forecasting_models:
             # prevent issues with pytorch-lightning trainer during retraining
-            raise_if(
-                some_trained,
-                "`train_forecasting_models=True` but some `forecasting_models` were already fitted. "
-                "Consider resetting all the `forecasting_models` with `my_model.untrained_model()` "
-                "before passing them to the `EnsembleModel`.",
-                logger,
-            )
+            if some_trained:
+                raise_log(
+                    ValueError(
+                        "`train_forecasting_models=True` but some `forecasting_models` were already fitted. "
+                        "Consider resetting all the `forecasting_models` with `my_model.untrained_model()` "
+                        "before passing them to the `EnsembleModel`."
+                    ),
+                    logger,
+                )
         else:
-            raise_if_not(
-                self.is_global_ensemble and self.all_trained,
-                "`train_forecasting_models=False` is supported only if all the `forecasting_models` are "
-                "already trained `GlobalForecastingModels`.",
-                logger,
-            )
+            if not (self.is_global_ensemble and self.all_trained):
+                raise_log(
+                    ValueError(
+                        "`train_forecasting_models=False` is supported only if all the `forecasting_models` are "
+                        "already trained `GlobalForecastingModels`."
+                    ),
+                    logger,
+                )
 
-        raise_if(
+        if (
             train_num_samples is not None
             and train_num_samples > 1
             and all([
                 not m.supports_probabilistic_prediction for m in forecasting_models
-            ]),
-            "`train_num_samples` is greater than 1 but the `RegressionEnsembleModel` "
-            "contains only deterministic `forecasting_models`.",
-            logger,
-        )
+            ])
+        ):
+            raise_log(
+                ValueError(
+                    "`train_num_samples` is greater than 1 but the `RegressionEnsembleModel` "
+                    "contains only deterministic `forecasting_models`."
+                ),
+                logger,
+            )
 
         supported_reduction = ["mean", "median"]
         if train_samples_reduction is None:
             pass
         elif isinstance(train_samples_reduction, float):
-            raise_if_not(
-                0.0 < train_samples_reduction < 1.0,
-                f"if a float, `train_samples_reduction` must be between "
-                f"0 and 1, received ({train_samples_reduction})",
-                logger,
-            )
+            if not (0.0 < train_samples_reduction < 1.0):
+                raise_log(
+                    ValueError(
+                        f"if a float, `train_samples_reduction` must be between "
+                        f"0 and 1, received ({train_samples_reduction})"
+                    ),
+                    logger,
+                )
         elif isinstance(train_samples_reduction, str):
-            raise_if(
-                train_samples_reduction not in supported_reduction,
-                f"if a string, `train_samples_reduction` must be one of {supported_reduction}, "
-                f"received ({train_samples_reduction})",
-                logger,
-            )
+            if train_samples_reduction not in supported_reduction:
+                raise_log(
+                    ValueError(
+                        f"if a string, `train_samples_reduction` must be one of {supported_reduction}, "
+                        f"received ({train_samples_reduction})"
+                    ),
+                    logger,
+                )
         else:
             raise_log(
                 ValueError(
@@ -192,13 +206,16 @@ class EnsembleModel(GlobalForecastingModel):
                 logger,
             )
 
-        raise_if(
-            train_n_points == -1
-            and not (self.all_trained and (not train_forecasting_models)),
-            "`regression_train_n_points` can only be `-1` if `retrain_forecasting_model=False` and "
-            "all `forecasting_models` are already fitted.",
-            logger,
-        )
+        if train_n_points == -1 and not (
+            self.all_trained and (not train_forecasting_models)
+        ):
+            raise_log(
+                ValueError(
+                    "`regression_train_n_points` can only be `-1` if `retrain_forecasting_model=False` and "
+                    "all `forecasting_models` are already fitted."
+                ),
+                logger,
+            )
 
         # ensemble model checks
         self.forecasting_models = forecasting_models
@@ -261,12 +278,14 @@ class EnsembleModel(GlobalForecastingModel):
         is_single_series = isinstance(series, TimeSeries)
 
         # local models OR mix of local and global models
-        raise_if(
-            not self.is_global_ensemble and not is_single_series,
-            "The `forecasting_models` contain at least one LocalForecastingModel, which does not support training "
-            "on multiple series.",
-            logger,
-        )
+        if not self.is_global_ensemble and not is_single_series:
+            raise_log(
+                ValueError(
+                    "The `forecasting_models` contain at least one LocalForecastingModel, "
+                    "which does not support training on multiple series."
+                ),
+                logger,
+            )
 
         # check that if timeseries is single series, that covariates are as well and vice versa
         error_past_cov = False
@@ -280,11 +299,13 @@ class EnsembleModel(GlobalForecastingModel):
                 future_covariates, TimeSeries
             )
 
-        raise_if(
-            error_past_cov or error_future_cov,
-            "Both series and covariates have to be either single TimeSeries or sequences of TimeSeries.",
-            logger,
-        )
+        if error_past_cov or error_future_cov:
+            raise_log(
+                ValueError(
+                    "Both series and covariates have to be either single TimeSeries or sequences of TimeSeries."
+                ),
+                logger,
+            )
 
         self._verify_past_future_covariates(past_covariates, future_covariates)
 
@@ -746,15 +767,19 @@ class EnsembleModel(GlobalForecastingModel):
         """
         Verify that any non-None covariates comply with the model type.
         """
-        raise_if(
-            past_covariates is not None and not self.supports_past_covariates,
-            "`past_covariates` were provided to an `EnsembleModel` but none of its "
-            "`forecasting_models` support such covariates.",
-            logger,
-        )
-        raise_if(
-            future_covariates is not None and not self.supports_future_covariates,
-            "`future_covariates` were provided to an `EnsembleModel` but none of its "
-            "`forecasting_models` support such covariates.",
-            logger,
-        )
+        if past_covariates is not None and not self.supports_past_covariates:
+            raise_log(
+                ValueError(
+                    "`past_covariates` were provided to an `EnsembleModel` but none of its "
+                    "`forecasting_models` support such covariates."
+                ),
+                logger,
+            )
+        if future_covariates is not None and not self.supports_future_covariates:
+            raise_log(
+                ValueError(
+                    "`future_covariates` were provided to an `EnsembleModel` but none of its "
+                    "`forecasting_models` support such covariates."
+                ),
+                logger,
+            )
