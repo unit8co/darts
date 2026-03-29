@@ -14,15 +14,25 @@ namespace dtw {
         auto y_view = y.view<double, nb::ndim<1>>();
         size_t x_size = x_view.shape(0);
         size_t y_size = y_view.shape(0);
-        // auto cost_view = cost_matrix.view<double, nb::ndim<2>>();
-        double *cost_matrix = new double[(x_size + 1) * (y_size + 1)];
-        std::fill_n(cost_matrix, (x_size + 1) * (y_size + 1), std::numeric_limits<double>::infinity());
+        size_t total_size = (x_size + 1) * (y_size + 1);
+
+        // allocate the cost matrix and initialize it with infinity
+        double *cost_matrix = new double[total_size];
+        double inf = std::numeric_limits<double>::infinity();
+        std::fill_n(cost_matrix, y_size + 1, inf);
+
         // initialize the first values of the cost matrix
         cost_matrix[0] = 0.0;
+        double cost = 0.0, min_prev_cost = 0.0;
         for (size_t i = 1; i <= x_size; ++i) {
+            cost_matrix[i * (y_size + 1)] = inf;
             for (size_t j = 1; j <= y_size; ++j) {
-                double cost = ABS(x_view(i-1) - y_view(j-1));
-                double min_prev_cost = std::min({cost_matrix[(i-1) * (y_size + 1) + j], cost_matrix[i * (y_size + 1) + (j-1)], cost_matrix[(i-1) * (y_size + 1) + (j-1)]});
+                cost = ABS(x_view(i-1) - y_view(j-1));
+                min_prev_cost = std::min({
+                    cost_matrix[(i-1) * (y_size + 1) + j],
+                    cost_matrix[i * (y_size + 1) + (j-1)],
+                    cost_matrix[(i-1) * (y_size + 1) + (j-1)]
+                });
                 cost_matrix[i * (y_size + 1) + j] = cost + min_prev_cost;
             }
         }
