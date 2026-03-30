@@ -1,3 +1,4 @@
+import itertools
 from itertools import product
 
 import numpy as np
@@ -1188,7 +1189,8 @@ class TestRegressionEnsembleModels:
                 ),
             )
 
-    def test_output_chunk_shift_auto_propagation(self):
+    @pytest.mark.parametrize("use_auto", [True, False])
+    def test_output_chunk_shift_support(self, use_auto):
         shift = 1
         ocl = 2
         m1 = LinearRegressionModel(
@@ -1198,12 +1200,32 @@ class TestRegressionEnsembleModels:
             lags=5, output_chunk_length=ocl, output_chunk_shift=shift
         )
 
+        if use_auto:
+            regression_model = None
+        else:
+            regression_model = LinearRegressionModel(
+                output_chunk_length=ocl,
+                output_chunk_shift=shift,
+                lags_future_covariates=(0, ocl),
+            )
+
         ensemble = RegressionEnsembleModel(
-            forecasting_models=[m1, m2], regression_train_n_points=10
+            forecasting_models=[m1, m2],
+            regression_train_n_points=10,
+            train_using_historical_forecasts=True,
+            regression_model=regression_model,
         )
 
         assert ensemble.ensemble_model.output_chunk_shift == shift
+        # lags are `[i + shift for i in range(ocl)]`
         assert ensemble.ensemble_model.lags == {"future": [1, 2]}
+
+        ensemble.fit(self.sine_series)
+        preds = ensemble.predict(n=ocl)
+        assert (
+            preds.start_time()
+            == self.sine_series.end_time() + 2 * self.sine_series.freq
+        )
 
     def test_shift_mismatch_validation(self):
         m1 = LinearRegressionModel(lags=2, output_chunk_shift=1)
@@ -1217,9 +1239,10 @@ class TestRegressionEnsembleModels:
                 forecasting_models=[m1],
                 regression_train_n_points=5,
                 regression_model=custom_regr,
+                train_using_historical_forecasts=True,
             )
 
-    def test_predict_with_historical_forecasts_unsupported_shift(self):
+    def test_shift_only_supported_for_training_on_historical_forecasts(self):
         train_n_points = 5
         m1 = LinearRegressionModel(
             lags=2, output_chunk_shift=1, output_chunk_length=train_n_points
@@ -1235,55 +1258,111 @@ class TestRegressionEnsembleModels:
                 train_using_historical_forecasts=False,
             )
 
-    def test_train_n_points_entire_series_auto_calc(self):
+    @pytest.mark.parametrize(
+        "config", itertools.product([True, False], [True, False], [True, False])
+    )
+    def test_train_n_points_scenarios(self, config):
+        multi_series, use_hfc, use_auto_calc = config
+        series = (
+            [self.sine_series, self.sine_series[:-1]]
+            if multi_series
+            else self.sine_series
+        )
+        if multi_series:
+            regression_train_n_points = 47
+        else:
+            regression_train_n_points = 48
+        regression_train_n_points = -1 if use_hfc else regression_train_n_points
+
         m1 = LinearRegressionModel(lags=2)
-        m1.fit(self.sine_series)
+
+        m1.fit(series)
 
         ensemble = RegressionEnsembleModel(
             forecasting_models=[m1],
-            regression_train_n_points=-1,
+            regression_train_n_points=regression_train_n_points,
             train_forecasting_models=False,
+            train_using_historical_forecasts=use_hfc,
         )
 
-        ensemble.fit(self.sine_series)
-        assert ensemble.train_n_points == 48
-
-    def test_coverage_hfc_slicing(self):
-        m1 = LinearRegressionModel(lags=1, output_chunk_length=1)
-        series = self.sine_series[:20]
-
-        ensemble = RegressionEnsembleModel(
-            forecasting_models=[m1],
-            regression_train_n_points=2,
-            train_using_historical_forecasts=True,
-        )
-        # Fitting will trigger _make_multiple_historical_forecasts
         ensemble.fit(series)
-        assert len(ensemble.ensemble_model.training_series) == 2
+        # train_n_points is the maximum points that can be achieved for all series
+        assert ensemble.train_n_points == 48 if not multi_series else 47
 
-    def test_coverage_expected_lags_zero(self):
-        from sklearn.linear_model import LinearRegression as SkLinearRegression
+        pred = ensemble.predict(n=1, series=series)
+        if not multi_series:
+            pred = [pred]
+            series = [series]
 
-        m1 = LinearRegressionModel(lags=2)
+        for pred_, series_ in zip(pred, series):
+            assert pred_.start_time() == series_.end_time() + series_.freq
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [1, 2],
+            [0, 1],
+        ),
+    )
+    def test_coverage_expected_lags(self, config):
+        ocl, ocs = config
+        m1 = LinearRegressionModel(
+            lags=2,
+            output_chunk_length=ocl,
+            output_chunk_shift=ocs,
+        )
+        lags_valid = [i for i in range(ocl)]
+        train_using_historical_forecasts = ocs > 0
+
         ensemble = RegressionEnsembleModel(
             forecasting_models=[m1],
             regression_train_n_points=5,
-            regression_model=SkLinearRegression(),
+            train_using_historical_forecasts=train_using_historical_forecasts,
+            regression_model=LinearRegressionModel(
+                lags_future_covariates=lags_valid,
+                output_chunk_length=ocl,
+                output_chunk_shift=ocs,
+            ),
         )
-        assert ensemble.ensemble_model.lags == {"future": [0]}
+        assert ensemble.ensemble_model.lags == {
+            "future": [lag + ocs for lag in lags_valid]
+        }
+
+        ensemble.fit(self.sine_series)
+        pred = ensemble.predict(n=1, series=self.sine_series)
+        assert (
+            pred.start_time()
+            == self.sine_series.end_time() + (1 + ocs) * self.sine_series.freq
+        )
+
+        with pytest.raises(
+            ValueError,
+            match=f"All lags in `lags_future_covariates` must be `0<=lag<={ocl - 1}",
+        ):
+            _ = RegressionEnsembleModel(
+                forecasting_models=[m1],
+                regression_train_n_points=5,
+                train_using_historical_forecasts=train_using_historical_forecasts,
+                regression_model=LinearRegressionModel(
+                    lags_future_covariates=lags_valid + [lags_valid[-1] + 1],
+                    output_chunk_length=ocl,
+                    output_chunk_shift=ocs,
+                ),
+            )
 
     def test_coverage_mismatched_ocl_validation(self):
         shift = 1
-        ocl_base = 2
+        base_ocl = 3
+        ens_ocl = 4
         # Base models have min OCL of 2
         m1 = LinearRegressionModel(
-            lags=2, output_chunk_length=ocl_base, output_chunk_shift=shift
+            lags=2, output_chunk_length=base_ocl, output_chunk_shift=shift
         )
 
         # We provide a regression model with OCL of 5 (mismatch)
         mismatched_regr = SKLearnModel(
-            lags_future_covariates=[1, 2],
-            output_chunk_length=5,
+            lags_future_covariates=(0, ens_ocl),
+            output_chunk_length=ens_ocl,
             output_chunk_shift=shift,
         )
 
@@ -1294,6 +1373,7 @@ class TestRegressionEnsembleModels:
             RegressionEnsembleModel(
                 forecasting_models=[m1],
                 regression_train_n_points=5,
+                train_using_historical_forecasts=True,
                 regression_model=mismatched_regr,
             )
 

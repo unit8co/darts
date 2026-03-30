@@ -6,7 +6,6 @@ An ensemble model which uses a regression model to compute the ensemble forecast
 """
 
 import math
-from collections.abc import Sequence
 
 from darts import TimeSeries, concatenate
 from darts.logging import get_logger, raise_log
@@ -167,7 +166,9 @@ class RegressionEnsembleModel(EnsembleModel):
         else:
             # scikit-learn like model
             regression_model = SKLearnModel(
+                lags=None,
                 lags_future_covariates=lags_future_covariates,
+                output_chunk_length=output_chunk_length,
                 output_chunk_shift=output_chunk_shift,
                 model=regression_model,
             )
@@ -186,6 +187,20 @@ class RegressionEnsembleModel(EnsembleModel):
                     f"forecasting models. "
                     f"Observed `output_chunk_shift`: `{regression_model.output_chunk_shift}`, "
                     f"expected: {output_chunk_shift}."
+                ),
+                logger,
+            )
+        if regression_train_n_points > 0 and (
+            regression_model.output_chunk_length
+            + regression_model.min_train_samples
+            - 1
+            > regression_train_n_points
+        ):
+            raise_log(
+                ValueError(
+                    f"The `output_chunk_length` ({regression_model.output_chunk_length}) of `regression_model` "
+                    f"must be smaller than `regression_train_n_point - {regression_model.min_train_samples - 1}` "
+                    f"(<{regression_train_n_points - (regression_model.min_train_samples - 1)})."
                 ),
                 logger,
             )
@@ -210,16 +225,16 @@ class RegressionEnsembleModel(EnsembleModel):
                 ),
                 logger,
             )
-        min_lag, max_lag = 0, output_chunk_length - 1
+        min_lag, max_lag = 0, regression_model.output_chunk_length - 1
         # adjust model lags by `output_chunk_shift` to get original lags
         lags_observed = [
             lag - output_chunk_shift for lag in regression_model.lags["future"]
         ]
-        if any([max_lag < lag < min_lag for lag in lags_observed]):
+        if any([not (min_lag <= lag <= max_lag) for lag in lags_observed]):
             raise_log(
                 ValueError(
                     f"All lags in `lags_future_covariates` must be `0<=lag<={max_lag}`, "
-                    f"where the upper bound is given by `(output_chunk_length-1)`. "
+                    f"where the upper bound is given by `(regression_model.output_chunk_length-1)`. "
                     f"Received lags: {lags_observed}."
                 ),
                 logger,
@@ -246,15 +261,6 @@ class RegressionEnsembleModel(EnsembleModel):
 
         self.train_using_historical_forecasts = train_using_historical_forecasts
 
-    def _split_multi_ts_sequence(
-        self, n: int | list[int], ts_sequence: Sequence[TimeSeries]
-    ) -> tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
-        if isinstance(n, int):
-            n = [n] * len(ts_sequence)
-        left = [ts[:-n_] for ts, n_ in zip(ts_sequence, n)]
-        right = [ts[-n_:] for ts, n_ in zip(ts_sequence, n)]
-        return left, right
-
     def _make_multiple_historical_forecasts(
         self,
         train_n_points: int,
@@ -279,12 +285,14 @@ class RegressionEnsembleModel(EnsembleModel):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
-        predictions = []
+        predictions: list[list[TimeSeries]] = []
         for m_idx, model in enumerate(self.forecasting_models):
             # we start historical forecasts at multiple of the output length before the end
             n_ocl_back = math.ceil(train_n_points / model.output_chunk_length)
 
-            start_hist_forecasts = n_ocl_back * model.output_chunk_length
+            start_hist_forecasts = (
+                n_ocl_back * model.output_chunk_length + self.output_chunk_shift
+            )
             hfc = model.historical_forecasts(
                 series=series,
                 past_covariates=(
@@ -308,7 +316,7 @@ class RegressionEnsembleModel(EnsembleModel):
                 verbose=verbose,
             )
 
-            predictions_tmp = []
+            predictions_tmp: list[TimeSeries] = []
             for idx, (series_, series_hfc) in enumerate(zip(series, hfc)):
                 # check that all forecasts end at the end of the target series
                 if (
@@ -333,11 +341,11 @@ class RegressionEnsembleModel(EnsembleModel):
             predictions.append(predictions_tmp)
 
         # postprocess the forecasts
-        forecasts = []
+        forecasts: list[TimeSeries] = []
         for idx, series_forecasts in enumerate(zip(*predictions)):
             # make sure all model forecasts share the same time index per series
             min_length = min(len(forecast) for forecast in series_forecasts)
-            series_forecasts = [
+            series_forecasts: list[TimeSeries] = [
                 forecast[-min_length:] if len(forecast) != min_length else forecast
                 for forecast in series_forecasts
             ]
@@ -405,25 +413,26 @@ class RegressionEnsembleModel(EnsembleModel):
             verbose=verbose,
         )
 
-        # at this point, we know that all target series all long enough
+        # at this point, we know that all target series are long enough
         is_single_series = isinstance(series, TimeSeries)
 
         # determine the actual number of training points to use
         if self.train_n_points == -1:
             input_shift = self._target_window_lengths[0]
-            if is_single_series:
-                self.train_n_points = len(series) - input_shift
-            else:
-                self.train_n_points = [len(ts) - input_shift for ts in series]
+            min_series_length = (
+                len(series) if is_single_series else min(len(ts) for ts in series)
+            )
+            self.train_n_points = min_series_length - input_shift
 
         # spare train_n_points points to serve as regression target
         if is_single_series:
             forecast_training = series[: -self.train_n_points]
             regression_target = series[-self.train_n_points :]
         else:
-            forecast_training, regression_target = self._split_multi_ts_sequence(
-                self.train_n_points, series
-            )
+            forecast_training, regression_target = [], []
+            for ts in series:
+                forecast_training.append(ts[: -self.train_n_points])
+                regression_target.append(ts[-self.train_n_points :])
 
         if self.train_forecasting_models:
             for model in self.forecasting_models:
@@ -523,18 +532,20 @@ class RegressionEnsembleModel(EnsembleModel):
 
     @property
     def output_chunk_length(self) -> int:
-        """Return the `output_chunk_length` of the regression model (ensembling layer)"""
+        # the `output_chunk_length` of the regression model (ensembling layer)
         return self.ensemble_model.output_chunk_length
 
     @property
+    def output_chunk_shift(self) -> int:
+        # the `output_chunk_shift` of the regression model (ensembling layer)
+        return self.ensemble_model.output_chunk_shift
+
+    @property
     def supports_likelihood_parameter_prediction(self) -> bool:
-        """RegressionEnsembleModel supports likelihood parameters predictions if its regression model does"""
+        # likelihood parameters predictions are supported if the regression model supports it (ensembling layer)
         return self.ensemble_model.supports_likelihood_parameter_prediction
 
     @property
     def supports_probabilistic_prediction(self) -> bool:
-        """
-        A RegressionEnsembleModel is probabilistic if its regression
-        model is probabilistic (ensembling layer)
-        """
+        # probabilistic predictions are supported if the regression model supports it (ensembling layer)
         return self.ensemble_model.supports_probabilistic_prediction

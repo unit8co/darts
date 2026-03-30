@@ -224,8 +224,8 @@ class EnsembleModel(GlobalForecastingModel):
         self.train_samples_reduction = train_samples_reduction
         self.train_forecasting_models = train_forecasting_models
         self.show_warnings = show_warnings
-        # converted to List[int] if regression_train_n_points=-1 and ensemble is trained with multiple series
-        self.train_n_points: int | list[int] = train_n_points
+        # regression_train_n_points=-1 is converted to actual n points at fitting time
+        self.train_n_points: int = train_n_points
 
         if show_warnings:
             if (
