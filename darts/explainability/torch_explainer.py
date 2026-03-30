@@ -1049,7 +1049,7 @@ class _DeepSHAPExplainer:
         elif shap_method == _SHAPMethod.SAMPLING:
             explainer = shap.SamplingExplainer(func, background_X, **kwargs)
         elif shap_method == _SHAPMethod.PARTITION:
-            explainer = shap.PermutationExplainer(func, background_X, **kwargs)
+            explainer = shap.PartitionExplainer(func, background_X, **kwargs)
         if shap_method == _SHAPMethod.PERMUTATION:
             explainer = shap.PermutationExplainer(func, background_X, **kwargs)
 
