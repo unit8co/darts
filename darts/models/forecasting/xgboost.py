@@ -31,7 +31,11 @@ from darts.models.forecasting.sklearn_model import (
 )
 from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
-from darts.utils.likelihood_models.sklearn import QuantileRegression, _get_likelihood
+from darts.utils.likelihood_models.sklearn import (
+    MultiQuantileRegression,
+    QuantileRegression,
+    _get_likelihood,
+)
 
 logger = get_logger(__name__)
 
@@ -239,7 +243,11 @@ class XGBModel(SKLearnModel):
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
             quantiles=quantiles,
-            available_likelihoods=[LikelihoodType.Quantile, LikelihoodType.Poisson],
+            available_likelihoods=[
+                LikelihoodType.Quantile,
+                LikelihoodType.MultiQuantile,
+                LikelihoodType.Poisson,
+            ],
         )
 
         if likelihood is None:
@@ -247,7 +255,11 @@ class XGBModel(SKLearnModel):
 
         if likelihood == LikelihoodType.Poisson.value:
             self.kwargs["objective"] = f"count:{likelihood}"
-        else:  # quantile
+        elif isinstance(self._likelihood, MultiQuantileRegression):
+            # must check before QuantileRegression since MultiQuantileRegression is a subclass
+            self.kwargs["objective"] = "reg:quantileerror"
+            self.kwargs["quantile_alpha"] = self._likelihood.quantiles
+        else:  # QuantileRegression — per-quantile loop in fit()
             self.kwargs["objective"] = "reg:quantileerror"
             self._model_container = _QuantileModelContainer()
 
@@ -318,7 +330,7 @@ class XGBModel(SKLearnModel):
         # TODO: XGBRegressor supports multi quantile regression which we could leverage in the future
         #  see https://xgboost.readthedocs.io/en/latest/python/examples/quantile_regression.html
         likelihood = self.likelihood
-        if isinstance(likelihood, QuantileRegression):
+        if type(likelihood) is QuantileRegression:
             # empty model container in case of multiple calls to fit, e.g. when backtesting
             self._model_container.clear()
             for quantile in likelihood.quantiles:
