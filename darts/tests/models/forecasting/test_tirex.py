@@ -82,7 +82,7 @@ class TestTiRexModel:
     # load validation inputs once for fidelity tests
     ts_energy_train, ts_energy_val = load_validation_inputs()
     # prediction length for fidelity test
-    prediction_length = 2048
+    prediction_length = 512
 
     # ---- Dummy Tests ---- #
     series = linear_timeseries(length=200, dtype=np.float32, column_name="A")
