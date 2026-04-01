@@ -1862,6 +1862,75 @@ class TestSKLearnModels:
                 pred_sub_model = sub_model.predict(dummy_feats)[0]
                 np.testing.assert_array_equal(pred_sub_model, pred_j[i])
 
+    @pytest.mark.skipif(not XGB_AVAILABLE, reason="XGBoost required for this test")
+    @pytest.mark.parametrize("multi_models", [True, False])
+    @pytest.mark.parametrize("multi_components", [True, False])
+    def test_get_estimator_multiquantile_xgb(
+        self,
+        multi_models: bool,
+        multi_components: bool,
+        caplog,
+    ):
+        """Check estimator getter when using XGBoost multiquantile likelihood."""
+        ocl = 3
+        lags = 3
+        quantiles = [0.01, 0.5, 0.99]
+        ts = tg.sine_timeseries(length=100, column_name="sine")
+        if multi_components:
+            ts = ts.stack(
+                tg.linear_timeseries(length=100, column_name="linear"),
+            )
+
+        model = XGBModel(
+            lags=lags,
+            output_chunk_length=ocl,
+            multi_models=multi_models,
+            likelihood="multiquantile",
+            quantiles=quantiles,
+            **xgb_test_params,
+        )
+        model.fit(ts)
+
+        # model container only used with `QuantileRegression` (not multi-quantile)
+        assert model._model_container is None
+        if multi_models:
+            # one sub-model per component, per horizon
+            assert len(model.model.estimators_) == ocl * ts.width
+        elif multi_components:
+            # one sub-model per component
+            assert len(model.model.estimators_) == ts.width
+        else:
+            # only one sub-model (one component, one predicted horizon)
+            assert not isinstance(model.model, MultiOutputRegressor)
+            assert not hasattr(model.model, "estimators_")
+
+        with caplog.at_level(logging.WARNING):
+            _ = model.get_estimator(horizon=0, target_dim=0, quantile=0.5)
+            assert "the same estimator forecasts all quantiles jointly" in caplog.text
+
+        # check that retrieved sub-model predictions match the "wrapper" model predictions
+        pred_input = ts[-lags:] if multi_models else ts[-lags - ocl + 1 :]
+        pred = model.predict(
+            n=ocl,
+            series=pred_input,
+            num_samples=1,
+            predict_likelihood_parameters=True,
+        )
+        assert isinstance(pred, TimeSeries)
+        for j in range(ts.width):
+            pred_j = pred.values()[:, j * len(quantiles) : (j + 1) * len(quantiles)]
+            for i in range(ocl):
+                if multi_models:
+                    dummy_feats = pred_input.values()[:lags]
+                else:
+                    dummy_feats = pred_input.values()[i : i + lags]
+                dummy_feats = np.expand_dims(dummy_feats.flatten(), 0)
+                sub_model = model.get_estimator(horizon=i, target_dim=j)
+                assert sub_model is not None
+                # the sub-model prediction is in shape (1, n_quantiles)
+                pred_sub_model = sub_model.predict(dummy_feats)[0]
+                np.testing.assert_array_equal(pred_sub_model, pred_j[i])
+
     def test_get_estimator_exceptions(self, caplog):
         """Check that all the corner-cases are properly covered by the method"""
         ts = TimeSeries.from_values(
@@ -4315,6 +4384,27 @@ class TestProbabilisticSKLearnModels:
                 },
                 0.4,
             ),
+            (
+                XGBModel,
+                {
+                    "lags": 2,
+                    "likelihood": "multiquantile",
+                    "multi_models": True,
+                    **xgb_test_params,
+                },
+                0.4,
+            ),
+            (
+                XGBModel,
+                {
+                    "lags": 2,
+                    "likelihood": "multiquantile",
+                    "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
+                    "multi_models": True,
+                    **xgb_test_params,
+                },
+                0.4,
+            ),
         ]
     if LGBM_AVAILABLE:
         models_cls_kwargs_errs += [
@@ -4479,6 +4569,43 @@ class TestProbabilisticSKLearnModels:
         assert isinstance(likelihood, MultiQuantileRegression)
         assert likelihood.type == LikelihoodType.MultiQuantile
         assert likelihood.quantiles == [0.1, 0.3, 0.5, 0.7, 0.9]
+
+    @pytest.mark.skipif(not XGB_AVAILABLE, reason="XGBoost required for this test")
+    def test_model_construction_multiquantile_xgb(self):
+        with pytest.raises(
+            ValueError,
+            match="'multiquantile' likelihood only supports multiple quantiles.",
+        ):
+            _ = XGBModel(
+                lags=2,
+                likelihood="multiquantile",
+                quantiles=[0.5],
+                **xgb_test_params,
+            )
+
+        model = XGBModel(
+            lags=2,
+            likelihood="multiquantile",
+            quantiles=[0.1, 0.3, 0.5, 0.7, 0.9],
+            **xgb_test_params,
+        )
+        likelihood = model.likelihood
+        assert isinstance(likelihood, MultiQuantileRegression)
+        assert likelihood.type == LikelihoodType.MultiQuantile
+        assert likelihood.quantiles == [0.1, 0.3, 0.5, 0.7, 0.9]
+
+        # quantiles passed as numpy array should be normalized to plain Python floats
+        quantiles_np = np.array([0.1, 0.3, 0.5, 0.7, 0.9])
+        model_np = XGBModel(
+            lags=2,
+            likelihood="multiquantile",
+            quantiles=quantiles_np,
+            **xgb_test_params,
+        )
+        ts = tg.sine_timeseries(length=50)
+        # should not raise XGBoostError due to np.float64 serialization
+        model_np.fit(ts)
+        assert all(isinstance(q, float) for q in model_np.likelihood.quantiles)
 
     @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))
     def test_fit_predict_determinism(self, config):
