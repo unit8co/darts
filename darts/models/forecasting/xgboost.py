@@ -155,10 +155,13 @@ class XGBModel(SKLearnModel):
                 To enable past and / or future encodings for any `SKLearnModel`, you must also define the
                 corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
-            Can be set to `poisson` or `quantile`. If set, the model will be probabilistic, allowing sampling at
-            prediction time. This will overwrite any `objective` parameter.
+            One of ``"multiquantile"``, ``"quantile"``, or ``"poisson"``. If set, the model becomes probabilistic
+            and supports sampling at prediction time. ``"multiquantile"`` and ``"quantile"`` use XGBoost's
+            ``"reg:quantileerror"`` objective; ``"multiquantile"`` fits a single model across all quantiles
+            simultaneously, while ``"quantile"`` fits one model per quantile. This overrides any ``objective``
+            parameter. Default is ``None``.
         quantiles
-            Fit the model to these quantiles if the ``likelihood`` is set to ``"quantile"``.
+            Fit the model to these quantiles if the ``likelihood`` is set to ``"quantile"`` or ``"multiquantile"``.
             Default is ``None`` and will use :class:`~darts.utils.likelihood_models.sklearn.QuantileRegression`'s
             default quantiles.
         random_state
@@ -327,8 +330,6 @@ class XGBModel(SKLearnModel):
         **kwargs
             Additional kwargs passed to `xgb.XGBRegressor.fit()`
         """
-        # TODO: XGBRegressor supports multi quantile regression which we could leverage in the future
-        #  see https://xgboost.readthedocs.io/en/latest/python/examples/quantile_regression.html
         likelihood = self.likelihood
         if type(likelihood) is QuantileRegression:
             # empty model container in case of multiple calls to fit, e.g. when backtesting
