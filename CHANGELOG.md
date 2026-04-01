@@ -14,6 +14,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improvements to `RegressionEnsembleModel` : [#2773](https://github.com/unit8co/darts/issues/2773) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
   - Base forecasting models using `output_chunk_shift>0` are now fully supported. If you're using a custom `regression_model`, simply set its output shift to be the same as that of the base models.
   - Added support for `output_chunk_length>1` for the ensemble (regression) model. This means that the ensemble model can now consume information from base model forecasts over the entire horizon.
+- Added native multi-quantile support for `XGBModel` using XGBoost’s `reg:quantileerror` objective. Set `likelihood="multiquantile"` to enable this feature. [#3056](https://github.com/unit8co/darts/pull/3056) by [Oswald Zink](https://github.com/ozink-u8)
 
 **Fixed**
 
