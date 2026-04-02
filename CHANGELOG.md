@@ -10,7 +10,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For users of the library:
 
 - Added native multi-quantile support for `CatBoostModel` by using CatBoost’s `MultiQuantile` loss for faster training and inference. Set `likelihood="multiquantile"` to enable this feature. [#3032](https://github.com/unit8co/darts/pull/3032) by [Zhihao Dai](https://github.com/daidahao)
-- Added native multi-quantile support for `XGBModel` using XGBoost’s `reg:quantileerror` objective. Set `likelihood="multiquantile"` to enable this feature. [#3056](https://github.com/unit8co/darts/pull/3056) by [Oswald Zink](https://github.com/ozink-u8)
+- Added native multi-quantile support for `XGBModel`. Similar to the regular quantile support, it still fits dedicated models per quantile, but it is more efficient due to fewer tabularization operations. Set `likelihood="multiquantile"` to enable this feature. [#3056](https://github.com/unit8co/darts/pull/3056) by [Oswald Zink](https://github.com/ozink-u8)
 
 **Fixed**
 
