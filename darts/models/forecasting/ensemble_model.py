@@ -356,7 +356,7 @@ class EnsembleModel(GlobalForecastingModel):
         """
         if self.ensemble_model is None:
             return n
-        ens_lags = self.ensemble_model.lags.get("future", [0])
+        ens_lags = self.ensemble_model.lags["future"]
         base_shift = self.output_chunk_shift
         return (
             max(ens_lags)
@@ -481,7 +481,7 @@ class EnsembleModel(GlobalForecastingModel):
         self,
         predictions: TimeSeriesLike,
         series: TimeSeriesLike,
-        n: int | None = None,
+        n: int,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         random_state: int | None = None,
@@ -498,9 +498,7 @@ class EnsembleModel(GlobalForecastingModel):
             Sequence of timeseries to predict on. Optional, since it only makes sense for sequences of timeseries -
             local models retain timeseries for prediction.
         n
-            The number of output time steps the ensemble should produce. When set,
-            the regression ensemble model uses this instead of the prediction length
-            (which may be longer to satisfy covariate requirements).
+            The number of output time steps the ensemble should produce.
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
         predict_likelihood_parameters
@@ -637,13 +635,6 @@ class EnsembleModel(GlobalForecastingModel):
         return model
 
     @property
-    def min_train_series_length(self) -> int:
-        """
-        The minimum required length for the training series.
-        """
-        return sum(self._target_window_lengths) + (self.min_train_samples - 1)
-
-    @property
     def min_train_samples(self) -> int:
         train_n_points = abs(self.train_n_points)
         if self.train_forecasting_models:
@@ -688,11 +679,8 @@ class EnsembleModel(GlobalForecastingModel):
         # - output shift
 
         if self.ensemble_model is not None:
-            # use the max of the ensemble model's max target lag and max future
-            # covariate lag; they can differ for custom regression models with
-            # non-contiguous future covariate lags
-            ens_el = self.ensemble_model.extreme_lags
-            ft_lag = max(ens_el[1], ens_el[5] if ens_el[5] is not None else -1)
+            # use the max of the ensemble model's max target lag
+            ft_lag = self.ensemble_model.extreme_lags[1]
         else:
             # or simulate a local forecasting model max target lag
             ft_lag = -1
@@ -703,7 +691,10 @@ class EnsembleModel(GlobalForecastingModel):
             model_extreme_lags = model.extreme_lags
             model_ft_lag = model_extreme_lags[1]
 
-            ft_lag_diff = max(ft_lag - model_ft_lag, 0)
+            # only adjust global models (model_ft_lag >= 0); local models
+            # (model_ft_lag < 0) have no fixed output window and their training
+            # data requirements should not be inflated
+            ft_lag_diff = max(ft_lag - model_ft_lag, 0) if model_ft_lag >= 0 else 0
 
             extreme_lags_adjusted[0].append(model_extreme_lags[0])
             extreme_lags_adjusted[1].append(model_extreme_lags[1] + ft_lag_diff)
@@ -721,9 +712,9 @@ class EnsembleModel(GlobalForecastingModel):
             )
             extreme_lags_adjusted[6].append(model_extreme_lags[6])
 
-        def find_max_lag_or_none(i, aggregator) -> int | None:
+        def find_max_lag_or_none(lag_id, aggregator) -> int | None:
             max_lag = None
-            for curr_lag in extreme_lags_adjusted[i]:
+            for curr_lag in extreme_lags_adjusted[lag_id]:
                 if max_lag is None:
                     max_lag = curr_lag
                 elif curr_lag is not None:

@@ -18,6 +18,9 @@ from darts.models import (
     SKLearnModel,
     Theta,
 )
+from darts.models.forecasting.forecasting_model import (
+    FutureCovariatesLocalForecastingModel,
+)
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.tests.models.forecasting.test_ensemble_models import _make_ts
 from darts.tests.models.forecasting.test_sklearn_models import train_test_split
@@ -27,6 +30,32 @@ if TORCH_AVAILABLE:
     import torch
 
     from darts.models import BlockRNNModel, RNNModel
+
+
+class NaiveFutureCovariatesModel(FutureCovariatesLocalForecastingModel):
+    """Simple local model that accepts future covariates"""
+
+    def __init__(self, K: int):
+        super().__init__()
+        self.K = K
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
+
+    @property
+    def _target_window_lengths(self):
+        return max(self.K, 3), 0
+
+    def _fit(self, *args, **kwargs):
+        super()._fit(*args, **kwargs)
+        return self
+
+    def _predict(self, n, *args, **kwargs):
+        super()._predict(n, *args, **kwargs)
+        return self._build_forecast_series(
+            np.zeros((n,) + self.training_series.shape[1:])
+        )
 
 
 class TestRegressionEnsembleModels:
@@ -541,15 +570,14 @@ class TestRegressionEnsembleModels:
         assert (
             max(m_.min_train_series_length for m_ in ensemble.forecasting_models) == 10
         )
-        # 11 from input window (10) + output window (1), and 10 from training the regression model
-        assert ensemble.min_train_series_length == 11 + regr_train_n
+        # 10 from training the forecasting models, and 10 from training the regression model
+        assert ensemble.min_train_series_length == 10 + regr_train_n
 
         ensemble.fit(self.sine_series)
-        # -10 comes from the maximum minimum train series length of all models;
-        # max_target_lag is 0 (adjusted from -1 to account for regression model's OCL=1)
+        # -10 comes from the maximum minimum train series length of all models
         assert ensemble.extreme_lags == (
             -10,
-            0,
+            -1,
             None,
             None,
             None,
@@ -559,7 +587,7 @@ class TestRegressionEnsembleModels:
         preds = ensemble.historical_forecasts(self.sine_series)
 
         expected_start = (
-            self.sine_series.start_time() + (11 + regr_train_n) * self.sine_series.freq
+            self.sine_series.start_time() + (10 + regr_train_n) * self.sine_series.freq
         )
         assert preds.start_time() == expected_start
         ensemble.backtest(self.sine_series)
@@ -605,9 +633,8 @@ class TestRegressionEnsembleModels:
             m2 = LinearRegressionModel(lags=3, output_chunk_length=4)
         elif m2_type == "local":
             m2 = NaiveSeasonal(K=3)
-            # local models don't have an output chunk length; the series can be shorter,
-            # but still need 1 step for the regression model's output window (vs 4 for global)
-            expected_min_length -= 3
+            # local models have no fixed output window (vs 4 for global models)
+            expected_min_length -= 4
         else:
             m2 = BlockRNNModel(
                 input_chunk_length=3, output_chunk_length=4, **tfm_kwargs, n_epochs=1
@@ -1378,6 +1405,226 @@ class TestRegressionEnsembleModels:
                 train_using_historical_forecasts=True,
                 regression_model=mismatched_regr,
             )
+
+    @staticmethod
+    def _make_base_models(base_type, fc_lag_type, series, future_covariates, train_fcm):
+        """Build base models for combination tests.
+
+        Returns a list of forecasting models, optionally pre-fitted when
+        ``train_fcm=False``.
+        """
+        ocl = 4
+
+        fc_lags_map = {
+            None: None,
+            "above_ocl": [0, 5],
+            "at_ocl": [0, 3],
+            "below_ocl": [0, 1],
+        }
+        fc_lags = fc_lags_map[fc_lag_type]
+
+        def _make_global():
+            kwargs = dict(lags=4, output_chunk_length=ocl)
+            if fc_lags is not None:
+                kwargs["lags_future_covariates"] = fc_lags
+            return LinearRegressionModel(**kwargs)
+
+        if base_type == "local":
+            models = [NaiveSeasonal(K=5), NaiveFutureCovariatesModel(K=6)]
+        elif base_type == "global":
+            models = [_make_global(), _make_global()]
+        else:
+            models = [NaiveFutureCovariatesModel(K=5), _make_global()]
+
+        if not train_fcm:
+            fc = future_covariates if fc_lags is not None else None
+            for m in models:
+                m.fit(series, future_covariates=fc)
+
+        return models
+
+    @pytest.mark.parametrize(
+        "regr_type",
+        [
+            pytest.param("larger", id="regr-larger"),
+            pytest.param("equal", id="regr-equal"),
+            pytest.param("lower", id="regr-lower"),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "base_type,fc_lag_type,train_fcm,train_hfc",
+        [
+            # local-only (1)
+            pytest.param("local", None, True, False, id="local-nofc-retrain-nohfc"),
+            # global-only, no FC (4)
+            pytest.param("global", None, True, False, id="global-nofc-retrain-nohfc"),
+            pytest.param("global", None, True, True, id="global-nofc-retrain-hfc"),
+            pytest.param(
+                "global", None, False, False, id="global-nofc-pretrained-nohfc"
+            ),
+            pytest.param("global", None, False, True, id="global-nofc-pretrained-hfc"),
+            # global-only, above_ocl (4)
+            pytest.param(
+                "global", "above_ocl", True, False, id="global-above-retrain-nohfc"
+            ),
+            pytest.param(
+                "global", "above_ocl", True, True, id="global-above-retrain-hfc"
+            ),
+            pytest.param(
+                "global", "above_ocl", False, False, id="global-above-pretrained-nohfc"
+            ),
+            pytest.param(
+                "global", "above_ocl", False, True, id="global-above-pretrained-hfc"
+            ),
+            # global-only, at_ocl (4)
+            pytest.param("global", "at_ocl", True, False, id="global-at-retrain-nohfc"),
+            pytest.param("global", "at_ocl", True, True, id="global-at-retrain-hfc"),
+            pytest.param(
+                "global", "at_ocl", False, False, id="global-at-pretrained-nohfc"
+            ),
+            pytest.param(
+                "global", "at_ocl", False, True, id="global-at-pretrained-hfc"
+            ),
+            # global-only, below_ocl (4)
+            pytest.param(
+                "global", "below_ocl", True, False, id="global-below-retrain-nohfc"
+            ),
+            pytest.param(
+                "global", "below_ocl", True, True, id="global-below-retrain-hfc"
+            ),
+            pytest.param(
+                "global", "below_ocl", False, False, id="global-below-pretrained-nohfc"
+            ),
+            pytest.param(
+                "global", "below_ocl", False, True, id="global-below-pretrained-hfc"
+            ),
+            # mix (4)
+            pytest.param("mix", None, True, False, id="mix-nofc-retrain-nohfc"),
+            pytest.param("mix", "above_ocl", True, False, id="mix-above-retrain-nohfc"),
+            pytest.param("mix", "at_ocl", True, False, id="mix-at-retrain-nohfc"),
+            pytest.param("mix", "below_ocl", True, False, id="mix-below-retrain-nohfc"),
+        ],
+    )
+    def test_fit_predict_hfc_combinations(
+        self, base_type, fc_lag_type, train_fcm, train_hfc, regr_type
+    ):
+        """End-to-end test of fit / predict / historical_forecasts across all
+        valid combinations of base model types, future covariate lag structures,
+        training flags, and regression model OCL relative to base model OCL."""
+        series = self.sine_series
+        future_covariates = (
+            tg.linear_timeseries(start=series.start_time(), length=len(series) + 20)
+            if fc_lag_type is not None
+            else None
+        )
+
+        models = self._make_base_models(
+            base_type, fc_lag_type, series, future_covariates, train_fcm
+        )
+
+        # regression model OCL relative to base model OCL (4):
+        #   larger  -> OCL=6 (> 4)
+        #   equal   -> OCL=4 (= 4)
+        #   lower   -> OCL=2 (< 4)
+        regr_ocl_map = {"larger": 6, "equal": 4, "lower": 2}
+        regr_ocl = regr_ocl_map[regr_type]
+        regression_model = SKLearnModel(
+            lags_future_covariates=list(range(regr_ocl)),
+            output_chunk_length=regr_ocl,
+        )
+
+        ensemble = RegressionEnsembleModel(
+            forecasting_models=models,
+            regression_train_n_points=10,
+            regression_model=regression_model,
+            train_forecasting_models=train_fcm,
+            train_using_historical_forecasts=train_hfc,
+        )
+
+        # fit
+        ensemble.fit(series, future_covariates=future_covariates)
+
+        # predict (n <= ocl)
+        n = 1
+        pred = ensemble.predict(n=n, future_covariates=future_covariates)
+        assert len(pred) == n
+        assert pred.start_time() == series.end_time() + series.freq
+
+        # predict (n == ocl)
+        n = regr_ocl
+        pred = ensemble.predict(n=n, future_covariates=future_covariates)
+        assert len(pred) == n
+        assert pred.start_time() == series.end_time() + series.freq
+
+        # predict (n > ocl)
+        n = regr_ocl + 1
+        pred = ensemble.predict(n=n, future_covariates=future_covariates)
+        assert len(pred) == n
+        assert pred.start_time() == series.end_time() + series.freq
+
+        # historical_forecasts: first forecast must start at the minimum
+        hfc = ensemble.historical_forecasts(
+            series=series,
+            future_covariates=future_covariates,
+            retrain=True,
+            overlap_end=True,
+            last_points_only=False,
+        )
+        assert len(hfc) >= 1
+        expected_start = (
+            series.start_time() + ensemble.min_train_series_length * series.freq
+        )
+        assert hfc[0].start_time() == expected_start
+
+    def test_hfc_short_future_covariates_detected(self):
+        """Verify that historical_forecasts correctly detects future covariates
+        that are too short when local base models use them, rather than failing
+        later inside predict()."""
+        series = self.sine_series
+        ensemble = RegressionEnsembleModel(
+            forecasting_models=[
+                NaiveSeasonal(K=5),
+                NaiveFutureCovariatesModel(K=5),
+            ],
+            regression_train_n_points=10,
+        )
+        forecast_horizon = 12
+
+        # covariates must reach min_train_series_length + max_future_cov_lag
+        # + forecast_horizon positions from the series start; one less is too short
+        max_fc_lag = max(
+            el
+            for el in [m.extreme_lags[5] for m in ensemble.forecasting_models]
+            if el is not None
+        )
+        min_fc_len = ensemble.min_train_series_length + max_fc_lag + forecast_horizon
+
+        too_short_fc = tg.linear_timeseries(
+            start=series.start_time(),
+            length=min_fc_len - 1,
+        )
+        with pytest.raises(ValueError, match="Cannot build any dataset"):
+            ensemble.historical_forecasts(
+                series=series,
+                future_covariates=too_short_fc,
+                forecast_horizon=forecast_horizon,
+                overlap_end=True,
+                last_points_only=False,
+            )
+
+        # exactly at the minimum should allow one forecast
+        just_enough_fc = tg.linear_timeseries(
+            start=series.start_time(),
+            length=min_fc_len,
+        )
+        hfc = ensemble.historical_forecasts(
+            series=series,
+            future_covariates=just_enough_fc,
+            forecast_horizon=forecast_horizon,
+            overlap_end=True,
+            last_points_only=False,
+        )
+        assert len(hfc) == 1
 
     @staticmethod
     def get_probabilistic_global_model(
