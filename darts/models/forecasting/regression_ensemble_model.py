@@ -507,6 +507,7 @@ class RegressionEnsembleModel(EnsembleModel):
         self,
         predictions: TimeSeriesLike,
         series: TimeSeriesLike,
+        n: int | None = None,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         random_state: int | None = None,
@@ -518,7 +519,7 @@ class RegressionEnsembleModel(EnsembleModel):
 
         ensembled = [
             self.ensemble_model.predict(
-                n=len(prediction),
+                n=n if n is not None else len(prediction),
                 series=serie,
                 future_covariates=prediction,
                 num_samples=num_samples,

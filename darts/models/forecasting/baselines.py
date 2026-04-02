@@ -360,6 +360,7 @@ class NaiveEnsembleModel(EnsembleModel):
         self,
         predictions: TimeSeriesLike,
         series: TimeSeriesLike,
+        n: int | None = None,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         random_state: int | None = None,

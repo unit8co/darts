@@ -541,14 +541,15 @@ class TestRegressionEnsembleModels:
         assert (
             max(m_.min_train_series_length for m_ in ensemble.forecasting_models) == 10
         )
-        # 10 from training the forecasting models, and 10 from training the regression model
-        assert ensemble.min_train_series_length == 10 + regr_train_n
+        # 11 from input window (10) + output window (1), and 10 from training the regression model
+        assert ensemble.min_train_series_length == 11 + regr_train_n
 
         ensemble.fit(self.sine_series)
-        # -10 comes from the maximum minimum train series length of all models
+        # -10 comes from the maximum minimum train series length of all models;
+        # max_target_lag is 0 (adjusted from -1 to account for regression model's OCL=1)
         assert ensemble.extreme_lags == (
             -10,
-            -1,
+            0,
             None,
             None,
             None,
@@ -558,7 +559,7 @@ class TestRegressionEnsembleModels:
         preds = ensemble.historical_forecasts(self.sine_series)
 
         expected_start = (
-            self.sine_series.start_time() + (10 + regr_train_n) * self.sine_series.freq
+            self.sine_series.start_time() + (11 + regr_train_n) * self.sine_series.freq
         )
         assert preds.start_time() == expected_start
         ensemble.backtest(self.sine_series)
@@ -604,8 +605,9 @@ class TestRegressionEnsembleModels:
             m2 = LinearRegressionModel(lags=3, output_chunk_length=4)
         elif m2_type == "local":
             m2 = NaiveSeasonal(K=3)
-            # local models don't have an output chunk length, the series can be shorter
-            expected_min_length -= 4
+            # local models don't have an output chunk length; the series can be shorter,
+            # but still need 1 step for the regression model's output window (vs 4 for global)
+            expected_min_length -= 3
         else:
             m2 = BlockRNNModel(
                 input_chunk_length=3, output_chunk_length=4, **tfm_kwargs, n_epochs=1
