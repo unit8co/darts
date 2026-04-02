@@ -531,16 +531,6 @@ class RegressionEnsembleModel(EnsembleModel):
         return seq2series(ensembled) if is_single_series else ensembled
 
     @property
-    def output_chunk_length(self) -> int:
-        # the `output_chunk_length` of the regression model (ensembling layer)
-        return self.ensemble_model.output_chunk_length
-
-    @property
-    def output_chunk_shift(self) -> int:
-        # the `output_chunk_shift` of the regression model (ensembling layer)
-        return self.ensemble_model.output_chunk_shift
-
-    @property
     def supports_likelihood_parameter_prediction(self) -> bool:
         # likelihood parameters predictions are supported if the regression model supports it (ensembling layer)
         return self.ensemble_model.supports_likelihood_parameter_prediction
