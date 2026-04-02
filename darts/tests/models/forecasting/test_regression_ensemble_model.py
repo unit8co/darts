@@ -1250,11 +1250,21 @@ class TestRegressionEnsembleModels:
         assert ensemble.ensemble_model.lags == {"future": [1, 2]}
 
         ensemble.fit(self.sine_series)
+
+        preds = ensemble.predict(n=1)
+        assert (
+            preds.start_time()
+            == self.sine_series.end_time() + 2 * self.sine_series.freq
+        )
+
         preds = ensemble.predict(n=ocl)
         assert (
             preds.start_time()
             == self.sine_series.end_time() + 2 * self.sine_series.freq
         )
+
+        with pytest.raises(ValueError, match="Cannot perform auto-regression"):
+            _ = ensemble.predict(n=ocl + 1)
 
     def test_shift_mismatch_validation(self):
         m1 = LinearRegressionModel(lags=2, output_chunk_shift=1)
@@ -1377,33 +1387,6 @@ class TestRegressionEnsembleModels:
                     output_chunk_length=ocl,
                     output_chunk_shift=ocs,
                 ),
-            )
-
-    def test_coverage_mismatched_ocl_validation(self):
-        shift = 1
-        base_ocl = 3
-        ens_ocl = 4
-        # Base models have min OCL of 2
-        m1 = LinearRegressionModel(
-            lags=2, output_chunk_length=base_ocl, output_chunk_shift=shift
-        )
-
-        # We provide a regression model with OCL of 5 (mismatch)
-        mismatched_regr = SKLearnModel(
-            lags_future_covariates=(0, ens_ocl),
-            output_chunk_length=ens_ocl,
-            output_chunk_shift=shift,
-        )
-
-        with pytest.raises(
-            ValueError,
-            match="`regression_model` must use the minimum `output_chunk_length`",
-        ):
-            RegressionEnsembleModel(
-                forecasting_models=[m1],
-                regression_train_n_points=5,
-                train_using_historical_forecasts=True,
-                regression_model=mismatched_regr,
             )
 
     @staticmethod
