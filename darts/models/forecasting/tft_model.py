@@ -137,8 +137,8 @@ class _TFTModule(PLForecastingModule):
 
         # initialize last batch size to check if new mask needs to be generated
         self.batch_size_last = -1
-        self.attention_mask = None
-        self.relative_index = None
+        self.register_buffer("attention_mask", None, persistent=False)
+        self.register_buffer("relative_index", None, persistent=False)
 
         # general information on variable name endings:
         # _vsn: VariableSelectionNetwork
