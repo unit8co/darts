@@ -1018,6 +1018,38 @@ class TestRegressionEnsembleModels:
                 regression_train_num_samples=10,
             )
 
+    def test_train_samples_reduction_using_historical_forecasts(self):
+        quantiles = [0.25, 0.5, 0.75]
+
+        # probabilistic ensembling model
+        base_model = [
+            LinearRegressionModel(
+                lags=2,
+                likelihood="quantile",
+                quantiles=quantiles,
+            )
+        ]
+
+        ensemble_model = LinearRegressionModel(
+            lags_future_covariates=(0, 1),
+            likelihood="quantile",
+            quantiles=quantiles,
+        )
+
+        # every models are probabilistic
+        model = RegressionEnsembleModel(
+            forecasting_models=base_model,
+            regression_model=ensemble_model,
+            regression_train_n_points=10,
+            regression_train_num_samples=100,
+            train_using_historical_forecasts=True,
+        )
+
+        model.fit(self.sine_series)
+        # probabilistic forecasting is supported
+        pred = model.predict(5, num_samples=10)
+        assert pred.shape == (5, self.sine_series.n_components, 10)
+
     def test_stochastic_training_regression_ensemble_model(self):
         """
         regression model is deterministic (default) but the forecasting models are
@@ -1025,62 +1057,59 @@ class TestRegressionEnsembleModels:
         """
         quantiles = [0.25, 0.5, 0.75]
 
-        # cannot sample deterministic forecasting models
-        with pytest.raises(ValueError):
-            RegressionEnsembleModel(
+        def _get_kwargs(mode: str):
+            kwargs = dict()
+            if mode == "probabilistic":
+                model_create_fn = self.get_probabilistic_global_model
+                kwargs["quantiles"] = quantiles
+            else:
+                model_create_fn = self.get_deterministic_global_model
+
+            return dict(
                 forecasting_models=[
-                    self.get_deterministic_global_model(lags=[-1, -3]),
-                    self.get_deterministic_global_model(lags=[-2, -4]),
+                    model_create_fn(lags=[-1, -3], **kwargs),
+                    model_create_fn(lags=[-2, -4], **kwargs),
                 ],
                 regression_train_n_points=50,
                 regression_train_num_samples=500,
             )
+
+        # cannot sample deterministic forecasting models
+        with pytest.raises(ValueError):
+            RegressionEnsembleModel(**_get_kwargs("deterministic"))
 
         # must use appropriate reduction method
         with pytest.raises(ValueError):
             RegressionEnsembleModel(
-                forecasting_models=[
-                    self.get_probabilistic_global_model(
-                        lags=[-1, -3], quantiles=quantiles
-                    ),
-                    self.get_probabilistic_global_model(
-                        lags=[-2, -4], quantiles=quantiles
-                    ),
-                ],
-                regression_train_n_points=50,
-                regression_train_num_samples=500,
                 regression_train_samples_reduction="wrong",
+                **_get_kwargs("probabilistic"),
+            )
+
+        # invalid float (not in between 0.<=x<=1.)
+        with pytest.raises(ValueError):
+            RegressionEnsembleModel(
+                regression_train_samples_reduction=1.2,
+                **_get_kwargs("probabilistic"),
+            )
+
+        # neither float, None, or str
+        with pytest.raises(ValueError):
+            RegressionEnsembleModel(
+                regression_train_samples_reduction=1,
+                **_get_kwargs("probabilistic"),
             )
 
         # by default, does not reduce samples and convert them to components
         ensemble_model_mean = RegressionEnsembleModel(
-            forecasting_models=[
-                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
-                self.get_probabilistic_global_model(lags=[-2, -4], quantiles=quantiles),
-            ],
-            regression_train_n_points=50,
-            regression_train_num_samples=500,
             regression_train_samples_reduction="mean",
+            **_get_kwargs("probabilistic"),
         )
 
-        ensemble_model_median = RegressionEnsembleModel(
-            forecasting_models=[
-                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
-                self.get_probabilistic_global_model(lags=[-2, -4], quantiles=quantiles),
-            ],
-            regression_train_n_points=50,
-            regression_train_num_samples=500,
-        )
+        ensemble_model_median = RegressionEnsembleModel(**_get_kwargs("probabilistic"))
         assert ensemble_model_median.train_samples_reduction == "median"
 
         ensemble_model_0_5_quantile = RegressionEnsembleModel(
-            forecasting_models=[
-                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
-                self.get_probabilistic_global_model(lags=[-2, -4], quantiles=quantiles),
-            ],
-            regression_train_n_points=50,
-            regression_train_num_samples=500,
-            regression_train_samples_reduction=0.5,
+            regression_train_samples_reduction=0.5, **_get_kwargs("probabilistic")
         )
 
         train, val = self.ts_sum1.split_after(0.9)
@@ -1107,14 +1136,9 @@ class TestRegressionEnsembleModels:
             ensemble_model_0_5_quantile.predict(len(val), num_samples=100)
 
         # possible to use very small regression_train_num_samples
-        ensemble_model_mean_1_sample = RegressionEnsembleModel(
-            forecasting_models=[
-                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
-                self.get_probabilistic_global_model(lags=[-2, -4], quantiles=quantiles),
-            ],
-            regression_train_n_points=50,
-            regression_train_num_samples=1,
-        )
+        kwargs_1_sample = _get_kwargs("probabilistic")
+        kwargs_1_sample["regression_train_num_samples"] = 1
+        ensemble_model_mean_1_sample = RegressionEnsembleModel(**kwargs_1_sample)
         ensemble_model_mean_1_sample.fit(train)
         ensemble_model_mean_1_sample.predict(len(val))
 
@@ -1218,6 +1242,41 @@ class TestRegressionEnsembleModels:
                 ),
             )
 
+    def test_invalid_base_models_list(self):
+        with pytest.raises(
+            ValueError,
+            match="`forecasting_models` must be a non-empty list of forecasting models.",
+        ):
+            RegressionEnsembleModel(
+                forecasting_models=1,
+                regression_train_n_points=5,
+            )
+
+    def test_only_future_lags_allowed(self):
+        with pytest.raises(
+            ValueError,
+            match="lags` and `lags_past_covariates` of `regression_model` must be `None`.",
+        ):
+            RegressionEnsembleModel(
+                forecasting_models=[LinearRegressionModel(lags=2)],
+                regression_model=LinearRegressionModel(lags=2),
+                regression_train_n_points=5,
+            )
+
+    def test_using_hfc_only_for_global_models(self):
+        with pytest.raises(
+            ValueError,
+            match=(
+                "`train_using_historical_forecasts=True` is only available "
+                "when all `forecasting_models` are global models."
+            ),
+        ):
+            RegressionEnsembleModel(
+                forecasting_models=[NaiveSeasonal(K=2)],
+                regression_train_n_points=5,
+                train_using_historical_forecasts=True,
+            )
+
     @pytest.mark.parametrize("use_auto", [True, False])
     def test_output_chunk_shift_support(self, use_auto):
         shift = 1
@@ -1266,7 +1325,7 @@ class TestRegressionEnsembleModels:
         with pytest.raises(ValueError, match="Cannot perform auto-regression"):
             _ = ensemble.predict(n=ocl + 1)
 
-    def test_shift_mismatch_validation(self):
+    def test_shift_mismatch_ensemble_validation(self):
         m1 = LinearRegressionModel(lags=2, output_chunk_shift=1)
         custom_regr = SKLearnModel(lags_future_covariates=[0], output_chunk_shift=0)
 
@@ -1280,6 +1339,54 @@ class TestRegressionEnsembleModels:
                 regression_model=custom_regr,
                 train_using_historical_forecasts=True,
             )
+
+    def test_shift_mismatch_base_models_validation(self):
+        m1 = LinearRegressionModel(lags=2, output_chunk_shift=1)
+        m2 = LinearRegressionModel(lags=2, output_chunk_shift=2)
+
+        with pytest.raises(
+            ValueError,
+            match="All base forecasting models must have the same `output_chunk_shift`",
+        ):
+            RegressionEnsembleModel(
+                forecasting_models=[m1, m2],
+                regression_train_n_points=5,
+            )
+
+    def test_shift_minimum_output_length(self):
+        m1 = LinearRegressionModel(lags=2, output_chunk_shift=1, output_chunk_length=2)
+        m2 = LinearRegressionModel(lags=2, output_chunk_shift=1, output_chunk_length=3)
+        kwargs = dict(
+            forecasting_models=[m1, m2],
+            train_using_historical_forecasts=True,
+            regression_train_n_points=5,
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="With `output_chunk_shift>0`, `regression_model` must use the minimum `output_chunk_length`",
+        ):
+            RegressionEnsembleModel(
+                regression_model=LinearRegressionModel(
+                    lags_future_covariates=(0, 2),
+                    output_chunk_shift=1,
+                    output_chunk_length=3,
+                ),
+                **kwargs,
+            )
+        # ocl is the smallest
+        model = RegressionEnsembleModel(
+            regression_model=LinearRegressionModel(
+                lags_future_covariates=(0, 2),
+                output_chunk_shift=1,
+                output_chunk_length=2,
+            ),
+            **kwargs,
+        )
+        pred = model.fit(self.sine_series).predict(n=1)
+        assert (
+            pred.start_time() == self.sine_series.end_time() + 2 * self.sine_series.freq
+        )
 
     def test_shift_only_supported_for_training_on_historical_forecasts(self):
         train_n_points = 5
@@ -1296,6 +1403,25 @@ class TestRegressionEnsembleModels:
                 regression_train_n_points=train_n_points,
                 train_using_historical_forecasts=False,
             )
+
+    def test_train_n_points_too_short(self):
+        kwargs = dict(
+            forecasting_models=[LinearRegressionModel(lags=2, output_chunk_length=1)],
+            regression_model=LinearRegressionModel(
+                lags_future_covariates=(0, 4), output_chunk_length=4
+            ),
+        )
+        # train n points just too small
+        with pytest.raises(
+            ValueError,
+            match=r"`regression_train_n_points` \(4\) must be `>=5`",
+        ):
+            RegressionEnsembleModel(regression_train_n_points=4, **kwargs)
+
+        # train n points large enough
+        model = RegressionEnsembleModel(regression_train_n_points=5, **kwargs)
+        pred = model.fit(self.sine_series).predict(n=4)
+        assert pred.start_time() == self.sine_series.end_time() + self.sine_series.freq
 
     @pytest.mark.parametrize(
         "config", itertools.product([True, False], [True, False], [True, False])
@@ -1629,3 +1755,24 @@ class TestRegressionEnsembleModels:
         lags: int | list[int], random_state: int = 13
     ) -> LinearRegressionModel:
         return LinearRegressionModel(lags=lags, random_state=random_state)
+
+    def test_valid_series_input(self):
+        ensemble = RegressionEnsembleModel(
+            forecasting_models=[
+                LinearRegressionModel(lags=2, lags_past_covariates=2),
+            ],
+            regression_train_n_points=10,
+        )
+        with pytest.raises(
+            ValueError, match="be either single TimeSeries or sequences of TimeSeries."
+        ):
+            ensemble.fit(series=self.sine_series, past_covariates=[self.sine_series])
+
+        with pytest.raises(
+            ValueError, match="`future_covariates` were provided to an `EnsembleModel`"
+        ):
+            ensemble.fit(
+                series=self.sine_series,
+                past_covariates=self.sine_series,
+                future_covariates=self.sine_series,
+            )

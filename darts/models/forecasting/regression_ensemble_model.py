@@ -198,12 +198,13 @@ class RegressionEnsembleModel(EnsembleModel):
         ):
             raise_log(
                 ValueError(
-                    f"The `output_chunk_length` ({regression_model.output_chunk_length}) of `regression_model` "
-                    f"must be smaller than `regression_train_n_point - {regression_model.min_train_samples - 1}` "
-                    f"(<{regression_train_n_points - (regression_model.min_train_samples - 1)})."
+                    f"`regression_train_n_points` ({regression_train_n_points}) must be "
+                    f"`>={regression_model.output_chunk_length + regression_model.min_train_samples - 1}`, given by "
+                    f"`(regression_model.output_chunk_length + regression_model.min_train_samples - 1)`."
                 ),
                 logger,
             )
+
         if output_chunk_shift > 0 and (
             regression_model.output_chunk_length != output_chunk_length
         ):

@@ -114,12 +114,6 @@ class NaiveSeasonal(LocalForecastingModel):
 
     def fit(self, series: TimeSeries, verbose: bool | None = None):
         super().fit(series, verbose=verbose)
-
-        if len(series) < self.K:
-            raise_log(
-                ValueError(f"The time series requires at least K={self.K} points"),
-                logger,
-            )
         self.last_k_vals = series.values(copy=False)[-self.K :, :]
         return self
 
@@ -169,7 +163,6 @@ class NaiveDrift(LocalForecastingModel):
 
     def fit(self, series: TimeSeries, verbose: bool | None = None):
         super().fit(series, verbose=verbose)
-        assert series.n_samples == 1, "This model expects deterministic time series"
         return self
 
     def predict(
@@ -367,18 +360,8 @@ class NaiveEnsembleModel(EnsembleModel):
         verbose: bool | None = None,
     ) -> TimeSeriesLike:
         """Average the `forecasting_models` predictions, component-wise"""
-        if (
-            predict_likelihood_parameters
-            and not self.supports_likelihood_parameter_prediction
-        ):
-            raise_log(
-                ValueError(
-                    "`predict_likelihood_parameters=True` is supported only if all the `forecasting_models` "
-                    "are probabilistic and fitting the same likelihood."
-                ),
-                logger,
-            )
-
+        # at this point, if `predict_likelihood_parameters=True`, it's guaranteed
+        # that all models use the same likelihood
         if isinstance(predictions, Sequence):
             return [
                 (
