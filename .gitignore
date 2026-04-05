@@ -28,3 +28,4 @@ uv.lock
 
 # C++ build artifacts
 *.so
+_ext.pyi

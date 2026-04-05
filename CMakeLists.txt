@@ -63,6 +63,7 @@ nanobind_add_stub(
   MODULE _ext
   OUTPUT _ext.pyi
   PYTHON_PATH $<TARGET_FILE_DIR:_ext>
+  MARKER_FILE py.typed
   DEPENDS _ext
 )
 
