@@ -876,8 +876,8 @@ def _safe_scaled_divide(
 
     * **Case 1** – scale ≈ 0, errors ≠ 0 (non-zero / zero): the scaled error
       is undefined, so the result is ``np.nan`` (or the supplied float).
-    * **Case 2** – scale ≈ 0, errors ≈ 0 (zero / zero): the model error is
-      zero, so the result is ``0.0`` (or the supplied float).
+    * **Case 2** – scale ≈ 0, errors ≈ 0 (zero / zero): the model is on par
+      with the naive baseline, so the result is ``1.0`` (or the supplied float).
 
     Parameters
     ----------
@@ -889,7 +889,7 @@ def _safe_scaled_divide(
         Controls behaviour when ``scale`` is (near) zero.
 
         * ``"warn"`` (default) – applies the smart defaults described above
-          (``np.nan`` for case 1, ``0.0`` for case 2) and emits a
+          (``np.nan`` for case 1, ``1.0`` for case 2) and emits a
           ``UserWarning``.
         * ``"raise"`` – raises a ``ValueError`` (the legacy behaviour).
         * A numeric value (e.g. ``0.0``, ``np.nan``) – used as the fill value
@@ -917,12 +917,12 @@ def _safe_scaled_divide(
 
     if isinstance(zero_division, str):
         # "warn" mode: distinguish 0/0 from non-zero/0
-        # Case 2: both numerator and denominator are ~0 → 0.0
+        # Case 2: both numerator and denominator are ~0 → 1.0 (on par with naive)
         both_zero = zero_mask & np.all(np.isclose(errors, 0.0), axis=tuple(range(errors.ndim - 1))) if errors.ndim > 1 else zero_mask & np.isclose(errors, 0.0)
-        # Case 1: denominator ~0 but numerator is not → nan
+        # Case 1: denominator ~0 but numerator is not → nan (undefined ratio)
         only_denom_zero = zero_mask & ~(np.all(np.isclose(errors, 0.0), axis=tuple(range(errors.ndim - 1))) if errors.ndim > 1 else np.isclose(errors, 0.0))
 
-        result[..., both_zero] = 0.0
+        result[..., both_zero] = 1.0
         result[..., only_denom_zero] = np.nan
 
         if zero_division == "warn":
@@ -931,7 +931,7 @@ def _safe_scaled_divide(
             warnings.warn(
                 "The error scale (denominator) is zero for some components. "
                 "Those entries are set to NaN (when numerator is non-zero) or "
-                "0.0 (when numerator is also zero). Use zero_division parameter "
+                "1.0 (when numerator is also zero, i.e. on par with naive). Use zero_division parameter "
                 "to control this behaviour.",
                 UserWarning,
                 stacklevel=5,

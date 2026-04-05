@@ -451,8 +451,8 @@ def ase(
         Controls behaviour when the error scale (denominator) is zero, i.e., when the ``insample`` series is
         constant or perfectly seasonal with period ``m``.
 
-        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``0.0``
-          when the numerator is also zero (model error is zero), and emits a ``UserWarning``.
+        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
+          when the numerator is also zero (on par with naive baseline), and emits a ``UserWarning``.
         * ``"raise"`` – raises a ``ValueError`` (legacy behaviour).
         * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
           entries regardless of the numerator.
@@ -580,8 +580,8 @@ def mase(
         Controls behaviour when the error scale (denominator) is zero, i.e., when the ``insample`` series is
         constant or perfectly seasonal with period ``m``.
 
-        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``0.0``
-          when the numerator is also zero (model error is zero), and emits a ``UserWarning``.
+        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
+          when the numerator is also zero (on par with naive baseline), and emits a ``UserWarning``.
         * ``"raise"`` – raises a ``ValueError`` (legacy behaviour).
         * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
           entries regardless of the numerator.
@@ -885,8 +885,8 @@ def sse(
         Controls behaviour when the error scale (denominator) is zero, i.e., when the ``insample`` series is
         constant or perfectly seasonal with period ``m``.
 
-        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``0.0``
-          when the numerator is also zero (model error is zero), and emits a ``UserWarning``.
+        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
+          when the numerator is also zero (on par with naive baseline), and emits a ``UserWarning``.
         * ``"raise"`` – raises a ``ValueError`` (legacy behaviour).
         * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
           entries regardless of the numerator.
@@ -1014,8 +1014,8 @@ def msse(
         Controls behaviour when the error scale (denominator) is zero, i.e., when the ``insample`` series is
         constant or perfectly seasonal with period ``m``.
 
-        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``0.0``
-          when the numerator is also zero (model error is zero), and emits a ``UserWarning``.
+        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
+          when the numerator is also zero (on par with naive baseline), and emits a ``UserWarning``.
         * ``"raise"`` – raises a ``ValueError`` (legacy behaviour).
         * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
           entries regardless of the numerator.
@@ -1223,8 +1223,8 @@ def rmsse(
         Controls behaviour when the error scale (denominator) is zero, i.e., when the ``insample`` series is
         constant or perfectly seasonal with period ``m``.
 
-        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``0.0``
-          when the numerator is also zero (model error is zero), and emits a ``UserWarning``.
+        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
+          when the numerator is also zero (on par with naive baseline), and emits a ``UserWarning``.
         * ``"raise"`` – raises a ``ValueError`` (legacy behaviour).
         * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
           entries regardless of the numerator.

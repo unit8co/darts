@@ -1363,7 +1363,7 @@ class TestMetrics:
 
         # --- Case 2: perfect prediction with constant insample (0/0) ---
         # use series1 as both actual and pred so error numerator is 0
-        # default "warn" mode: 0/0 → 0.0
+        # default "warn" mode: 0/0 → 1.0 (on par with naive)
         with pytest.warns(UserWarning):
             result = metric(
                 self.series1,
@@ -1373,7 +1373,7 @@ class TestMetrics:
                 component_reduction=None,
                 **kwargs,
             )
-        assert np.all(result == 0.0)
+        assert np.all(result == 1.0)
 
         # explicit float: 0/0 also gets the fill value
         result = metric(
