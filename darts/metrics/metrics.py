@@ -452,7 +452,8 @@ def ase(
         constant or perfectly seasonal with period ``m``.
 
         * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
-          when the numerator is also zero (on par with naive baseline), and emits a ``UserWarning``.
+          when the numerator is also zero (on par with naive baseline — we cannot distinguish a trivially naive
+          prediction from a non-trivial one that happens to match), and emits a ``UserWarning``.
         * ``"raise"`` – raises a ``ValueError`` (legacy behaviour).
         * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
           entries regardless of the numerator.
@@ -581,7 +582,8 @@ def mase(
         constant or perfectly seasonal with period ``m``.
 
         * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
-          when the numerator is also zero (on par with naive baseline), and emits a ``UserWarning``.
+          when the numerator is also zero (on par with naive baseline — we cannot distinguish a trivially naive
+          prediction from a non-trivial one that happens to match), and emits a ``UserWarning``.
         * ``"raise"`` – raises a ``ValueError`` (legacy behaviour).
         * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
           entries regardless of the numerator.
@@ -886,7 +888,8 @@ def sse(
         constant or perfectly seasonal with period ``m``.
 
         * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
-          when the numerator is also zero (on par with naive baseline), and emits a ``UserWarning``.
+          when the numerator is also zero (on par with naive baseline — we cannot distinguish a trivially naive
+          prediction from a non-trivial one that happens to match), and emits a ``UserWarning``.
         * ``"raise"`` – raises a ``ValueError`` (legacy behaviour).
         * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
           entries regardless of the numerator.
@@ -1015,7 +1018,8 @@ def msse(
         constant or perfectly seasonal with period ``m``.
 
         * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
-          when the numerator is also zero (on par with naive baseline), and emits a ``UserWarning``.
+          when the numerator is also zero (on par with naive baseline — we cannot distinguish a trivially naive
+          prediction from a non-trivial one that happens to match), and emits a ``UserWarning``.
         * ``"raise"`` – raises a ``ValueError`` (legacy behaviour).
         * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
           entries regardless of the numerator.
@@ -1224,7 +1228,8 @@ def rmsse(
         constant or perfectly seasonal with period ``m``.
 
         * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
-          when the numerator is also zero (on par with naive baseline), and emits a ``UserWarning``.
+          when the numerator is also zero (on par with naive baseline — we cannot distinguish a trivially naive
+          prediction from a non-trivial one that happens to match), and emits a ``UserWarning``.
         * ``"raise"`` – raises a ``ValueError`` (legacy behaviour).
         * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
           entries regardless of the numerator.

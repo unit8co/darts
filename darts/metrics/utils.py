@@ -879,6 +879,13 @@ def _safe_scaled_divide(
     * **Case 2** – scale ≈ 0, errors ≈ 0 (zero / zero): the model is on par
       with the naive baseline, so the result is ``1.0`` (or the supplied float).
 
+    .. note::
+       Returning ``1.0`` for the 0/0 case assumes "model matches naive baseline"
+       since we cannot distinguish whether the model trivially *is* the seasonal
+       naive or made a non-trivial prediction that happens to match.  For practical
+       purposes ``1.0`` is the right default; callers who need different semantics
+       can pass an explicit numeric ``zero_division`` value.
+
     Parameters
     ----------
     errors
@@ -911,34 +918,28 @@ def _safe_scaled_divide(
             logger=logger,
         )
 
-    # Safe division: replace zero-scale with 1 to avoid runtime warnings
-    safe_scale = np.where(zero_mask, 1.0, scale)
-    result = errors / safe_scale
-
+    # Determine the fill value for zero-scale entries in a single pass.
+    # For numeric zero_division: use that value everywhere.
+    # For "warn": Case 1 (non-zero / zero) → nan, Case 2 (0 / 0) → 1.0.
     if isinstance(zero_division, str):
-        # "warn" mode: distinguish 0/0 from non-zero/0
-        # Case 2: both numerator and denominator are ~0 → 1.0 (on par with naive)
-        both_zero = zero_mask & np.all(np.isclose(errors, 0.0), axis=tuple(range(errors.ndim - 1))) if errors.ndim > 1 else zero_mask & np.isclose(errors, 0.0)
-        # Case 1: denominator ~0 but numerator is not → nan (undefined ratio)
-        only_denom_zero = zero_mask & ~(np.all(np.isclose(errors, 0.0), axis=tuple(range(errors.ndim - 1))) if errors.ndim > 1 else np.isclose(errors, 0.0))
-
-        result[..., both_zero] = 1.0
-        result[..., only_denom_zero] = np.nan
-
-        if zero_division == "warn":
-            import warnings
-
-            warnings.warn(
-                "The error scale (denominator) is zero for some components. "
-                "Those entries are set to NaN (when numerator is non-zero) or "
-                "1.0 (when numerator is also zero, i.e. on par with naive). Use zero_division parameter "
-                "to control this behaviour.",
-                UserWarning,
-                stacklevel=5,
-            )
+        fill = np.where(np.isclose(errors, 0.0), 1.0, np.nan)
     else:
-        # Numeric fill: apply the same value to all zero-scale entries
-        result[..., zero_mask] = zero_division
+        fill = zero_division
+
+    # Single-pass: where scale ≈ 0 use fill, otherwise normal division
+    result = np.where(zero_mask, fill, errors / np.where(zero_mask, 1.0, scale))
+
+    if zero_division == "warn":
+        import warnings
+
+        warnings.warn(
+            "The error scale (denominator) is zero for some components. "
+            "Those entries are set to NaN (when numerator is non-zero) or "
+            "1.0 (when numerator is also zero, i.e. on par with naive). Use zero_division parameter "
+            "to control this behaviour.",
+            UserWarning,
+            stacklevel=5,
+        )
 
     return result
 
