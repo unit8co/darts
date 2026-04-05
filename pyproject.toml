@@ -82,7 +82,7 @@ required-environments = [
     "sys_platform == 'linux'",
     "sys_platform == 'win32'",
 ]
-cache-keys = [ {file = "src/*.cpp"}, {file = "include/*.h"} ]
+cache-keys = [ {file = "src/*.cpp"}, {file = "include/*.h"}, {file = "CMakeLists.txt"} ]
 
 [tool.uv.pip]
 # Use only binary dependency wheels to prevent arbitrary code execution
@@ -97,12 +97,6 @@ name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 explicit = true  # Only use this index for packages explicitly configured to use it
 
-[tool.setuptools]
-zip-safe = false
-
-[tool.setuptools.packages.find]
-exclude = ["examples*", "datasets*", "docs*", "darts.tests*"]
-
 [tool.scikit-build]
 # Protect the configuration against future changes in scikit-build-core
 minimum-version = "build-system.requires"
@@ -112,9 +106,9 @@ build-dir = "build/{wheel_tag}"
 
 # Build stable ABI wheels for CPython 3.12+
 wheel.py-api = "cp312"
-
-[tool.setuptools.package-data]
-darts = ["py.typed"]
+# Explicit package selection for wheel assembly via scikit-build-core.
+# Keep this backend-exclusive to avoid accidental setuptools-built wheels.
+wheel.packages = ["darts"]
 
 [tool.cibuildwheel]
 archs = "all"

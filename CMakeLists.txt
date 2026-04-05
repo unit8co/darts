@@ -58,5 +58,25 @@ nanobind_add_module(
   src/dtw.cpp
 )
 
+nanobind_add_stub(
+  _ext_stub
+  MODULE _ext
+  OUTPUT _ext.pyi
+  PYTHON_PATH $<TARGET_FILE_DIR:_ext>
+  DEPENDS _ext
+)
+
+# Keep generated typing artifacts visible to language servers during local/editable
+# development. VS Code/Pylance resolves this workspace package from source.
+add_custom_command(
+  TARGET _ext_stub POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    ${CMAKE_CURRENT_BINARY_DIR}/_ext.pyi
+    ${CMAKE_CURRENT_SOURCE_DIR}/darts/_ext.pyi
+)
+
 # Install directive for scikit-build-core
 install(TARGETS _ext LIBRARY DESTINATION darts)
+
+# Install the generated stub file as well, so that it can be included in the wheel
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/py.typed ${CMAKE_CURRENT_BINARY_DIR}/_ext.pyi DESTINATION darts)
