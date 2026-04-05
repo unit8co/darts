@@ -861,9 +861,86 @@ def _get_error_scale(
             logger=logger,
         )
 
-    if np.isclose(scale, 0.0).any():
-        raise_log(ValueError("cannot use MASE with periodical signals"), logger=logger)
     return scale
+
+
+def _safe_scaled_divide(
+    errors: np.ndarray,
+    scale: np.ndarray,
+    zero_division: float | str = "warn",
+) -> np.ndarray:
+    """Divides ``errors`` by ``scale``, handling zero-scale entries gracefully.
+
+    When ``zero_division`` is ``"warn"`` (default) or a float, the behaviour
+    depends on whether the *numerator* is also zero:
+
+    * **Case 1** – scale ≈ 0, errors ≠ 0 (non-zero / zero): the scaled error
+      is undefined, so the result is ``np.nan`` (or the supplied float).
+    * **Case 2** – scale ≈ 0, errors ≈ 0 (zero / zero): the model error is
+      zero, so the result is ``0.0`` (or the supplied float).
+
+    Parameters
+    ----------
+    errors
+        Numerator array of shape ``(t, c)`` or ``(c,)``.
+    scale
+        Denominator array of shape ``(c,)``.
+    zero_division
+        Controls behaviour when ``scale`` is (near) zero.
+
+        * ``"warn"`` (default) – applies the smart defaults described above
+          (``np.nan`` for case 1, ``0.0`` for case 2) and emits a
+          ``UserWarning``.
+        * ``"raise"`` – raises a ``ValueError`` (the legacy behaviour).
+        * A numeric value (e.g. ``0.0``, ``np.nan``) – used as the fill value
+          for **all** zero-scale entries regardless of the numerator.
+
+    Returns
+    -------
+    np.ndarray
+        The result of ``errors / scale``, with zero-scale entries replaced.
+    """
+    zero_mask = np.isclose(scale, 0.0)
+    if not zero_mask.any():
+        return errors / scale
+
+    # --- legacy behaviour: raise on zero scale ---
+    if zero_division == "raise":
+        raise_log(
+            ValueError("cannot use scaled metric with periodical signals"),
+            logger=logger,
+        )
+
+    # Safe division: replace zero-scale with 1 to avoid runtime warnings
+    safe_scale = np.where(zero_mask, 1.0, scale)
+    result = errors / safe_scale
+
+    if isinstance(zero_division, str):
+        # "warn" mode: distinguish 0/0 from non-zero/0
+        # Case 2: both numerator and denominator are ~0 → 0.0
+        both_zero = zero_mask & np.all(np.isclose(errors, 0.0), axis=tuple(range(errors.ndim - 1))) if errors.ndim > 1 else zero_mask & np.isclose(errors, 0.0)
+        # Case 1: denominator ~0 but numerator is not → nan
+        only_denom_zero = zero_mask & ~(np.all(np.isclose(errors, 0.0), axis=tuple(range(errors.ndim - 1))) if errors.ndim > 1 else np.isclose(errors, 0.0))
+
+        result[..., both_zero] = 0.0
+        result[..., only_denom_zero] = np.nan
+
+        if zero_division == "warn":
+            import warnings
+
+            warnings.warn(
+                "The error scale (denominator) is zero for some components. "
+                "Those entries are set to NaN (when numerator is non-zero) or "
+                "0.0 (when numerator is also zero). Use zero_division parameter "
+                "to control this behaviour.",
+                UserWarning,
+                stacklevel=5,
+            )
+    else:
+        # Numeric fill: apply the same value to all zero-scale entries
+        result[..., zero_mask] = zero_division
+
+    return result
 
 
 def _unique_labels(y_true: np.ndarray, y_pred: np.ndarray) -> list[np.ndarray]:

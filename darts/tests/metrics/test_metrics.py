@@ -1114,8 +1114,19 @@ class TestMetrics:
         ],
     )
     def test_season(self, metric):
-        with pytest.raises(ValueError):
+        # default "warn" mode: no longer raises, emits a warning instead
+        with pytest.warns(UserWarning, match="error scale.*denominator.*zero"):
             metric(self.series3, self.series3 * 1.3, self.series_train, 8)
+
+        # legacy "raise" mode still raises ValueError
+        with pytest.raises(ValueError):
+            metric(
+                self.series3,
+                self.series3 * 1.3,
+                self.series_train,
+                8,
+                zero_division="raise",
+            )
 
     @pytest.mark.parametrize(
         "config",
@@ -1262,6 +1273,133 @@ class TestMetrics:
         # multi-ts one array has different length
         with pytest.raises(ValueError):
             metric([self.series1] * 2, [self.series2] * 2, [insample] * 3)
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (metrics.ase, False, {"time_reduction": np.nanmean}),
+            (metrics.sse, False, {"time_reduction": np.nanmean}),
+            (metrics.mase, True, {}),
+            (metrics.msse, True, {}),
+            (metrics.rmsse, True, {}),
+        ],
+    )
+    def test_scaled_errors_zero_division(self, config):
+        """Test that scaled metrics handle zero error scale gracefully."""
+        metric, is_aggregate, kwargs = config
+
+        # --- constant insample (zero scale for m=1) ---
+        constant_train = TimeSeries.from_times_and_values(
+            self.series_train.time_index,
+            np.full((len(self.series_train), 1), 5.0),
+        )
+
+        # default zero_division="warn": Case 1 (non-zero / zero) → nan + warning
+        with pytest.warns(UserWarning, match="error scale.*denominator.*zero"):
+            result = metric(
+                self.series1,
+                self.series2,
+                constant_train,
+                m=1,
+                component_reduction=None,
+                **kwargs,
+            )
+        assert np.all(np.isnan(result))
+
+        # zero_division="raise": raises ValueError (legacy behaviour)
+        with pytest.raises(ValueError):
+            metric(
+                self.series1,
+                self.series2,
+                constant_train,
+                m=1,
+                zero_division="raise",
+                component_reduction=None,
+                **kwargs,
+            )
+
+        # zero_division=0.0: returns 0.0 for all zero-scale entries
+        result = metric(
+            self.series1,
+            self.series2,
+            constant_train,
+            m=1,
+            zero_division=0.0,
+            component_reduction=None,
+            **kwargs,
+        )
+        assert np.all(result == 0.0)
+
+        # --- perfectly seasonal insample with m=2 ---
+        seasonal_vals = np.tile([1.0, 2.0], 16)[:len(self.series_train)]
+        seasonal_train = TimeSeries.from_times_and_values(
+            self.series_train.time_index,
+            seasonal_vals.reshape(-1, 1),
+        )
+
+        # Case 1 with seasonal: non-zero / zero → nan
+        with pytest.warns(UserWarning):
+            result = metric(
+                self.series1,
+                self.series2,
+                seasonal_train,
+                m=2,
+                component_reduction=None,
+                **kwargs,
+            )
+        assert np.all(np.isnan(result))
+
+        # numeric override with zero_division=1.0
+        result = metric(
+            self.series1,
+            self.series2,
+            seasonal_train,
+            m=2,
+            zero_division=1.0,
+            component_reduction=None,
+            **kwargs,
+        )
+        assert np.all(result == 1.0)
+
+        # --- Case 2: perfect prediction with constant insample (0/0) ---
+        # use series1 as both actual and pred so error numerator is 0
+        # default "warn" mode: 0/0 → 0.0
+        with pytest.warns(UserWarning):
+            result = metric(
+                self.series1,
+                self.series1,
+                constant_train,
+                m=1,
+                component_reduction=None,
+                **kwargs,
+            )
+        assert np.all(result == 0.0)
+
+        # explicit float: 0/0 also gets the fill value
+        result = metric(
+            self.series1,
+            self.series1,
+            constant_train,
+            m=1,
+            zero_division=np.nan,
+            component_reduction=None,
+            **kwargs,
+        )
+        assert np.all(np.isnan(result))
+
+        # --- non-zero scale still works normally (no warning) ---
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            result_normal = metric(
+                self.series1,
+                self.series2,
+                self.series_train,
+                m=1,
+                component_reduction=None,
+                **kwargs,
+            )
+        assert not np.any(np.isnan(result_normal))
 
     def test_ope(self):
         self.helper_test_multivariate_duplication_equality(metrics.ope)
