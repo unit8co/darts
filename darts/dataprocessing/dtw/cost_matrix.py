@@ -5,7 +5,9 @@ DTW Cost Matrix
 
 import array
 from abc import ABC, abstractmethod
+from collections.abc import Generator
 from itertools import repeat
+from typing import Any
 
 import numpy as np
 
@@ -30,7 +32,7 @@ class CostMatrix(ABC):
         pass
 
     @abstractmethod
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> Any:
         pass
 
     @abstractmethod
@@ -38,7 +40,7 @@ class CostMatrix(ABC):
         pass
 
     @abstractmethod
-    def __iter__(self):
+    def __iter__(self) -> Generator:
         pass
 
     @abstractmethod
@@ -77,14 +79,24 @@ class CostMatrix(ABC):
             return DenseCostMatrix(window.n, window.m)
 
 
-class DenseCostMatrix(np.ndarray, CostMatrix):
-    def __new__(self, n, m):
+class DenseCostMatrix(CostMatrix):
+    def __init__(self, n: int, m: int, dense: np.ndarray | None = None):
         self.n = n
         self.m = m
-        return super().__new__(self, (n + 1, m + 1), float)
+        self.dense = np.ndarray((n + 1, m + 1), float) if dense is None else dense
 
-    def to_dense(self) -> np.ndarray:
-        return self[1:, 1:]
+    def to_dense(self, copy: bool = False) -> np.ndarray:
+        data = self.dense[1:, 1:]
+        return data.copy() if copy else data
+
+    def fill(self, value: float):
+        self.dense.fill(value)
+
+    def __getitem__(self, item):
+        return self.dense[item]
+
+    def __setitem__(self, key, value):
+        self.dense[key] = value
 
     def __iter__(self):
         for n in range(1, self.n):
