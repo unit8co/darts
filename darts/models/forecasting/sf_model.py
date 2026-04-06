@@ -3,8 +3,6 @@ StatsForecastModel
 ------------------
 """
 
-import warnings
-
 import numpy as np
 from statsforecast.models import _TS
 
@@ -114,11 +112,10 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         >>> from darts.datasets import AirPassengersDataset
         >>> from darts.models import StatsForecastModel
         >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
-        >>> from statsforecast.models import AutoARIMA
         >>> series = AirPassengersDataset().load()
         >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
         >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
-        >>> # define AutoARIMA parameters (using string and model_kwargs)
+        >>> # define AutoARIMA parameters
         >>> model = StatsForecastModel(model="AutoARIMA", model_kwargs={"season_length": 12})
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
@@ -132,18 +129,23 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         """
         if isinstance(model, _TS):
             # backwards compatibility: model passed as an instance
+            logger.warning(
+                "DEPRECATED: Passing a StatsForecast model instance is deprecated "
+                "and will be removed in a future release. "
+                "Pass `model` as a string (e.g. 'AutoARIMA') or class instead."
+            )
             if model_kwargs:
-                warnings.warn(
+                logger.warning(
                     "`model_kwargs` is ignored when `model` is an instance. "
-                    "Pass `model` as a string or class to use `model_kwargs`.",
-                    UserWarning,
-                    stacklevel=2,
+                    "Pass `model` as a string or class to use `model_kwargs`."
                 )
             self.model = model
         elif isinstance(model, str):
             model_class = self._import_sf_model_class(model)
+            self._validate_sf_model_class(model_class, name=f"statsforecast.models.{model}")
             self.model = model_class(**(model_kwargs or {}))
         elif isinstance(model, type) and issubclass(model, _TS):
+            self._validate_sf_model_class(model)
             self.model = model(**(model_kwargs or {}))
         else:
             raise_log(
@@ -172,14 +174,17 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
                 ),
                 logger,
             )
+        return model_class
+
+    @staticmethod
+    def _validate_sf_model_class(model_class, name: str = "model") -> None:
         if not (isinstance(model_class, type) and issubclass(model_class, _TS)):
             raise_log(
                 ValueError(
-                    f"`{model}` is not a valid StatsForecast model class."
+                    f"`{name}` is not a valid StatsForecast model class."
                 ),
                 logger,
             )
-        return model_class
 
     def _fit(
         self,
