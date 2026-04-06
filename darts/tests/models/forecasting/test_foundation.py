@@ -18,7 +18,7 @@ if not TORCH_AVAILABLE:
         allow_module_level=True,
     )
 
-from darts.models import Chronos2Model, TimesFM2p5Model
+from darts.models import Chronos2Model, ReversoModel, TimesFM2p5Model
 
 
 def generate_series(n_variables: int, length: int, prefix: str):
@@ -456,3 +456,138 @@ class TestFoundationModel:
 
         preds = model.predict(n=6, predict_likelihood_parameters=True)
         assert preds.shape == (6, self.series.n_components * len(quantiles), 1)
+
+
+reverso_artefacts_dir = (
+    Path(__file__).parent / "artefacts" / "reverso"
+).absolute()
+
+reverso_variant_dirs = {
+    "shinfxh/reverso-nano": reverso_artefacts_dir / "tiny_reverso_nano",
+    "shinfxh/reverso-small": reverso_artefacts_dir / "tiny_reverso_small",
+    "shinfxh/reverso-darts": reverso_artefacts_dir / "tiny_reverso_full",
+}
+
+# default variant for tests that don't parametrize
+reverso_local_dir = reverso_variant_dirs["shinfxh/reverso-small"]
+
+
+def reverso_mock_download(
+    repo_id: str,
+    filename: str,
+    revision: str | None,
+    local_dir: str | Path | None,
+    **kwargs,
+):
+    variant_dir = reverso_variant_dirs.get(repo_id, reverso_local_dir)
+    path = variant_dir / filename
+    if local_dir is None:
+        return str(path)
+    else:
+        dest_path = Path(local_dir) / filename
+        shutil.copy(path, dest_path)
+        return str(dest_path)
+
+
+class TestReversoModel:
+    series = generate_series(n_variables=2, length=100, prefix="A")
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=reverso_mock_download,
+    )
+    @pytest.mark.parametrize(
+        "hub_model_name",
+        ["shinfxh/reverso-nano", "shinfxh/reverso-small", "shinfxh/reverso-darts"],
+    )
+    def test_all_variants(self, mock_method, hub_model_name):
+        """Test that all three Reverso variants can load, fit, and predict."""
+        model = ReversoModel(
+            input_chunk_length=12,
+            output_chunk_length=6,
+            hub_model_name=hub_model_name,
+            **tfm_kwargs,
+        )
+        mock_method.assert_called()
+
+        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+            model.fit(series=self.series)
+            mock_fit.assert_not_called()
+
+        assert model.model_created
+        assert not model.supports_probabilistic_prediction
+
+        pred = model.predict(n=6)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 6
+        assert pred.n_components == self.series.n_components
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=reverso_mock_download,
+    )
+    def test_invalid_params(self, mock_method):
+        # input_chunk_length exceeds model's seq_len (32)
+        with pytest.raises(ValueError, match="cannot be greater than"):
+            _ = ReversoModel(
+                input_chunk_length=64,
+                output_chunk_length=6,
+                **tfm_kwargs,
+            )
+
+        # output_chunk_length exceeds model's output_token_len (8)
+        with pytest.raises(ValueError, match="cannot be greater than"):
+            _ = ReversoModel(
+                input_chunk_length=12,
+                output_chunk_length=10,
+                **tfm_kwargs,
+            )
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=reverso_mock_download,
+    )
+    def test_local_dir(self, mock_method):
+        model = ReversoModel(
+            input_chunk_length=12,
+            output_chunk_length=6,
+            local_dir=reverso_local_dir,
+            **tfm_kwargs,
+        )
+        model.fit(series=self.series)
+        pred = model.predict(n=6)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 6
+        assert pred.n_components == self.series.n_components
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=reverso_mock_download,
+    )
+    def test_no_covariates(self, mock_method):
+        model = ReversoModel(
+            input_chunk_length=12,
+            output_chunk_length=6,
+            **tfm_kwargs,
+        )
+        assert model.supports_past_covariates is False
+        assert model.supports_future_covariates is False
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=reverso_mock_download,
+    )
+    def test_autoregressive_prediction(self, mock_method):
+        """Test that predictions with n > output_chunk_length work via autoregression."""
+        model = ReversoModel(
+            input_chunk_length=12,
+            output_chunk_length=6,
+            **tfm_kwargs,
+        )
+        model.fit(series=self.series)
+
+        # n=12 > output_chunk_length=6, requires autoregression
+        pred = model.predict(n=12)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 12
+        assert pred.n_components == self.series.n_components

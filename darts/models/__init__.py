@@ -5,7 +5,7 @@ Models
 A comprehensive collection of forecasting and filtering models, including baseline models
 (NaiveSeasonal, NaiveMovingAverage, ...), statistical models (ARIMA, exponential smoothing, ...),
 machine learning models (LightGBM, CatBoost, sklearn-based, ...), neural network models (RNN,
-N-BEATS, TiDE...), and foundation models (Chronos-2, TimesFM 2.5).
+N-BEATS, TiDE...), and foundation models (Chronos-2, Reverso, TimesFM 2.5).
 """
 
 from darts.logging import get_logger
@@ -89,9 +89,11 @@ except ModuleNotFoundError:
 
 try:
     from darts.models.forecasting.chronos2_model import Chronos2Model
+    from darts.models.forecasting.reverso_model import ReversoModel
     from darts.models.forecasting.timesfm2p5_model import TimesFM2p5Model
 except ModuleNotFoundError:
     Chronos2Model = NotImportedModule(module_name="(Py)Torch", warn=False)
+    ReversoModel = NotImportedModule(module_name="(Py)Torch", warn=False)
     TimesFM2p5Model = NotImportedModule(module_name="(Py)Torch", warn=False)
 
 try:
@@ -210,6 +212,7 @@ __all__ = [
     "ConformalNaiveModel",
     "ConformalQRModel",
     "Chronos2Model",
+    "ReversoModel",
     "TimesFM2p5Model",
     "NeuralForecastModel",
 ]
