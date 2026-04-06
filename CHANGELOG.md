@@ -9,7 +9,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 
-- Added `ReversoModel`, a new foundation model for zero-shot time series forecasting. Reverso is a highly parameter-efficient model (600K-3M params) that matches accuracy of models 100x its size. [#3034](https://github.com/unit8co/darts/issues/3034) by [Xinghong Fu](https://github.com/shinfxh).
+- Added `ReversoModel`, a new foundation model for zero-shot time series forecasting. Reverso is a highly parameter-efficient model (200K-2.6M params) that matches accuracy of models 100x its size. [#3034](https://github.com/unit8co/darts/issues/3034) by [Xinghong Fu](https://github.com/shinfxh).
 - Added native multi-quantile support for `CatBoostModel` by using CatBoost’s `MultiQuantile` loss for faster training and inference. Set `likelihood="multiquantile"` to enable this feature. [#3032](https://github.com/unit8co/darts/pull/3032) by [Zhihao Dai](https://github.com/daidahao)
 
 **Fixed**
