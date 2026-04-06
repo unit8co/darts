@@ -11,6 +11,10 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Added native multi-quantile support for `CatBoostModel` by using CatBoost’s `MultiQuantile` loss for faster training and inference. Set `likelihood="multiquantile"` to enable this feature. [#3032](https://github.com/unit8co/darts/pull/3032) by [Zhihao Dai](https://github.com/daidahao)
 
+**Improved**
+
+- Scaled metrics (`ase`, `sse`, `mase`, `msse`, `rmsse`) no longer raise a hard `ValueError` when the insample series has zero error scale (constant or perfectly seasonal signals). A new `zero_division` parameter controls the behaviour: `"warn"` (default) returns `np.nan` or `1.0` with a warning, `"raise"` preserves the legacy error, and numeric values (e.g. `0.0`, `np.nan`) fill all zero-scale entries directly. [#3059](https://github.com/unit8co/darts/pull/3059) by [Mahima Sharma](https://github.com/mahi-ma)
+
 **Fixed**
 
 - Fixed a device mismatch error in `TFTModel` when moving a trained model to a different device (e.g., GPU to CPU for ONNX export). `attention_mask` and `relative_index` are now registered as non-persistent buffers so they are properly moved with the model. [#3053](https://github.com/unit8co/darts/pull/3053) by [Wolfhart Feldmeier](https://github.com/trahflow)

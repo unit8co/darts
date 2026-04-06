@@ -178,9 +178,7 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         pred_series = (
             kwargs["pred_series"]
             if "pred_series" in kwargs
-            else args[0]
-            if "actual_series" in kwargs
-            else args[1]
+            else args[0] if "actual_series" in kwargs else args[1]
         )
 
         params = signature(func).parameters
@@ -907,6 +905,14 @@ def _safe_scaled_divide(
     np.ndarray
         The result of ``errors / scale``, with zero-scale entries replaced.
     """
+    if isinstance(zero_division, str) and zero_division not in ["warn", "raise"]:
+        raise_log(
+            ValueError(
+                f"`zero_division` must be 'warn', 'raise', or a numeric value. Received {zero_division}."
+            ),
+            logger=logger,
+        )
+
     zero_mask = np.isclose(scale, 0.0)
     if not zero_mask.any():
         return errors / scale
@@ -930,15 +936,11 @@ def _safe_scaled_divide(
     result = np.where(zero_mask, fill, errors / np.where(zero_mask, 1.0, scale))
 
     if zero_division == "warn":
-        import warnings
-
-        warnings.warn(
+        logger.warning(
             "The error scale (denominator) is zero for some components. "
             "Those entries are set to NaN (when numerator is non-zero) or "
-            "1.0 (when numerator is also zero, i.e. on par with naive). Use zero_division parameter "
-            "to control this behaviour.",
-            UserWarning,
-            stacklevel=5,
+            "1.0 (when numerator is also zero, i.e. on par with naive). Use "
+            "zero_division parameter to control this behaviour."
         )
 
     return result

@@ -1,6 +1,7 @@
 import copy
 import inspect
 import itertools
+import logging
 
 import numpy as np
 import pandas as pd
@@ -242,12 +243,12 @@ class TestMetrics:
         ],
     )
     def test_sape_zero_denom(self, metric):
-        assert np.allclose(metric(self.series0, self.series0), 0.0), (
-            "Expected SAPE to be 0.0 when both series are identical"
-        )
-        assert np.allclose(metric(self.series1, self.series1), 0.0), (
-            "Expected SAPE to be 0.0 when both series are identical"
-        )
+        assert np.allclose(
+            metric(self.series0, self.series0), 0.0
+        ), "Expected SAPE to be 0.0 when both series are identical"
+        assert np.allclose(
+            metric(self.series1, self.series1), 0.0
+        ), "Expected SAPE to be 0.0 when both series are identical"
 
     @pytest.mark.parametrize(
         "config",
@@ -1113,10 +1114,12 @@ class TestMetrics:
             metrics.rmsse,
         ],
     )
-    def test_season(self, metric):
+    def test_season(self, metric, caplog):
         # default "warn" mode: no longer raises, emits a warning instead
-        with pytest.warns(UserWarning, match="error scale.*denominator.*zero"):
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
             metric(self.series3, self.series3 * 1.3, self.series_train, 8)
+        assert "error scale (denominator) is zero" in caplog.text
 
         # legacy "raise" mode still raises ValueError
         with pytest.raises(ValueError):
@@ -1284,7 +1287,7 @@ class TestMetrics:
             (metrics.rmsse, True, {}),
         ],
     )
-    def test_scaled_errors_zero_division(self, config):
+    def test_scaled_errors_zero_division(self, config, caplog):
         """Test that scaled metrics handle zero error scale gracefully."""
         metric, is_aggregate, kwargs = config
 
@@ -1295,7 +1298,8 @@ class TestMetrics:
         )
 
         # default zero_division="warn": Case 1 (non-zero / zero) → nan + warning
-        with pytest.warns(UserWarning, match="error scale.*denominator.*zero"):
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
             result = metric(
                 self.series1,
                 self.series2,
@@ -1304,6 +1308,7 @@ class TestMetrics:
                 component_reduction=None,
                 **kwargs,
             )
+        assert "error scale (denominator) is zero" in caplog.text
         assert np.all(np.isnan(result))
 
         # zero_division="raise": raises ValueError (legacy behaviour)
@@ -1331,14 +1336,15 @@ class TestMetrics:
         assert np.all(result == 0.0)
 
         # --- perfectly seasonal insample with m=2 ---
-        seasonal_vals = np.tile([1.0, 2.0], 16)[:len(self.series_train)]
+        seasonal_vals = np.tile([1.0, 2.0], 16)[: len(self.series_train)]
         seasonal_train = TimeSeries.from_times_and_values(
             self.series_train.time_index,
             seasonal_vals.reshape(-1, 1),
         )
 
         # Case 1 with seasonal: non-zero / zero → nan
-        with pytest.warns(UserWarning):
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
             result = metric(
                 self.series1,
                 self.series2,
@@ -1347,6 +1353,7 @@ class TestMetrics:
                 component_reduction=None,
                 **kwargs,
             )
+        assert "error scale (denominator) is zero" in caplog.text
         assert np.all(np.isnan(result))
 
         # numeric override with zero_division=1.0
@@ -1364,7 +1371,8 @@ class TestMetrics:
         # --- Case 2: perfect prediction with constant insample (0/0) ---
         # use series1 as both actual and pred so error numerator is 0
         # default "warn" mode: 0/0 → 1.0 (on par with naive)
-        with pytest.warns(UserWarning):
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
             result = metric(
                 self.series1,
                 self.series1,
@@ -1373,6 +1381,7 @@ class TestMetrics:
                 component_reduction=None,
                 **kwargs,
             )
+        assert "error scale (denominator) is zero" in caplog.text
         assert np.all(result == 1.0)
 
         # explicit float: 0/0 also gets the fill value
@@ -1388,9 +1397,8 @@ class TestMetrics:
         assert np.all(np.isnan(result))
 
         # --- non-zero scale still works normally (no warning) ---
-        import warnings
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
             result_normal = metric(
                 self.series1,
                 self.series2,
@@ -1399,6 +1407,7 @@ class TestMetrics:
                 component_reduction=None,
                 **kwargs,
             )
+        assert "error scale (denominator) is zero" not in caplog.text
         assert not np.any(np.isnan(result_normal))
 
     def test_ope(self):
@@ -1713,11 +1722,13 @@ class TestMetrics:
         metric, scores_exp, q_param, kwargs = config
         np.random.seed(0)
         x = np.random.normal(loc=0.0, scale=1.0, size=10000)
-        y = np.array([
-            [0.0, 10.0],
-            [1.0, 11.0],
-            [2.0, 12.0],
-        ]).reshape(3, 2, 1)
+        y = np.array(
+            [
+                [0.0, 10.0],
+                [1.0, 11.0],
+                [2.0, 12.0],
+            ]
+        ).reshape(3, 2, 1)
 
         y_true = [TimeSeries.from_values(y)] * 2
         y_pred = [TimeSeries.from_values(y + x)] * 2
