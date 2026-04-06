@@ -463,7 +463,7 @@ reverso_artefacts_dir = (Path(__file__).parent / "artefacts" / "reverso").absolu
 reverso_variant_dirs = {
     "shinfxh/reverso-nano": reverso_artefacts_dir / "tiny_reverso_nano",
     "shinfxh/reverso-small": reverso_artefacts_dir / "tiny_reverso_small",
-    "shinfxh/reverso-darts": reverso_artefacts_dir / "tiny_reverso_full",
+    "shinfxh/reverso-base": reverso_artefacts_dir / "tiny_reverso_full",
 }
 
 # default variant for tests that don't parametrize
@@ -496,7 +496,7 @@ class TestReversoModel:
     )
     @pytest.mark.parametrize(
         "hub_model_name",
-        ["shinfxh/reverso-nano", "shinfxh/reverso-small", "shinfxh/reverso-darts"],
+        ["shinfxh/reverso-nano", "shinfxh/reverso-small", "shinfxh/reverso-base"],
     )
     def test_all_variants(self, mock_method, hub_model_name):
         """Test that all three Reverso variants can load, fit, and predict."""

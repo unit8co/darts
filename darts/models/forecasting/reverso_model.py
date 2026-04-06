@@ -280,6 +280,14 @@ class ReversoModel(FoundationModel):
         Alternatively, you can specify a local directory containing the model config and weights using the
         ``local_dir`` parameter.
 
+        Three variants are available on HuggingFace Hub:
+
+        - `shinfxh/reverso-nano <https://huggingface.co/shinfxh/reverso-nano>`_: 200K parameters
+        - `shinfxh/reverso-small <https://huggingface.co/shinfxh/reverso-small>`_: 550K parameters (default)
+        - `shinfxh/reverso-base <https://huggingface.co/shinfxh/reverso-base>`_: 2.6M parameters
+
+        To use a different variant, specify the ``hub_model_name`` parameter.
+
         .. tip::
             You can perform full or partial fine-tuning of the model by setting the ``enable_finetuning`` parameter.
             Read more in the parameter description below and in the `Fine-Tuning Examples
@@ -305,6 +313,7 @@ class ReversoModel(FoundationModel):
             the model cannot generate autoregressive predictions (``n > output_chunk_length``).
         hub_model_name
             The model ID on HuggingFace Hub. Default: ``"shinfxh/reverso-small"``.
+            Other available variants: ``"shinfxh/reverso-nano"`` and ``"shinfxh/reverso-base"``.
         hub_model_revision
             The model version to use. This can be a branch name, tag name, or commit hash.
         local_dir
