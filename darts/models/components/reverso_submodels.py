@@ -103,9 +103,7 @@ class _MLPBlock(nn.Module):
             self.linear = nn.Linear(d_in, d_out)
             self.linear_final = nn.Identity()
         self.activation = nn.ReLU()
-        self.skip_linear = (
-            nn.Linear(d_in, d_out) if d_in != d_out else nn.Identity()
-        )
+        self.skip_linear = nn.Linear(d_in, d_out) if d_in != d_out else nn.Identity()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if x.ndim == 3:
@@ -304,9 +302,7 @@ class _TorchDeltaNet(nn.Module):
                 stride = 2**d
                 if stride >= clen:
                     break
-                new_A = torch.matmul(
-                    As[:, :, stride:], As[:, :, : clen - stride]
-                )
+                new_A = torch.matmul(As[:, :, stride:], As[:, :, : clen - stride])
                 new_b = (
                     torch.matmul(As[:, :, stride:], bs[:, :, : clen - stride])
                     + bs[:, :, stride:]
@@ -315,9 +311,7 @@ class _TorchDeltaNet(nn.Module):
                 bs = torch.cat([bs[:, :, :stride], new_b], dim=2)
 
             # Materialize all states: h_t = As[t] @ h_prev + bs[t]
-            states = torch.matmul(
-                As, h.unsqueeze(2).expand(-1, -1, clen, -1, -1)
-            ) + bs
+            states = torch.matmul(As, h.unsqueeze(2).expand(-1, -1, clen, -1, -1)) + bs
 
             # Readout: o_t = q_t^T @ h_t
             o[:, :, start:end] = torch.einsum("bhlk,bhlkv->bhlv", q_c, states)

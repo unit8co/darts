@@ -458,9 +458,7 @@ class TestFoundationModel:
         assert preds.shape == (6, self.series.n_components * len(quantiles), 1)
 
 
-reverso_artefacts_dir = (
-    Path(__file__).parent / "artefacts" / "reverso"
-).absolute()
+reverso_artefacts_dir = (Path(__file__).parent / "artefacts" / "reverso").absolute()
 
 reverso_variant_dirs = {
     "shinfxh/reverso-nano": reverso_artefacts_dir / "tiny_reverso_nano",

@@ -478,8 +478,9 @@ class ReversoModel(FoundationModel):
             Reverso does not support covariates natively. For multivariate time series, each component
             is forecasted independently.
         .. warning::
-            CPU inference is significantly slower than GPU due to the use of torch Conv instead of flashfft and sequential delta-rule
-            computation instead of fla implementation. GPU is recommended for production use. See https://github.com/shinfxh/reverso/.
+            CPU inference is significantly slower than GPU due to the use of torch Conv instead of
+            flashfft and sequential delta-rule computation instead of fla implementation. GPU is
+            recommended for production use. See https://github.com/shinfxh/reverso/.
         """
         hf_connector = HuggingFaceConnector(
             model_name=hub_model_name,
