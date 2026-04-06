@@ -10,7 +10,7 @@ from collections.abc import Sequence
 import numpy as np
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
+from darts.logging import get_logger
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
     ForecastingModel,
@@ -228,11 +228,6 @@ class NaiveMovingAverage(LocalForecastingModel):
 
     def fit(self, series: TimeSeries, verbose: bool | None = None):
         super().fit(series, verbose=verbose)
-        if not series.is_deterministic:
-            raise_log(
-                ValueError("This model expects deterministic time series"), logger
-            )
-
         self.rolling_window = series[-self.input_chunk_length :].values(copy=False)
         return self
 
