@@ -1410,6 +1410,18 @@ class TestMetrics:
         assert "error scale (denominator) is zero" not in caplog.text
         assert not np.any(np.isnan(result_normal))
 
+        # --- invalid string zero_division raises ---
+        with pytest.raises(ValueError, match="`zero_division` must be"):
+            metric(
+                self.series1,
+                self.series2,
+                constant_train,
+                m=1,
+                zero_division="invalid",
+                component_reduction=None,
+                **kwargs,
+            )
+
     def test_ope(self):
         self.helper_test_multivariate_duplication_equality(metrics.ope)
         self.helper_test_multiple_ts_duplication_equality(metrics.ope)
