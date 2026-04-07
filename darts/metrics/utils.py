@@ -178,7 +178,9 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         pred_series = (
             kwargs["pred_series"]
             if "pred_series" in kwargs
-            else args[0] if "actual_series" in kwargs else args[1]
+            else args[0]
+            if "actual_series" in kwargs
+            else args[1]
         )
 
         params = signature(func).parameters

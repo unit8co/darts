@@ -1722,13 +1722,11 @@ class TestMetrics:
         metric, scores_exp, q_param, kwargs = config
         np.random.seed(0)
         x = np.random.normal(loc=0.0, scale=1.0, size=10000)
-        y = np.array(
-            [
-                [0.0, 10.0],
-                [1.0, 11.0],
-                [2.0, 12.0],
-            ]
-        ).reshape(3, 2, 1)
+        y = np.array([
+            [0.0, 10.0],
+            [1.0, 11.0],
+            [2.0, 12.0],
+        ]).reshape(3, 2, 1)
 
         y_true = [TimeSeries.from_values(y)] * 2
         y_pred = [TimeSeries.from_values(y + x)] * 2
