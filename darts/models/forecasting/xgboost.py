@@ -157,9 +157,9 @@ class XGBModel(SKLearnModel):
         likelihood
             One of ``"multiquantile"``, ``"quantile"``, or ``"poisson"``. If set, the model becomes probabilistic
             and supports sampling at prediction time. ``"multiquantile"`` and ``"quantile"`` use XGBoost's
-            ``"reg:quantileerror"`` objective; ``"multiquantile"`` fits a single model across all quantiles
-            simultaneously, while ``"quantile"`` fits one model per quantile. This overrides any ``objective``
-            parameter. Default is ``None``.
+            ``"reg:quantileerror"`` objective. Both quantile likelihoods fit dedicated models per quantile, but
+            ``"multiquantile"`` can be more efficient due to fewer tabularization operations. This overrides any
+            ``objective`` parameter. Default is ``None``.
         quantiles
             Fit the model to these quantiles if the ``likelihood`` is set to ``"quantile"`` or ``"multiquantile"``.
             Default is ``None`` and will use :class:`~darts.utils.likelihood_models.sklearn.QuantileRegression`'s
