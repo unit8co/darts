@@ -32,7 +32,6 @@ from darts.models.forecasting.sklearn_model import (
 from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import (
-    MultiQuantileRegression,
     QuantileRegression,
     _get_likelihood,
 )
