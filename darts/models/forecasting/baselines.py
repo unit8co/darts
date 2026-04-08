@@ -10,7 +10,7 @@ from collections.abc import Sequence
 import numpy as np
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
     ForecastingModel,
@@ -114,12 +114,6 @@ class NaiveSeasonal(LocalForecastingModel):
 
     def fit(self, series: TimeSeries, verbose: bool | None = None):
         super().fit(series, verbose=verbose)
-
-        raise_if_not(
-            len(series) >= self.K,
-            f"The time series requires at least K={self.K} points",
-            logger,
-        )
         self.last_k_vals = series.values(copy=False)[-self.K :, :]
         return self
 
@@ -169,7 +163,6 @@ class NaiveDrift(LocalForecastingModel):
 
     def fit(self, series: TimeSeries, verbose: bool | None = None):
         super().fit(series, verbose=verbose)
-        assert series.n_samples == 1, "This model expects deterministic time series"
         return self
 
     def predict(
@@ -235,12 +228,6 @@ class NaiveMovingAverage(LocalForecastingModel):
 
     def fit(self, series: TimeSeries, verbose: bool | None = None):
         super().fit(series, verbose=verbose)
-        raise_if_not(
-            series.is_deterministic,
-            "This model expects deterministic time series",
-            logger,
-        )
-
         self.rolling_window = series[-self.input_chunk_length :].values(copy=False)
         return self
 
@@ -361,20 +348,15 @@ class NaiveEnsembleModel(EnsembleModel):
         self,
         predictions: TimeSeriesLike,
         series: TimeSeriesLike,
+        n: int,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         random_state: int | None = None,
         verbose: bool | None = None,
     ) -> TimeSeriesLike:
         """Average the `forecasting_models` predictions, component-wise"""
-        raise_if(
-            predict_likelihood_parameters
-            and not self.supports_likelihood_parameter_prediction,
-            "`predict_likelihood_parameters=True` is supported only if all the `forecasting_models` "
-            "are probabilistic and fitting the same likelihood.",
-            logger,
-        )
-
+        # at this point, if `predict_likelihood_parameters=True`, it's guaranteed
+        # that all models use the same likelihood
         if isinstance(predictions, Sequence):
             return [
                 (
