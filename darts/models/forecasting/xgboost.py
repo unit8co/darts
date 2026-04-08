@@ -258,8 +258,7 @@ class XGBModel(SKLearnModel):
 
         if likelihood == LikelihoodType.Poisson.value:
             self.kwargs["objective"] = f"count:{likelihood}"
-        elif isinstance(self._likelihood, MultiQuantileRegression):
-            # must check before QuantileRegression since MultiQuantileRegression is a subclass
+        elif likelihood == LikelihoodType.MultiQuantile.value:
             self.kwargs["objective"] = "reg:quantileerror"
             self.kwargs["quantile_alpha"] = self._likelihood.quantiles
         else:  # QuantileRegression — per-quantile loop in fit()
