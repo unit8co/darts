@@ -1791,11 +1791,23 @@ class TestSKLearnModels:
                         == pred[f"{ts.components[j]}_q{q:.3f}"].values()[i][0]
                     )
 
-    @pytest.mark.skipif(not CB_AVAILABLE, reason="CatBoost is required for this test")
+    @pytest.mark.skipif(
+        not XGB_AVAILABLE and not CB_AVAILABLE,
+        reason="XGBoost or CatBoost required for this test",
+    )
+    @pytest.mark.parametrize(
+        "model_cls,model_kwargs",
+        (
+            ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
+            + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
+        ),
+    )
     @pytest.mark.parametrize("multi_models", [True, False])
     @pytest.mark.parametrize("multi_components", [True, False])
     def test_get_estimator_multiquantile(
         self,
+        model_cls: SKLearnModel,
+        model_kwargs: dict[str, Any],
         multi_models: bool,
         multi_components: bool,
         caplog,
@@ -1810,13 +1822,13 @@ class TestSKLearnModels:
                 tg.linear_timeseries(length=100, column_name="linear"),
             )
 
-        model = CatBoostModel(
+        model = model_cls(
             lags=lags,
             output_chunk_length=ocl,
             multi_models=multi_models,
             likelihood="multiquantile",
             quantiles=quantiles,
-            **cb_test_params,
+            **model_kwargs,
         )
         model.fit(ts)
 
@@ -1856,75 +1868,6 @@ class TestSKLearnModels:
                 dummy_feats = np.expand_dims(dummy_feats.flatten(), 0)
                 # CatBoost with "Multiquantile" loss does not use a model container but directly
                 # implements multi-quantile support in the main model
-                sub_model = model.get_estimator(horizon=i, target_dim=j)
-                assert sub_model is not None
-                # the sub-model prediction is in shape (1, n_quantiles)
-                pred_sub_model = sub_model.predict(dummy_feats)[0]
-                np.testing.assert_array_equal(pred_sub_model, pred_j[i])
-
-    @pytest.mark.skipif(not XGB_AVAILABLE, reason="XGBoost required for this test")
-    @pytest.mark.parametrize("multi_models", [True, False])
-    @pytest.mark.parametrize("multi_components", [True, False])
-    def test_get_estimator_multiquantile_xgb(
-        self,
-        multi_models: bool,
-        multi_components: bool,
-        caplog,
-    ):
-        """Check estimator getter when using XGBoost multiquantile likelihood."""
-        ocl = 3
-        lags = 3
-        quantiles = [0.01, 0.5, 0.99]
-        ts = tg.sine_timeseries(length=100, column_name="sine")
-        if multi_components:
-            ts = ts.stack(
-                tg.linear_timeseries(length=100, column_name="linear"),
-            )
-
-        model = XGBModel(
-            lags=lags,
-            output_chunk_length=ocl,
-            multi_models=multi_models,
-            likelihood="multiquantile",
-            quantiles=quantiles,
-            **xgb_test_params,
-        )
-        model.fit(ts)
-
-        # model container only used with `QuantileRegression` (not multi-quantile)
-        assert model._model_container is None
-        if multi_models:
-            # one sub-model per component, per horizon
-            assert len(model.model.estimators_) == ocl * ts.width
-        elif multi_components:
-            # one sub-model per component
-            assert len(model.model.estimators_) == ts.width
-        else:
-            # only one sub-model (one component, one predicted horizon)
-            assert not isinstance(model.model, MultiOutputRegressor)
-            assert not hasattr(model.model, "estimators_")
-
-        with caplog.at_level(logging.WARNING):
-            _ = model.get_estimator(horizon=0, target_dim=0, quantile=0.5)
-            assert "the same estimator forecasts all quantiles jointly" in caplog.text
-
-        # check that retrieved sub-model predictions match the "wrapper" model predictions
-        pred_input = ts[-lags:] if multi_models else ts[-lags - ocl + 1 :]
-        pred = model.predict(
-            n=ocl,
-            series=pred_input,
-            num_samples=1,
-            predict_likelihood_parameters=True,
-        )
-        assert isinstance(pred, TimeSeries)
-        for j in range(ts.width):
-            pred_j = pred.values()[:, j * len(quantiles) : (j + 1) * len(quantiles)]
-            for i in range(ocl):
-                if multi_models:
-                    dummy_feats = pred_input.values()[:lags]
-                else:
-                    dummy_feats = pred_input.values()[i : i + lags]
-                dummy_feats = np.expand_dims(dummy_feats.flatten(), 0)
                 sub_model = model.get_estimator(horizon=i, target_dim=j)
                 assert sub_model is not None
                 # the sub-model prediction is in shape (1, n_quantiles)
@@ -4546,48 +4489,38 @@ class TestProbabilisticSKLearnModels:
             == "Invalid `likelihood='does_not_exist'`. Must be one of ['gaussian', 'poisson', 'quantile']"
         )
 
-    @pytest.mark.skipif(not CB_AVAILABLE, reason="CatBoostModel required for this test")
-    def test_model_construction_multiquantile(self):
+    @pytest.mark.skipif(
+        not XGB_AVAILABLE and not CB_AVAILABLE,
+        reason="XGBoost or CatBoost required for this test",
+    )
+    @pytest.mark.parametrize(
+        "model_cls,model_kwargs",
+        (
+            ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
+            + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
+        ),
+    )
+    def test_model_construction_multiquantile(
+        self,
+        model_cls,
+        model_kwargs,
+    ):
         with pytest.raises(
             ValueError,
             match="'multiquantile' likelihood only supports multiple quantiles.",
         ):
-            _ = CatBoostModel(
+            _ = model_cls(
                 lags=2,
                 likelihood="multiquantile",
                 quantiles=[0.5],
-                **cb_test_params,
+                **model_kwargs,
             )
 
-        model = CatBoostModel(
+        model = model_cls(
             lags=2,
             likelihood="multiquantile",
             quantiles=[0.1, 0.3, 0.5, 0.7, 0.9],
-            **cb_test_params,
-        )
-        likelihood = model.likelihood
-        assert isinstance(likelihood, MultiQuantileRegression)
-        assert likelihood.type == LikelihoodType.MultiQuantile
-        assert likelihood.quantiles == [0.1, 0.3, 0.5, 0.7, 0.9]
-
-    @pytest.mark.skipif(not XGB_AVAILABLE, reason="XGBoost required for this test")
-    def test_model_construction_multiquantile_xgb(self):
-        with pytest.raises(
-            ValueError,
-            match="'multiquantile' likelihood only supports multiple quantiles.",
-        ):
-            _ = XGBModel(
-                lags=2,
-                likelihood="multiquantile",
-                quantiles=[0.5],
-                **xgb_test_params,
-            )
-
-        model = XGBModel(
-            lags=2,
-            likelihood="multiquantile",
-            quantiles=[0.1, 0.3, 0.5, 0.7, 0.9],
-            **xgb_test_params,
+            **model_kwargs,
         )
         likelihood = model.likelihood
         assert isinstance(likelihood, MultiQuantileRegression)
@@ -4596,14 +4529,13 @@ class TestProbabilisticSKLearnModels:
 
         # quantiles passed as numpy array should be normalized to plain Python floats
         quantiles_np = np.array([0.1, 0.3, 0.5, 0.7, 0.9])
-        model_np = XGBModel(
+        model_np = model_cls(
             lags=2,
             likelihood="multiquantile",
             quantiles=quantiles_np,
-            **xgb_test_params,
+            **model_kwargs,
         )
         ts = tg.sine_timeseries(length=50)
-        # should not raise XGBoostError due to np.float64 serialization
         model_np.fit(ts)
         assert all(isinstance(q, float) for q in model_np.likelihood.quantiles)
 
