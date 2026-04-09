@@ -100,7 +100,9 @@ except ModuleNotFoundError:
 try:
     from darts.models.forecasting.tirex_model import TiRexModel
 except ModuleNotFoundError:
-    TiRexModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    TiRexModel = NotImportedModule(
+        module_name="(Py)Torch and / or TiRex-TS", warn=False
+    )
 
 try:
     from darts.models.forecasting.nf_model import NeuralForecastModel

@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import torch
+from tirex import load_model
 
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.foundation_model import FoundationModel
@@ -25,41 +26,6 @@ from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.utils.likelihood_models.torch import QuantileRegression
 
 logger = get_logger(__name__)
-
-
-def _require_tirex():
-    """
-    Import and return the TiRex `load_model` entry point from the optional
-    `tirex-ts` dependency.
-
-    This helper ensures that the TiRex integration remains optional and that
-    Darts itself does not depend on `tirex-ts`. If the package is not installed,
-    an informative ImportError is raised.
-
-    Returns
-    -------
-    Callable
-        The `load_model` function from the `tirex` package.
-
-    Raises
-    ------
-    ImportError
-        If `tirex-ts` is not installed.
-    """
-    try:
-        from tirex import load_model
-
-    except ModuleNotFoundError:
-        raise_log(
-            ImportError(
-                "Optional dependency `tirex-ts` is required to use TiRexModel. "
-                "Install it with `pip install tirex-ts` (it provides the `tirex` Python package; "
-                "extras include `tirex-ts[hfdataset]`, `tirex-ts[gluonts]`)."
-            ),
-            logger,
-        )
-
-    return load_model
 
 
 @dataclass(frozen=True)
@@ -100,8 +66,6 @@ class _TiRexModule(PLForecastingModule):
         **kwargs,
     ):
         super().__init__(**kwargs)
-
-        load_model = _require_tirex()
 
         # ensure that the TiRex pipeline is loaded on the same device as the PL module
         tirex_kwargs["device"] = str(self.device)
