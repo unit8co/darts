@@ -226,14 +226,6 @@ Chronos-2 Foundation model example notebook:
 
    examples/25-Chronos-2-examples.ipynb
 
-TiRex Model
-=======================================
-
-.. toctree::
-   :maxdepth: 1
-
-   examples/28-TiRex-examples.ipynb
-
 Torch and Foundation Model Fine-Tuning
 ======================================
 
