@@ -164,9 +164,6 @@ class TiRexModel(FoundationModel):
         hub_model_name: str = "NX-AI/TiRex",
         hub_model_revision: str | None = None,
         local_dir: str | os.PathLike | None = None,
-        backend: str | None = None,
-        compile: bool | None = None,
-        hf_kwargs: dict[str, Any] | None = None,
         tirex_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ):
@@ -229,15 +226,6 @@ class TiRexModel(FoundationModel):
             Optional local directory to load the pre-downloaded model. If specified and the directory is empty, the
             model will be downloaded from HuggingFace Hub and saved to this directory. Default: ``None``, which will
             use a cache directory managed by ``huggingface_hub`` instead.
-        backend
-            Optional inference engine argument passed to ``tirex.load_model()``, either ``"torch"`` or ``"cuda"``.
-            If set to ``"cuda"``, `xlstm` package must be installed and the model will use custom CUDA kernels.
-            Otherwise, torch backend will be used. Default: ``None`` (torch backend).
-        compile
-            Optional compilation flag passed to ``tirex.load_model()``. If ``True``, the model will be compiled with
-            `torch.compile()`. Default: ``None`` (no compilation).
-        hf_kwargs
-            Optional HuggingFace Hub arguments passed to ``tirex.load_model()`` for loading the model weights.
         tirex_kwargs
             Additional keyword arguments forwarded to ``tirex.load_model()``.
         **kwargs
@@ -386,6 +374,8 @@ class TiRexModel(FoundationModel):
 
         super().__init__(**kwargs)
 
+        # prepare arguments for loading the TiRex pipeline with `tirex.load_model()`
+        tirex_kwargs = tirex_kwargs or {}
         hf_kwargs = {
             **(
                 {"revision": hub_model_revision}
@@ -393,14 +383,20 @@ class TiRexModel(FoundationModel):
                 else {}
             ),
             **({"local_dir": local_dir} if local_dir is not None else {}),
-            **(hf_kwargs or {}),
+            **(tirex_kwargs.get("hf_kwargs", {})),
         }
+        if "path" in tirex_kwargs:
+            raise_log(
+                ValueError(
+                    "The `path` argument for loading the TiRex model should be passed via `hub_model_name`,"
+                    "not `tirex_kwargs`."
+                ),
+                logger,
+            )
         self.tirex_kwargs = {
             "path": hub_model_name,
-            **({"backend": backend} if backend is not None else {}),
-            **({"compile": compile} if compile is not None else {}),
             **({"hf_kwargs": hf_kwargs} if hf_kwargs else {}),
-            **(tirex_kwargs or {}),
+            **tirex_kwargs,
         }
 
     @property
