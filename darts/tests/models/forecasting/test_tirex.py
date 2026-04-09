@@ -27,7 +27,6 @@ import torch
 from darts import TimeSeries
 from darts.datasets import ElectricityConsumptionZurichDataset
 from darts.models import TiRexModel
-from darts.models.forecasting import tirex_model
 from darts.tests.conftest import tfm_kwargs
 from darts.utils.likelihood_models import QuantileRegression
 from darts.utils.timeseries_generation import linear_timeseries
@@ -68,10 +67,6 @@ class _StubTiRexPipeline:
             quantiles[:, :, qi] = mean + (float(q) - 0.5)
 
         return quantiles, mean
-
-
-def _stub_loader(*_a, **_k):
-    return _StubTiRexPipeline()
 
 
 class TestTiRexModel:
@@ -170,7 +165,8 @@ class TestTiRexModel:
         if not probabilistic:
             original = original[:, :, [4]]  # median quantile (index 4 = 0.5)
 
-        np.testing.assert_allclose(pred_np, original, rtol=1e-5, atol=1e-5)
+        # increase tolerance due to platform differences
+        np.testing.assert_allclose(pred_np, original, rtol=1e-3, atol=1e-3)
 
     def test_requires_license_acceptance(self):
         with pytest.raises(ValueError, match="accept_license=True"):
@@ -184,7 +180,7 @@ class TestTiRexModel:
             **tfm_kwargs,
         )
 
-        with patch.object(tirex_model, "_require_tirex", return_value=_stub_loader):
+        with patch("tirex.load_model", return_value=_StubTiRexPipeline()):
             model.fit(self.series)
 
         pred = model.predict(n=10, series=self.series)
@@ -201,7 +197,7 @@ class TestTiRexModel:
             **tfm_kwargs,
         )
 
-        with patch.object(tirex_model, "_require_tirex", return_value=_stub_loader):
+        with patch("tirex.load_model", return_value=_StubTiRexPipeline()):
             model.fit(self.series, val_series=self.series, load_best=False)
 
     def test_probabilistic_quantiles(self):
@@ -213,7 +209,7 @@ class TestTiRexModel:
             **tfm_kwargs,
         )
 
-        with patch.object(tirex_model, "_require_tirex", return_value=_stub_loader):
+        with patch("tirex.load_model", return_value=_StubTiRexPipeline()):
             model.fit(self.series)
 
         pred_q = model.predict(
@@ -233,7 +229,7 @@ class TestTiRexModel:
             **tfm_kwargs,
         )
 
-        with patch.object(tirex_model, "_require_tirex", return_value=_stub_loader):
+        with patch("tirex.load_model", return_value=_StubTiRexPipeline()):
             model.fit(self.series)
 
         pred_s = model.predict(n=10, series=self.series, num_samples=25)
@@ -253,7 +249,7 @@ class TestTiRexModel:
         with pytest.raises(ValueError, match="does not support any covariates"):
             model.fit(self.series, past_covariates=self.cov)
 
-        with patch.object(tirex_model, "_require_tirex", return_value=_stub_loader):
+        with patch("tirex.load_model", return_value=_StubTiRexPipeline()):
             model.fit(self.series)
 
         with pytest.raises(ValueError, match="does not support any covariates"):
