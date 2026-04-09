@@ -287,7 +287,7 @@ class QuantileRegression(SKLearnLikelihood):
                 0.99,
             ]
         else:
-            quantiles = [float(x) for x in sorted(quantiles)]
+            quantiles = sorted(quantiles)
             _check_quantiles(quantiles)
         self.quantiles = quantiles
         self._median_idx = quantiles.index(0.5)

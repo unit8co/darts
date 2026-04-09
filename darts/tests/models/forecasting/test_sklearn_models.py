@@ -1806,7 +1806,7 @@ class TestSKLearnModels:
     @pytest.mark.parametrize("multi_components", [True, False])
     def test_get_estimator_multiquantile(
         self,
-        model_cls: SKLearnModel,
+        model_cls: type[SKLearnModel],
         model_kwargs: dict[str, Any],
         multi_models: bool,
         multi_components: bool,
@@ -4516,18 +4516,6 @@ class TestProbabilisticSKLearnModels:
         assert isinstance(likelihood, MultiQuantileRegression)
         assert likelihood.type == LikelihoodType.MultiQuantile
         assert likelihood.quantiles == [0.1, 0.3, 0.5, 0.7, 0.9]
-
-        # quantiles passed as numpy array should be normalized to plain Python floats
-        quantiles_np = np.array([0.1, 0.3, 0.5, 0.7, 0.9])
-        model_np = model_cls(
-            lags=2,
-            likelihood="multiquantile",
-            quantiles=quantiles_np,
-            **model_kwargs,
-        )
-        ts = tg.sine_timeseries(length=50)
-        model_np.fit(ts)
-        assert all(isinstance(q, float) for q in model_np.likelihood.quantiles)
 
     @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))
     def test_fit_predict_determinism(self, config):
