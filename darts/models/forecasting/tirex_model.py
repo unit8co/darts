@@ -313,7 +313,7 @@ class TiRexModel(FoundationModel):
         >>> model = TiRexModel(
         ...     input_chunk_length=12,
         ...     output_chunk_length=6,
-        ...     accept_license=True,
+        ...     accept_license=False,
         ... )
         >>> # fit the model (data is validated but TiRex is not actually trained)
         >>> model.fit(series)
@@ -336,7 +336,7 @@ class TiRexModel(FoundationModel):
         ...     accept_license=True,
         ... )
         >>> model.fit(series)
-        >>> pred = model.predict(n=6, num_samples=50)
+        >>> pred = model.predict(n=6, predict_likelihood_parameters=True)
         """
         if not accept_license:
             raise_log(
@@ -372,9 +372,8 @@ class TiRexModel(FoundationModel):
         if output_chunk_length + output_chunk_shift > self._MAX_PREDICTION_LENGTH:
             raise_log(
                 ValueError(
-                    "TiRex supports a maximum prediction length of "
-                    f"{self._MAX_PREDICTION_LENGTH} per call. "
-                    "Please ensure `output_chunk_length + output_chunk_shift <= {self._MAX_PREDICTION_LENGTH}`."
+                    f"TiRex supports a maximum prediction length of {self._MAX_PREDICTION_LENGTH} per call. "
+                    f"Please ensure `output_chunk_length + output_chunk_shift <= {self._MAX_PREDICTION_LENGTH}`."
                 ),
                 logger,
             )
