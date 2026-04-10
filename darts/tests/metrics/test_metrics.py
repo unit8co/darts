@@ -1115,7 +1115,7 @@ class TestMetrics:
         ],
     )
     def test_season(self, metric, caplog):
-        # default "warn" mode: no longer raises, emits a warning instead
+        # default "warn" mode: emits a warning for perfectly seasonal or constant insample
         caplog.clear()
         with caplog.at_level(logging.WARNING):
             metric(self.series3, self.series3 * 1.3, self.series_train, 8)
@@ -1311,7 +1311,7 @@ class TestMetrics:
         assert "error scale (denominator) is zero" in caplog.text
         assert np.all(np.isnan(result))
 
-        # zero_division="raise": raises ValueError (legacy behaviour)
+        # zero_division="raise": raises ValueError (legacy behavior)
         with pytest.raises(ValueError):
             metric(
                 self.series1,

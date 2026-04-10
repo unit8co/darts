@@ -893,12 +893,12 @@ def _safe_scaled_divide(
     scale
         Denominator array of shape ``(c,)``.
     zero_division
-        Controls behaviour when ``scale`` is (near) zero.
+        Controls behavior when ``scale`` is (near) zero.
 
         * ``"warn"`` (default) – applies the smart defaults described above
           (``np.nan`` for case 1, ``1.0`` for case 2) and emits a
           ``UserWarning``.
-        * ``"raise"`` – raises a ``ValueError`` (the legacy behaviour).
+        * ``"raise"`` – raises a ``ValueError`` (the legacy behavior).
         * A numeric value (e.g. ``0.0``, ``np.nan``) – used as the fill value
           for **all** zero-scale entries regardless of the numerator.
 
@@ -919,7 +919,7 @@ def _safe_scaled_divide(
     if not zero_mask.any():
         return errors / scale
 
-    # --- legacy behaviour: raise on zero scale ---
+    # --- legacy behavior: raise on zero scale ---
     if zero_division == "raise":
         raise_log(
             ValueError("cannot use scaled metric with periodical signals"),

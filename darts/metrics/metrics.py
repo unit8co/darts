@@ -448,13 +448,13 @@ def ase(
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     zero_division
-        Controls behaviour when the error scale (denominator) is zero, i.e., when the ``insample`` series is
+        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is
         constant or perfectly seasonal with period ``m``.
 
         * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
           when the numerator is also zero (on par with naive baseline — we cannot distinguish a trivially naive
           prediction from a non-trivial one that happens to match), and emits a ``UserWarning``.
-        * ``"raise"`` – raises a ``ValueError`` (legacy behaviour).
+        * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
         * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
           entries regardless of the numerator.
     time_reduction
@@ -483,8 +483,8 @@ def ase(
     Raises
     ------
     ValueError
-        If any series in `insample` does not end one
-        time step before the start of the corresponding forecast in `pred_series`.
+        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast
+        in  `pred_series`.
 
     Returns
     -------
@@ -578,13 +578,13 @@ def mase(
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     zero_division
-        Controls behaviour when the error scale (denominator) is zero, i.e., when the ``insample`` series is
+        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is
         constant or perfectly seasonal with period ``m``.
 
         * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
           when the numerator is also zero (on par with naive baseline — we cannot distinguish a trivially naive
           prediction from a non-trivial one that happens to match), and emits a ``UserWarning``.
-        * ``"raise"`` – raises a ``ValueError`` (legacy behaviour).
+        * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
         * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
           entries regardless of the numerator.
     component_reduction
@@ -608,8 +608,8 @@ def mase(
     Raises
     ------
     ValueError
-        If any series in `insample` does not end one
-        time step before the start of the corresponding forecast in `pred_series`.
+        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast
+        in  `pred_series`.
 
     Returns
     -------
@@ -884,13 +884,13 @@ def sse(
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     zero_division
-        Controls behaviour when the error scale (denominator) is zero, i.e., when the ``insample`` series is
+        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is
         constant or perfectly seasonal with period ``m``.
 
         * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
           when the numerator is also zero (on par with naive baseline — we cannot distinguish a trivially naive
           prediction from a non-trivial one that happens to match), and emits a ``UserWarning``.
-        * ``"raise"`` – raises a ``ValueError`` (legacy behaviour).
+        * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
         * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
           entries regardless of the numerator.
     time_reduction
@@ -919,8 +919,8 @@ def sse(
     Raises
     ------
     ValueError
-        If any series in `insample` does not end one
-        time step before the start of the corresponding forecast in `pred_series`.
+        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast
+        in  `pred_series`.
 
     Returns
     -------
@@ -1014,13 +1014,13 @@ def msse(
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     zero_division
-        Controls behaviour when the error scale (denominator) is zero, i.e., when the ``insample`` series is
+        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is
         constant or perfectly seasonal with period ``m``.
 
         * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
           when the numerator is also zero (on par with naive baseline — we cannot distinguish a trivially naive
           prediction from a non-trivial one that happens to match), and emits a ``UserWarning``.
-        * ``"raise"`` – raises a ``ValueError`` (legacy behaviour).
+        * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
         * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
           entries regardless of the numerator.
     component_reduction
@@ -1044,8 +1044,8 @@ def msse(
     Raises
     ------
     ValueError
-        If any series in `insample` does not end one
-        time step before the start of the corresponding forecast in `pred_series`.
+        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast
+        in  `pred_series`.
 
     Returns
     -------
@@ -1224,13 +1224,13 @@ def rmsse(
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     zero_division
-        Controls behaviour when the error scale (denominator) is zero, i.e., when the ``insample`` series is
+        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is
         constant or perfectly seasonal with period ``m``.
 
         * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
           when the numerator is also zero (on par with naive baseline — we cannot distinguish a trivially naive
           prediction from a non-trivial one that happens to match), and emits a ``UserWarning``.
-        * ``"raise"`` – raises a ``ValueError`` (legacy behaviour).
+        * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
         * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
           entries regardless of the numerator.
     component_reduction
@@ -1254,8 +1254,8 @@ def rmsse(
     Raises
     ------
     ValueError
-        If any series in `insample` does not end one
-        time step before the start of the corresponding forecast in `pred_series`.
+        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast
+        in  `pred_series`.
 
     Returns
     -------
