@@ -51,35 +51,37 @@ Multivariate Datasets
 - :class:`~darts.datasets.datasets.WeatherDataset` - Weather indicators (21 components, 10-min, 2020)
 """
 
-from darts.datasets.datasets import (
-    AirPassengersDataset,
-    AusBeerDataset,
-    AustralianTourismDataset,
-    ElectricityConsumptionZurichDataset,
-    ElectricityDataset,
-    EnergyDataset,
-    ETTh1Dataset,
-    ETTh2Dataset,
-    ETTm1Dataset,
-    ETTm2Dataset,
-    ExchangeRateDataset,
-    GasRateCO2Dataset,
-    HeartRateDataset,
-    IceCreamHeaterDataset,
-    ILINetDataset,
-    MonthlyMilkDataset,
-    MonthlyMilkIncompleteDataset,
-    SunspotsDataset,
-    TaxiNewYorkDataset,
-    TaylorDataset,
-    TemperatureDataset,
-    TrafficDataset,
-    UberTLCDataset,
-    USGasolineDataset,
-    WeatherDataset,
-    WineDataset,
-    WoolyDataset,
-)
+import importlib
+
+_LAZY_IMPORTS: dict[str, str] = {
+    "AirPassengersDataset": "darts.datasets.datasets",
+    "AusBeerDataset": "darts.datasets.datasets",
+    "AustralianTourismDataset": "darts.datasets.datasets",
+    "ElectricityConsumptionZurichDataset": "darts.datasets.datasets",
+    "ElectricityDataset": "darts.datasets.datasets",
+    "EnergyDataset": "darts.datasets.datasets",
+    "ETTh1Dataset": "darts.datasets.datasets",
+    "ETTh2Dataset": "darts.datasets.datasets",
+    "ETTm1Dataset": "darts.datasets.datasets",
+    "ETTm2Dataset": "darts.datasets.datasets",
+    "ExchangeRateDataset": "darts.datasets.datasets",
+    "GasRateCO2Dataset": "darts.datasets.datasets",
+    "HeartRateDataset": "darts.datasets.datasets",
+    "IceCreamHeaterDataset": "darts.datasets.datasets",
+    "ILINetDataset": "darts.datasets.datasets",
+    "MonthlyMilkDataset": "darts.datasets.datasets",
+    "MonthlyMilkIncompleteDataset": "darts.datasets.datasets",
+    "SunspotsDataset": "darts.datasets.datasets",
+    "TaxiNewYorkDataset": "darts.datasets.datasets",
+    "TaylorDataset": "darts.datasets.datasets",
+    "TemperatureDataset": "darts.datasets.datasets",
+    "TrafficDataset": "darts.datasets.datasets",
+    "UberTLCDataset": "darts.datasets.datasets",
+    "USGasolineDataset": "darts.datasets.datasets",
+    "WeatherDataset": "darts.datasets.datasets",
+    "WineDataset": "darts.datasets.datasets",
+    "WoolyDataset": "darts.datasets.datasets",
+}
 
 __all__ = [
     "AirPassengersDataset",
@@ -110,3 +112,17 @@ __all__ = [
     "WeatherDataset",
     "ElectricityConsumptionZurichDataset",
 ]
+
+
+def __getattr__(name: str):
+    if name not in _LAZY_IMPORTS:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+    module = importlib.import_module(_LAZY_IMPORTS[name])
+    value = getattr(module, name)
+    globals()[name] = value
+    return value
+
+
+def __dir__():
+    return __all__

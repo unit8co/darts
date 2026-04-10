@@ -26,47 +26,45 @@ on time series.
   applying boolean logic.
 """
 
-# anomaly aggregators
-from darts.ad.aggregators import AndAggregator, EnsembleSklearnAggregator, OrAggregator
+import importlib
 
-# anomaly models
-from darts.ad.anomaly_model import FilteringAnomalyModel, ForecastingAnomalyModel
+_LAZY_IMPORTS: dict[str, str] = {
+    # anomaly aggregators
+    "AndAggregator": "darts.ad.aggregators",
+    "EnsembleSklearnAggregator": "darts.ad.aggregators",
+    "OrAggregator": "darts.ad.aggregators",
+    # anomaly models
+    "FilteringAnomalyModel": "darts.ad.anomaly_model",
+    "ForecastingAnomalyModel": "darts.ad.anomaly_model",
+    # anomaly detectors
+    "QuantileDetector": "darts.ad.detectors",
+    "ThresholdDetector": "darts.ad.detectors",
+    # anomaly scorers
+    "CauchyNLLScorer": "darts.ad.scorers",
+    "DifferenceScorer": "darts.ad.scorers",
+    "ExponentialNLLScorer": "darts.ad.scorers",
+    "GammaNLLScorer": "darts.ad.scorers",
+    "GaussianNLLScorer": "darts.ad.scorers",
+    "KMeansScorer": "darts.ad.scorers",
+    "LaplaceNLLScorer": "darts.ad.scorers",
+    "NormScorer": "darts.ad.scorers",
+    "PoissonNLLScorer": "darts.ad.scorers",
+    "PyODScorer": "darts.ad.scorers",
+    "WassersteinScorer": "darts.ad.scorers",
+}
 
-# anomaly detectors
-from darts.ad.detectors import QuantileDetector, ThresholdDetector
+__all__ = list(_LAZY_IMPORTS.keys())
 
-# anomaly scorers
-from darts.ad.scorers import (
-    CauchyNLLScorer,
-    DifferenceScorer,
-    ExponentialNLLScorer,
-    GammaNLLScorer,
-    GaussianNLLScorer,
-    KMeansScorer,
-    LaplaceNLLScorer,
-    NormScorer,
-    PoissonNLLScorer,
-    PyODScorer,
-    WassersteinScorer,
-)
 
-__all__ = [
-    "AndAggregator",
-    "EnsembleSklearnAggregator",
-    "OrAggregator",
-    "FilteringAnomalyModel",
-    "ForecastingAnomalyModel",
-    "QuantileDetector",
-    "ThresholdDetector",
-    "CauchyNLLScorer",
-    "DifferenceScorer",
-    "ExponentialNLLScorer",
-    "GammaNLLScorer",
-    "GaussianNLLScorer",
-    "KMeansScorer",
-    "LaplaceNLLScorer",
-    "NormScorer",
-    "PoissonNLLScorer",
-    "PyODScorer",
-    "WassersteinScorer",
-]
+def __getattr__(name: str):
+    if name not in _LAZY_IMPORTS:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+    module = importlib.import_module(_LAZY_IMPORTS[name])
+    value = getattr(module, name)
+    globals()[name] = value
+    return value
+
+
+def __dir__():
+    return __all__

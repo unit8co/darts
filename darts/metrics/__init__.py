@@ -94,74 +94,75 @@ For Dynamic Time Warping (DTW) (aggregated over time):
 
 """
 
-from darts.metrics.metrics import (
-    accuracy,
-    ae,
-    ape,
-    arre,
-    ase,
-    autc,
-    coefficient_of_variation,
-    confusion_matrix,
-    dtw_metric,
-    err,
-    f1,
-    ic,
-    incs_qr,
-    iw,
-    iws,
-    mae,
-    mape,
-    marre,
-    mase,
-    merr,
-    mic,
-    mincs_qr,
-    miw,
-    miws,
-    mql,
-    mse,
-    msse,
-    ope,
-    precision,
-    ql,
-    qr,
-    r2_score,
-    recall,
-    rmse,
-    rmsle,
-    rmsse,
-    sape,
-    se,
-    sle,
-    smape,
-    sse,
-    wmape,
-)
+import importlib
 
-TIME_DEPENDENT_METRICS = {
-    ae,
-    ape,
-    arre,
-    ase,
-    err,
-    ql,
-    sape,
-    se,
-    sle,
-    sse,
-    iw,
-    iws,
-    ic,
-    incs_qr,
+_LAZY_IMPORTS: dict[str, str] = {
+    "accuracy": "darts.metrics.metrics",
+    "ae": "darts.metrics.metrics",
+    "ape": "darts.metrics.metrics",
+    "arre": "darts.metrics.metrics",
+    "ase": "darts.metrics.metrics",
+    "autc": "darts.metrics.metrics",
+    "coefficient_of_variation": "darts.metrics.metrics",
+    "confusion_matrix": "darts.metrics.metrics",
+    "dtw_metric": "darts.metrics.metrics",
+    "err": "darts.metrics.metrics",
+    "f1": "darts.metrics.metrics",
+    "ic": "darts.metrics.metrics",
+    "incs_qr": "darts.metrics.metrics",
+    "iw": "darts.metrics.metrics",
+    "iws": "darts.metrics.metrics",
+    "mae": "darts.metrics.metrics",
+    "mape": "darts.metrics.metrics",
+    "marre": "darts.metrics.metrics",
+    "mase": "darts.metrics.metrics",
+    "merr": "darts.metrics.metrics",
+    "mic": "darts.metrics.metrics",
+    "mincs_qr": "darts.metrics.metrics",
+    "miw": "darts.metrics.metrics",
+    "miws": "darts.metrics.metrics",
+    "mql": "darts.metrics.metrics",
+    "mse": "darts.metrics.metrics",
+    "msse": "darts.metrics.metrics",
+    "ope": "darts.metrics.metrics",
+    "precision": "darts.metrics.metrics",
+    "ql": "darts.metrics.metrics",
+    "qr": "darts.metrics.metrics",
+    "r2_score": "darts.metrics.metrics",
+    "recall": "darts.metrics.metrics",
+    "rmse": "darts.metrics.metrics",
+    "rmsle": "darts.metrics.metrics",
+    "rmsse": "darts.metrics.metrics",
+    "sape": "darts.metrics.metrics",
+    "se": "darts.metrics.metrics",
+    "sle": "darts.metrics.metrics",
+    "smape": "darts.metrics.metrics",
+    "sse": "darts.metrics.metrics",
+    "wmape": "darts.metrics.metrics",
 }
 
-CLASSIFICATION_METRICS = {
-    accuracy,
-    precision,
-    recall,
-    f1,
-    confusion_matrix,
+_TIME_DEPENDENT_METRIC_NAMES = {
+    "ae",
+    "ape",
+    "arre",
+    "ase",
+    "err",
+    "ql",
+    "sape",
+    "se",
+    "sle",
+    "sse",
+    "iw",
+    "iws",
+    "ic",
+    "incs_qr",
+}
+_CLASSIFICATION_METRIC_NAMES = {
+    "accuracy",
+    "precision",
+    "recall",
+    "f1",
+    "confusion_matrix",
 }
 
 __all__ = [
@@ -207,4 +208,35 @@ __all__ = [
     "recall",
     "f1",
     "confusion_matrix",
+    "TIME_DEPENDENT_METRICS",
+    "CLASSIFICATION_METRICS",
 ]
+
+
+def _load_metric_sets():
+    """Resolve metric function objects for the pre-defined metric sets."""
+    module = importlib.import_module("darts.metrics.metrics")
+    globals()["TIME_DEPENDENT_METRICS"] = {
+        getattr(module, n) for n in _TIME_DEPENDENT_METRIC_NAMES
+    }
+    globals()["CLASSIFICATION_METRICS"] = {
+        getattr(module, n) for n in _CLASSIFICATION_METRIC_NAMES
+    }
+
+
+def __getattr__(name: str):
+    if name in _LAZY_IMPORTS:
+        module = importlib.import_module(_LAZY_IMPORTS[name])
+        value = getattr(module, name)
+        globals()[name] = value
+        return value
+
+    if name in ("TIME_DEPENDENT_METRICS", "CLASSIFICATION_METRICS"):
+        _load_metric_sets()
+        return globals()[name]
+
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    return __all__

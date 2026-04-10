@@ -31,12 +31,9 @@ try:
 except ModuleNotFoundError:
     get_ipython = None
 
-try:
-    import torch  # noqa: F401
+import importlib.util
 
-    TORCH_AVAILABLE = True
-except ImportError:
-    TORCH_AVAILABLE = False
+TORCH_AVAILABLE = importlib.util.find_spec("torch") is not None
 
 logger = get_logger(__name__)
 

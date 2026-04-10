@@ -6,30 +6,38 @@ Tools for explaining and interpreting forecasting model predictions, including S
 model-specific explainability methods.
 """
 
-from darts.explainability.explainability_result import (
-    ShapExplainabilityResult,
-    TFTExplainabilityResult,
-    _ExplainabilityResult,
-)
-from darts.explainability.shap_explainer import ShapExplainer
-from darts.logging import get_logger
+import importlib
+
 from darts.utils.utils import NotImportedModule
 
-logger = get_logger(__name__)
-try:
-    from darts.explainability.tft_explainer import TFTExplainer
-except ModuleNotFoundError:
-    logger.warning(
-        "Support for Torch based explainers not available. "
-        'To enable them, install "darts[torch]" or "darts[all]" (with pip); '
-        'or "u8darts-torch" or "u8darts-all" (with conda).'
-    )
-    TFTExplainer = NotImportedModule(module_name="(Py)Torch", warn=False)
+_LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
+    "ShapExplainabilityResult": ("darts.explainability.explainability_result", None),
+    "TFTExplainabilityResult": ("darts.explainability.explainability_result", None),
+    "_ExplainabilityResult": ("darts.explainability.explainability_result", None),
+    "ShapExplainer": ("darts.explainability.shap_explainer", None),
+    "TFTExplainer": ("darts.explainability.tft_explainer", "(Py)Torch"),
+}
 
-__all__ = [
-    "ShapExplainabilityResult",
-    "TFTExplainabilityResult",
-    "_ExplainabilityResult",
-    "ShapExplainer",
-    "TFTExplainer",
-]
+__all__ = list(_LAZY_IMPORTS.keys())
+
+
+def __getattr__(name: str):
+    if name not in _LAZY_IMPORTS:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+    module_path, optional_dep = _LAZY_IMPORTS[name]
+    try:
+        module = importlib.import_module(module_path)
+        value = getattr(module, name)
+    except (ModuleNotFoundError, ImportError):
+        if optional_dep is not None:
+            value = NotImportedModule(module_name=optional_dep, warn=False)
+        else:
+            raise
+
+    globals()[name] = value
+    return value
+
+
+def __dir__():
+    return __all__

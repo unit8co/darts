@@ -53,14 +53,12 @@ from io import StringIO
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, Literal, Optional
 
-import matplotlib.axes
 import narwhals as nw
 import numpy as np
 import pandas as pd
 import xarray as xr
 from narwhals.utils import Implementation
 from pandas.tseries.frequencies import to_offset
-from scipy.stats import kurtosis, skew
 
 from darts.config import get_option
 from darts.logging import get_logger, raise_log
@@ -89,6 +87,7 @@ else:
     from typing_extensions import Self
 
 if TYPE_CHECKING:
+    import matplotlib.axes
     import plotly.graph_objects as go
 
 logger = get_logger(__name__)
@@ -4426,13 +4425,13 @@ class TimeSeries:
         title: str | None = None,
         label: str | Sequence[str] | None = "",
         max_nr_components: int = 10,
-        ax: matplotlib.axes.Axes | None = None,
+        ax: "matplotlib.axes.Axes | None" = None,
         alpha: float | None = None,
         color: str | tuple | Sequence[str, tuple] | None = None,
         c: str | tuple | Sequence[str, tuple] | None = None,
         *args,
         **kwargs,
-    ) -> matplotlib.axes.Axes:
+    ) -> "matplotlib.axes.Axes":
         """Plot the series using Matplotlib.
 
         Parameters
@@ -4919,6 +4918,8 @@ class TimeSeries:
         TimeSeries
             A new series containing the skew of each component.
         """
+        from scipy.stats import skew
+
         self._assert_stochastic()
         vals = np.expand_dims(skew(self._values, axis=2, **kwargs), axis=2)
         return self.with_values(vals)
@@ -4939,6 +4940,8 @@ class TimeSeries:
         TimeSeries
             A new series containing the kurtosis of each component.
         """
+        from scipy.stats import kurtosis
+
         self._assert_stochastic()
         vals = np.expand_dims(kurtosis(self._values, axis=2, **kwargs), axis=2)
         return self.with_values(vals)
