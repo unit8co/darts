@@ -321,7 +321,7 @@ class TiRexModel(FoundationModel):
         ...     input_chunk_length=12,
         ...     output_chunk_length=6,
         ...     likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
-        ...     accept_license=True,
+        ...     accept_license=False,
         ... )
         >>> model.fit(series)
         >>> pred = model.predict(n=6, predict_likelihood_parameters=True)
