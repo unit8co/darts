@@ -1,6 +1,7 @@
 import copy
 import inspect
 import itertools
+import logging
 
 import numpy as np
 import pandas as pd
@@ -1113,9 +1114,23 @@ class TestMetrics:
             metrics.rmsse,
         ],
     )
-    def test_season(self, metric):
-        with pytest.raises(ValueError):
+    def test_season(self, metric, caplog):
+        # default "warn" mode: emits a warning for perfectly seasonal or constant insample
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
             metric(self.series3, self.series3 * 1.3, self.series_train, 8)
+        assert "error scale (denominator) is zero" in caplog.text
+
+        # legacy "raise" mode still raises ValueError
+        with pytest.raises(ValueError):
+            metric(
+                self.series3,
+                self.series3 * 1.3,
+                self.series_train,
+                8,
+                zero_division="raise",
+            )
+        caplog.clear()
 
     @pytest.mark.parametrize(
         "config",
@@ -1262,6 +1277,192 @@ class TestMetrics:
         # multi-ts one array has different length
         with pytest.raises(ValueError):
             metric([self.series1] * 2, [self.series2] * 2, [insample] * 3)
+
+    @pytest.mark.parametrize("is_univariate", [False, True])
+    @pytest.mark.parametrize("is_deterministic", [False, True])
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (metrics.ase, False, {"time_reduction": np.nanmean}),
+            (metrics.sse, False, {"time_reduction": np.nanmean}),
+            (metrics.mase, True, {}),
+            (metrics.msse, True, {}),
+            (metrics.rmsse, True, {}),
+        ],
+    )
+    def test_scaled_errors_zero_division(
+        self, is_univariate, is_deterministic, config, caplog
+    ):
+        """Test that scaled metrics handle zero error scale gracefully."""
+        metric, is_aggregate, kwargs = config
+
+        series1, series2 = self.series1, self.series2
+        if not is_univariate:
+            series1 = series1.stack(series1 + 1.0)
+            series2 = series2.stack(series2 + 1.0)
+        if not is_deterministic:
+            vals = series2.all_values()
+            vals = np.concatenate([vals - 1.0, vals, vals + 1.0], axis=2)
+            series2 = series2.with_values(vals)
+
+        # --- constant insample (zero scale for m=1) ---
+        constant_train = TimeSeries.from_times_and_values(
+            self.series_train.time_index,
+            np.full((len(self.series_train), 1 if is_univariate else 2), 5.0),
+        )
+
+        # default zero_division="warn": Case 1 (non-zero / zero) → nan + warning
+        # expected result shape
+        result_shape = tuple() if is_univariate else (2,)
+        with caplog.at_level(logging.WARNING):
+            result = metric(
+                series1,
+                series2,
+                constant_train,
+                m=1,
+                component_reduction=None,
+                **kwargs,
+            )
+        assert "error scale (denominator) is zero" in caplog.text
+        assert result.shape == result_shape
+        assert np.all(np.isnan(result))
+        caplog.clear()
+
+        # zero_division="raise": raises ValueError (legacy behavior)
+        with pytest.raises(
+            ValueError, match="Cannot use scaled metric with periodical signals."
+        ):
+            metric(
+                series1,
+                series2,
+                constant_train,
+                m=1,
+                zero_division="raise",
+                component_reduction=None,
+                **kwargs,
+            )
+
+        # --- perfectly seasonal insample with m=2 ---
+        seasonal_vals = np.tile([1.0, 2.0], 16)[: len(self.series_train)]
+        seasonal_train = TimeSeries.from_times_and_values(
+            self.series_train.time_index,
+            seasonal_vals.reshape(-1, 1),
+        )
+        if not is_univariate:
+            seasonal_train = seasonal_train.stack(seasonal_train + 1.0)
+
+        # Case 1 with seasonal: non-zero / zero → nan
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            result = metric(
+                series1,
+                series2,
+                seasonal_train,
+                m=2,
+                component_reduction=None,
+                **kwargs,
+            )
+        assert "error scale (denominator) is zero" in caplog.text
+        assert result.shape == result_shape
+        assert np.all(np.isnan(result))
+
+        # --- Case 2: perfect prediction with constant insample (0/0) ---
+        # use series1 as both actual and pred so error numerator is 0
+        # default "warn" mode: 0/0 → 1.0 (on par with naive)
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            result = metric(
+                series1,
+                series1,
+                constant_train,
+                m=1,
+                component_reduction=None,
+                **kwargs,
+            )
+        assert "error scale (denominator) is zero" in caplog.text
+        assert result.shape == result_shape
+        assert np.all(result == 1.0)
+
+        # --- non-zero scale still works normally (no warning) ---
+        series_train = self.series_train
+        if not is_univariate:
+            series_train = series_train.stack(series_train + 1.0)
+
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            result_normal = metric(
+                series1,
+                series2,
+                series_train,
+                m=1,
+                component_reduction=None,
+                **kwargs,
+            )
+        assert "error scale (denominator) is zero" not in caplog.text
+        assert result.shape == result_shape
+        assert not np.any(np.isnan(result_normal))
+
+        # --- invalid string zero_division raises ---
+        with pytest.raises(ValueError, match="`zero_division` must be"):
+            metric(
+                series1,
+                series2,
+                constant_train,
+                m=1,
+                zero_division="invalid",
+                component_reduction=None,
+                **kwargs,
+            )
+
+        if not is_univariate:
+            # --- Some perfect prediction others with zero error scale ---
+            # check zero division correctly handles component dimension
+            comps = series1.columns.tolist()
+            preds = concatenate(
+                [
+                    series1[comps[0]],
+                    series1[comps[1]] + 1.0,
+                ],
+                axis=1,
+            )
+            result = metric(
+                series1,
+                preds,
+                constant_train,
+                m=1,
+                component_reduction=None,
+                **kwargs,
+            )
+            np.testing.assert_array_equal(result, [1.0, np.nan])
+
+        if not is_deterministic:
+            # --- Probabilistic forecast with multi-quantiles: Some zero error scale, others without ---
+            # check zero division correctly handles quantile dimension
+            if not is_univariate:
+                insample = concatenate(
+                    [
+                        series_train[series_train.columns[0]],
+                        constant_train[constant_train.columns[1]],
+                    ],
+                    axis=1,
+                )
+            else:
+                insample = series_train
+
+            result = metric(
+                series1,
+                series2,
+                insample,
+                m=1,
+                component_reduction=None,
+                q=[0.0, 1.0],
+                **kwargs,
+            )
+            # 2 quantiles per component
+            assert result.shape == ((2,) if is_univariate else (4,))
+            assert not np.any(np.isnan(result[:2]))
+            assert np.all(np.isnan(result[2:]))
+        caplog.clear()
 
     def test_ope(self):
         self.helper_test_multivariate_duplication_equality(metrics.ope)
