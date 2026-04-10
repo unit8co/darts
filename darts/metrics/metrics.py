@@ -24,6 +24,7 @@ from darts.metrics.utils import (
     _get_values_or_raise,
     _get_wrapped_metric,
     _LabelReduction,
+    _safe_scaled_divide,
     classification_support,
     interval_support,
     multi_ts_support,
@@ -402,6 +403,7 @@ def ase(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
     time_reduction: Callable[..., np.ndarray] | None = None,
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
@@ -445,6 +447,13 @@ def ase(
         will consider the values only over their common time interval (intersection in time).
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is
+        constant or perfectly seasonal with period ``m``.
+
+        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
+          when the numerator is also zero (on par with naive baseline), and emits a warning.
+        * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -471,8 +480,8 @@ def ase(
     Raises
     ------
     ValueError
-        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one
-        time step before the start of the corresponding forecast in `pred_series`.
+        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast
+        in  `pred_series`.
 
     Returns
     -------
@@ -509,7 +518,7 @@ def ase(
         intersect,
         q=q,
     )
-    return errors / error_scale
+    return _safe_scaled_divide(errors, error_scale, zero_division=zero_division)
 
 
 @multi_ts_support
@@ -522,6 +531,7 @@ def mase(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
@@ -564,6 +574,13 @@ def mase(
         will consider the values only over their common time interval (intersection in time).
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is
+        constant or perfectly seasonal with period ``m``.
+
+        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
+          when the numerator is also zero (on par with naive baseline), and emits a warning.
+        * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -585,8 +602,8 @@ def mase(
     Raises
     ------
     ValueError
-        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one
-        time step before the start of the corresponding forecast in `pred_series`.
+        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast
+        in  `pred_series`.
 
     Returns
     -------
@@ -621,6 +638,7 @@ def mase(
             m=m,
             intersect=intersect,
             q=q,
+            zero_division=zero_division,
         ),
         axis=TIME_AX,
     )
@@ -815,6 +833,7 @@ def sse(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
     time_reduction: Callable[..., np.ndarray] | None = None,
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
@@ -858,6 +877,13 @@ def sse(
         will consider the values only over their common time interval (intersection in time).
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is
+        constant or perfectly seasonal with period ``m``.
+
+        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
+          when the numerator is also zero (on par with naive baseline), and emits a warning.
+        * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -884,8 +910,8 @@ def sse(
     Raises
     ------
     ValueError
-        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one
-        time step before the start of the corresponding forecast in `pred_series`.
+        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast
+        in  `pred_series`.
 
     Returns
     -------
@@ -922,7 +948,7 @@ def sse(
         intersect,
         q=q,
     )
-    return errors / error_scale
+    return _safe_scaled_divide(errors, error_scale, zero_division=zero_division)
 
 
 @multi_ts_support
@@ -935,6 +961,7 @@ def msse(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
@@ -977,6 +1004,13 @@ def msse(
         will consider the values only over their common time interval (intersection in time).
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is
+        constant or perfectly seasonal with period ``m``.
+
+        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
+          when the numerator is also zero (on par with naive baseline), and emits a warning.
+        * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -998,8 +1032,8 @@ def msse(
     Raises
     ------
     ValueError
-        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one
-        time step before the start of the corresponding forecast in `pred_series`.
+        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast
+        in  `pred_series`.
 
     Returns
     -------
@@ -1034,6 +1068,7 @@ def msse(
             m=m,
             intersect=intersect,
             q=q,
+            zero_division=zero_division,
         ),
         axis=TIME_AX,
     )
@@ -1133,6 +1168,7 @@ def rmsse(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
@@ -1175,6 +1211,13 @@ def rmsse(
         will consider the values only over their common time interval (intersection in time).
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is
+        constant or perfectly seasonal with period ``m``.
+
+        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
+          when the numerator is also zero (on par with naive baseline), and emits a warning.
+        * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -1196,8 +1239,8 @@ def rmsse(
     Raises
     ------
     ValueError
-        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one
-        time step before the start of the corresponding forecast in `pred_series`.
+        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast
+        in  `pred_series`.
 
     Returns
     -------
@@ -1231,7 +1274,7 @@ def rmsse(
         intersect,
         q=q,
     )
-    return errors / error_scale
+    return _safe_scaled_divide(errors, error_scale, zero_division=zero_division)
 
 
 @multi_ts_support
