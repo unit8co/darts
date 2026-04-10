@@ -3,8 +3,10 @@ StatsForecastModel
 ------------------
 """
 
+from typing import Protocol, runtime_checkable
+
 import numpy as np
-from statsforecast.models import _TS
+import statsforecast.models as sf_models
 
 from darts import TimeSeries, concatenate
 from darts.logging import get_logger, raise_log
@@ -19,11 +21,28 @@ from darts.utils.utils import random_method
 logger = get_logger(__name__)
 
 
+@runtime_checkable
+class _SFModel(Protocol):
+    """This serves as a protocol for expected StatsForecast model API."""
+
+    uses_exog: bool
+
+    def __init__(*args, **kwargs): ...
+
+    def fit(self, *args, **kwargs): ...
+
+    def predict(self, *args, **kwargs) -> dict: ...
+
+    def forecast(self, *args, **kwargs) -> dict: ...
+
+    def forward(self, *args, **kwargs) -> dict: ...
+
+
 class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
     @random_method
     def __init__(
         self,
-        model: str | type[_TS] | _TS = "AutoARIMA",
+        model: str | type[sf_models._TS] | sf_models._TS = "AutoARIMA",
         model_kwargs: dict | None = None,
         add_encoders: dict | None = None,
         quantiles: list[float] | None = None,
@@ -71,12 +90,13 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         Parameters
         ----------
         model
-            A StatsForecast base model, specified as a string name (e.g., ``"AutoARIMA"``), a class
-            (e.g., ``AutoARIMA``), or a model instance (e.g., ``AutoARIMA(season_length=12)``).
-            When passing a string or class, use ``model_kwargs`` to configure model parameters.
+            Name, class, or instance of the StatsForecast base model to be used from ``statsforecast.models``, e.g.,
+            ``"AutoARIMA"``, ``AutoARIMA``, or ``AutoARIMA()``. See all `StatsForecast models
+            <https://nixtlaverse.nixtla.io/statsforecast/src/core/models_intro.html>`__ here.
         model_kwargs
-            A dictionary of keyword arguments to pass to the StatsForecast model constructor when
-            ``model`` is a string or class. Ignored when ``model`` is an instance. Default: ``None``.
+            A dictionary of model parameters to initialize the StatsForecast base model. The expected
+            parameters depend on the base model used. Only effective when `model` is a string or class.
+            Default: ``None``.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -127,64 +147,37 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
          [502.67834069]
          [566.04774778]]
         """
-        if isinstance(model, _TS):
-            # backwards compatibility: model passed as an instance
-            logger.warning(
-                "DEPRECATED: Passing a StatsForecast model instance is deprecated "
-                "and will be removed in a future release. "
-                "Pass `model` as a string (e.g. 'AutoARIMA') or class instead."
-            )
-            if model_kwargs:
-                logger.warning(
-                    "`model_kwargs` is ignored when `model` is an instance. "
-                    "Pass `model` as a string or class to use `model_kwargs`."
-                )
-            self.model = model
+        model_kwargs = model_kwargs or {}
+        if isinstance(model, sf_models._TS):
+            pass
         elif isinstance(model, str):
-            model_class = self._import_sf_model_class(model)
-            self._validate_sf_model_class(model_class, name=f"statsforecast.models.{model}")
-            self.model = model_class(**(model_kwargs or {}))
-        elif isinstance(model, type) and issubclass(model, _TS):
-            self._validate_sf_model_class(model)
-            self.model = model(**(model_kwargs or {}))
+            try:
+                model_class = getattr(sf_models, model)
+            except AttributeError:
+                raise_log(
+                    ValueError(
+                        f"Could not find a StatsForecast model class named `{model}` "
+                        f"in `statsforecast.models`."
+                    ),
+                    logger,
+                )
+            model = model_class(**model_kwargs)
+        elif isinstance(model, type) and issubclass(model, sf_models._TS):
+            model = model(**model_kwargs)
         else:
             raise_log(
                 ValueError(
-                    "`model` must be a StatsForecast model name (str), class, or instance."
+                    "`model` must be a valid StatsForecast model name (str), class or instance."
                 ),
                 logger,
             )
+
+        self.model: _SFModel = model
         self._likelihood = QuantilePrediction(quantiles=quantiles)
 
         # future covariates support can be added through the use of a linear model
         self._linreg: LinearRegressionModel | None = None
         super().__init__(add_encoders=add_encoders)
-
-    @staticmethod
-    def _import_sf_model_class(model: str) -> type[_TS]:
-        import statsforecast.models as sf_models
-
-        try:
-            model_class = getattr(sf_models, model)
-        except AttributeError:
-            raise_log(
-                ValueError(
-                    f"Could not find a StatsForecast model class named `{model}` "
-                    f"in `statsforecast.models`."
-                ),
-                logger,
-            )
-        return model_class
-
-    @staticmethod
-    def _validate_sf_model_class(model_class, name: str = "model") -> None:
-        if not (isinstance(model_class, type) and issubclass(model_class, _TS)):
-            raise_log(
-                ValueError(
-                    f"`{name}` is not a valid StatsForecast model class."
-                ),
-                logger,
-            )
 
     def _fit(
         self,
@@ -428,18 +421,6 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
     @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         return self._supports_native_transferable_series
-
-
-class _SFModel(_TS):
-    """This serves as a protocol for expected StatsForecast model API."""
-
-    def fit(self, *args, **kwargs): ...
-
-    def predict(self, *args, **kwargs) -> dict: ...
-
-    def forecast(self, *args, **kwargs) -> dict: ...
-
-    def forward(self, *args, **kwargs) -> dict: ...
 
 
 def _unpack_sf_dict(

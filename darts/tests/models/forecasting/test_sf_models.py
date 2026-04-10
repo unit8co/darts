@@ -12,8 +12,7 @@ if not SF_AVAILABLE:
         allow_module_level=True,
     )
 
-from statsforecast.models import AutoETS as SF_AutoETS
-from statsforecast.models import SimpleExponentialSmoothing as SF_ETS
+import statsforecast.models as sf_models
 from statsforecast.utils import ConformalIntervals
 
 import darts.utils.timeseries_generation as tg
@@ -51,7 +50,10 @@ class TestSFModels:
             (AutoARIMA, {"season_length": 12}),  # (native, native)
             (AutoMFLES, {"season_length": 12, "test_size": 12}),  # (custom, native)
             (AutoETS, {"season_length": 12}),  # (native, custom)
-            (StatsForecastModel, {"model": SF_ETS(alpha=0.1)}),  # (custom, custom)
+            (
+                StatsForecastModel,
+                {"model": sf_models.SimpleExponentialSmoothing(alpha=0.1)},
+            ),  # (custom, custom)
         ],
     )
     def test_transferable_series_forecast(self, config):
@@ -151,7 +153,7 @@ class TestSFModels:
             (AutoETS, {"season_length": 12}, False),  # (native, custom, native)
             (
                 StatsForecastModel,
-                {"model": SF_ETS(alpha=0.1)},
+                {"model": sf_models.SimpleExponentialSmoothing(alpha=0.1)},
                 True,
             ),  # (custom, custom, conformal)
         ],
@@ -187,7 +189,9 @@ class TestSFModels:
             if isinstance(model, AutoMFLES):
                 kwargs["prediction_intervals"] = ci
             else:
-                kwargs["model"] = SF_ETS(alpha=0.1, prediction_intervals=ci)
+                kwargs["model"] = sf_models.SimpleExponentialSmoothing(
+                    alpha=0.1, prediction_intervals=ci
+                )
             model = model_cls(**kwargs).fit(series)
 
         with pytest.raises(ValueError) as exc:
@@ -249,7 +253,7 @@ class TestSFModels:
         "model",
         [
             AutoETS(season_length=12, model="ZZZ"),
-            StatsForecastModel(SF_AutoETS(season_length=12, model="ZZZ")),
+            StatsForecastModel(sf_models.AutoETS(season_length=12, model="ZZZ")),
         ],
     )
     def test_custom_fc_support_fit_on_residuals(self, model):
@@ -280,7 +284,7 @@ class TestSFModels:
         "model",
         [
             AutoETS(season_length=12, model="ZZZ"),
-            StatsForecastModel(SF_AutoETS(season_length=12, model="ZZZ")),
+            StatsForecastModel(sf_models.AutoETS(season_length=12, model="ZZZ")),
         ],
     )
     def test_custom_fc_support_fit_a_linreg(self, model):
@@ -361,3 +365,38 @@ class TestSFModels:
         with pytest.raises(ValueError) as exc:
             _ = model.predict(n=n, future_covariates=fc[:-1])
         assert exc_expected in str(exc.value)
+
+    @pytest.mark.parametrize(
+        "model, model_kwargs",
+        [
+            ("AutoETS", {}),
+            ("AutoETS", {"season_length": 12}),
+            (sf_models.AutoETS, {}),
+            (sf_models.AutoETS, {"season_length": 12}),
+            (sf_models.AutoETS(), {}),
+            (sf_models.AutoETS(season_length=12), {}),
+        ],
+    )
+    def test_model_creation(self, model, model_kwargs):
+        model = StatsForecastModel(
+            model=model,
+            model_kwargs=model_kwargs,
+        )
+        model.fit(series=self.series[:24])
+        preds = model.predict(n=12)
+        assert len(preds) == 12
+
+    class InvalidModel:
+        pass
+
+    @pytest.mark.parametrize("model", ["InvalidModel", InvalidModel, InvalidModel()])
+    def test_invalid_model(self, model):
+        if not isinstance(model, str):
+            with pytest.raises(ValueError, match="must be a valid StatsForecast model"):
+                _ = StatsForecastModel(model=model)
+        else:
+            with pytest.raises(
+                ValueError,
+                match="Could not find a StatsForecast model class named `InvalidModel`",
+            ):
+                _ = StatsForecastModel(model=model)
