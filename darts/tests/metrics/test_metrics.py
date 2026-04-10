@@ -1312,7 +1312,9 @@ class TestMetrics:
         assert np.all(np.isnan(result))
 
         # zero_division="raise": raises ValueError (legacy behavior)
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="Cannot use scaled metric with periodical signals."
+        ):
             metric(
                 self.series1,
                 self.series2,
@@ -1322,18 +1324,6 @@ class TestMetrics:
                 component_reduction=None,
                 **kwargs,
             )
-
-        # zero_division=0.0: returns 0.0 for all zero-scale entries
-        result = metric(
-            self.series1,
-            self.series2,
-            constant_train,
-            m=1,
-            zero_division=0.0,
-            component_reduction=None,
-            **kwargs,
-        )
-        assert np.all(result == 0.0)
 
         # --- perfectly seasonal insample with m=2 ---
         seasonal_vals = np.tile([1.0, 2.0], 16)[: len(self.series_train)]
@@ -1356,18 +1346,6 @@ class TestMetrics:
         assert "error scale (denominator) is zero" in caplog.text
         assert np.all(np.isnan(result))
 
-        # numeric override with zero_division=1.0
-        result = metric(
-            self.series1,
-            self.series2,
-            seasonal_train,
-            m=2,
-            zero_division=1.0,
-            component_reduction=None,
-            **kwargs,
-        )
-        assert np.all(result == 1.0)
-
         # --- Case 2: perfect prediction with constant insample (0/0) ---
         # use series1 as both actual and pred so error numerator is 0
         # default "warn" mode: 0/0 → 1.0 (on par with naive)
@@ -1383,18 +1361,6 @@ class TestMetrics:
             )
         assert "error scale (denominator) is zero" in caplog.text
         assert np.all(result == 1.0)
-
-        # explicit float: 0/0 also gets the fill value
-        result = metric(
-            self.series1,
-            self.series1,
-            constant_train,
-            m=1,
-            zero_division=np.nan,
-            component_reduction=None,
-            **kwargs,
-        )
-        assert np.all(np.isnan(result))
 
         # --- non-zero scale still works normally (no warning) ---
         caplog.clear()

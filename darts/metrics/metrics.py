@@ -403,7 +403,7 @@ def ase(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
-    zero_division: float | str = "warn",
+    zero_division: str = "warn",
     time_reduction: Callable[..., np.ndarray] | None = None,
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
@@ -452,11 +452,8 @@ def ase(
         constant or perfectly seasonal with period ``m``.
 
         * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
-          when the numerator is also zero (on par with naive baseline — we cannot distinguish a trivially naive
-          prediction from a non-trivial one that happens to match), and emits a ``UserWarning``.
+          when the numerator is also zero (on par with naive baseline), and emits a warning.
         * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
-        * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
-          entries regardless of the numerator.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -534,7 +531,7 @@ def mase(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
-    zero_division: float | str = "warn",
+    zero_division: str = "warn",
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
@@ -582,11 +579,8 @@ def mase(
         constant or perfectly seasonal with period ``m``.
 
         * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
-          when the numerator is also zero (on par with naive baseline — we cannot distinguish a trivially naive
-          prediction from a non-trivial one that happens to match), and emits a ``UserWarning``.
+          when the numerator is also zero (on par with naive baseline), and emits a warning.
         * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
-        * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
-          entries regardless of the numerator.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -839,7 +833,7 @@ def sse(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
-    zero_division: float | str = "warn",
+    zero_division: str = "warn",
     time_reduction: Callable[..., np.ndarray] | None = None,
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
@@ -888,11 +882,8 @@ def sse(
         constant or perfectly seasonal with period ``m``.
 
         * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
-          when the numerator is also zero (on par with naive baseline — we cannot distinguish a trivially naive
-          prediction from a non-trivial one that happens to match), and emits a ``UserWarning``.
+          when the numerator is also zero (on par with naive baseline), and emits a warning.
         * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
-        * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
-          entries regardless of the numerator.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -970,7 +961,7 @@ def msse(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
-    zero_division: float | str = "warn",
+    zero_division: str = "warn",
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
@@ -1018,11 +1009,8 @@ def msse(
         constant or perfectly seasonal with period ``m``.
 
         * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
-          when the numerator is also zero (on par with naive baseline — we cannot distinguish a trivially naive
-          prediction from a non-trivial one that happens to match), and emits a ``UserWarning``.
+          when the numerator is also zero (on par with naive baseline), and emits a warning.
         * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
-        * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
-          entries regardless of the numerator.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -1180,7 +1168,7 @@ def rmsse(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
-    zero_division: float | str = "warn",
+    zero_division: str = "warn",
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
@@ -1228,11 +1216,8 @@ def rmsse(
         constant or perfectly seasonal with period ``m``.
 
         * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
-          when the numerator is also zero (on par with naive baseline — we cannot distinguish a trivially naive
-          prediction from a non-trivial one that happens to match), and emits a ``UserWarning``.
+          when the numerator is also zero (on par with naive baseline), and emits a warning.
         * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
-        * A numeric value (e.g. ``0.0``, ``np.nan``, ``1.0``) – used as the fill value for **all** zero-scale
-          entries regardless of the numerator.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
