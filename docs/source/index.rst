@@ -675,6 +675,12 @@ Our regression models are designed to predict continuous numerical values, makin
      - ✅ ✅
      - ✅
      - `TimesFM 1.0 paper <https://arxiv.org/abs/2310.10688>`_, `Google blog post <https://research.google/blog/a-decoder-only-foundation-model-for-time-series-forecasting>`_
+   * - `ReversoModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.reverso_model.html#darts.models.forecasting.reverso_model.ReversoModel>`_
+     - ✅ 🔴
+     - 🔴 🔴 🔴
+     - 🔴 🔴
+     - ✅
+     - `Reverso paper <https://arxiv.org/abs/2602.17634>`_, `GitHub <https://github.com/shinfxh/reverso>`_
    * - **Ensemble Models** (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_): Model support is dependent on ensembled forecasting models and the ensemble model itself
      -
      -
