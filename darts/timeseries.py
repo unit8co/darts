@@ -39,6 +39,8 @@ Optionally, ``TimeSeries`` can store static covariates, a hierarchy, and / or me
 - Have a hierarchy consistent with their components, or no hierarchy
 """
 
+from __future__ import annotations
+
 import itertools
 import json
 import math
@@ -51,7 +53,7 @@ from copy import deepcopy
 from inspect import signature
 from io import StringIO
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal
 
 import narwhals as nw
 import numpy as np
@@ -4425,13 +4427,13 @@ class TimeSeries:
         title: str | None = None,
         label: str | Sequence[str] | None = "",
         max_nr_components: int = 10,
-        ax: "matplotlib.axes.Axes | None" = None,
+        ax: matplotlib.axes.Axes | None = None,
         alpha: float | None = None,
         color: str | tuple | Sequence[str, tuple] | None = None,
         c: str | tuple | Sequence[str, tuple] | None = None,
         *args,
         **kwargs,
-    ) -> "matplotlib.axes.Axes":
+    ) -> matplotlib.axes.Axes:
         """Plot the series using Matplotlib.
 
         Parameters
@@ -4506,7 +4508,7 @@ class TimeSeries:
 
     def plotly(
         self,
-        fig: Optional["go.Figure"] = None,
+        fig: go.Figure | None = None,
         central_quantile: float | str = 0.5,
         low_quantile: float | None = 0.05,
         high_quantile: float | None = 0.95,
@@ -4518,7 +4520,7 @@ class TimeSeries:
         c: str | Sequence[str] | None = None,
         downsample_threshold: int = 100_000,
         **kwargs,
-    ) -> "go.Figure":
+    ) -> go.Figure:
         """Plot the series using Plotly.
 
         Parameters

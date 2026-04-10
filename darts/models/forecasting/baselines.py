@@ -14,14 +14,6 @@ from darts.models.forecasting.forecasting_model import LocalForecastingModel
 logger = get_logger(__name__)
 
 
-def __getattr__(name):
-    if name == "NaiveEnsembleModel":
-        from darts.models.forecasting.naive_ensemble_model import NaiveEnsembleModel
-
-        return NaiveEnsembleModel
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
 class NaiveMean(LocalForecastingModel):
     def __init__(self):
         """Naive Mean Model

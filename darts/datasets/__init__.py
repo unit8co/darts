@@ -83,35 +83,7 @@ _LAZY_IMPORTS: dict[str, str] = {
     "WoolyDataset": "darts.datasets.datasets",
 }
 
-__all__ = [
-    "AirPassengersDataset",
-    "AusBeerDataset",
-    "AustralianTourismDataset",
-    "EnergyDataset",
-    "GasRateCO2Dataset",
-    "HeartRateDataset",
-    "IceCreamHeaterDataset",
-    "MonthlyMilkDataset",
-    "MonthlyMilkIncompleteDataset",
-    "SunspotsDataset",
-    "TaylorDataset",
-    "TemperatureDataset",
-    "USGasolineDataset",
-    "WineDataset",
-    "WoolyDataset",
-    "ETTh1Dataset",
-    "ETTh2Dataset",
-    "ETTm1Dataset",
-    "ETTm2Dataset",
-    "TaxiNewYorkDataset",
-    "ElectricityDataset",
-    "UberTLCDataset",
-    "ILINetDataset",
-    "ExchangeRateDataset",
-    "TrafficDataset",
-    "WeatherDataset",
-    "ElectricityConsumptionZurichDataset",
-]
+__all__ = list(_LAZY_IMPORTS.keys())
 
 
 def __getattr__(name: str):
