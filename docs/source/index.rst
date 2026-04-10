@@ -18,7 +18,7 @@ Time Series Made Easy in Python
 .. raw:: html
 
    <p align="center" style="margin-top: 20px;">
-       <a href="https://badge.fury.io/py/darts"><img src="https://badge.fury.io/py/u8darts.svg" alt="PyPI version"></a>
+       <a href="https://badge.fury.io/py/darts"><img src="https://badge.fury.io/py/darts.svg" alt="PyPI version"></a>
        <a href="https://anaconda.org/conda-forge/u8darts-all"><img src="https://img.shields.io/conda/vn/conda-forge/u8darts-all.svg" alt="Conda Version"></a>
        <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Supported versions">
        <a href="https://hub.docker.com/r/unit8/darts"><img src="https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date" alt="Docker Image Version"></a>
