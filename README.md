@@ -3,7 +3,7 @@
 ![darts](https://github.com/unit8co/darts/raw/master/static/images/darts-logo-trim.png "darts")
 
 ---
-[![PyPI version](https://badge.fury.io/py/u8darts.svg)](https://badge.fury.io/py/darts)
+[![PyPI version](https://badge.fury.io/py/darts.svg)](https://badge.fury.io/py/darts)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/u8darts-all.svg)](https://anaconda.org/conda-forge/u8darts-all)
 ![Supported versions](https://img.shields.io/badge/python-3.10+-blue.svg)
 [![Docker Image Version (latest by date)](https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date)](https://hub.docker.com/r/unit8/darts)
