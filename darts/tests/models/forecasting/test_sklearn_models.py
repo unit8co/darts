@@ -1791,11 +1791,23 @@ class TestSKLearnModels:
                         == pred[f"{ts.components[j]}_q{q:.3f}"].values()[i][0]
                     )
 
-    @pytest.mark.skipif(not CB_AVAILABLE, reason="CatBoost is required for this test")
+    @pytest.mark.skipif(
+        not XGB_AVAILABLE and not CB_AVAILABLE,
+        reason="XGBoost or CatBoost required for this test",
+    )
+    @pytest.mark.parametrize(
+        "model_cls,model_kwargs",
+        (
+            ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
+            + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
+        ),
+    )
     @pytest.mark.parametrize("multi_models", [True, False])
     @pytest.mark.parametrize("multi_components", [True, False])
     def test_get_estimator_multiquantile(
         self,
+        model_cls: type[SKLearnModel],
+        model_kwargs: dict[str, Any],
         multi_models: bool,
         multi_components: bool,
         caplog,
@@ -1810,13 +1822,13 @@ class TestSKLearnModels:
                 tg.linear_timeseries(length=100, column_name="linear"),
             )
 
-        model = CatBoostModel(
+        model = model_cls(
             lags=lags,
             output_chunk_length=ocl,
             multi_models=multi_models,
             likelihood="multiquantile",
             quantiles=quantiles,
-            **cb_test_params,
+            **model_kwargs,
         )
         model.fit(ts)
 
@@ -4315,6 +4327,17 @@ class TestProbabilisticSKLearnModels:
                 },
                 0.4,
             ),
+            (
+                XGBModel,
+                {
+                    "lags": 2,
+                    "likelihood": "multiquantile",
+                    "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
+                    "multi_models": True,
+                    **xgb_test_params,
+                },
+                0.4,
+            ),
         ]
     if LGBM_AVAILABLE:
         models_cls_kwargs_errs += [
@@ -4456,24 +4479,38 @@ class TestProbabilisticSKLearnModels:
             == "Invalid `likelihood='does_not_exist'`. Must be one of ['gaussian', 'poisson', 'quantile']"
         )
 
-    @pytest.mark.skipif(not CB_AVAILABLE, reason="CatBoostModel required for this test")
-    def test_model_construction_multiquantile(self):
+    @pytest.mark.skipif(
+        not XGB_AVAILABLE and not CB_AVAILABLE,
+        reason="XGBoost or CatBoost required for this test",
+    )
+    @pytest.mark.parametrize(
+        "model_cls,model_kwargs",
+        (
+            ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
+            + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
+        ),
+    )
+    def test_model_construction_multiquantile(
+        self,
+        model_cls,
+        model_kwargs,
+    ):
         with pytest.raises(
             ValueError,
             match="'multiquantile' likelihood only supports multiple quantiles.",
         ):
-            _ = CatBoostModel(
+            _ = model_cls(
                 lags=2,
                 likelihood="multiquantile",
                 quantiles=[0.5],
-                **cb_test_params,
+                **model_kwargs,
             )
 
-        model = CatBoostModel(
+        model = model_cls(
             lags=2,
             likelihood="multiquantile",
             quantiles=[0.1, 0.3, 0.5, 0.7, 0.9],
-            **cb_test_params,
+            **model_kwargs,
         )
         likelihood = model.likelihood
         assert isinstance(likelihood, MultiQuantileRegression)

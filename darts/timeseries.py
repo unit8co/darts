@@ -5989,7 +5989,7 @@ def concatenate(
     ignore_static_covariates: bool = False,
     drop_hierarchy: bool = True,
     drop_metadata: bool = False,
-):
+) -> TimeSeries:
     """Concatenates multiple series along a given axis.
 
     ``axis`` can be an integer in (0, 1, 2) to denote (time, component, sample) or, alternatively, a string denoting

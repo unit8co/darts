@@ -31,7 +31,10 @@ from darts.models.forecasting.sklearn_model import (
 )
 from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
-from darts.utils.likelihood_models.sklearn import QuantileRegression, _get_likelihood
+from darts.utils.likelihood_models.sklearn import (
+    QuantileRegression,
+    _get_likelihood,
+)
 
 logger = get_logger(__name__)
 
@@ -151,10 +154,13 @@ class XGBModel(SKLearnModel):
                 To enable past and / or future encodings for any `SKLearnModel`, you must also define the
                 corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
-            Can be set to `poisson` or `quantile`. If set, the model will be probabilistic, allowing sampling at
-            prediction time. This will overwrite any `objective` parameter.
+            One of ``"multiquantile"``, ``"quantile"``, or ``"poisson"``. If set, the model becomes probabilistic
+            and supports sampling at prediction time. ``"multiquantile"`` and ``"quantile"`` use XGBoost's
+            ``"reg:quantileerror"`` objective. Both quantile likelihoods fit dedicated models per quantile, but
+            ``"multiquantile"`` can be more efficient due to fewer tabularization operations. This overrides any
+            ``objective`` parameter. Default is ``None``.
         quantiles
-            Fit the model to these quantiles if the ``likelihood`` is set to ``"quantile"``.
+            Fit the model to these quantiles if the ``likelihood`` is set to ``"quantile"`` or ``"multiquantile"``.
             Default is ``None`` and will use :class:`~darts.utils.likelihood_models.sklearn.QuantileRegression`'s
             default quantiles.
         random_state
@@ -239,7 +245,11 @@ class XGBModel(SKLearnModel):
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
             quantiles=quantiles,
-            available_likelihoods=[LikelihoodType.Quantile, LikelihoodType.Poisson],
+            available_likelihoods=[
+                LikelihoodType.Quantile,
+                LikelihoodType.MultiQuantile,
+                LikelihoodType.Poisson,
+            ],
         )
 
         if likelihood is None:
@@ -247,7 +257,10 @@ class XGBModel(SKLearnModel):
 
         if likelihood == LikelihoodType.Poisson.value:
             self.kwargs["objective"] = f"count:{likelihood}"
-        else:  # quantile
+        elif likelihood == LikelihoodType.MultiQuantile.value:
+            self.kwargs["objective"] = "reg:quantileerror"
+            self.kwargs["quantile_alpha"] = self._likelihood.quantiles
+        else:  # QuantileRegression — per-quantile loop in fit()
             self.kwargs["objective"] = "reg:quantileerror"
             self._model_container = _QuantileModelContainer()
 
@@ -315,10 +328,8 @@ class XGBModel(SKLearnModel):
         **kwargs
             Additional kwargs passed to `xgb.XGBRegressor.fit()`
         """
-        # TODO: XGBRegressor supports multi quantile regression which we could leverage in the future
-        #  see https://xgboost.readthedocs.io/en/latest/python/examples/quantile_regression.html
         likelihood = self.likelihood
-        if isinstance(likelihood, QuantileRegression):
+        if type(likelihood) is QuantileRegression:
             # empty model container in case of multiple calls to fit, e.g. when backtesting
             self._model_container.clear()
             for quantile in likelihood.quantiles:

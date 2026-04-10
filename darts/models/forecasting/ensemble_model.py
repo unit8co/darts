@@ -7,6 +7,7 @@ import copy
 import os
 import sys
 from abc import abstractmethod
+from collections import defaultdict
 from typing import BinaryIO
 
 from darts.models.forecasting.sklearn_model import SKLearnModel
@@ -18,7 +19,7 @@ else:
     from typing_extensions import Self
 
 from darts import TimeSeries, concatenate
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import (
     ForecastingModel,
     GlobalForecastingModel,
@@ -86,11 +87,13 @@ class EnsembleModel(GlobalForecastingModel):
     ):
         super().__init__()
 
-        raise_if_not(
-            isinstance(forecasting_models, list) and forecasting_models,
-            "Cannot instantiate EnsembleModel with an empty list of `forecasting_models`",
-            logger,
-        )
+        if not isinstance(forecasting_models, list) or len(forecasting_models) == 0:
+            raise_log(
+                ValueError(
+                    "`forecasting_models` must be a non-empty list of forecasting models."
+                ),
+                logger,
+            )
 
         is_local_model = [
             isinstance(model, LocalForecastingModel) for model in forecasting_models
@@ -102,15 +105,17 @@ class EnsembleModel(GlobalForecastingModel):
         self.is_local_ensemble = all(is_local_model)
         self.is_global_ensemble = all(is_global_model)
 
-        raise_if_not(
-            all([
-                local_model or global_model
-                for local_model, global_model in zip(is_local_model, is_global_model)
-            ]),
-            "All models must be of type `GlobalForecastingModel`, or `LocalForecastingModel`. "
-            "Also, make sure that all `forecasting_models` are instantiated.",
-            logger,
-        )
+        if not all([
+            local_model or global_model
+            for local_model, global_model in zip(is_local_model, is_global_model)
+        ]):
+            raise_log(
+                ValueError(
+                    "All models must be of type `GlobalForecastingModel`, or `LocalForecastingModel`. "
+                    "Also, make sure that all `forecasting_models` are instantiated."
+                ),
+                logger,
+            )
 
         model_fit_status = [m._fit_called for m in forecasting_models]
         self.all_trained = all(model_fit_status)
@@ -137,49 +142,61 @@ class EnsembleModel(GlobalForecastingModel):
 
         if train_forecasting_models:
             # prevent issues with pytorch-lightning trainer during retraining
-            raise_if(
-                some_trained,
-                "`train_forecasting_models=True` but some `forecasting_models` were already fitted. "
-                "Consider resetting all the `forecasting_models` with `my_model.untrained_model()` "
-                "before passing them to the `EnsembleModel`.",
-                logger,
-            )
+            if some_trained:
+                raise_log(
+                    ValueError(
+                        "`train_forecasting_models=True` but some `forecasting_models` were already fitted. "
+                        "Consider resetting all the `forecasting_models` with `my_model.untrained_model()` "
+                        "before passing them to the `EnsembleModel`."
+                    ),
+                    logger,
+                )
         else:
-            raise_if_not(
-                self.is_global_ensemble and self.all_trained,
-                "`train_forecasting_models=False` is supported only if all the `forecasting_models` are "
-                "already trained `GlobalForecastingModels`.",
-                logger,
-            )
+            if not (self.is_global_ensemble and self.all_trained):
+                raise_log(
+                    ValueError(
+                        "`train_forecasting_models=False` is supported only if all the `forecasting_models` are "
+                        "already trained `GlobalForecastingModels`."
+                    ),
+                    logger,
+                )
 
-        raise_if(
+        if (
             train_num_samples is not None
             and train_num_samples > 1
             and all([
                 not m.supports_probabilistic_prediction for m in forecasting_models
-            ]),
-            "`train_num_samples` is greater than 1 but the `RegressionEnsembleModel` "
-            "contains only deterministic `forecasting_models`.",
-            logger,
-        )
+            ])
+        ):
+            raise_log(
+                ValueError(
+                    "`train_num_samples` is greater than 1 but the `RegressionEnsembleModel` "
+                    "contains only deterministic `forecasting_models`."
+                ),
+                logger,
+            )
 
         supported_reduction = ["mean", "median"]
         if train_samples_reduction is None:
             pass
         elif isinstance(train_samples_reduction, float):
-            raise_if_not(
-                0.0 < train_samples_reduction < 1.0,
-                f"if a float, `train_samples_reduction` must be between "
-                f"0 and 1, received ({train_samples_reduction})",
-                logger,
-            )
+            if not (0.0 < train_samples_reduction < 1.0):
+                raise_log(
+                    ValueError(
+                        f"if a float, `train_samples_reduction` must be between "
+                        f"0 and 1, received ({train_samples_reduction})"
+                    ),
+                    logger,
+                )
         elif isinstance(train_samples_reduction, str):
-            raise_if(
-                train_samples_reduction not in supported_reduction,
-                f"if a string, `train_samples_reduction` must be one of {supported_reduction}, "
-                f"received ({train_samples_reduction})",
-                logger,
-            )
+            if train_samples_reduction not in supported_reduction:
+                raise_log(
+                    ValueError(
+                        f"if a string, `train_samples_reduction` must be one of {supported_reduction}, "
+                        f"received ({train_samples_reduction})"
+                    ),
+                    logger,
+                )
         else:
             raise_log(
                 ValueError(
@@ -190,13 +207,16 @@ class EnsembleModel(GlobalForecastingModel):
                 logger,
             )
 
-        raise_if(
-            train_n_points == -1
-            and not (self.all_trained and (not train_forecasting_models)),
-            "`regression_train_n_points` can only be `-1` if `retrain_forecasting_model=False` and "
-            "all `forecasting_models` are already fitted.",
-            logger,
-        )
+        if train_n_points == -1 and not (
+            self.all_trained and (not train_forecasting_models)
+        ):
+            raise_log(
+                ValueError(
+                    "`regression_train_n_points` can only be `-1` if `retrain_forecasting_model=False` and "
+                    "all `forecasting_models` are already fitted."
+                ),
+                logger,
+            )
 
         # ensemble model checks
         self.forecasting_models = forecasting_models
@@ -205,8 +225,8 @@ class EnsembleModel(GlobalForecastingModel):
         self.train_samples_reduction = train_samples_reduction
         self.train_forecasting_models = train_forecasting_models
         self.show_warnings = show_warnings
-        # converted to List[int] if regression_train_n_points=-1 and ensemble is trained with multiple series
-        self.train_n_points: int | list[int] = train_n_points
+        # regression_train_n_points=-1 is converted to actual n points at fitting time
+        self.train_n_points: int = train_n_points
 
         if show_warnings:
             if (
@@ -259,12 +279,14 @@ class EnsembleModel(GlobalForecastingModel):
         is_single_series = isinstance(series, TimeSeries)
 
         # local models OR mix of local and global models
-        raise_if(
-            not self.is_global_ensemble and not is_single_series,
-            "The `forecasting_models` contain at least one LocalForecastingModel, which does not support training "
-            "on multiple series.",
-            logger,
-        )
+        if not self.is_global_ensemble and not is_single_series:
+            raise_log(
+                ValueError(
+                    "The `forecasting_models` contain at least one LocalForecastingModel, "
+                    "which does not support training on multiple series."
+                ),
+                logger,
+            )
 
         # check that if timeseries is single series, that covariates are as well and vice versa
         error_past_cov = False
@@ -278,11 +300,13 @@ class EnsembleModel(GlobalForecastingModel):
                 future_covariates, TimeSeries
             )
 
-        raise_if(
-            error_past_cov or error_future_cov,
-            "Both series and covariates have to be either single TimeSeries or sequences of TimeSeries.",
-            logger,
-        )
+        if error_past_cov or error_future_cov:
+            raise_log(
+                ValueError(
+                    "Both series and covariates have to be either single TimeSeries or sequences of TimeSeries."
+                ),
+                logger,
+            )
 
         self._verify_past_future_covariates(past_covariates, future_covariates)
 
@@ -318,6 +342,27 @@ class EnsembleModel(GlobalForecastingModel):
     def _model_encoder_settings(self):
         raise NotImplementedError(
             "Encoders are not supported by EnsembleModels. Instead add encoders to the underlying `forecasting_models`."
+        )
+
+    def _base_model_predict_n(self, n: int) -> int:
+        """Minimum prediction horizon for base models to satisfy the ensemble
+        (regression) model's future covariate requirements during predict.
+
+        The base model predictions start at ``series.end_time() + (shift + 1) * freq``
+        (shifted output). The regression model needs covariates from
+        ``series.end_time() + (min(lags) + 1) * freq``. Since all models share the
+        same shift, ``min(lags) >= shift``, and we subtract the shift to avoid
+        requesting autoregression the base models cannot perform.
+        """
+        if self.ensemble_model is None:
+            return n
+        ens_lags = self.ensemble_model.lags["future"]
+        base_shift = self.output_chunk_shift
+        return (
+            max(ens_lags)
+            + 1
+            - base_shift
+            + max(0, n - self.ensemble_model.output_chunk_length)
         )
 
     def _make_multiple_predictions(
@@ -409,8 +454,9 @@ class EnsembleModel(GlobalForecastingModel):
 
         self._verify_past_future_covariates(past_covariates, future_covariates)
 
+        base_n = self._base_model_predict_n(n)
         predictions = self._make_multiple_predictions(
-            n=n,
+            n=base_n,
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
@@ -423,6 +469,7 @@ class EnsembleModel(GlobalForecastingModel):
         return self.ensemble(
             predictions,
             series=series,
+            n=n,
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
             random_state=random_state,
@@ -434,6 +481,7 @@ class EnsembleModel(GlobalForecastingModel):
         self,
         predictions: TimeSeriesLike,
         series: TimeSeriesLike,
+        n: int,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         random_state: int | None = None,
@@ -449,6 +497,8 @@ class EnsembleModel(GlobalForecastingModel):
         series
             Sequence of timeseries to predict on. Optional, since it only makes sense for sequences of timeseries -
             local models retain timeseries for prediction.
+        n
+            The number of output time steps the ensemble should produce.
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
         predict_likelihood_parameters
@@ -602,15 +652,10 @@ class EnsembleModel(GlobalForecastingModel):
 
     @property
     def _target_window_lengths(self) -> tuple[int, int]:
-        # for ensemble, it is the max of each of the sub-models' target sample lengths
-        lengths_max = (0, 0)
-        for model in self.forecasting_models:
-            input_length, output_length = model._target_window_lengths
-            if input_length > lengths_max[0]:
-                lengths_max = (input_length, lengths_max[1])
-            if output_length > lengths_max[1]:
-                lengths_max = (lengths_max[0], output_length)
-        return lengths_max
+        extreme_lags = self.extreme_lags
+        input_length = abs(extreme_lags[0]) if extreme_lags[0] is not None else 0
+        output_length = max(extreme_lags[1] + 1, 0)
+        return input_length, output_length
 
     @property
     def extreme_lags(
@@ -624,10 +669,52 @@ class EnsembleModel(GlobalForecastingModel):
         int | None,
         int,
     ]:
+        # the extreme lags are:
+        # - min target lag
+        # - max target lag
+        # - min past covariate lag
+        # - max past covariate lag
+        # - min future covariate lag
+        # - max future covariate lag
+        # - output shift
+
+        if self.ensemble_model is not None:
+            # use the max of the ensemble model's max target lag
+            ft_lag = self.ensemble_model.extreme_lags[1]
+        else:
+            # or simulate a local forecasting model max target lag
+            ft_lag = -1
+
+        # adjust the right-bound lags if the ensemble models has a larger max target lag than the submodels
+        extreme_lags_adjusted = defaultdict(list)
+        for model in self.forecasting_models:
+            model_extreme_lags = model.extreme_lags
+            model_ft_lag = model_extreme_lags[1]
+
+            # only adjust global models (model_ft_lag >= 0); local models
+            # (model_ft_lag < 0) have no fixed output window and their training
+            # data requirements should not be inflated
+            ft_lag_diff = max(ft_lag - model_ft_lag, 0) if model_ft_lag >= 0 else 0
+
+            extreme_lags_adjusted[0].append(model_extreme_lags[0])
+            extreme_lags_adjusted[1].append(model_extreme_lags[1] + ft_lag_diff)
+            extreme_lags_adjusted[2].append(model_extreme_lags[2])
+            extreme_lags_adjusted[3].append(
+                model_extreme_lags[3] + ft_lag_diff
+                if model_extreme_lags[3] is not None
+                else None
+            )
+            extreme_lags_adjusted[4].append(model_extreme_lags[4])
+            extreme_lags_adjusted[5].append(
+                model_extreme_lags[5] + ft_lag_diff
+                if model_extreme_lags[5] is not None
+                else None
+            )
+            extreme_lags_adjusted[6].append(model_extreme_lags[6])
+
         def find_max_lag_or_none(lag_id, aggregator) -> int | None:
             max_lag = None
-            for model in self.forecasting_models:
-                curr_lag = model.extreme_lags[lag_id]
+            for curr_lag in extreme_lags_adjusted[lag_id]:
                 if max_lag is None:
                     max_lag = curr_lag
                 elif curr_lag is not None:
@@ -635,16 +722,23 @@ class EnsembleModel(GlobalForecastingModel):
             return max_lag
 
         # extreme lags is given by the min or max of the extreme lags of the sub-models
-        lag_aggregators = (min, max, min, max, min, max, max)
-        return tuple(
-            find_max_lag_or_none(i, agg) for i, agg in enumerate(lag_aggregators)
+        return (
+            find_max_lag_or_none(0, min),
+            find_max_lag_or_none(1, max),
+            find_max_lag_or_none(2, min),
+            find_max_lag_or_none(3, max),
+            find_max_lag_or_none(4, min),
+            find_max_lag_or_none(5, max),
+            find_max_lag_or_none(6, max),
         )
 
     @property
     def output_chunk_length(self) -> int | None:
-        """Return `None` if none of the forecasting models have a `output_chunk_length`,
-        otherwise return the smallest output_chunk_length.
-        """
+        # either it's the ensemble model's output_chunk_length
+        if self.ensemble_model is not None:
+            return self.ensemble_model.output_chunk_length
+
+        # or the smallest base model output chunk length
         tmp = [
             m.output_chunk_length
             for m in self.forecasting_models
@@ -655,6 +749,15 @@ class EnsembleModel(GlobalForecastingModel):
             return None
         else:
             return min(tmp)
+
+    @property
+    def output_chunk_shift(self) -> int:
+        # either use the ensemble model's output shift
+        if self.ensemble_model is not None:
+            return self.ensemble_model.output_chunk_shift
+
+        # or the output shift of the sub models (enforced to be identical at model creation)
+        return self.extreme_lags[6]
 
     @property
     def _models_are_probabilistic(self) -> bool:
@@ -744,15 +847,19 @@ class EnsembleModel(GlobalForecastingModel):
         """
         Verify that any non-None covariates comply with the model type.
         """
-        raise_if(
-            past_covariates is not None and not self.supports_past_covariates,
-            "`past_covariates` were provided to an `EnsembleModel` but none of its "
-            "`forecasting_models` support such covariates.",
-            logger,
-        )
-        raise_if(
-            future_covariates is not None and not self.supports_future_covariates,
-            "`future_covariates` were provided to an `EnsembleModel` but none of its "
-            "`forecasting_models` support such covariates.",
-            logger,
-        )
+        if past_covariates is not None and not self.supports_past_covariates:
+            raise_log(
+                ValueError(
+                    "`past_covariates` were provided to an `EnsembleModel` but none of its "
+                    "`forecasting_models` support such covariates."
+                ),
+                logger,
+            )
+        if future_covariates is not None and not self.supports_future_covariates:
+            raise_log(
+                ValueError(
+                    "`future_covariates` were provided to an `EnsembleModel` but none of its "
+                    "`forecasting_models` support such covariates."
+                ),
+                logger,
+            )

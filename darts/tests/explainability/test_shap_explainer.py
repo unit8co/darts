@@ -47,7 +47,7 @@ class TestShapExplainer:
 
     date_start = date(2012, 12, 12)
     date_end = date(2014, 6, 5)
-    days = pd.date_range(date_start, date_end, freq="d")
+    days = pd.date_range(date_start, date_end, freq="D")
     N = len(days)
     eps_1 = np.random.normal(0, 1, N).astype("float32")
     eps_2 = np.random.normal(0, 1, N).astype("float32")
@@ -57,7 +57,7 @@ class TestShapExplainer:
     x_3 = np.zeros(N).astype("float32")
 
     days_past_cov = pd.date_range(
-        date_start, date_start + timedelta(days=N - 2), freq="d"
+        date_start, date_start + timedelta(days=N - 2), freq="D"
     )
 
     past_cov_1 = np.random.normal(0, 1, N - 1).astype("float32")
