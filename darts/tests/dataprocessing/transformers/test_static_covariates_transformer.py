@@ -253,6 +253,25 @@ class TestStaticCovariatesTransformer:
                 series[i].static_covariates,
             )
 
+    @pytest.mark.parametrize("drop", ["first", "if_binary"])
+    def test_one_hot_encoder_with_drop(self, drop):
+        transformer = StaticCovariatesTransformer(
+            transformer_cat=OneHotEncoder(sparse_output=False, drop=drop)
+        )
+        series_tr = transformer.fit_transform(self.series1)
+        series_recovered = transformer.inverse_transform(series_tr)
+        pd.testing.assert_frame_equal(
+            series_recovered.static_covariates, self.series1.static_covariates
+        )
+
+        series_list = [self.series1, self.series2]
+        series_tr_list = transformer.fit_transform(series_list)
+        series_recovered_list = transformer.inverse_transform(series_tr_list)
+        for orig, recov in zip(series_list, series_recovered_list):
+            pd.testing.assert_frame_equal(
+                recov.static_covariates, orig.static_covariates
+            )
+
     def helper_test_scaling(self, series, scaler, test_values):
         series_copy = series.copy()
         series_tr = scaler.fit_transform(series)

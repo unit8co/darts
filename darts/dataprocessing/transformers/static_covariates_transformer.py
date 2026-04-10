@@ -295,11 +295,16 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
             else:
                 col_map_cat = OrderedDict()
                 inv_col_map_cat = OrderedDict()
-                for col, categories in zip(cols_cat, transformer_cat.categories_):
+                feature_names = transformer_cat.get_feature_names_out(cols_cat)
+                feat_idx = 0
+                for col in cols_cat:
                     col_map_cat_i = []
-                    for cat in categories:
-                        col_map_cat_i.append(str(col) + "_" + str(cat))
-                        inv_col_map_cat[str(col) + "_" + str(cat)] = [col]
+                    prefix = str(col) + "_"
+                    while feat_idx < len(feature_names) and feature_names[feat_idx].startswith(prefix):
+                        name = feature_names[feat_idx]
+                        col_map_cat_i.append(name)
+                        inv_col_map_cat[name] = [col]
+                        feat_idx += 1
                     col_map_cat[col] = col_map_cat_i
         # If we don't have any categorical static covariates, don't need to generate mapping:
         else:
