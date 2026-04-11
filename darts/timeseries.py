@@ -58,7 +58,6 @@ from typing import TYPE_CHECKING, Any, Literal
 import narwhals as nw
 import numpy as np
 import pandas as pd
-import xarray as xr
 from narwhals.utils import Implementation
 from pandas.tseries.frequencies import to_offset
 
@@ -91,8 +90,15 @@ else:
 if TYPE_CHECKING:
     import matplotlib.axes
     import plotly.graph_objects as go
+    import xarray as xr
 
 logger = get_logger(__name__)
+
+
+def _is_xarray(obj) -> bool:
+    """Check if *obj* is an xarray type without importing xarray."""
+    return type(obj).__module__.startswith("xarray")
+
 
 # dimension names in the array
 # the "time" one can be different, if it has a name in the underlying Series/DataFrame.
@@ -1746,6 +1752,8 @@ class TimeSeries:
         xarray.DataArray
             An ``xarray.DataArray`` representation of  represents the time series.
         """
+        import xarray as xr
+
         xa = xr.DataArray(
             self._values,
             dims=(self._time_dim,) + DIMS[-2:],
@@ -3727,6 +3735,8 @@ class TimeSeries:
         [2.5]
         [4.5]]
         """
+        import xarray as xr
+
         method_kwargs = method_kwargs or {}
         if isinstance(freq, pd.DateOffset):
             freq = freq.freqstr
@@ -4960,10 +4970,10 @@ class TimeSeries:
 
         if isinstance(other, TimeSeries):
             other_vals = other._values
-        elif isinstance(other, xr.DataArray):
-            other_vals = other.values
-        else:
+        elif isinstance(other, np.ndarray):
             other_vals = other
+        else:
+            other_vals = other.values
 
         t, c, s = self.shape
         other_shape = other_vals.shape
@@ -5363,7 +5373,7 @@ class TimeSeries:
         return len(self._values)
 
     def __add__(self, other):
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5380,7 +5390,7 @@ class TimeSeries:
         return self + other
 
     def __sub__(self, other):
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5397,7 +5407,7 @@ class TimeSeries:
         return other + (-self)
 
     def __mul__(self, other):
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5421,7 +5431,7 @@ class TimeSeries:
                     logger,
                 )
             n = float(n)
-        elif isinstance(n, TimeSeries | xr.DataArray | np.ndarray):
+        elif isinstance(n, TimeSeries | np.ndarray) or _is_xarray(n):
             n = self._extract_values(n)  # elementwise power
         else:
             raise_log(
@@ -5438,7 +5448,7 @@ class TimeSeries:
         if isinstance(other, int | float | np.integer):
             if other == 0:
                 raise_log(ZeroDivisionError("Cannot divide by 0."), logger)
-        elif isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        elif isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
             if (other == 0).any():
                 raise_log(
@@ -5479,7 +5489,7 @@ class TimeSeries:
         return ts
 
     def __lt__(self, other) -> np.ndarray:
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5491,7 +5501,7 @@ class TimeSeries:
         return np.less(self._values, other)
 
     def __gt__(self, other) -> np.ndarray:
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5503,7 +5513,7 @@ class TimeSeries:
         return np.greater(self._values, other)
 
     def __le__(self, other) -> np.ndarray:
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5515,7 +5525,7 @@ class TimeSeries:
         return np.less_equal(self._values, other)
 
     def __ge__(self, other) -> np.ndarray:
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
