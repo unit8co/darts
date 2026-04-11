@@ -1,5 +1,4 @@
 import numpy as np
-from matplotlib import pyplot as plt
 
 
 def plot(
@@ -38,6 +37,7 @@ def plot(
     args_series2
         Some keyword arguments to pass to `plot()` method for series2
     """
+    from matplotlib import pyplot as plt
 
     if new_plot:
         fig = plt.figure()
@@ -125,6 +125,7 @@ def plot_alignment(
     args_series2
         Some keyword arguments to pass to `plot()` method for series2
     """
+    import xarray as xr
 
     series1 = self.series1
     series2 = self.series2
@@ -171,8 +172,6 @@ def plot_alignment(
     y_coords[0::3] = y_coords1
     y_coords[1::3] = y_coords2
     y_coords[2::3] = np.nan
-
-    import xarray as xr
 
     arr = xr.DataArray(y_coords, dims=["value"], coords={"value": x_coords})
     xr.plot.line(arr, x="value", **args_line)

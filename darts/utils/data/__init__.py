@@ -6,42 +6,31 @@ Datasets and utilities for preparing time series data for training and inference
 including torch-based datasets and tabularization methods for SKLearn-like models.
 """
 
-try:
-    # inference datasets
-    from darts.utils.data.torch_datasets.inference_dataset import (
-        SequentialTorchInferenceDataset,
-        TorchInferenceDataset,
-    )
+import importlib
 
-    # training datasets
-    from darts.utils.data.torch_datasets.training_dataset import (
-        HorizonBasedTorchTrainingDataset,
-        SequentialTorchTrainingDataset,
-        ShiftedTorchTrainingDataset,
-        TorchTrainingDataset,
-    )
-except ImportError:  # Torch is not available
-    from darts.utils.utils import NotImportedModule
+from darts.utils.utils import NotImportedModule
 
-    TorchTrainingDataset = NotImportedModule(module_name="(Py)Torch", warn=False)
-    ShiftedTorchTrainingDataset = NotImportedModule(module_name="(Py)Torch", warn=False)
-    SequentialTorchTrainingDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    HorizonBasedTorchTrainingDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
+_TORCH_DATASET_NAMES = {
+    "SequentialTorchInferenceDataset": "darts.utils.data.torch_datasets.inference_dataset",
+    "TorchInferenceDataset": "darts.utils.data.torch_datasets.inference_dataset",
+    "HorizonBasedTorchTrainingDataset": "darts.utils.data.torch_datasets.training_dataset",
+    "SequentialTorchTrainingDataset": "darts.utils.data.torch_datasets.training_dataset",
+    "ShiftedTorchTrainingDataset": "darts.utils.data.torch_datasets.training_dataset",
+    "TorchTrainingDataset": "darts.utils.data.torch_datasets.training_dataset",
+}
 
-    TorchInferenceDataset = NotImportedModule(module_name="(Py)Torch", warn=False)
-    SequentialTorchInferenceDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
+__all__ = list(_TORCH_DATASET_NAMES.keys())
 
-__all__ = [
-    "HorizonBasedTorchTrainingDataset",
-    "TorchInferenceDataset",
-    "SequentialTorchTrainingDataset",
-    "TorchTrainingDataset",
-    "ShiftedTorchTrainingDataset",
-    "SequentialTorchInferenceDataset",
-]
+
+def __getattr__(name: str):
+    if name in _TORCH_DATASET_NAMES:
+        try:
+            mod = importlib.import_module(_TORCH_DATASET_NAMES[name])
+            return getattr(mod, name)
+        except ImportError:
+            return NotImportedModule(module_name="(Py)Torch", warn=False)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    return __all__
