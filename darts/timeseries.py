@@ -71,8 +71,6 @@ from darts.utils._formatting import (
     make_collapsible_section,
     make_paragraph,
 )
-from darts.utils._plotting import plot as _plot
-from darts.utils._plotting import plotly as _plotly
 from darts.utils.utils import (
     SUPPORTED_RESAMPLE_METHODS,
     dataframe_col_to_time_index,
@@ -4498,6 +4496,8 @@ class TimeSeries:
         matplotlib.axes.Axes
             Either the passed `ax` axis, a newly created one if `new_plot=True`, or the existing one.
         """
+        from darts.utils._plotting import plot as _plot
+
         return _plot(
             self,
             new_plot=new_plot,
@@ -4582,6 +4582,8 @@ class TimeSeries:
         plotly.graph_objects.Figure
             The Plotly figure object containing the plot. Call `.show()` on the returned figure to display it.
         """
+        from darts.utils._plotting import plotly as _plotly
+
         return _plotly(
             self,
             fig=fig,
