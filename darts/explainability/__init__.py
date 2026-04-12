@@ -6,30 +6,14 @@ Tools for explaining and interpreting forecasting model predictions, including S
 model-specific explainability methods.
 """
 
-from darts.explainability.explainability_result import (
-    ShapExplainabilityResult,
-    TFTExplainabilityResult,
-    _ExplainabilityResult,
-)
-from darts.explainability.shap_explainer import ShapExplainer
-from darts.logging import get_logger
-from darts.utils.utils import NotImportedModule
+from darts.utils._lazy import setup_lazy_imports
 
-logger = get_logger(__name__)
-try:
-    from darts.explainability.tft_explainer import TFTExplainer
-except ModuleNotFoundError:
-    logger.warning(
-        "Support for Torch based explainers not available. "
-        'To enable them, install "darts[torch]" or "darts[all]" (with pip); '
-        'or "u8darts-torch" or "u8darts-all" (with conda).'
-    )
-    TFTExplainer = NotImportedModule(module_name="(Py)Torch", warn=False)
+_LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
+    "ShapExplainabilityResult": ("darts.explainability.explainability_result", None),
+    "TFTExplainabilityResult": ("darts.explainability.explainability_result", None),
+    "_ExplainabilityResult": ("darts.explainability.explainability_result", None),
+    "ShapExplainer": ("darts.explainability.shap_explainer", None),
+    "TFTExplainer": ("darts.explainability.tft_explainer", "(Py)Torch"),
+}
 
-__all__ = [
-    "ShapExplainabilityResult",
-    "TFTExplainabilityResult",
-    "_ExplainabilityResult",
-    "ShapExplainer",
-    "TFTExplainer",
-]
+__all__, __getattr__, __dir__ = setup_lazy_imports(_LAZY_IMPORTS, __name__, globals())

@@ -6,42 +6,33 @@ Datasets and utilities for preparing time series data for training and inference
 including torch-based datasets and tabularization methods for SKLearn-like models.
 """
 
-try:
-    # inference datasets
-    from darts.utils.data.torch_datasets.inference_dataset import (
-        SequentialTorchInferenceDataset,
-        TorchInferenceDataset,
-    )
+from darts.utils._lazy import setup_lazy_imports
 
-    # training datasets
-    from darts.utils.data.torch_datasets.training_dataset import (
-        HorizonBasedTorchTrainingDataset,
-        SequentialTorchTrainingDataset,
-        ShiftedTorchTrainingDataset,
-        TorchTrainingDataset,
-    )
-except ImportError:  # Torch is not available
-    from darts.utils.utils import NotImportedModule
+_LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
+    "SequentialTorchInferenceDataset": (
+        "darts.utils.data.torch_datasets.inference_dataset",
+        "(Py)Torch",
+    ),
+    "TorchInferenceDataset": (
+        "darts.utils.data.torch_datasets.inference_dataset",
+        "(Py)Torch",
+    ),
+    "HorizonBasedTorchTrainingDataset": (
+        "darts.utils.data.torch_datasets.training_dataset",
+        "(Py)Torch",
+    ),
+    "SequentialTorchTrainingDataset": (
+        "darts.utils.data.torch_datasets.training_dataset",
+        "(Py)Torch",
+    ),
+    "ShiftedTorchTrainingDataset": (
+        "darts.utils.data.torch_datasets.training_dataset",
+        "(Py)Torch",
+    ),
+    "TorchTrainingDataset": (
+        "darts.utils.data.torch_datasets.training_dataset",
+        "(Py)Torch",
+    ),
+}
 
-    TorchTrainingDataset = NotImportedModule(module_name="(Py)Torch", warn=False)
-    ShiftedTorchTrainingDataset = NotImportedModule(module_name="(Py)Torch", warn=False)
-    SequentialTorchTrainingDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    HorizonBasedTorchTrainingDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-
-    TorchInferenceDataset = NotImportedModule(module_name="(Py)Torch", warn=False)
-    SequentialTorchInferenceDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-
-__all__ = [
-    "HorizonBasedTorchTrainingDataset",
-    "TorchInferenceDataset",
-    "SequentialTorchTrainingDataset",
-    "TorchTrainingDataset",
-    "ShiftedTorchTrainingDataset",
-    "SequentialTorchInferenceDataset",
-]
+__all__, __getattr__, __dir__ = setup_lazy_imports(_LAZY_IMPORTS, __name__, globals())
