@@ -96,6 +96,8 @@ For Dynamic Time Warping (DTW) (aggregated over time):
 
 import importlib
 
+from darts.utils._lazy import setup_lazy_imports
+
 _LAZY_IMPORTS: dict[str, str] = {
     "accuracy": "darts.metrics.metrics",
     "ae": "darts.metrics.metrics",
@@ -165,36 +167,23 @@ _CLASSIFICATION_METRIC_NAMES = {
     "confusion_matrix",
 }
 
-__all__ = list(_LAZY_IMPORTS.keys()) + [
-    "TIME_DEPENDENT_METRICS",
-    "CLASSIFICATION_METRICS",
-]
 
-
-def _load_metric_sets():
-    """Resolve metric function objects for the pre-defined metric sets."""
+def _build_time_dependent_metrics():
     module = importlib.import_module("darts.metrics.metrics")
-    globals()["TIME_DEPENDENT_METRICS"] = {
-        getattr(module, n) for n in _TIME_DEPENDENT_METRIC_NAMES
-    }
-    globals()["CLASSIFICATION_METRICS"] = {
-        getattr(module, n) for n in _CLASSIFICATION_METRIC_NAMES
-    }
+    return {getattr(module, n) for n in _TIME_DEPENDENT_METRIC_NAMES}
 
 
-def __getattr__(name: str):
-    if name in _LAZY_IMPORTS:
-        module = importlib.import_module(_LAZY_IMPORTS[name])
-        value = getattr(module, name)
-        globals()[name] = value
-        return value
-
-    if name in ("TIME_DEPENDENT_METRICS", "CLASSIFICATION_METRICS"):
-        _load_metric_sets()
-        return globals()[name]
-
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+def _build_classification_metrics():
+    module = importlib.import_module("darts.metrics.metrics")
+    return {getattr(module, n) for n in _CLASSIFICATION_METRIC_NAMES}
 
 
-def __dir__():
-    return __all__
+__all__, __getattr__, __dir__ = setup_lazy_imports(
+    _LAZY_IMPORTS,
+    __name__,
+    globals(),
+    extra_attrs={
+        "TIME_DEPENDENT_METRICS": _build_time_dependent_metrics,
+        "CLASSIFICATION_METRICS": _build_classification_metrics,
+    },
+)

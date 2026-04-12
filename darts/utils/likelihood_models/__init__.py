@@ -5,50 +5,29 @@ Likelihood Models
 Likelihood models for producing probabilistic forecasts.
 """
 
-import importlib
+from darts.utils._lazy import setup_lazy_imports
 
-from darts.logging import get_logger
-from darts.utils.utils import NotImportedModule
+_LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
+    "BernoulliLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
+    "BetaLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
+    "CauchyLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
+    "ContinuousBernoulliLikelihood": (
+        "darts.utils.likelihood_models.torch",
+        "(Py)Torch",
+    ),
+    "DirichletLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
+    "ExponentialLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
+    "GammaLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
+    "GaussianLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
+    "GeometricLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
+    "GumbelLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
+    "HalfNormalLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
+    "LaplaceLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
+    "LogNormalLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
+    "NegativeBinomialLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
+    "PoissonLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
+    "QuantileRegression": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
+    "WeibullLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
+}
 
-logger = get_logger(__name__)
-
-_TORCH_LIKELIHOOD_NAMES = [
-    "BernoulliLikelihood",
-    "BetaLikelihood",
-    "CauchyLikelihood",
-    "ContinuousBernoulliLikelihood",
-    "DirichletLikelihood",
-    "ExponentialLikelihood",
-    "GammaLikelihood",
-    "GaussianLikelihood",
-    "GeometricLikelihood",
-    "GumbelLikelihood",
-    "HalfNormalLikelihood",
-    "LaplaceLikelihood",
-    "LogNormalLikelihood",
-    "NegativeBinomialLikelihood",
-    "PoissonLikelihood",
-    "QuantileRegression",
-    "WeibullLikelihood",
-]
-
-__all__ = list(_TORCH_LIKELIHOOD_NAMES)
-
-
-def __getattr__(name: str):
-    if name in _TORCH_LIKELIHOOD_NAMES:
-        try:
-            mod = importlib.import_module("darts.utils.likelihood_models.torch")
-            return getattr(mod, name)
-        except ModuleNotFoundError:
-            logger.warning(
-                "Support for PyTorch based likelihood models not available. "
-                'To enable them, install "darts[torch]" or "darts[all]" (with pip); '
-                'or "u8darts-torch" or "u8darts-all" (with conda).'
-            )
-            return NotImportedModule(module_name="(Py)Torch", warn=False)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-def __dir__():
-    return __all__
+__all__, __getattr__, __dir__ = setup_lazy_imports(_LAZY_IMPORTS, __name__, globals())

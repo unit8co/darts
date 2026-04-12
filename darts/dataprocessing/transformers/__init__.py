@@ -6,7 +6,7 @@ Data transformers for preprocessing time series data, including scalers, missing
 differencing, BoxCox transformations, and hierarchical reconciliation methods.
 """
 
-import importlib
+from darts.utils._lazy import setup_lazy_imports
 
 _LAZY_IMPORTS: dict[str, str] = {
     "BaseDataTransformer": "darts.dataprocessing.transformers.base_data_transformer",
@@ -26,15 +26,4 @@ _LAZY_IMPORTS: dict[str, str] = {
     "WindowTransformer": "darts.dataprocessing.transformers.window_transformer",
 }
 
-__all__ = list(_LAZY_IMPORTS.keys())
-
-
-def __getattr__(name: str):
-    if name in _LAZY_IMPORTS:
-        mod = importlib.import_module(_LAZY_IMPORTS[name])
-        return getattr(mod, name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-def __dir__():
-    return __all__
+__all__, __getattr__, __dir__ = setup_lazy_imports(_LAZY_IMPORTS, __name__, globals())

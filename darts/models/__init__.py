@@ -8,16 +8,11 @@ machine learning models (LightGBM, CatBoost, sklearn-based, ...), neural network
 N-BEATS, TiDE...), and foundation models (Chronos-2, TimesFM 2.5).
 """
 
-import importlib
+from darts.utils._lazy import setup_lazy_imports
 
-from darts.logging import get_logger
-from darts.utils.utils import NotImportedModule
-
-logger = get_logger(__name__)
-
-# Mapping of public name -> (module_path, optional_dependency_name_or_None).
-# When optional_dependency_name is not None, a missing dependency yields a
-# ``NotImportedModule`` stub instead of propagating the ImportError.
+# mapping of public name -> (module_path, optional_dependency_name | None);
+# when optional_dependency_name is not None, a missing dependency yields a
+# ``NotImportedModule`` stub instead of propagating the ImportError
 _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     # --- Forecasting: always-available models ---
     "ARIMA": ("darts.models.forecasting.arima", None),
@@ -101,27 +96,4 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     "MovingAverageFilter": ("darts.models.filtering.moving_average_filter", None),
 }
 
-__all__ = list(_LAZY_IMPORTS.keys())
-
-
-def __getattr__(name: str):
-    if name not in _LAZY_IMPORTS:
-        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-    module_path, optional_dep = _LAZY_IMPORTS[name]
-    try:
-        module = importlib.import_module(module_path)
-        value = getattr(module, name)
-    except (ModuleNotFoundError, ImportError):
-        if optional_dep is not None:
-            value = NotImportedModule(module_name=optional_dep, warn=False)
-        else:
-            raise
-
-    # Cache so __getattr__ is not called again for this name
-    globals()[name] = value
-    return value
-
-
-def __dir__():
-    return __all__
+__all__, __getattr__, __dir__ = setup_lazy_imports(_LAZY_IMPORTS, __name__, globals())

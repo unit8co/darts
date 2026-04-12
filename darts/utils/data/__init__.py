@@ -6,31 +6,33 @@ Datasets and utilities for preparing time series data for training and inference
 including torch-based datasets and tabularization methods for SKLearn-like models.
 """
 
-import importlib
+from darts.utils._lazy import setup_lazy_imports
 
-from darts.utils.utils import NotImportedModule
-
-_TORCH_DATASET_NAMES = {
-    "SequentialTorchInferenceDataset": "darts.utils.data.torch_datasets.inference_dataset",
-    "TorchInferenceDataset": "darts.utils.data.torch_datasets.inference_dataset",
-    "HorizonBasedTorchTrainingDataset": "darts.utils.data.torch_datasets.training_dataset",
-    "SequentialTorchTrainingDataset": "darts.utils.data.torch_datasets.training_dataset",
-    "ShiftedTorchTrainingDataset": "darts.utils.data.torch_datasets.training_dataset",
-    "TorchTrainingDataset": "darts.utils.data.torch_datasets.training_dataset",
+_LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
+    "SequentialTorchInferenceDataset": (
+        "darts.utils.data.torch_datasets.inference_dataset",
+        "(Py)Torch",
+    ),
+    "TorchInferenceDataset": (
+        "darts.utils.data.torch_datasets.inference_dataset",
+        "(Py)Torch",
+    ),
+    "HorizonBasedTorchTrainingDataset": (
+        "darts.utils.data.torch_datasets.training_dataset",
+        "(Py)Torch",
+    ),
+    "SequentialTorchTrainingDataset": (
+        "darts.utils.data.torch_datasets.training_dataset",
+        "(Py)Torch",
+    ),
+    "ShiftedTorchTrainingDataset": (
+        "darts.utils.data.torch_datasets.training_dataset",
+        "(Py)Torch",
+    ),
+    "TorchTrainingDataset": (
+        "darts.utils.data.torch_datasets.training_dataset",
+        "(Py)Torch",
+    ),
 }
 
-__all__ = list(_TORCH_DATASET_NAMES.keys())
-
-
-def __getattr__(name: str):
-    if name in _TORCH_DATASET_NAMES:
-        try:
-            mod = importlib.import_module(_TORCH_DATASET_NAMES[name])
-            return getattr(mod, name)
-        except ImportError:
-            return NotImportedModule(module_name="(Py)Torch", warn=False)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-def __dir__():
-    return __all__
+__all__, __getattr__, __dir__ = setup_lazy_imports(_LAZY_IMPORTS, __name__, globals())

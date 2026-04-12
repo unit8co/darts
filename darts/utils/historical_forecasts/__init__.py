@@ -5,7 +5,7 @@ Utils for Historical Forecasting
 Utilities for generating and optimizing historical forecasts.
 """
 
-import importlib
+from darts.utils._lazy import setup_lazy_imports
 
 _LAZY_IMPORTS: dict[str, str] = {
     "_optimized_historical_forecasts_regression": (
@@ -17,15 +17,4 @@ _LAZY_IMPORTS: dict[str, str] = {
     "_process_historical_forecast_input": "darts.utils.historical_forecasts.utils",
 }
 
-__all__ = list(_LAZY_IMPORTS.keys())
-
-
-def __getattr__(name: str):
-    if name in _LAZY_IMPORTS:
-        mod = importlib.import_module(_LAZY_IMPORTS[name])
-        return getattr(mod, name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-def __dir__():
-    return __all__
+__all__, __getattr__, __dir__ = setup_lazy_imports(_LAZY_IMPORTS, __name__, globals())

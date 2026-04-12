@@ -26,7 +26,7 @@ on time series.
   applying boolean logic.
 """
 
-import importlib
+from darts.utils._lazy import setup_lazy_imports
 
 _LAZY_IMPORTS: dict[str, str] = {
     # anomaly aggregators
@@ -53,18 +53,4 @@ _LAZY_IMPORTS: dict[str, str] = {
     "WassersteinScorer": "darts.ad.scorers",
 }
 
-__all__ = list(_LAZY_IMPORTS.keys())
-
-
-def __getattr__(name: str):
-    if name not in _LAZY_IMPORTS:
-        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-    module = importlib.import_module(_LAZY_IMPORTS[name])
-    value = getattr(module, name)
-    globals()[name] = value
-    return value
-
-
-def __dir__():
-    return __all__
+__all__, __getattr__, __dir__ = setup_lazy_imports(_LAZY_IMPORTS, __name__, globals())

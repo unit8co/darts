@@ -92,12 +92,6 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-
-def _is_xarray(obj) -> bool:
-    """Check if *obj* is an xarray type without importing xarray."""
-    return type(obj).__module__.startswith("xarray")
-
-
 # dimension names in the array
 # the "time" one can be different, if it has a name in the underlying Series/DataFrame.
 DIMS = ("time", "component", "sample")
@@ -6316,3 +6310,8 @@ def _clean_components(components: pd.Index) -> pd.Index:
         has_duplicate = len(set(clist)) != len(clist)
 
     return pd.Index(clist)
+
+
+def _is_xarray(obj) -> bool:
+    """Check if *obj* is an xarray type without importing xarray."""
+    return type(obj).__module__.startswith("xarray")

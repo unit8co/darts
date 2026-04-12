@@ -51,7 +51,7 @@ Multivariate Datasets
 - :class:`~darts.datasets.datasets.WeatherDataset` - Weather indicators (21 components, 10-min, 2020)
 """
 
-import importlib
+from darts.utils._lazy import setup_lazy_imports
 
 _LAZY_IMPORTS: dict[str, str] = {
     "AirPassengersDataset": "darts.datasets.datasets",
@@ -83,18 +83,4 @@ _LAZY_IMPORTS: dict[str, str] = {
     "WoolyDataset": "darts.datasets.datasets",
 }
 
-__all__ = list(_LAZY_IMPORTS.keys())
-
-
-def __getattr__(name: str):
-    if name not in _LAZY_IMPORTS:
-        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-    module = importlib.import_module(_LAZY_IMPORTS[name])
-    value = getattr(module, name)
-    globals()[name] = value
-    return value
-
-
-def __dir__():
-    return __all__
+__all__, __getattr__, __dir__ = setup_lazy_imports(_LAZY_IMPORTS, __name__, globals())
