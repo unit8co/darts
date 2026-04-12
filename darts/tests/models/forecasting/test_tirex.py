@@ -166,7 +166,8 @@ class TestTiRexModel:
             original = original[:, :, [4]]  # median quantile (index 4 = 0.5)
 
         # increase tolerance due to platform differences
-        np.testing.assert_allclose(pred_np, original, rtol=1e-3, atol=1e-3)
+        # reference: https://github.com/NX-AI/tirex/blob/30702459b2454660242d63e4ef8f57906e6be65b/tests/test_forecast.py
+        np.testing.assert_allclose(pred_np, original, rtol=1.6e-2, atol=1e-5)
 
     def test_requires_license_acceptance(self):
         with pytest.raises(ValueError, match="accept_license=True"):
