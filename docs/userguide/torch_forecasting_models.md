@@ -21,7 +21,7 @@ We assume that you already know about covariates in Darts. If you're new to the 
       - [Checkpoint saving and loading](#automatic-checkpointing)
       - [Manual model saving and loading](#manual-saving-and-loading)
       - [GPU training and CPU loading](#training-and-saving-on-gpu-loading-on-cpu)
-      - [Re-training or fine-tuning a pre-trained model](#re-training-or-fine-tuning-a-pre-trained-model)
+      - [Re-training or fine-tuning a pre-trained model](#retraining-or-finetuning-a-pretrained-model)
       - [ONNX export for inference](#exporting-model-to-onnx-format-for-inference)
     - [Using callbacks](#callbacks)
       - [Early Stopping](#example-with-early-stopping)
@@ -323,7 +323,7 @@ loaded_model.to_cpu()
 ```
 
 
-#### Re-training or fine-tuning a pre-trained model
+#### Retraining or finetuning a pretrained model
 
 To re-train or fine-tune a model using a different optimizer and/or learning rate scheduler, you can load the weights from the automatic checkpoints into a new model:
 
