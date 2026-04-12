@@ -1,4 +1,6 @@
+import builtins
 import itertools
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -21,6 +23,8 @@ from darts.utils.utils import (
     n_steps_between,
     sample_from_quantiles,
 )
+
+_real_import = builtins.__import__
 
 
 class TestUtils:
@@ -789,3 +793,109 @@ class TestUtils:
             )
             share_unique2 = len(np.unique(y_pred[:, i][mask2])) / num_samples
             assert share_unique2 == pytest.approx(n_times * (q[2] - q[1]), abs=0.05)
+
+
+class TestBuildTqdmIterator:
+    def test_verbose_false_returns_raw_iterable(self):
+        from darts.utils.utils import _build_tqdm_iterator
+
+        items = list(range(5))
+        result = _build_tqdm_iterator(items, verbose=False)
+        assert result is items
+        [res for res in result]
+
+    def test_verbose_true_returns_tqdm_wrapper(self):
+        from darts.utils.utils import _build_tqdm_iterator
+
+        items = list(range(5))
+        result = _build_tqdm_iterator(items, verbose=True)
+        assert list(result) == items
+        assert type(result).__name__ == "tqdm"
+        [res for res in result]
+
+    def test_kwargs_forwarded_to_tqdm(self):
+        from darts.utils.utils import _build_tqdm_iterator
+
+        items = range(10)
+        result = _build_tqdm_iterator(items, verbose=True, desc="test", total=10)
+        assert result.desc == "test"
+        assert result.total == 10
+
+    @patch("builtins.__import__")
+    def test_ipython_unavailable_verbose_false(self, mock_import):
+        def side_effect(name, *args, **kwargs):
+            if name == "IPython" or name.startswith("IPython."):
+                raise ModuleNotFoundError("mocked IPython missing")
+            return _real_import(name, *args, **kwargs)
+
+        mock_import.side_effect = side_effect
+
+        from darts.utils.utils import _build_tqdm_iterator
+
+        items = list(range(5))
+        result = _build_tqdm_iterator(items, verbose=False)
+        assert result is items
+
+    @patch("builtins.__import__")
+    def test_ipython_unavailable_verbose_true(self, mock_import):
+        def side_effect(name, *args, **kwargs):
+            if name == "IPython" or name.startswith("IPython."):
+                raise ModuleNotFoundError("mocked IPython missing")
+            return _real_import(name, *args, **kwargs)
+
+        mock_import.side_effect = side_effect
+
+        from darts.utils.utils import _build_tqdm_iterator
+
+        items = list(range(5))
+        result = _build_tqdm_iterator(items, verbose=True)
+        assert list(result) == items
+        assert type(result).__name__ == "tqdm"
+
+    @patch("IPython.get_ipython")
+    def test_notebook_shell_uses_tqdm_notebook(self, mock_get_ipython):
+        shell = type("FakeShell", (), {})()
+        shell.__class__.__name__ = "ZMQInteractiveShell"
+        mock_get_ipython.return_value = shell
+
+        from darts.utils.utils import _build_tqdm_iterator
+
+        items = list(range(5))
+        result = _build_tqdm_iterator(items, verbose=True)
+        assert list(result) == items
+        assert "notebook" in type(result).__module__
+
+    @patch("IPython.get_ipython")
+    def test_terminal_shell_uses_regular_tqdm(self, mock_get_ipython):
+        shell = type("FakeShell", (), {})()
+        shell.__class__.__name__ = "TerminalInteractiveShell"
+        mock_get_ipython.return_value = shell
+
+        from darts.utils.utils import _build_tqdm_iterator
+
+        items = list(range(5))
+        result = _build_tqdm_iterator(items, verbose=True)
+        assert list(result) == items
+        assert type(result).__name__ == "tqdm"
+
+    @patch("IPython.get_ipython")
+    def test_unknown_shell_uses_regular_tqdm(self, mock_get_ipython):
+        shell = type("FakeShell", (), {})()
+        shell.__class__.__name__ = "SomeOtherShell"
+        mock_get_ipython.return_value = shell
+
+        from darts.utils.utils import _build_tqdm_iterator
+
+        items = list(range(5))
+        result = _build_tqdm_iterator(items, verbose=True)
+        assert list(result) == items
+        assert type(result).__name__ == "tqdm"
+
+    @patch("IPython.get_ipython", side_effect=NameError("no IPython"))
+    def test_get_ipython_raises_name_error(self, mock_get_ipython):
+        from darts.utils.utils import _build_tqdm_iterator
+
+        items = list(range(5))
+        result = _build_tqdm_iterator(items, verbose=True)
+        assert list(result) == items
+        assert type(result).__name__ == "tqdm"
