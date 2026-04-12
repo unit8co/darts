@@ -8,6 +8,7 @@ import pytest
 from pandas.tseries.offsets import CustomBusinessDay
 
 from darts import TimeSeries
+from darts.tests.conftest import IPYTHON_AVAILABLE
 from darts.utils import _with_sanity_checks
 from darts.utils.likelihood_models.base import (
     likelihood_component_names,
@@ -795,6 +796,7 @@ class TestUtils:
             assert share_unique2 == pytest.approx(n_times * (q[2] - q[1]), abs=0.05)
 
 
+@pytest.mark.skipif(not IPYTHON_AVAILABLE, reason="requires IPython")
 class TestBuildTqdmIterator:
     def test_verbose_false_returns_raw_iterable(self):
         from darts.utils.utils import _build_tqdm_iterator
@@ -802,7 +804,6 @@ class TestBuildTqdmIterator:
         items = list(range(5))
         result = _build_tqdm_iterator(items, verbose=False)
         assert result is items
-        [res for res in result]
 
     def test_verbose_true_returns_tqdm_wrapper(self):
         from darts.utils.utils import _build_tqdm_iterator
@@ -811,7 +812,6 @@ class TestBuildTqdmIterator:
         result = _build_tqdm_iterator(items, verbose=True)
         assert list(result) == items
         assert type(result).__name__ == "tqdm"
-        [res for res in result]
 
     def test_kwargs_forwarded_to_tqdm(self):
         from darts.utils.utils import _build_tqdm_iterator

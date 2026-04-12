@@ -125,6 +125,14 @@ except ImportError:
     logger.warning("Plotly not installed - Some tests will be skipped.")
     PLOTLY_AVAILABLE = False
 
+try:
+    import IPython  # noqa: F401
+
+    IPYTHON_AVAILABLE = True
+except ImportError:
+    logger.warning("IPython not installed - Some tests will be skipped.")
+    IPYTHON_AVAILABLE = False
+
 tfm_kwargs: dict[str, Any] = {
     "pl_trainer_kwargs": {
         "accelerator": "cpu",
