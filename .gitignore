@@ -25,3 +25,5 @@ docs_env
 .venv
 .env
 uv.lock
+repl/
+examples/mlruns/*
