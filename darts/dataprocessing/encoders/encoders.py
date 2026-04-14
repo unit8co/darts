@@ -728,6 +728,7 @@ class CallableIndexEncoder(SingleEncoder):
         super().__init__(index_generator)
 
         self.attribute = attribute
+        self._n_components: int = 1
 
     def _encode(
         self, index: TimeIndex, target_end: pd.Timestamp, dtype: np.dtype
@@ -735,17 +736,23 @@ class CallableIndexEncoder(SingleEncoder):
         """Apply the user-defined callable to encode the index"""
         super()._encode(index, target_end, dtype)
 
+        values = np.array(self.attribute(index)).astype(np.dtype(dtype))
+        self._n_components = 1 if values.ndim == 1 else values.shape[1]
+        components = [
+            self.base_component_name + ("custom" if i == 0 else f"custom_{i}")
+            for i in range(self._n_components)
+        ]
         return TimeSeries(
             times=index,
-            values=self.attribute(index).astype(np.dtype(dtype)),
-            components=[self.base_component_name + "custom"],
+            values=values,
+            components=components,
             copy=False,
         )
 
     @property
     def accept_transformer(self) -> list[bool]:
         """`CallableIndexEncoder` accepts transformations."""
-        return [True]
+        return [True] * self._n_components
 
     @property
     def requires_fit(self) -> bool:
@@ -757,7 +764,7 @@ class CallableIndexEncoder(SingleEncoder):
 
     @property
     def encoding_n_components(self) -> int:
-        return 1
+        return self._n_components
 
 
 class PastCallableIndexEncoder(CallableIndexEncoder):
