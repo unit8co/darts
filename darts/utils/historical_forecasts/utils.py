@@ -335,7 +335,11 @@ def _historical_forecasts_general_checks(
             else:
                 # at least one pipeline was fitted on several series with `global_fit=False` but only
                 # one series was passed
-                if n.show_warnings and max(fitted_params_pipelines) > 1:
+                if (
+                    n.show_warnings
+                    and len(fitted_params_pipelines) > 0
+                    and max(fitted_params_pipelines) > 1
+                ):
                     logger.warning(
                         "Provided only a single series, but at least one of the `data_transformers` "
                         "that use `global_fit=False` was fitted on multiple `TimeSeries`."
