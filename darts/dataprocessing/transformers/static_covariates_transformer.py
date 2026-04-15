@@ -300,7 +300,9 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
                 for col in cols_cat:
                     col_map_cat_i = []
                     prefix = str(col) + "_"
-                    while feat_idx < len(feature_names) and feature_names[feat_idx].startswith(prefix):
+                    while feat_idx < len(feature_names) and feature_names[
+                        feat_idx
+                    ].startswith(prefix):
                         name = feature_names[feat_idx]
                         col_map_cat_i.append(name)
                         inv_col_map_cat[name] = [col]
