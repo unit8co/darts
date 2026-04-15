@@ -26,11 +26,10 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - `"warn"` (default) raises a warning and returns `np.nan` for non-zero forecast errors, and `1.0` otherwise (forecast is on-par with naive forecast).
   - `"raise"` preserves the legacy error.
 
-
-
 **Fixed**
 
 - Fixed a device mismatch error in `TFTModel` when moving a trained model to a different device (e.g., GPU to CPU for ONNX export). `attention_mask` and `relative_index` are now registered as non-persistent buffers so they are properly moved with the model. [#3053](https://github.com/unit8co/darts/pull/3053) by [Wolfhart Feldmeier](https://github.com/trahflow)
+- Fixed a bug in historical forecasts, which raised an exception when forecasting a list of a single series with `retrain=False`. [#3070](https://github.com/unit8co/darts/pull/3070) by [Dennis Bader](https://github.com/dennisbader)
 
 ### For developers of the library:
 
