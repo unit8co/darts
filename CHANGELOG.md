@@ -26,14 +26,16 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - `"warn"` (default) raises a warning and returns `np.nan` for non-zero forecast errors, and `1.0` otherwise (forecast is on-par with naive forecast).
   - `"raise"` preserves the legacy error.
 
-
-
 **Fixed**
 
 - Fixed a device mismatch error in `TFTModel` when moving a trained model to a different device (e.g., GPU to CPU for ONNX export). `attention_mask` and `relative_index` are now registered as non-persistent buffers so they are properly moved with the model. [#3053](https://github.com/unit8co/darts/pull/3053) by [Wolfhart Feldmeier](https://github.com/trahflow)
 - Fixed an `IndexError` in `StaticCovariatesTransformer` when using a `OneHotEncoder` with a `drop` parameter (e.g. `drop="first"`, `drop="if_binary"`). Column name mapping now uses `get_feature_names_out()` to correctly reflect dropped categories. [#3065](https://github.com/unit8co/darts/pull/3065) by [Jay Dasondee](https://github.com/JKDasondee)
 
 ### For developers of the library:
+
+- Significantly reduced test suite session loading times by deferring heavy third-party dependencies until they are actually needed. [#3072](https://github.com/unit8co/darts/pull/3072) by [Dennis Bader](https://github.com/dennisbader)
+  - Test run sessions: 3x faster (6 → 2 seconds)
+  - Test debug sessions: 6x faster (36 → 6 seconds)
 
 ## [0.43.0](https://github.com/unit8co/darts/tree/0.43.0) (2026-03-23)
 

@@ -1,3 +1,4 @@
+import importlib.util
 import logging
 import os
 import shutil
@@ -5,7 +6,6 @@ import tempfile
 from typing import Any
 from unittest.mock import patch
 
-import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
 from packaging import version
@@ -16,122 +16,25 @@ logger = get_logger(__name__)
 
 PANDAS_30_OR_GREATER = version.parse(pd.__version__) >= version.parse("3.0.0")
 
-try:
-    import torch  # noqa: F401
 
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning("Torch not installed - Some tests will be skipped.")
-    TORCH_AVAILABLE = False
+def _package_available(*names: str) -> bool:
+    return all(importlib.util.find_spec(n) is not None for n in names)
 
-try:
-    import catboost
-    import lightgbm
-    import xgboost  # noqa: F401
 
-    GBM_AVAILABLE = True
-except ImportError:
-    logger.warning(
-        "Gradient Boosting Models not installed - Some tests will be skipped."
-    )
-    GBM_AVAILABLE = False
-
-try:
-    import xgboost  # noqa: F401
-
-    XGB_AVAILABLE = True
-except ImportError:
-    logger.warning("XGBoost not installed - Some tests will be skipped.")
-    XGB_AVAILABLE = False
-
-try:
-    import lightgbm  # noqa: F401
-
-    LGBM_AVAILABLE = True
-except ImportError:
-    logger.warning("LightGBM not installed - Some tests will be skipped.")
-    LGBM_AVAILABLE = False
-
-try:
-    import catboost  # noqa: F401
-
-    CB_AVAILABLE = True
-except ImportError:
-    logger.warning("CatBoost not installed - Some tests will be skipped.")
-    CB_AVAILABLE = False
-
-try:
-    import prophet  # noqa: F401
-
-    PROPHET_AVAILABLE = True
-except ImportError:
-    logger.warning("Prophet not installed - Some tests will be skipped.")
-    PROPHET_AVAILABLE = False
-
-try:
-    import statsforecast  # noqa: F401
-
-    SF_AVAILABLE = True
-except ImportError:
-    logger.warning("StatsForecast not installed - Some tests will be skipped.")
-    SF_AVAILABLE = False
-
-try:
-    import neuralforecast  # noqa: F401
-
-    NF_AVAILABLE = True
-except ImportError:
-    logger.warning("NeuralForecast not installed - Some tests will be skipped.")
-    NF_AVAILABLE = False
-
-try:
-    import onnx  # noqa: F401
-    import onnxruntime  # noqa: F401
-
-    ONNX_AVAILABLE = True
-except ImportError:
-    logger.warning("Onnx not installed - Some tests will be skipped.")
-    ONNX_AVAILABLE = False
-
-try:
-    import optuna  # noqa: F401
-
-    OPTUNA_AVAILABLE = True
-except ImportError:
-    logger.warning("Optuna not installed - Some tests will be skipped.")
-    OPTUNA_AVAILABLE = False
-
-try:
-    import ray  # noqa: F401
-
-    RAY_AVAILABLE = True
-except ImportError:
-    logger.warning("Ray not installed - Some tests will be skipped.")
-    RAY_AVAILABLE = False
-
-try:
-    import polars  # noqa: F401
-
-    POLARS_AVAILABLE = True
-except ImportError:
-    logger.warning("Polars not installed - Some tests will be skipped.")
-    POLARS_AVAILABLE = False
-
-try:
-    import plotly  # noqa: F401
-
-    PLOTLY_AVAILABLE = True
-except ImportError:
-    logger.warning("Plotly not installed - Some tests will be skipped.")
-    PLOTLY_AVAILABLE = False
-
-try:
-    import IPython  # noqa: F401
-
-    IPYTHON_AVAILABLE = True
-except ImportError:
-    logger.warning("IPython not installed - Some tests will be skipped.")
-    IPYTHON_AVAILABLE = False
+TORCH_AVAILABLE = _package_available("torch")
+GBM_AVAILABLE = _package_available("catboost", "lightgbm", "xgboost")
+XGB_AVAILABLE = _package_available("xgboost")
+LGBM_AVAILABLE = _package_available("lightgbm")
+CB_AVAILABLE = _package_available("catboost")
+PROPHET_AVAILABLE = _package_available("prophet")
+SF_AVAILABLE = _package_available("statsforecast")
+NF_AVAILABLE = _package_available("neuralforecast")
+ONNX_AVAILABLE = _package_available("onnx", "onnxruntime")
+OPTUNA_AVAILABLE = _package_available("optuna")
+RAY_AVAILABLE = _package_available("ray")
+POLARS_AVAILABLE = _package_available("polars")
+PLOTLY_AVAILABLE = _package_available("plotly")
+IPYTHON_AVAILABLE = _package_available("IPython")
 
 tfm_kwargs: dict[str, Any] = {
     "pl_trainer_kwargs": {
@@ -199,6 +102,8 @@ def tmpdir_fn():
 @pytest.fixture(scope="function")
 def mpl_safe_plotting():
     """Patches plt.show() and closes all plots / figures from memory at the end of the test."""
+    import matplotlib.pyplot as plt
+
     with patch("matplotlib.pyplot.show") as patched_show:
         yield patched_show
     plt.close("all")
