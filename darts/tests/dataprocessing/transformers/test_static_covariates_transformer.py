@@ -254,23 +254,97 @@ class TestStaticCovariatesTransformer:
             )
 
     @pytest.mark.parametrize("drop", ["first", "if_binary"])
-    def test_one_hot_encoder_with_drop(self, drop):
+    def test_one_hot_encoder_with_drop_single_series(self, drop):
         transformer = StaticCovariatesTransformer(
             transformer_cat=OneHotEncoder(sparse_output=False, drop=drop)
         )
-        series_tr = transformer.fit_transform(self.series1)
+
+        # pick edge-case cat column names ("cat1" is also prefix of "cat1_")
+        sc_in1 = pd.DataFrame(
+            data={"cat1": [0, 1, 2], "col_num": [3.0, 4.0, 5.0], "cat1_": [10, 11, 11]},
+            index=self.series1.static_covariates.index,
+        ).astype({"cat1": "O", "cat1_": "O"})
+        series1 = self.series1.with_static_covariates(sc_in1)
+        sc_in1 = series1.static_covariates
+
+        data = {"cat1_0": [1, 0, 0]} if drop == "if_binary" else {}
+        data = {
+            **data,
+            "cat1_1": [0, 1, 0],
+            "cat1_2": [0, 0, 1],
+            "col_num": [0.0, 0.5, 1.0],
+            "cat1__11": [0, 1, 1],
+        }
+        sc_tr_expected = pd.DataFrame(data=data, index=series1.static_covariates.index)
+        sc_tr_expected = series1.with_static_covariates(
+            sc_tr_expected
+        ).static_covariates
+
+        series_tr = transformer.fit_transform(series1)
+        assert series_tr.static_covariates.equals(sc_tr_expected)
+
         series_recovered = transformer.inverse_transform(series_tr)
-        pd.testing.assert_frame_equal(
-            series_recovered.static_covariates, self.series1.static_covariates
+        assert series_recovered.static_covariates.equals(sc_in1)
+
+    @pytest.mark.parametrize("drop", ["first", "if_binary"])
+    def test_one_hot_encoder_with_drop_multi_series(self, drop):
+        transformer = StaticCovariatesTransformer(
+            transformer_cat=OneHotEncoder(sparse_output=False, drop=drop)
         )
 
-        series_list = [self.series1, self.series2]
+        # pick edge-case cat column names ("cat1" is also prefix of "cat1_")
+        sc_in1 = pd.DataFrame(
+            data={"cat1": [0, 1, 2], "col_num": [3.0, 4.0, 5.0], "cat1_": [10, 11, 11]},
+            index=self.series1.static_covariates.index,
+        ).astype({"cat1": "O", "cat1_": "O"})
+        series1 = self.series1.with_static_covariates(sc_in1)
+        sc_in1 = series1.static_covariates
+
+        sc_in2 = pd.DataFrame(
+            data={"cat1": [3, 0, 3], "col_num": [5.0, 6.0, 7.0], "cat1_": [11, 10, 10]},
+            index=self.series2.static_covariates.index,
+        ).astype({"cat1": "O", "cat1_": "O"})
+        series2 = self.series2.with_static_covariates(sc_in2)
+        sc_in2 = series2.static_covariates
+
+        data = {"cat1_0": [1, 0, 0]} if drop == "if_binary" else {}
+        data = {
+            **data,
+            "cat1_1": [0, 1, 0],
+            "cat1_2": [0, 0, 1],
+            "cat1_3": [0, 0, 0],
+            "col_num": [0.0, 0.25, 0.5],
+            "cat1__11": [0, 1, 1],
+        }
+        sc_tr1_expected = pd.DataFrame(data=data, index=series1.static_covariates.index)
+        sc_tr1_expected = series1.with_static_covariates(
+            sc_tr1_expected
+        ).static_covariates
+
+        data = {"cat1_0": [0, 1, 0]} if drop == "if_binary" else {}
+        data = {
+            **data,
+            "cat1_1": [0, 0, 0],
+            "cat1_2": [0, 0, 0],
+            "cat1_3": [1, 0, 1],
+            "col_num": [0.5, 0.75, 1.0],
+            "cat1__11": [1, 0, 0],
+        }
+        sc_tr2_expected = pd.DataFrame(data=data, index=series2.static_covariates.index)
+        sc_tr2_expected = series2.with_static_covariates(
+            sc_tr2_expected
+        ).static_covariates
+
+        series_list = [series1, series2]
         series_tr_list = transformer.fit_transform(series_list)
+        for series_tr, sc_tr_expected in zip(
+            series_tr_list, [sc_tr1_expected, sc_tr2_expected]
+        ):
+            assert series_tr.static_covariates.equals(sc_tr_expected)
+
         series_recovered_list = transformer.inverse_transform(series_tr_list)
-        for orig, recov in zip(series_list, series_recovered_list):
-            pd.testing.assert_frame_equal(
-                recov.static_covariates, orig.static_covariates
-            )
+        for recov, sc_in in zip(series_recovered_list, [sc_in1, sc_in2]):
+            assert recov.static_covariates.equals(sc_in)
 
     def helper_test_scaling(self, series, scaler, test_values):
         series_copy = series.copy()

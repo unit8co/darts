@@ -297,12 +297,15 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
                 inv_col_map_cat = OrderedDict()
                 feature_names = transformer_cat.get_feature_names_out(cols_cat)
                 feat_idx = 0
-                for col in cols_cat:
+                for i, col in enumerate(cols_cat):
                     col_map_cat_i = []
-                    prefix = str(col) + "_"
-                    while feat_idx < len(feature_names) and feature_names[
-                        feat_idx
-                    ].startswith(prefix):
+                    expected_names = {
+                        f"{col}_{cat}" for cat in transformer_cat.categories_[i]
+                    }
+                    while (
+                        feat_idx < len(feature_names)
+                        and feature_names[feat_idx] in expected_names
+                    ):
                         name = feature_names[feat_idx]
                         col_map_cat_i.append(name)
                         inv_col_map_cat[name] = [col]
