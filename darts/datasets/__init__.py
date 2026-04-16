@@ -51,7 +51,44 @@ Multivariate Datasets
 - :class:`~darts.datasets.datasets.WeatherDataset` - Weather indicators (21 components, 10-min, 2020)
 """
 
+from typing import TYPE_CHECKING
+
 from darts.utils._lazy import setup_lazy_imports
+
+if TYPE_CHECKING:
+    from darts.datasets.datasets import AirPassengersDataset as AirPassengersDataset
+    from darts.datasets.datasets import AusBeerDataset as AusBeerDataset
+    from darts.datasets.datasets import (
+        AustralianTourismDataset as AustralianTourismDataset,
+    )
+    from darts.datasets.datasets import (
+        ElectricityConsumptionZurichDataset as ElectricityConsumptionZurichDataset,
+    )
+    from darts.datasets.datasets import ElectricityDataset as ElectricityDataset
+    from darts.datasets.datasets import EnergyDataset as EnergyDataset
+    from darts.datasets.datasets import ETTh1Dataset as ETTh1Dataset
+    from darts.datasets.datasets import ETTh2Dataset as ETTh2Dataset
+    from darts.datasets.datasets import ETTm1Dataset as ETTm1Dataset
+    from darts.datasets.datasets import ETTm2Dataset as ETTm2Dataset
+    from darts.datasets.datasets import ExchangeRateDataset as ExchangeRateDataset
+    from darts.datasets.datasets import GasRateCO2Dataset as GasRateCO2Dataset
+    from darts.datasets.datasets import HeartRateDataset as HeartRateDataset
+    from darts.datasets.datasets import IceCreamHeaterDataset as IceCreamHeaterDataset
+    from darts.datasets.datasets import ILINetDataset as ILINetDataset
+    from darts.datasets.datasets import MonthlyMilkDataset as MonthlyMilkDataset
+    from darts.datasets.datasets import (
+        MonthlyMilkIncompleteDataset as MonthlyMilkIncompleteDataset,
+    )
+    from darts.datasets.datasets import SunspotsDataset as SunspotsDataset
+    from darts.datasets.datasets import TaxiNewYorkDataset as TaxiNewYorkDataset
+    from darts.datasets.datasets import TaylorDataset as TaylorDataset
+    from darts.datasets.datasets import TemperatureDataset as TemperatureDataset
+    from darts.datasets.datasets import TrafficDataset as TrafficDataset
+    from darts.datasets.datasets import UberTLCDataset as UberTLCDataset
+    from darts.datasets.datasets import USGasolineDataset as USGasolineDataset
+    from darts.datasets.datasets import WeatherDataset as WeatherDataset
+    from darts.datasets.datasets import WineDataset as WineDataset
+    from darts.datasets.datasets import WoolyDataset as WoolyDataset
 
 _LAZY_IMPORTS: dict[str, str] = {
     "AirPassengersDataset": "darts.datasets.datasets",

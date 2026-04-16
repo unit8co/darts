@@ -8,7 +8,115 @@ machine learning models (LightGBM, CatBoost, sklearn-based, ...), neural network
 N-BEATS, TiDE...), and foundation models (Chronos-2, TimesFM 2.5).
 """
 
+from typing import TYPE_CHECKING
+
 from darts.utils._lazy import setup_lazy_imports
+
+if TYPE_CHECKING:
+    from darts.models.filtering.gaussian_process_filter import (
+        GaussianProcessFilter as GaussianProcessFilter,
+    )
+    from darts.models.filtering.kalman_filter import KalmanFilter as KalmanFilter
+    from darts.models.filtering.moving_average_filter import (
+        MovingAverageFilter as MovingAverageFilter,
+    )
+    from darts.models.forecasting.arima import ARIMA as ARIMA
+    from darts.models.forecasting.baselines import NaiveDrift as NaiveDrift
+    from darts.models.forecasting.baselines import NaiveMean as NaiveMean
+    from darts.models.forecasting.baselines import (
+        NaiveMovingAverage as NaiveMovingAverage,
+    )
+    from darts.models.forecasting.baselines import NaiveSeasonal as NaiveSeasonal
+    from darts.models.forecasting.block_rnn_model import BlockRNNModel as BlockRNNModel
+    from darts.models.forecasting.catboost_model import (
+        CatBoostClassifierModel as CatBoostClassifierModel,
+    )
+    from darts.models.forecasting.catboost_model import CatBoostModel as CatBoostModel
+    from darts.models.forecasting.chronos2_model import Chronos2Model as Chronos2Model
+    from darts.models.forecasting.conformal_models import (
+        ConformalNaiveModel as ConformalNaiveModel,
+    )
+    from darts.models.forecasting.conformal_models import (
+        ConformalQRModel as ConformalQRModel,
+    )
+    from darts.models.forecasting.dlinear import DLinearModel as DLinearModel
+    from darts.models.forecasting.ensemble_model import EnsembleModel as EnsembleModel
+    from darts.models.forecasting.exponential_smoothing import (
+        ExponentialSmoothing as ExponentialSmoothing,
+    )
+    from darts.models.forecasting.fft import FFT as FFT
+    from darts.models.forecasting.global_baseline_models import (
+        GlobalNaiveAggregate as GlobalNaiveAggregate,
+    )
+    from darts.models.forecasting.global_baseline_models import (
+        GlobalNaiveDrift as GlobalNaiveDrift,
+    )
+    from darts.models.forecasting.global_baseline_models import (
+        GlobalNaiveSeasonal as GlobalNaiveSeasonal,
+    )
+    from darts.models.forecasting.kalman_forecaster import (
+        KalmanForecaster as KalmanForecaster,
+    )
+    from darts.models.forecasting.lgbm import (
+        LightGBMClassifierModel as LightGBMClassifierModel,
+    )
+    from darts.models.forecasting.lgbm import LightGBMModel as LightGBMModel
+    from darts.models.forecasting.linear_regression_model import (
+        LinearRegressionModel as LinearRegressionModel,
+    )
+    from darts.models.forecasting.naive_ensemble_model import (
+        NaiveEnsembleModel as NaiveEnsembleModel,
+    )
+    from darts.models.forecasting.nbeats import NBEATSModel as NBEATSModel
+    from darts.models.forecasting.nf_model import (
+        NeuralForecastModel as NeuralForecastModel,
+    )
+    from darts.models.forecasting.nhits import NHiTSModel as NHiTSModel
+    from darts.models.forecasting.nlinear import NLinearModel as NLinearModel
+    from darts.models.forecasting.prophet_model import Prophet as Prophet
+    from darts.models.forecasting.random_forest import RandomForest as RandomForest
+    from darts.models.forecasting.random_forest import (
+        RandomForestModel as RandomForestModel,
+    )
+    from darts.models.forecasting.regression_ensemble_model import (
+        RegressionEnsembleModel as RegressionEnsembleModel,
+    )
+    from darts.models.forecasting.rnn_model import RNNModel as RNNModel
+    from darts.models.forecasting.sf_auto_arima import AutoARIMA as AutoARIMA
+    from darts.models.forecasting.sf_auto_ces import AutoCES as AutoCES
+    from darts.models.forecasting.sf_auto_ets import AutoETS as AutoETS
+    from darts.models.forecasting.sf_auto_mfles import AutoMFLES as AutoMFLES
+    from darts.models.forecasting.sf_auto_tbats import AutoTBATS as AutoTBATS
+    from darts.models.forecasting.sf_auto_theta import AutoTheta as AutoTheta
+    from darts.models.forecasting.sf_croston import Croston as Croston
+    from darts.models.forecasting.sf_model import (
+        StatsForecastModel as StatsForecastModel,
+    )
+    from darts.models.forecasting.sf_tbats import TBATS as TBATS
+    from darts.models.forecasting.sklearn_model import (
+        RegressionModel as RegressionModel,
+    )
+    from darts.models.forecasting.sklearn_model import (
+        SKLearnClassifierModel as SKLearnClassifierModel,
+    )
+    from darts.models.forecasting.sklearn_model import SKLearnModel as SKLearnModel
+    from darts.models.forecasting.tcn_model import TCNModel as TCNModel
+    from darts.models.forecasting.tft_model import TFTModel as TFTModel
+    from darts.models.forecasting.theta import FourTheta as FourTheta
+    from darts.models.forecasting.theta import Theta as Theta
+    from darts.models.forecasting.tide_model import TiDEModel as TiDEModel
+    from darts.models.forecasting.timesfm2p5_model import (
+        TimesFM2p5Model as TimesFM2p5Model,
+    )
+    from darts.models.forecasting.transformer_model import (
+        TransformerModel as TransformerModel,
+    )
+    from darts.models.forecasting.tsmixer_model import TSMixerModel as TSMixerModel
+    from darts.models.forecasting.varima import VARIMA as VARIMA
+    from darts.models.forecasting.xgboost import (
+        XGBClassifierModel as XGBClassifierModel,
+    )
+    from darts.models.forecasting.xgboost import XGBModel as XGBModel
 
 # mapping of public name -> (module_path, optional_dependency_name | None);
 # when optional_dependency_name is not None, a missing dependency yields a

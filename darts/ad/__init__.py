@@ -26,7 +26,33 @@ on time series.
   applying boolean logic.
 """
 
+from typing import TYPE_CHECKING
+
 from darts.utils._lazy import setup_lazy_imports
+
+if TYPE_CHECKING:
+    from darts.ad.aggregators import AndAggregator as AndAggregator
+    from darts.ad.aggregators import (
+        EnsembleSklearnAggregator as EnsembleSklearnAggregator,
+    )
+    from darts.ad.aggregators import OrAggregator as OrAggregator
+    from darts.ad.anomaly_model import FilteringAnomalyModel as FilteringAnomalyModel
+    from darts.ad.anomaly_model import (
+        ForecastingAnomalyModel as ForecastingAnomalyModel,
+    )
+    from darts.ad.detectors import QuantileDetector as QuantileDetector
+    from darts.ad.detectors import ThresholdDetector as ThresholdDetector
+    from darts.ad.scorers import CauchyNLLScorer as CauchyNLLScorer
+    from darts.ad.scorers import DifferenceScorer as DifferenceScorer
+    from darts.ad.scorers import ExponentialNLLScorer as ExponentialNLLScorer
+    from darts.ad.scorers import GammaNLLScorer as GammaNLLScorer
+    from darts.ad.scorers import GaussianNLLScorer as GaussianNLLScorer
+    from darts.ad.scorers import KMeansScorer as KMeansScorer
+    from darts.ad.scorers import LaplaceNLLScorer as LaplaceNLLScorer
+    from darts.ad.scorers import NormScorer as NormScorer
+    from darts.ad.scorers import PoissonNLLScorer as PoissonNLLScorer
+    from darts.ad.scorers import PyODScorer as PyODScorer
+    from darts.ad.scorers import WassersteinScorer as WassersteinScorer
 
 _LAZY_IMPORTS: dict[str, str] = {
     # anomaly aggregators
