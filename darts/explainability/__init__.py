@@ -6,7 +6,22 @@ Tools for explaining and interpreting forecasting model predictions, including S
 model-specific explainability methods.
 """
 
+from typing import TYPE_CHECKING
+
 from darts.utils._lazy import setup_lazy_imports
+
+if TYPE_CHECKING:
+    from darts.explainability.explainability_result import (
+        ShapExplainabilityResult as ShapExplainabilityResult,
+    )
+    from darts.explainability.explainability_result import (
+        TFTExplainabilityResult as TFTExplainabilityResult,
+    )
+    from darts.explainability.explainability_result import (
+        _ExplainabilityResult as _ExplainabilityResult,
+    )
+    from darts.explainability.shap_explainer import ShapExplainer as ShapExplainer
+    from darts.explainability.tft_explainer import TFTExplainer as TFTExplainer
 
 _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     "ShapExplainabilityResult": ("darts.explainability.explainability_result", None),
