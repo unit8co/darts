@@ -11,6 +11,11 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- 🚀🚀 Dramatically reduced import times by deferring heavy third-party dependencies (torch, sklearn, scipy, ...) until they are actually needed. Here are some import speed up examples: [#3066](https://github.com/unit8co/darts/pull/3066) by [Dennis Bader](https://github.com/dennisbader)
+  - TimeSeries, metrics, datasets, data transformers: 7x faster (2.4 → 0.3 seconds)
+  - Baseline models: 15x faster (5.7 → 0.4 seconds)
+  - SKLearn models: 4.5x faster (5.7 → 1.27 seconds)
+  - Torch models: 1.9x faster (5.7 → 3.0 seconds)
 - Added native multi-quantile support for `CatBoostModel` by using CatBoost’s `MultiQuantile` loss for faster training and inference. Set `likelihood="multiquantile"` to enable this feature. [#3032](https://github.com/unit8co/darts/pull/3032) by [Zhihao Dai](https://github.com/daidahao)
 - Added native multi-quantile support for `XGBModel`. Similar to the regular quantile support, it still fits dedicated models per quantile, but it is more efficient due to fewer tabularization operations. Set `likelihood="multiquantile"` to enable this feature. [#3056](https://github.com/unit8co/darts/pull/3056) by [Oswald Zink](https://github.com/ozink-u8)
 - `StatsForecastModel` now accepts `model` as a StatsForecast model name, class, or instance; `model_kwargs` supplies constructor arguments when `model` is a name or class. This simplifies config-driven setups. [#3058](https://github.com/unit8co/darts/pull/3058) by [Trevin Chow](https://github.com/tmchow).

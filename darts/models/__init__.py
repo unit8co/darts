@@ -8,208 +8,92 @@ machine learning models (LightGBM, CatBoost, sklearn-based, ...), neural network
 N-BEATS, TiDE...), and foundation models (Chronos-2, TimesFM 2.5).
 """
 
-from darts.logging import get_logger
+from darts.utils._lazy import setup_lazy_imports
 
-logger = get_logger(__name__)
+# mapping of public name -> (module_path, optional_dependency_name | None);
+# when optional_dependency_name is not None, a missing dependency yields a
+# ``NotImportedModule`` stub instead of propagating the ImportError
+_LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
+    # --- Forecasting: always-available models ---
+    "ARIMA": ("darts.models.forecasting.arima", None),
+    "NaiveDrift": ("darts.models.forecasting.baselines", None),
+    "NaiveMean": ("darts.models.forecasting.baselines", None),
+    "NaiveMovingAverage": ("darts.models.forecasting.baselines", None),
+    "NaiveSeasonal": ("darts.models.forecasting.baselines", None),
+    "NaiveEnsembleModel": ("darts.models.forecasting.naive_ensemble_model", None),
+    "ConformalNaiveModel": ("darts.models.forecasting.conformal_models", None),
+    "ConformalQRModel": ("darts.models.forecasting.conformal_models", None),
+    "EnsembleModel": ("darts.models.forecasting.ensemble_model", None),
+    "ExponentialSmoothing": ("darts.models.forecasting.exponential_smoothing", None),
+    "FFT": ("darts.models.forecasting.fft", None),
+    "KalmanForecaster": ("darts.models.forecasting.kalman_forecaster", None),
+    "LinearRegressionModel": ("darts.models.forecasting.linear_regression_model", None),
+    "RandomForest": ("darts.models.forecasting.random_forest", None),
+    "RandomForestModel": ("darts.models.forecasting.random_forest", None),
+    "RegressionEnsembleModel": (
+        "darts.models.forecasting.regression_ensemble_model",
+        None,
+    ),
+    "RegressionModel": ("darts.models.forecasting.sklearn_model", None),
+    "SKLearnClassifierModel": ("darts.models.forecasting.sklearn_model", None),
+    "SKLearnModel": ("darts.models.forecasting.sklearn_model", None),
+    "FourTheta": ("darts.models.forecasting.theta", None),
+    "Theta": ("darts.models.forecasting.theta", None),
+    "VARIMA": ("darts.models.forecasting.varima", None),
+    # --- Forecasting: LightGBM (import first to avoid segfault) ---
+    "LightGBMModel": ("darts.models.forecasting.lgbm", "LightGBM"),
+    "LightGBMClassifierModel": ("darts.models.forecasting.lgbm", "LightGBM"),
+    # --- Forecasting: Torch-based models ---
+    "BlockRNNModel": ("darts.models.forecasting.block_rnn_model", "(Py)Torch"),
+    "DLinearModel": ("darts.models.forecasting.dlinear", "(Py)Torch"),
+    "GlobalNaiveAggregate": (
+        "darts.models.forecasting.global_baseline_models",
+        "(Py)Torch",
+    ),
+    "GlobalNaiveDrift": (
+        "darts.models.forecasting.global_baseline_models",
+        "(Py)Torch",
+    ),
+    "GlobalNaiveSeasonal": (
+        "darts.models.forecasting.global_baseline_models",
+        "(Py)Torch",
+    ),
+    "NBEATSModel": ("darts.models.forecasting.nbeats", "(Py)Torch"),
+    "NHiTSModel": ("darts.models.forecasting.nhits", "(Py)Torch"),
+    "NLinearModel": ("darts.models.forecasting.nlinear", "(Py)Torch"),
+    "RNNModel": ("darts.models.forecasting.rnn_model", "(Py)Torch"),
+    "TCNModel": ("darts.models.forecasting.tcn_model", "(Py)Torch"),
+    "TFTModel": ("darts.models.forecasting.tft_model", "(Py)Torch"),
+    "TiDEModel": ("darts.models.forecasting.tide_model", "(Py)Torch"),
+    "TransformerModel": ("darts.models.forecasting.transformer_model", "(Py)Torch"),
+    "TSMixerModel": ("darts.models.forecasting.tsmixer_model", "(Py)Torch"),
+    # --- Forecasting: Foundation models (Torch-based) ---
+    "Chronos2Model": ("darts.models.forecasting.chronos2_model", "(Py)Torch"),
+    "TimesFM2p5Model": ("darts.models.forecasting.timesfm2p5_model", "(Py)Torch"),
+    # --- Forecasting: NeuralForecast ---
+    "NeuralForecastModel": ("darts.models.forecasting.nf_model", "NeuralForecast"),
+    # --- Forecasting: Prophet ---
+    "Prophet": ("darts.models.forecasting.prophet_model", "Prophet"),
+    # --- Forecasting: CatBoost ---
+    "CatBoostModel": ("darts.models.forecasting.catboost_model", "CatBoost"),
+    "CatBoostClassifierModel": ("darts.models.forecasting.catboost_model", "CatBoost"),
+    # --- Forecasting: StatsForecast ---
+    "AutoARIMA": ("darts.models.forecasting.sf_auto_arima", "StatsForecast"),
+    "AutoCES": ("darts.models.forecasting.sf_auto_ces", "StatsForecast"),
+    "AutoETS": ("darts.models.forecasting.sf_auto_ets", "StatsForecast"),
+    "AutoMFLES": ("darts.models.forecasting.sf_auto_mfles", "StatsForecast"),
+    "AutoTBATS": ("darts.models.forecasting.sf_auto_tbats", "StatsForecast"),
+    "AutoTheta": ("darts.models.forecasting.sf_auto_theta", "StatsForecast"),
+    "Croston": ("darts.models.forecasting.sf_croston", "StatsForecast"),
+    "StatsForecastModel": ("darts.models.forecasting.sf_model", "StatsForecast"),
+    "TBATS": ("darts.models.forecasting.sf_tbats", "StatsForecast"),
+    # --- Forecasting: XGBoost ---
+    "XGBModel": ("darts.models.forecasting.xgboost", "XGBoost"),
+    "XGBClassifierModel": ("darts.models.forecasting.xgboost", "XGBoost"),
+    # --- Filtering ---
+    "GaussianProcessFilter": ("darts.models.filtering.gaussian_process_filter", None),
+    "KalmanFilter": ("darts.models.filtering.kalman_filter", None),
+    "MovingAverageFilter": ("darts.models.filtering.moving_average_filter", None),
+}
 
-from darts.utils.utils import NotImportedModule
-
-try:
-    # `lightgbm` needs to be imported first to avoid segmentation fault
-    from darts.models.forecasting.lgbm import LightGBMClassifierModel, LightGBMModel
-except ModuleNotFoundError:
-    LightGBMModel = NotImportedModule(module_name="LightGBM", warn=False)
-    LightGBMClassifierModel = NotImportedModule(module_name="LightGBM", warn=False)
-
-# Forecasting
-from darts.models.forecasting.arima import ARIMA
-from darts.models.forecasting.baselines import (
-    NaiveDrift,
-    NaiveEnsembleModel,
-    NaiveMean,
-    NaiveMovingAverage,
-    NaiveSeasonal,
-)
-from darts.models.forecasting.conformal_models import (
-    ConformalNaiveModel,
-    ConformalQRModel,
-)
-from darts.models.forecasting.ensemble_model import EnsembleModel
-from darts.models.forecasting.exponential_smoothing import ExponentialSmoothing
-from darts.models.forecasting.fft import FFT
-from darts.models.forecasting.kalman_forecaster import KalmanForecaster
-from darts.models.forecasting.linear_regression_model import LinearRegressionModel
-from darts.models.forecasting.random_forest import RandomForest, RandomForestModel
-from darts.models.forecasting.regression_ensemble_model import RegressionEnsembleModel
-from darts.models.forecasting.sklearn_model import (
-    RegressionModel,
-    SKLearnClassifierModel,
-    SKLearnModel,
-)
-from darts.models.forecasting.theta import FourTheta, Theta
-from darts.models.forecasting.varima import VARIMA
-
-try:
-    from darts.models.forecasting.block_rnn_model import BlockRNNModel
-    from darts.models.forecasting.dlinear import DLinearModel
-    from darts.models.forecasting.global_baseline_models import (
-        GlobalNaiveAggregate,
-        GlobalNaiveDrift,
-        GlobalNaiveSeasonal,
-    )
-    from darts.models.forecasting.nbeats import NBEATSModel
-    from darts.models.forecasting.nhits import NHiTSModel
-    from darts.models.forecasting.nlinear import NLinearModel
-    from darts.models.forecasting.rnn_model import RNNModel
-    from darts.models.forecasting.tcn_model import TCNModel
-    from darts.models.forecasting.tft_model import TFTModel
-    from darts.models.forecasting.tide_model import TiDEModel
-    from darts.models.forecasting.transformer_model import TransformerModel
-    from darts.models.forecasting.tsmixer_model import TSMixerModel
-except ModuleNotFoundError:
-    logger.warning(
-        "Support for Torch based models not available. "
-        'To enable them, install "darts[torch]" or "darts[all]" (with pip); '
-        'or "u8darts-torch" or "u8darts-all" (with conda).'
-    )
-    BlockRNNModel = NotImportedModule(module_name="(Py)Torch", warn=False)
-    DLinearModel = NotImportedModule(module_name="(Py)Torch", warn=False)
-    GlobalNaiveAggregate = NotImportedModule(module_name="(Py)Torch", warn=False)
-    GlobalNaiveDrift = NotImportedModule(module_name="(Py)Torch", warn=False)
-    GlobalNaiveSeasonal = NotImportedModule(module_name="(Py)Torch", warn=False)
-    NBEATSModel = NotImportedModule(module_name="(Py)Torch", warn=False)
-    NHiTSModel = NotImportedModule(module_name="(Py)Torch", warn=False)
-    NLinearModel = NotImportedModule(module_name="(Py)Torch", warn=False)
-    RNNModel = NotImportedModule(module_name="(Py)Torch", warn=False)
-    TCNModel = NotImportedModule(module_name="(Py)Torch", warn=False)
-    TFTModel = NotImportedModule(module_name="(Py)Torch", warn=False)
-    TiDEModel = NotImportedModule(module_name="(Py)Torch", warn=False)
-    TransformerModel = NotImportedModule(module_name="(Py)Torch", warn=False)
-    TSMixerModel = NotImportedModule(module_name="(Py)Torch", warn=False)
-
-try:
-    from darts.models.forecasting.chronos2_model import Chronos2Model
-    from darts.models.forecasting.timesfm2p5_model import TimesFM2p5Model
-except ModuleNotFoundError:
-    Chronos2Model = NotImportedModule(module_name="(Py)Torch", warn=False)
-    TimesFM2p5Model = NotImportedModule(module_name="(Py)Torch", warn=False)
-
-try:
-    from darts.models.forecasting.nf_model import NeuralForecastModel
-except ModuleNotFoundError:
-    NeuralForecastModel = NotImportedModule(module_name="NeuralForecast", warn=False)
-
-try:
-    from darts.models.forecasting.prophet_model import Prophet
-except ImportError:
-    Prophet = NotImportedModule(module_name="Prophet", warn=False)
-
-try:
-    from darts.models.forecasting.catboost_model import (
-        CatBoostClassifierModel,
-        CatBoostModel,
-    )
-except ModuleNotFoundError:
-    CatBoostModel = NotImportedModule(module_name="CatBoost", warn=False)
-    CatBoostClassifierModel = NotImportedModule(module_name="CatBoost", warn=False)
-
-
-try:
-    from darts.models.forecasting.sf_auto_arima import AutoARIMA
-    from darts.models.forecasting.sf_auto_ces import AutoCES
-    from darts.models.forecasting.sf_auto_ets import AutoETS
-    from darts.models.forecasting.sf_auto_mfles import AutoMFLES
-    from darts.models.forecasting.sf_auto_tbats import AutoTBATS
-    from darts.models.forecasting.sf_auto_theta import AutoTheta
-    from darts.models.forecasting.sf_croston import Croston
-    from darts.models.forecasting.sf_model import StatsForecastModel
-    from darts.models.forecasting.sf_tbats import TBATS
-
-except ImportError:
-    logger.warning(
-        "The StatsForecast module could not be imported. "
-        "To enable support for the AutoARIMA, "
-        "AutoETS and Croston models, please consider "
-        "installing it."
-    )
-    StatsForecastModel = NotImportedModule(module_name="StatsForecast", warn=False)
-    Croston = NotImportedModule(module_name="StatsForecast", warn=False)
-    TBATS = NotImportedModule(module_name="StatsForecast", warn=False)
-    AutoARIMA = NotImportedModule(module_name="StatsForecast", warn=False)
-    AutoCES = NotImportedModule(module_name="StatsForecast", warn=False)
-    AutoETS = NotImportedModule(module_name="StatsForecast", warn=False)
-    AutoMFLES = NotImportedModule(module_name="StatsForecast", warn=False)
-    AutoTheta = NotImportedModule(module_name="StatsForecast", warn=False)
-    AutoTBATS = NotImportedModule(module_name="StatsForecast", warn=False)
-
-try:
-    from darts.models.forecasting.xgboost import XGBClassifierModel, XGBModel
-except ImportError:
-    XGBModel = NotImportedModule(module_name="XGBoost", warn=False)
-    XGBClassifierModel = NotImportedModule(module_name="XGBoost", warn=False)
-
-# Filtering
-from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter
-from darts.models.filtering.kalman_filter import KalmanFilter
-from darts.models.filtering.moving_average_filter import MovingAverageFilter
-
-__all__ = [
-    "LightGBMModel",
-    "LightGBMClassifierModel",
-    "ARIMA",
-    "NaiveDrift",
-    "NaiveMean",
-    "NaiveMovingAverage",
-    "NaiveSeasonal",
-    "ExponentialSmoothing",
-    "FFT",
-    "KalmanForecaster",
-    "LinearRegressionModel",
-    "RandomForest",
-    "RandomForestModel",
-    "RegressionEnsembleModel",
-    "SKLearnModel",
-    "SKLearnClassifierModel",
-    "RegressionModel",
-    "TBATS",
-    "FourTheta",
-    "Theta",
-    "VARIMA",
-    "BlockRNNModel",
-    "DLinearModel",
-    "GlobalNaiveAggregate",
-    "GlobalNaiveDrift",
-    "GlobalNaiveSeasonal",
-    "NBEATSModel",
-    "NHiTSModel",
-    "NLinearModel",
-    "RNNModel",
-    "TCNModel",
-    "TFTModel",
-    "TiDEModel",
-    "TransformerModel",
-    "TSMixerModel",
-    "Prophet",
-    "CatBoostModel",
-    "CatBoostClassifierModel",
-    "Croston",
-    "AutoARIMA",
-    "AutoCES",
-    "AutoETS",
-    "AutoMFLES",
-    "AutoTheta",
-    "AutoTBATS",
-    "StatsForecastModel",
-    "XGBModel",
-    "XGBClassifierModel",
-    "GaussianProcessFilter",
-    "KalmanFilter",
-    "MovingAverageFilter",
-    "NaiveEnsembleModel",
-    "EnsembleModel",
-    "ConformalNaiveModel",
-    "ConformalQRModel",
-    "Chronos2Model",
-    "TimesFM2p5Model",
-    "NeuralForecastModel",
-]
+__all__, __getattr__, __dir__ = setup_lazy_imports(_LAZY_IMPORTS, __name__, globals())

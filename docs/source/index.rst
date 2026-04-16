@@ -681,7 +681,7 @@ Our regression models are designed to predict continuous numerical values, makin
      -
      -
      -
-   * - `NaiveEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel>`_
+   * - `NaiveEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.naive_ensemble_model.html#darts.models.forecasting.naive_ensemble_model.NaiveEnsembleModel>`_
      - ✅ ✅
      - ✅ ✅ ✅
      - ✅ ✅

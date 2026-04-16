@@ -11,11 +11,6 @@ from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.typing import TimeSeriesLike
 
-try:
-    from IPython import get_ipython
-except ModuleNotFoundError:
-    get_ipython = None
-
 logger = get_logger(__name__)
 
 _SEQ_TYPE_NAMES = {

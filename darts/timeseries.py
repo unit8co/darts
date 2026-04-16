@@ -39,6 +39,8 @@ Optionally, ``TimeSeries`` can store static covariates, a hierarchy, and / or me
 - Have a hierarchy consistent with their components, or no hierarchy
 """
 
+from __future__ import annotations
+
 import itertools
 import json
 import math
@@ -51,16 +53,13 @@ from copy import deepcopy
 from inspect import signature
 from io import StringIO
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal
 
-import matplotlib.axes
 import narwhals as nw
 import numpy as np
 import pandas as pd
-import xarray as xr
 from narwhals.utils import Implementation
 from pandas.tseries.frequencies import to_offset
-from scipy.stats import kurtosis, skew
 
 from darts.config import get_option
 from darts.logging import get_logger, raise_log
@@ -72,8 +71,6 @@ from darts.utils._formatting import (
     make_collapsible_section,
     make_paragraph,
 )
-from darts.utils._plotting import plot as _plot
-from darts.utils._plotting import plotly as _plotly
 from darts.utils.utils import (
     SUPPORTED_RESAMPLE_METHODS,
     dataframe_col_to_time_index,
@@ -89,7 +86,9 @@ else:
     from typing_extensions import Self
 
 if TYPE_CHECKING:
+    import matplotlib.axes
     import plotly.graph_objects as go
+    import xarray as xr
 
 logger = get_logger(__name__)
 
@@ -1745,6 +1744,8 @@ class TimeSeries:
         xarray.DataArray
             An ``xarray.DataArray`` representation of  represents the time series.
         """
+        import xarray as xr
+
         xa = xr.DataArray(
             self._values,
             dims=(self._time_dim,) + DIMS[-2:],
@@ -3726,6 +3727,8 @@ class TimeSeries:
         [2.5]
         [4.5]]
         """
+        import xarray as xr
+
         method_kwargs = method_kwargs or {}
         if isinstance(freq, pd.DateOffset):
             freq = freq.freqstr
@@ -4487,6 +4490,8 @@ class TimeSeries:
         matplotlib.axes.Axes
             Either the passed `ax` axis, a newly created one if `new_plot=True`, or the existing one.
         """
+        from darts.utils._plotting import plot as _plot
+
         return _plot(
             self,
             new_plot=new_plot,
@@ -4507,7 +4512,7 @@ class TimeSeries:
 
     def plotly(
         self,
-        fig: Optional["go.Figure"] = None,
+        fig: go.Figure | None = None,
         central_quantile: float | str = 0.5,
         low_quantile: float | None = 0.05,
         high_quantile: float | None = 0.95,
@@ -4519,7 +4524,7 @@ class TimeSeries:
         c: str | Sequence[str] | None = None,
         downsample_threshold: int = 100_000,
         **kwargs,
-    ) -> "go.Figure":
+    ) -> go.Figure:
         """Plot the series using Plotly.
 
         Parameters
@@ -4571,6 +4576,8 @@ class TimeSeries:
         plotly.graph_objects.Figure
             The Plotly figure object containing the plot. Call `.show()` on the returned figure to display it.
         """
+        from darts.utils._plotting import plotly as _plotly
+
         return _plotly(
             self,
             fig=fig,
@@ -4919,6 +4926,8 @@ class TimeSeries:
         TimeSeries
             A new series containing the skew of each component.
         """
+        from scipy.stats import skew
+
         self._assert_stochastic()
         vals = np.expand_dims(skew(self._values, axis=2, **kwargs), axis=2)
         return self.with_values(vals)
@@ -4939,6 +4948,8 @@ class TimeSeries:
         TimeSeries
             A new series containing the kurtosis of each component.
         """
+        from scipy.stats import kurtosis
+
         self._assert_stochastic()
         vals = np.expand_dims(kurtosis(self._values, axis=2, **kwargs), axis=2)
         return self.with_values(vals)
@@ -4955,10 +4966,10 @@ class TimeSeries:
 
         if isinstance(other, TimeSeries):
             other_vals = other._values
-        elif isinstance(other, xr.DataArray):
-            other_vals = other.values
-        else:
+        elif isinstance(other, np.ndarray):
             other_vals = other
+        else:
+            other_vals = other.values
 
         t, c, s = self.shape
         other_shape = other_vals.shape
@@ -5358,7 +5369,7 @@ class TimeSeries:
         return len(self._values)
 
     def __add__(self, other):
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5375,7 +5386,7 @@ class TimeSeries:
         return self + other
 
     def __sub__(self, other):
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5392,7 +5403,7 @@ class TimeSeries:
         return other + (-self)
 
     def __mul__(self, other):
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5416,7 +5427,7 @@ class TimeSeries:
                     logger,
                 )
             n = float(n)
-        elif isinstance(n, TimeSeries | xr.DataArray | np.ndarray):
+        elif isinstance(n, TimeSeries | np.ndarray) or _is_xarray(n):
             n = self._extract_values(n)  # elementwise power
         else:
             raise_log(
@@ -5433,7 +5444,7 @@ class TimeSeries:
         if isinstance(other, int | float | np.integer):
             if other == 0:
                 raise_log(ZeroDivisionError("Cannot divide by 0."), logger)
-        elif isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        elif isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
             if (other == 0).any():
                 raise_log(
@@ -5474,7 +5485,7 @@ class TimeSeries:
         return ts
 
     def __lt__(self, other) -> np.ndarray:
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5486,7 +5497,7 @@ class TimeSeries:
         return np.less(self._values, other)
 
     def __gt__(self, other) -> np.ndarray:
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5498,7 +5509,7 @@ class TimeSeries:
         return np.greater(self._values, other)
 
     def __le__(self, other) -> np.ndarray:
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5510,7 +5521,7 @@ class TimeSeries:
         return np.less_equal(self._values, other)
 
     def __ge__(self, other) -> np.ndarray:
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -6299,3 +6310,8 @@ def _clean_components(components: pd.Index) -> pd.Index:
         has_duplicate = len(set(clist)) != len(clist)
 
     return pd.Index(clist)
+
+
+def _is_xarray(obj) -> bool:
+    """Check if *obj* is an xarray type without importing xarray."""
+    return type(obj).__module__.startswith("xarray")

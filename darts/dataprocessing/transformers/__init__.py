@@ -6,43 +6,24 @@ Data transformers for preprocessing time series data, including scalers, missing
 differencing, BoxCox transformations, and hierarchical reconciliation methods.
 """
 
-from darts.dataprocessing.transformers.base_data_transformer import BaseDataTransformer
-from darts.dataprocessing.transformers.boxcox import BoxCox
-from darts.dataprocessing.transformers.diff import Diff
-from darts.dataprocessing.transformers.fittable_data_transformer import (
-    FittableDataTransformer,
-)
-from darts.dataprocessing.transformers.invertible_data_transformer import (
-    InvertibleDataTransformer,
-)
-from darts.dataprocessing.transformers.mappers import InvertibleMapper, Mapper
-from darts.dataprocessing.transformers.midas import MIDAS
-from darts.dataprocessing.transformers.missing_values_filler import MissingValuesFiller
-from darts.dataprocessing.transformers.reconciliation import (
-    BottomUpReconciliator,
-    MinTReconciliator,
-    TopDownReconciliator,
-)
-from darts.dataprocessing.transformers.scaler import Scaler
-from darts.dataprocessing.transformers.static_covariates_transformer import (
-    StaticCovariatesTransformer,
-)
-from darts.dataprocessing.transformers.window_transformer import WindowTransformer
+from darts.utils._lazy import setup_lazy_imports
 
-__all__ = [
-    "BaseDataTransformer",
-    "BoxCox",
-    "Diff",
-    "FittableDataTransformer",
-    "InvertibleDataTransformer",
-    "InvertibleMapper",
-    "Mapper",
-    "MIDAS",
-    "MissingValuesFiller",
-    "BottomUpReconciliator",
-    "MinTReconciliator",
-    "TopDownReconciliator",
-    "Scaler",
-    "StaticCovariatesTransformer",
-    "WindowTransformer",
-]
+_LAZY_IMPORTS: dict[str, str] = {
+    "BaseDataTransformer": "darts.dataprocessing.transformers.base_data_transformer",
+    "BoxCox": "darts.dataprocessing.transformers.boxcox",
+    "Diff": "darts.dataprocessing.transformers.diff",
+    "FittableDataTransformer": "darts.dataprocessing.transformers.fittable_data_transformer",
+    "InvertibleDataTransformer": "darts.dataprocessing.transformers.invertible_data_transformer",
+    "InvertibleMapper": "darts.dataprocessing.transformers.mappers",
+    "Mapper": "darts.dataprocessing.transformers.mappers",
+    "MIDAS": "darts.dataprocessing.transformers.midas",
+    "MissingValuesFiller": "darts.dataprocessing.transformers.missing_values_filler",
+    "BottomUpReconciliator": "darts.dataprocessing.transformers.reconciliation",
+    "MinTReconciliator": "darts.dataprocessing.transformers.reconciliation",
+    "TopDownReconciliator": "darts.dataprocessing.transformers.reconciliation",
+    "Scaler": "darts.dataprocessing.transformers.scaler",
+    "StaticCovariatesTransformer": "darts.dataprocessing.transformers.static_covariates_transformer",
+    "WindowTransformer": "darts.dataprocessing.transformers.window_transformer",
+}
+
+__all__, __getattr__, __dir__ = setup_lazy_imports(_LAZY_IMPORTS, __name__, globals())

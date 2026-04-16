@@ -4,6 +4,7 @@ Additional util functions
 """
 
 import contextlib
+import importlib.util
 import math
 from collections.abc import Callable, Iterator
 from enum import Enum
@@ -14,29 +15,13 @@ from typing import Any, TypeVar
 import narwhals as nw
 import numpy as np
 import pandas as pd
-from joblib import Parallel, delayed
 from narwhals import DataFrame
 from pandas._libs.tslibs.offsets import BusinessMixin
-from sklearn.utils import check_random_state
-from tqdm import tqdm
-from tqdm.notebook import tqdm as tqdm_notebook
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.typing import TimeIndex
 
-logger = get_logger(__name__)
-
-try:
-    from IPython import get_ipython
-except ModuleNotFoundError:
-    get_ipython = None
-
-try:
-    import torch  # noqa: F401
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    TORCH_AVAILABLE = False
+TORCH_AVAILABLE = importlib.util.find_spec("torch") is not None
 
 logger = get_logger(__name__)
 
@@ -120,6 +105,13 @@ def _build_tqdm_iterator(iterable, verbose, **kwargs):
     Returns
     -------
     """
+    from tqdm import tqdm
+    from tqdm.notebook import tqdm as tqdm_notebook
+
+    try:
+        from IPython import get_ipython
+    except ModuleNotFoundError:
+        get_ipython = None
 
     def _isnotebook():
         if get_ipython is None:
@@ -236,6 +228,8 @@ def _parallel_apply(
         Additional keyword arguments for each `fn()` call
 
     """
+
+    from joblib import Parallel, delayed
 
     returned_data = Parallel(n_jobs=n_jobs)(
         delayed(fn)(*sample, *fn_args, **fn_kwargs) for sample in iterator
@@ -717,6 +711,8 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
     decorated
         A method to be run in an isolated torch random context.
     """
+    from sklearn.utils import check_random_state
+
     # check that @random_method has been applied to a method.
     if not _is_method(decorated):
         raise_log(ValueError("@random_method can only be used on methods."), logger)
