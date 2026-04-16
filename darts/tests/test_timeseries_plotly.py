@@ -1,6 +1,9 @@
+import builtins
 import logging
 from itertools import product
 from unittest.mock import patch
+
+_real_import = builtins.__import__
 
 import numpy as np
 import pytest
@@ -347,7 +350,7 @@ class TestTimeSeriesPlotly:
         def side_effect(name, *args, **kwargs):
             if name == "plotly" or name.startswith("plotly."):
                 raise ImportError("mocked plotly import error")
-            return __import__(name, *args, **kwargs)
+            return _real_import(name, *args, **kwargs)
 
         mock_import.side_effect = side_effect
 

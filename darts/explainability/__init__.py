@@ -17,33 +17,36 @@ Model-Specific Explainers
 
 """
 
-from darts.explainability.explainability_result import (
-    SHAPExplainabilityResult,
-    SHAPSingleExplainabilityResult,
-    TFTExplainabilityResult,
-)
-from darts.explainability.sklearn_explainer import SKLearnExplainer
-from darts.logging import get_logger
-from darts.utils.utils import NotImportedModule
+from typing import TYPE_CHECKING
 
-logger = get_logger(__name__)
-try:
-    from darts.explainability.tft_explainer import TFTExplainer
-    from darts.explainability.torch_explainer import TorchExplainer
-except ModuleNotFoundError:
-    logger.warning(
-        "Support for Torch based explainers not available. "
-        'To enable them, install "darts[torch]" or "darts[all]" (with pip); '
-        'or "u8darts-torch" or "u8darts-all" (with conda).'
+from darts.utils._lazy import setup_lazy_imports
+
+if TYPE_CHECKING:
+    from darts.explainability.explainability_result import (
+        SHAPExplainabilityResult as SHAPExplainabilityResult,
     )
-    TFTExplainer = NotImportedModule(module_name="(Py)Torch", warn=False)
-    TorchExplainer = NotImportedModule(module_name="(Py)Torch", warn=False)
+    from darts.explainability.explainability_result import (
+        SHAPSingleExplainabilityResult as SHAPSingleExplainabilityResult,
+    )
+    from darts.explainability.explainability_result import (
+        TFTExplainabilityResult as TFTExplainabilityResult,
+    )
+    from darts.explainability.sklearn_explainer import (
+        SKLearnExplainer as SKLearnExplainer,
+    )
+    from darts.explainability.tft_explainer import TFTExplainer as TFTExplainer
+    from darts.explainability.torch_explainer import TorchExplainer as TorchExplainer
 
-__all__ = [
-    "SHAPExplainabilityResult",
-    "SHAPSingleExplainabilityResult",
-    "TFTExplainabilityResult",
-    "SKLearnExplainer",
-    "TFTExplainer",
-    "TorchExplainer",
-]
+_LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
+    "SHAPExplainabilityResult": ("darts.explainability.explainability_result", None),
+    "SHAPSingleExplainabilityResult": (
+        "darts.explainability.explainability_result",
+        None,
+    ),
+    "TFTExplainabilityResult": ("darts.explainability.explainability_result", None),
+    "SKLearnExplainer": ("darts.explainability.sklearn_explainer", None),
+    "TFTExplainer": ("darts.explainability.tft_explainer", "(Py)Torch"),
+    "TorchExplainer": ("darts.explainability.torch_explainer", "(Py)Torch"),
+}
+
+__all__, __getattr__, __dir__ = setup_lazy_imports(_LAZY_IMPORTS, __name__, globals())

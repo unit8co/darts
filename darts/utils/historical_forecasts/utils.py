@@ -966,6 +966,10 @@ def _get_maximum_historical_forecastable_time_index(
         if is_autoregression:
             # we step back in case of auto-regression
             shift_fc_end += forecast_horizon - (max_target_lag - output_chunk_shift + 1)
+        elif max_target_lag < 0:
+            # local models have no fixed output window but still need future
+            # covariates for the full forecast horizon
+            shift_fc_end += forecast_horizon - 1
         end_fc = future_covariates.end_time() - shift_fc_end * future_covariates.freq
 
         intersect_ = (

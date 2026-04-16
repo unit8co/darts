@@ -9,11 +9,27 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 
-- 🚀🚀 Added SHAP-based explainer `TorchExplainer` for torch forecasting models. This allows for explaining the predictions of any `TorchForecastingModel` with SHAP permutation explainer and others, in a consistent API with existing `SKLearnExplainer`. It supports global and local explanations and can output SHAP values for further analysis. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
-  - Check out the new [Explainability of Forecasting Models Notebook](https://unit8co.github.io/darts/examples/29-Explainability-examples.html) for usage of `SKLearnExplainer` and `TorchExplainer`.
-- 🔴 Renamed `ShapExplainer` to `SKLearnExplainer` to better reflect its scope of explaining sklearn-based models. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
-- Added `explain_single()` method to `SKLearnExplainer` and `TorchExplainer` to allow explaining a single forecast instance, in addition to the existing batched method `explain()`. This is useful for local explanations of individual predictions with reduced computational cost. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+**Improved**
+
+- 🚀🚀 Dramatically reduced import times by deferring heavy third-party dependencies (torch, sklearn, scipy, ...) until they are actually needed. Here are some import speed up examples: [#3066](https://github.com/unit8co/darts/pull/3066) by [Dennis Bader](https://github.com/dennisbader)
+  - TimeSeries, metrics, datasets, data transformers: 7x faster (2.4 → 0.3 seconds)
+  - Baseline models: 15x faster (5.7 → 0.4 seconds)
+  - SKLearn models: 4.5x faster (5.7 → 1.27 seconds)
+  - Torch models: 1.9x faster (5.7 → 3.0 seconds)
+- Improvements to Explainability:
+  - 🚀🚀 Added SHAP-based explainer `TorchExplainer` for torch forecasting models. This allows for explaining the predictions of any `TorchForecastingModel` with SHAP permutation explainer and others, in a consistent API with existing `SKLearnExplainer`. It supports global and local explanations and can output SHAP values for further analysis. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+    - Check out the new [Explainability of Forecasting Models Notebook](https://unit8co.github.io/darts/examples/29-Explainability-examples.html) for usage of `SKLearnExplainer` and `TorchExplainer`.
+  - 🔴 Renamed `ShapExplainer` to `SKLearnExplainer` to better reflect its scope of explaining sklearn-based models. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+  - Added `explain_single()` method to `SKLearnExplainer` and `TorchExplainer` to allow explaining a single forecast instance, in addition to the existing batched method `explain()`. This is useful for local explanations of individual predictions with reduced computational cost. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 - Added native multi-quantile support for `CatBoostModel` by using CatBoost’s `MultiQuantile` loss for faster training and inference. Set `likelihood="multiquantile"` to enable this feature. [#3032](https://github.com/unit8co/darts/pull/3032) by [Zhihao Dai](https://github.com/daidahao)
+- Added native multi-quantile support for `XGBModel`. Similar to the regular quantile support, it still fits dedicated models per quantile, but it is more efficient due to fewer tabularization operations. Set `likelihood="multiquantile"` to enable this feature. [#3056](https://github.com/unit8co/darts/pull/3056) by [Oswald Zink](https://github.com/ozink-u8)
+- `StatsForecastModel` now accepts `model` as a StatsForecast model name, class, or instance; `model_kwargs` supplies constructor arguments when `model` is a name or class. This simplifies config-driven setups. [#3058](https://github.com/unit8co/darts/pull/3058) by [Trevin Chow](https://github.com/tmchow).
+- Improvements to `RegressionEnsembleModel` : [#3041](https://github.com/unit8co/darts/pull/3041) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
+  - Base forecasting models using `output_chunk_shift>0` are now fully supported. If you're using a custom `regression_model`, simply set its output shift to be the same as that of the base models.
+  - Added support for `output_chunk_length>1` for the ensemble (regression) model. This means that the ensemble model can now consume information from base model forecasts over the entire horizon.
+- Scaled metrics (`ase`, `sse`, `mase`, `msse`, `rmsse`) no longer raise a hard `ValueError` when the `insample` series has zero error scale (constant or perfectly seasonal signals). A new `zero_division` parameter controls the behavior: [#3059](https://github.com/unit8co/darts/pull/3059) by [Mahima Sharma](https://github.com/mahi-ma)
+  - `"warn"` (default) raises a warning and returns `np.nan` for non-zero forecast errors, and `1.0` otherwise (forecast is on-par with naive forecast).
+  - `"raise"` preserves the legacy error.
 
 **Fixed**
 
@@ -26,6 +42,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For developers of the library:
 
+- Significantly reduced test suite session loading times by deferring heavy third-party dependencies until they are actually needed. [#3072](https://github.com/unit8co/darts/pull/3072) by [Dennis Bader](https://github.com/dennisbader)
+  - Test run sessions: 3x faster (6 → 2 seconds)
+  - Test debug sessions: 6x faster (36 → 6 seconds)
 - Added `SHAPSingleExplainabilityResult` class as the return type of `explain_single()` method in `SKLearnExplainer` and `TorchExplainer` and to store the SHAP results of a single instance explanation. This is in contrast to the existing `SHAPExplainabilityResult` which stores results for batched explanations. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 - Sped up the documentation build by utilizing multiple CPU cores. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 
@@ -42,12 +61,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - `plot_variable_selection()` now accepts a `show_plot: bool = True` parameter that allows to suppress showing the plot.
   - 🔴 `plot_attention()` now also returns the matplotlib figures for all explained series, instead of only the matplotlib axis for the last series.
 - `TorchForecastingModel` now raises a warning when the input series have mixed data types, or the prediction series do not have the same data type as the series used for training. [#3043](https://github.com/unit8co/darts/pull/3043) by [Oswald Zink](https://github.com/ozink-u8)
-
-**Fixed**
-
-**Dependencies**
-
-### For developers of the library:
 
 ## [0.42.1](https://github.com/unit8co/darts/tree/0.42.1) (2026-03-07)
 
