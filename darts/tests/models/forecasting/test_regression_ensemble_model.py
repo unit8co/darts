@@ -1,4 +1,5 @@
 import itertools
+import logging
 from itertools import product
 
 import numpy as np
@@ -317,44 +318,30 @@ class TestRegressionEnsembleModels:
         rmse_hfc, rmse_pred = rmse(pred_hist_fct, val), rmse(pred_predict, val)
         assert rmse_hfc < rmse_pred or rmse_hfc == pytest.approx(rmse_pred)
 
-    def test_train_with_historical_forecasts_no_phantom_warning(self, caplog):
-        """Regression test: the "Generated fewer forecasts than the requested N"
-        warning must not fire when the generated forecasts are at least
-        ``regression_train_n_points`` long.
-
-        Previously the guard was written as
-
-            len(get_single_series(series_forecasts) < train_n_points)
-
-        which parses as ``len(ts < n)`` — the length of the boolean
-        ``TimeSeries`` produced by ``ts.__lt__(n)``. That length is always
-        positive, so the warning fired unconditionally.
-        """
-        import logging
-
+    def test_train_with_historical_forecasts_warn_fewer_predictions(self, caplog):
         regression_train_n_points = 20
+        icl = 5
+        series = tg.linear_timeseries(length=regression_train_n_points + icl)
+
+        base_model = LinearRegressionModel(
+            lags=icl, lags_past_covariates=icl, output_chunk_length=1
+        ).fit(series=series, past_covariates=series)
         ensemble = RegressionEnsembleModel(
-            forecasting_models=[
-                LinearRegressionModel(lags=5, output_chunk_length=1),
-                LinearRegressionModel(lags=2, output_chunk_length=1),
-            ],
+            forecasting_models=[base_model],
             regression_train_n_points=regression_train_n_points,
             train_using_historical_forecasts=True,
+            train_forecasting_models=False,
             show_warnings=True,
         )
-        logger_name = (
-            "darts.models.forecasting.regression_ensemble_model"
-        )
-        with caplog.at_level(logging.WARNING, logger=logger_name):
-            ensemble.fit(self.combined)
-        phantom = [
-            r for r in caplog.records
-            if "Generated fewer forecasts than the requested" in r.getMessage()
-        ]
-        assert phantom == [], (
-            "Spurious 'fewer forecasts' warning fired even though the "
-            "historical forecasts had enough points."
-        )
+        with caplog.at_level(logging.WARNING):
+            ensemble.fit(series=series, past_covariates=series[1:])
+        assert "Generated fewer forecasts than the requested" in caplog.text
+        caplog.clear()
+
+        with caplog.at_level(logging.WARNING):
+            ensemble.fit(series=series, past_covariates=series)
+        assert "Generated fewer forecasts than the requested" not in caplog.text
+        caplog.clear()
 
     @pytest.mark.parametrize(
         "config",
