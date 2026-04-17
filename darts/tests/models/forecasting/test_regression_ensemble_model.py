@@ -1,4 +1,5 @@
 import itertools
+import logging
 from itertools import product
 
 import numpy as np
@@ -316,6 +317,31 @@ class TestRegressionEnsembleModels:
 
         rmse_hfc, rmse_pred = rmse(pred_hist_fct, val), rmse(pred_predict, val)
         assert rmse_hfc < rmse_pred or rmse_hfc == pytest.approx(rmse_pred)
+
+    def test_train_with_historical_forecasts_warn_fewer_predictions(self, caplog):
+        regression_train_n_points = 20
+        icl = 5
+        series = tg.linear_timeseries(length=regression_train_n_points + icl)
+
+        base_model = LinearRegressionModel(
+            lags=icl, lags_past_covariates=icl, output_chunk_length=1
+        ).fit(series=series, past_covariates=series)
+        ensemble = RegressionEnsembleModel(
+            forecasting_models=[base_model],
+            regression_train_n_points=regression_train_n_points,
+            train_using_historical_forecasts=True,
+            train_forecasting_models=False,
+            show_warnings=True,
+        )
+        with caplog.at_level(logging.WARNING):
+            ensemble.fit(series=series, past_covariates=series[1:])
+        assert "Generated fewer forecasts than the requested" in caplog.text
+        caplog.clear()
+
+        with caplog.at_level(logging.WARNING):
+            ensemble.fit(series=series, past_covariates=series)
+        assert "Generated fewer forecasts than the requested" not in caplog.text
+        caplog.clear()
 
     @pytest.mark.parametrize(
         "config",
