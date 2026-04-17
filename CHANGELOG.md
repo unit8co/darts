@@ -30,6 +30,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Fixed a device mismatch error in `TFTModel` when moving a trained model to a different device (e.g., GPU to CPU for ONNX export). `attention_mask` and `relative_index` are now registered as non-persistent buffers so they are properly moved with the model. [#3053](https://github.com/unit8co/darts/pull/3053) by [Wolfhart Feldmeier](https://github.com/trahflow)
 - Fixed an issue in `StaticCovariatesTransformer`, where applying a `OneHotEncoder` on categorical static covariates with a `drop` parameter (e.g. `drop="first"`, `drop="if_binary"`) raised an exception. [#3065](https://github.com/unit8co/darts/pull/3065) by [Jay Dasondee](https://github.com/JKDasondee)
+- Fixed an issue in `StaticCovariatesTransformer` where applying a `OneHotEncoder` with `min_frequency` or `max_categories` silently truncated the column mapping. Transformed static covariates lost the synthetic `{col}_infrequent_sklearn` column and `inverse_transform` raised `ValueError: Shape of the passed X data is not correct`. [#3076](https://github.com/unit8co/darts/pull/3076) by [Junghwan Na](https://github.com/shaun0927).
 
 ### For developers of the library:
 

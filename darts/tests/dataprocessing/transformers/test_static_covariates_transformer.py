@@ -346,6 +346,64 @@ class TestStaticCovariatesTransformer:
         for recov, sc_in in zip(series_recovered_list, [sc_in1, sc_in2]):
             assert recov.static_covariates.equals(sc_in)
 
+    @pytest.mark.parametrize(
+        "enc_kwargs",
+        [
+            {"sparse_output": False, "min_frequency": 2},
+            {"sparse_output": False, "max_categories": 2},
+        ],
+    )
+    def test_one_hot_encoder_with_infrequent_sklearn(self, enc_kwargs):
+        """Regression test for ``OneHotEncoder`` with ``min_frequency`` /
+        ``max_categories``.
+
+        Sklearn ≥ 1.1 groups low-frequency categories into a synthetic feature
+        named ``{col}_infrequent_sklearn`` which does not appear in
+        ``transformer_cat.categories_``. The column-name mapping must include
+        this feature, otherwise ``transform`` silently drops the infrequent
+        column and ``inverse_transform`` fails with a shape mismatch.
+        """
+        # Build a small sequence of series where one category ("JP") is
+        # infrequent so that sklearn groups it into ``infrequent_sklearn``.
+        def make_series(idx, country):
+            return TimeSeries.from_times_and_values(
+                times=pd.date_range("2024-01-01", periods=5),
+                values=np.ones((5, 1)),
+                columns=[f"comp_{idx}"],
+                static_covariates=pd.DataFrame({"country": [country]}),
+            )
+
+        categories = (["US"] * 5) + (["KR"] * 2) + ["JP"]
+        series_list = [
+            make_series(i, country) for i, country in enumerate(categories)
+        ]
+        transformer = StaticCovariatesTransformer(
+            transformer_cat=OneHotEncoder(**enc_kwargs)
+        )
+
+        transformed = transformer.fit_transform(series_list)
+        # Every transformed series must carry the full one-hot output from the
+        # underlying encoder, including the synthetic ``_infrequent_sklearn``
+        # bucket (previously this column was silently dropped from the mapping).
+        expected_cols = list(
+            transformer.transformer_cat.get_feature_names_out(["country"])
+        )
+        assert "country_infrequent_sklearn" in expected_cols
+        for ts in transformed:
+            assert list(ts.static_covariates.columns) == expected_cols
+
+        # ``inverse_transform`` must succeed (previously raised
+        # ``ValueError: Shape of the passed X data is not correct``) and map
+        # the infrequent inputs to sklearn's sentinel string.
+        recovered = transformer.inverse_transform(transformed)
+        frequent = set(c.split("_", 1)[1] for c in expected_cols
+                       if c != "country_infrequent_sklearn")
+        for rec, original in zip(recovered, categories):
+            restored = rec.static_covariates["country"].iloc[0]
+            assert restored == (
+                original if original in frequent else "infrequent_sklearn"
+            )
+
     def helper_test_scaling(self, series, scaler, test_values):
         series_copy = series.copy()
         series_tr = scaler.fit_transform(series)

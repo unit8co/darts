@@ -302,6 +302,12 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
                     expected_names = {
                         f"{col}_{cat}" for cat in transformer_cat.categories_[i]
                     }
+                    # When ``min_frequency`` or ``max_categories`` is used, sklearn
+                    # emits an additional synthetic feature called
+                    # ``{col}_infrequent_sklearn`` which is not present in
+                    # ``categories_``. Include it so the mapping is not
+                    # silently truncated.
+                    expected_names.add(f"{col}_infrequent_sklearn")
                     while (
                         feat_idx < len(feature_names)
                         and feature_names[feat_idx] in expected_names
