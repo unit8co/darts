@@ -65,9 +65,8 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
             `series.diff(n=1, periods=2).diff(n=1, periods=3)`.
         dropna
             Optionally, specifies if values which can't be differenced (i.e. at the start of the series) should be
-            dropped. When ``dropna=True`` is combined with ``columns=...`` (or, equivalently, an external
-            ``component_mask``), the series is trimmed from the start by ``sum(lags)`` time steps and the
-            values of the non-differenced components over that window are preserved in the output.
+            dropped. This applies to all time series columns, also the ones potentially ignored via the `columns`
+            parameter or any ``component_mask`` passed to downstream methods.
         n_jobs
             The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
             passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -117,7 +116,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         self._dropna = dropna
         # Don't let the base transformer apply ``component_mask`` automatically — ``ts_transform``
         # handles masking explicitly so it can preserve the non-differenced components when
-        # ``dropna=True`` is combined with ``columns=...``.
+        # ``dropna=True`` is combined with `columns` or `component_mask`.
         super().__init__(
             name=name,
             n_jobs=n_jobs,
