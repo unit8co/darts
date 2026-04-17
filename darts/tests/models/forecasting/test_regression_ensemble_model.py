@@ -317,6 +317,45 @@ class TestRegressionEnsembleModels:
         rmse_hfc, rmse_pred = rmse(pred_hist_fct, val), rmse(pred_predict, val)
         assert rmse_hfc < rmse_pred or rmse_hfc == pytest.approx(rmse_pred)
 
+    def test_train_with_historical_forecasts_no_phantom_warning(self, caplog):
+        """Regression test: the "Generated fewer forecasts than the requested N"
+        warning must not fire when the generated forecasts are at least
+        ``regression_train_n_points`` long.
+
+        Previously the guard was written as
+
+            len(get_single_series(series_forecasts) < train_n_points)
+
+        which parses as ``len(ts < n)`` — the length of the boolean
+        ``TimeSeries`` produced by ``ts.__lt__(n)``. That length is always
+        positive, so the warning fired unconditionally.
+        """
+        import logging
+
+        regression_train_n_points = 20
+        ensemble = RegressionEnsembleModel(
+            forecasting_models=[
+                LinearRegressionModel(lags=5, output_chunk_length=1),
+                LinearRegressionModel(lags=2, output_chunk_length=1),
+            ],
+            regression_train_n_points=regression_train_n_points,
+            train_using_historical_forecasts=True,
+            show_warnings=True,
+        )
+        logger_name = (
+            "darts.models.forecasting.regression_ensemble_model"
+        )
+        with caplog.at_level(logging.WARNING, logger=logger_name):
+            ensemble.fit(self.combined)
+        phantom = [
+            r for r in caplog.records
+            if "Generated fewer forecasts than the requested" in r.getMessage()
+        ]
+        assert phantom == [], (
+            "Spurious 'fewer forecasts' warning fired even though the "
+            "historical forecasts had enough points."
+        )
+
     @pytest.mark.parametrize(
         "config",
         [(1, 1), (5, 2), (4, 3)],
