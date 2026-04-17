@@ -41,10 +41,10 @@ class MissingValuesFiller(BaseDataTransformer):
         verbose
             Optionally, whether to print operations progress
         columns
-            Optionally, a string or list of strings specifying the names of the components (columns)
-            to transform. If specified, only these components will be transformed, and the remaining
-            components will be kept untouched. For more information refer to the `BaseDataTransformer`
-            documentation.
+            Optionally, a string or list of strings specifying the names of the components (columns) to transform.
+            If specified, only these components will be transformed, and the remaining components will be kept
+            untouched. For more information refer to the `BaseDataTransformer` documentation. In case the transformer
+            is applied on multiple TimeSeries, it is expected that all series have the same column order.
 
         Examples
         --------
