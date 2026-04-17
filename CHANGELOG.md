@@ -28,9 +28,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
-- Fixed a spurious `"Generated fewer forecasts than the requested N"` warning in `RegressionEnsembleModel` when `train_using_historical_forecasts=True`. The guard was written as `len(ts < n)` instead of `len(ts) < n`, so it always evaluated truthy — the warning fired on every fit even when enough historical forecasts were generated. [#3074](https://github.com/unit8co/darts/pull/3074) by [Junghwan Na](https://github.com/shaun0927).
 - Fixed a device mismatch error in `TFTModel` when moving a trained model to a different device (e.g., GPU to CPU for ONNX export). `attention_mask` and `relative_index` are now registered as non-persistent buffers so they are properly moved with the model. [#3053](https://github.com/unit8co/darts/pull/3053) by [Wolfhart Feldmeier](https://github.com/trahflow)
 - Fixed an issue in `StaticCovariatesTransformer`, where applying a `OneHotEncoder` on categorical static covariates with a `drop` parameter (e.g. `drop="first"`, `drop="if_binary"`) raised an exception. [#3065](https://github.com/unit8co/darts/pull/3065) by [Jay Dasondee](https://github.com/JKDasondee)
+- Fixed a spurious `"Generated fewer forecasts than the requested N"` warning in `RegressionEnsembleModel` when `train_using_historical_forecasts=True`. The guard was written as `len(ts < n)` instead of `len(ts) < n`, so it always evaluated truthy — the warning fired on every fit even when enough historical forecasts were generated. [#3074](https://github.com/unit8co/darts/pull/3074) by [Junghwan Na](https://github.com/shaun0927).
 
 ### For developers of the library:
 
