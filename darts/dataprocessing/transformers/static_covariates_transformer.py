@@ -291,25 +291,38 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
                 col_map_cat = inv_col_map_cat = OrderedDict({
                     col: [col] for col in cols_cat
                 })
-            # transformer generates more features (i.e. OneHotEncoder) -> create a 1-many column map
+            # transformer generates more features (i.e. OneHotEncoder) -> create a 1-many column map;
+            # also some columns might be dropped by the transformer (e.g. with drop="first")
             else:
                 col_map_cat = OrderedDict()
                 inv_col_map_cat = OrderedDict()
+
                 feature_names = transformer_cat.get_feature_names_out(cols_cat)
+                col_prefixes = [f"{c}_" for c in cols_cat]
                 feat_idx = 0
                 for i, col in enumerate(cols_cat):
                     col_map_cat_i = []
-                    expected_names = {
-                        f"{col}_{cat}" for cat in transformer_cat.categories_[i]
-                    }
-                    while (
-                        feat_idx < len(feature_names)
-                        and feature_names[feat_idx] in expected_names
-                    ):
+                    prefix = col_prefixes[i]
+
+                    while feat_idx < len(feature_names):
                         name = feature_names[feat_idx]
+                        if not name.startswith(prefix):
+                            # no more features with this prefix
+                            break
+
+                        if any(
+                            name.startswith(col_prefixes[j])
+                            for j in range(i + 1, len(cols_cat))
+                            if len(col_prefixes[j]) > len(prefix)
+                        ):
+                            # the column prefix is contained in the feature but actually belongs to another longer
+                            # column prefix (e.g. prefix "x_" is contained in another prefix "x_y_")
+                            break
+
                         col_map_cat_i.append(name)
                         inv_col_map_cat[name] = [col]
                         feat_idx += 1
+
                     col_map_cat[col] = col_map_cat_i
         # If we don't have any categorical static covariates, don't need to generate mapping:
         else:
