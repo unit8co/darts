@@ -30,13 +30,13 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Fixed a device mismatch error in `TFTModel` when moving a trained model to a different device (e.g., GPU to CPU for ONNX export). `attention_mask` and `relative_index` are now registered as non-persistent buffers so they are properly moved with the model. [#3053](https://github.com/unit8co/darts/pull/3053) by [Wolfhart Feldmeier](https://github.com/trahflow)
 - Fixed an issue in `StaticCovariatesTransformer`, where applying a `OneHotEncoder` on categorical static covariates with a `drop` parameter (e.g. `drop="first"`, `drop="if_binary"`) raised an exception. [#3065](https://github.com/unit8co/darts/pull/3065) by [Jay Dasondee](https://github.com/JKDasondee)
+- Fixed a stale docstring in `Diff` that incorrectly stated a `component_mask` cannot be specified together with `dropna=True`. The note became outdated when the `columns=...` parameter was introduced in [#3023](https://github.com/unit8co/darts/pull/3023). [#3078](https://github.com/unit8co/darts/pull/3078) by [Junghwan Na](https://github.com/shaun0927).
 
 ### For developers of the library:
 
 - Significantly reduced test suite session loading times by deferring heavy third-party dependencies until they are actually needed. [#3072](https://github.com/unit8co/darts/pull/3072) by [Dennis Bader](https://github.com/dennisbader)
   - Test run sessions: 3x faster (6 → 2 seconds)
   - Test debug sessions: 6x faster (36 → 6 seconds)
-- Removed a stale docstring note in `Diff` that claimed `component_mask` cannot be specified when `dropna=True`; this restriction no longer applies since the `columns=...` parameter was added in [#3023](https://github.com/unit8co/darts/pull/3023). [#3078](https://github.com/unit8co/darts/pull/3078) by [Junghwan Na](https://github.com/shaun0927).
 
 ## [0.43.0](https://github.com/unit8co/darts/tree/0.43.0) (2026-03-23)
 
