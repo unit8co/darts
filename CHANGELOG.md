@@ -35,7 +35,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Fixed an issue where using the OHE parameters `min_frequency` or `max_categories` silently truncated the column mapping. [#3076](https://github.com/unit8co/darts/pull/3076) by [Junghwan Na](https://github.com/shaun0927).
 - Fixed a stale docstring in `Diff` that incorrectly stated a `component_mask` cannot be specified together with `dropna=True`. [#3078](https://github.com/unit8co/darts/pull/3078) by [Junghwan Na](https://github.com/shaun0927).
 
-
 ### For developers of the library:
 
 - Significantly reduced test suite session loading times by deferring heavy third-party dependencies until they are actually needed. [#3072](https://github.com/unit8co/darts/pull/3072) by [Dennis Bader](https://github.com/dennisbader)
