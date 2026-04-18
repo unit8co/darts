@@ -7,8 +7,9 @@ model-specific explainability methods.
 
 `SHAP <https://github.com/slundberg/shap>`__-Based Explainers
 -------------------------------------------------------------
-- :class:`~darts.explainability.sklearn_explainer.SKLearnExplainer`: SHAP-based explainer for SKLearn models.
-- :class:`~darts.explainability.torch_explainer.TorchExplainer`: SHAP-based explainer for PyTorch models.
+- :class:`~darts.explainability.sklearn_explainer.SKLearnExplainer`: SHAP-based explainer for Darts' SKLearn
+  models.
+- :class:`~darts.explainability.torch_explainer.TorchExplainer`: SHAP-based explainer for Darts' PyTorch models.
 
 Model-Specific Explainers
 -------------------------

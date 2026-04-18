@@ -6,16 +6,19 @@ Contains the explainability results obtained from :func:`_ForecastingModelExplai
 <darts.explainability.explainability._ForecastingModelExplainer.explain>`.
 
 - :class:`SHAPExplainabilityResult <SHAPExplainabilityResult>` for :class:`SKLearnExplainer
-  <darts.explainability.sklearn_explainer.SKLearnExplainer>` and :class:`TorchExplainer
-  <darts.explainability.torch_explainer.TorchExplainer>`, which are based on SHAP values.
-- :class:`SHAPSingleExplainabilityResult <SHAPSingleExplainabilityResult>` for single-step explainability
-  of :class:`SKLearnExplainer <darts.explainability.sklearn_explainer.SKLearnExplainer>` and
-  :class:`TorchExplainer <darts.explainability.torch_explainer.TorchExplainer>`.
+  <darts.explainability.sklearn_explainer.SKLearnExplainer>` or :class:`TorchExplainer
+  <darts.explainability.torch_explainer.TorchExplainer>`. Contains general forecasting model explainability result
+  based on SHAP values.
+- :class:`SHAPSingleExplainabilityResult <SHAPSingleExplainabilityResult>` for :class:`SKLearnExplainer
+  <darts.explainability.sklearn_explainer.SKLearnExplainer>` or :class:`TorchExplainer
+  <darts.explainability.torch_explainer.TorchExplainer>`. Contains the explainability result for
+  a single model forecast.
 - :class:`TFTExplainabilityResult <TFTExplainabilityResult>` for :class:`TFTExplainer
-  <darts.explainability.tft_explainer.TFTExplainer>`
-- :class:`ComponentBasedExplainabilityResult <ComponentBasedExplainabilityResult>` for component based explainability
-  results
-- :class:`HorizonBasedExplainabilityResult <HorizonBasedExplainabilityResult>` for horizon based explainability results
+  <darts.explainability.tft_explainer.TFTExplainer>`.
+- :class:`ComponentBasedExplainabilityResult <ComponentBasedExplainabilityResult>` for generic component-based
+  explainability result.
+- :class:`HorizonBasedExplainabilityResult <HorizonBasedExplainabilityResult>` for generic horizon-based
+  explainability results.
 """
 
 from abc import ABC, abstractmethod
@@ -42,8 +45,10 @@ class _ExplainabilityResult(ABC):
 
 
 class ComponentBasedExplainabilityResult(_ExplainabilityResult):
-    """Explainability result for general component objects.
-    The explained components can describe anything.
+    """
+    Stores the explainability results of a :class:`_ForecastingModelExplainer
+    <darts.explainability.explainability._ForecastingModelExplainer>` with convenient access to component-based
+    results.
 
     Examples
     --------
@@ -77,7 +82,8 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
         Parameters
         ----------
         component
-            The component for which to return the explanation.
+            Optionally, the target series component for which to return the explanation. Must be supplied for
+            multivariate forecasting models.
         """
         return self._query_explainability_result(self.explained_components, component)
 
@@ -111,8 +117,7 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
         Parameters
         ----------
         component
-            The component for which to return the explanation. Does not
-            need to be specified for univariate series.
+            The component for which to return the explanation.
         """
         # validate component argument
         if component is None and len(self.available_components) > 1:
@@ -123,24 +128,24 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
                 logger,
             )
 
-        if component is None:
-            component = self.available_components[0]
+        component_out = self.available_components[0] if component is None else component
 
-        if component not in self.available_components:
+        if component_out not in self.available_components:
             raise_log(
                 ValueError(
-                    f'Component "{component}" is not available. Available components are: {self.available_components}'
+                    f'Component "{component_out}" is not available. '
+                    f"Available components are: {self.available_components}"
                 ),
                 logger,
             )
-        return component
+        return component_out
 
 
 class HorizonBasedExplainabilityResult(_ExplainabilityResult):
     """
     Stores the explainability results of a :class:`_ForecastingModelExplainer
-    <darts.explainability.explainability._ForecastingModelExplainer>` with convenient access to the horizon
-    based results.
+    <darts.explainability.explainability._ForecastingModelExplainer>` with convenient access to horizon-based
+    results.
 
     The result is a multivariate ``TimeSeries`` instance containing the "explanation" for the
     ``(horizon, target_component)`` forecast at any timestamp forecastable in the foreground series.
@@ -150,7 +155,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
     the forecasts. They are named according to the convention:
     ``"{name}_{type_of_cov}_lag{idx}"``, where:
 
-    - ``{name}`` is the component name from the original foreground series (target, past, or future).
+    - ``{name}`` is the component name from the original foreground series (target, past covariate or future covariate).
     - ``{type_of_cov}`` is the covariates type. It can take 3 different values:
       ``"target"``, ``"pastcov"``,  ``"futcov"``.
     - ``{idx}`` is the lag index.
@@ -258,8 +263,8 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
         horizon
             The horizon for which to return the explanation.
         component
-            The component for which to return the explanation. Does not
-            need to be specified for univariate series.
+            Optionally, the target series component for which to return the explanation. Must be supplied for
+            multivariate forecasting models.
         """
         return self._query_explainability_result(
             self.explained_forecasts, horizon, component
@@ -282,8 +287,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
         horizon
             The horizon for which to return the content of the attribute.
         component
-            The component for which to return the content of the attribute. Does not
-            need to be specified for univariate series.
+            The component for which to return the content of the attribute.
         """
         component = self._validate_input_for_querying_explainability_result(
             horizon, component
@@ -312,8 +316,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
         horizon
             The horizon for which to return the explanation.
         component
-            The component for which to return the explanation. Does not
-            need to be specified for univariate series.
+            The component for which to return the explanation.
         """
         # validate component argument
         if component is None and len(self.available_components) > 1:
@@ -324,13 +327,13 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
                 logger,
             )
 
-        if component is None:
-            component = self.available_components[0]
+        component_out = self.available_components[0] if component is None else component
 
-        if component not in self.available_components:
+        if component_out not in self.available_components:
             raise_log(
                 ValueError(
-                    f'Component "{component}" is not available. Available components are: {self.available_components}'
+                    f'Component "{component_out}" is not available. '
+                    f"Available components are: {self.available_components}"
                 ),
                 logger,
             )
@@ -342,15 +345,14 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
                 ),
                 logger,
             )
-        return component
+        return component_out
 
 
 class SHAPExplainabilityResult(HorizonBasedExplainabilityResult):
     """
-    Stores the explainability results of a
-    :class:`SKLearnExplainer <darts.explainability.sklearn_explainer.SKLearnExplainer>` or
-    :class:`TorchExplainer <darts.explainability.torch_explainer.TorchExplainer>`
-    with convenient access to the results.
+    Stores the explainability results of :class:`SKLearnExplainer
+    <darts.explainability.sklearn_explainer.SKLearnExplainer>` or :class:`TorchExplainer
+    <darts.explainability.torch_explainer.TorchExplainer>` with convenient access to the results.
 
     It extends the :class:`HorizonBasedExplainabilityResult
     <HorizonBasedExplainabilityResult>` and carries additional information specific to the SHAP explainers.
@@ -366,7 +368,7 @@ class SHAPExplainabilityResult(HorizonBasedExplainabilityResult):
     --------
     >>> explainer = SKLearnExplainer(model)  # requires `background` if model was trained on multiple series
     >>> explain_results = explainer.explain()
-    >>> explained_fc = explain_results.get_explanation(horizon=1) # requires `component` if target is multivariate
+    >>> explained_fc = explain_results.get_explanation(horizon=1)  # requires `component` if target is multivariate
     >>> feature_values = explain_results.get_feature_values(horizon=1)
     >>> shap_objects = explain_results.get_shap_explanation_objects(horizon=1)
     """
@@ -396,8 +398,8 @@ class SHAPExplainabilityResult(HorizonBasedExplainabilityResult):
         horizon
             The horizon for which to return the feature values.
         component
-            The component for which to return the feature values. Does not
-            need to be specified for univariate series.
+            The component for which to return the feature values. Must be supplied for
+            multivariate forecasting models.
         """
         return self._query_explainability_result(
             self.feature_values, horizon, component
@@ -414,8 +416,8 @@ class SHAPExplainabilityResult(HorizonBasedExplainabilityResult):
         horizon
             The horizon for which to return the ``shap.Explanation`` object.
         component
-            The component for which to return the ``shap.Explanation`` object. Does not
-            need to be specified for univariate series.
+            The component for which to return the ``shap.Explanation`` object. Must be supplied for
+            multivariate forecasting models.
         """
         return self._query_explainability_result(
             self.shap_explanation_object, horizon, component
@@ -430,10 +432,10 @@ class SHAPSingleExplainabilityResult(ComponentBasedExplainabilityResult):
         shap_explanation_object: dict[str, shap.Explanation],
     ):
         """
-        Stores the explainability results of a
-        :class:`SKLearnExplainer <darts.explainability.sklearn_explainer.SKLearnExplainer>` or
-        :class:`TorchExplainer <darts.explainability.torch_explainer.TorchExplainer>`
-        for a single forecast with convenient access to the results.
+        Stores the explainability results of :class:`SKLearnExplainer
+        <darts.explainability.sklearn_explainer.SKLearnExplainer>` or :class:`TorchExplainer
+        <darts.explainability.torch_explainer.TorchExplainer>` for a single model forecast with convenient access to
+        the results.
 
         It extends the :class:`ComponentBasedExplainabilityResult <ComponentBasedExplainabilityResult>` and
         carries additional information specific to the SHAP explainers.
@@ -468,7 +470,8 @@ class SHAPSingleExplainabilityResult(ComponentBasedExplainabilityResult):
         Parameters
         ----------
         component
-            The component for which to return the explanation. Only optional if the target series is univariate.
+            Optionally, the target series component for which to return the explanation. Must be supplied for
+            multivariate forecasting models.
         """
         return self._query_explainability_result(self.explained_components, component)
 
@@ -484,7 +487,7 @@ class SHAPSingleExplainabilityResult(ComponentBasedExplainabilityResult):
         Parameters
         ----------
         component
-            The component for which to return the feature values. Only optional if the target series is univariate.
+            The component for which to return the feature values. Must be supplied for multivariate forecasting models.
         """
         return self._query_explainability_result(self.feature_values, component)
 
@@ -497,8 +500,8 @@ class SHAPSingleExplainabilityResult(ComponentBasedExplainabilityResult):
         Parameters
         ----------
         component
-            The component for which to return the ``shap.Explanation`` object. Only optional if the target series is
-            univariate.
+            The component for which to return the ``shap.Explanation`` object. Must be supplied for multivariate
+            forecasting models.
         """
         return self._query_explainability_result(
             self.shap_explanation_object, component

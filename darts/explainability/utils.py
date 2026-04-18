@@ -50,6 +50,8 @@ def process_input(
 
     Parameters
     ----------
+    n
+        The forecast horizon (``output_chunk_length``) that the model was trained to predict.
     model
         any `ForecastingModel`.
     input_type
