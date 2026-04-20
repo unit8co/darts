@@ -14,7 +14,6 @@ For detailed examples and tutorials, check out the following notebooks:
 """
 
 import os
-from dataclasses import dataclass
 from typing import Any
 
 import torch
@@ -28,130 +27,111 @@ from darts.utils.likelihood_models.torch import QuantileRegression
 logger = get_logger(__name__)
 
 
-@dataclass(frozen=True)
-class _TiRexQuantiles:
-    # TiRex returns 9 quantiles by default (0.1..0.9).
-    quantiles: tuple[float, ...] = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
-
-
 class _TiRexModule(PLForecastingModule):
+    """PyTorch Lightning module wrapping a pre-loaded TiRex pipeline.
+
+    Adapts TiRex's forecasting interface to Darts' PLForecastingModule API.
+    Multivariate inputs are supported by folding components into the batch dimension.
+    Covariates are not supported.
+
+    During fine-tuning, the gradient-enabled ``_forecast_tensor`` path is used,
+    bypassing the ``@torch.inference_mode()`` decorator on ``_forecast_quantiles``.
+    Loss is computed over all 9 pre-trained quantiles; only user-specified quantiles
+    are returned at prediction time.
+    """
+
     _user_quantile_indices: torch.Tensor
-    """
-    PyTorch Lightning module wrapping a pre-loaded TiRex pipeline.
-
-    This module adapts TiRex's zero-shot forecasting interface to Darts'
-    `PLForecastingModule` API. It does not implement any trainable layers
-    itself. Instead, it delegates all forecasting logic to the TiRex pipeline
-    obtained via `tirex.load_model()`.
-
-    The module:
-
-    - Accepts batched past target tensors from Darts
-    - Calls `tirex_pipeline.forecast()`
-    - Selects user-requested quantiles (or median)
-    - Returns outputs in Darts' expected shape:
-      `(batch_size, time, n_targets, n_quantiles)`
-
-    Notes
-    -----
-    - Mulitvariate is currently not supported.
-    - Covariates are currently not supported.
-    - Fine-tuning is not supported; this is a zero-shot wrapper.
-    """
 
     def __init__(
         self,
         tirex_kwargs: dict[str, Any],
         all_quantiles: tuple[float, ...],
+        enable_finetuning: bool | dict = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
 
-        # ensure that the TiRex pipeline is loaded on the same device as the PL module
         tirex_kwargs["device"] = str(self.device)
-        # load the TiRex pipeline (this will download weights if not cached locally)
         self.tirex_pipeline = load_model(**tirex_kwargs)
 
         self.future_len = (self.output_chunk_length or 0) + self.output_chunk_shift
+        # bool(dict) is True for a non-empty dict; _setup_finetuning() handles the actual
+        # parameter freeze/unfreeze pattern — here we only need a flag for the forward path
+        self._enable_finetuning = bool(enable_finetuning)
 
-        # gather indices of user-specified quantiles (used at prediction time)
         user_q: list[float] = (
             self.likelihood.quantiles
             if isinstance(self.likelihood, QuantileRegression)
             else [0.5]
         )
-        user_quantile_indices = [all_quantiles.index(q) for q in user_q]
         self.register_buffer(
             "_user_quantile_indices",
-            torch.tensor(user_quantile_indices, dtype=torch.long, device=self.device),
+            torch.tensor(
+                [all_quantiles.index(q) for q in user_q],
+                dtype=torch.long,
+                device=self.device,
+            ),
         )
+
+        if enable_finetuning:
+            # loss is computed over all pre-trained quantiles to preserve the distribution;
+            # user-specified quantiles are selected at prediction time
+            self._finetuning_likelihood = QuantileRegression(list(all_quantiles))
+        else:
+            self._finetuning_likelihood = None
 
     def forward(self, x_in, *args, **kwargs):
+        """Forward pass returning quantile predictions shaped ``(batch, time, n_targets, n_quantiles)``.
+
+        During training with fine-tuning enabled, all 9 pre-trained quantiles are returned
+        for the loss. At prediction time, only user-specified quantiles are returned.
         """
-        TiRex forward pass.
-
-        Parameters
-        ----------
-        x_in
-            Tuple `(x_past, x_future, x_static)` as provided by Darts.
-            - `x_past`: tensor of shape `(batch_size, input_chunk_length, n_targets)`
-            - `x_future`: expected to be `None` (covariates unsupported)
-            - `x_static`: ignored
-
-        Returns
-        -------
-        torch.Tensor
-            Tensor of shape `(batch_size, output_chunk_length, n_targets, n_quantiles)`
-            containing the selected quantile predictions.
-            If deterministic (`likelihood=None`), only the median (0.5) quantile
-            is returned.
-        """
-        # Dimension notation in comments below:
-        #   B: batch size
-        #   L: input chunk length
-        #   T: output chunk length
-        #   S: output chunk shift
-        #   H: forecast horizon = T + S
-        #   C: target components
-        #   Q = 9: likelihood quantiles returned by TiRex
-        #   N: likelihood quantiles (user-specified, 1 if deterministic)
-
-        # `x_past`: (B, L, C)
         x_past, _, _ = x_in
-        # fold target component into batch dimension to support multivariate forecasting
-        # -> (B, C, L) -> (B * C, L)
+        # fold target components into batch dim for multivariate support: (B,L,C) -> (B*C,L)
         x_past = x_past.transpose(1, 2).flatten(start_dim=0, end_dim=1)
 
-        # TiRex should forecast output_chunk_shift + output_chunk_length steps,
-        # then we slice away the shift to match Darts' output_chunk_length.
+        if self.training and self._enable_finetuning:
+            # call _forecast_tensor directly to keep gradients flowing — _forecast_quantiles
+            # is decorated with @torch.inference_mode() which would block backprop
+            # output: (B*C, Q, H) -> swapaxes -> (B*C, H, Q), then slice output_chunk_shift
+            q_sel = self.tirex_pipeline._forecast_tensor(
+                context=x_past,
+                prediction_length=self.future_len,
+            ).swapaxes(1, 2)[:, self.output_chunk_shift :, :]
+        else:
+            quantiles, _ = self.tirex_pipeline._forecast_quantiles(
+                context=x_past,
+                prediction_length=self.future_len,
+                output_device=x_past.device,
+            )
+            # (B*C, H, Q) -> slice shift -> select user quantiles -> (B*C, T, N)
+            q_sel = quantiles[:, self.output_chunk_shift :, :].index_select(
+                dim=-1, index=self._user_quantile_indices
+            )
 
-        # `quantiles`: (B * C, H, Q)
-        quantiles, _ = self.tirex_pipeline._forecast_quantiles(
-            context=x_past,
-            prediction_length=self.future_len,
-            output_device=x_past.device,
-        )
+        # unfold batch dim and permute to Darts' output shape: (B, T, C, N or Q)
+        return q_sel.unflatten(dim=0, sizes=(-1, self.n_targets)).permute(0, 2, 1, 3)
 
-        # slice away output_chunk_shift -> (B * C, T, Q)
-        quantiles = quantiles[:, self.output_chunk_shift :, :]
-
-        # select user-requested quantiles (or median) -> (B * C, T, N)
-        q_sel: torch.Tensor = quantiles.index_select(
-            dim=-1, index=self._user_quantile_indices
-        )
-
-        # unfold batch dimension to separate target components -> (B, C, T, N)
-        q_sel = q_sel.unflatten(dim=0, sizes=(-1, self.n_targets))
-
-        # permute to Darts' expected output shape -> (B, T, C, N)
-        q_sel = q_sel.permute(0, 2, 1, 3)
-
-        return q_sel
+    def _compute_loss(self, output, target, criterion, sample_weight):
+        if self.training and self._enable_finetuning:
+            return self._finetuning_likelihood.compute_loss(
+                output, target, sample_weight
+            )
+        return super()._compute_loss(output, target, criterion, sample_weight)
 
 
 class TiRexModel(FoundationModel):
-    # TiRex quantiles returned by default (0.1..0.9)
-    _DEFAULT_QUANTILES = _TiRexQuantiles().quantiles
+    _DEFAULT_QUANTILES: tuple[float, ...] = (
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5,
+        0.6,
+        0.7,
+        0.8,
+        0.9,
+    )
     _MAX_PREDICTION_LENGTH = 2048
 
     def __init__(
@@ -192,9 +172,13 @@ class TiRexModel(FoundationModel):
             TiRex is distributed under the `NXAI Community License <https://github.com/NX-AI/tirex/blob/main/LICENSE>`_.
             You must explicitly acknowledge this license by passing ``accept_license=True`` when constructing the model.
 
-        .. warning::
-            Fine-tuning TiRex is not supported in Darts. Visit `TiRex Docs <https://nx-ai.github.io/tirex/>`_ for
-            details.
+        .. note::
+            Partial fine-tuning is supported via
+            ``enable_finetuning={"unfreeze": ["tirex_pipeline.output_patch_embedding*", ...]}``.
+            Fine-tuning requires ``tirex_kwargs={"backend": "torch"}``; only the last sLSTM blocks
+            and the output head are gradient-safe (see notebook for recommended configurations).
+            Full fine-tuning (``enable_finetuning=True``) is **not supported** — backpropagation
+            through the early sLSTM blocks produces NaN gradients.
 
         Parameters
         ----------
@@ -295,15 +279,13 @@ class TiRexModel(FoundationModel):
         --------
         >>> from darts.models import TiRexModel
         >>> from darts.datasets import AirPassengersDataset
-        >>> # load data in float32 format
         >>> series = AirPassengersDataset().load().astype("float32")
         >>> # you must explicitly accept the license to use the model
         >>> model = TiRexModel(
         ...     input_chunk_length=12,
         ...     output_chunk_length=6,
-        ...     accept_license=False,
+        ...     accept_license=True,
         ... )
-        >>> # fit the model (data is validated but TiRex is not actually trained)
         >>> model.fit(series)
         >>> pred = model.predict(n=6)
         >>> print(pred.all_values())
@@ -321,7 +303,7 @@ class TiRexModel(FoundationModel):
         ...     input_chunk_length=12,
         ...     output_chunk_length=6,
         ...     likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
-        ...     accept_license=False,
+        ...     accept_license=True,
         ... )
         >>> model.fit(series)
         >>> pred = model.predict(n=6, predict_likelihood_parameters=True)
@@ -335,6 +317,11 @@ class TiRexModel(FoundationModel):
                 ),
                 logger,
             )
+        print(
+            "TiRex is licensed under the NXAI Community License — "
+            "https://github.com/NX-AI/tirex/blob/main/LICENSE\n"
+            "Fine-tuned weights are derivative works subject to the same terms."
+        )
 
         if likelihood is not None:
             if not isinstance(likelihood, QuantileRegression):
@@ -344,8 +331,6 @@ class TiRexModel(FoundationModel):
                     ),
                     logger,
                 )
-
-            # validate that requested quantiles are a subset of TiRex quantiles
             req = tuple(float(q) for q in likelihood.quantiles)
             if not set(req).issubset(set(self._DEFAULT_QUANTILES)):
                 raise_log(
@@ -356,7 +341,6 @@ class TiRexModel(FoundationModel):
                     logger,
                 )
 
-        # TiRex supports up to 2048 steps per single forecast call.
         if output_chunk_length + output_chunk_shift > self._MAX_PREDICTION_LENGTH:
             raise_log(
                 ValueError(
@@ -366,15 +350,8 @@ class TiRexModel(FoundationModel):
                 logger,
             )
 
-        if kwargs.get("enable_finetuning", False) not in (None, False):
-            raise_log(
-                ValueError("Fine-tuning is not supported for TiRexModel."),
-                logger,
-            )
-
         super().__init__(**kwargs)
 
-        # prepare arguments for loading the TiRex pipeline with `tirex.load_model()`
         tirex_kwargs = tirex_kwargs or {}
         hf_kwargs = {
             **(
@@ -409,7 +386,8 @@ class TiRexModel(FoundationModel):
 
     def _create_model(self, train_sample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}
-
+        # enable_finetuning is injected into pl_module_params by the base class;
+        # _TiRexModule accepts it as an explicit parameter and converts dict form to bool
         return _TiRexModule(
             tirex_kwargs=self.tirex_kwargs,
             all_quantiles=self._DEFAULT_QUANTILES,
