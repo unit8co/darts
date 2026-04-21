@@ -32,7 +32,6 @@ Run with:
 Inspect in the UI:
     mlflow ui --backend-store-uri sqlite:////tmp/mlflow_v2.db
 """
-
 import logging
 
 import coolname
@@ -55,8 +54,77 @@ from darts.models import (
 )
 
 
+def _managed_run_scenarios(model, train, val, log) -> None:
+    """Explores manage_run=True behaviour across four scenarios.
+
+    Metrics always use manage_run=False internally — they only log into an
+    already-active run and never create one themselves.
+
+    Scenario A — bare fit():
+        fit() uses with_managed_run which creates a run when none is active,
+        then closes it on return.
+        Result: one run per model, params logged, no metrics.
+
+    Scenario B — metric with no active run:
+        Metric patches have manage_run=False so they never open a run.
+        With nothing active there is nowhere to log.
+        Result: nothing logged (silent no-op).
+
+    Scenario C — metric inside an explicit start_run():
+        Caller opens a run; metric patch sees an active run and logs into it.
+        No fit() → no params.
+        Result: one run with only the metric logged.
+
+    Scenario D — fit() + metric inside an explicit start_run():
+        with_managed_run creates a run "if necessary". Because the caller's
+        run is already active, fit() reuses it rather than nesting a child.
+        Params and metric all land in the same single run.
+        Result: one run per model with both params and metric logged.
+    """
+    model_name = type(model).__name__
+
+    # ── Scenario A: bare fit ──────────────────────────────────────────
+    # Expected: one run with params logged; no metrics.
+    log(f"[{model_name}] Scenario A — bare fit")
+    model.fit(train)
+    pred = model.predict(n=len(val))
+
+    # ── Scenario B: metric outside any run ───────────────────────────
+    # Expected: nothing logged (metrics have manage_run=False).
+    log(f"[{model_name}] Scenario B — metric with no active run (expect: not logged)")
+    darts_metrics.mape(val, pred)
+
+    # ── Scenario C: metric inside explicit start_run ──────────────────
+    # Expected: one run with rmse logged, no params.
+    log(f"[{model_name}] Scenario C — metric inside explicit start_run")
+    with mlflow.start_run():
+        darts_metrics.rmse(val, pred)
+
+    # ── Scenario D: fit + metric inside explicit start_run ───────────
+    # Expected: one run with both params (from fit) and mape logged.
+    # fit() reuses the caller's run — no nesting.
+    log(f"[{model_name}] Scenario D — fit + metric inside explicit start_run")
+    with mlflow.start_run():
+        model.fit(train)
+        pred = model.predict(n=len(val))
+        darts_metrics.mape(val, pred)
+
+
 def _magic(model, train, val, series, log) -> None:
-    log(f"[{model_name}] Run created: run_id={run.info.run_id}")
+    """Advanced use case: caller-managed run with predict, val metrics, and backtest.
+
+    Requires autolog(manage_run=False) and an active mlflow.start_run() in the
+    caller. Because manage_run=False, fit() never opens or closes a run on its
+    own — the caller's run stays open for the entire workflow.
+
+    What gets logged into the single run:
+      - Model params (from fit via the autolog patch).
+      - val_mape, val_rmse (from patched darts_metrics calls while run is active).
+      - backtest_mape, backtest_rmse, backtest_ape as consecutive steps
+        (one value per window, because reduction=None).
+    """
+    model_name = type(model).__name__
+    log(f"[{model_name}] Run created: run_id={mlflow.active_run().info.run_id}")
     # ── fit ───────────────────────────────────────────────────────────
     log(f"[{model_name}] Fitting model on {len(train)} training samples")
     model.fit(train)
@@ -94,7 +162,59 @@ def _magic(model, train, val, series, log) -> None:
         metric=[darts_metrics.mape, darts_metrics.rmse, darts_metrics.ape],
         reduction=None,
     )
-    log(f"[{model_name}] Run complete: {run.info.run_id}")
+    log(f"[{model_name}] Run complete: {mlflow.active_run().info.run_id}")
+
+
+def _backtest_reduction_scenarios(model, train, series, log) -> None:
+    """Explores how different ``reduction`` values affect MLflow logging.
+
+    Fits once and computes historical forecasts once, then calls backtest with
+    four different reductions.  Each variant runs inside its own nested
+    child run so the MLflow UI shows them separately without key collisions.
+
+    Reduction variants and their logged shape:
+      None      → 1-D array per metric → logged as consecutive steps (chart).
+      np.mean   → scalar per metric    → single value (mean over windows).
+      np.median → scalar per metric    → single value (median over windows).
+      custom    → scalar per metric    → single value (90th-percentile).
+
+    All variants use the same metric list (mape, rmse) and the same
+    pre-computed historical forecasts so results are directly comparable.
+    """
+    model_name = type(model).__name__
+    metrics = [darts_metrics.mape, darts_metrics.rmse]
+
+    log(f"[{model_name}] Fitting")
+    model.fit(train)
+    log(f"[{model_name}] Computing historical forecasts")
+    hfc = model.historical_forecasts(
+        series,
+        start=BT_START,
+        forecast_horizon=FORECAST_HORIZON,
+        stride=STRIDE,
+        retrain=True,
+        last_points_only=False,
+    )
+    log(f"[{model_name}] {len(hfc)} windows")
+
+    reductions = [
+        (None,                            "reduction=None (per-window steps)"),
+        (np.mean,                         "reduction=np.mean"),
+        (np.median,                       "reduction=np.median"),
+        (lambda x, axis=None: np.percentile(x, 90, axis=axis), "reduction=p90"),
+    ]
+
+    for reduction_fn, label in reductions:
+        log(f"[{model_name}] Backtest — {label}")
+        with mlflow.start_run(nested=True, run_name=label):
+            model.backtest(
+                series=series,
+                historical_forecasts=hfc,
+                last_points_only=False,
+                metric=metrics,
+                reduction=reduction_fn,
+            )
+
 
 # ── Data setup ----------------------------------------------------------------
 # Cast to float32: MPS doesn't support float64 tensors
@@ -103,7 +223,7 @@ train, val = series.split_after(0.75)
 FORECAST_HORIZON, STRIDE, BT_START = 1, 2, 0.75
 
 # ── Logging setup ─────────────────────────────────────────────────────────────
-VERBOSE = False
+VERBOSE = True
 log = logger.info if VERBOSE else lambda *a, **kw: None
 # ── MLflow setup ──────────────────────────────────────────────────────────────
 DB_PATH = "/tmp/mlflow_v2.db"
@@ -119,19 +239,45 @@ models = [
     LinearRegressionModel(lags=12, output_chunk_length=FORECAST_HORIZON),
     # LinearRegressionModel(lags=24, output_chunk_length=FORECAST_HORIZON),  # same model, more lags
     ExponentialSmoothing(),
-    # NBEATSModel(**_torch_kwargs),
+    NBEATSModel(**_torch_kwargs),
     # NBEATSModel(**_torch_kwargs, num_stacks=4, num_blocks=2),  # same model, deeper architecture
     # NHiTSModel(**_torch_kwargs),
     # TCNModel(**_torch_kwargs),
 ]
 
-#--- MLflow experiment with manage_run=False -------------------------
+# ── Use case 1: manage_run=True (default) ─────────────────────────────────────
+# fit() auto-creates and closes a run per model — no start_run() needed.
 exp_name: str = coolname.generate_slug(2)
 mlflow.set_experiment(exp_name)
-mlflow_darts.autolog(manage_run=False) # NOTE: manage_run = False
-logger.info(f"Starting experiment: {exp_name}")
+mlflow_darts.autolog(manage_run=True)
+logger.info(f"[Use case 1] Experiment: {exp_name}")
 for model in models:
+    _managed_run_scenarios(model, train, val, log)
+
+# ── Use case 2: manage_run=False + backtest ───────────────────────────────────
+# Caller opens the run so predict, val metrics, and backtest all land in it.
+# NOTE: this is the recommended way to use MLFlow in Darts. It avoids
+#       nesting runs and ensures all metrics land in the same run.
+exp_name = coolname.generate_slug(2)
+mlflow.set_experiment(exp_name)
+mlflow_darts.autolog(manage_run=False)
+logger.info(f"[Use case 2] Experiment: {exp_name}")
+for i, model in enumerate(models):
     model_name = type(model).__name__
     log(f"[{model_name}] Starting run")
-    with mlflow.start_run() as run:
+    with mlflow.start_run(
+        run_name=model_name,
+        description = f"Small exp. run for {model_name}",
+    ) as run:
         _magic(model, train, val, series, log)
+
+# ── Use case 3: backtest reduction variants ───────────────────────────────────
+# One parent run per model; one nested child run per reduction variant.
+exp_name = coolname.generate_slug(2)
+mlflow.set_experiment(exp_name)
+mlflow_darts.autolog(manage_run=False)
+logger.info(f"[Use case 3] Experiment: {exp_name}")
+for model in models:
+    model_name = type(model).__name__
+    with mlflow.start_run(run_name=model_name):
+        _backtest_reduction_scenarios(model, train, series, log)
