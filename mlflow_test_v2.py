@@ -32,6 +32,7 @@ Run with:
 Inspect in the UI:
     mlflow ui --backend-store-uri sqlite:////tmp/mlflow_v2.db
 """
+
 import logging
 
 import coolname
@@ -198,9 +199,9 @@ def _backtest_reduction_scenarios(model, train, series, log) -> None:
     log(f"[{model_name}] {len(hfc)} windows")
 
     reductions = [
-        (None,                            "reduction=None (per-window steps)"),
-        (np.mean,                         "reduction=np.mean"),
-        (np.median,                       "reduction=np.median"),
+        (None, "reduction=None (per-window steps)"),
+        (np.mean, "reduction=np.mean"),
+        (np.median, "reduction=np.median"),
         (lambda x, axis=None: np.percentile(x, 90, axis=axis), "reduction=p90"),
     ]
 
@@ -233,7 +234,11 @@ _torch_kwargs = dict(
     input_chunk_length=12,
     output_chunk_length=FORECAST_HORIZON,
     n_epochs=10,
-    pl_trainer_kwargs={"accelerator": "mps", "precision": "32-true", "enable_progress_bar": False},
+    pl_trainer_kwargs={
+        "accelerator": "mps",
+        "precision": "32-true",
+        "enable_progress_bar": False,
+    },
 )
 models = [
     LinearRegressionModel(lags=12, output_chunk_length=FORECAST_HORIZON),
@@ -267,7 +272,7 @@ for i, model in enumerate(models):
     log(f"[{model_name}] Starting run")
     with mlflow.start_run(
         run_name=model_name,
-        description = f"Small exp. run for {model_name}",
+        description=f"Small exp. run for {model_name}",
     ) as run:
         _magic(model, train, val, series, log)
 
