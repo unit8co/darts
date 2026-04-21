@@ -387,7 +387,6 @@ def autolog(
     log_torch_metrics: bool = True,
     disable: bool = False,
     silent: bool = False,
-    manage_run: bool = True,
 ) -> None:
     """Enable (or disable) automatic MLflow logging for darts models.
 
@@ -449,12 +448,6 @@ def autolog(
     silent
         If ``True`` (default ``False``), suppress all event logging and warnings from
         MLflow during autologging.
-    manage_run
-        If `True`, applies the `with_managed_run` wrapper to the specified
-        `patch_function`, which automatically creates & terminates an MLflow
-        active run during patch code execution if necessary. If `False`,
-        does not apply the `with_managed_run` wrapper to the specified
-        `patch_function`.
     """
     # Enable/disable mlflow.pytorch.autolog for per-epoch metrics on torch models.
     # This must happen outside the @autologging_integration-decorated _autolog()
@@ -486,7 +479,6 @@ def autolog(
         log_metrics=log_metrics,
         disable=disable,
         silent=silent,
-        manage_run=manage_run,
     )
 
 
@@ -513,7 +505,6 @@ def _autolog(
     log_metrics: bool = True,
     disable: bool = False,
     silent: bool = False,
-    manage_run: bool = True,
 ) -> None:
     """Internal autolog implementation decorated with ``@autologging_integration``.
 
@@ -594,7 +585,7 @@ def _autolog(
         """Suppress per-iteration fit() autologging during historical_forecasts.
 
         Sets a thread-local flag so _patched_fit skips autologging for the
-        internal fit() calls. The outer safe_patch(manage_run=manage_run) on
+        internal fit() calls. The outer safe_patch() on
         historical_forecasts itself provides a single managed run.
         """
         _autolog_state.in_historical_forecasts = True
@@ -703,7 +694,6 @@ def _autolog(
             cls,
             "fit",
             _patched_fit,
-            manage_run=manage_run,
         )
 
     # patch `historical_forecasts()` for all forecasting models so that the
@@ -714,7 +704,6 @@ def _autolog(
             cls,
             "historical_forecasts",
             _patched_historical_forecasts,
-            manage_run=manage_run,
         )
 
     # patch `backtest()` for all forecasting models to log metric results
@@ -724,7 +713,6 @@ def _autolog(
             cls,
             "backtest",
             _patched_backtest,
-            manage_run=manage_run,
         )
 
     if log_metrics:
@@ -744,14 +732,11 @@ def _autolog(
 
         # patch all metric functions to log results
         for metric_name in darts.metrics.__all__:
-            # metrics should not create their own runs;
-            # they log into the run started by fit(), so manage_run=False here
             safe_patch(
                 FLAVOR_NAME,
                 darts.metrics,
                 metric_name,
                 _make_metric_patch(metric_name),
-                manage_run=False,
             )
 
 
