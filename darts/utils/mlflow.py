@@ -19,6 +19,7 @@ import json
 import os
 import re
 import sys
+import threading
 from collections.abc import Callable
 from operator import itemgetter
 from typing import Any
@@ -26,6 +27,7 @@ from typing import Any
 import mlflow
 import numpy as np
 import yaml
+from mlflow.entities import LoggedModel
 from mlflow.models import Model, ModelInputExample, ModelSignature
 from mlflow.models.model import MLMODEL_FILE_NAME
 from mlflow.models.utils import _save_example
@@ -93,6 +95,10 @@ _covariate_types = [
         "columns",
     ),
 ]
+
+# Thread-local flag set during historical_forecasts to suppress per-iteration
+# autologging in _patched_fit (which would otherwise spawn one run per iteration).
+_autolog_state = threading.local()
 
 
 def save_model(
@@ -536,9 +542,14 @@ def _autolog(
         -------
             The result of calling the original fit method.
         """
-
         # Create a training session to track the training process and log information
         autologging_client = MlflowAutologgingQueueingClient()
+
+        if getattr(_autolog_state, "in_historical_forecasts", False):
+            return original(self, *args, **kwargs)
+
+        # Track which model is active so metric patches can prefix their keys
+        _autolog_state.current_model_name = type(self).__name__
 
         run_id = mlflow.active_run().info.run_id
 
@@ -555,15 +566,19 @@ def _autolog(
         param_logging_ops = autologging_client.flush(synchronous=False)
 
         if log_models:
-            model_id = _initialize_logged_model("model", flavor=FLAVOR_NAME).model_id
+            model_name = type(self).__name__
+            model: LoggedModel = _initialize_logged_model(
+                name=model_name, flavor=FLAVOR_NAME
+            )
             try:
                 registered_model_name = get_autologging_config(
                     FLAVOR_NAME, "registered_model_name", None
                 )
                 log_model(
                     result,
+                    name=model_name,
                     registered_model_name=registered_model_name,
-                    model_id=model_id,
+                    model_id=model.model_id,
                 )
             except Exception:
                 logger.info(
@@ -575,6 +590,112 @@ def _autolog(
 
         return result
 
+    def _patched_historical_forecasts(original, self, *args, **kwargs):
+        """Suppress per-iteration fit() autologging during historical_forecasts.
+
+        Sets a thread-local flag so _patched_fit skips autologging for the
+        internal fit() calls. The outer safe_patch(manage_run=manage_run) on
+        historical_forecasts itself provides a single managed run.
+        """
+        _autolog_state.in_historical_forecasts = True
+        try:
+            return original(self, *args, **kwargs)
+        finally:
+            _autolog_state.in_historical_forecasts = False
+
+    def _patched_backtest(original, self, *args, **kwargs):
+        """Log backtest metric result(s) to the active MLflow run.
+
+        Scalar results (default reduction) are logged as a single metric value.
+        Per-window arrays (reduction=None) are logged as consecutive steps of
+        the same metric key so the MLflow UI renders them as a chart.
+        """
+        _autolog_state.in_backtest = True
+        try:
+            result = original(self, *args, **kwargs)
+        finally:
+            _autolog_state.in_backtest = False
+
+        if not log_metrics:
+            return result
+
+        active_run = mlflow.active_run()
+        if active_run is None:
+            return result
+
+        # Resolve `metric` arg (keyword is the common case; fall back to sig-bind)
+        metric = kwargs.get("metric")
+        if metric is None:
+            try:
+                sig = inspect.signature(original)
+                bound = sig.bind(self, *args, **kwargs)
+                bound.apply_defaults()
+                metric = bound.arguments.get("metric")
+            except Exception:
+                pass
+
+        # Derive metric name(s)
+        if callable(metric):
+            names = [getattr(metric, "__name__", "metric")]
+        elif isinstance(metric, list | tuple):
+            names = [
+                getattr(m, "__name__", f"metric_{i}") for i, m in enumerate(metric)
+            ]
+        else:
+            names = ["mape"]  # darts default
+
+        run_id = active_run.info.run_id
+        autologging_client = MlflowAutologgingQueueingClient()
+
+        def _log(key, val_or_arr):
+            arr = np.asarray(val_or_arr)
+            if arr.ndim == 0:
+                autologging_client.log_metrics(run_id=run_id, metrics={key: float(arr)})
+            elif arr.ndim == 1:
+                # per-window: log as steps so the MLflow UI shows a chart
+                for step, val in enumerate(arr):
+                    autologging_client.log_metrics(
+                        run_id=run_id, metrics={key: float(val)}, step=step
+                    )
+            # 2-D and higher: skip to keep MVP simple
+
+        result_arr = np.asarray(result) if not isinstance(result, list) else None
+
+        if isinstance(metric, (list, tuple)) and isinstance(result, list):
+            # multiple metrics → result is list[scalar_or_array], one per metric
+            for name, r in zip(names, result):
+                _log(f"backtest_{name}", r)
+        elif (
+            isinstance(metric, list| tuple)
+            and result_arr is not None
+            and result_arr.ndim == 1
+            and len(result_arr) == len(names)
+        ):
+            # multiple metrics with scalar reduction returned as a 1-D ndarray
+            # (e.g. np.mean/median/percentile) — log each as a separate scalar
+            for name, r in zip(names, result_arr):
+                autologging_client.log_metrics(
+                    run_id=run_id, metrics={f"backtest_{name}": float(r)}
+                )
+        elif result_arr is not None and result_arr.ndim == 2:
+            # (N_windows, N_metrics) ndarray — multi-metric + reduction=None
+            for col_i, name in enumerate(names[: result_arr.shape[1]]):
+                for step, val in enumerate(result_arr[:, col_i]):
+                    autologging_client.log_metrics(
+                        run_id=run_id,
+                        metrics={f"backtest_{name}": float(val)},
+                        step=step,
+                    )
+        elif isinstance(result, list):
+            # single metric, multiple series → result is list[scalar_or_array]
+            for s_i, r in enumerate(result):
+                _log(f"backtest_{names[0]}_{s_i}", r)
+        else:
+            _log(f"backtest_{names[0]}", result)
+
+        autologging_client.flush(synchronous=False).await_completion()
+        return result
+
     # patch `fit()` for all forecasting models
     for _, cls in _get_forecasting_models():
         safe_patch(
@@ -582,6 +703,27 @@ def _autolog(
             cls,
             "fit",
             _patched_fit,
+            manage_run=manage_run,
+        )
+
+    # patch `historical_forecasts()` for all forecasting models so that the
+    # N internal fit() calls don't each spawn their own MLflow run
+    for _, cls in _get_forecasting_models():
+        safe_patch(
+            FLAVOR_NAME,
+            cls,
+            "historical_forecasts",
+            _patched_historical_forecasts,
+            manage_run=manage_run,
+        )
+
+    # patch `backtest()` for all forecasting models to log metric results
+    for _, cls in _get_forecasting_models():
+        safe_patch(
+            FLAVOR_NAME,
+            cls,
+            "backtest",
+            _patched_backtest,
             manage_run=manage_run,
         )
 
@@ -886,6 +1028,12 @@ def _make_metric_patch(metric_name: str) -> Callable:
 
         active_run = mlflow.active_run()
         if active_run is None:
+            return result
+
+        # backtest() calls metric functions internally; _patched_backtest
+        # handles logging the aggregated result, so skip here to avoid
+        # generating one flat key per window (series_gen_mape_0, _1, …).
+        if getattr(_autolog_state, "in_backtest", False):
             return result
 
         autologging_client = MlflowAutologgingQueueingClient()
