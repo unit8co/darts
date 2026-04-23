@@ -262,6 +262,134 @@ class TestDiff:
             f"has {self.sine_series.n_timesteps} timesteps."
         ) == str(e.value)
 
+    @pytest.mark.parametrize(
+        "lags,dropna",
+        [
+            (1, True),
+            (1, False),
+            ([1, 12], True),
+            ([1, 12], False),
+        ],
+    )
+    def test_diff_inverse_transform_with_insample(self, lags, dropna):
+        """
+        Tests that ``inverse_transform(..., insample=...)`` matches prepending the transformed
+        insample to the forecast in diff space, then slicing the inverse result.
+        """
+        diff = Diff(lags=lags, dropna=dropna)
+        series_tf = diff.fit_transform(self.sine_series)
+        n_forecast = 10
+        insample_tf = series_tf[:-n_forecast]
+        forecast_tf = series_tf[-n_forecast:]
+        expected = self.sine_series[-n_forecast:]
+        manual_full = diff.inverse_transform(insample_tf.append(forecast_tf))
+        manual = manual_full.slice_n_points_after(forecast_tf.start_time(), n_forecast)
+        got = diff.inverse_transform(forecast_tf, insample=insample_tf)
+        self.assert_series_equal(expected, got, equal_nan=(not dropna))
+        self.assert_series_equal(manual, got, equal_nan=(not dropna))
+
+    def test_diff_inverse_transform_insample_extends_beyond_fit(self):
+        """
+        Tests ``insample`` that extends beyond the fitted range still inverse-transforms
+        the forecast correctly (trim-before-append logic).
+        """
+        short_sine = self.sine_series.copy().drop_after(10)
+        diff = Diff(lags=1, dropna=True)
+        diff.fit(short_sine)
+        full_tf = diff.transform(self.sine_series)
+        n_forecast = 5
+        insample_tf = full_tf[:-n_forecast]
+        forecast_tf = full_tf[-n_forecast:]
+        expected = self.sine_series[-n_forecast:]
+        got = diff.inverse_transform(forecast_tf, insample=insample_tf)
+        self.assert_series_equal(expected, got, equal_nan=True)
+
+    def test_diff_inverse_transform_insample_errors(self):
+        """
+        Tests validation errors for invalid ``insample`` (start time, length, frequency).
+        """
+        diff = Diff(lags=1, dropna=True)
+        vals = np.random.rand(20, 2)
+        times = pd.date_range(start="2018-01-01", freq="D", periods=20)
+        series = TimeSeries.from_times_and_values(times, vals)
+        series_tf = diff.fit_transform(series)
+        forecast_tf = series_tf[-5:]
+        insample_ok = series_tf[:-5]
+
+        insample_bad_start = insample_ok.with_times_and_values(
+            times=insample_ok.time_index + insample_ok.freq,
+            values=insample_ok.values(),
+        )
+        with pytest.raises(ValueError) as e:
+            diff.inverse_transform(forecast_tf, insample=insample_bad_start)
+        assert "`insample` must start at time" in str(
+            e.value
+        ) and "instead, it starts at time" in str(e.value)
+
+        insample_too_short = insample_ok[: insample_ok.n_timesteps - 2]
+        with pytest.raises(ValueError) as e:
+            diff.inverse_transform(forecast_tf, insample=insample_too_short)
+        assert (
+            "The `insample` series must start before the series to inverse-transform"
+            in str(e.value)
+        )
+
+        insample_bad_freq = TimeSeries.from_times_and_values(
+            values=insample_ok.all_values(copy=False),
+            times=pd.date_range(
+                start=insample_ok.start_time(), freq="W", periods=len(insample_ok)
+            ),
+        )
+        with pytest.raises(ValueError) as e:
+            diff.inverse_transform(forecast_tf, insample=insample_bad_freq)
+        assert "`insample` is of frequency" in str(e.value)
+
+    @pytest.mark.parametrize("dropna", [False, True])
+    def test_diff_inverse_transform_with_insample_sine(self, dropna):
+        """
+        ``inverse_transform(..., insample=...)`` on multivariate ``self.sine_series``.
+        """
+        s = self.sine_series
+        diff = Diff(lags=1, dropna=dropna)
+        series_tf = diff.fit_transform(s)
+        n_forecast = 12
+        insample_tf = series_tf[:-n_forecast]
+        forecast_tf = series_tf[-n_forecast:]
+        expected = s[-n_forecast:]
+        manual_full = diff.inverse_transform(insample_tf.append(forecast_tf))
+        manual = manual_full.slice_n_points_after(forecast_tf.start_time(), n_forecast)
+        got = diff.inverse_transform(forecast_tf, insample=insample_tf)
+        self.assert_series_equal(expected, got, equal_nan=(not dropna))
+        self.assert_series_equal(manual, got, equal_nan=(not dropna))
+
+    @pytest.mark.parametrize("dropna", [False, True])
+    def test_diff_inverse_transform_with_insample_nested_sequence(self, dropna):
+        """
+        ``inverse_transform(..., insample=...)`` with nested ``Sequence[Sequence[TimeSeries]]``:
+        two outer groups (fit on two series) and multiple inner forecast chunks.
+        """
+        s = self.sine_series
+        n1, n2, n3 = 8, 6, 7
+        diff_n = Diff(lags=1, dropna=dropna)
+        tf = diff_n.fit_transform([s, s])
+        fc1, fc2 = tf[0][-(n1 + n2) : -n2], tf[0][-n2:]
+        fc3 = tf[1][-n3:]
+        insample_nested = [tf[0][:-n2], tf[1][:-n3]]
+        nested = [[fc1, fc2], [fc3]]
+        got_nested = diff_n.inverse_transform(nested, insample=insample_nested)
+        # Manual baselines: ``fc1`` lies inside ``tf[0][:-n2]``, so use a shorter prefix for ``fc1`` only.
+        for i, j, fc, ins_m in (
+            (0, 0, fc1, tf[0][: -(n1 + n2)]),
+            (0, 1, fc2, tf[0][:-n2]),
+            (1, 0, fc3, tf[1][:-n3]),
+        ):
+            manual_ij = diff_n.inverse_transform(fc, insample=ins_m)
+            expected_ij = s.slice_n_points_after(fc.start_time(), fc.n_timesteps)
+            self.assert_series_equal(expected_ij, manual_ij, equal_nan=(not dropna))
+            self.assert_series_equal(
+                manual_ij, got_nested[i][j], equal_nan=(not dropna)
+            )
+
     def test_diff_incompatible_inverse_transform_date(self):
         """
         Tests that `Diff` throws error when given series to `inverse_transform`

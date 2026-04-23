@@ -8,6 +8,7 @@ from darts import TimeSeries
 from darts.dataprocessing import Pipeline
 from darts.dataprocessing.transformers import (
     BaseDataTransformer,
+    Diff,
     FittableDataTransformer,
     InvertibleDataTransformer,
     InvertibleMapper,
@@ -15,7 +16,7 @@ from darts.dataprocessing.transformers import (
     Scaler,
 )
 from darts.typing import TimeSeriesLike
-from darts.utils.timeseries_generation import constant_timeseries
+from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
 
 
 class TestPipeline:
@@ -324,6 +325,41 @@ class TestPipeline:
 
         # then
         assert data == back
+
+    def test_inverse_transform_insample_diff(self):
+        """Pipeline([Diff]) inverse with ``insample`` matches manual prepend + slice."""
+        # given
+        series = linear_timeseries(length=50, start_value=1.0, end_value=5.0)
+        pipeline = Pipeline([Diff(lags=1, dropna=True)])
+        series_tf = pipeline.fit_transform(series)
+        n_forecast = 10
+        insample_tf = series_tf[:-n_forecast]
+        forecast_tf = series_tf[-n_forecast:]
+        diff = pipeline._transformers[0]
+        manual_full = diff.inverse_transform(insample_tf.append(forecast_tf))
+        manual = manual_full.slice_n_points_after(forecast_tf.start_time(), n_forecast)
+        # when
+        got = pipeline.inverse_transform(forecast_tf, insample=insample_tf)
+        # then
+        np.testing.assert_array_almost_equal(got.values(), manual.values())
+        assert got.time_index.equals(manual.time_index)
+
+    def test_inverse_transform_insample_scaler_diff(self):
+        """Pipeline([Scaler, Diff]) keeps insample aligned through inverse steps."""
+        # given
+        series = linear_timeseries(length=50, start_value=1.0, end_value=5.0)
+        pipeline = Pipeline([Scaler(), Diff(lags=1, dropna=True)])
+        series_tf = pipeline.fit_transform(series)
+        n_forecast = 10
+        insample_tf = series_tf[:-n_forecast]
+        forecast_tf = series_tf[-n_forecast:]
+        manual_full = pipeline.inverse_transform(insample_tf.append(forecast_tf))
+        manual = manual_full.slice_n_points_after(forecast_tf.start_time(), n_forecast)
+        # when
+        got = pipeline.inverse_transform(forecast_tf, insample=insample_tf)
+        # then
+        np.testing.assert_array_almost_equal(got.values(), manual.values())
+        assert got.time_index.equals(manual.time_index)
 
     def test_inverse_transform_prefitted(self):
         """Check that when multiple series are passed to fit transformers with global_fit=False,
