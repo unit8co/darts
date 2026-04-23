@@ -181,6 +181,7 @@ class Pipeline:
         data: TimeSeriesLike,
         partial: bool = False,
         series_idx: int | Sequence[int] | None = None,
+        insample: TimeSeriesLike | None = None,
     ) -> TimeSeriesLike:
         """
         For each data transformer in the pipeline, inverse-transform data. Then inverse transformed data is passed to
@@ -198,6 +199,10 @@ class Pipeline:
         series_idx
             Optionally, the index(es) of each series corresponding to their positions within the series used to fit
             the transformer (to retrieve the appropriate transformer parameters).
+        insample
+            Optionally, transformed insample history in the same space as ``data`` (after ``transform``). Passed to
+            each invertible step's ``inverse_transform``; between steps the insample series is inverse-transformed so
+            it stays aligned with ``data``. See :meth:`InvertibleDataTransformer.inverse_transform`.
 
         Returns
         -------
@@ -211,16 +216,39 @@ class Pipeline:
                 logger,
             )
 
+            current_insample = insample
             for transformer in reversed(self._transformers):
-                data = transformer.inverse_transform(data, series_idx=series_idx)
+                inv_kw = (
+                    {"insample": current_insample}
+                    if current_insample is not None
+                    else {}
+                )
+                data = transformer.inverse_transform(
+                    data, series_idx=series_idx, **inv_kw
+                )
+                if current_insample is not None:
+                    current_insample = transformer.inverse_transform(
+                        current_insample, series_idx=series_idx
+                    )
             return data
         else:
+            current_insample = insample
             for transformer in reversed(self._transformers):
                 if isinstance(transformer, InvertibleDataTransformer):
+                    inv_kw = (
+                        {"insample": current_insample}
+                        if current_insample is not None
+                        else {}
+                    )
                     data = transformer.inverse_transform(
                         data,
                         series_idx=series_idx,
+                        **inv_kw,
                     )
+                    if current_insample is not None:
+                        current_insample = transformer.inverse_transform(
+                            current_insample, series_idx=series_idx
+                        )
             return data
 
     @property

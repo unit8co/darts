@@ -232,6 +232,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
         *args,
         component_mask: np.ndarray | None = None,
         series_idx: int | Sequence[int] | None = None,
+        insample: TimeSeriesLike | None = None,
         **kwargs,
     ) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]]:
         """Inverse transforms a (sequence of) series by calling the user-implemented `ts_inverse_transform` method.
@@ -263,6 +264,11 @@ class InvertibleDataTransformer(BaseDataTransformer):
         series_idx
             Optionally, the index(es) of each series corresponding to their positions within the series used to fit
             the transformer (to retrieve the appropriate transformer parameters).
+        insample
+            Transformed target history in the same representation as ``series`` (omit with ``None``, the default).
+            Match how ``series`` is grouped: one ``TimeSeries``, one per series in a sequence, or one per outer group
+            for nested list-of-lists; a single ``TimeSeries`` may be given and is reused for each. Only
+            :class:`~darts.dataprocessing.transformers.Diff` uses this argument; other transformers ignore it.
         kwargs
             Additional keyword arguments for the :func:`ts_inverse_transform()` method
 
@@ -326,12 +332,37 @@ class InvertibleDataTransformer(BaseDataTransformer):
                 data.extend(series_list)
                 transformer_selector += [idx] * len(series_list)
 
+        if insample is None:
+            insample_list = [None] * len(data)
+        else:
+            insample_seq = (
+                [insample] if isinstance(insample, TimeSeries) else list(insample)
+            )
+            outer_len = (
+                1 if called_with_single_series else max(transformer_selector) + 1
+            )
+            if len(insample_seq) != outer_len:
+                raise_log(
+                    ValueError(
+                        f"`insample` must have the same outer length as `series` "
+                        f"(expected {outer_len}, got {len(insample_seq)})."
+                    ),
+                    logger=logger,
+                )
+            insample_list = [insample_seq[idx] for idx in transformer_selector]
+
         input_iterator = _build_tqdm_iterator(
             zip(
                 data,
-                self._get_params(
-                    transformer_selector=transformer_selector,
-                    series_specified=series_specified,
+                (
+                    {**(p or {}), "insample": ins}
+                    for p, ins in zip(
+                        self._get_params(
+                            transformer_selector=transformer_selector,
+                            series_specified=series_specified,
+                        ),
+                        insample_list,
+                    )
                 ),
             ),
             verbose=self._verbose,

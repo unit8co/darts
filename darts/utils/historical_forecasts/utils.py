@@ -1437,6 +1437,8 @@ def _apply_inverse_data_transformers(
     forecasts: TimeSeries | list[TimeSeries] | list[list[TimeSeries]],
     data_transformers: dict[str, Pipeline],
     series_idx: int | None = None,
+    *,
+    pass_insample: bool = True,
 ) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]]:
     """
     Apply the inverse transform to the forecasts when defined.
@@ -1448,9 +1450,10 @@ def _apply_inverse_data_transformers(
         called_with_single_series = get_series_seq_type(series) == SeriesType.SINGLE
         if called_with_single_series:
             forecasts = [forecasts]
-        forecasts = data_transformers["series"].inverse_transform(
-            forecasts, series_idx=series_idx
-        )
+        inv_kw = {"series_idx": series_idx}
+        if pass_insample:
+            inv_kw["insample"] = series
+        forecasts = data_transformers["series"].inverse_transform(forecasts, **inv_kw)
         return forecasts[0] if called_with_single_series else forecasts
     else:
         return forecasts

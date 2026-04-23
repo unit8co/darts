@@ -100,7 +100,6 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
          [ nan]
          [ -9.]
          [-22.]]
-
         References
         ----------
         .. [1] https://otexts.com/fpp2/stationarity.html
@@ -178,6 +177,44 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
     ) -> TimeSeries:
         lags, dropna = params["fixed"]["_lags"], params["fixed"]["_dropna"]
         start_vals, fit_component_mask, start_time, freq = params["fitted"]
+        insample = params.get("insample")
+        n_forecast_output = None
+        forecast_start = series.start_time()
+
+        if insample is not None:
+            n_forecast_output = series.n_timesteps
+            if insample.freq != freq:
+                raise_log(
+                    ValueError(
+                        f"`insample` is of frequency {insample.freq}, but "
+                        f"transform was fitted to data of frequency {freq}."
+                    ),
+                    logger,
+                )
+            expected_insample_start = (
+                start_time + sum(lags) * freq if dropna else start_time
+            )
+            if insample.start_time() != expected_insample_start:
+                raise_log(
+                    ValueError(
+                        f"`insample` must start at time {expected_insample_start}; "
+                        f"instead, it starts at time {insample.start_time()}."
+                    ),
+                    logger,
+                )
+            min_end = forecast_start - series.freq
+            if insample.end_time() < min_end:
+                raise_log(
+                    ValueError(
+                        "The `insample` series must start before the series to inverse-transform "
+                        "and extend at least until one time step before the start of that series "
+                        f"(need `insample.end_time()` >= {min_end}, got {insample.end_time()})."
+                    ),
+                    logger,
+                )
+            insample_trim = insample.drop_after(min_end, keep_point=True)
+            series = insample_trim.append(series)
+
         if series.freq != freq:
             raise_log(
                 ValueError(
@@ -246,10 +283,13 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                 to_undiff[i::lag, :, :] = np.cumsum(to_undiff[i::lag, :, :], axis=0)
             vals[cutoff:, :, :] = to_undiff
         vals = Diff.unapply_component_mask(series, vals, component_mask)
-        return TimeSeries(
+        result = TimeSeries(
             times=series.time_index,
             values=vals,
             components=series.components,
             copy=False,
             **series._attrs,
         )
+        if n_forecast_output is not None:
+            result = result.slice_n_points_after(forecast_start, n_forecast_output)
+        return result
