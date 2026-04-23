@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from unittest.mock import patch
 
@@ -24,12 +25,19 @@ ALL_QUANTILES = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
 
 import torch
 
-from darts import TimeSeries
+from darts import TimeSeries, concatenate
 from darts.datasets import ElectricityConsumptionZurichDataset
 from darts.models import TiRexModel
 from darts.tests.conftest import tfm_kwargs
-from darts.utils.likelihood_models import QuantileRegression
-from darts.utils.timeseries_generation import linear_timeseries
+from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
+from darts.utils.timeseries_generation import (
+    gaussian_timeseries,
+    linear_timeseries,
+    sine_timeseries,
+)
+
+# `TiRexModel` uses `from tirex import load_model`; mock the name in darts' module.
+_PATCH_TIREX_LOAD_MODEL = "darts.models.forecasting.tirex_model.load_model"
 
 
 def load_validation_inputs():
@@ -78,12 +86,28 @@ class TestTiRexModel:
     ts_energy_train, ts_energy_val = load_validation_inputs()
     # prediction length for fidelity test
     prediction_length = 512
+    # maximum prediction length w/o triggering auto-regression where the results
+    # would diverge from the original implementation due to different sampling methods
+    max_prediction_length = 2048
 
     # ---- Dummy Tests ---- #
     series = linear_timeseries(length=200, dtype=np.float32, column_name="A")
-    series_multi = linear_timeseries(
-        length=200, dtype=np.float32, column_name="A"
-    ).stack(linear_timeseries(length=200, dtype=np.float32, column_name="B"))
+    series_multi = concatenate(
+        [
+            linear_timeseries(length=200, dtype=np.float32, column_name="A"),
+            sine_timeseries(length=200, dtype=np.float32, column_name="B"),
+            gaussian_timeseries(length=200, dtype=np.float32, column_name="C"),
+        ],
+        axis=1,
+    )
+    series_multi_2 = concatenate(
+        [
+            linear_timeseries(length=150, dtype=np.float32, column_name="A"),
+            sine_timeseries(length=150, dtype=np.float32, column_name="B"),
+            gaussian_timeseries(length=150, dtype=np.float32, column_name="C"),
+        ],
+        axis=1,
+    )
     cov = linear_timeseries(length=200, dtype=np.float32, column_name="C")
 
     @pytest.mark.slow
@@ -169,118 +193,201 @@ class TestTiRexModel:
         # reference: https://github.com/NX-AI/tirex/blob/30702459b2454660242d63e4ef8f57906e6be65b/tests/test_forecast.py
         np.testing.assert_allclose(pred_np, original, rtol=1.6e-2, atol=1e-5)
 
-    def test_requires_license_acceptance(self):
+    @pytest.mark.slow
+    def test_creation(self, caplog):
+        # requires accepting the license
         with pytest.raises(ValueError, match="accept_license=True"):
-            TiRexModel(36, 12)
+            TiRexModel(36, 12, **tfm_kwargs)
 
-    def test_default_deterministic(self):
+        # can use shorter input/output chunk length than max
+        kwargs = {"accept_license": True, **tfm_kwargs}
+        # cannot create longer output chunk length than max
+        with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
+            TiRexModel(
+                input_chunk_length=19,
+                output_chunk_length=self.max_prediction_length + 1,
+                **kwargs,
+            )
+
+        # cannot create longer output chunk length + output chunk shift than max
+        with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
+            TiRexModel(
+                input_chunk_length=23,
+                output_chunk_length=self.max_prediction_length - 1,
+                output_chunk_shift=3,
+                **kwargs,
+            )
+
+        # cannot use likelihood others than QuantileRegression
+        with pytest.raises(ValueError, match="Only QuantileRegression likelihood is"):
+            TiRexModel(
+                input_chunk_length=29,
+                output_chunk_length=12,
+                likelihood=GaussianLikelihood(),
+                **kwargs,
+            )
+
+        # cannot use quantiles other than those used in pre-training
+        with pytest.raises(ValueError, match="must be a subset of TiRex quantiles"):
+            TiRexModel(
+                input_chunk_length=7,
+                output_chunk_length=6,
+                likelihood=QuantileRegression(quantiles=[0.23, 0.5, 0.77]),
+                **kwargs,
+            )
+
+        # cannot use quantiles other than those used in pre-training
+        with pytest.raises(
+            ValueError,
+            match="The `path` argument for loading the TiRex model should be passed via `hub_model_name`",
+        ):
+            TiRexModel(
+                input_chunk_length=7,
+                output_chunk_length=6,
+                tirex_kwargs={"path": "dummy_path"},
+                **kwargs,
+            )
+
+        # should give info on fine-tuned models conforming to same license
+        with caplog.at_level(logging.INFO):
+            _ = TiRexModel(
+                input_chunk_length=2,
+                output_chunk_length=3,
+                enable_finetuning=True,
+                **kwargs,
+            )
+            assert (
+                "Fine-tuned weights are derivative works subject to the same terms"
+                in caplog.text
+            )
+        caplog.clear()
+
+    def test_default(self):
         model = TiRexModel(
-            input_chunk_length=64,
-            output_chunk_length=12,
+            input_chunk_length=3,
+            output_chunk_length=4,
             accept_license=True,
             **tfm_kwargs,
         )
 
-        with patch("tirex.load_model", return_value=_StubTiRexPipeline()):
+        with patch(_PATCH_TIREX_LOAD_MODEL, return_value=_StubTiRexPipeline()):
             model.fit(self.series)
 
+        # predictions should not be probabilistic
         pred = model.predict(n=10, series=self.series)
+        assert isinstance(pred, TimeSeries)
         assert len(pred) == 10
         assert pred.n_components == 1
-        assert pred.n_samples == 1
-        assert pred.all_values().shape == (10, 1, 1)
 
-    def test_fit_accepts_standard_foundation_kwargs(self):
+        # default model allows autoregressive predictions (6 > 4)
+        pred_ar = model.predict(n=6, series=self.series)
+        assert isinstance(pred_ar, TimeSeries)
+        assert len(pred_ar) == 6
+        assert pred_ar.n_components == 1
+
+    @pytest.mark.slow
+    def test_probabilistic(self):
+        # probabilistic model
         model = TiRexModel(
-            input_chunk_length=64,
-            output_chunk_length=12,
-            accept_license=True,
-            **tfm_kwargs,
-        )
-
-        with patch("tirex.load_model", return_value=_StubTiRexPipeline()):
-            model.fit(self.series, val_series=self.series, load_best=False)
-
-    def test_probabilistic_quantiles(self):
-        model = TiRexModel(
-            input_chunk_length=64,
-            output_chunk_length=12,
+            input_chunk_length=5,
+            output_chunk_length=6,
             likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
             accept_license=True,
             **tfm_kwargs,
         )
 
-        with patch("tirex.load_model", return_value=_StubTiRexPipeline()):
+        # calling `fit()` should not use `trainer.fit()`
+        with patch(_PATCH_TIREX_LOAD_MODEL, return_value=_StubTiRexPipeline()):
             model.fit(self.series)
+        assert model.model_created
+        assert model.supports_probabilistic_prediction
 
-        pred_q = model.predict(
-            n=10, series=self.series, predict_likelihood_parameters=True
+        # predictions should be probabilistic
+        pred = model.predict(
+            n=5, series=self.series, predict_likelihood_parameters=True
         )
-        assert len(pred_q) == 10
-        assert pred_q.n_components == 3
-        assert pred_q.n_samples == 1
-        assert pred_q.all_values().shape == (10, 3, 1)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 5
+        assert pred.n_components == 3  # 3 quantiles
 
-    def test_probabilistic_sampling(self):
+        # probabilistic model allows autoregressive predictions (8 > 6)
+        pred_ar = model.predict(
+            n=8,
+            series=self.series,
+            num_samples=10,
+        )
+        assert isinstance(pred_ar, TimeSeries)
+        assert len(pred_ar) == 8
+        assert pred_ar.n_components == 1  # sampling yields single component
+        assert pred_ar.n_samples == 10
+
+    @pytest.mark.slow
+    @pytest.mark.parametrize("probabilistic", [True, False])
+    def test_multivariate(self, probabilistic: bool):
+        # create model
         model = TiRexModel(
-            input_chunk_length=64,
-            output_chunk_length=12,
-            likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
+            input_chunk_length=3,
+            output_chunk_length=8,
+            likelihood=(
+                QuantileRegression(quantiles=[0.1, 0.5, 0.9]) if probabilistic else None
+            ),
+            accept_license=True,
+            **tfm_kwargs,
+        )
+        with patch(_PATCH_TIREX_LOAD_MODEL, return_value=_StubTiRexPipeline()):
+            model.fit(series=self.series_multi)
+        pred = model.predict(n=7, predict_likelihood_parameters=probabilistic)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 7
+        if probabilistic:
+            assert pred.n_components == 9  # 3 variables x 3 quantiles
+        else:
+            assert pred.n_components == 3
+
+    def test_covariates(self):
+        model = TiRexModel(
+            input_chunk_length=21,
+            output_chunk_length=23,
             accept_license=True,
             **tfm_kwargs,
         )
 
-        with patch("tirex.load_model", return_value=_StubTiRexPipeline()):
-            model.fit(self.series)
+        # past covariates are not supported
+        with pytest.raises(ValueError, match="does not support `past_covariates`"):
+            model.fit(series=self.series, past_covariates=self.cov)
 
-        pred_s = model.predict(n=10, series=self.series, num_samples=25)
-        assert len(pred_s) == 10
-        assert pred_s.n_components == 1
-        assert pred_s.n_samples == 25
-        assert pred_s.all_values().shape == (10, 1, 25)
+        # future covariates are not supported
+        with pytest.raises(ValueError, match="does not support `future_covariates`"):
+            model.fit(series=self.series, future_covariates=self.cov)
 
-    def test_rejects_covariates(self):
-        model = TiRexModel(
-            input_chunk_length=64,
-            output_chunk_length=12,
-            accept_license=True,
-            **tfm_kwargs,
-        )
-
-        with pytest.raises(ValueError, match="does not support any covariates"):
-            model.fit(self.series, past_covariates=self.cov)
-
-        with patch("tirex.load_model", return_value=_StubTiRexPipeline()):
-            model.fit(self.series)
-
-        with pytest.raises(ValueError, match="does not support any covariates"):
-            model.predict(n=5, series=self.series, future_covariates=self.cov)
-
-    def test_covariate_support_flags(self):
-        model = TiRexModel(
-            input_chunk_length=64,
-            output_chunk_length=12,
-            accept_license=True,
-            **tfm_kwargs,
-        )
-        assert not model.supports_past_covariates
-        assert not model.supports_future_covariates
-
-    def test_rejects_too_long_horizon(self):
-        # max horizon in TiRex is 2048; wrapper should enforce output_chunk_length + shift
-        with pytest.raises(ValueError, match="2048"):
-            TiRexModel(
-                input_chunk_length=64,
-                output_chunk_length=2049,
-                accept_license=True,
-                **tfm_kwargs,
+        # past and future covariates are not supported
+        with pytest.raises(
+            ValueError, match="does not support `past_covariates`, `future_covariates`"
+        ):
+            model.fit(
+                series=self.series,
+                past_covariates=self.cov,
+                future_covariates=self.cov,
             )
 
-        with pytest.raises(ValueError, match="2048"):
-            TiRexModel(
-                input_chunk_length=64,
-                output_chunk_length=2048,
-                output_chunk_shift=1,
-                accept_license=True,
-                **tfm_kwargs,
-            )
+    @pytest.mark.slow
+    def test_multiple_series(self):
+        # create model
+        model = TiRexModel(
+            input_chunk_length=2,
+            output_chunk_length=3,
+            accept_license=True,
+            **tfm_kwargs,
+        )
+        with patch(_PATCH_TIREX_LOAD_MODEL, return_value=_StubTiRexPipeline()):
+            model.fit(series=[self.series_multi, self.series_multi_2])
+        pred = model.predict(n=5, series=[self.series_multi, self.series_multi_2])
+
+        # check that we get a list of predictions
+        assert isinstance(pred, list) and len(pred) == 2
+        assert all(isinstance(p, TimeSeries) for p in pred)
+
+        # check that each prediction has correct length
+        assert all(len(p) == 5 for p in pred)
+        # check that each prediction is deterministic with 3 components
+        assert all(p.n_components == 3 for p in pred)

@@ -396,7 +396,7 @@ class TimesFM2p5Model(FoundationModel):
             :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. If using ``QuantileRegression``,
             the quantiles must be a subset of those used during TimesFM 2.5 pre-training:
             [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].
-            Default: ``None``, which will make TimesFM 2.5 deterministic (median quantile only).
+            Default: ``None``, which will make the model deterministic (median quantile only).
             When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to
             preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood`` parameter
             only affects prediction output.
