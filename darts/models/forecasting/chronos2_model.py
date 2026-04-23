@@ -658,7 +658,7 @@ class Chronos2Model(FoundationModel):
             the quantiles must be a subset of those used during Chronos-2 pre-training:
             [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9,
             0.95, 0.99].
-            Default: ``None``, which will make Chronos-2 deterministic (median quantile only).
+            Default: ``None``, which will make the model deterministic (median quantile only).
             When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to
             preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood`` parameter
             only affects prediction output.

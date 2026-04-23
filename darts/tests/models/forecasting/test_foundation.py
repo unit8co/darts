@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from darts import TimeSeries, concatenate
+from darts.models.forecasting.tirex_model import TiRexModel
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils.likelihood_models import QuantileRegression
 from darts.utils.timeseries_generation import linear_timeseries
@@ -416,28 +417,42 @@ class TestFoundationModel:
             (
                 TimesFM2p5Model,
                 "output_projection_point.hidden_layer.weight",
-                "google/timesfm-2.5-200m-pytorch",
+                {"hub_model_name": "google/timesfm-2.5-200m-pytorch"},
             ),
-            (Chronos2Model, "output_patch_embedding.*", "autogluon/chronos-2-small"),
+            (
+                Chronos2Model,
+                "output_patch_embedding.*",
+                {"hub_model_name": "autogluon/chronos-2-small"},
+            ),
+            (
+                TiRexModel,
+                "*output_patch_embedding.*",
+                {
+                    "hub_model_name": "NX-AI/TiRex",
+                    "accept_license": True,
+                },
+            ),
         ],
     )
     def test_finetuning_all_models(self, config):
         """Tests fine-tuning with user-quantiles that are different to the ones the model was trained on."""
-        model_cls, pattern, model_revision = config
+        model_cls, pattern, kwargs = config
         quantiles = [0.1, 0.5, 0.9]
 
+        icl, ocl = 12, 6
         model = model_cls(
-            input_chunk_length=12,
-            output_chunk_length=6,
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
             enable_finetuning={"unfreeze": [pattern]},
             n_epochs=1,
             likelihood=QuantileRegression(quantiles),
-            hub_model_name=model_revision,
+            **kwargs,
             **tfm_kwargs,
         )
 
         # fit model with validation series (training quantile loss is different from evaluation quantile loss)
-        model.fit(self.series, val_series=self.series)
+        series = self.series[: icl + ocl]
+        model.fit(series, val_series=series)
 
         # Check requires_grad status
         unfrozen_found = False
@@ -456,3 +471,4 @@ class TestFoundationModel:
 
         preds = model.predict(n=6, predict_likelihood_parameters=True)
         assert preds.shape == (6, self.series.n_components * len(quantiles), 1)
+        assert not np.isnan(preds.all_values()).any()
