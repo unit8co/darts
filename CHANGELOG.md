@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- `InvertibleDataTransformer.inverse_transform()` and `Pipeline.inverse_transform()` accept optional `insample`, so `Diff` can inverse-transform forecasts without manually prepending the transformed history.[#3085](https://github.com/unit8co/darts/pull/3085) by [Jakub Chłapek](https://github.com/jakubchlapek)
 - 🚀🚀 Dramatically reduced import times by deferring heavy third-party dependencies (torch, sklearn, scipy, ...) until they are actually needed. Here are some import speed up examples: [#3066](https://github.com/unit8co/darts/pull/3066) by [Dennis Bader](https://github.com/dennisbader)
   - TimeSeries, metrics, datasets, data transformers: 7x faster (2.4 → 0.3 seconds)
   - Baseline models: 15x faster (5.7 → 0.4 seconds)
