@@ -5,7 +5,54 @@ Likelihood Models
 Likelihood models for producing probabilistic forecasts.
 """
 
+from typing import TYPE_CHECKING
+
 from darts.utils._lazy import setup_lazy_imports
+
+if TYPE_CHECKING:
+    from darts.utils.likelihood_models.torch import (
+        BernoulliLikelihood as BernoulliLikelihood,
+    )
+    from darts.utils.likelihood_models.torch import BetaLikelihood as BetaLikelihood
+    from darts.utils.likelihood_models.torch import CauchyLikelihood as CauchyLikelihood
+    from darts.utils.likelihood_models.torch import (
+        ContinuousBernoulliLikelihood as ContinuousBernoulliLikelihood,
+    )
+    from darts.utils.likelihood_models.torch import (
+        DirichletLikelihood as DirichletLikelihood,
+    )
+    from darts.utils.likelihood_models.torch import (
+        ExponentialLikelihood as ExponentialLikelihood,
+    )
+    from darts.utils.likelihood_models.torch import GammaLikelihood as GammaLikelihood
+    from darts.utils.likelihood_models.torch import (
+        GaussianLikelihood as GaussianLikelihood,
+    )
+    from darts.utils.likelihood_models.torch import (
+        GeometricLikelihood as GeometricLikelihood,
+    )
+    from darts.utils.likelihood_models.torch import GumbelLikelihood as GumbelLikelihood
+    from darts.utils.likelihood_models.torch import (
+        HalfNormalLikelihood as HalfNormalLikelihood,
+    )
+    from darts.utils.likelihood_models.torch import (
+        LaplaceLikelihood as LaplaceLikelihood,
+    )
+    from darts.utils.likelihood_models.torch import (
+        LogNormalLikelihood as LogNormalLikelihood,
+    )
+    from darts.utils.likelihood_models.torch import (
+        NegativeBinomialLikelihood as NegativeBinomialLikelihood,
+    )
+    from darts.utils.likelihood_models.torch import (
+        PoissonLikelihood as PoissonLikelihood,
+    )
+    from darts.utils.likelihood_models.torch import (
+        QuantileRegression as QuantileRegression,
+    )
+    from darts.utils.likelihood_models.torch import (
+        WeibullLikelihood as WeibullLikelihood,
+    )
 
 _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     "BernoulliLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),

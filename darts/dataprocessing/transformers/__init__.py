@@ -6,7 +6,46 @@ Data transformers for preprocessing time series data, including scalers, missing
 differencing, BoxCox transformations, and hierarchical reconciliation methods.
 """
 
+from typing import TYPE_CHECKING
+
 from darts.utils._lazy import setup_lazy_imports
+
+if TYPE_CHECKING:
+    from darts.dataprocessing.transformers.base_data_transformer import (
+        BaseDataTransformer as BaseDataTransformer,
+    )
+    from darts.dataprocessing.transformers.boxcox import BoxCox as BoxCox
+    from darts.dataprocessing.transformers.diff import Diff as Diff
+    from darts.dataprocessing.transformers.fittable_data_transformer import (
+        FittableDataTransformer as FittableDataTransformer,
+    )
+    from darts.dataprocessing.transformers.invertible_data_transformer import (
+        InvertibleDataTransformer as InvertibleDataTransformer,
+    )
+    from darts.dataprocessing.transformers.mappers import (
+        InvertibleMapper as InvertibleMapper,
+    )
+    from darts.dataprocessing.transformers.mappers import Mapper as Mapper
+    from darts.dataprocessing.transformers.midas import MIDAS as MIDAS
+    from darts.dataprocessing.transformers.missing_values_filler import (
+        MissingValuesFiller as MissingValuesFiller,
+    )
+    from darts.dataprocessing.transformers.reconciliation import (
+        BottomUpReconciliator as BottomUpReconciliator,
+    )
+    from darts.dataprocessing.transformers.reconciliation import (
+        MinTReconciliator as MinTReconciliator,
+    )
+    from darts.dataprocessing.transformers.reconciliation import (
+        TopDownReconciliator as TopDownReconciliator,
+    )
+    from darts.dataprocessing.transformers.scaler import Scaler as Scaler
+    from darts.dataprocessing.transformers.static_covariates_transformer import (
+        StaticCovariatesTransformer as StaticCovariatesTransformer,
+    )
+    from darts.dataprocessing.transformers.window_transformer import (
+        WindowTransformer as WindowTransformer,
+    )
 
 _LAZY_IMPORTS: dict[str, str] = {
     "BaseDataTransformer": "darts.dataprocessing.transformers.base_data_transformer",

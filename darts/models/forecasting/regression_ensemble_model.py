@@ -352,7 +352,7 @@ class RegressionEnsembleModel(EnsembleModel):
             ]
 
             if (
-                len(get_single_series(series_forecasts) < train_n_points)
+                len(get_single_series(series_forecasts)) < train_n_points
                 and self.show_warnings
             ):
                 logger.warning(
