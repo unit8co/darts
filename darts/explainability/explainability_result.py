@@ -155,7 +155,8 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
     the forecasts. They are named according to the convention:
     ``"{name}_{type_of_cov}_lag{idx}"``, where:
 
-    - ``{name}`` is the component name from the original foreground series (target, past covariate or future covariate).
+    - ``{name}`` is the component name from the original foreground series (target, past covariates, or future
+      covariates).
     - ``{type_of_cov}`` is the covariates type. It can take 3 different values:
       ``"target"``, ``"pastcov"``,  ``"futcov"``.
     - ``{idx}`` is the lag index.
@@ -398,8 +399,7 @@ class SHAPExplainabilityResult(HorizonBasedExplainabilityResult):
         horizon
             The horizon for which to return the feature values.
         component
-            The component for which to return the feature values. Must be supplied for
-            multivariate forecasting models.
+            The component for which to return the feature values. Must be supplied for multivariate forecasting models.
         """
         return self._query_explainability_result(
             self.feature_values, horizon, component
@@ -416,8 +416,8 @@ class SHAPExplainabilityResult(HorizonBasedExplainabilityResult):
         horizon
             The horizon for which to return the ``shap.Explanation`` object.
         component
-            The component for which to return the ``shap.Explanation`` object. Must be supplied for
-            multivariate forecasting models.
+            The component for which to return the ``shap.Explanation`` object. Must be supplied for multivariate
+            forecasting models.
         """
         return self._query_explainability_result(
             self.shap_explanation_object, horizon, component

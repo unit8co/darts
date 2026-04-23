@@ -23,7 +23,8 @@ Depending on the model and training data, features can include:
     Input features except static covariates are named according to the convention:
     ``"{name}_{type_of_cov}_lag{idx}"``, where:
 
-    - ``{name}`` is the component name from the original foreground series (target, past, or future).
+    - ``{name}`` is the component name from the original foreground series (target, past covariates, or future
+      covariates).
     - ``{type_of_cov}`` is the covariates type. It can take 3 different values:
       ``"target"``, ``"pastcov"``,  ``"futcov"``.
     - ``{idx}`` is the lag index.
@@ -37,11 +38,12 @@ Depending on the model and training data, features can include:
 .. note::
    SHAP uses a feature-independence assumption. Indirect effects between features are not captured.
 
-:class:`SKLearnExplainer` provides the following methods for explaining forecasts in batches:
+:class:`SKLearnExplainer` provides the following methods for explaining multiple forecasts in batches:
 
 - :func:`explain() <SKLearnExplainer.explain>` computes SHAP values per forecast horizon and target component.
 - :func:`summary_plot() <SKLearnExplainer.summary_plot>` shows SHAP value distributions by feature.
-- :func:`force_plot() <SKLearnExplainer.force_plot>` shows additive SHAP contributions for one target and horizon.
+- :func:`force_plot() <SKLearnExplainer.force_plot>` shows additive SHAP contributions for one target component and
+  horizon.
 
 :class:`SKLearnExplainer` also provides :func:`explain_single() <SKLearnExplainer.explain_single>` for explaining
 a single forecast (equivalent to calling ``model.predict(n=output_chunk_length)``).
@@ -193,7 +195,7 @@ class SKLearnExplainer(_ForecastingModelExplainer):
                 raise_log(
                     ValueError(
                         f"Invalid `shap_method`. Please choose one value among the following:"
-                        f" {', '.join([e.name.lower() for e in _SHAPMethod])}."
+                        f" {[e.name.lower() for e in _SHAPMethod]}."
                     )
                 )
         else:
