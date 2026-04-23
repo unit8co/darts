@@ -48,7 +48,7 @@ def err(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "err",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Error (ERR).
 
@@ -95,7 +95,7 @@ def err(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"err"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -144,7 +144,7 @@ def merr(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "merr",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Error (MERR).
 
@@ -186,7 +186,7 @@ def merr(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"merr"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -233,7 +233,7 @@ def ae(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "ae",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Absolute Error (AE).
 
@@ -280,7 +280,7 @@ def ae(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"ae"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -329,7 +329,7 @@ def mae(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "mae",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Error (MAE).
 
@@ -371,7 +371,7 @@ def mae(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"mae"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -421,7 +421,7 @@ def ase(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "ase",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Absolute Scaled Error (ASE) (see [1]_ for more information on scaled forecasting errors).
 
@@ -490,7 +490,7 @@ def ase(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"ase"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -551,7 +551,7 @@ def mase(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "mase",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Scaled Error (MASE) (see [1]_ for more information on scaled forecasting errors).
 
@@ -615,7 +615,7 @@ def mase(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"mase"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -675,7 +675,7 @@ def se(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "se",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Squared Error (SE).
 
@@ -722,7 +722,7 @@ def se(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"se"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -771,7 +771,7 @@ def mse(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "mse",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Squared Error (MSE).
 
@@ -813,7 +813,7 @@ def mse(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"mse"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -863,7 +863,7 @@ def sse(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "sse",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Squared Scaled Error (SSE) (see [1]_ for more information on scaled forecasting errors).
 
@@ -932,7 +932,7 @@ def sse(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"sse"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -993,7 +993,7 @@ def msse(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "msse",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Squared Scaled Error (MSSE) (see [1]_ for more information on scaled forecasting errors).
 
@@ -1057,7 +1057,7 @@ def msse(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"msse"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -1116,7 +1116,7 @@ def rmse(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "rmse",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Root Mean Squared Error (RMSE).
 
@@ -1158,7 +1158,7 @@ def rmse(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"rmse"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -1206,7 +1206,7 @@ def rmsse(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "rmsse",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Root Mean Squared Scaled Error (RMSSE) (see [1]_ for more information on scaled forecasting errors).
 
@@ -1270,7 +1270,7 @@ def rmsse(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"rmsse"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -1326,7 +1326,7 @@ def sle(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "sle",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Squared Log Error (SLE).
 
@@ -1375,7 +1375,7 @@ def sle(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"sle"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -1425,7 +1425,7 @@ def rmsle(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "rmsle",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Root Mean Squared Log Error (RMSLE).
 
@@ -1469,7 +1469,7 @@ def rmsle(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"rmsle"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -1518,7 +1518,7 @@ def ape(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "ape",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Absolute Percentage Error (APE).
 
@@ -1568,7 +1568,7 @@ def ape(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"ape"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -1629,7 +1629,7 @@ def mape(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "mape",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Percentage Error (MAPE).
 
@@ -1674,7 +1674,7 @@ def mape(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"mape"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -1726,7 +1726,7 @@ def wmape(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "wmape",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Weighted Mean Absolute Percentage Error (WMAPE). (see [1]_ for more information).
 
@@ -1768,7 +1768,7 @@ def wmape(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"wmape"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -1829,7 +1829,7 @@ def sape(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "sape",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """symmetric Absolute Percentage Error (sAPE).
 
@@ -1880,7 +1880,7 @@ def sape(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"sape"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -1936,7 +1936,7 @@ def smape(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "smape",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """symmetric Mean Absolute Percentage Error (sMAPE).
 
@@ -1983,7 +1983,7 @@ def smape(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"smape"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -2030,7 +2030,7 @@ def ope(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "ope",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Overall Percentage Error (OPE).
 
@@ -2073,7 +2073,7 @@ def ope(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"ope"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -2136,7 +2136,7 @@ def arre(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "arre",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Absolute Ranged Relative Error (ARRE).
 
@@ -2183,7 +2183,7 @@ def arre(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"arre"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -2247,7 +2247,7 @@ def marre(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "marre",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Ranged Relative Error (MARRE).
 
@@ -2290,7 +2290,7 @@ def marre(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"marre"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -2336,7 +2336,7 @@ def r2_score(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "r2_score",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Coefficient of Determination :math:`R^2` (see [1]_ for more details).
 
@@ -2382,7 +2382,7 @@ def r2_score(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"r2_score"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -2434,7 +2434,7 @@ def coefficient_of_variation(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "coefficient_of_variation",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Coefficient of Variation (percentage).
 
@@ -2479,7 +2479,7 @@ def coefficient_of_variation(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"coefficient_of_variation"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -2533,7 +2533,7 @@ def _tolerance_coverages(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "_tolerance_coverages",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Computes the tolerance coverages for different tolerance levels.
 
@@ -2593,7 +2593,7 @@ def autc(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "autc",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Area Under Tolerance Curve (AUTC).
 
@@ -2656,7 +2656,7 @@ def autc(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"autc"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -2720,7 +2720,7 @@ def dtw_metric(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "dtw_metric",
+    name: str | None = None,
     **kwargs,
 ) -> METRIC_OUTPUT_TYPE:
     """
@@ -2757,7 +2757,7 @@ def dtw_metric(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"dtw_metric"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -2801,7 +2801,7 @@ def qr(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "qr",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Quantile Risk (QR)
 
@@ -2849,7 +2849,7 @@ def qr(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"qr"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -2915,7 +2915,7 @@ def ql(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "ql",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Quantile Loss (QL).
 
@@ -2968,7 +2968,7 @@ def ql(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"ql"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3019,7 +3019,7 @@ def mql(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "mql",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Quantile Loss (MQL).
 
@@ -3068,7 +3068,7 @@ def mql(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"mql"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3117,7 +3117,7 @@ def iw(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "iw",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Interval Width (IW).
 
@@ -3170,7 +3170,7 @@ def iw(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"iw"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3221,7 +3221,7 @@ def miw(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "miw",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Interval Width (MIW).
 
@@ -3269,7 +3269,7 @@ def miw(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"miw"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3319,7 +3319,7 @@ def iws(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "iws",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Interval Winkler Score (IWS) [1]_.
 
@@ -3378,7 +3378,7 @@ def iws(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"iws"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3450,7 +3450,7 @@ def miws(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "miws",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Interval Winkler Score (IWS) [1]_.
 
@@ -3496,7 +3496,7 @@ def miws(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"miws"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3550,7 +3550,7 @@ def ic(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "ic",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Interval Coverage (IC).
 
@@ -3608,7 +3608,7 @@ def ic(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"ic"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3659,7 +3659,7 @@ def mic(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "mic",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Interval Coverage (MIC).
 
@@ -3705,7 +3705,7 @@ def mic(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"mic"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3756,7 +3756,7 @@ def incs_qr(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "incs_qr",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Interval Non-Conformity Score for Quantile Regression (INCS_QR).
 
@@ -3812,7 +3812,7 @@ def incs_qr(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"incs_qr"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3867,7 +3867,7 @@ def mincs_qr(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "mincs_qr",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Interval Non-Conformity Score for Quantile Regression (MINCS_QR).
 
@@ -3916,7 +3916,7 @@ def mincs_qr(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"mincs_qr"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3964,7 +3964,7 @@ def accuracy(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "accuracy",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Accuracy Score [1]_.
 
@@ -4007,7 +4007,7 @@ def accuracy(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"accuracy"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -4056,7 +4056,7 @@ def precision(
     label_reduction: str | None | _LabelReduction = _LabelReduction.MACRO,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "precision",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Precision Score [1]_.
 
@@ -4111,7 +4111,7 @@ def precision(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"precision"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -4174,7 +4174,7 @@ def recall(
     label_reduction: str | None | _LabelReduction = _LabelReduction.MACRO,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "recall",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Recall Score [1]_.
 
@@ -4229,7 +4229,7 @@ def recall(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"recall"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -4292,7 +4292,7 @@ def f1(
     label_reduction: str | None | _LabelReduction = _LabelReduction.MACRO,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "f1",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """F1 Score [1]_.
 
@@ -4348,7 +4348,7 @@ def f1(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"f1"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -4411,7 +4411,7 @@ def confusion_matrix(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
-    name: str = "confusion_matrix",
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Confusion Matrix (CM) [1]_.
 
@@ -4456,7 +4456,7 @@ def confusion_matrix(
     verbose
         Optionally, whether to print operations progress.
     name
-        The name of the metric. Default: `"confusion_matrix"`.
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
