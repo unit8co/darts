@@ -19,20 +19,29 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Added native multi-quantile support for `CatBoostModel` by using CatBoost’s `MultiQuantile` loss for faster training and inference. Set `likelihood="multiquantile"` to enable this feature. [#3032](https://github.com/unit8co/darts/pull/3032) by [Zhihao Dai](https://github.com/daidahao)
 - Added native multi-quantile support for `XGBModel`. Similar to the regular quantile support, it still fits dedicated models per quantile, but it is more efficient due to fewer tabularization operations. Set `likelihood="multiquantile"` to enable this feature. [#3056](https://github.com/unit8co/darts/pull/3056) by [Oswald Zink](https://github.com/ozink-u8)
 - `StatsForecastModel` now accepts `model` as a StatsForecast model name, class, or instance; `model_kwargs` supplies constructor arguments when `model` is a name or class. This simplifies config-driven setups. [#3058](https://github.com/unit8co/darts/pull/3058) by [Trevin Chow](https://github.com/tmchow).
-- Improvements to `RegressionEnsembleModel` : [#3041](https://github.com/unit8co/darts/pull/3041) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
+- Improvements to `RegressionEnsembleModel` : [#3041](https://github.com/unit8co/darts/pull/3041) by [Gabriel Margaria](https://github.com/Jaco-Pastorius) and [#3074](https://github.com/unit8co/darts/pull/3074) by [Junghwan Na](https://github.com/shaun0927).
   - Base forecasting models using `output_chunk_shift>0` are now fully supported. If you're using a custom `regression_model`, simply set its output shift to be the same as that of the base models.
   - Added support for `output_chunk_length>1` for the ensemble (regression) model. This means that the ensemble model can now consume information from base model forecasts over the entire horizon.
-- Scaled metrics (`ase`, `sse`, `mase`, `msse`, `rmsse`) no longer raise a hard `ValueError` when the `insample` series has zero error scale (constant or perfectly seasonal signals). A new `zero_division` parameter controls the behavior: [#3059](https://github.com/unit8co/darts/pull/3059) by [Mahima Sharma](https://github.com/mahi-ma)
+- 🔴 Scaled metrics (`ase`, `sse`, `mase`, `msse`, `rmsse`) no longer raise a hard `ValueError` when the `insample` series has zero error scale (constant or perfectly seasonal signals). A new `zero_division` parameter controls the behavior: [#3059](https://github.com/unit8co/darts/pull/3059) by [Mahima Sharma](https://github.com/mahi-ma)
   - `"warn"` (default) raises a warning and returns `np.nan` for non-zero forecast errors, and `1.0` otherwise (forecast is on-par with naive forecast).
   - `"raise"` preserves the legacy error.
-
-
+- 🔴 We moved `NaiveEnsembleModel` from `darts.models.forecasting.baselines` into a dedicated module `darts.models.forecasting.naive_ensemble_model` to separate the heavier dependencies from the baseline models and improve import times. Models that were saved in older Darts versions (pickled) cannot be loaded anymore. To fix it, simply re-create the model and store it again. [#3066](https://github.com/unit8co/darts/pull/3066) by [Dennis Bader](https://github.com/dennisbader)
+- Added parameter `name` to all metric functions for customizing the displayed name. [#3084](https://github.com/unit8co/darts/pull/3084)
+  by [Bruno Da Costa](https://github.com/BrunoDaC).
 
 **Fixed**
 
 - Fixed a device mismatch error in `TFTModel` when moving a trained model to a different device (e.g., GPU to CPU for ONNX export). `attention_mask` and `relative_index` are now registered as non-persistent buffers so they are properly moved with the model. [#3053](https://github.com/unit8co/darts/pull/3053) by [Wolfhart Feldmeier](https://github.com/trahflow)
+- Fixed several issues when using a `StaticCovariatesTransformer` with a `OneHotEncoder` (OHE) for categorical static covariates:
+  - Fixed an issue where using the OHE parameter `drop` (e.g. `drop="first"`, `drop="if_binary"`) raised an exception due to wrong internal column mapping. [#3065](https://github.com/unit8co/darts/pull/3065) by [Jay Dasondee](https://github.com/JKDasondee)
+  - Fixed an issue where using the OHE parameters `min_frequency` or `max_categories` silently truncated the column mapping. [#3076](https://github.com/unit8co/darts/pull/3076) by [Junghwan Na](https://github.com/shaun0927).
+- Fixed a stale docstring in `Diff` that incorrectly stated a `component_mask` cannot be specified together with `dropna=True`. [#3078](https://github.com/unit8co/darts/pull/3078) by [Junghwan Na](https://github.com/shaun0927).
 
 ### For developers of the library:
+
+- Significantly reduced test suite session loading times by deferring heavy third-party dependencies until they are actually needed. [#3072](https://github.com/unit8co/darts/pull/3072) by [Dennis Bader](https://github.com/dennisbader)
+  - Test run sessions: 3x faster (6 → 2 seconds)
+  - Test debug sessions: 6x faster (36 → 6 seconds)
 
 ## [0.43.0](https://github.com/unit8co/darts/tree/0.43.0) (2026-03-23)
 

@@ -253,6 +253,170 @@ class TestStaticCovariatesTransformer:
                 series[i].static_covariates,
             )
 
+    @pytest.mark.parametrize("reverse_cols_order", [False, True])
+    @pytest.mark.parametrize("drop", ["first", "if_binary"])
+    def test_one_hot_encoder_with_drop_single_series(self, reverse_cols_order, drop):
+        transformer = StaticCovariatesTransformer(
+            transformer_cat=OneHotEncoder(sparse_output=False, drop=drop)
+        )
+
+        # pick edge-case cat column names ("cat1" is also prefix of "cat1_")
+        data = {"cat1": [0, 1, 2], "col_num": [3.0, 4.0, 5.0], "cat1_": [10, 11, 11]}
+        if reverse_cols_order:
+            data = {k: v for k, v in list(data.items())[::-1]}
+        sc_in1 = pd.DataFrame(
+            data=data,
+            index=self.series1.static_covariates.index,
+        ).astype({"cat1": "O", "cat1_": "O"})
+        series1 = self.series1.with_static_covariates(sc_in1)
+        sc_in1 = series1.static_covariates
+
+        data = {"cat1_0": [1, 0, 0]} if drop == "if_binary" else {}
+        data = {
+            **data,
+            "cat1_1": [0, 1, 0],
+            "cat1_2": [0, 0, 1],
+            "col_num": [0.0, 0.5, 1.0],
+            "cat1__11": [0, 1, 1],
+        }
+        if reverse_cols_order:
+            data = {
+                k: data[k]
+                for k in ["cat1__11", "col_num"]
+                + (["cat1_0"] if drop == "if_binary" else [])
+                + ["cat1_1", "cat1_2"]
+            }
+        sc_tr_expected = pd.DataFrame(data=data, index=series1.static_covariates.index)
+        sc_tr_expected = series1.with_static_covariates(
+            sc_tr_expected
+        ).static_covariates
+
+        series_tr = transformer.fit_transform(series1)
+        assert series_tr.static_covariates.equals(sc_tr_expected)
+
+        series_recovered = transformer.inverse_transform(series_tr)
+        assert series_recovered.static_covariates.equals(sc_in1)
+
+    @pytest.mark.parametrize("drop", ["first", "if_binary"])
+    def test_one_hot_encoder_with_drop_multi_series(self, drop):
+        transformer = StaticCovariatesTransformer(
+            transformer_cat=OneHotEncoder(sparse_output=False, drop=drop)
+        )
+
+        # pick edge-case cat column names ("cat1" is also prefix of "cat1_")
+        sc_in1 = pd.DataFrame(
+            data={"cat1": [0, 1, 2], "col_num": [3.0, 4.0, 5.0], "cat1_": [10, 11, 11]},
+            index=self.series1.static_covariates.index,
+        ).astype({"cat1": "O", "cat1_": "O"})
+        series1 = self.series1.with_static_covariates(sc_in1)
+        sc_in1 = series1.static_covariates
+
+        sc_in2 = pd.DataFrame(
+            data={"cat1": [3, 0, 3], "col_num": [5.0, 6.0, 7.0], "cat1_": [11, 10, 10]},
+            index=self.series2.static_covariates.index,
+        ).astype({"cat1": "O", "cat1_": "O"})
+        series2 = self.series2.with_static_covariates(sc_in2)
+        sc_in2 = series2.static_covariates
+
+        data = {"cat1_0": [1, 0, 0]} if drop == "if_binary" else {}
+        data = {
+            **data,
+            "cat1_1": [0, 1, 0],
+            "cat1_2": [0, 0, 1],
+            "cat1_3": [0, 0, 0],
+            "col_num": [0.0, 0.25, 0.5],
+            "cat1__11": [0, 1, 1],
+        }
+        sc_tr1_expected = pd.DataFrame(data=data, index=series1.static_covariates.index)
+        sc_tr1_expected = series1.with_static_covariates(
+            sc_tr1_expected
+        ).static_covariates
+
+        data = {"cat1_0": [0, 1, 0]} if drop == "if_binary" else {}
+        data = {
+            **data,
+            "cat1_1": [0, 0, 0],
+            "cat1_2": [0, 0, 0],
+            "cat1_3": [1, 0, 1],
+            "col_num": [0.5, 0.75, 1.0],
+            "cat1__11": [1, 0, 0],
+        }
+        sc_tr2_expected = pd.DataFrame(data=data, index=series2.static_covariates.index)
+        sc_tr2_expected = series2.with_static_covariates(
+            sc_tr2_expected
+        ).static_covariates
+
+        series_list = [series1, series2]
+        series_tr_list = transformer.fit_transform(series_list)
+        for series_tr, sc_tr_expected in zip(
+            series_tr_list, [sc_tr1_expected, sc_tr2_expected]
+        ):
+            assert series_tr.static_covariates.equals(sc_tr_expected)
+
+        series_recovered_list = transformer.inverse_transform(series_tr_list)
+        for recov, sc_in in zip(series_recovered_list, [sc_in1, sc_in2]):
+            assert recov.static_covariates.equals(sc_in)
+
+    @pytest.mark.parametrize(
+        "enc_kwargs",
+        [
+            {"sparse_output": False, "min_frequency": 2},
+            {"sparse_output": False, "max_categories": 3},
+        ],
+    )
+    def test_one_hot_encoder_with_infrequent_sklearn(self, enc_kwargs):
+        """Test for ``OneHotEncoder`` with ``min_frequency`` and ``max_categories``.
+
+        Sklearn ≥ 1.1 groups low-frequency categories into a synthetic feature named  ``{col}_infrequent_sklearn``
+        which does not appear in ``transformer_cat.categories_``. The column-name mapping must include this feature,
+        otherwise ``transform`` silently drops the infrequent column and ``inverse_transform`` fails with a shape
+        mismatch.
+        """
+
+        # Build a small sequence of series where one category ("JP") is
+        # infrequent so that sklearn groups it into ``infrequent_sklearn``.
+        def make_series(idx, country):
+            return TimeSeries.from_times_and_values(
+                times=pd.date_range("2024-01-01", periods=5),
+                values=np.ones((5, 1)),
+                columns=[f"comp_{idx}"],
+                static_covariates=pd.DataFrame({"country": [country]}),
+            )
+
+        categories = (["US"] * 5) + (["KR"] * 2) + ["JP"]
+        series_list = [make_series(i, country) for i, country in enumerate(categories)]
+
+        vals_tr_expected = np.array(
+            [[0, 1, 0]] * 5 + [[1, 0, 0]] * 2 + [[0, 0, 1]]
+        ).astype("float64")
+        # Every transformed series must carry the full one-hot output from the
+        # underlying encoder, including the synthetic ``_infrequent_sklearn``
+        # bucket (previously this column was silently dropped from the mapping).
+        expected_cols = ["country_KR", "country_US", "country_infrequent_sklearn"]
+
+        transformer = StaticCovariatesTransformer(
+            transformer_cat=OneHotEncoder(**enc_kwargs)
+        )
+
+        transformed = transformer.fit_transform(series_list)
+        vals_tr = []
+        for ts in transformed:
+            sc = ts.static_covariates
+            vals_tr.append(sc.values)
+            assert list(sc.columns) == expected_cols
+
+        np.testing.assert_array_equal(np.concatenate(vals_tr), vals_tr_expected)
+
+        # inverse transform must restore all frequent countries
+        recovered = transformer.inverse_transform(transformed)
+        for recov, series in zip(recovered[:-1], series_list[:-1]):
+            assert recov.static_covariates.equals(series.static_covariates)
+
+        # the infrequent inputs are mapped to sklearn's sentinel string
+        assert recovered[-1].static_covariates.to_dict() == {
+            "country": {"comp_7": "infrequent_sklearn"}
+        }
+
     def helper_test_scaling(self, series, scaler, test_values):
         series_copy = series.copy()
         series_tr = scaler.fit_transform(series)

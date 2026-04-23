@@ -2155,6 +2155,7 @@ class TestMetrics:
             series_reduction=None,
             n_jobs=1,
             verbose=False,
+            name="custom_name",
             out_ndim=1,
         ):
             return np.ones(tuple(1 for _ in range(out_ndim)))

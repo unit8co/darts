@@ -186,6 +186,7 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         params = signature(func).parameters
         n_jobs = kwargs.pop("n_jobs", params["n_jobs"].default)
         verbose = kwargs.pop("verbose", params["verbose"].default)
+        name = kwargs.pop("name", params["name"].default)
 
         # sanity check reduction functions
         _ = _get_reduction(
@@ -287,7 +288,7 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             iterable=zip(*input_series),
             verbose=verbose,
             total=len(actual_series),
-            desc=f"metric `{func.__name__}()`",
+            desc=f"metric `{name or func.__name__}`",
         )
 
         # `vals` is a list of series metrics of length `len(actual_series)`. Each metric has shape
