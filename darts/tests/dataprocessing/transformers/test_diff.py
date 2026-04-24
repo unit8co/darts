@@ -323,15 +323,24 @@ class TestDiff:
         forecast_tf = series_tf[-5:]
         insample_ok = series_tf[:-5]
 
-        insample_bad_start = insample_ok[1:]
         with pytest.raises(ValueError) as e:
-            diff.inverse_transform(forecast_tf, insample=insample_bad_start)
+            diff.inverse_transform(forecast_tf, insample=forecast_tf)
+        assert "`insample` must start before the `series` start time." in str(e.value)
+        "`insample` must start before the `series` start time."
+
+        with pytest.raises(ValueError) as e:
+            diff.inverse_transform(forecast_tf, insample=insample_ok[1:])
         assert "Expected the `insample` series to begin at time" in str(e.value)
 
-        insample_too_short = insample_ok[:-1]
         with pytest.raises(ValueError) as e:
-            diff.inverse_transform(forecast_tf, insample=insample_too_short)
+            diff.inverse_transform(forecast_tf, insample=insample_ok[:-1])
         assert "extend at least until one time step before" in str(e.value)
+
+        with pytest.raises(ValueError) as e:
+            diff.inverse_transform(forecast_tf, insample=[insample_ok, insample_ok])
+        assert "`insample` must have the same number of TimeSeries as `series`" in str(
+            e.value
+        )
 
         insample_bad_freq = TimeSeries.from_times_and_values(
             values=insample_ok.all_values(copy=False),
