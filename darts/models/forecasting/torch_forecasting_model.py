@@ -1223,6 +1223,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         This function can be called several times to do some extra training. If ``epochs`` is specified, the model
         will be trained for some (extra) ``epochs`` epochs.
 
+        Encoders configured via ``add_encoders`` at model creation are not applied here; ``train_dataset``
+        (and ``val_dataset`` if given) must already include any encoder-generated covariates.
+
         Parameters
         ----------
         train_dataset
@@ -1256,6 +1259,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self
             Fitted model.
         """
+        if self.encoders is not None and self.encoders.encoding_available:
+            logger.warning(
+                "The model was created with `add_encoders`, but encoders are not "
+                "applied when calling `fit_from_dataset()`. The provided "
+                "`train_dataset` (and `val_dataset`) must already contain any "
+                "encoder-generated covariates. Use `fit()` if you want encoders "
+                "to be applied automatically."
+            )
         self._train(
             *self._setup_for_train(
                 train_dataset=train_dataset,
@@ -1852,6 +1863,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ``trainer``. For more information on PyTorch Lightning Trainers check out `this link
         <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__.
 
+        Encoders configured via ``add_encoders`` at model creation are not applied here; ``dataset`` must already
+        include any encoder-generated covariates.
+
         Parameters
         ----------
         n
@@ -1909,6 +1923,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ForecastingModel.predict(self, n, num_samples)
 
         self._verify_inference_dataset_type(dataset)
+
+        if self.encoders is not None and self.encoders.encoding_available:
+            logger.warning(
+                "The model was created with `add_encoders`, but encoders are not "
+                "applied when calling `predict_from_dataset()`. The provided "
+                "`dataset` must already contain any encoder-generated covariates. "
+                "Use `predict()` if you want encoders to be applied automatically."
+            )
 
         # check that covariates and dimensions are matching what we had during training
         self._validate_predict_sample(

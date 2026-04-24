@@ -28,6 +28,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - 🔴 We moved `NaiveEnsembleModel` from `darts.models.forecasting.baselines` into a dedicated module `darts.models.forecasting.naive_ensemble_model` to separate the heavier dependencies from the baseline models and improve import times. Models that were saved in older Darts versions (pickled) cannot be loaded anymore. To fix it, simply re-create the model and store it again. [#3066](https://github.com/unit8co/darts/pull/3066) by [Dennis Bader](https://github.com/dennisbader)
 - Added parameter `name` to all metric functions for customizing the displayed name. [#3084](https://github.com/unit8co/darts/pull/3084)
   by [Bruno Da Costa](https://github.com/BrunoDaC).
+- Warn and document that `add_encoders` are not applied on `TorchForecastingModel` `*_from_dataset`; clarify categorical-embedding keying behavior on `TFTModel` for that path. [#3086](https://github.com/unit8co/darts/pull/3086) by [Jakub Chłapek](https://github.com/jakubchlapek).
 
 **Fixed**
 
