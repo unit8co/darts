@@ -136,7 +136,10 @@ class TestLocalFittableInvertibleDataTransformer:
 
         @staticmethod
         def ts_inverse_transform(
-            series: TimeSeries, params: Mapping[str, Any], **kwargs
+            series: TimeSeries,
+            params: Mapping[str, Any],
+            insample: TimeSeries | None = None,
+            **kwargs,
         ) -> TimeSeries:
             """
             Implements the inverse transform `(series - translation) / scale`.
@@ -560,11 +563,12 @@ class TestGlobalFittableInvertibleDataTransformer:
 
         @staticmethod
         def ts_inverse_transform(
-            series: TimeSeries, params: Mapping[str, Any], **kwargs
+            series: TimeSeries,
+            params: Mapping[str, Any],
+            insample: TimeSeries | None = None,
+            **kwargs,
         ) -> TimeSeries:
-            """
-            Implements the inverse transform `series + mean`.
-            """
+            """Implements the inverse transform `series + mean`."""
             mean = params["fitted"]
             vals = series.all_values()
             vals += mean

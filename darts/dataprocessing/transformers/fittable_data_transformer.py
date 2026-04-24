@@ -31,6 +31,7 @@ class FittableDataTransformer(BaseDataTransformer):
         mask_components: bool = True,
         columns: str | list[str] | None = None,
         global_fit: bool = False,
+        uses_insample: bool = False,
     ):
         """Base class for fittable transformers.
 
@@ -80,6 +81,12 @@ class FittableDataTransformer(BaseDataTransformer):
             and a single set of parameters is fitted using all provided `TimeSeries`. If `False`, then
             each `TimeSeries` is individually passed to `ts_fit`, and a different set of fitted parameters
             if yielded for each of these fitting operations. See `ts_fit` for further details.
+        uses_insample
+            Whether the transformer requires the in-sample (historic) series during inverse transformation.
+            If `True`, `inverse_transform` will use the ``insample`` argument to pass the transformed
+            historic series to `ts_inverse_transform`. This is needed when inverse transforming a partial
+            series (e.g. a forecast) requires information from earlier times (e.g. for
+            :class:`~darts.dataprocessing.transformers.diff.Diff`).
 
         Notes
         -----
@@ -154,6 +161,7 @@ class FittableDataTransformer(BaseDataTransformer):
             parallel_params=parallel_params,
             mask_components=mask_components,
             columns=columns,
+            uses_insample=uses_insample,
         )
 
         self._fit_called = False

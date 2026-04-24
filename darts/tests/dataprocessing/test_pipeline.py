@@ -53,7 +53,9 @@ class TestPipeline:
 
         @staticmethod
         def ts_inverse_transform(
-            series: TimeSeries, params: Mapping[str, Any]
+            series: TimeSeries,
+            params: Mapping[str, Any],
+            insample: TimeSeries | None = None,
         ) -> TimeSeries:
             return series
 
@@ -84,7 +86,9 @@ class TestPipeline:
 
         @staticmethod
         def ts_inverse_transform(
-            series: TimeSeries, params: Mapping[str, Any]
+            series: TimeSeries,
+            params: Mapping[str, Any],
+            insample: TimeSeries | None = None,
         ) -> TimeSeries:
             return series.map(lambda x: x - 10)
 
@@ -93,14 +97,16 @@ class TestPipeline:
             super().__init__(name="*2 transformer")
 
         @staticmethod
-        def ts_transform(data: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
-            return data.map(lambda x: x * 2)
+        def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
+            return series.map(lambda x: x * 2)
 
         @staticmethod
         def ts_inverse_transform(
-            data: TimeSeries, params: Mapping[str, Any]
+            series: TimeSeries,
+            params: Mapping[str, Any],
+            insample: TimeSeries | None = None,
         ) -> TimeSeries:
-            return data.map(lambda x: x / 2)
+            return series.map(lambda x: x / 2)
 
     class ExtendTransformer(FittableDataTransformer, InvertibleDataTransformer):
         def __init__(self, global_fit: bool, coef: int):
@@ -123,14 +129,16 @@ class TestPipeline:
                 return series.values()[0] + coef
 
         @staticmethod
-        def ts_transform(data: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
-            return data + params["fitted"]
+        def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
+            return series + params["fitted"]
 
         @staticmethod
         def ts_inverse_transform(
-            data: TimeSeries, params: Mapping[str, Any]
+            series: TimeSeries,
+            params: Mapping[str, Any],
+            insample: TimeSeries | None = None,
         ) -> TimeSeries:
-            return data - params["fitted"]
+            return series - params["fitted"]
 
     def test_transform(self):
         # given
@@ -329,37 +337,52 @@ class TestPipeline:
     def test_inverse_transform_insample_diff(self):
         """Pipeline([Diff]) inverse with ``insample`` matches manual prepend + slice."""
         # given
+        n_forecast = 10
         series = linear_timeseries(length=50, start_value=1.0, end_value=5.0)
+
         pipeline = Pipeline([Diff(lags=1, dropna=True)])
         series_tf = pipeline.fit_transform(series)
-        n_forecast = 10
+
         insample_tf = series_tf[:-n_forecast]
         forecast_tf = series_tf[-n_forecast:]
-        diff = pipeline._transformers[0]
-        manual_full = diff.inverse_transform(insample_tf.append(forecast_tf))
-        manual = manual_full.slice_n_points_after(forecast_tf.start_time(), n_forecast)
-        # when
-        got = pipeline.inverse_transform(forecast_tf, insample=insample_tf)
-        # then
-        np.testing.assert_array_almost_equal(got.values(), manual.values())
-        assert got.time_index.equals(manual.time_index)
 
-    def test_inverse_transform_insample_scaler_diff(self):
+        diff = pipeline._transformers[0]
+        result_manual = diff.inverse_transform(insample_tf.append(forecast_tf))[
+            -n_forecast:
+        ]
+        result_insample = pipeline.inverse_transform(forecast_tf, insample=insample_tf)
+
+        np.testing.assert_array_almost_equal(
+            result_insample.values(), result_manual.values()
+        )
+        assert result_insample.time_index.equals(result_manual.time_index)
+
+    @pytest.mark.parametrize("reverse_order", [False, True])
+    def test_inverse_transform_insample_scaler_diff(self, reverse_order):
         """Pipeline([Scaler, Diff]) keeps insample aligned through inverse steps."""
         # given
-        series = linear_timeseries(length=50, start_value=1.0, end_value=5.0)
-        pipeline = Pipeline([Scaler(), Diff(lags=1, dropna=True)])
-        series_tf = pipeline.fit_transform(series)
         n_forecast = 10
+        series = linear_timeseries(length=50, start_value=1.0, end_value=5.0)
+
+        tfs = [Scaler(), Diff(lags=1, dropna=True)]
+        if reverse_order:
+            tfs = tfs[::-1]
+
+        pipeline = Pipeline(tfs)
+        series_tf = pipeline.fit_transform(series)
+
         insample_tf = series_tf[:-n_forecast]
         forecast_tf = series_tf[-n_forecast:]
-        manual_full = pipeline.inverse_transform(insample_tf.append(forecast_tf))
-        manual = manual_full.slice_n_points_after(forecast_tf.start_time(), n_forecast)
-        # when
-        got = pipeline.inverse_transform(forecast_tf, insample=insample_tf)
-        # then
-        np.testing.assert_array_almost_equal(got.values(), manual.values())
-        assert got.time_index.equals(manual.time_index)
+
+        result_manual = pipeline.inverse_transform(insample_tf.append(forecast_tf))[
+            -n_forecast:
+        ]
+        result_insample = pipeline.inverse_transform(forecast_tf, insample=insample_tf)
+
+        np.testing.assert_array_almost_equal(
+            result_insample.values(), result_manual.values()
+        )
+        assert result_insample.time_index.equals(result_manual.time_index)
 
     def test_inverse_transform_prefitted(self):
         """Check that when multiple series are passed to fit transformers with global_fit=False,

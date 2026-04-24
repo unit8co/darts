@@ -1434,26 +1434,31 @@ def _apply_data_transformers(
 
 def _apply_inverse_data_transformers(
     series: TimeSeriesLike,
-    forecasts: TimeSeries | list[TimeSeries] | list[list[TimeSeries]],
+    forecasts: TimeSeriesLike | Sequence[Sequence[TimeSeries]],
     data_transformers: dict[str, Pipeline],
     series_idx: int | None = None,
-    *,
     pass_insample: bool = True,
-) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]]:
+) -> TimeSeriesLike | Sequence[Sequence[TimeSeries]]:
     """
-    Apply the inverse transform to the forecasts when defined.
+    If a preprocessing pipeline is registered under ``"series"`` and can be reversed, convert ``forecasts`` from
+    preprocessed form back to the original one; if not, leave ``forecasts`` as they are.
 
-    `series_idx` is used to retrieve the appropriate transformer when the data transformer was
-    fitted with several series and global_fit=False.
+    ``pass_insample`` (default ``True``): also hand the (already transformed) training target ``series`` to that
+    reverse step, so a **short** forecast can be turned back correctly when the method needs recent history (as with
+    :class:`~darts.dataprocessing.transformers.diff.Diff`). Set it to ``False`` when ``forecasts`` is a **full-length**
+    series that already contains everything needed to invert (for example in-sample fitted values). Only the
+    ``"series"`` pipeline is inverted; other keys in ``data_transformers`` are unchanged. Arguments line up with
+    :meth:`~darts.dataprocessing.pipeline.Pipeline.inverse_transform`.
     """
     if "series" in data_transformers and data_transformers["series"].invertible:
         called_with_single_series = get_series_seq_type(series) == SeriesType.SINGLE
         if called_with_single_series:
             forecasts = [forecasts]
-        inv_kw = {"series_idx": series_idx}
-        if pass_insample:
-            inv_kw["insample"] = series
-        forecasts = data_transformers["series"].inverse_transform(forecasts, **inv_kw)
+        forecasts = data_transformers["series"].inverse_transform(
+            data=forecasts,
+            series_idx=series_idx,
+            insample=series if pass_insample else None,
+        )
         return forecasts[0] if called_with_single_series else forecasts
     else:
         return forecasts

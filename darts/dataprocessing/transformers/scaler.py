@@ -145,7 +145,10 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
 
     @staticmethod
     def ts_inverse_transform(
-        series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
+        series: TimeSeries,
+        params: Mapping[str, Any],
+        insample: TimeSeries | None = None,
+        **kwargs,
     ) -> TimeSeries:
         transformer = params["fitted"]
 
