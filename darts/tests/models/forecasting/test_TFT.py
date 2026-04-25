@@ -489,18 +489,18 @@ class TestTFTModel:
         under PyTorch Lightning mixed precision (16-mixed) training.
         The fix uses torch.finfo(attn.dtype).min instead of hardcoded -1e9.
         """
+        # Merge tfm_kwargs with precision setting to avoid duplicate pl_trainer_kwargs
+        train_kwargs = dict(tfm_kwargs, add_relative_index=True)
+        train_kwargs["pl_trainer_kwargs"] = dict(
+            train_kwargs["pl_trainer_kwargs"],
+            precision="16-mixed",
+        )
         model = TFTModel(
             input_chunk_length=4,
             output_chunk_length=2,
             n_epochs=1,
-            pl_trainer_kwargs={
-                "accelerator": "cpu",
-                "precision": "16-mixed",
-                "enable_progress_bar": False,
-                "enable_model_summary": False,
-            },
             force_reset=True,
-            **tfm_kwargs,
+            **train_kwargs,
         )
         series = tg.linear_timeseries(length=20).astype("float32")
         model.fit(series, verbose=False)
