@@ -66,6 +66,7 @@ class BaseDataTransformer(ABC):
         parallel_params: bool | Sequence[str] = False,
         mask_components: bool = True,
         columns: str | list[str] | None = None,
+        uses_insample: bool = False,
     ):
         """Abstract class for data transformers.
 
@@ -131,6 +132,12 @@ class BaseDataTransformer(ABC):
             to transform. If specified, only these components will be transformed, and the remaining
             components will be kept untouched. If `None`, all components are transformed. Note that
             if `columns` is provided, the `mask_components` attribute must be set to `True`.
+        uses_insample
+            Whether the transformer requires the in-sample (historic) series during inverse transformation.
+            If `True`, `inverse_transform` will use the ``insample`` argument to pass the transformed
+            historic series to `ts_inverse_transform`. This is needed when inverse transforming a partial
+            series (e.g. a forecast) requires information from earlier times (e.g. for
+            :class:`~darts.dataprocessing.transformers.diff.Diff`).
 
         Example
         --------
@@ -177,9 +184,9 @@ class BaseDataTransformer(ABC):
         self._name = name
         self._verbose = verbose
         self._n_jobs = n_jobs
-
         self._mask_components = mask_components
         self._columns = [columns] if isinstance(columns, str) else columns
+        self._uses_insample = uses_insample
 
     def set_verbose(self, value: bool):
         """Set the verbosity status.

@@ -1919,6 +1919,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         forecasts=fitted_values,
                         data_transformers=data_transformers,
                         series_idx=None,
+                        pass_insample=False,
                     )
                 error = metric(series, fitted_values)
             elif val_series is None:  # expanding window mode

@@ -151,6 +151,8 @@ class InvertibleMapper(InvertibleDataTransformer):
 
     @staticmethod
     def ts_inverse_transform(
-        series: TimeSeries, params: Mapping[str, Mapping[str, MapperFn]]
+        series: TimeSeries,
+        params: Mapping[str, Mapping[str, MapperFn]],
+        insample: TimeSeries | None = None,
     ) -> TimeSeries:
         return series.map(params["fixed"]["_inverse_fn"])

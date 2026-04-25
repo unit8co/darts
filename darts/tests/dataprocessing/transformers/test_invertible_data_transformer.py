@@ -105,7 +105,10 @@ class TestInvertibleDataTransformer:
 
         @staticmethod
         def ts_inverse_transform(
-            series: TimeSeries, params: Mapping[str, Any], **kwargs
+            series: TimeSeries,
+            params: Mapping[str, Any],
+            insample: TimeSeries | None = None,
+            **kwargs,
         ) -> TimeSeries:
             """
             Implements the inverse transform `(series - translation) / scale`.

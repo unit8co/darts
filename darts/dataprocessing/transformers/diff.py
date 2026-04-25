@@ -123,6 +123,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
             verbose=verbose,
             mask_components=False,
             columns=columns,
+            uses_insample=True,
         )
 
     @staticmethod
@@ -174,6 +175,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
     def ts_inverse_transform(
         series: TimeSeries,
         params: Mapping[str, Any],
+        insample: TimeSeries | None = None,
         **kwargs,
     ) -> TimeSeries:
         lags, dropna = params["fixed"]["_lags"], params["fixed"]["_dropna"]
@@ -186,13 +188,20 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                 ),
                 logger,
             )
+
+        # if given, add the historic part of `insample` to the `series`
+        series, n_forecast_output = InvertibleDataTransformer._maybe_prepend_insample(
+            series=series,
+            insample=insample,
+        )
+
         # Start dates 'missing' from differenced series if dropna = True, so need to shift forward:
         expected_start = start_time + sum(lags) * series.freq if dropna else start_time
         if series.start_time() != expected_start:
             raise_log(
                 ValueError(
-                    f"Expected series to begin at time {expected_start}; "
-                    f"instead, it begins at time {series.start_time()}."
+                    f"Expected the {'`insample` series' if n_forecast_output else '`series`'} "
+                    f"to begin at time {expected_start}; instead, it begins at time {series.start_time()}."
                 ),
                 logger,
             )
@@ -246,10 +255,13 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                 to_undiff[i::lag, :, :] = np.cumsum(to_undiff[i::lag, :, :], axis=0)
             vals[cutoff:, :, :] = to_undiff
         vals = Diff.unapply_component_mask(series, vals, component_mask)
-        return TimeSeries(
+        result = TimeSeries(
             times=series.time_index,
             values=vals,
             components=series.components,
             copy=False,
             **series._attrs,
         )
+        if n_forecast_output is not None:
+            result = result[-n_forecast_output:]
+        return result

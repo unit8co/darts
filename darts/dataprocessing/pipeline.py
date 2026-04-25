@@ -6,13 +6,15 @@ Pipeline
 from collections.abc import Iterator, Sequence
 from copy import deepcopy
 
+import numpy as np
+
 from darts import TimeSeries
 from darts.dataprocessing.transformers import (
     BaseDataTransformer,
     FittableDataTransformer,
     InvertibleDataTransformer,
 )
-from darts.logging import get_logger, raise_if_not
+from darts.logging import get_logger, raise_if_not, raise_log
 from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
@@ -178,10 +180,11 @@ class Pipeline:
 
     def inverse_transform(
         self,
-        data: TimeSeriesLike,
+        data: TimeSeriesLike | Sequence[Sequence[TimeSeries]],
         partial: bool = False,
         series_idx: int | Sequence[int] | None = None,
-    ) -> TimeSeriesLike:
+        insample: TimeSeriesLike | None = None,
+    ) -> TimeSeriesLike | Sequence[Sequence[TimeSeries]]:
         """
         For each data transformer in the pipeline, inverse-transform data. Then inverse transformed data is passed to
         the next transformer. Transformers are traversed in reverse order. Raises value error if not all transformers
@@ -191,37 +194,51 @@ class Pipeline:
         Parameters
         ----------
         data
-            (Sequence of) TimeSeries to be inverse transformed.
+            (Sequence of) ``TimeSeries`` to inverse-transform.
         partial
             If set to `True`, the inverse transformation is applied even if the pipeline is not fully invertible,
             calling `inverse_transform()` only on transformers of type `InvertibleDataTransformer`.
         series_idx
             Optionally, the index(es) of each series corresponding to their positions within the series used to fit
             the transformer (to retrieve the appropriate transformer parameters).
+        insample
+            Optionally, the transformed historic (insample) part of ``data``. This can be used when ``data`` is
+            only a tail (for example a forecast) and inverse transforming requires information from earlier times
+            (for example the :class:`~darts.dataprocessing.transformers.diff.Diff` transformer). Each ``insample``
+            series must start before the ``data`` start time and extend at least until one step before the start time
+            of the ``data``. If ``data`` is a ``Sequence[Sequence[TimeSeries]]``, then ``insample`` should be a
+            ``Sequence[TimeSeries]`` with the same length. Otherwise, it should have the same type as ``data``. Only
+            used by transformers that require information from earlier times.
 
         Returns
         -------
-        TimeSeriesLike
-            Inverse transformed data.
+        TimeSeriesLike | Sequence[Sequence[TimeSeries]]
+            Inverse-transformed data; same structure as ``data``.
         """
-        if not partial:
-            raise_if_not(
-                self._invertible,
-                "Not all transformers in the pipeline can perform inverse_transform",
+        if not partial and not self._invertible:
+            raise_log(
+                ValueError(
+                    "Not all transformers in the pipeline can perform inverse_transform"
+                ),
                 logger,
             )
 
-            for transformer in reversed(self._transformers):
-                data = transformer.inverse_transform(data, series_idx=series_idx)
-            return data
-        else:
-            for transformer in reversed(self._transformers):
-                if isinstance(transformer, InvertibleDataTransformer):
-                    data = transformer.inverse_transform(
-                        data,
-                        series_idx=series_idx,
+        # only inverse-transform insample as long as it is required
+        tfs_with_insample = [tf._uses_insample for tf in reversed(self._transformers)]
+        last_tf_index_with_insample = int(np.argmax(np.cumsum(tfs_with_insample)))
+        current_insample = insample
+        for idx, transformer in enumerate(reversed(self._transformers)):
+            if isinstance(transformer, InvertibleDataTransformer):
+                data = transformer.inverse_transform(
+                    series=data,
+                    series_idx=series_idx,
+                    insample=current_insample,
+                )
+                if idx < last_tf_index_with_insample and current_insample is not None:
+                    current_insample = transformer.inverse_transform(
+                        current_insample, series_idx=series_idx
                     )
-            return data
+        return data
 
     @property
     def invertible(self) -> bool:
