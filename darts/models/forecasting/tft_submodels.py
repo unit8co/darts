@@ -543,7 +543,7 @@ class _ScaledDotProductAttention(nn.Module):
 
         if self.scale:
             dimension = torch.sqrt(
-                torch.tensor(k.shape[-1], dtype=attn.dtype, device=attn.device)
+                torch.tensor(k.shape[-1], dtype=self.dtype, device=self.device)
             )
             attn = attn / dimension
 
