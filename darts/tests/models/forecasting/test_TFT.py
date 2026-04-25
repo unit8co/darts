@@ -481,3 +481,29 @@ class TestTFTModel:
         # the cached tensors were plain attributes not moved by .to().
         preds = model.predict(n=2, series=[series] * inner.batch_size_last)
         assert len(preds) == inner.batch_size_last
+
+    def test_mixed_precision_attention_mask(self):
+        """Regression test for https://github.com/unit8co/darts/issues/3081.
+
+        _ScaledDotProductAttention must not overflow float16 during masked_fill
+        under PyTorch Lightning mixed precision (16-mixed) training.
+        The fix uses torch.finfo(attn.dtype).min instead of hardcoded -1e9.
+        """
+        model = TFTModel(
+            input_chunk_length=4,
+            output_chunk_length=2,
+            n_epochs=1,
+            pl_trainer_kwargs={
+                "accelerator": "cpu",
+                "precision": "16-mixed",
+                "enable_progress_bar": False,
+                "enable_model_summary": False,
+            },
+            force_reset=True,
+            **tfm_kwargs,
+        )
+        series = tg.linear_timeseries(length=20).astype("float32")
+        model.fit(series, verbose=False)
+        preds = model.predict(n=3, series=series)
+        assert len(preds) == 3
+        assert np.all(np.isfinite(preds.values()))
