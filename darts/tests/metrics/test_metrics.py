@@ -264,6 +264,7 @@ class TestMetrics:
             (metrics.sape, False, {"time_reduction": np.mean}),
             (metrics.arre, False, {"time_reduction": np.mean}),
             (metrics.ql, True, {"time_reduction": np.mean}),
+            (metrics.crps, True, {"time_reduction": np.mean}),
             # time aggregates
             (metrics.merr, False, {}),
             (metrics.mae, False, {}),
@@ -283,6 +284,7 @@ class TestMetrics:
             (metrics.coefficient_of_variation, False, {}),
             (metrics.qr, True, {}),
             (metrics.mql, True, {}),
+            (metrics.mcrps, True, {}),
             (metrics.dtw_metric, False, {}),
             (metrics.accuracy, False, {}),
             (metrics.precision, False, {}),
@@ -577,6 +579,7 @@ class TestMetrics:
             (metrics.sape, False),
             (metrics.arre, False),
             (metrics.ql, True),
+            (metrics.crps, True),
         ],
     )
     def test_output_type_time_dependent(self, config):
@@ -862,6 +865,7 @@ class TestMetrics:
                 (metrics.sape, False),
                 (metrics.arre, False),
                 (metrics.ql, True),
+                (metrics.crps, True),
                 # time aggregates
                 (metrics.merr, False),
                 (metrics.mae, False),
@@ -881,6 +885,7 @@ class TestMetrics:
                 (metrics.coefficient_of_variation, False),
                 (metrics.qr, True),
                 (metrics.mql, True),
+                (metrics.mcrps, True),
                 (metrics.dtw_metric, False),
                 (metrics.accuracy, False),
                 (metrics.precision, False),
@@ -970,6 +975,7 @@ class TestMetrics:
             (metrics.sape, 0, False, {"time_reduction": np.mean}),
             (metrics.arre, 0, False, {"time_reduction": np.mean}),
             (metrics.ql, 0, True, {"time_reduction": np.mean}),
+            (metrics.crps, 0, True, {"time_reduction": np.mean}),
             # time aggregates
             (metrics.merr, 0, False, {}),
             (metrics.mae, 0, False, {}),
@@ -989,6 +995,7 @@ class TestMetrics:
             (metrics.coefficient_of_variation, 0, False, {}),
             (metrics.qr, 0, True, {}),
             (metrics.mql, 0, True, {}),
+            (metrics.mcrps, 0, True, {}),
             (metrics.dtw_metric, 0, False, {}),
             (metrics.accuracy, 1, False, {}),
             (metrics.precision, 1, False, {}),
