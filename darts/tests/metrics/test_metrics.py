@@ -1593,9 +1593,7 @@ class TestMetrics:
         # crps = 2/3 - 4/9 = 2/9
         y_true = TimeSeries.from_values(np.zeros((5, 1, 1)))
         samples = np.array([-1.0, 0.0, 1.0])
-        y_pred = TimeSeries.from_values(
-            np.tile(samples, (5, 1, 1)).reshape(5, 1, 3)
-        )
+        y_pred = TimeSeries.from_values(np.tile(samples, (5, 1, 1)).reshape(5, 1, 3))
         expected_crps = 2.0 / 9.0
         np.testing.assert_almost_equal(
             metric(y_true, y_pred, **kwargs), expected_crps, decimal=10

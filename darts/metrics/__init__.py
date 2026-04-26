@@ -108,7 +108,6 @@ from darts.utils._lazy import setup_lazy_imports
 if TYPE_CHECKING:
     from darts.metrics.metrics import accuracy as accuracy
     from darts.metrics.metrics import ae as ae
-    from darts.metrics.metrics import crps as crps
     from darts.metrics.metrics import ape as ape
     from darts.metrics.metrics import arre as arre
     from darts.metrics.metrics import ase as ase
@@ -117,6 +116,7 @@ if TYPE_CHECKING:
         coefficient_of_variation as coefficient_of_variation,
     )
     from darts.metrics.metrics import confusion_matrix as confusion_matrix
+    from darts.metrics.metrics import crps as crps
     from darts.metrics.metrics import dtw_metric as dtw_metric
     from darts.metrics.metrics import err as err
     from darts.metrics.metrics import f1 as f1
@@ -126,9 +126,9 @@ if TYPE_CHECKING:
     from darts.metrics.metrics import iws as iws
     from darts.metrics.metrics import mae as mae
     from darts.metrics.metrics import mape as mape
-    from darts.metrics.metrics import mcrps as mcrps
     from darts.metrics.metrics import marre as marre
     from darts.metrics.metrics import mase as mase
+    from darts.metrics.metrics import mcrps as mcrps
     from darts.metrics.metrics import merr as merr
     from darts.metrics.metrics import mic as mic
     from darts.metrics.metrics import mincs_qr as mincs_qr

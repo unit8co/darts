@@ -3211,9 +3211,7 @@ def crps(
     # y_true: (T, C, 1), y_pred: (T, C, N)
     n = y_pred.shape[SMPL_AX]
     term1 = np.mean(np.abs(y_pred - y_true), axis=SMPL_AX)  # (T, C)
-    pairwise = np.abs(
-        y_pred[:, :, :, None] - y_pred[:, :, None, :]
-    )  # (T, C, N, N)
+    pairwise = np.abs(y_pred[:, :, :, None] - y_pred[:, :, None, :])  # (T, C, N, N)
     term2 = 0.5 * np.sum(pairwise, axis=(-2, -1)) / (n**2)  # (T, C)
     return (term1 - term2)[:, :, np.newaxis]  # (T, C, 1)
 
