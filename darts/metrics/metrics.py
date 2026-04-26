@@ -3197,7 +3197,7 @@ def crps(
     if not pred_series.is_stochastic:
         raise_log(
             ValueError(
-                "CRPS should only be computed for stochastic predicted TimeSeries."
+                "`pred_series` must be a stochastic (contain multiple predicted samples)."
             ),
             logger=logger,
         )
@@ -3211,8 +3211,14 @@ def crps(
     # y_true: (T, C, 1), y_pred: (T, C, N)
     n = y_pred.shape[SMPL_AX]
     term1 = np.mean(np.abs(y_pred - y_true), axis=SMPL_AX)  # (T, C)
-    pairwise = np.abs(y_pred[:, :, :, None] - y_pred[:, :, None, :])  # (T, C, N, N)
-    term2 = 0.5 * np.sum(pairwise, axis=(-2, -1)) / (n**2)  # (T, C)
+
+    # term2: `sum of |x_i - x_j| over i,j` has complexity O(N^2);
+    # instead we can compute `2 * sum_k (2k - (n - 1)) * x_{(k)}` for sorted x and 0-based k;
+    # it gives identical result but more efficient with O(N log N) time and O(N) memory per (T, C) slice.
+    y_sorted = np.sort(y_pred, axis=SMPL_AX)
+    k = np.arange(n, dtype=y_pred.dtype)
+    coeff = 2.0 * k - (n - 1.0)
+    term2 = np.sum(coeff * y_sorted, axis=SMPL_AX) / (n**2)  # (T, C)
     return (term1 - term2)[:, :, np.newaxis]  # (T, C, 1)
 
 
