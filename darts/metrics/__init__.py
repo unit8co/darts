@@ -49,6 +49,9 @@ compute the deterministic metrics on:
 For probabilistic forecasts (storchastic predictions with `num_samples >> 1`) and quantile forecasts:
 
 - Aggregated over time:
+    Probabilistic metrics:
+        - :func:`MCRPS <darts.metrics.metrics.mcrps>`: Mean Continuous Ranked Probability Score
+
     Quantile metrics:
         - :func:`MQL <darts.metrics.metrics.mql>`: Mean Quantile Loss
         - :func:`QR <darts.metrics.metrics.qr>`: Quantile Risk
@@ -60,6 +63,9 @@ For probabilistic forecasts (storchastic predictions with `num_samples >> 1`) an
         - :func:`MINCS_QR <darts.metrics.metrics.mincs_qr>`: Mean Interval Non-Conformity Score for Quantile Regression
 
 - Per time step:
+    Probabilistic metrics:
+        - :func:`CRPS <darts.metrics.metrics.crps>`: Continuous Ranked Probability Score
+
     Quantile metrics:
         - :func:`QL <darts.metrics.metrics.ql>`: Quantile Loss
 
@@ -110,6 +116,7 @@ if TYPE_CHECKING:
         coefficient_of_variation as coefficient_of_variation,
     )
     from darts.metrics.metrics import confusion_matrix as confusion_matrix
+    from darts.metrics.metrics import crps as crps
     from darts.metrics.metrics import dtw_metric as dtw_metric
     from darts.metrics.metrics import err as err
     from darts.metrics.metrics import f1 as f1
@@ -121,6 +128,7 @@ if TYPE_CHECKING:
     from darts.metrics.metrics import mape as mape
     from darts.metrics.metrics import marre as marre
     from darts.metrics.metrics import mase as mase
+    from darts.metrics.metrics import mcrps as mcrps
     from darts.metrics.metrics import merr as merr
     from darts.metrics.metrics import mic as mic
     from darts.metrics.metrics import mincs_qr as mincs_qr
@@ -148,6 +156,7 @@ if TYPE_CHECKING:
 _LAZY_IMPORTS: dict[str, str] = {
     "accuracy": "darts.metrics.metrics",
     "ae": "darts.metrics.metrics",
+    "crps": "darts.metrics.metrics",
     "ape": "darts.metrics.metrics",
     "arre": "darts.metrics.metrics",
     "ase": "darts.metrics.metrics",
@@ -163,6 +172,7 @@ _LAZY_IMPORTS: dict[str, str] = {
     "iws": "darts.metrics.metrics",
     "mae": "darts.metrics.metrics",
     "mape": "darts.metrics.metrics",
+    "mcrps": "darts.metrics.metrics",
     "marre": "darts.metrics.metrics",
     "mase": "darts.metrics.metrics",
     "merr": "darts.metrics.metrics",
@@ -195,6 +205,7 @@ _TIME_DEPENDENT_METRIC_NAMES = {
     "ape",
     "arre",
     "ase",
+    "crps",
     "err",
     "ql",
     "sape",

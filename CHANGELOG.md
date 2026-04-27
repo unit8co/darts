@@ -31,6 +31,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - 🔴 We moved `NaiveEnsembleModel` from `darts.models.forecasting.baselines` into a dedicated module `darts.models.forecasting.naive_ensemble_model` to separate the heavier dependencies from the baseline models and improve import times. Models that were saved in older Darts versions (pickled) cannot be loaded anymore. To fix it, simply re-create the model and store it again. [#3066](https://github.com/unit8co/darts/pull/3066) by [Dennis Bader](https://github.com/dennisbader)
 - Added parameter `name` to all metric functions for customizing the displayed name. [#3084](https://github.com/unit8co/darts/pull/3084)
   by [Bruno Da Costa](https://github.com/BrunoDaC).
+- Added new probabilistic metrics `crps()` (Continuous Ranked Probability Score) and `mcrps()` (Mean CRPS): a proper scoring rule that generalises the Mean Absolute Error (MAE) to probabilistic forecasts. [#3089](https://github.com/unit8co/darts/pull/3089) by [Boubker Bennani](https://github.com/Boubker10)
 
 **Fixed**
 

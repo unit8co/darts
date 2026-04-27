@@ -3102,6 +3102,226 @@ def mql(
     )
 
 
+@multi_ts_support
+@multivariate_support
+def crps(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Continuous Ranked Probability Score (CRPS).
+
+    CRPS is a proper scoring rule that generalises the Mean Absolute Error (MAE) to probabilistic forecasts.
+    It measures the compatibility of a predictive sample distribution with a scalar observation.
+
+    For the true series :math:`y` and predicted stochastic series (containing N samples) :math:`\\hat{y}`
+    of shape :math:`T \\times N`, it is computed per column/component and time step :math:`t` as:
+
+    .. math:: \\frac{1}{N}\\sum_{i=1}^{N}|\\hat{y}_{t,i} - y_t|
+              - \\frac{1}{2N^2}\\sum_{i=1}^{N}\\sum_{j=1}^{N}|\\hat{y}_{t,i} - \\hat{y}_{t,j}|,
+
+    where :math:`\\hat{y}_{t,i}` is the :math:`i`-th sample at time :math:`t`.
+
+    A CRPS of 0 indicates a perfect forecast. When all N samples are identical, CRPS reduces to the
+    Absolute Error (:func:`~darts.metrics.metrics.ae`).
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    time_reduction
+        Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        time axis. If `None`, will return a metric per time step.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    float
+        A single metric score for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n time steps, n components) without time- and
+        component reductions. For:
+
+        - the same input arguments that result in the `float` return case from above but with ``time_reduction=None``.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    Raises
+    ------
+    ValueError
+        If `pred_series` is not stochastic (i.e., does not contain multiple samples).
+    """
+    if not pred_series.is_stochastic:
+        raise_log(
+            ValueError(
+                "`pred_series` must be a stochastic (contain multiple predicted samples)."
+            ),
+            logger=logger,
+        )
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        q=None,
+        remove_nan_union=True,
+    )
+    # y_true: (T, C, 1), y_pred: (T, C, N)
+    n = y_pred.shape[SMPL_AX]
+    term1 = np.mean(np.abs(y_pred - y_true), axis=SMPL_AX)  # (T, C)
+
+    # term2: `sum of |x_i - x_j| over i,j` has complexity O(N^2);
+    # instead we can compute `2 * sum_k (2k - (n - 1)) * x_{(k)}` for sorted x and 0-based k;
+    # it gives identical result but more efficient with O(N log N) time and O(N) memory per (T, C) slice.
+    y_sorted = np.sort(y_pred, axis=SMPL_AX)
+    k = np.arange(n, dtype=y_pred.dtype)
+    coeff = 2.0 * k - (n - 1.0)
+    term2 = np.sum(coeff * y_sorted, axis=SMPL_AX) / (n**2)  # (T, C)
+    return (term1 - term2)[:, :, np.newaxis]  # (T, C, 1)
+
+
+@multi_ts_support
+@multivariate_support
+def mcrps(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Mean Continuous Ranked Probability Score (MCRPS).
+
+    MCRPS is a proper scoring rule that generalises the Mean Absolute Error (MAE) to probabilistic forecasts.
+    It measures the compatibility of a predictive sample distribution with scalar observations, averaged over
+    all time steps.
+
+    MCRPS first computes the CRPS per time step (:func:`~darts.metrics.metrics.crps`), and then takes the
+    mean over the time axis.
+
+    For the true series :math:`y` and predicted stochastic series (containing N samples) :math:`\\hat{y}`
+    of shape :math:`T \\times N`, it is computed per column/component as:
+
+    .. math:: \\frac{1}{T}\\sum_{t=1}^{T}\\left(
+              \\frac{1}{N}\\sum_{i=1}^{N}|\\hat{y}_{t,i} - y_t|
+              - \\frac{1}{2N^2}\\sum_{i=1}^{N}\\sum_{j=1}^{N}|\\hat{y}_{t,i} - \\hat{y}_{t,j}|
+              \\right),
+
+    where :math:`\\hat{y}_{t,i}` is the :math:`i`-th sample at time :math:`t`.
+
+    A MCRPS of 0 indicates a perfect forecast. When all N samples are identical, MCRPS reduces to the
+    Mean Absolute Error (:func:`~darts.metrics.metrics.mae`).
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    float
+        A single metric score for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components,) without component reduction.
+        For:
+
+        - the same input arguments that result in the `float` return case from above but with
+          `component_reduction=None`.
+        - a single multivariate series and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    Raises
+    ------
+    ValueError
+        If `pred_series` is not stochastic (i.e., does not contain multiple samples).
+    """
+    return np.nanmean(
+        _get_wrapped_metric(crps)(
+            actual_series,
+            pred_series,
+            intersect=intersect,
+        ),
+        axis=TIME_AX,
+    )
+
+
 @interval_support
 @multi_ts_support
 @multivariate_support
