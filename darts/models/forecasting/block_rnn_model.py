@@ -1,6 +1,11 @@
 """
 Block Recurrent Neural Networks
 -------------------------------
+.. autoclass:: CustomBlockRNNModule
+   :members: forward
+   :no-inherited-members:
+   :no-undoc-members:
+   :no-special-members:
 """
 
 import inspect
@@ -42,13 +47,13 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
 
         To create a new module, subclass from :class:`CustomBlockRNNModule` and:
 
-        * Define the architecture in the module constructor (`__init__()`)
+        * Define the architecture in the module constructor (``__init__()``)
 
-        * Add the `forward()` method and define the logic of your module's forward pass
+        * Add the ``forward()`` method and define the logic of your module's forward pass
 
-        * Use the custom module class when creating a new :class:`BlockRNNModel` with parameter `model`.
+        * Use the custom module class when creating a new :class:`BlockRNNModel` with parameter ``model``.
 
-        You can use `darts.models.forecasting.block_rnn_model._BlockRNNModule` as an example.
+        You can use ``darts.models.forecasting.block_rnn_model._BlockRNNModule`` as an example.
 
         Parameters
         ----------
@@ -529,7 +534,7 @@ class BlockRNNModel(MixedCovariatesTorchModel):
 
         self._considers_static_covariates = use_static_covariates
 
-    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
         (past_target, past_covariates, _, future_covariates, static_covariates, _) = (
             train_sample

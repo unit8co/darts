@@ -198,7 +198,7 @@ series.plot()
   This is useful for example for Day-Ahead Market forecasts, or when the covariates (or target series) are reported
   with a delay.
 
-* **Explainability:** Darts has the ability to *explain* some forecasting models using Shap values.
+* **Explainability:** Darts has the ability to *explain* some forecasting models using SHAP values.
 
 * **Data Processing:** Tools to easily apply (and revert) common transformations on
   time series data (scaling, filling missing values, differencing, boxcox, ...)

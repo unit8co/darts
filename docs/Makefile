@@ -85,7 +85,7 @@ generate-api:
 html:
 	# Note: this target has to be called "html" because its name is given as an argument to Sphinx
 	@echo "[Makefile] generating HTML pages using sphinx-build..."
-	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O) -j auto
 
 build-all-docs: clean copy-examples copy-quickstart generate-release_notes generate-userguide generate-api html
 build-api: clean generate-api html
