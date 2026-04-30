@@ -172,7 +172,7 @@ release = [
     "ipywidgets==8.1.8",
     "jinja2==3.1.6",
     "jupyterlab==4.4.10",
-    "lxml-html-clean==0.4.3",
+    "lxml-html-clean==0.4.4",
     "m2r2==0.3.4",
     "nbsphinx==0.9.7",
     "numpydoc==1.9.0",
