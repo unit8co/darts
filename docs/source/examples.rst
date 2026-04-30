@@ -255,7 +255,7 @@ for both PyTorch and SKLearn models:
 .. toctree::
    :maxdepth: 1
 
-   examples/29-Explainability-examples.ipynb
+   examples/28-Explainability-examples.ipynb
 
 Kalman Filter Model
 ===================

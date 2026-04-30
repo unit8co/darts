@@ -13,7 +13,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Improvements to Explainability:
   - 🚀🚀 Added SHAP-based explainer `TorchExplainer` for torch forecasting models. This allows for explaining the predictions of any `TorchForecastingModel` with SHAP permutation explainer and others, in a consistent API with existing `SKLearnExplainer`. It supports global and local explanations and can output SHAP values for further analysis. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
-    - Check out the new [Explainability of Forecasting Models Notebook](https://unit8co.github.io/darts/examples/29-Explainability-examples.html) for usage of `SKLearnExplainer` and `TorchExplainer`.
+    - Check out the new [Explainability of Forecasting Models Notebook](https://unit8co.github.io/darts/examples/28-Explainability-examples.html) for usage of `SKLearnExplainer` and `TorchExplainer`.
   - 🔴 Renamed `ShapExplainer` to `SKLearnExplainer` to better reflect its scope of explaining sklearn-based models. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
   - Added `explain_single()` method to `SKLearnExplainer` and `TorchExplainer` to allow explaining a single forecast instance, in addition to the existing batched method `explain()`. This is useful for local explanations of individual predictions with reduced computational cost. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 
