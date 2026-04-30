@@ -675,6 +675,12 @@ Our regression models are designed to predict continuous numerical values, makin
      - ✅ ✅
      - ✅
      - `TimesFM 1.0 paper <https://arxiv.org/abs/2310.10688>`_, `Google blog post <https://research.google/blog/a-decoder-only-foundation-model-for-time-series-forecasting>`_
+   * - `TiRexModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tirex_model.html#darts.models.forecasting.tirex_model.TiRexModel>`_
+     - ✅ ✅
+     - 🔴 🔴 🔴
+     - ✅ ✅
+     - ✅
+     - `TiRex report <https://arxiv.org/abs/2505.23719>`_, `Model card <https://huggingface.co/NX-AI/TiRex>`_
    * - **Ensemble Models** (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_): Model support is dependent on ensembled forecasting models and the ensemble model itself
      -
      -

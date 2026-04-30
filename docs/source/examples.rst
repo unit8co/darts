@@ -219,12 +219,12 @@ NeuralForecastModel example notebook:
 Chronos-2 Model
 ===============
 
-Chronos-2 Foundation model example notebook:
+Foundation model example notebook:
 
 .. toctree::
    :maxdepth: 1
 
-   examples/25-Chronos-2-examples.ipynb
+   examples/25-FoundationModel-examples.ipynb
 
 Torch and Foundation Model Fine-Tuning
 ======================================

@@ -48,6 +48,7 @@ def err(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Error (ERR).
 
@@ -93,6 +94,8 @@ def err(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -141,6 +144,7 @@ def merr(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Error (MERR).
 
@@ -181,6 +185,8 @@ def merr(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -227,6 +233,7 @@ def ae(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Absolute Error (AE).
 
@@ -272,6 +279,8 @@ def ae(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -320,6 +329,7 @@ def mae(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Error (MAE).
 
@@ -360,6 +370,8 @@ def mae(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -409,6 +421,7 @@ def ase(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Absolute Scaled Error (ASE) (see [1]_ for more information on scaled forecasting errors).
 
@@ -476,6 +489,8 @@ def ase(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -536,6 +551,7 @@ def mase(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Scaled Error (MASE) (see [1]_ for more information on scaled forecasting errors).
 
@@ -598,6 +614,8 @@ def mase(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -657,6 +675,7 @@ def se(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Squared Error (SE).
 
@@ -702,6 +721,8 @@ def se(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -750,6 +771,7 @@ def mse(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Squared Error (MSE).
 
@@ -790,6 +812,8 @@ def mse(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -839,6 +863,7 @@ def sse(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Squared Scaled Error (SSE) (see [1]_ for more information on scaled forecasting errors).
 
@@ -906,6 +931,8 @@ def sse(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -966,6 +993,7 @@ def msse(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Squared Scaled Error (MSSE) (see [1]_ for more information on scaled forecasting errors).
 
@@ -1028,6 +1056,8 @@ def msse(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -1086,6 +1116,7 @@ def rmse(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Root Mean Squared Error (RMSE).
 
@@ -1126,6 +1157,8 @@ def rmse(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -1173,6 +1206,7 @@ def rmsse(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Root Mean Squared Scaled Error (RMSSE) (see [1]_ for more information on scaled forecasting errors).
 
@@ -1235,6 +1269,8 @@ def rmsse(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -1290,6 +1326,7 @@ def sle(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Squared Log Error (SLE).
 
@@ -1337,6 +1374,8 @@ def sle(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -1386,6 +1425,7 @@ def rmsle(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Root Mean Squared Log Error (RMSLE).
 
@@ -1428,6 +1468,8 @@ def rmsle(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -1476,6 +1518,7 @@ def ape(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Absolute Percentage Error (APE).
 
@@ -1524,6 +1567,8 @@ def ape(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -1584,6 +1629,7 @@ def mape(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Percentage Error (MAPE).
 
@@ -1627,6 +1673,8 @@ def mape(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -1678,6 +1726,7 @@ def wmape(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Weighted Mean Absolute Percentage Error (WMAPE). (see [1]_ for more information).
 
@@ -1718,6 +1767,8 @@ def wmape(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -1778,6 +1829,7 @@ def sape(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """symmetric Absolute Percentage Error (sAPE).
 
@@ -1827,6 +1879,8 @@ def sape(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -1882,6 +1936,7 @@ def smape(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """symmetric Mean Absolute Percentage Error (sMAPE).
 
@@ -1927,6 +1982,8 @@ def smape(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -1973,6 +2030,7 @@ def ope(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Overall Percentage Error (OPE).
 
@@ -2014,6 +2072,8 @@ def ope(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -2076,6 +2136,7 @@ def arre(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Absolute Ranged Relative Error (ARRE).
 
@@ -2121,6 +2182,8 @@ def arre(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -2184,6 +2247,7 @@ def marre(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Ranged Relative Error (MARRE).
 
@@ -2225,6 +2289,8 @@ def marre(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -2270,6 +2336,7 @@ def r2_score(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Coefficient of Determination :math:`R^2` (see [1]_ for more details).
 
@@ -2314,6 +2381,8 @@ def r2_score(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -2365,6 +2434,7 @@ def coefficient_of_variation(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Coefficient of Variation (percentage).
 
@@ -2408,6 +2478,8 @@ def coefficient_of_variation(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -2461,6 +2533,7 @@ def _tolerance_coverages(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Computes the tolerance coverages for different tolerance levels.
 
@@ -2520,6 +2593,7 @@ def autc(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Area Under Tolerance Curve (AUTC).
 
@@ -2581,6 +2655,8 @@ def autc(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -2644,6 +2720,7 @@ def dtw_metric(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
     **kwargs,
 ) -> METRIC_OUTPUT_TYPE:
     """
@@ -2679,6 +2756,8 @@ def dtw_metric(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -2722,6 +2801,7 @@ def qr(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Quantile Risk (QR)
 
@@ -2768,6 +2848,8 @@ def qr(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -2833,6 +2915,7 @@ def ql(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Quantile Loss (QL).
 
@@ -2884,6 +2967,8 @@ def ql(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -2934,6 +3019,7 @@ def mql(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Quantile Loss (MQL).
 
@@ -2981,6 +3067,8 @@ def mql(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3014,6 +3102,226 @@ def mql(
     )
 
 
+@multi_ts_support
+@multivariate_support
+def crps(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Continuous Ranked Probability Score (CRPS).
+
+    CRPS is a proper scoring rule that generalises the Mean Absolute Error (MAE) to probabilistic forecasts.
+    It measures the compatibility of a predictive sample distribution with a scalar observation.
+
+    For the true series :math:`y` and predicted stochastic series (containing N samples) :math:`\\hat{y}`
+    of shape :math:`T \\times N`, it is computed per column/component and time step :math:`t` as:
+
+    .. math:: \\frac{1}{N}\\sum_{i=1}^{N}|\\hat{y}_{t,i} - y_t|
+              - \\frac{1}{2N^2}\\sum_{i=1}^{N}\\sum_{j=1}^{N}|\\hat{y}_{t,i} - \\hat{y}_{t,j}|,
+
+    where :math:`\\hat{y}_{t,i}` is the :math:`i`-th sample at time :math:`t`.
+
+    A CRPS of 0 indicates a perfect forecast. When all N samples are identical, CRPS reduces to the
+    Absolute Error (:func:`~darts.metrics.metrics.ae`).
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    time_reduction
+        Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        time axis. If `None`, will return a metric per time step.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    float
+        A single metric score for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n time steps, n components) without time- and
+        component reductions. For:
+
+        - the same input arguments that result in the `float` return case from above but with ``time_reduction=None``.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    Raises
+    ------
+    ValueError
+        If `pred_series` is not stochastic (i.e., does not contain multiple samples).
+    """
+    if not pred_series.is_stochastic:
+        raise_log(
+            ValueError(
+                "`pred_series` must be a stochastic (contain multiple predicted samples)."
+            ),
+            logger=logger,
+        )
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        q=None,
+        remove_nan_union=True,
+    )
+    # y_true: (T, C, 1), y_pred: (T, C, N)
+    n = y_pred.shape[SMPL_AX]
+    term1 = np.mean(np.abs(y_pred - y_true), axis=SMPL_AX)  # (T, C)
+
+    # term2: `sum of |x_i - x_j| over i,j` has complexity O(N^2);
+    # instead we can compute `2 * sum_k (2k - (n - 1)) * x_{(k)}` for sorted x and 0-based k;
+    # it gives identical result but more efficient with O(N log N) time and O(N) memory per (T, C) slice.
+    y_sorted = np.sort(y_pred, axis=SMPL_AX)
+    k = np.arange(n, dtype=y_pred.dtype)
+    coeff = 2.0 * k - (n - 1.0)
+    term2 = np.sum(coeff * y_sorted, axis=SMPL_AX) / (n**2)  # (T, C)
+    return (term1 - term2)[:, :, np.newaxis]  # (T, C, 1)
+
+
+@multi_ts_support
+@multivariate_support
+def mcrps(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Mean Continuous Ranked Probability Score (MCRPS).
+
+    MCRPS is a proper scoring rule that generalises the Mean Absolute Error (MAE) to probabilistic forecasts.
+    It measures the compatibility of a predictive sample distribution with scalar observations, averaged over
+    all time steps.
+
+    MCRPS first computes the CRPS per time step (:func:`~darts.metrics.metrics.crps`), and then takes the
+    mean over the time axis.
+
+    For the true series :math:`y` and predicted stochastic series (containing N samples) :math:`\\hat{y}`
+    of shape :math:`T \\times N`, it is computed per column/component as:
+
+    .. math:: \\frac{1}{T}\\sum_{t=1}^{T}\\left(
+              \\frac{1}{N}\\sum_{i=1}^{N}|\\hat{y}_{t,i} - y_t|
+              - \\frac{1}{2N^2}\\sum_{i=1}^{N}\\sum_{j=1}^{N}|\\hat{y}_{t,i} - \\hat{y}_{t,j}|
+              \\right),
+
+    where :math:`\\hat{y}_{t,i}` is the :math:`i`-th sample at time :math:`t`.
+
+    A MCRPS of 0 indicates a perfect forecast. When all N samples are identical, MCRPS reduces to the
+    Mean Absolute Error (:func:`~darts.metrics.metrics.mae`).
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    float
+        A single metric score for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components,) without component reduction.
+        For:
+
+        - the same input arguments that result in the `float` return case from above but with
+          `component_reduction=None`.
+        - a single multivariate series and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    Raises
+    ------
+    ValueError
+        If `pred_series` is not stochastic (i.e., does not contain multiple samples).
+    """
+    return np.nanmean(
+        _get_wrapped_metric(crps)(
+            actual_series,
+            pred_series,
+            intersect=intersect,
+        ),
+        axis=TIME_AX,
+    )
+
+
 @interval_support
 @multi_ts_support
 @multivariate_support
@@ -3029,6 +3337,7 @@ def iw(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Interval Width (IW).
 
@@ -3080,6 +3389,8 @@ def iw(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3130,6 +3441,7 @@ def miw(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Interval Width (MIW).
 
@@ -3176,6 +3488,8 @@ def miw(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3225,6 +3539,7 @@ def iws(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Interval Winkler Score (IWS) [1]_.
 
@@ -3282,6 +3597,8 @@ def iws(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3353,6 +3670,7 @@ def miws(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Interval Winkler Score (IWS) [1]_.
 
@@ -3397,6 +3715,8 @@ def miws(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3450,6 +3770,7 @@ def ic(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Interval Coverage (IC).
 
@@ -3506,6 +3827,8 @@ def ic(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3556,6 +3879,7 @@ def mic(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Interval Coverage (MIC).
 
@@ -3600,6 +3924,8 @@ def mic(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3650,6 +3976,7 @@ def incs_qr(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Interval Non-Conformity Score for Quantile Regression (INCS_QR).
 
@@ -3704,6 +4031,8 @@ def incs_qr(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3758,6 +4087,7 @@ def mincs_qr(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Interval Non-Conformity Score for Quantile Regression (MINCS_QR).
 
@@ -3805,6 +4135,8 @@ def mincs_qr(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3852,6 +4184,7 @@ def accuracy(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Accuracy Score [1]_.
 
@@ -3893,6 +4226,8 @@ def accuracy(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -3941,6 +4276,7 @@ def precision(
     label_reduction: str | None | _LabelReduction = _LabelReduction.MACRO,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Precision Score [1]_.
 
@@ -3994,6 +4330,8 @@ def precision(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -4056,6 +4394,7 @@ def recall(
     label_reduction: str | None | _LabelReduction = _LabelReduction.MACRO,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Recall Score [1]_.
 
@@ -4109,6 +4448,8 @@ def recall(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -4171,6 +4512,7 @@ def f1(
     label_reduction: str | None | _LabelReduction = _LabelReduction.MACRO,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """F1 Score [1]_.
 
@@ -4225,6 +4567,8 @@ def f1(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
@@ -4287,6 +4631,7 @@ def confusion_matrix(
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Confusion Matrix (CM) [1]_.
 
@@ -4330,6 +4675,8 @@ def confusion_matrix(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
