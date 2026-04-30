@@ -26,12 +26,12 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For developers of the library:
 
+- Added `SHAPSingleExplainabilityResult` class as the return type of `explain_single()` method in `SKLearnExplainer` and `TorchExplainer` and to store the SHAP results of a single instance explanation. This is in contrast to the existing `SHAPExplainabilityResult` which stores results for batched explanations. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+- Sped up the documentation build by utilizing multiple CPU cores. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+
 ## [0.44.0](https://github.com/unit8co/darts/tree/0.44.0) (2026-04-30)
 
 ### For users of the library:
-
-- Added `SHAPSingleExplainabilityResult` class as the return type of `explain_single()` method in `SKLearnExplainer` and `TorchExplainer` and to store the SHAP results of a single instance explanation. This is in contrast to the existing `SHAPExplainabilityResult` which stores results for batched explanations. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
-- Sped up the documentation build by utilizing multiple CPU cores. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 
 **Improved**
 - 🚀🚀 Dramatically reduced import times by deferring heavy third-party dependencies (torch, sklearn, scipy, ...) until they are actually needed. This benefits cold-start scenarios (serverless functions, CLI tools, short-lived scripts), CI pipelines, and interactive development workflows where fast feedback loops matter. Here are some import speed-up examples: [#3066](https://github.com/unit8co/darts/pull/3066) by [Dennis Bader](https://github.com/dennisbader)

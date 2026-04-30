@@ -22,7 +22,7 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
-from darts.utils.data import ShiftedTorchTrainingDataset, TorchTrainingDataset
+from darts.utils.data import ShiftedTorchTrainingDataset
 from darts.utils.data.torch_datasets.utils import (
     PLModuleInput,
     TorchBatch,
@@ -608,7 +608,7 @@ class RNNModel(DualCovariatesTorchModel):
         )
 
     @staticmethod
-    def _verify_train_dataset_type(train_dataset: TorchTrainingDataset):
+    def _verify_train_dataset_type(train_dataset: ShiftedTorchTrainingDataset):
         if not isinstance(train_dataset, ShiftedTorchTrainingDataset):
             raise_log(
                 ValueError(
