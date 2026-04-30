@@ -75,6 +75,10 @@ all = ["darts[torch,notorch]"]
 [tool.uv]
 # Cooldown period for PyPI releases to mitigate supply chain attacks.
 exclude-newer = "7 days"
+required-environments = [
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",  # Apple Silicon
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",  # Linux x86_64
+]
 
 [tool.uv.sources]
 # Use PyTorch CPU-only index when torch-cpu group is enabled
