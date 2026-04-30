@@ -5,33 +5,41 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.43.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.44.0...master)
+
+### For users of the library:
+
+### For developers of the library:
+
+## [0.44.0](https://github.com/unit8co/darts/tree/0.44.0) (2026-04-30)
 
 ### For users of the library:
 
 **Improved**
-- 🚀🚀 Added new forecasting model `TiRexModel`: NX-AI's pre-trained 35M-parameter foundational model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series forecasting without training and can output deterministic or probabilistic forecasts. [#3038](https://github.com/unit8co/darts/pull/3038) by [Lukas Fischer](https://github.com/lukfischer), [Martin Loretz](https://github.com/martinloretzzz), and [Zhihao Dai](https://github.com/daidahao).
-- 🚀🚀 Dramatically reduced import times by deferring heavy third-party dependencies (torch, sklearn, scipy, ...) until they are actually needed. Here are some import speed up examples: [#3066](https://github.com/unit8co/darts/pull/3066) by [Dennis Bader](https://github.com/dennisbader)
-  - TimeSeries, metrics, datasets, data transformers: 7x faster (2.4 → 0.3 seconds)
-  - Baseline models: 15x faster (5.7 → 0.4 seconds)
-  - SKLearn models: 4.5x faster (5.7 → 1.27 seconds)
+- 🚀🚀 Dramatically reduced import times by deferring heavy third-party dependencies (torch, sklearn, scipy, ...) until they are actually needed. This benefits cold-start scenarios (serverless functions, CLI tools, short-lived scripts), CI pipelines, and interactive development workflows where fast feedback loops matter. Here are some import speed-up examples: [#3066](https://github.com/unit8co/darts/pull/3066) by [Dennis Bader](https://github.com/dennisbader)
+  - TimeSeries, metrics, datasets, data transformers: 8x faster (2.4 → 0.3 seconds)
+  - Baseline models: 19x faster (5.7 → 0.3 seconds)
+  - SKLearn models: 4.4x faster (5.7 → 1.3 seconds)
   - Torch models: 1.9x faster (5.7 → 3.0 seconds)
-- Improvements to `InvertibleDataTransformer` and data `Pipeline`: [#3085](https://github.com/unit8co/darts/pull/3085) by [Jakub Chłapek](https://github.com/jakubchlapek)
+- 🚀🚀 Added new forecasting model `TiRexModel` : NX-AI's pre-trained 35M-parameter foundational model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series forecasting without training and can output deterministic or probabilistic forecasts. [#3038](https://github.com/unit8co/darts/pull/3038) by [Lukas Fischer](https://github.com/lukfischer), [Martin Loretz](https://github.com/martinloretzzz), and [Zhihao Dai](https://github.com/daidahao).
+- Improvements to `InvertibleDataTransformer` and data `Pipeline` : [#3085](https://github.com/unit8co/darts/pull/3085) by [Jakub Chłapek](https://github.com/jakubchlapek)
   - Added optional `insample` parameter to `inverse_transform()` to supply the transformed history needed by transformers like `Diff`, removing the need to manually concatenate the in-sample series before inverse-transforming a forecast.
   - `Diff` can now be properly used inside a target series `Pipeline` with `historical_forecasts()` via the `data_transformers` parameter. The backtested forecasts are correctly inverse-transformed back to the original scale.
-- Added native multi-quantile support for `CatBoostModel` by using CatBoost’s `MultiQuantile` loss for faster training and inference. Set `likelihood="multiquantile"` to enable this feature. [#3032](https://github.com/unit8co/darts/pull/3032) by [Zhihao Dai](https://github.com/daidahao)
-- Added native multi-quantile support for `XGBModel`. Similar to the regular quantile support, it still fits dedicated models per quantile, but it is more efficient due to fewer tabularization operations. Set `likelihood="multiquantile"` to enable this feature. [#3056](https://github.com/unit8co/darts/pull/3056) by [Oswald Zink](https://github.com/ozink-u8)
-- `StatsForecastModel` now accepts `model` as a StatsForecast model name, class, or instance; `model_kwargs` supplies constructor arguments when `model` is a name or class. This simplifies config-driven setups. [#3058](https://github.com/unit8co/darts/pull/3058) by [Trevin Chow](https://github.com/tmchow).
 - Improvements to `RegressionEnsembleModel` : [#3041](https://github.com/unit8co/darts/pull/3041) by [Gabriel Margaria](https://github.com/Jaco-Pastorius) and [#3074](https://github.com/unit8co/darts/pull/3074) by [Junghwan Na](https://github.com/shaun0927).
   - Base forecasting models using `output_chunk_shift>0` are now fully supported. If you're using a custom `regression_model`, simply set its output shift to be the same as that of the base models.
   - Added support for `output_chunk_length>1` for the ensemble (regression) model. This means that the ensemble model can now consume information from base model forecasts over the entire horizon.
-- 🔴 Scaled metrics (`ase`, `sse`, `mase`, `msse`, `rmsse`) no longer raise a hard `ValueError` when the `insample` series has zero error scale (constant or perfectly seasonal signals). A new `zero_division` parameter controls the behavior: [#3059](https://github.com/unit8co/darts/pull/3059) by [Mahima Sharma](https://github.com/mahi-ma)
-  - `"warn"` (default) raises a warning and returns `np.nan` for non-zero forecast errors, and `1.0` otherwise (forecast is on-par with naive forecast).
-  - `"raise"` preserves the legacy error.
-- 🔴 We moved `NaiveEnsembleModel` from `darts.models.forecasting.baselines` into a dedicated module `darts.models.forecasting.naive_ensemble_model` to separate the heavier dependencies from the baseline models and improve import times. Models that were saved in older Darts versions (pickled) cannot be loaded anymore. To fix it, simply re-create the model and store it again. [#3066](https://github.com/unit8co/darts/pull/3066) by [Dennis Bader](https://github.com/dennisbader)
-- Added parameter `name` to all metric functions for customizing the displayed name. [#3084](https://github.com/unit8co/darts/pull/3084)
-  by [Bruno Da Costa](https://github.com/BrunoDaC).
-- Added new probabilistic metrics `crps()` (Continuous Ranked Probability Score) and `mcrps()` (Mean CRPS): a proper scoring rule that generalises the Mean Absolute Error (MAE) to probabilistic forecasts. [#3089](https://github.com/unit8co/darts/pull/3089) by [Boubker Bennani](https://github.com/Boubker10)
+- Improvements to Gradient-Boosted Models:
+  - Added native multi-quantile support for `CatBoostModel` by using CatBoost’s `MultiQuantile` loss for faster training and inference. Set `likelihood="multiquantile"` to enable this feature. [#3032](https://github.com/unit8co/darts/pull/3032) by [Zhihao Dai](https://github.com/daidahao)
+  - Added native multi-quantile support for `XGBModel`. Similar to the regular quantile support, it still fits dedicated models per quantile, but it is more efficient due to fewer tabularization operations. Set `likelihood="multiquantile"` to enable this feature. [#3056](https://github.com/unit8co/darts/pull/3056) by [Oswald Zink](https://github.com/ozink-u8)
+- Improvements to metrics:
+  - Added new probabilistic metrics `crps()` (Continuous Ranked Probability Score) and `mcrps()` (Mean CRPS): a proper scoring rule that generalises the Mean Absolute Error (MAE) to probabilistic forecasts. [#3089](https://github.com/unit8co/darts/pull/3089) by [Boubker Bennani](https://github.com/Boubker10)
+  - Added parameter `name` to all metric functions for customizing the displayed name. [#3084](https://github.com/unit8co/darts/pull/3084) by [Bruno Da Costa](https://github.com/BrunoDaC).
+  - 🔴 Scaled metrics (`ase`, `sse`, `mase`, `msse`, `rmsse`) no longer raise a hard `ValueError` when the `insample` series has zero error scale (constant or perfectly seasonal signals). A new `zero_division` parameter controls the behavior: [#3059](https://github.com/unit8co/darts/pull/3059) by [Mahima Sharma](https://github.com/mahi-ma)
+    - `"warn"` (default) raises a warning and returns `np.nan` for non-zero forecast errors, and `1.0` otherwise (forecast is on-par with naive forecast).
+    - `"raise"` preserves the legacy error.
+- Other improvements:
+  - `StatsForecastModel` now accepts `model` as a StatsForecast model name, class, or instance; `model_kwargs` supplies constructor arguments when `model` is a name or class. This simplifies config-driven setups. [#3058](https://github.com/unit8co/darts/pull/3058) by [Trevin Chow](https://github.com/tmchow).
+  - 🔴 We moved `NaiveEnsembleModel` from `darts.models.forecasting.baselines` into a dedicated module `darts.models.forecasting.naive_ensemble_model` to separate the heavier dependencies from the baseline models and improve import times. The import remains identical `from darts.models import NaiveEnsembleModel` but pickled models that were saved in older Darts versions cannot be loaded anymore. To fix it, simply re-create the model and store it again. [#3066](https://github.com/unit8co/darts/pull/3066) by [Dennis Bader](https://github.com/dennisbader)
 
 **Fixed**
 
