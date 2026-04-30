@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from darts import TimeSeries, concatenate
-from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.conftest import TIREX_AVAILABLE, TORCH_AVAILABLE, tfm_kwargs
 from darts.utils.likelihood_models import QuantileRegression
 from darts.utils.timeseries_generation import linear_timeseries
 
@@ -423,15 +423,18 @@ class TestFoundationModel:
                 "output_patch_embedding.*",
                 {"hub_model_name": "autogluon/chronos-2-small"},
             ),
-            (
-                TiRexModel,
-                "*output_patch_embedding.*",
-                {
-                    "hub_model_name": "NX-AI/TiRex",
-                    "accept_license": True,
-                },
-            ),
-        ],
+        ]
+        + (
+            [
+                (
+                    TiRexModel,
+                    "*output_patch_embedding.*",
+                    {"hub_model_name": "NX-AI/TiRex", "accept_license": True},
+                )
+            ]
+            if TIREX_AVAILABLE
+            else []
+        ),
     )
     def test_finetuning_all_models(self, config):
         """Tests fine-tuning with user-quantiles that are different to the ones the model was trained on."""
