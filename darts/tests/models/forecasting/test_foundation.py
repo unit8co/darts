@@ -8,7 +8,6 @@ import numpy as np
 import pytest
 
 from darts import TimeSeries, concatenate
-from darts.models.forecasting.tirex_model import TiRexModel
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils.likelihood_models import QuantileRegression
 from darts.utils.timeseries_generation import linear_timeseries
@@ -19,7 +18,7 @@ if not TORCH_AVAILABLE:
         allow_module_level=True,
     )
 
-from darts.models import Chronos2Model, TimesFM2p5Model
+from darts.models import Chronos2Model, TimesFM2p5Model, TiRexModel
 
 
 def generate_series(n_variables: int, length: int, prefix: str):
