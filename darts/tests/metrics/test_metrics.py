@@ -264,6 +264,7 @@ class TestMetrics:
             (metrics.sape, False, {"time_reduction": np.mean}),
             (metrics.arre, False, {"time_reduction": np.mean}),
             (metrics.ql, True, {"time_reduction": np.mean}),
+            (metrics.crps, True, {"time_reduction": np.mean}),
             # time aggregates
             (metrics.merr, False, {}),
             (metrics.mae, False, {}),
@@ -283,6 +284,7 @@ class TestMetrics:
             (metrics.coefficient_of_variation, False, {}),
             (metrics.qr, True, {}),
             (metrics.mql, True, {}),
+            (metrics.mcrps, True, {}),
             (metrics.dtw_metric, False, {}),
             (metrics.accuracy, False, {}),
             (metrics.precision, False, {}),
@@ -577,6 +579,7 @@ class TestMetrics:
             (metrics.sape, False),
             (metrics.arre, False),
             (metrics.ql, True),
+            (metrics.crps, True),
         ],
     )
     def test_output_type_time_dependent(self, config):
@@ -862,6 +865,7 @@ class TestMetrics:
                 (metrics.sape, False),
                 (metrics.arre, False),
                 (metrics.ql, True),
+                (metrics.crps, True),
                 # time aggregates
                 (metrics.merr, False),
                 (metrics.mae, False),
@@ -881,6 +885,7 @@ class TestMetrics:
                 (metrics.coefficient_of_variation, False),
                 (metrics.qr, True),
                 (metrics.mql, True),
+                (metrics.mcrps, True),
                 (metrics.dtw_metric, False),
                 (metrics.accuracy, False),
                 (metrics.precision, False),
@@ -970,6 +975,7 @@ class TestMetrics:
             (metrics.sape, 0, False, {"time_reduction": np.mean}),
             (metrics.arre, 0, False, {"time_reduction": np.mean}),
             (metrics.ql, 0, True, {"time_reduction": np.mean}),
+            (metrics.crps, 0, True, {"time_reduction": np.mean}),
             # time aggregates
             (metrics.merr, 0, False, {}),
             (metrics.mae, 0, False, {}),
@@ -989,6 +995,7 @@ class TestMetrics:
             (metrics.coefficient_of_variation, 0, False, {}),
             (metrics.qr, 0, True, {}),
             (metrics.mql, 0, True, {}),
+            (metrics.mcrps, 0, True, {}),
             (metrics.dtw_metric, 0, False, {}),
             (metrics.accuracy, 1, False, {}),
             (metrics.precision, 1, False, {}),
@@ -1556,6 +1563,54 @@ class TestMetrics:
         )
         np.testing.assert_array_almost_equal(
             metric(s2, s12_stochastic, q=0.0, **kwargs), 0.0
+        )
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (metrics.crps, False, {"time_reduction": np.nanmean}),
+            (metrics.mcrps, True, {}),
+        ],
+    )
+    def test_crps(self, config):
+        metric, is_aggregate, kwargs = config
+
+        # deterministic not supported
+        with pytest.raises(ValueError):
+            metric(self.series1, self.series1, **kwargs)
+
+        # general univariate, multivariate and multi-ts tests
+        self.helper_test_multivariate_duplication_equality(
+            metric, is_stochastic=True, **kwargs
+        )
+        self.helper_test_multiple_ts_duplication_equality(
+            metric, is_stochastic=True, **kwargs
+        )
+        self.helper_test_nan(metric, is_stochastic=True, **kwargs)
+
+        # perfect predictions (all samples equal to actual) -> CRPS = 0
+        np.testing.assert_array_almost_equal(
+            metric(self.series1, self.series11_stochastic, **kwargs), 0.0
+        )
+
+        # manual numerical check: y_true = 0, samples = [-1, 0, 1]
+        # term1 = mean(|x_i - 0|) = (1 + 0 + 1) / 3 = 2/3
+        # pairwise |x_i - x_j| sum = 2*(1+2+1) = 8  (upper tri * 2 + diag)
+        # term2 = 0.5 * 8 / 9 = 4/9
+        # crps = 2/3 - 4/9 = 2/9
+        y_true = TimeSeries.from_values(np.zeros((5, 1, 1)))
+        samples = np.array([-1.0, 0.0, 1.0])
+        y_pred = TimeSeries.from_values(np.tile(samples, (5, 1, 1)).reshape(5, 1, 3))
+        expected_crps = 2.0 / 9.0
+        np.testing.assert_almost_equal(
+            metric(y_true, y_pred, **kwargs), expected_crps, decimal=10
+        )
+
+        # CRPS should be <= MAE: a spread-out distribution centered on truth is better than a point prediction
+        # Use series1 as truth; stochastic series centered on truth has lower CRPS than a biased one
+        np.testing.assert_array_less(
+            metric(self.series1, self.series11_stochastic, **kwargs),
+            metric(self.series1, self.series22_stochastic, **kwargs) + 1e-10,
         )
 
     def test_metrics_arguments(self):
