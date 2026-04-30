@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -415,11 +415,13 @@
 <span class="sd">------------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">runtime_checkable</span>
+
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">statsforecast.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">_TS</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">statsforecast.models</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sf_models</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">concatenate</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearRegressionModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">TransferableFutureCovariatesLocalForecastingModel</span><span class="p">,</span>
@@ -431,13 +433,31 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_SFModel</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;This serves as a protocol for expected StatsForecast model API.&quot;&quot;&quot;</span>
+
+    <span class="n">uses_exog</span><span class="p">:</span> <span class="nb">bool</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span> <span class="o">...</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span> <span class="o">...</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forecast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span> <span class="o">...</span>
+
+
 <div class="viewcode-block" id="StatsForecastModel">
 <a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_model.html#darts.models.forecasting.sf_model.StatsForecastModel">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">StatsForecastModel</span><span class="p">(</span><span class="n">TransferableFutureCovariatesLocalForecastingModel</span><span class="p">):</span>
     <span class="nd">@random_method</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">model</span><span class="p">:</span> <span class="n">_TS</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">type</span><span class="p">[</span><span class="n">sf_models</span><span class="o">.</span><span class="n">_TS</span><span class="p">]</span> <span class="o">|</span> <span class="n">sf_models</span><span class="o">.</span><span class="n">_TS</span> <span class="o">=</span> <span class="s2">&quot;AutoARIMA&quot;</span><span class="p">,</span>
+        <span class="n">model_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">add_encoders</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">quantiles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -484,7 +504,13 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        model</span>
-<span class="sd">            Any StatsForecast model.</span>
+<span class="sd">            Name, class, or instance of the StatsForecast base model to be used from ``statsforecast.models``, e.g.,</span>
+<span class="sd">            ``&quot;AutoARIMA&quot;``, ``AutoARIMA``, or ``AutoARIMA()``. See all `StatsForecast models</span>
+<span class="sd">            &lt;https://nixtlaverse.nixtla.io/statsforecast/src/core/models_intro.html&gt;`__ here.</span>
+<span class="sd">        model_kwargs</span>
+<span class="sd">            A dictionary of model parameters to initialize the StatsForecast base model. The expected</span>
+<span class="sd">            parameters depend on the base model used. Only effective when `model` is a string or class.</span>
+<span class="sd">            Default: ``None``.</span>
 <span class="sd">        add_encoders</span>
 <span class="sd">            A large number of future covariates can be automatically generated with `add_encoders`.</span>
 <span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
@@ -520,12 +546,11 @@
 <span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
 <span class="sd">        &gt;&gt;&gt; from darts.models import StatsForecastModel</span>
 <span class="sd">        &gt;&gt;&gt; from darts.utils.timeseries_generation import datetime_attribute_timeseries</span>
-<span class="sd">        &gt;&gt;&gt; from statsforecast.models import AutoARIMA</span>
 <span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
 <span class="sd">        &gt;&gt;&gt; # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series</span>
 <span class="sd">        &gt;&gt;&gt; future_cov = datetime_attribute_timeseries(series, &quot;month&quot;, cyclic=True, add_length=6)</span>
 <span class="sd">        &gt;&gt;&gt; # define AutoARIMA parameters</span>
-<span class="sd">        &gt;&gt;&gt; model = StatsForecastModel(model=AutoARIMA(season_length=12))</span>
+<span class="sd">        &gt;&gt;&gt; model = StatsForecastModel(model=&quot;AutoARIMA&quot;, model_kwargs={&quot;season_length&quot;: 12})</span>
 <span class="sd">        &gt;&gt;&gt; model.fit(series, future_covariates=future_cov)</span>
 <span class="sd">        &gt;&gt;&gt; pred = model.predict(6, future_covariates=future_cov)</span>
 <span class="sd">        &gt;&gt;&gt; print(pred.values())</span>
@@ -536,10 +561,31 @@
 <span class="sd">         [502.67834069]</span>
 <span class="sd">         [566.04774778]]</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">_TS</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;`model` must be a StatsForecast model imported from `statsforecast.models`.&quot;</span>
+        <span class="n">model_kwargs</span> <span class="o">=</span> <span class="n">model_kwargs</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">sf_models</span><span class="o">.</span><span class="n">_TS</span><span class="p">):</span>
+            <span class="k">pass</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">model_class</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">sf_models</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Could not find a StatsForecast model class named `</span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s2">` &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;in `statsforecast.models`.&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">model_class</span><span class="p">(</span><span class="o">**</span><span class="n">model_kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="nb">type</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">sf_models</span><span class="o">.</span><span class="n">_TS</span><span class="p">):</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">model_kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;`model` must be a valid StatsForecast model name (str), class or instance.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">:</span> <span class="n">_SFModel</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood</span> <span class="o">=</span> <span class="n">QuantilePrediction</span><span class="p">(</span><span class="n">quantiles</span><span class="o">=</span><span class="n">quantiles</span><span class="p">)</span>
 
@@ -790,18 +836,6 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">_supports_non_retrainable_historical_forecasts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_supports_native_transferable_series</span></div>
 
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">_SFModel</span><span class="p">(</span><span class="n">_TS</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;This serves as a protocol for expected StatsForecast model API.&quot;&quot;&quot;</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span> <span class="o">...</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span> <span class="o">...</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">forecast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span> <span class="o">...</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span> <span class="o">...</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_unpack_sf_dict</span><span class="p">(</span>

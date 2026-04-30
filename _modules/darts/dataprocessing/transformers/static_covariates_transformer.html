@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -416,7 +416,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -708,15 +708,38 @@
                 <span class="n">col_map_cat</span> <span class="o">=</span> <span class="n">inv_col_map_cat</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">({</span>
                     <span class="n">col</span><span class="p">:</span> <span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols_cat</span>
                 <span class="p">})</span>
-            <span class="c1"># transformer generates more features (i.e. OneHotEncoder) -&gt; create a 1-many column map</span>
+            <span class="c1"># transformer generates more features (i.e. OneHotEncoder) -&gt; create a 1-many column map;</span>
+            <span class="c1"># also some columns might be dropped by the transformer (e.g. with drop=&quot;first&quot;)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">col_map_cat</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
                 <span class="n">inv_col_map_cat</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-                <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">categories</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">cols_cat</span><span class="p">,</span> <span class="n">transformer_cat</span><span class="o">.</span><span class="n">categories_</span><span class="p">):</span>
+
+                <span class="n">feature_names</span> <span class="o">=</span> <span class="n">transformer_cat</span><span class="o">.</span><span class="n">get_feature_names_out</span><span class="p">(</span><span class="n">cols_cat</span><span class="p">)</span>
+                <span class="n">col_prefixes</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2">_&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cols_cat</span><span class="p">]</span>
+                <span class="n">feat_idx</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cols_cat</span><span class="p">):</span>
                     <span class="n">col_map_cat_i</span> <span class="o">=</span> <span class="p">[]</span>
-                    <span class="k">for</span> <span class="n">cat</span> <span class="ow">in</span> <span class="n">categories</span><span class="p">:</span>
-                        <span class="n">col_map_cat_i</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cat</span><span class="p">))</span>
-                        <span class="n">inv_col_map_cat</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cat</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="p">]</span>
+                    <span class="n">prefix</span> <span class="o">=</span> <span class="n">col_prefixes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+                    <span class="k">while</span> <span class="n">feat_idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">feature_names</span><span class="p">):</span>
+                        <span class="n">name</span> <span class="o">=</span> <span class="n">feature_names</span><span class="p">[</span><span class="n">feat_idx</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">):</span>
+                            <span class="c1"># no more features with this prefix</span>
+                            <span class="k">break</span>
+
+                        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
+                            <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">col_prefixes</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+                            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cols_cat</span><span class="p">))</span>
+                            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">col_prefixes</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+                        <span class="p">):</span>
+                            <span class="c1"># the column prefix is contained in the feature but actually belongs to another longer</span>
+                            <span class="c1"># column prefix (e.g. prefix &quot;x_&quot; is contained in another prefix &quot;x_y_&quot;)</span>
+                            <span class="k">break</span>
+
+                        <span class="n">col_map_cat_i</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                        <span class="n">inv_col_map_cat</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="p">]</span>
+                        <span class="n">feat_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+
                     <span class="n">col_map_cat</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">col_map_cat_i</span>
         <span class="c1"># If we don&#39;t have any categorical static covariates, don&#39;t need to generate mapping:</span>
         <span class="k">else</span><span class="p">:</span>
@@ -780,7 +803,10 @@
 <a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.static_covariates_transformer.html#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_inverse_transform">[docs]</a>
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">ts_inverse_transform</span><span class="p">(</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">insample</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">StaticCovariatesTransformer</span><span class="o">.</span><span class="n">_transform_static_covs</span><span class="p">(</span>
             <span class="n">series</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fitted&quot;</span><span class="p">],</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;inverse_transform&quot;</span>

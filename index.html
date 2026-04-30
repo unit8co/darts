@@ -59,7 +59,7 @@
     <link rel="next" title="Quickstart" href="quickstart/00-quickstart.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -397,7 +397,7 @@
 <a class="only-dark reference internal image-reference" href="_images/darts-logo-dark.png"><img alt="darts" class="only-dark align-center" src="_images/darts-logo-dark.png" style="width: 100%;" />
 </a>
 <p align="center" style="margin-top: 20px;">
-    <a href="https://badge.fury.io/py/darts"><img src="https://badge.fury.io/py/u8darts.svg" alt="PyPI version"></a>
+    <a href="https://badge.fury.io/py/darts"><img src="https://badge.fury.io/py/darts.svg" alt="PyPI version"></a>
     <a href="https://anaconda.org/conda-forge/u8darts-all"><img src="https://img.shields.io/conda/vn/conda-forge/u8darts-all.svg" alt="Conda Version"></a>
     <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Supported versions">
     <a href="https://hub.docker.com/r/unit8/darts"><img src="https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date" alt="Docker Image Version"></a>
@@ -1002,42 +1002,49 @@ then use it over validation scores to get binary anomaly classification:</p>
 <td><p>✅</p></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/2310.10688">TimesFM 1.0 paper</a>, <a class="reference external" href="https://research.google/blog/a-decoder-only-foundation-model-for-time-series-forecasting">Google blog post</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>Ensemble Models</strong> (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>): Model support is dependent on ensembled forecasting models and the ensemble model itself</p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tirex_model.html#darts.models.forecasting.tirex_model.TiRexModel">TiRexModel</a></p></td>
+<td><p>✅ ✅</p></td>
+<td><p>🔴 🔴 🔴</p></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/abs/2505.23719">TiRex report</a>, <a class="reference external" href="https://huggingface.co/NX-AI/TiRex">Model card</a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Ensemble Models</strong> (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>): Model support is dependent on ensembled forecasting models and the ensemble model itself</p></td>
 <td></td>
 <td></td>
 <td></td>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel">NaiveEnsembleModel</a></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.naive_ensemble_model.html#darts.models.forecasting.naive_ensemble_model.NaiveEnsembleModel">NaiveEnsembleModel</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel">RegressionEnsembleModel</a></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel">RegressionEnsembleModel</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><strong>Conformal Models</strong> (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>): Model support is dependent on the forecasting model used</p></td>
+<tr class="row-odd"><td><p><strong>Conformal Models</strong> (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>): Model support is dependent on the forecasting model used</p></td>
 <td></td>
 <td></td>
 <td></td>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalNaiveModel">ConformalNaiveModel</a></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalNaiveModel">ConformalNaiveModel</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
 <td><p><a class="reference external" href="https://arxiv.org/pdf/1905.03222">Conformalized Prediction</a></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalQRModel">ConformalQRModel</a></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalQRModel">ConformalQRModel</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>

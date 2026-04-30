@@ -60,7 +60,7 @@
     <link rel="prev" title="Moving Average Filter" href="darts.models.filtering.moving_average_filter.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -590,6 +590,8 @@
 
 
 
+
+
 <li class="toctree-l2"><a class="reference internal" href="darts.metrics.utils.html">Metric Utils</a></li>
 
 
@@ -611,7 +613,6 @@
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.arima.html">ARIMA</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.baselines.html">Baseline Models</a></li>
-
 
 
 
@@ -644,6 +645,8 @@
 
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">Linear Regression Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.naive_ensemble_model.html">Naive Ensemble Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nbeats.html">N-BEATS</a></li>
 
@@ -699,6 +702,8 @@
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.timesfm2p5_model.html">TimesFM 2.5</a></li>
 
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tirex_model.html">TiRex: Zero-Shot Forecasting</a></li>
+
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.transformer_model.html">Transformer Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">Time-Series Mixer (TSMixer)</a></li>
@@ -731,6 +736,7 @@
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="darts.utils.likelihood_models.html">Likelihood Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">Likelihoods for SKLearnModel</a></li>
+
 
 
 
@@ -956,10 +962,11 @@
 <dt>Foundation Models (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>)</dt><dd><ul class="simple">
 <li><p><a class="reference internal" href="darts.models.forecasting.chronos2_model.html#darts.models.forecasting.chronos2_model.Chronos2Model" title="darts.models.forecasting.chronos2_model.Chronos2Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Chronos2Model</span></code></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.timesfm2p5_model.html#darts.models.forecasting.timesfm2p5_model.TimesFM2p5Model" title="darts.models.forecasting.timesfm2p5_model.TimesFM2p5Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimesFM2p5Model</span></code></a></p></li>
+<li><p><a class="reference internal" href="darts.models.forecasting.tirex_model.html#darts.models.forecasting.tirex_model.TiRexModel" title="darts.models.forecasting.tirex_model.TiRexModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TiRexModel</span></code></a></p></li>
 </ul>
 </dd>
 <dt>Ensemble Models (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>)</dt><dd><ul class="simple">
-<li><p><a class="reference internal" href="darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel" title="darts.models.forecasting.baselines.NaiveEnsembleModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">NaiveEnsembleModel</span></code></a></p></li>
+<li><p><a class="reference internal" href="darts.models.forecasting.naive_ensemble_model.html#darts.models.forecasting.naive_ensemble_model.NaiveEnsembleModel" title="darts.models.forecasting.naive_ensemble_model.NaiveEnsembleModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">NaiveEnsembleModel</span></code></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel" title="darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code></a></p></li>
 </ul>
 </dd>
@@ -997,6 +1004,7 @@
 <li><p><a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html"><span class="doc">Kalman Filter Forecaster</span></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.lgbm.html"><span class="doc">LightGBM Models</span></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.linear_regression_model.html"><span class="doc">Linear Regression Model</span></a></p></li>
+<li><p><a class="reference internal" href="darts.models.forecasting.naive_ensemble_model.html"><span class="doc">Naive Ensemble Model</span></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.nbeats.html"><span class="doc">N-BEATS</span></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.nf_model.html"><span class="doc">NeuralForecastModel</span></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.nhits.html"><span class="doc">N-HiTS</span></a></p></li>
@@ -1021,6 +1029,7 @@
 <li><p><a class="reference internal" href="darts.models.forecasting.theta.html"><span class="doc">Theta Method</span></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.tide_model.html"><span class="doc">Time-series Dense Encoder (TiDE)</span></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.timesfm2p5_model.html"><span class="doc">TimesFM 2.5</span></a></p></li>
+<li><p><a class="reference internal" href="darts.models.forecasting.tirex_model.html"><span class="doc">TiRex: Zero-Shot Forecasting</span></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.transformer_model.html"><span class="doc">Transformer Model</span></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.tsmixer_model.html"><span class="doc">Time-Series Mixer (TSMixer)</span></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.varima.html"><span class="doc">VARIMA</span></a></p></li>

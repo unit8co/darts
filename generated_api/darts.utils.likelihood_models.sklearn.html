@@ -58,7 +58,7 @@
     <link rel="prev" title="Likelihood Models" href="darts.utils.likelihood_models.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -588,6 +588,8 @@
 
 
 
+
+
 <li class="toctree-l2"><a class="reference internal" href="darts.metrics.utils.html">Metric Utils</a></li>
 
 
@@ -609,7 +611,6 @@
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.arima.html">ARIMA</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.baselines.html">Baseline Models</a></li>
-
 
 
 
@@ -642,6 +643,8 @@
 
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">Linear Regression Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.naive_ensemble_model.html">Naive Ensemble Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nbeats.html">N-BEATS</a></li>
 
@@ -697,6 +700,8 @@
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.timesfm2p5_model.html">TimesFM 2.5</a></li>
 
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tirex_model.html">TiRex: Zero-Shot Forecasting</a></li>
+
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.transformer_model.html">Transformer Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">Time-Series Mixer (TSMixer)</a></li>
@@ -729,6 +734,7 @@
 </details></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="darts.utils.likelihood_models.html">Likelihood Models</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l3 current active"><a class="current reference internal" href="#">Likelihoods for SKLearnModel</a></li>
+
 
 
 
@@ -1167,10 +1173,151 @@ likelihood model / distribution. Only supported with <cite>num_samples = 1</cite
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.MultiQuantileRegression">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.sklearn.</span></span><span class="sig-name descname"><span class="pre">MultiQuantileRegression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_outputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantiles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/sklearn.html#MultiQuantileRegression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.sklearn.QuantileRegression" title="darts.utils.likelihood_models.sklearn.QuantileRegression"><code class="xref py py-class docutils literal notranslate"><span class="pre">QuantileRegression</span></code></a></p>
+<p>Multi-output Quantile Regression <a class="reference internal" href="#r1ffd40328bf6-1" id="id2">[1]</a>.</p>
+<p>This is an extension of <a class="reference internal" href="#darts.utils.likelihood_models.sklearn.QuantileRegression" title="darts.utils.likelihood_models.sklearn.QuantileRegression"><code class="xref py py-class docutils literal notranslate"><span class="pre">QuantileRegression</span></code></a> for scikit-learn models that natively supports
+multi-quantile prediction (e.g. CatBoost).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n_outputs</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The number of predicted outputs per model call. <code class="docutils literal notranslate"><span class="pre">1</span></code> if <code class="docutils literal notranslate"><span class="pre">multi_models=False</span></code>, otherwise
+<code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>.</p></li>
+<li><p><strong>quantiles</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – A list of quantiles. Default: <code class="docutils literal notranslate"><span class="pre">[0.01,</span> <span class="pre">0.05,</span> <span class="pre">0.1,</span> <span class="pre">0.25,</span> <span class="pre">0.5,</span> <span class="pre">0.75,</span> <span class="pre">0.9,</span> <span class="pre">0.95,</span> <span class="pre">0.99]</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<div role="list" class="citation-list">
+<div class="citation" id="r1ffd40328bf6-1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">1</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://en.wikipedia.org/wiki/Quantile_regression">https://en.wikipedia.org/wiki/Quantile_regression</a></p>
+</div>
+</div>
+<p class="rubric">Attributes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.num_parameters" title="darts.utils.likelihood_models.sklearn.MultiQuantileRegression.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of distribution parameters for a single target value.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.parameter_names" title="darts.utils.likelihood_models.sklearn.MultiQuantileRegression.parameter_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameter_names</span></code></a></p></td>
+<td><p>Returns the likelihood parameter names.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.type" title="darts.utils.likelihood_models.sklearn.MultiQuantileRegression.type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">type</span></code></a></p></td>
+<td><p>Returns the likelihood type.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Methods</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.component_names" title="darts.utils.likelihood_models.sklearn.MultiQuantileRegression.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
+<td><p>Generates names for the parameters of the Likelihood.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.fit" title="darts.utils.likelihood_models.sklearn.MultiQuantileRegression.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.predict" title="darts.utils.likelihood_models.sklearn.MultiQuantileRegression.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(model, x, num_samples, ...)</p></td>
+<td><p>Generates sampled or direct likelihood parameter predictions.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.predict_likelihood_parameters" title="darts.utils.likelihood_models.sklearn.MultiQuantileRegression.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<td><p>Returns the distribution parameters as a array, extracted from the raw model outputs.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.sample" title="darts.utils.likelihood_models.sklearn.MultiQuantileRegression.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.MultiQuantileRegression.component_names">
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.component_names" title="Link to this definition">#</a></dt>
+<dd><p>Generates names for the parameters of the Likelihood.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.MultiQuantileRegression.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.fit" title="Link to this definition">#</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.MultiQuantileRegression.num_parameters">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.num_parameters" title="Link to this definition">#</a></dt>
+<dd><p>Returns the number of distribution parameters for a single target value.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.MultiQuantileRegression.parameter_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parameter_names</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.parameter_names" title="Link to this definition">#</a></dt>
+<dd><p>Returns the likelihood parameter names.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.MultiQuantileRegression.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.predict" title="Link to this definition">#</a></dt>
+<dd><p>Generates sampled or direct likelihood parameter predictions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – The Darts <cite>SKLearnModel</cite>.</p></li>
+<li><p><strong>x</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span>) – The input feature array passed to the underlying estimator’s <cite>predict()</cite> method.</p></li>
+<li><p><strong>num_samples</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Number of times a prediction is sampled from the likelihood model / distribution.
+If <cite>1</cite> and <cite>predict_likelihood_parameters=False</cite>, returns median / mean predictions.</p></li>
+<li><p><strong>predict_likelihood_parameters</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – If set to <cite>True</cite>, generates likelihood parameter predictions instead of sampling from the
+likelihood model / distribution. Only supported with <cite>num_samples = 1</cite> and
+<cite>n&lt;=output_chunk_length</cite>.</p></li>
+<li><p><strong>kwargs</strong> – Some kwargs passed to the underlying estimator’s <cite>predict()</cite> method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.MultiQuantileRegression.predict_likelihood_parameters">
+<span class="sig-name descname"><span class="pre">predict_likelihood_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.predict_likelihood_parameters" title="Link to this definition">#</a></dt>
+<dd><p>Returns the distribution parameters as a array, extracted from the raw model outputs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.MultiQuantileRegression.sample">
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.sample" title="Link to this definition">#</a></dt>
+<dd><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.MultiQuantileRegression.type">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">LikelihoodType</span></em><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.type" title="Link to this definition">#</a></dt>
+<dd><p>Returns the likelihood type.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.PoissonLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.sklearn.</span></span><span class="sig-name descname"><span class="pre">PoissonLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_outputs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/sklearn.html#PoissonLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.PoissonLikelihood" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.sklearn.SKLearnLikelihood" title="darts.utils.likelihood_models.sklearn.SKLearnLikelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnLikelihood</span></code></a></p>
-<p>Poisson distribution <a class="reference internal" href="#r9fabf780dd66-1" id="id2">[1]</a>.</p>
+<p>Poisson distribution <a class="reference internal" href="#r9fabf780dd66-1" id="id3">[1]</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>n_outputs</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The number of predicted outputs per model call. <cite>1</cite> if <cite>multi_models=False</cite>, otherwise
@@ -1180,7 +1327,7 @@ likelihood model / distribution. Only supported with <cite>num_samples = 1</cite
 <p class="rubric">References</p>
 <div role="list" class="citation-list">
 <div class="citation" id="r9fabf780dd66-1" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">1</a><span class="fn-bracket">]</span></span>
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">1</a><span class="fn-bracket">]</span></span>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Poisson_distribution">https://en.wikipedia.org/wiki/Poisson_distribution</a></p>
 </div>
 </div>
@@ -1306,7 +1453,7 @@ likelihood model / distribution. Only supported with <cite>num_samples = 1</cite
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.QuantileRegression">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.sklearn.</span></span><span class="sig-name descname"><span class="pre">QuantileRegression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_outputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantiles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/sklearn.html#QuantileRegression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.QuantileRegression" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.sklearn.SKLearnLikelihood" title="darts.utils.likelihood_models.sklearn.SKLearnLikelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnLikelihood</span></code></a></p>
-<p>Quantile Regression <a class="reference internal" href="#r71f4150f8d4d-1" id="id3">[1]</a>.</p>
+<p>Quantile Regression <a class="reference internal" href="#r71f4150f8d4d-1" id="id4">[1]</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1319,7 +1466,7 @@ likelihood model / distribution. Only supported with <cite>num_samples = 1</cite
 <p class="rubric">References</p>
 <div role="list" class="citation-list">
 <div class="citation" id="r71f4150f8d4d-1" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">1</a><span class="fn-bracket">]</span></span>
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">1</a><span class="fn-bracket">]</span></span>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Quantile_regression">https://en.wikipedia.org/wiki/Quantile_regression</a></p>
 </div>
 </div>
@@ -1643,6 +1790,17 @@ likelihood model / distribution. Only supported with <cite>num_samples = 1</cite
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.likelihood_models.sklearn.GaussianLikelihood.predict_likelihood_parameters"><code class="docutils literal notranslate"><span class="pre">GaussianLikelihood.predict_likelihood_parameters()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.likelihood_models.sklearn.GaussianLikelihood.sample"><code class="docutils literal notranslate"><span class="pre">GaussianLikelihood.sample()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.likelihood_models.sklearn.GaussianLikelihood.type"><code class="docutils literal notranslate"><span class="pre">GaussianLikelihood.type</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression"><code class="docutils literal notranslate"><span class="pre">MultiQuantileRegression</span></code></a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.component_names"><code class="docutils literal notranslate"><span class="pre">MultiQuantileRegression.component_names()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.fit"><code class="docutils literal notranslate"><span class="pre">MultiQuantileRegression.fit()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.num_parameters"><code class="docutils literal notranslate"><span class="pre">MultiQuantileRegression.num_parameters</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.parameter_names"><code class="docutils literal notranslate"><span class="pre">MultiQuantileRegression.parameter_names</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.predict"><code class="docutils literal notranslate"><span class="pre">MultiQuantileRegression.predict()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.predict_likelihood_parameters"><code class="docutils literal notranslate"><span class="pre">MultiQuantileRegression.predict_likelihood_parameters()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.sample"><code class="docutils literal notranslate"><span class="pre">MultiQuantileRegression.sample()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.likelihood_models.sklearn.MultiQuantileRegression.type"><code class="docutils literal notranslate"><span class="pre">MultiQuantileRegression.type</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.likelihood_models.sklearn.PoissonLikelihood"><code class="docutils literal notranslate"><span class="pre">PoissonLikelihood</span></code></a><ul class="visible nav section-nav flex-column">

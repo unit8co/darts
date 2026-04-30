@@ -58,7 +58,7 @@
     <link rel="prev" title="Data Transformers" href="darts.dataprocessing.transformers.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -588,6 +588,8 @@
 
 
 
+
+
 <li class="toctree-l2"><a class="reference internal" href="darts.metrics.utils.html">Metric Utils</a></li>
 
 
@@ -609,7 +611,6 @@
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.arima.html">ARIMA</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.baselines.html">Baseline Models</a></li>
-
 
 
 
@@ -642,6 +643,8 @@
 
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">Linear Regression Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.naive_ensemble_model.html">Naive Ensemble Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nbeats.html">N-BEATS</a></li>
 
@@ -697,6 +700,8 @@
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.timesfm2p5_model.html">TimesFM 2.5</a></li>
 
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tirex_model.html">TiRex: Zero-Shot Forecasting</a></li>
+
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.transformer_model.html">Transformer Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">Time-Series Mixer (TSMixer)</a></li>
@@ -729,6 +734,7 @@
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="darts.utils.likelihood_models.html">Likelihood Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">Likelihoods for SKLearnModel</a></li>
+
 
 
 
@@ -897,7 +903,7 @@
 </section>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.base_data_transformer.</span></span><span class="sig-name descname"><span class="pre">BaseDataTransformer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BaseDataTransformer'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/base_data_transformer.html#BaseDataTransformer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.base_data_transformer.</span></span><span class="sig-name descname"><span class="pre">BaseDataTransformer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BaseDataTransformer'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uses_insample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/base_data_transformer.html#BaseDataTransformer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p>Abstract class for data transformers.</p>
 <p>All the deriving classes have to implement the static method <a class="reference internal" href="#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer.ts_transform" title="darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a>; this implemented
@@ -952,6 +958,11 @@ See <cite>apply_component_mask</cite> for further details.</p></li>
 to transform. If specified, only these components will be transformed, and the remaining
 components will be kept untouched. If <cite>None</cite>, all components are transformed. Note that
 if <cite>columns</cite> is provided, the <cite>mask_components</cite> attribute must be set to <cite>True</cite>.</p></li>
+<li><p><strong>uses_insample</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether the transformer requires the in-sample (historic) series during inverse transformation.
+If <cite>True</cite>, <cite>inverse_transform</cite> will use the <code class="docutils literal notranslate"><span class="pre">insample</span></code> argument to pass the transformed
+historic series to <cite>ts_inverse_transform</cite>. This is needed when inverse transforming a partial
+series (e.g. a forecast) requires information from earlier times (e.g. for
+<a class="reference internal" href="darts.dataprocessing.transformers.diff.html#darts.dataprocessing.transformers.diff.Diff" title="darts.dataprocessing.transformers.diff.Diff"><code class="xref py py-class docutils literal notranslate"><span class="pre">Diff</span></code></a>).</p></li>
 </ul>
 </dd>
 </dl>

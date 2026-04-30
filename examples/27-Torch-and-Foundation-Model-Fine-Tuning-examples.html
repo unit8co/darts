@@ -58,10 +58,10 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Ensembling Models" href="19-EnsembleModel-examples.html" />
-    <link rel="prev" title="Chronos-2 Foundation Model" href="25-Chronos-2-examples.html" />
+    <link rel="prev" title="Foundation Models" href="25-FoundationModel-examples.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -439,7 +439,7 @@
 <li class="toctree-l1"><a class="reference internal" href="26-NeuralForecast-examples.html">NeuralForecast Model Integration</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="25-Chronos-2-examples.html">Chronos-2 Foundation Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="25-FoundationModel-examples.html">Foundation Models</a></li>
 </ul>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Fine-Tuning PyTorch Models and Foundation Models</a></li>
@@ -533,7 +533,7 @@
 <li><p><strong>Fine-tuning</strong> the loaded model (updating weights on new data).</p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#2.-Foundation-Model:-Zero-Shot-Forecasting-and-Fine-Tuning"><span class="std std-ref">Foundation Models</span></a> (e.g., Chronos 2, TimesFM 2.5):</p>
+<li><p><a class="reference internal" href="#2.-Foundation-Model:-Zero-Shot-Forecasting-and-Fine-Tuning"><span class="std std-ref">Foundation Models</span></a> (e.g., Chronos 2, TimesFM 2.5, TiRex, …):</p>
 <ul>
 <li><p><strong>Zero-shot inference</strong> for forecasting without any training.</p></li>
 <li><p><strong>Fine-tuning</strong> the foundation model.</p></li>
@@ -835,7 +835,33 @@
 <section id="2.2.-Fine-Tuning">
 <h3>2.2. Fine-Tuning<a class="headerlink" href="#2.2.-Fine-Tuning" title="Link to this heading">#</a></h3>
 <p>And how does it look after fine-tuning the output layers of the model on the dataset?</p>
-<div class="nbinput docutils container">
+<details><summary><p>TiRex: Fine-tunable layers</p>
+</summary><p>TiRex uses sLSTM blocks with bfloat16 recurrence. Backpropagating through the time-loop in the <strong>first 8 blocks</strong> produces NaN gradients on the first backward pass — this is a structural precision constraint, not a learning rate issue. The safe fine-tunable region is:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Layer group</p></th>
+<th class="head"><p>Trainable params</p></th>
+<th class="head"><p>Gradient-safe?</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">output_patch_embedding</span></code> + <code class="docutils literal notranslate"><span class="pre">out_norm</span></code></p></td>
+<td><p>~1.8M</p></td>
+<td><p>✓</p></td>
+</tr>
+<tr class="row-odd"><td><p>Last 4 blocks (8–11) + output head</p></td>
+<td><p>~12.6M</p></td>
+<td><p>✓</p></td>
+</tr>
+<tr class="row-even"><td><p>First 8 blocks or full model</p></td>
+<td><p>all</p></td>
+<td><p>✗ NaN gradients</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="alert alert-warning" role="alert"><p><strong>Backend requirement</strong>: Fine-tuning requires <code class="docutils literal notranslate"><span class="pre">tirex_kwargs={&quot;backend&quot;:</span> <span class="pre">&quot;torch&quot;}</span></code>.</p>
+</div></details><div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
@@ -930,12 +956,12 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="25-Chronos-2-examples.html"
+       href="25-FoundationModel-examples.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Chronos-2 Foundation Model</p>
+        <p class="prev-next-title">Foundation Models</p>
       </div>
     </a>
     <a class="right-next"

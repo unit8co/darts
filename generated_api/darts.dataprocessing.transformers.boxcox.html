@@ -60,7 +60,7 @@
     <link rel="prev" title="Data Transformer Base Class" href="darts.dataprocessing.transformers.base_data_transformer.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -590,6 +590,8 @@
 
 
 
+
+
 <li class="toctree-l2"><a class="reference internal" href="darts.metrics.utils.html">Metric Utils</a></li>
 
 
@@ -611,7 +613,6 @@
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.arima.html">ARIMA</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.baselines.html">Baseline Models</a></li>
-
 
 
 
@@ -644,6 +645,8 @@
 
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">Linear Regression Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.naive_ensemble_model.html">Naive Ensemble Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nbeats.html">N-BEATS</a></li>
 
@@ -699,6 +702,8 @@
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.timesfm2p5_model.html">TimesFM 2.5</a></li>
 
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tirex_model.html">TiRex: Zero-Shot Forecasting</a></li>
+
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.transformer_model.html">Transformer Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">Time-Series Mixer (TSMixer)</a></li>
@@ -731,6 +736,7 @@
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="darts.utils.likelihood_models.html">Likelihood Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">Likelihoods for SKLearnModel</a></li>
+
 
 
 
@@ -937,10 +943,10 @@ passed as input, parallelising operations regarding different <code class="docut
 Note: for a small amount of data, the parallelisation overhead could end up increasing the total
 required amount of time.</p></li>
 <li><p><strong>verbose</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to print operations progress</p></li>
-<li><p><strong>columns</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, a string or list of strings specifying the names of the components (columns)
-to transform. If specified, only these components will be transformed, and the remaining
-components will be kept untouched. For more information refer to the <cite>BaseDataTransformer</cite>
-documentation.</p></li>
+<li><p><strong>columns</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, a string or list of strings specifying the names of the components (columns) to transform.
+If specified, only these components will be transformed, and the remaining components will be kept
+untouched. For more information refer to the <cite>BaseDataTransformer</cite> documentation. In case the transformer
+is applied on multiple TimeSeries, it is expected that all series have the same column order.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1004,7 +1010,7 @@ documentation.</p></li>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_fit" title="darts.dataprocessing.transformers.boxcox.BoxCox.ts_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_fit</span></code></a>(series, params, *args, **kwargs)</p></td>
 <td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.fit" title="darts.dataprocessing.transformers.boxcox.BoxCox.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> is called.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_inverse_transform</span></code></a>(series, params, **kwargs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_inverse_transform</span></code></a>(series, params[, insample])</p></td>
 <td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">inverse_transform()</span></code></a> is called.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.ts_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_transform</span></code></a>(series, params, **kwargs)</p></td>
@@ -1106,7 +1112,7 @@ components of the underlying <cite>series</cite> the transform should be fitted 
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform">
-<span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform" title="Link to this definition">#</a></dt>
 <dd><p>Inverse transforms a (sequence of) series by calling the user-implemented <cite>ts_inverse_transform</cite> method.</p>
 <p>In case a sequence or list of lists is passed as input data, this function takes care of parallelising the
 transformation of multiple series in the sequence at the same time. Additionally,
@@ -1130,6 +1136,13 @@ to fit the transformer.</p></li>
 which components of the underlying <cite>series</cite> the inverse transform should consider.</p></li>
 <li><p><strong>series_idx</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the index(es) of each series corresponding to their positions within the series used to fit
 the transformer (to retrieve the appropriate transformer parameters).</p></li>
+<li><p><strong>insample</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, the transformed historic (insample) part of <code class="docutils literal notranslate"><span class="pre">series</span></code>. This can be used when <code class="docutils literal notranslate"><span class="pre">series</span></code> is
+only a tail (for example a forecast) and inverse transforming requires information from earlier times
+(for example the <a class="reference internal" href="darts.dataprocessing.transformers.diff.html#darts.dataprocessing.transformers.diff.Diff" title="darts.dataprocessing.transformers.diff.Diff"><code class="xref py py-class docutils literal notranslate"><span class="pre">Diff</span></code></a> transformer). Each <code class="docutils literal notranslate"><span class="pre">insample</span></code>
+series must start before the <code class="docutils literal notranslate"><span class="pre">series</span></code> start time and extend at least until one step before the start time
+of the <code class="docutils literal notranslate"><span class="pre">series</span></code>. If <code class="docutils literal notranslate"><span class="pre">series</span></code> is a <code class="docutils literal notranslate"><span class="pre">Sequence[Sequence[TimeSeries]]</span></code>, then <code class="docutils literal notranslate"><span class="pre">insample</span></code> should be a
+<code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> with the same length. Otherwise, it should have the same type as <code class="docutils literal notranslate"><span class="pre">series</span></code>. Only
+used by transformers that require information from earlier times.</p></li>
 <li><p><strong>kwargs</strong> – Additional keyword arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a> method</p></li>
 </ul>
 </dd>
@@ -1303,7 +1316,7 @@ bottleneck and nullify parallelisation benefits.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/boxcox.html#BoxCox.ts_inverse_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/boxcox.html#BoxCox.ts_inverse_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform" title="Link to this definition">#</a></dt>
 <dd><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">inverse_transform()</span></code></a> is called.</p>
 <p>The function must take as first argument a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object and, as a second argument, a
 dictionary containing the fixed and/or fitted parameters of the transformation; this function
@@ -1352,6 +1365,10 @@ calling <cite>super.__init__()</cite>) are stored under the <cite>‘fixed’</c
 inherits from the <cite>FittableDataTransformer</cite> class, then the fitted parameters of the
 transformation (i.e. the values returned by <cite>ts_fit</cite>) are stored under the
 <cite>‘fitted’</cite> key.</p></li>
+<li><p><strong>insample</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, the transformed historic (insample) part of <code class="docutils literal notranslate"><span class="pre">series</span></code>. This can be used when <code class="docutils literal notranslate"><span class="pre">series</span></code> is
+only a tail (for example a forecast) and inverse transforming requires information from earlier times
+(for example the <a class="reference internal" href="darts.dataprocessing.transformers.diff.html#darts.dataprocessing.transformers.diff.Diff" title="darts.dataprocessing.transformers.diff.Diff"><code class="xref py py-class docutils literal notranslate"><span class="pre">Diff</span></code></a> transformer). Only used by
+transformers that require information from earlier times.</p></li>
 <li><p><strong>args</strong> – Any additional keyword arguments provided to <cite>inverse_transform</cite>.</p></li>
 <li><p><strong>kwargs</strong> – Any additional keyword arguments provided to <cite>inverse_transform</cite>. Note that if the <cite>mask_component</cite>
 attribute of <cite>InvertibleDataTransformer</cite> is set to <cite>False</cite>, then <cite>component_mask</cite> will

@@ -58,7 +58,7 @@
     <link rel="prev" title="Random Forest" href="darts.models.forecasting.random_forest.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -588,6 +588,8 @@
 
 
 
+
+
 <li class="toctree-l2"><a class="reference internal" href="darts.metrics.utils.html">Metric Utils</a></li>
 
 
@@ -609,7 +611,6 @@
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.arima.html">ARIMA</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.baselines.html">Baseline Models</a></li>
-
 
 
 
@@ -642,6 +643,8 @@
 
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">Linear Regression Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.naive_ensemble_model.html">Naive Ensemble Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nbeats.html">N-BEATS</a></li>
 
@@ -697,6 +700,8 @@
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.timesfm2p5_model.html">TimesFM 2.5</a></li>
 
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tirex_model.html">TiRex: Zero-Shot Forecasting</a></li>
+
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.transformer_model.html">Transformer Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">Time-Series Mixer (TSMixer)</a></li>
@@ -729,6 +734,7 @@
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="darts.utils.likelihood_models.html">Likelihood Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">Likelihoods for SKLearnModel</a></li>
+
 
 
 
@@ -997,7 +1003,7 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <td><p>The minimum number of samples for training the model.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.output_chunk_length" title="darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
-<td><p>Return the <cite>output_chunk_length</cite> of the regression model (ensembling layer)</p></td>
+<td><p>Number of time steps predicted at once by the model, not defined for statistical models.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.output_chunk_shift" title="darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
 <td><p>Number of time steps that the output/prediction starts after the end of the input.</p></td>
@@ -1006,7 +1012,7 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <td><p>Whether model supports future covariates</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.supports_likelihood_parameter_prediction" title="darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
-<td><p>RegressionEnsembleModel supports likelihood parameters predictions if its regression model does</p></td>
+<td><p>EnsembleModel can predict likelihood parameters if all its forecasting models were fitted with the same likelihood.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.supports_multivariate" title="darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
 <td><p>Whether the model considers more than one variate in the time series.</p></td>
@@ -1018,7 +1024,7 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <td><p>Whether model supports past covariates</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.supports_probabilistic_prediction" title="darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a></p></td>
-<td><p>A RegressionEnsembleModel is probabilistic if its regression model is probabilistic (ensembling layer)</p></td>
+<td><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.supports_sample_weight" title="darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
 <td><p>Whether model supports sample weight for training.</p></td>
@@ -1055,7 +1061,7 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.backtest" title="darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.backtest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">backtest</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute error values that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.ensemble" title="darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.ensemble"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ensemble</span></code></a>(predictions, series[, num_samples, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.ensemble" title="darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.ensemble"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ensemble</span></code></a>(predictions, series, n[, ...])</p></td>
 <td><p>Defines how to ensemble the individual models' predictions to produce a single prediction.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.fit" title="darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series[, past_covariates, ...])</p></td>
@@ -1280,7 +1286,7 @@ when <cite>reduction=None</cite></p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.ensemble">
-<span class="sig-name descname"><span class="pre">ensemble</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/regression_ensemble_model.html#RegressionEnsembleModel.ensemble"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.ensemble" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">ensemble</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/regression_ensemble_model.html#RegressionEnsembleModel.ensemble"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.ensemble" title="Link to this definition">#</a></dt>
 <dd><p>Defines how to ensemble the individual models’ predictions to produce a single prediction.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1288,6 +1294,7 @@ when <cite>reduction=None</cite></p></li>
 <li><p><strong>predictions</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]</span>) – Individual predictions to ensemble</p></li>
 <li><p><strong>series</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]</span>) – Sequence of timeseries to predict on. Optional, since it only makes sense for sequences of timeseries -
 local models retain timeseries for prediction.</p></li>
+<li><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The number of output time steps the ensemble should produce.</p></li>
 <li><p><strong>num_samples</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Number of times a prediction is sampled from a probabilistic model. Must be <cite>1</cite> for deterministic models.</p></li>
 <li><p><strong>predict_likelihood_parameters</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – If set to <cite>True</cite>, the model predicts the parameters of its <cite>likelihood</cite> instead of the target. Only
 supported for probabilistic models with a likelihood, <cite>num_samples = 1</cite> and <cite>n&lt;=output_chunk_length</cite>.
@@ -1374,7 +1381,7 @@ only the regression model will be trained.</p>
 forecasting models</p></li>
 <li><p><strong>future_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, a series or sequence of series specifying future-known covariates passed to the
 forecasting models</p></li>
-<li><p><strong>sample_weight</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, some sample weights to apply to the target <cite>series</cite> labels. They are applied per observation,
+<li><p><strong>sample_weight</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, some sample weights to apply to the target <cite>series</cite> labels. They are applied per observation,
 per label (each step in <cite>output_chunk_length</cite>), and per component.
 If a series or sequence of series, then those weights are used. If the weight series only have a single
 component / column, then the weights are applied globally to all components in <cite>series</cite>. Otherwise, for
@@ -1817,8 +1824,8 @@ For more information, read the <a class="reference external" href="https://pytor
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.output_chunk_length">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_chunk_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.output_chunk_length" title="Link to this definition">#</a></dt>
-<dd><p>Return the <cite>output_chunk_length</cite> of the regression model (ensembling layer)</p>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_chunk_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.output_chunk_length" title="Link to this definition">#</a></dt>
+<dd><p>Number of time steps predicted at once by the model, not defined for statistical models.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -2097,7 +2104,8 @@ their Lightning Trainer-related parameters.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.supports_likelihood_parameter_prediction">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_likelihood_parameter_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.supports_likelihood_parameter_prediction" title="Link to this definition">#</a></dt>
-<dd><p>RegressionEnsembleModel supports likelihood parameters predictions if its regression model does</p>
+<dd><p>EnsembleModel can predict likelihood parameters if all its forecasting models were fitted with the
+same likelihood.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -2121,8 +2129,9 @@ their Lightning Trainer-related parameters.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.supports_probabilistic_prediction">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_probabilistic_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.supports_probabilistic_prediction" title="Link to this definition">#</a></dt>
-<dd><p>A RegressionEnsembleModel is probabilistic if its regression
-model is probabilistic (ensembling layer)</p>
+<dd><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p>
+<p>By default, returns False. Needs to be overwritten by models that do support
+probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py property">

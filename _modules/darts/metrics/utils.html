@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -606,6 +606,7 @@
         <span class="n">params</span> <span class="o">=</span> <span class="n">signature</span><span class="p">(</span><span class="n">func</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span>
         <span class="n">n_jobs</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;n_jobs&quot;</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;n_jobs&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">default</span><span class="p">)</span>
         <span class="n">verbose</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;verbose&quot;</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;verbose&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">default</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">default</span><span class="p">)</span>
 
         <span class="c1"># sanity check reduction functions</span>
         <span class="n">_</span> <span class="o">=</span> <span class="n">_get_reduction</span><span class="p">(</span>
@@ -707,7 +708,7 @@
             <span class="n">iterable</span><span class="o">=</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">input_series</span><span class="p">),</span>
             <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
             <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">actual_series</span><span class="p">),</span>
-            <span class="n">desc</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;metric `</span><span class="si">{</span><span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">()`&quot;</span><span class="p">,</span>
+            <span class="n">desc</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;metric `</span><span class="si">{</span><span class="n">name</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">`&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># `vals` is a list of series metrics of length `len(actual_series)`. Each metric has shape</span>
@@ -1285,9 +1286,81 @@
             <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-        <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;cannot use MASE with periodical signals&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">scale</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_safe_scaled_divide</span><span class="p">(</span>
+    <span class="n">errors</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">scale</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">zero_division</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;warn&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Divides ``errors`` by ``scale``, handling zero-scale entries gracefully.</span>
+
+<span class="sd">    When ``zero_division`` is ``&quot;warn&quot;`` (default), the behavior depends on</span>
+<span class="sd">    whether the *numerator* is also zero:</span>
+
+<span class="sd">    * **Case 1** – scale ≈ 0, errors ≠ 0 (non-zero / zero): the scaled error</span>
+<span class="sd">      is undefined, so the result is ``np.nan``.</span>
+<span class="sd">    * **Case 2** – scale ≈ 0, errors ≈ 0 (zero / zero): the model is on par</span>
+<span class="sd">      with the naive baseline, so the result is ``1.0``.</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">       Returning ``1.0`` for the 0/0 case assumes &quot;model matches naive baseline&quot;</span>
+<span class="sd">       since we cannot distinguish whether the model trivially *is* the seasonal</span>
+<span class="sd">       naive or made a non-trivial prediction that happens to match. For practical</span>
+<span class="sd">       purposes ``1.0`` is the right default.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    errors</span>
+<span class="sd">        Numerator array of shape ``(t, c)`` or ``(c,)``.</span>
+<span class="sd">    scale</span>
+<span class="sd">        Denominator array of shape ``(c,)``.</span>
+<span class="sd">    zero_division</span>
+<span class="sd">        Controls behavior when ``scale`` is (near) zero.</span>
+
+<span class="sd">        * ``&quot;warn&quot;`` (default) – applies the defaults described above</span>
+<span class="sd">          (``np.nan`` for case 1, ``1.0`` for case 2) and emits a ``UserWarning``.</span>
+<span class="sd">        * ``&quot;raise&quot;`` – raises a ``ValueError`` (the legacy behavior).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        The result of ``errors / scale``, with zero-scale entries replaced.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">zero_division</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;warn&quot;</span><span class="p">,</span> <span class="s2">&quot;raise&quot;</span><span class="p">]:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;`zero_division` must be &#39;warn&#39; or &#39;raise&#39;. Received </span><span class="si">{</span><span class="n">zero_division</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">zero_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">zero_mask</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">errors</span> <span class="o">/</span> <span class="n">scale</span>
+
+    <span class="c1"># --- legacy behavior: raise on zero scale ---</span>
+    <span class="k">if</span> <span class="n">zero_division</span> <span class="o">==</span> <span class="s2">&quot;raise&quot;</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot use scaled metric with periodical signals.&quot;</span><span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Determine the fill value for zero-scale entries in a single pass.</span>
+    <span class="c1"># For numeric zero_division: use that value everywhere.</span>
+    <span class="c1"># For &quot;warn&quot;: Case 1 (non-zero / zero) → nan, Case 2 (0 / 0) → 1.0.</span>
+    <span class="n">fill</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">errors</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+
+    <span class="c1"># Single-pass: where scale ≈ 0 use fill, otherwise normal division</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">zero_mask</span><span class="p">,</span> <span class="n">fill</span><span class="p">,</span> <span class="n">errors</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">zero_mask</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">scale</span><span class="p">))</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+        <span class="s2">&quot;The error scale (denominator) is zero for some components. &quot;</span>
+        <span class="s2">&quot;Those entries are set to NaN (when numerator is non-zero) or &quot;</span>
+        <span class="s2">&quot;1.0 (when numerator is also zero, i.e. on par with naive).&quot;</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_unique_labels</span><span class="p">(</span><span class="n">y_true</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>

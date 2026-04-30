@@ -60,7 +60,7 @@
     <link rel="prev" title="TFTModel Explainer" href="darts.explainability.tft_explainer.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -590,6 +590,8 @@
 
 
 
+
+
 <li class="toctree-l2"><a class="reference internal" href="darts.metrics.utils.html">Metric Utils</a></li>
 
 
@@ -611,7 +613,6 @@
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.arima.html">ARIMA</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.baselines.html">Baseline Models</a></li>
-
 
 
 
@@ -644,6 +645,8 @@
 
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">Linear Regression Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.naive_ensemble_model.html">Naive Ensemble Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nbeats.html">N-BEATS</a></li>
 
@@ -699,6 +702,8 @@
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.timesfm2p5_model.html">TimesFM 2.5</a></li>
 
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tirex_model.html">TiRex: Zero-Shot Forecasting</a></li>
+
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.transformer_model.html">Transformer Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">Time-Series Mixer (TSMixer)</a></li>
@@ -731,6 +736,7 @@
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="darts.utils.likelihood_models.html">Likelihood Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">Likelihoods for SKLearnModel</a></li>
+
 
 
 
@@ -953,6 +959,10 @@ compute the deterministic metrics on:</p>
 <ul class="simple">
 <li><dl class="simple">
 <dt>Aggregated over time:</dt><dd><dl class="simple">
+<dt>Probabilistic metrics:</dt><dd><ul>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.mcrps" title="darts.metrics.metrics.mcrps"><code class="xref py py-func docutils literal notranslate"><span class="pre">MCRPS</span></code></a>: Mean Continuous Ranked Probability Score</p></li>
+</ul>
+</dd>
 <dt>Quantile metrics:</dt><dd><ul>
 <li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.mql" title="darts.metrics.metrics.mql"><code class="xref py py-func docutils literal notranslate"><span class="pre">MQL</span></code></a>: Mean Quantile Loss</p></li>
 <li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.qr" title="darts.metrics.metrics.qr"><code class="xref py py-func docutils literal notranslate"><span class="pre">QR</span></code></a>: Quantile Risk</p></li>
@@ -971,6 +981,10 @@ compute the deterministic metrics on:</p>
 </li>
 <li><dl class="simple">
 <dt>Per time step:</dt><dd><dl class="simple">
+<dt>Probabilistic metrics:</dt><dd><ul>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.crps" title="darts.metrics.metrics.crps"><code class="xref py py-func docutils literal notranslate"><span class="pre">CRPS</span></code></a>: Continuous Ranked Probability Score</p></li>
+</ul>
+</dd>
 <dt>Quantile metrics:</dt><dd><ul>
 <li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.ql" title="darts.metrics.metrics.ql"><code class="xref py py-func docutils literal notranslate"><span class="pre">QL</span></code></a>: Quantile Loss</p></li>
 </ul>

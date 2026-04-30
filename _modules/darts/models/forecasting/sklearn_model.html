@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -501,6 +501,7 @@
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LikelihoodType</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.sklearn</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MultiQuantileRegression</span><span class="p">,</span>
     <span class="n">QuantileRegression</span><span class="p">,</span>
     <span class="n">SKLearnLikelihood</span><span class="p">,</span>
     <span class="n">_get_likelihood</span><span class="p">,</span>
@@ -618,9 +619,9 @@
 <span class="sd">            will be used per component in the multivariate series.</span>
 <span class="sd">            If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.</span>
 <span class="sd">        multi_models</span>
-<span class="sd">            If True, a separate model will be trained for each future lag to predict. If False, a single model</span>
-<span class="sd">            is trained to predict all the steps in &#39;output_chunk_length&#39; (features lags are shifted back by</span>
-<span class="sd">            `output_chunk_length - n` for each step `n`). Default: True.</span>
+<span class="sd">            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model</span>
+<span class="sd">            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by</span>
+<span class="sd">            ``output_chunk_length - n`` for each step `n`). Default: ``True``.</span>
 <span class="sd">        use_static_covariates</span>
 <span class="sd">            Whether the model should use static covariate information in case the input `series` passed to ``fit()``</span>
 <span class="sd">            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce</span>
@@ -1049,30 +1050,49 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">get_estimator</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">target_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">quantile</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the estimator that forecasts the step `horizon` of the target component `target_dim`.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the estimator that forecasts the step ``horizon`` of the target component ``target_dim``.</span>
 
-<span class="sd">        For probabilistic models fitting quantiles, a desired `quantile` can also be passed. If not passed, it will</span>
-<span class="sd">        return the model predicting the median (quantile=0.5).</span>
+<span class="sd">        For probabilistic models fitting quantiles, a desired ``quantile`` can also be passed. If not passed, it will</span>
+<span class="sd">        return the estimator predicting the median quantile.</span>
 
 <span class="sd">        If the (quantile) model supports multi-output natively, it will return the model that can predict the entire</span>
 <span class="sd">        horizon and all target components jointly.</span>
 
-<span class="sd">        Note: Internally, estimators are grouped by `output_chunk_length` position, then by component. For probabilistic</span>
-<span class="sd">        models fitting quantiles, there is an additional abstraction layer, grouping the estimators by `quantile`.</span>
+<span class="sd">        .. note::</span>
+<span class="sd">            Internally, estimators are grouped by ``output_chunk_length`` position, then by component. For</span>
+<span class="sd">            probabilistic models fitting quantiles (``likelihood=&quot;quantile&quot;``), there will be an additional</span>
+<span class="sd">            abstraction layer, grouping the estimators by ``quantile``. Models using a single native multi-quantile</span>
+<span class="sd">            estimator (``likelihood=&quot;multiquantile&quot;``) do not use this extra quantile grouping, and ``quantile``</span>
+<span class="sd">            must be set to ``None`` to obtain the correct estimator.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        horizon</span>
-<span class="sd">            The index of the forecasting point within `output_chunk_length`.</span>
+<span class="sd">            The index of the forecasting point within ``output_chunk_length``.</span>
 <span class="sd">        target_dim</span>
 <span class="sd">            The index of the target component.</span>
 <span class="sd">        quantile</span>
-<span class="sd">            Optionally, for probabilistic model with `likelihood=&quot;quantile&quot;`, the desired quantile value. If `None` and</span>
-<span class="sd">            `likelihood=&quot;quantile&quot;`, returns the model predicting the median (quantile=0.5).</span>
+<span class="sd">            Optionally, for probabilistic model with ``likelihood=&quot;quantile&quot;``, the desired quantile value. If ``None``</span>
+<span class="sd">            and the model uses per-quantile estimators, returns the model predicting the median quantile.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">likelihood</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">QuantileRegression</span><span class="p">):</span>
-            <span class="c1"># for quantile-models, the estimators are grouped by quantiles</span>
+        <span class="k">if</span> <span class="n">quantile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">QuantileRegression</span><span class="p">):</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;`quantile` is only supported for probabilistic models that use `likelihood=&#39;quantile&#39;`.&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">MultiQuantileRegression</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;Model supports multi-quantile regression; the same estimator forecasts all quantiles jointly. &quot;</span>
+                    <span class="s2">&quot;Ignoring passed `quantile` value.&quot;</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">likelihood</span><span class="p">)</span> <span class="ow">is</span> <span class="n">QuantileRegression</span><span class="p">:</span>
+            <span class="c1"># check for type `QuantileRegression` to ignore subclass `MultiQuantileRegression`.</span>
+            <span class="c1"># the estimators are grouped by quantiles</span>
             <span class="k">if</span> <span class="n">quantile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">quantile</span> <span class="o">=</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">quantiles</span><span class="p">[</span><span class="n">likelihood</span><span class="o">.</span><span class="n">_median_idx</span><span class="p">]</span>
             <span class="k">elif</span> <span class="n">quantile</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="p">:</span>
@@ -1084,13 +1104,6 @@
                     <span class="n">logger</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="p">[</span><span class="n">quantile</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="n">quantile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">raise_log</span><span class="p">(</span>
-                <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;`quantile` is only supported for probabilistic models that use `likelihood=&#39;quantile&#39;`.&quot;</span>
-                <span class="p">),</span>
-                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
 
@@ -2038,9 +2051,9 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model</span><span class="p">,</span>
-        <span class="n">lags</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">lags</span><span class="p">:</span> <span class="n">LAGS_TYPE</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">LAGS_TYPE</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">FUTURE_LAGS_TYPE</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">add_encoders</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2136,8 +2149,9 @@
 <span class="sd">                To enable past and / or future encodings for any `SKLearnModel`, you must also define the</span>
 <span class="sd">                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.</span>
 <span class="sd">        multi_models</span>
-<span class="sd">            If True, a separate model will be trained for each future lag to predict. If False, a single model is</span>
-<span class="sd">            trained to predict at step &#39;output_chunk_length&#39; in the future. Default: True.</span>
+<span class="sd">            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model</span>
+<span class="sd">            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by</span>
+<span class="sd">            ``output_chunk_length - n`` for each step `n`). Default: ``True``.</span>
 <span class="sd">        use_static_covariates</span>
 <span class="sd">            Whether the model should use static covariate information in case the input `series` passed to ``fit()``</span>
 <span class="sd">            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce</span>
@@ -2461,9 +2475,9 @@
 <span class="sd">            will be used per component in the multivariate series.</span>
 <span class="sd">            If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.</span>
 <span class="sd">        multi_models</span>
-<span class="sd">            If True, a separate model will be trained for each future lag to predict. If False, a single model</span>
-<span class="sd">            is trained to predict all the steps in &#39;output_chunk_length&#39; (features lags are shifted back by</span>
-<span class="sd">            `output_chunk_length - n` for each step `n`). Default: True.</span>
+<span class="sd">            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model</span>
+<span class="sd">            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by</span>
+<span class="sd">            ``output_chunk_length - n`` for each step `n`). Default: ``True``.</span>
 <span class="sd">        use_static_covariates</span>
 <span class="sd">            Whether the model should use static covariate information in case the input `series` passed to ``fit()``</span>
 <span class="sd">            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce</span>

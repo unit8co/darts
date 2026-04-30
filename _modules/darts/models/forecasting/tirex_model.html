@@ -1,0 +1,990 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>darts.models.forecasting.tirex_model &#8212; darts  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/darts/models/forecasting/tirex_model';</script>
+    <link rel="icon" href="../../../../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.43.0" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../../../../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">darts.models.forecasting.tirex_model</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for darts.models.forecasting.tirex_model</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">TiRex: Zero-Shot Forecasting</span>
+<span class="sd">----------------------------</span>
+
+<span class="sd">TiRex can be used the same way as other foundation models (e.g. Chronos2), with the exception</span>
+<span class="sd">that it does not support any type of covariates.</span>
+
+<span class="sd">For detailed examples and tutorials, see:</span>
+
+<span class="sd">* `Foundation Model Examples</span>
+<span class="sd">  &lt;https://unit8co.github.io/darts/examples/25-FoundationModel-examples.html&gt;`__</span>
+<span class="sd">* `Fine-Tuning Examples</span>
+<span class="sd">  &lt;https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html&gt;`__</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tirex</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_model</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tirex.models.tirex</span><span class="w"> </span><span class="kn">import</span> <span class="n">TiRexZero</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.foundation_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">FoundationModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.pl_forecasting_module</span><span class="w"> </span><span class="kn">import</span> <span class="n">PLForecastingModule</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_TiRexModule</span><span class="p">(</span><span class="n">PLForecastingModule</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;PyTorch Lightning module wrapping a pre-loaded TiRex pipeline.</span>
+
+<span class="sd">    Adapts TiRex&#39;s forecasting interface to Darts&#39; PLForecastingModule API. Multivariate inputs are supported by</span>
+<span class="sd">    folding components into the batch dimension. Covariates are not supported.</span>
+
+<span class="sd">    During fine-tuning, the gradient-enabled ``_forecast_tensor`` path is used, bypassing the</span>
+<span class="sd">    ``@torch.inference_mode()`` decorator on ``_forecast_quantiles``. Loss is computed over all 9 pre-trained</span>
+<span class="sd">    quantiles; only user-specified quantiles are returned at prediction time.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_user_quantile_indices</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tirex_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">all_quantiles</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+        <span class="n">enable_finetuning</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">tirex_kwargs</span><span class="p">[</span><span class="s2">&quot;device&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tirex</span><span class="p">:</span> <span class="n">TiRexZero</span> <span class="o">=</span> <span class="n">load_model</span><span class="p">(</span><span class="o">**</span><span class="n">tirex_kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">future_len</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_shift</span>
+        <span class="c1"># bool(dict) is True for a non-empty dict; _setup_finetuning() handles the actual</span>
+        <span class="c1"># parameter freeze/unfreeze pattern — here we only need a flag for the forward path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_enable_finetuning</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">enable_finetuning</span><span class="p">)</span>
+
+        <span class="n">user_q</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">quantiles</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">QuantileRegression</span><span class="p">)</span>
+            <span class="k">else</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span>
+            <span class="s2">&quot;_user_quantile_indices&quot;</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">all_quantiles</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">user_q</span><span class="p">],</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span>
+                <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">enable_finetuning</span><span class="p">:</span>
+            <span class="c1"># loss is computed over all pre-trained quantiles to preserve the distribution;</span>
+            <span class="c1"># user-specified quantiles are selected at prediction time</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_finetuning_likelihood</span> <span class="o">=</span> <span class="n">QuantileRegression</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">all_quantiles</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_finetuning_likelihood</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forward pass returning quantile predictions shaped ``(batch, time, n_targets, n_quantiles)``.</span>
+
+<span class="sd">        During training with fine-tuning enabled, all 9 pre-trained quantiles are returned</span>
+<span class="sd">        for the loss. At prediction time, only user-specified quantiles are returned.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Dimension notation in comments below:</span>
+        <span class="c1">#   B: batch size</span>
+        <span class="c1">#   L: input chunk length</span>
+        <span class="c1">#   T: output chunk length</span>
+        <span class="c1">#   S: output chunk shift</span>
+        <span class="c1">#   H: forecast horizon = T + S</span>
+        <span class="c1">#   C: target components</span>
+        <span class="c1">#   Q = 9: likelihood quantiles returned by TiRex</span>
+        <span class="c1">#   N: likelihood quantiles (user-specified, 1 if deterministic)</span>
+
+        <span class="c1"># `x_past`: (B, L, C)</span>
+        <span class="n">x_past</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">x_in</span>
+        <span class="c1"># fold target components into batch dim for multivariate support: (B, L, C) -&gt; (B*C, L)</span>
+        <span class="n">x_past</span> <span class="o">=</span> <span class="n">x_past</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">start_dim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">end_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enable_finetuning</span><span class="p">:</span>
+            <span class="c1"># call _forecast_tensor directly to keep gradients flowing — _forecast_quantiles</span>
+            <span class="c1"># is decorated with @torch.inference_mode() which would block backprop</span>
+            <span class="c1"># output: (B*C, Q, H) -&gt; swapaxes -&gt; (B*C, H, Q) -&gt; slice output shift -&gt; (B*C, T, Q)</span>
+            <span class="n">q_sel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tirex</span><span class="o">.</span><span class="n">_forecast_tensor</span><span class="p">(</span>
+                <span class="n">context</span><span class="o">=</span><span class="n">x_past</span><span class="p">,</span>
+                <span class="n">prediction_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">future_len</span><span class="p">,</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_shift</span> <span class="p">:,</span> <span class="p">:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">quantiles</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tirex</span><span class="o">.</span><span class="n">_forecast_quantiles</span><span class="p">(</span>
+                <span class="n">context</span><span class="o">=</span><span class="n">x_past</span><span class="p">,</span>
+                <span class="n">prediction_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">future_len</span><span class="p">,</span>
+                <span class="n">output_device</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">x_past</span><span class="o">.</span><span class="n">device</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="c1"># (B*C, H, Q) -&gt; slice output shift -&gt; select user quantiles -&gt; (B*C, T, N)</span>
+            <span class="n">q_sel</span> <span class="o">=</span> <span class="n">quantiles</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_shift</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span>
+                <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_user_quantile_indices</span>
+            <span class="p">)</span>
+
+        <span class="c1"># unfold batch dim and permute to Darts&#39; output shape: (B, T, C, N or Q)</span>
+        <span class="k">return</span> <span class="n">q_sel</span><span class="o">.</span><span class="n">unflatten</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sizes</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_targets</span><span class="p">))</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">criterion</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enable_finetuning</span><span class="p">:</span>
+            <span class="c1"># compute loss on pre-trained quantiles</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_finetuning_likelihood</span><span class="o">.</span><span class="n">compute_loss</span><span class="p">(</span>
+                <span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sample_weight</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_compute_loss</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">criterion</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="TiRexModel">
+<a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.tirex_model.html#darts.models.forecasting.tirex_model.TiRexModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TiRexModel</span><span class="p">(</span><span class="n">FoundationModel</span><span class="p">):</span>
+    <span class="n">_DEFAULT_QUANTILES</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="mf">0.1</span><span class="p">,</span>
+        <span class="mf">0.2</span><span class="p">,</span>
+        <span class="mf">0.3</span><span class="p">,</span>
+        <span class="mf">0.4</span><span class="p">,</span>
+        <span class="mf">0.5</span><span class="p">,</span>
+        <span class="mf">0.6</span><span class="p">,</span>
+        <span class="mf">0.7</span><span class="p">,</span>
+        <span class="mf">0.8</span><span class="p">,</span>
+        <span class="mf">0.9</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">_MAX_PREDICTION_LENGTH</span> <span class="o">=</span> <span class="mi">2048</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">accept_license</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">likelihood</span><span class="p">:</span> <span class="n">QuantileRegression</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">hub_model_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;NX-AI/TiRex&quot;</span><span class="p">,</span>
+        <span class="n">hub_model_revision</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">local_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tirex_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        TiRex foundation model for zero-shot time series forecasting.</span>
+
+<span class="sd">        This is a Darts wrapper around the TiRex model introduced in Auer et al. (2025) [1]_. The implementation</span>
+<span class="sd">        delegates all forecasting logic and weight loading to the optional `tirex-ts</span>
+<span class="sd">        &lt;https://pypi.org/project/tirex-ts&gt;`_ package while exposing a standard :class:`TorchForecastingModel`</span>
+<span class="sd">        interface.</span>
+
+<span class="sd">        TiRex is a pre-trained foundation model designed for zero-shot forecasting across both short and long horizons.</span>
+
+<span class="sd">        This model supports either univariate or multivariate time series, but does not support covariates.</span>
+<span class="sd">        For multivariate time series, the model is applied independently to each component.</span>
+
+<span class="sd">        By default, the model is deterministic (median forecast only). To enable probabilistic forecasts, pass a</span>
+<span class="sd">        :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the ``likelihood`` parameter.</span>
+<span class="sd">        It is recommended to call :func:`predict()` with ``predict_likelihood_parameters=True`` or ``num_samples &gt;&gt; 1``</span>
+<span class="sd">        to get meaningful results.</span>
+
+<span class="sd">        For more details on the TiRex model, see the original paper [1]_, the `TiRex base repo</span>
+<span class="sd">        &lt;https://github.com/NX-AI/tirex&gt;`_, `model card &lt;https://huggingface.co/NX-AI/TiRex&gt;`_, and `docs</span>
+<span class="sd">        &lt;https://nx-ai.github.io/tirex/&gt;`_.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            TiRex is distributed under the `NXAI Community License &lt;https://github.com/NX-AI/tirex/blob/main/LICENSE&gt;`_.</span>
+<span class="sd">            You must explicitly acknowledge this license by passing ``accept_license=True`` when constructing the model.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            Partial fine-tuning is supported via</span>
+<span class="sd">            ``enable_finetuning={&quot;unfreeze&quot;: [&quot;tirex.output_patch_embedding*&quot;, ...]}``. Fine-tuning requires</span>
+<span class="sd">            ``tirex_kwargs={&quot;backend&quot;: &quot;torch&quot;}``; only the last sLSTM blocks and the output head are gradient-safe</span>
+<span class="sd">            (see notebook for recommended configurations). Full fine-tuning (``enable_finetuning=True``) is</span>
+<span class="sd">            **not supported** — backpropagation through the early sLSTM blocks produces NaN gradients.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            Number of time steps in the past to take as a model input (per chunk). Applies to the target</span>
+<span class="sd">            series, and past and/or future covariates (if the model supports it).</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values</span>
+<span class="sd">            from future covariates to use as a model input (if the model supports future covariates). It is not the same</span>
+<span class="sd">            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated</span>
+<span class="sd">            using either a one-shot- or autoregressive forecast. Setting `n &lt;= output_chunk_length` prevents</span>
+<span class="sd">            auto-regression. This is useful when the covariates don&#39;t extend far enough into the future, or to prohibit</span>
+<span class="sd">            the model from using future values of past and / or future covariates for prediction (depending on the</span>
+<span class="sd">            model&#39;s covariate support).</span>
+<span class="sd">            For TiRex, `output_chunk_length + output_chunk_shift` must be less than or equal to ``2048``.</span>
+<span class="sd">        output_chunk_shift</span>
+<span class="sd">            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the</span>
+<span class="sd">            input chunk end). This will create a gap between the input and output. If the model supports</span>
+<span class="sd">            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start</span>
+<span class="sd">            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model</span>
+<span class="sd">            cannot generate autoregressive predictions (`n &gt; output_chunk_length`).</span>
+<span class="sd">        likelihood</span>
+<span class="sd">            The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of</span>
+<span class="sd">            :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. If using ``QuantileRegression``,</span>
+<span class="sd">            the quantiles must be a subset of those used during Chronos-2 pre-training:</span>
+<span class="sd">            [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].</span>
+<span class="sd">            Default: ``None``, which will make the model deterministic (median quantile only).</span>
+<span class="sd">            When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to</span>
+<span class="sd">            preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood`` parameter</span>
+<span class="sd">            only affects prediction output.</span>
+<span class="sd">        accept_license</span>
+<span class="sd">            Must be set to ``True`` to confirm acceptance of the NXAI Community License. Default: ``False``.</span>
+<span class="sd">        hub_model_name</span>
+<span class="sd">            The model ID on HuggingFace Hub. Default: ``&quot;NX-AI/TiRex&quot;``.</span>
+<span class="sd">        hub_model_revision</span>
+<span class="sd">            The model version to use. This can be a branch name, tag name, or commit hash. Default: ``None``, which</span>
+<span class="sd">            will use the default branch from ``hub_model_name``.</span>
+<span class="sd">        local_dir</span>
+<span class="sd">            Optional local directory to load the pre-downloaded model. If specified and the directory is empty, the</span>
+<span class="sd">            model will be downloaded from HuggingFace Hub and saved to this directory. Default is ``None``, which will</span>
+<span class="sd">            use a cache directory managed by ``huggingface_hub`` instead. Note that this is different from the</span>
+<span class="sd">            ``work_dir`` parameter used for saving model checkpoints during fine-tuning.</span>
+<span class="sd">        tirex_kwargs</span>
+<span class="sd">            Additional keyword arguments forwarded to ``tirex.load_model()``.</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and</span>
+<span class="sd">            Darts&#39; :class:`TorchForecastingModel`.</span>
+
+<span class="sd">        loss_fn</span>
+<span class="sd">            PyTorch loss function used for fine-tuning a deterministic Chronos-2 model. Ignored for probabilistic</span>
+<span class="sd">            Chronos-2 when ``likelihood`` is specified. Default: ``nn.MSELoss()``.</span>
+<span class="sd">        torch_metrics</span>
+<span class="sd">            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found</span>
+<span class="sd">            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.</span>
+<span class="sd">        optimizer_cls</span>
+<span class="sd">            The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.</span>
+<span class="sd">        optimizer_kwargs</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{&#39;lr&#39;: 1e-3}``</span>
+<span class="sd">            for specifying a learning rate). Otherwise, the default values of the selected ``optimizer_cls``</span>
+<span class="sd">            will be used. Default: ``None``.</span>
+<span class="sd">        lr_scheduler_cls</span>
+<span class="sd">            Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds</span>
+<span class="sd">            to using a constant learning rate. Default: ``None``.</span>
+<span class="sd">        lr_scheduler_kwargs</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.</span>
+<span class="sd">        batch_size</span>
+<span class="sd">            Number of time series (input and output sequences) used in each training pass. Default: ``32``.</span>
+<span class="sd">        n_epochs</span>
+<span class="sd">            Number of epochs over which to train the model. Default: ``100``.</span>
+<span class="sd">        model_name</span>
+<span class="sd">            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,</span>
+<span class="sd">            defaults to the following string ``&quot;YYYY-mm-dd_HH_MM_SS_torch_model_run_PID&quot;``, where the initial part</span>
+<span class="sd">            of the name is formatted with the local date and time, while PID is the processed ID (preventing models</span>
+<span class="sd">            spawned at the same time by different processes to share the same model_name). E.g.,</span>
+<span class="sd">            ``&quot;2021-06-14_09_53_32_torch_model_run_44607&quot;``.</span>
+<span class="sd">        work_dir</span>
+<span class="sd">            Path of the working directory, where to save checkpoints and Tensorboard summaries.</span>
+<span class="sd">            Default: current working directory.</span>
+<span class="sd">        log_tensorboard</span>
+<span class="sd">            If set, use Tensorboard to log the different parameters. The logs will be located in:</span>
+<span class="sd">            ``&quot;{work_dir}/darts_logs/{model_name}/logs/&quot;``. Default: ``False``.</span>
+<span class="sd">        nr_epochs_val_period</span>
+<span class="sd">            Number of epochs to wait before evaluating the validation loss (if a validation</span>
+<span class="sd">            ``TimeSeries`` is passed to the :func:`fit()` method). Default: ``1``.</span>
+<span class="sd">        force_reset</span>
+<span class="sd">            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will</span>
+<span class="sd">            be discarded). Default: ``False``.</span>
+<span class="sd">        save_checkpoints</span>
+<span class="sd">            Whether to automatically save the untrained model and checkpoints from training.</span>
+<span class="sd">            To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where</span>
+<span class="sd">            :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,</span>
+<span class="sd">            :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using</span>
+<span class="sd">            :func:`save()` and loaded using :func:`load()`. Default: ``False``.</span>
+<span class="sd">        add_encoders</span>
+<span class="sd">            A large number of past and future covariates can be automatically generated with `add_encoders`.</span>
+<span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
+<span class="sd">            will be used as index encoders. Additionally, a transformer such as Darts&#39; :class:`Scaler` can be added to</span>
+<span class="sd">            transform the generated covariates. This happens all under one hood and only needs to be specified at</span>
+<span class="sd">            model creation.</span>
+<span class="sd">            Read :meth:`SequentialEncoder &lt;darts.dataprocessing.encoders.SequentialEncoder&gt;` to find out more about</span>
+<span class="sd">            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                def encode_year(idx):</span>
+<span class="sd">                    return (idx.year - 1950) / 50</span>
+
+<span class="sd">                add_encoders={</span>
+<span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
+<span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
+<span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [encode_year]},</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler(),</span>
+<span class="sd">                    &#39;tz&#39;: &#39;CET&#39;</span>
+<span class="sd">                }</span>
+<span class="sd">            ..</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Controls the randomness of the weights initialization and reproducible forecasting.</span>
+<span class="sd">        pl_trainer_kwargs</span>
+<span class="sd">            By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets</span>
+<span class="sd">            that performs the training, validation and prediction processes. These presets include automatic</span>
+<span class="sd">            checkpointing, tensorboard logging, setting the torch device and more.</span>
+<span class="sd">            With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer</span>
+<span class="sd">            object. Check the `PL Trainer documentation</span>
+<span class="sd">            &lt;https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html&gt;`__ for more information about the</span>
+<span class="sd">            supported kwargs. Default: ``None``.</span>
+<span class="sd">            Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``&quot;accelerator&quot;,</span>
+<span class="sd">            &quot;devices&quot;, and &quot;auto_select_gpus&quot;``. Some examples for setting the devices inside the ``pl_trainer_kwargs``</span>
+<span class="sd">            dict:</span>
+
+<span class="sd">            - ``{&quot;accelerator&quot;: &quot;cpu&quot;}`` for CPU,</span>
+<span class="sd">            - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;devices&quot;: [i]}`` to use only GPU ``i`` (``i`` must be an integer),</span>
+<span class="sd">            - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;devices&quot;: -1, &quot;auto_select_gpus&quot;: True}`` to use all available GPUS.</span>
+
+<span class="sd">            For more info, see here:</span>
+<span class="sd">            https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and</span>
+<span class="sd">            https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus</span>
+
+<span class="sd">            With parameter ``&quot;callbacks&quot;`` you can add custom or PyTorch-Lightning built-in callbacks to Darts&#39;</span>
+<span class="sd">            :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.</span>
+<span class="sd">            The model will stop training early if the validation loss `val_loss` does not improve beyond</span>
+<span class="sd">            specifications. For more information on callbacks, visit:</span>
+<span class="sd">            `PyTorch Lightning Callbacks</span>
+<span class="sd">            &lt;https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html&gt;`__</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                from pytorch_lightning.callbacks.early_stopping import EarlyStopping</span>
+
+<span class="sd">                # stop training when validation loss does not decrease more than 0.05 (`min_delta`) over</span>
+<span class="sd">                # a period of 5 epochs (`patience`)</span>
+<span class="sd">                my_stopper = EarlyStopping(</span>
+<span class="sd">                    monitor=&quot;val_loss&quot;,</span>
+<span class="sd">                    patience=5,</span>
+<span class="sd">                    min_delta=0.05,</span>
+<span class="sd">                    mode=&#39;min&#39;,</span>
+<span class="sd">                )</span>
+
+<span class="sd">                pl_trainer_kwargs={&quot;callbacks&quot;: [my_stopper]}</span>
+<span class="sd">            ..</span>
+
+<span class="sd">            Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional</span>
+<span class="sd">            parameter ``trainer`` in :func:`fit()` and :func:`predict()`.</span>
+<span class="sd">        show_warnings</span>
+<span class="sd">            whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of</span>
+<span class="sd">            your forecasting use case. Default: ``False``.</span>
+<span class="sd">        enable_finetuning</span>
+<span class="sd">            Enables model fine-tuning. Only effective if not ``None``.</span>
+<span class="sd">            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep</span>
+<span class="sd">            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value</span>
+<span class="sd">            record. Can be used to:</span>
+
+<span class="sd">            - Unfreeze specific parameters, while keeping everything else frozen:</span>
+<span class="sd">              ``{&quot;unfreeze&quot;: [&quot;param.name.patterns.*&quot;]}``</span>
+<span class="sd">            - Freeze specific parameters, while keeping everything else unfrozen:</span>
+<span class="sd">              ``{&quot;freeze&quot;: [&quot;param.name.patterns.*&quot;]}``</span>
+
+<span class="sd">            Default: ``None``.</span>
+
+<span class="sd">        References</span>
+<span class="sd">        ----------</span>
+<span class="sd">        .. [1] A. Auer et al., &quot;TiRex: Zero-Shot Forecasting Across Long and Short Horizons with Enhanced In-Context</span>
+<span class="sd">                Learning&quot;, NeurIPS 2025. https://arxiv.org/abs/2505.23719.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import TiRexModel</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
+<span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load().astype(&quot;float32&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; # you must explicitly set `accept_license=True` to use the model</span>
+<span class="sd">        &gt;&gt;&gt; model = TiRexModel(</span>
+<span class="sd">        ...     input_chunk_length=12,</span>
+<span class="sd">        ...     output_chunk_length=6,</span>
+<span class="sd">        ...     accept_license=False,</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(series)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(n=6)</span>
+<span class="sd">        &gt;&gt;&gt; print(pred.all_values())</span>
+<span class="sd">        [[[440.2505 ]]</span>
+<span class="sd">        [[444.44373]]</span>
+<span class="sd">        [[447.36362]]</span>
+<span class="sd">        [[451.50375]]</span>
+<span class="sd">        [[458.05853]]</span>
+<span class="sd">        [[461.98694]]]</span>
+
+<span class="sd">        Probabilistic forecasting:</span>
+
+<span class="sd">        &gt;&gt;&gt; from darts.utils.likelihood_models import QuantileRegression</span>
+<span class="sd">        &gt;&gt;&gt; # you must explicitly set `accept_license=True` to use the model</span>
+<span class="sd">        &gt;&gt;&gt; model = TiRexModel(</span>
+<span class="sd">        ...     input_chunk_length=12,</span>
+<span class="sd">        ...     output_chunk_length=6,</span>
+<span class="sd">        ...     likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),</span>
+<span class="sd">        ...     accept_license=False,</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(series)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(n=6, predict_likelihood_parameters=True)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">accept_license</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;TiRex is distributed under the NXAI Community License. &quot;</span>
+                    <span class="s2">&quot;Set `accept_license=True` to confirm you have reviewed and accept the terms: &quot;</span>
+                    <span class="s2">&quot;https://github.com/NX-AI/tirex/blob/main/LICENSE&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">QuantileRegression</span><span class="p">):</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Only QuantileRegression likelihood is supported for TiRex in Darts. &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">likelihood</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="n">user_quantiles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">quantiles</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">user_quantiles</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_DEFAULT_QUANTILES</span><span class="p">):</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;The quantiles for QuantileRegression likelihood </span><span class="si">{</span><span class="n">user_quantiles</span><span class="si">}</span><span class="s2"> &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;must be a subset of TiRex quantiles </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_DEFAULT_QUANTILES</span><span class="si">}</span><span class="s2">.&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">output_chunk_length</span> <span class="o">+</span> <span class="n">output_chunk_shift</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_MAX_PREDICTION_LENGTH</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;`output_chunk_length` </span><span class="si">{</span><span class="n">output_chunk_length</span><span class="si">}</span><span class="s2"> plus `output_chunk_shift` </span><span class="si">{</span><span class="n">output_chunk_shift</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;cannot be greater than model&#39;s maximum prediction length </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_MAX_PREDICTION_LENGTH</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">tirex_kwargs</span> <span class="o">=</span> <span class="n">tirex_kwargs</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="s2">&quot;path&quot;</span> <span class="ow">in</span> <span class="n">tirex_kwargs</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;The `path` argument for loading the TiRex model should be passed via `hub_model_name`,&quot;</span>
+                    <span class="s2">&quot;not `tirex_kwargs`.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;enable_finetuning&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;TiRex is licensed under the NXAI Community License — &quot;</span>
+                <span class="s2">&quot;https://github.com/NX-AI/tirex/blob/main/LICENSE</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;Fine-tuned weights are derivative works subject to the same terms.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">hf_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="p">(</span>
+                <span class="p">{</span><span class="s2">&quot;revision&quot;</span><span class="p">:</span> <span class="n">hub_model_revision</span><span class="p">}</span>
+                <span class="k">if</span> <span class="n">hub_model_revision</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="p">{}</span>
+            <span class="p">),</span>
+            <span class="o">**</span><span class="p">({</span><span class="s2">&quot;local_dir&quot;</span><span class="p">:</span> <span class="n">local_dir</span><span class="p">}</span> <span class="k">if</span> <span class="n">local_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}),</span>
+            <span class="o">**</span><span class="p">(</span><span class="n">tirex_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hf_kwargs&quot;</span><span class="p">,</span> <span class="p">{})),</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tirex_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="n">hub_model_name</span><span class="p">,</span>
+            <span class="o">**</span><span class="p">({</span><span class="s2">&quot;hf_kwargs&quot;</span><span class="p">:</span> <span class="n">hf_kwargs</span><span class="p">}</span> <span class="k">if</span> <span class="n">hf_kwargs</span> <span class="k">else</span> <span class="p">{}),</span>
+            <span class="o">**</span><span class="n">tirex_kwargs</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_past_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_future_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PLForecastingModule</span><span class="p">:</span>
+        <span class="n">pl_module_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="c1"># enable_finetuning is injected into pl_module_params by the base class;</span>
+        <span class="c1"># _TiRexModule accepts it as an explicit parameter and converts dict form to bool</span>
+        <span class="k">return</span> <span class="n">_TiRexModule</span><span class="p">(</span>
+            <span class="n">tirex_kwargs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tirex_kwargs</span><span class="p">,</span>
+            <span class="n">all_quantiles</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_DEFAULT_QUANTILES</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">pl_module_params</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2026, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

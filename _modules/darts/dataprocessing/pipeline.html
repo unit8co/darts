@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -418,13 +418,15 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">BaseDataTransformer</span><span class="p">,</span>
     <span class="n">FittableDataTransformer</span><span class="p">,</span>
     <span class="n">InvertibleDataTransformer</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeriesLike</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -603,10 +605,11 @@
 <a class="viewcode-back" href="../../../generated_api/darts.dataprocessing.pipeline.html#darts.dataprocessing.pipeline.Pipeline.inverse_transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">inverse_transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesLike</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesLike</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">partial</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">series_idx</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeriesLike</span><span class="p">:</span>
+        <span class="n">insample</span><span class="p">:</span> <span class="n">TimeSeriesLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeriesLike</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        For each data transformer in the pipeline, inverse-transform data. Then inverse transformed data is passed to</span>
 <span class="sd">        the next transformer. Transformers are traversed in reverse order. Raises value error if not all transformers</span>
@@ -616,37 +619,51 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        data</span>
-<span class="sd">            (Sequence of) TimeSeries to be inverse transformed.</span>
+<span class="sd">            (Sequence of) ``TimeSeries`` to inverse-transform.</span>
 <span class="sd">        partial</span>
 <span class="sd">            If set to `True`, the inverse transformation is applied even if the pipeline is not fully invertible,</span>
 <span class="sd">            calling `inverse_transform()` only on transformers of type `InvertibleDataTransformer`.</span>
 <span class="sd">        series_idx</span>
 <span class="sd">            Optionally, the index(es) of each series corresponding to their positions within the series used to fit</span>
 <span class="sd">            the transformer (to retrieve the appropriate transformer parameters).</span>
+<span class="sd">        insample</span>
+<span class="sd">            Optionally, the transformed historic (insample) part of ``data``. This can be used when ``data`` is</span>
+<span class="sd">            only a tail (for example a forecast) and inverse transforming requires information from earlier times</span>
+<span class="sd">            (for example the :class:`~darts.dataprocessing.transformers.diff.Diff` transformer). Each ``insample``</span>
+<span class="sd">            series must start before the ``data`` start time and extend at least until one step before the start time</span>
+<span class="sd">            of the ``data``. If ``data`` is a ``Sequence[Sequence[TimeSeries]]``, then ``insample`` should be a</span>
+<span class="sd">            ``Sequence[TimeSeries]`` with the same length. Otherwise, it should have the same type as ``data``. Only</span>
+<span class="sd">            used by transformers that require information from earlier times.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        TimeSeriesLike</span>
-<span class="sd">            Inverse transformed data.</span>
+<span class="sd">        TimeSeriesLike | Sequence[Sequence[TimeSeries]]</span>
+<span class="sd">            Inverse-transformed data; same structure as ``data``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">partial</span><span class="p">:</span>
-            <span class="n">raise_if_not</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_invertible</span><span class="p">,</span>
-                <span class="s2">&quot;Not all transformers in the pipeline can perform inverse_transform&quot;</span><span class="p">,</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">partial</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_invertible</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Not all transformers in the pipeline can perform inverse_transform&quot;</span>
+                <span class="p">),</span>
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
 
-            <span class="k">for</span> <span class="n">transformer</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_transformers</span><span class="p">):</span>
-                <span class="n">data</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">series_idx</span><span class="o">=</span><span class="n">series_idx</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">data</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">transformer</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_transformers</span><span class="p">):</span>
-                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">transformer</span><span class="p">,</span> <span class="n">InvertibleDataTransformer</span><span class="p">):</span>
-                    <span class="n">data</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span>
-                        <span class="n">data</span><span class="p">,</span>
-                        <span class="n">series_idx</span><span class="o">=</span><span class="n">series_idx</span><span class="p">,</span>
+        <span class="c1"># only inverse-transform insample as long as it is required</span>
+        <span class="n">tfs_with_insample</span> <span class="o">=</span> <span class="p">[</span><span class="n">tf</span><span class="o">.</span><span class="n">_uses_insample</span> <span class="k">for</span> <span class="n">tf</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_transformers</span><span class="p">)]</span>
+        <span class="n">last_tf_index_with_insample</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">tfs_with_insample</span><span class="p">)))</span>
+        <span class="n">current_insample</span> <span class="o">=</span> <span class="n">insample</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">transformer</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_transformers</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">transformer</span><span class="p">,</span> <span class="n">InvertibleDataTransformer</span><span class="p">):</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span>
+                    <span class="n">series</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+                    <span class="n">series_idx</span><span class="o">=</span><span class="n">series_idx</span><span class="p">,</span>
+                    <span class="n">insample</span><span class="o">=</span><span class="n">current_insample</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">idx</span> <span class="o">&lt;</span> <span class="n">last_tf_index_with_insample</span> <span class="ow">and</span> <span class="n">current_insample</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">current_insample</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span>
+                        <span class="n">current_insample</span><span class="p">,</span> <span class="n">series_idx</span><span class="o">=</span><span class="n">series_idx</span>
                     <span class="p">)</span>
-            <span class="k">return</span> <span class="n">data</span></div>
+        <span class="k">return</span> <span class="n">data</span></div>
 
 
     <span class="nd">@property</span>

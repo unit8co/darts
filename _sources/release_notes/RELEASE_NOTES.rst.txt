@@ -8,13 +8,79 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 `Unreleased <https://github.com/unit8co/darts/tree/master>`_
 ----------------------------------------------------------------
 
-`Full Changelog <https://github.com/unit8co/darts/compare/0.43.0...master>`_
+`Full Changelog <https://github.com/unit8co/darts/compare/0.44.0...master>`_
 
 For users of the library:
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For developers of the library:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+`0.44.0 <https://github.com/unit8co/darts/tree/0.44.0>`_ (2026-04-30)
+-------------------------------------------------------------------------
+
+For users of the library:
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Improved**
+
+
+* 🚀🚀 Dramatically reduced import times by deferring heavy third-party dependencies (torch, sklearn, scipy, ...) until they are actually needed. This benefits cold-start scenarios (serverless functions, CLI tools, short-lived scripts), CI pipelines, and interactive development workflows where fast feedback loops matter. Here are some import speed-up examples: `#3066 <https://github.com/unit8co/darts/pull/3066>`_ by `Dennis Bader <https://github.com/dennisbader>`_
+
+  * TimeSeries, metrics, datasets, data transformers: 8x faster (2.4 → 0.3 seconds)
+  * Baseline models: 19x faster (5.7 → 0.3 seconds)
+  * SKLearn models: 4.4x faster (5.7 → 1.3 seconds)
+  * Torch models: 1.9x faster (5.7 → 3.0 seconds)
+
+* 🚀🚀 Added new forecasting model ``TiRexModel`` : NX-AI's pre-trained 35M-parameter foundational model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series forecasting without training and can output deterministic or probabilistic forecasts. `#3038 <https://github.com/unit8co/darts/pull/3038>`_ by `Lukas Fischer <https://github.com/lukfischer>`_\ , `Martin Loretz <https://github.com/martinloretzzz>`_\ , and `Zhihao Dai <https://github.com/daidahao>`_.
+* Improvements to ``InvertibleDataTransformer`` and data ``Pipeline`` : `#3085 <https://github.com/unit8co/darts/pull/3085>`_ by `Jakub Chłapek <https://github.com/jakubchlapek>`_
+
+  * Added optional ``insample`` parameter to ``inverse_transform()`` to supply the transformed history needed by transformers like ``Diff``\ , removing the need to manually concatenate the in-sample series before inverse-transforming a forecast.
+  * ``Diff`` can now be properly used inside a target series ``Pipeline`` with ``historical_forecasts()`` via the ``data_transformers`` parameter. The backtested forecasts are correctly inverse-transformed back to the original scale.
+
+* Improvements to ``RegressionEnsembleModel`` : `#3041 <https://github.com/unit8co/darts/pull/3041>`_ by `Gabriel Margaria <https://github.com/Jaco-Pastorius>`_ and `#3074 <https://github.com/unit8co/darts/pull/3074>`_ by `Junghwan Na <https://github.com/shaun0927>`_.
+
+  * Base forecasting models using ``output_chunk_shift>0`` are now fully supported. If you're using a custom ``regression_model``\ , simply set its output shift to be the same as that of the base models.
+  * Added support for ``output_chunk_length>1`` for the ensemble (regression) model. This means that the ensemble model can now consume information from base model forecasts over the entire horizon.
+
+* Improvements to Gradient-Boosted Models:
+
+  * Added native multi-quantile support for ``CatBoostModel`` by using CatBoost’s ``MultiQuantile`` loss for faster training and inference. Set ``likelihood="multiquantile"`` to enable this feature. `#3032 <https://github.com/unit8co/darts/pull/3032>`_ by `Zhihao Dai <https://github.com/daidahao>`_
+  * Added native multi-quantile support for ``XGBModel``. Similar to the regular quantile support, it still fits dedicated models per quantile, but it is more efficient due to fewer tabularization operations. Set ``likelihood="multiquantile"`` to enable this feature. `#3056 <https://github.com/unit8co/darts/pull/3056>`_ by `Oswald Zink <https://github.com/ozink-u8>`_
+
+* Improvements to metrics:
+
+  * Added new probabilistic metrics ``crps()`` (Continuous Ranked Probability Score) and ``mcrps()`` (Mean CRPS): a proper scoring rule that generalises the Mean Absolute Error (MAE) to probabilistic forecasts. `#3089 <https://github.com/unit8co/darts/pull/3089>`_ by `Boubker Bennani <https://github.com/Boubker10>`_
+  * Added parameter ``name`` to all metric functions for customizing the displayed name. `#3084 <https://github.com/unit8co/darts/pull/3084>`_ by `Bruno Da Costa <https://github.com/BrunoDaC>`_.
+  * 🔴 Scaled metrics (\ ``ase``\ , ``sse``\ , ``mase``\ , ``msse``\ , ``rmsse``\ ) no longer raise a hard ``ValueError`` when the ``insample`` series has zero error scale (constant or perfectly seasonal signals). A new ``zero_division`` parameter controls the behavior: `#3059 <https://github.com/unit8co/darts/pull/3059>`_ by `Mahima Sharma <https://github.com/mahi-ma>`_
+
+    * ``"warn"`` (default) raises a warning and returns ``np.nan`` for non-zero forecast errors, and ``1.0`` otherwise (forecast is on-par with naive forecast).
+    * ``"raise"`` preserves the legacy error.
+
+* Other improvements:
+
+  * ``StatsForecastModel`` now accepts ``model`` as a StatsForecast model name, class, or instance; ``model_kwargs`` supplies constructor arguments when ``model`` is a name or class. This simplifies config-driven setups. `#3058 <https://github.com/unit8co/darts/pull/3058>`_ by `Trevin Chow <https://github.com/tmchow>`_.
+  * 🔴 We moved ``NaiveEnsembleModel`` from ``darts.models.forecasting.baselines`` into a dedicated module ``darts.models.forecasting.naive_ensemble_model`` to separate the heavier dependencies from the baseline models and improve import times. The import remains identical ``from darts.models import NaiveEnsembleModel`` but pickled models that were saved in older Darts versions cannot be loaded anymore. To fix it, simply re-create the model and store it again. `#3066 <https://github.com/unit8co/darts/pull/3066>`_ by `Dennis Bader <https://github.com/dennisbader>`_
+
+**Fixed**
+
+
+* Fixed a device mismatch error in ``TFTModel`` when moving a trained model to a different device (e.g., GPU to CPU for ONNX export). ``attention_mask`` and ``relative_index`` are now registered as non-persistent buffers so they are properly moved with the model. `#3053 <https://github.com/unit8co/darts/pull/3053>`_ by `Wolfhart Feldmeier <https://github.com/trahflow>`_
+* Fixed several issues when using a ``StaticCovariatesTransformer`` with a ``OneHotEncoder`` (OHE) for categorical static covariates:
+
+  * Fixed an issue where using the OHE parameter ``drop`` (e.g. ``drop="first"``\ , ``drop="if_binary"``\ ) raised an exception due to wrong internal column mapping. `#3065 <https://github.com/unit8co/darts/pull/3065>`_ by `Jay Dasondee <https://github.com/JKDasondee>`_
+  * Fixed an issue where using the OHE parameters ``min_frequency`` or ``max_categories`` silently truncated the column mapping. `#3076 <https://github.com/unit8co/darts/pull/3076>`_ by `Junghwan Na <https://github.com/shaun0927>`_.
+
+* Fixed a stale docstring in ``Diff`` that incorrectly stated a ``component_mask`` cannot be specified together with ``dropna=True``. `#3078 <https://github.com/unit8co/darts/pull/3078>`_ by `Junghwan Na <https://github.com/shaun0927>`_.
+
+For developers of the library:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+* Significantly reduced test suite session loading times by deferring heavy third-party dependencies until they are actually needed. `#3072 <https://github.com/unit8co/darts/pull/3072>`_ by `Dennis Bader <https://github.com/dennisbader>`_
+
+  * Test run sessions: 3x faster (6 → 2 seconds)
+  * Test debug sessions: 6x faster (36 → 6 seconds)
 
 `0.43.0 <https://github.com/unit8co/darts/tree/0.43.0>`_ (2026-03-23)
 -------------------------------------------------------------------------
@@ -34,6 +100,8 @@ For users of the library:
   * ``plot_variable_selection()`` now returns the matplotlib figures for downstream usage (saving, editing, ...). It returns a single figure when explaining a single TimeSeries. Otherwise, it returns a list of figures.
   * ``plot_variable_selection()`` now accepts a ``show_plot: bool = True`` parameter that allows to suppress showing the plot.
   * 🔴 ``plot_attention()`` now also returns the matplotlib figures for all explained series, instead of only the matplotlib axis for the last series.
+
+* ``TorchForecastingModel`` now raises a warning when the input series have mixed data types, or the prediction series do not have the same data type as the series used for training. `#3043 <https://github.com/unit8co/darts/pull/3043>`_ by `Oswald Zink <https://github.com/ozink-u8>`_
 
 `0.42.1 <https://github.com/unit8co/darts/tree/0.42.1>`_ (2026-03-07)
 -------------------------------------------------------------------------
@@ -217,7 +285,7 @@ For users of the library:
   Improvements to forecasting models:
 
 
-  * 🚀🚀 Added new forecasting model `Chronos2Model`: Amazon's pre-trained 120M-parameter foundational model for zero-shot forecasting. `Chronos2Model` can be used for univariate, multivariate, and multiple time series forecasting without any training. It supports past and future covariates and can output deterministic or probabilistic forecasts. Check out the new [Chronos-2 Foundation Model Notebook](https://unit8co.github.io/darts/examples/25-Chronos-2-examples.html) for examples and usage of Chronos-2. `#2944 <https://github.com/unit8co/darts/pull/2944>`_ by `Zhihao Dai <https://github.com/daidahao>`_.
+  * 🚀🚀 Added new forecasting model `Chronos2Model`: Amazon's pre-trained 120M-parameter foundational model for zero-shot forecasting. `Chronos2Model` can be used for univariate, multivariate, and multiple time series forecasting without any training. It supports past and future covariates and can output deterministic or probabilistic forecasts. Check out the new [Chronos-2 Foundation Model Notebook](https://unit8co.github.io/darts/examples/25-FoundationModel-examples.html) for examples and usage of Chronos-2. `#2944 <https://github.com/unit8co/darts/pull/2944>`_ by `Zhihao Dai <https://github.com/daidahao>`_.
 
 * 
   Improvements to ``TimeSeries``\ :

@@ -1,0 +1,3 @@
+.. automodule:: darts.models.forecasting.naive_ensemble_model
+   :members:
+   :undoc-members:

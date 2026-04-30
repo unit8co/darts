@@ -21,6 +21,7 @@ darts.models.forecasting
    darts.models.forecasting.kalman_forecaster
    darts.models.forecasting.lgbm
    darts.models.forecasting.linear_regression_model
+   darts.models.forecasting.naive_ensemble_model
    darts.models.forecasting.nbeats
    darts.models.forecasting.nf_model
    darts.models.forecasting.nhits
@@ -45,6 +46,7 @@ darts.models.forecasting
    darts.models.forecasting.theta
    darts.models.forecasting.tide_model
    darts.models.forecasting.timesfm2p5_model
+   darts.models.forecasting.tirex_model
    darts.models.forecasting.transformer_model
    darts.models.forecasting.tsmixer_model
    darts.models.forecasting.varima
@@ -65,6 +67,7 @@ darts.models.forecasting
 - :doc:`darts.models.forecasting.kalman_forecaster <darts.models.forecasting.kalman_forecaster>`
 - :doc:`darts.models.forecasting.lgbm <darts.models.forecasting.lgbm>`
 - :doc:`darts.models.forecasting.linear_regression_model <darts.models.forecasting.linear_regression_model>`
+- :doc:`darts.models.forecasting.naive_ensemble_model <darts.models.forecasting.naive_ensemble_model>`
 - :doc:`darts.models.forecasting.nbeats <darts.models.forecasting.nbeats>`
 - :doc:`darts.models.forecasting.nf_model <darts.models.forecasting.nf_model>`
 - :doc:`darts.models.forecasting.nhits <darts.models.forecasting.nhits>`
@@ -89,6 +92,7 @@ darts.models.forecasting
 - :doc:`darts.models.forecasting.theta <darts.models.forecasting.theta>`
 - :doc:`darts.models.forecasting.tide_model <darts.models.forecasting.tide_model>`
 - :doc:`darts.models.forecasting.timesfm2p5_model <darts.models.forecasting.timesfm2p5_model>`
+- :doc:`darts.models.forecasting.tirex_model <darts.models.forecasting.tirex_model>`
 - :doc:`darts.models.forecasting.transformer_model <darts.models.forecasting.transformer_model>`
 - :doc:`darts.models.forecasting.tsmixer_model <darts.models.forecasting.tsmixer_model>`
 - :doc:`darts.models.forecasting.varima <darts.models.forecasting.varima>`

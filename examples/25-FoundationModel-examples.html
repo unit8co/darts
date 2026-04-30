@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Chronos-2 Foundation Model &#8212; darts  documentation</title>
+    <title>Foundation Models &#8212; darts  documentation</title>
   
   
   
@@ -53,7 +53,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/25-Chronos-2-examples';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/25-FoundationModel-examples';</script>
     <link rel="icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -61,7 +61,7 @@
     <link rel="prev" title="NeuralForecast Model Integration" href="26-NeuralForecast-examples.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -439,7 +439,7 @@
 <li class="toctree-l1"><a class="reference internal" href="26-NeuralForecast-examples.html">NeuralForecast Model Integration</a></li>
 </ul>
 <ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Chronos-2 Foundation Model</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Foundation Models</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="27-Torch-and-Foundation-Model-Fine-Tuning-examples.html">Fine-Tuning PyTorch Models and Foundation Models</a></li>
@@ -505,7 +505,7 @@
     
     <li class="breadcrumb-item"><a href="../examples.html" class="nav-link">Examples</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Chronos-2 Foundation Model</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Foundation Models</span></li>
   </ul>
 </nav>
 </div>
@@ -522,13 +522,63 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="Chronos-2-Foundation-Model">
-<h1>Chronos-2 Foundation Model<a class="headerlink" href="#Chronos-2-Foundation-Model" title="Link to this heading">#</a></h1>
-<p>In this notebook, we will show how to use Chronos-2 in Darts. If you are new to Darts, please check out the <a class="reference external" href="https://unit8co.github.io/darts/quickstart/00-quickstart.html">Quickstart Guide</a> before proceeding.</p>
-<p>Chronos-2 is a time series foundation model for zero-shot forecasting. That means that it can be used for forecasting <strong>without any training or fine-tuning</strong> since it has already been pre-trained on large-scale time series data. Chronos-2 supports multivariate time series forecasting with <a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html">covariates</a> (exogenous variables) and can produce probabilistic forecasts.</p>
-<p>Check out the <a class="reference external" href="https://www.amazon.science/blog/introducing-chronos-2-from-univariate-to-universal-forecasting">Amazon Science Blog</a> and the <a class="reference external" href="https://arxiv.org/abs/2510.15821">original paper</a> for technical details.</p>
-<div class="alert alert-success" role="alert"><p>Fine-tuning Chronos-2 on your own data is not yet supported in Darts, but may be added in the future.</p>
-</div><div class="nbinput nblast docutils container">
+  <section id="Foundation-Models">
+<h1>Foundation Models<a class="headerlink" href="#Foundation-Models" title="Link to this heading">#</a></h1>
+<p>In this notebook, we will show how to use time series foundation models in Darts. If you are new to Darts, please check out the <a class="reference external" href="https://unit8co.github.io/darts/quickstart/00-quickstart.html">Quickstart Guide</a> before proceeding.</p>
+<p>Foundation models are pre-trained on large-scale time series data and can be used for <strong>zero-shot forecasting</strong> – that means they can produce forecasts <strong>without any training or fine-tuning</strong>. Darts currently supports the following foundation models:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.chronos2_model.html">Chronos2Model</a> – Amazon’s Chronos-2 (<a class="reference external" href="https://arxiv.org/abs/2510.15821">paper</a>, <a class="reference external" href="https://www.amazon.science/blog/introducing-chronos-2-from-univariate-to-universal-forecasting">blog</a>)</p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.timesfm2p5_model.html">TimesFM2p5Model</a> – Google’s TimesFM 2.5 (<a class="reference external" href="https://arxiv.org/abs/2310.10688">paper</a>)</p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tirex_model.html">TiRexModel</a> – NX-AI’s TiRex (<a class="reference external" href="https://arxiv.org/abs/2505.23719">paper</a>)</p></li>
+</ul>
+<p>All models support the following:</p>
+<ul class="simple">
+<li><p>uni- and multivariate time series</p></li>
+<li><p>single and multiple time series</p></li>
+<li><p>deterministic and probabilistic forecasting</p></li>
+<li><p>zero-shot forecasting</p></li>
+<li><p>fine-tuning</p></li>
+</ul>
+<p>They differ in covariate support and installation requirements:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Model</p></th>
+<th class="head"><p>Past Covariates</p></th>
+<th class="head"><p>Future Covariates</p></th>
+<th class="head"><p>Static Covariates</p></th>
+<th class="head"><p>Extra Dependency</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Chronos2Model</span></code></p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>🔴</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TimesFM2p5Model</span></code></p></td>
+<td><p>🔴</p></td>
+<td><p>🔴</p></td>
+<td><p>🔴</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TiRexModel</span></code></p></td>
+<td><p>🔴</p></td>
+<td><p>🔴</p></td>
+<td><p>🔴</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tirex-ts&gt;=1.4.0</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>This notebook demonstrates common usage patterns with <code class="docutils literal notranslate"><span class="pre">Chronos2Model</span></code>. Other foundation models can be used in exactly the same way – the only differences are covariate support (see table above) and installation requirements.</p>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
@@ -572,6 +622,10 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">ElectricityConsumptionZurichDataset</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mae</span><span class="p">,</span> <span class="n">mic</span><span class="p">,</span> <span class="n">miw</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Chronos2Model</span>
+
+<span class="c1"># Other foundation models can be imported in the same way:</span>
+<span class="c1"># from darts.models import TimesFM2p5Model</span>
+<span class="c1"># from darts.models import TiRexModel  # requires: pip install tirex-ts&gt;=1.4.0</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span>
 
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
@@ -586,14 +640,14 @@
 <p>Here, we will use the <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.datasets.datasets.html#darts.datasets.datasets.ElectricityConsumptionZurichDataset">Electricity Consumption Zurich Dataset</a>, which records the electricity consumption of households &amp; SMEs (<code class="docutils literal notranslate"><span class="pre">&quot;Value_NE5&quot;</span></code> column) and business &amp; services (<code class="docutils literal notranslate"><span class="pre">&quot;Value_NE7&quot;</span></code>) in Zurich, Switzerland, along with weather covariates such as temperature (<code class="docutils literal notranslate"><span class="pre">&quot;T</span> <span class="pre">[°C]&quot;</span></code>) and humidity (<code class="docutils literal notranslate"><span class="pre">&quot;Hr</span> <span class="pre">[%Hr]&quot;</span></code>). Values are recorded every 15 minutes between
 January 2015 and August 2022.</p>
 <details><summary><p>Train-Test Split</p>
-</summary><p>Even though Chronos-2 is pre-trained already, we still need to split the data into training and test sets. That is because <code class="docutils literal notranslate"><span class="pre">Chronos2Model</span></code> follows the Darts unified interface and will require calling the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> method before forecasting. However, no training or fine-tuning will be performed during the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> call.</p>
+</summary><p>Even though foundation models are pre-trained already, we still need to split the data into training and test sets. That is because they follow the Darts unified interface and will require calling the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> method before forecasting. However, no training or fine-tuning will be performed during the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> call.</p>
 </details><details><summary><p>Data Scaling</p>
-</summary><p>Unlike other deep learning models in Darts, Chronos-2 does not require data scaling since it has its own internal data normalization mechanism. Therefore, we will skip the scaling step in this notebook.</p>
+</summary><p>Unlike other deep learning models in Darts, foundation models do not require data scaling since they have their own internal data normalization mechanism. Therefore, we will skip the scaling step in this notebook.</p>
 </details><div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># convert to float32 as Chronos-2 works with float32 input</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># convert to float32</span>
 <span class="n">data</span> <span class="o">=</span> <span class="n">ElectricityConsumptionZurichDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 <span class="c1"># extract households energy consumption</span>
 <span class="n">ts_energy</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;Value_NE5&quot;</span><span class="p">]</span>
@@ -617,19 +671,20 @@ January 2015 and August 2022.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_25-Chronos-2-examples_10_0.png" src="../_images/examples_25-Chronos-2-examples_10_0.png" />
+<img alt="../_images/examples_25-FoundationModel-examples_9_0.png" src="../_images/examples_25-FoundationModel-examples_9_0.png" />
 </div>
 </div>
 </section>
 <section id="Model-Creation">
 <h2>Model Creation<a class="headerlink" href="#Model-Creation" title="Link to this heading">#</a></h2>
-<p>Chronos-2 supports two types of forecasting outputs:</p>
+<p>In the following, we demonstrate model creation using <code class="docutils literal notranslate"><span class="pre">Chronos2Model</span></code>. The same pattern applies to other foundation models – simply swap the model class.</p>
+<p>All foundation models support two types of forecasting outputs:</p>
 <ul class="simple">
 <li><p><strong>Deterministic</strong> forecasts (<strong>default</strong>): single point estimates for each future time step.</p></li>
-<li><p><strong>Probabilistic</strong> forecasts: multiple samples for each future time step, which can be used to estimate prediction intervals. To enable probabilistic forecasting, set <code class="docutils literal notranslate"><span class="pre">likelihood=QuantileRegression([...])</span></code> when creating the model. The list of quantiles used here must be a subset of Chronos-2 supported quantiles: <code class="docutils literal notranslate"><span class="pre">[0.01,</span> <span class="pre">0.05,</span> <span class="pre">0.1,</span> <span class="pre">0.15,</span> <span class="pre">0.2,</span> <span class="pre">0.25,</span> <span class="pre">0.3,</span> <span class="pre">0.35,</span> <span class="pre">0.4,</span> <span class="pre">0.45,</span> <span class="pre">0.5,</span> <span class="pre">0.55,</span> <span class="pre">0.6,</span> <span class="pre">0.65,</span> <span class="pre">0.7,</span> <span class="pre">0.75,</span> <span class="pre">0.8,</span> <span class="pre">0.85,</span> <span class="pre">0.9,</span> <span class="pre">0.95,</span> <span class="pre">0.99]</span></code>.</p></li>
+<li><p><strong>Probabilistic</strong> forecasts: multiple samples for each future time step, which can be used to estimate prediction intervals. To enable probabilistic forecasting, set <code class="docutils literal notranslate"><span class="pre">likelihood=QuantileRegression([...])</span></code> when creating the model. The list of quantiles used here must be a subset of the model’s supported quantiles. For Chronos-2: <code class="docutils literal notranslate"><span class="pre">[0.01,</span> <span class="pre">0.05,</span> <span class="pre">0.1,</span> <span class="pre">0.15,</span> <span class="pre">0.2,</span> <span class="pre">0.25,</span> <span class="pre">0.3,</span> <span class="pre">0.35,</span> <span class="pre">0.4,</span> <span class="pre">0.45,</span> <span class="pre">0.5,</span> <span class="pre">0.55,</span> <span class="pre">0.6,</span> <span class="pre">0.65,</span> <span class="pre">0.7,</span> <span class="pre">0.75,</span> <span class="pre">0.8,</span> <span class="pre">0.85,</span> <span class="pre">0.9,</span> <span class="pre">0.95,</span> <span class="pre">0.99]</span></code>.</p></li>
 </ul>
 <details><summary><p>Lookback and Forward Windows</p>
-</summary><p>Under the hood, Chronos-2 is no different from other <a class="reference external" href="https://unit8co.github.io/darts/userguide/torch_forecasting_models.html">Torch Forecasting Models (TFMs)</a> in Darts and most hyperparameters from TFMs can be applied here as well. In particular, you can control the length of the lookback window and the forward window using the <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> parameters, respectively.</p>
+</summary><p>Under the hood, foundation models are no different from other <a class="reference external" href="https://unit8co.github.io/darts/userguide/torch_forecasting_models.html">Torch Forecasting Models (TFMs)</a> in Darts and most hyperparameters from TFMs can be applied here as well. In particular, you can control the length of the lookback window and the forward window using the <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> parameters, respectively.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code>: the number of time steps of history the model takes as input when making a forecast. Maximum is <strong>8192</strong> for Chronos-2.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>: the number of time steps the model outputs in one forward pass. If the forecast horizon is longer than this value, the model consumes its own previous predictions to produce further forecasts. This is known as the autoregressive forecasting. Maximum is <strong>1024</strong> for Chronos-2.</p></li>
@@ -637,7 +692,7 @@ January 2015 and August 2022.</p>
 <img alt="figure0" src="https://unit8co.github.io/darts/_images/tfm.png" />
 <p>See the <a class="reference external" href="https://unit8co.github.io/darts/userguide/torch_forecasting_models.html">Torch Forecasting Models User Guide</a> for more details.</p>
 </details><details><summary><p>Model Downloading and Caching</p>
-</summary><p>When creating a <code class="docutils literal notranslate"><span class="pre">Chronos2Model</span></code> instance for the first time, the pre-trained model checkpoint will be automatically downloaded from <a class="reference external" href="https://huggingface.co/amazon/chronos-2">amazon/chronos-2</a> hosted on Hugging Face Hub and cached locally. Subsequent usage of <code class="docutils literal notranslate"><span class="pre">Chronos2Model</span></code> will NOT re-download the files but use the cached version instead.</p>
+</summary><p>When creating a foundation model instance for the first time, the pre-trained model checkpoint will be automatically downloaded from Hugging Face Hub and cached locally. Subsequent usage will NOT re-download the files but use the cached version instead.</p>
 <p>If you would like to download or load the model checkpoint to a custom directory, set <code class="docutils literal notranslate"><span class="pre">local_dir</span></code> argument when creating the model. For example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">Chronos2Model</span><span class="p">(</span>
     <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">168</span><span class="p">,</span>
@@ -646,11 +701,11 @@ January 2015 and August 2022.</p>
 <span class="p">)</span>
 </pre></div>
 </div>
-</details><details><summary><p>Using Smaller or Synthetic Variants</p>
+</details><details><summary><p>Using Smaller or Synthetic Variants (Chronos-2)</p>
 </summary><p>Two variants of Chronos-2 are available on HuggingFace Hub:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">`autogluon/chronos-2-small</span></code> &lt;<a class="reference external" href="https://huggingface.co/autogluon/chronos-2-small">https://huggingface.co/autogluon/chronos-2-small</a>&gt;`__ : a smaller 28M parameter Chronos-2 model.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">`autogluon/chronos-2-synth</span></code> &lt;<a class="reference external" href="https://huggingface.co/autogluon/chronos-2-synth">https://huggingface.co/autogluon/chronos-2-synth</a>&gt;`__ : a 120M parameter Chronos-2 model trained on synthetic data only.</p></li>
+<li><p><a class="reference external" href="https://huggingface.co/autogluon/chronos-2-small">autogluon/chronos-2-small</a> : a smaller 28M parameter Chronos-2 model.</p></li>
+<li><p><a class="reference external" href="https://huggingface.co/autogluon/chronos-2-synth">autogluon/chronos-2-synth</a> : a 120M parameter Chronos-2 model trained on synthetic data only.</p></li>
 </ul>
 <p>To use either of those variants, specify the <code class="docutils literal notranslate"><span class="pre">hub_model_name</span></code> parameter to the desired model ID. For example, to use the synthetic data variant:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">Chronos2Model</span><span class="p">(</span>
@@ -676,7 +731,7 @@ January 2015 and August 2022.</p>
 </section>
 <section id="Model-Training">
 <h2>Model Training<a class="headerlink" href="#Model-Training" title="Link to this heading">#</a></h2>
-<p>Here, we will call the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> method to “train” the model on the training set. Note that no actual training or fine-tuning will be performed since Chronos-2 is already pre-trained.</p>
+<p>Here, we will call the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> method to “train” the model on the training set. Note that no actual training or fine-tuning will be performed since foundation models are already pre-trained.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
@@ -700,7 +755,7 @@ Chronos2Model(output_chunk_shift=0, likelihood=None, hub_model_name=amazon/chron
 </section>
 <section id="Forecasting">
 <h2>Forecasting<a class="headerlink" href="#Forecasting" title="Link to this heading">#</a></h2>
-<p>We now perform a one-shot forecast for the next 7 days using Chronos-2. We then compare the forecast against the actual values from the validation set.</p>
+<p>We now perform a one-shot forecast for the next 7 days. We then compare the forecast against the actual values from the validation set.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
@@ -724,10 +779,10 @@ Chronos2Model(output_chunk_shift=0, likelihood=None, hub_model_name=amazon/chron
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_25-Chronos-2-examples_17_1.png" src="../_images/examples_25-Chronos-2-examples_17_1.png" />
+<img alt="../_images/examples_25-FoundationModel-examples_16_1.png" src="../_images/examples_25-FoundationModel-examples_16_1.png" />
 </div>
 </div>
-<p>You can see that Chronos-2 is able to produce qualitatively accurate forecasts without any training or fine-tuning! Let’s evaluate the forecast accuracy using the <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.metrics.metrics.html#darts.metrics.metrics.mae">Mean Absolute Error (MAE)</a> metric.</p>
+<p>You can see that the model is able to produce qualitatively accurate forecasts without any training or fine-tuning! Let’s evaluate the forecast accuracy using the <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.metrics.metrics.html#darts.metrics.metrics.mae">Mean Absolute Error (MAE)</a> metric.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
@@ -746,11 +801,16 @@ MAE on validation set: 653.57
 </pre></div></div>
 </div>
 </section>
+<section id="Model-Fine-Tuning">
+<h2>Model Fine Tuning<a class="headerlink" href="#Model-Fine-Tuning" title="Link to this heading">#</a></h2>
+<p>Fine-tuning can be enabled via the <code class="docutils literal notranslate"><span class="pre">enable_finetuning</span></code> model creation parameter. You can find detailed examples in our <a class="reference external" href="https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html">fine-tuning examples</a>.</p>
+</section>
 <section id="Forecasting-with-Covariates">
 <h2>Forecasting with Covariates<a class="headerlink" href="#Forecasting-with-Covariates" title="Link to this heading">#</a></h2>
-<p>Recall that Chronos-2 supports forecasting with covariates (exogenous variables). Since no training is required, we do not worry about hyperparameter tuning for covariates. Forecasting with covariates is as simple as passing the covariate series to the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> methods!</p>
+<div class="alert alert-info" role="alert"><p>This section only applies to foundation models that support covariates (such as <code class="docutils literal notranslate"><span class="pre">Chronos2Model</span></code>).</p>
+</div><p>Recall that Chronos-2 supports forecasting with covariates (exogenous variables). Since no training is required, we do not worry about hyperparameter tuning for covariates. Forecasting with covariates is as simple as passing the covariate series to the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> methods!</p>
 <p>We use weather variables as future covariates to help forecast the electricity consumption. We then compare the forecast (with and without covariates) against the actual values from the validation set.</p>
-<div class="alert alert-warning" role="alert"><p>The weather variables here are actual measurements from a weather station and not forecasts. The results shown here are optimistic and for demonstration purposes only. In practice, you should supply weather forecasts as future covariates to get realistic results.</p>
+<div class="alert alert-warning" role="alert"><p>The weather variables here are actual measurements from a weather station and not forecasts (not actual future covariates). The results shown here for demonstration purposes only. In practice, you should supply weather forecasts as future covariates to get realistic results.</p>
 </div><div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
@@ -785,7 +845,7 @@ MAE on validation set: 653.57
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_25-Chronos-2-examples_21_1.png" src="../_images/examples_25-Chronos-2-examples_21_1.png" />
+<img alt="../_images/examples_25-FoundationModel-examples_21_1.png" src="../_images/examples_25-FoundationModel-examples_21_1.png" />
 </div>
 </div>
 <p>With future covariates such as weather, we see that the forecast accuracy has improved on the 7-day horizon! Covariate support from Chronos-2 can be very useful when exogenous variables have a strong influence on the target series.</p>
@@ -809,8 +869,8 @@ MAE on validation set with covariates: 466.05
 </section>
 <section id="Probabilistic-Forecasting">
 <h2>Probabilistic Forecasting<a class="headerlink" href="#Probabilistic-Forecasting" title="Link to this heading">#</a></h2>
-<p>Here, we show how to perform probabilistic forecasting with Chronos-2 by using <code class="docutils literal notranslate"><span class="pre">`QuantileRegression</span></code> &lt;<a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.QuantileRegression">https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.QuantileRegression</a>&gt;`__ likelihood. The quantiles passed to <code class="docutils literal notranslate"><span class="pre">QuantileRegression</span></code> must be a subset of pre-trained quantiles supported by Chronos-2 (see “Model Creation” section above).</p>
-<p>Because sampling with large models like Chronos-2 can be computationally expensive, we here call <code class="docutils literal notranslate"><span class="pre">predict()</span></code> with <code class="docutils literal notranslate"><span class="pre">predict_likelihood_parameters=True</span></code> to obtain quantile estimates directly without sampling. However, if the forecast horizon is longer than <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> (i.e., auto-regressive forecasting is required), you must call <code class="docutils literal notranslate"><span class="pre">predict()</span></code> with a large enough <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> value (e.g., 1000) to generate probabilistic forecasts via Monte Carlo sampling.</p>
+<p>All foundation models support probabilistic forecasting. Here, we show how to perform probabilistic forecasting using <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.QuantileRegression">QuantileRegression</a> likelihood. The quantiles passed to <code class="docutils literal notranslate"><span class="pre">QuantileRegression</span></code> must be a subset of the model’s pre-trained quantiles (see “Model Creation” section above for Chronos-2).</p>
+<p>Because sampling with large foundation models can be computationally expensive, we here call <code class="docutils literal notranslate"><span class="pre">predict()</span></code> with <code class="docutils literal notranslate"><span class="pre">predict_likelihood_parameters=True</span></code> to obtain quantile estimates directly without sampling. However, if the forecast horizon is longer than <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> (i.e., auto-regressive forecasting is required), you must call <code class="docutils literal notranslate"><span class="pre">predict()</span></code> with a large enough <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> value (e.g., 1000) to generate probabilistic forecasts via Monte Carlo sampling.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
@@ -846,7 +906,7 @@ MAE on validation set with covariates: 466.05
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_25-Chronos-2-examples_25_1.png" src="../_images/examples_25-Chronos-2-examples_25_1.png" />
+<img alt="../_images/examples_25-FoundationModel-examples_25_1.png" src="../_images/examples_25-FoundationModel-examples_25_1.png" />
 </div>
 </div>
 <p>For probabilistic forecasts, we can evaluate the forecast quality by computing the <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.metrics.metrics.html#darts.metrics.metrics.mic">Mean Interval Coverage (MIC)</a> (the share of actuals inside the prediction intervals) and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.metrics.metrics.html#darts.metrics.metrics.miw">Mean Interval Width (MIW)</a> (the width of the prediction intervals) metrics to evaluate the quality of the prediction
@@ -875,12 +935,15 @@ MIW on validation set with covariates: 1719.57
 </section>
 <section id="Final-Remarks">
 <h2>Final Remarks<a class="headerlink" href="#Final-Remarks" title="Link to this heading">#</a></h2>
-<p>Just like other Torch Forecasting Models in Darts, Chronos-2 supports historical forecasting (<code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code>), backtesting (<code class="docutils literal notranslate"><span class="pre">backtest()</span></code>), residual computation (<code class="docutils literal notranslate"><span class="pre">residuals()</span></code>), custom PyTorch Lightning arguments (<code class="docutils literal notranslate"><span class="pre">pl_trainer_kwargs</span></code>), and more. Check out the following resources to learn more about those topics:</p>
+<p>Just like other Torch Forecasting Models in Darts, foundation models support historical forecasting (<code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code>), backtesting (<code class="docutils literal notranslate"><span class="pre">backtest()</span></code>), residual computation (<code class="docutils literal notranslate"><span class="pre">residuals()</span></code>), custom PyTorch Lightning arguments (<code class="docutils literal notranslate"><span class="pre">pl_trainer_kwargs</span></code>), and more. Check out the following resources to learn more about those topics:</p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://unit8co.github.io/darts/quickstart/00-quickstart.html#Backtesting:-simulate-historical-forecasting">Backtesting: simulate historical forecasting</a></p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/userguide/torch_forecasting_models.html">Torch Forecasting Models User Guide</a></p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html">Fine Tuning Examples</a></p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/userguide/gpu_and_tpu_usage.html">Using Torch Models with GPUs and TPUs</a></p></li>
-<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.chronos2_model.html">Chronos-2 Model API</a></p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/quickstart/00-quickstart.html#Backtesting:-simulate-historical-forecasting">Backtesting: simulate historical forecasting</a></p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.chronos2_model.html">Chronos2Model API</a></p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.timesfm2p5_model.html">TimesFM2p5Model API</a></p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tirex_model.html">TiRexModel API</a></p></li>
 </ul>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
@@ -944,6 +1007,7 @@ MIW on validation set with covariates: 1719.57
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Model-Creation">Model Creation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Model-Training">Model Training</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Forecasting">Forecasting</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Model-Fine-Tuning">Model Fine Tuning</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Forecasting-with-Covariates">Forecasting with Covariates</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Probabilistic-Forecasting">Probabilistic Forecasting</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Final-Remarks">Final Remarks</a></li>
@@ -954,7 +1018,7 @@ MIW on validation set with covariates: 1719.57
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/examples/25-Chronos-2-examples.ipynb.txt"
+      <li><a href="../_sources/examples/25-FoundationModel-examples.ipynb.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>

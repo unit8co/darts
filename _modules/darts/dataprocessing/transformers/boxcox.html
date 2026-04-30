@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -496,10 +496,10 @@
 <span class="sd">        verbose</span>
 <span class="sd">            Whether to print operations progress</span>
 <span class="sd">        columns</span>
-<span class="sd">            Optionally, a string or list of strings specifying the names of the components (columns)</span>
-<span class="sd">            to transform. If specified, only these components will be transformed, and the remaining</span>
-<span class="sd">            components will be kept untouched. For more information refer to the `BaseDataTransformer`</span>
-<span class="sd">            documentation.</span>
+<span class="sd">            Optionally, a string or list of strings specifying the names of the components (columns) to transform.</span>
+<span class="sd">            If specified, only these components will be transformed, and the remaining components will be kept</span>
+<span class="sd">            untouched. For more information refer to the `BaseDataTransformer` documentation. In case the transformer</span>
+<span class="sd">            is applied on multiple TimeSeries, it is expected that all series have the same column order.</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
@@ -603,7 +603,10 @@
 <a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.boxcox.html#darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform">[docs]</a>
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">ts_inverse_transform</span><span class="p">(</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">insample</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
         <span class="n">lmbda</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fitted&quot;</span><span class="p">]</span>
 

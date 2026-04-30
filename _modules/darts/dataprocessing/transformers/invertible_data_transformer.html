@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -444,6 +444,7 @@
         <span class="n">parallel_params</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">mask_components</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">columns</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">uses_insample</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Abstract class for invertible transformers.</span>
 
@@ -492,10 +493,16 @@
 <span class="sd">            be passed as a keyword argument, but won&#39;t automatically be applied to the input timeseries.</span>
 <span class="sd">            See `apply_component_mask` method of `BaseDataTransformer` for further details.</span>
 <span class="sd">        columns</span>
-<span class="sd">            Optionally, a string or list of strings specifying the names of the components (columns)</span>
-<span class="sd">            to transform. If specified, only these components will be transformed, and the remaining</span>
-<span class="sd">            components will be kept untouched. For more information refer to the `BaseDataTransformer`</span>
-<span class="sd">            documentation.</span>
+<span class="sd">            Optionally, a string or list of strings specifying the names of the components (columns) to transform.</span>
+<span class="sd">            If specified, only these components will be transformed, and the remaining components will be kept</span>
+<span class="sd">            untouched. For more information refer to the `BaseDataTransformer` documentation. In case the transformer</span>
+<span class="sd">            is applied on multiple TimeSeries, it is expected that all series have the same column order.</span>
+<span class="sd">        uses_insample</span>
+<span class="sd">            Whether the transformer requires the in-sample (historic) series during inverse transformation.</span>
+<span class="sd">            If `True`, `inverse_transform` will use the ``insample`` argument to pass the transformed</span>
+<span class="sd">            historic series to `ts_inverse_transform`. This is needed when inverse transforming a partial</span>
+<span class="sd">            series (e.g. a forecast) requires information from earlier times (e.g. for</span>
+<span class="sd">            :class:`~darts.dataprocessing.transformers.diff.Diff`).</span>
 
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
@@ -558,6 +565,7 @@
             <span class="n">parallel_params</span><span class="o">=</span><span class="n">parallel_params</span><span class="p">,</span>
             <span class="n">mask_components</span><span class="o">=</span><span class="n">mask_components</span><span class="p">,</span>
             <span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">,</span>
+            <span class="n">uses_insample</span><span class="o">=</span><span class="n">uses_insample</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="nd">@classmethod</span>
@@ -571,7 +579,9 @@
     <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">ts_inverse_transform</span><span class="p">(</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">insample</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The function that will be applied to each series when :func:`inverse_transform` is called.</span>
 
@@ -626,6 +636,11 @@
 <span class="sd">            inherits from the `FittableDataTransformer` class, then the fitted parameters of the</span>
 <span class="sd">            transformation (i.e. the values returned by `ts_fit`) are stored under the</span>
 <span class="sd">            `&#39;fitted&#39;` key.</span>
+<span class="sd">        insample</span>
+<span class="sd">            Optionally, the transformed historic (insample) part of ``series``. This can be used when ``series`` is</span>
+<span class="sd">            only a tail (for example a forecast) and inverse transforming requires information from earlier times</span>
+<span class="sd">            (for example the :class:`~darts.dataprocessing.transformers.diff.Diff` transformer). Only used by</span>
+<span class="sd">            transformers that require information from earlier times.</span>
 <span class="sd">        args</span>
 <span class="sd">            Any additional keyword arguments provided to `inverse_transform`.</span>
 <span class="sd">        kwargs</span>
@@ -651,8 +666,9 @@
         <span class="o">*</span><span class="n">args</span><span class="p">,</span>
         <span class="n">component_mask</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">series_idx</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">insample</span><span class="p">:</span> <span class="n">TimeSeriesLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeriesLike</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Inverse transforms a (sequence of) series by calling the user-implemented `ts_inverse_transform` method.</span>
 
 <span class="sd">        In case a sequence or list of lists is passed as input data, this function takes care of parallelising the</span>
@@ -682,6 +698,14 @@
 <span class="sd">        series_idx</span>
 <span class="sd">            Optionally, the index(es) of each series corresponding to their positions within the series used to fit</span>
 <span class="sd">            the transformer (to retrieve the appropriate transformer parameters).</span>
+<span class="sd">        insample</span>
+<span class="sd">            Optionally, the transformed historic (insample) part of ``series``. This can be used when ``series`` is</span>
+<span class="sd">            only a tail (for example a forecast) and inverse transforming requires information from earlier times</span>
+<span class="sd">            (for example the :class:`~darts.dataprocessing.transformers.diff.Diff` transformer). Each ``insample``</span>
+<span class="sd">            series must start before the ``series`` start time and extend at least until one step before the start time</span>
+<span class="sd">            of the ``series``. If ``series`` is a ``Sequence[Sequence[TimeSeries]]``, then ``insample`` should be a</span>
+<span class="sd">            ``Sequence[TimeSeries]`` with the same length. Otherwise, it should have the same type as ``series``. Only</span>
+<span class="sd">            used by transformers that require information from earlier times.</span>
 <span class="sd">        kwargs</span>
 <span class="sd">            Additional keyword arguments for the :func:`ts_inverse_transform()` method</span>
 
@@ -716,6 +740,22 @@
 
         <span class="n">desc</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Inverse (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="si">}</span><span class="s2">)&quot;</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_uses_insample</span> <span class="ow">and</span> <span class="n">insample</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">insample</span> <span class="o">=</span> <span class="p">[</span><span class="n">insample</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">insample</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">insample</span>
+            <span class="n">outer_len</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">insample</span><span class="p">)</span> <span class="o">!=</span> <span class="n">outer_len</span><span class="p">:</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;`insample` must have the same number of TimeSeries as `series` &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;(expected </span><span class="si">{</span><span class="n">outer_len</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">insample</span><span class="p">)</span><span class="si">}</span><span class="s2">).&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="n">use_insample</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">insample</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">use_insample</span> <span class="o">=</span> <span class="kc">False</span>
+
         <span class="c1"># Take note of original input for unmasking purposes:</span>
         <span class="n">called_with_single_series</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="n">called_with_sequence_series</span> <span class="o">=</span> <span class="kc">False</span>
@@ -726,6 +766,7 @@
                 <span class="n">transformer_selector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_series_idx</span><span class="p">(</span><span class="n">series_idx</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">transformer_selector</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">insample_list</span> <span class="o">=</span> <span class="n">insample</span> <span class="k">if</span> <span class="n">use_insample</span> <span class="k">else</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span>
             <span class="n">called_with_single_series</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">TimeSeries</span><span class="p">):</span>  <span class="c1"># Sequence[TimeSeries]</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">series</span>
@@ -733,10 +774,12 @@
                 <span class="n">transformer_selector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_series_idx</span><span class="p">(</span><span class="n">series_idx</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">transformer_selector</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
+            <span class="n">insample_list</span> <span class="o">=</span> <span class="n">insample</span> <span class="k">if</span> <span class="n">use_insample</span> <span class="k">else</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
             <span class="n">called_with_sequence_series</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># Sequence[Sequence[TimeSeries]]</span>
             <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">transformer_selector</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">insample_list</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">if</span> <span class="n">series_specified</span><span class="p">:</span>
                 <span class="n">iterator_</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_process_series_idx</span><span class="p">(</span><span class="n">series_idx</span><span class="p">),</span> <span class="n">series</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
@@ -744,6 +787,9 @@
             <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">series_list</span> <span class="ow">in</span> <span class="n">iterator_</span><span class="p">:</span>
                 <span class="n">data</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">series_list</span><span class="p">)</span>
                 <span class="n">transformer_selector</span> <span class="o">+=</span> <span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">series_list</span><span class="p">)</span>
+                <span class="n">insample_list</span> <span class="o">+=</span> <span class="p">[</span><span class="n">insample</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">if</span> <span class="n">use_insample</span> <span class="k">else</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span>
+                    <span class="n">series_list</span>
+                <span class="p">)</span>
 
         <span class="n">input_iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span>
             <span class="nb">zip</span><span class="p">(</span>
@@ -752,6 +798,7 @@
                     <span class="n">transformer_selector</span><span class="o">=</span><span class="n">transformer_selector</span><span class="p">,</span>
                     <span class="n">series_specified</span><span class="o">=</span><span class="n">series_specified</span><span class="p">,</span>
                 <span class="p">),</span>
+                <span class="n">insample_list</span><span class="p">,</span>
             <span class="p">),</span>
             <span class="n">verbose</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">,</span>
             <span class="n">desc</span><span class="o">=</span><span class="n">desc</span><span class="p">,</span>
@@ -787,7 +834,51 @@
                 <span class="n">transformed_data</span><span class="p">[</span><span class="n">cum_len</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="p">:</span> <span class="n">cum_len</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span>
                 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cum_len</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
             <span class="p">]</span></div>
-</div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_maybe_prepend_insample</span><span class="p">(</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">insample</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepend the historic part of the `insample` series to the `series` if it is not None.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">insample</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">series</span><span class="p">,</span> <span class="mi">0</span>
+
+        <span class="c1"># when ``insample`` is set, it is the transformed insample data of `series`</span>
+        <span class="n">freq</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span>
+        <span class="n">n_forecast_output</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+        <span class="n">forecast_start</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">insample</span><span class="o">.</span><span class="n">freq</span> <span class="o">!=</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;`insample` is of frequency </span><span class="si">{</span><span class="n">insample</span><span class="o">.</span><span class="n">freq</span><span class="si">}</span><span class="s2">, but &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;transform was fitted to data of frequency </span><span class="si">{</span><span class="n">freq</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">insample</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="n">forecast_start</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;`insample` must start before the `series` start time.&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Expected `insample.start_time()` &lt;= </span><span class="si">{</span><span class="n">forecast_start</span><span class="si">}</span><span class="s2">, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;got </span><span class="si">{</span><span class="n">insample</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">expected_end</span> <span class="o">=</span> <span class="n">forecast_start</span> <span class="o">-</span> <span class="n">freq</span>
+        <span class="k">if</span> <span class="n">insample</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">expected_end</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;The `insample` series must start before the series to inverse-transform &quot;</span>
+                    <span class="s2">&quot;and extend at least until one time step before the start of that series. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Expected `insample.end_time()` &gt;= </span><span class="si">{</span><span class="n">expected_end</span><span class="si">}</span><span class="s2">, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;got </span><span class="si">{</span><span class="n">insample</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="n">insample</span><span class="p">[:</span><span class="n">expected_end</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">series</span><span class="p">,</span> <span class="n">n_forecast_output</span></div>
 
 </pre></div>
 

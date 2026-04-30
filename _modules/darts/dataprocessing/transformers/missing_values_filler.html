@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -455,10 +455,10 @@
 <span class="sd">        verbose</span>
 <span class="sd">            Optionally, whether to print operations progress</span>
 <span class="sd">        columns</span>
-<span class="sd">            Optionally, a string or list of strings specifying the names of the components (columns)</span>
-<span class="sd">            to transform. If specified, only these components will be transformed, and the remaining</span>
-<span class="sd">            components will be kept untouched. For more information refer to the `BaseDataTransformer`</span>
-<span class="sd">            documentation.</span>
+<span class="sd">            Optionally, a string or list of strings specifying the names of the components (columns) to transform.</span>
+<span class="sd">            If specified, only these components will be transformed, and the remaining components will be kept</span>
+<span class="sd">            untouched. For more information refer to the `BaseDataTransformer` documentation. In case the transformer</span>
+<span class="sd">            is applied on multiple TimeSeries, it is expected that all series have the same column order.</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>

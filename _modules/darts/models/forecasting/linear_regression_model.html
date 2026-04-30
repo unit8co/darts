@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -540,13 +540,15 @@
 <span class="sd">            prediction time. If set to `quantile`, the `sklearn.linear_model.QuantileRegressor` is used. Similarly, if</span>
 <span class="sd">            set to `poisson`, the `sklearn.linear_model.PoissonRegressor` is used.</span>
 <span class="sd">        quantiles</span>
-<span class="sd">            Fit the model to these quantiles if the `likelihood` is set to `quantile`.</span>
+<span class="sd">            Fit the model to these quantiles if the ``likelihood`` is set to ``&quot;quantile&quot;``.</span>
+<span class="sd">            Default is ``None`` and will use :class:`~darts.utils.likelihood_models.sklearn.QuantileRegression`&#39;s</span>
+<span class="sd">            default quantiles.</span>
 <span class="sd">        random_state</span>
 <span class="sd">            Controls the randomness for reproducible forecasting.</span>
 <span class="sd">        multi_models</span>
-<span class="sd">            If True, a separate model will be trained for each future lag to predict. If False, a single model</span>
-<span class="sd">            is trained to predict all the steps in &#39;output_chunk_length&#39; (features lags are shifted back by</span>
-<span class="sd">            `output_chunk_length - n` for each step `n`). Default: True.</span>
+<span class="sd">            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model</span>
+<span class="sd">            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by</span>
+<span class="sd">            ``output_chunk_length - n`` for each step `n`). Default: ``True``.</span>
 <span class="sd">        use_static_covariates</span>
 <span class="sd">            Whether the model should use static covariate information in case the input `series` passed to ``fit()``</span>
 <span class="sd">            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce</span>

@@ -58,7 +58,7 @@
     <link rel="prev" title="Overview of Forecasting Models" href="forecasting_overview.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -461,7 +461,7 @@
 <li><p><a class="reference internal" href="#automatic-checkpointing"><span class="std std-ref">Checkpoint saving and loading</span></a></p></li>
 <li><p><a class="reference internal" href="#manual-saving-and-loading"><span class="std std-ref">Manual model saving and loading</span></a></p></li>
 <li><p><a class="reference internal" href="#training-and-saving-on-gpu-loading-on-cpu"><span class="std std-ref">GPU training and CPU loading</span></a></p></li>
-<li><p>Re-training or fine-tuning a pre-trained model</p></li>
+<li><p><a class="reference internal" href="#retraining-or-finetuning-a-pretrained-model"><span class="std std-ref">Re-training or fine-tuning a pre-trained model</span></a></p></li>
 <li><p><a class="reference internal" href="#exporting-model-to-onnx-format-for-inference"><span class="std std-ref">ONNX export for inference</span></a></p></li>
 </ul>
 </li>
@@ -841,8 +841,8 @@ from <a class="reference internal" href="#required-target-time-spans-for-trainin
 </pre></div>
 </div>
 </section>
-<section id="id3">
-<h4>Re-training or fine-tuning a pre-trained model<a class="headerlink" href="#id3" title="Link to this heading">#</a></h4>
+<section id="retraining-or-finetuning-a-pretrained-model">
+<h4>Retraining or finetuning a pretrained model<a class="headerlink" href="#retraining-or-finetuning-a-pretrained-model" title="Link to this heading">#</a></h4>
 <p>To re-train or fine-tune a model using a different optimizer and/or learning rate scheduler, you can load the weights from the automatic checkpoints into a new model:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># model with identical architecture but different optimizer (default: torch.optim.Adam)</span>
 <span class="n">model_finetune</span> <span class="o">=</span> <span class="n">SomeTorchForecastingModel</span><span class="p">(</span><span class="o">...</span><span class="p">,</span>  <span class="c1"># use identical parameters &amp; values as in original model</span>
@@ -1559,7 +1559,7 @@ We train two models; <code class="docutils literal notranslate"><span class="pre
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#automatic-checkpointing">Automatic checkpointing</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#manual-saving-and-loading">Manual saving and loading</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#training-and-saving-on-gpu-loading-on-cpu">Training and saving on GPU, loading on CPU</a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">Re-training or fine-tuning a pre-trained model</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#retraining-or-finetuning-a-pretrained-model">Retraining or finetuning a pretrained model</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#exporting-model-to-onnx-format-for-inference">Exporting model to ONNX format for inference</a></li>
 </ul>
 </li>

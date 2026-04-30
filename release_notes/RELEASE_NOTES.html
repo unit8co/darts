@@ -57,7 +57,7 @@
     <link rel="prev" title="Dynamic Time Warping (DTW)" href="../examples/12-Dynamic-Time-Warping-example.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -425,7 +425,7 @@
 but cannot always guarantee backwards compatibility. Changes that may <strong>break code which uses a previous release of Darts</strong> are marked with a “🔴”. Changes that deprecate functionalities are marked with a “🟠”.</p>
 <section id="id1">
 <h2><a class="reference external" href="https://github.com/unit8co/darts/tree/master">Unreleased</a><a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
-<p><a class="reference external" href="https://github.com/unit8co/darts/compare/0.43.0...master">Full Changelog</a></p>
+<p><a class="reference external" href="https://github.com/unit8co/darts/compare/0.44.0...master">Full Changelog</a></p>
 <section id="for-users-of-the-library">
 <h3>For users of the library:<a class="headerlink" href="#for-users-of-the-library" title="Link to this heading">#</a></h3>
 </section>
@@ -434,9 +434,85 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 </section>
 </section>
 <section id="id3">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.43.0">0.43.0</a> (2026-03-23)<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.44.0">0.44.0</a> (2026-04-30)<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
 <section id="id4">
 <h3>For users of the library:<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
+<p><strong>Improved</strong></p>
+<ul class="simple">
+<li><p>🚀🚀 Dramatically reduced import times by deferring heavy third-party dependencies (torch, sklearn, scipy, …) until they are actually needed. This benefits cold-start scenarios (serverless functions, CLI tools, short-lived scripts), CI pipelines, and interactive development workflows where fast feedback loops matter. Here are some import speed-up examples: <a class="reference external" href="https://github.com/unit8co/darts/pull/3066">#3066</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a></p>
+<ul>
+<li><p>TimeSeries, metrics, datasets, data transformers: 8x faster (2.4 → 0.3 seconds)</p></li>
+<li><p>Baseline models: 19x faster (5.7 → 0.3 seconds)</p></li>
+<li><p>SKLearn models: 4.4x faster (5.7 → 1.3 seconds)</p></li>
+<li><p>Torch models: 1.9x faster (5.7 → 3.0 seconds)</p></li>
+</ul>
+</li>
+<li><p>🚀🚀 Added new forecasting model <code class="docutils literal notranslate"><span class="pre">TiRexModel</span></code> : NX-AI’s pre-trained 35M-parameter foundational model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series forecasting without training and can output deterministic or probabilistic forecasts. <a class="reference external" href="https://github.com/unit8co/darts/pull/3038">#3038</a> by <a class="reference external" href="https://github.com/lukfischer">Lukas Fischer</a>, <a class="reference external" href="https://github.com/martinloretzzz">Martin Loretz</a>, and <a class="reference external" href="https://github.com/daidahao">Zhihao Dai</a>.</p></li>
+<li><p>Improvements to <code class="docutils literal notranslate"><span class="pre">InvertibleDataTransformer</span></code> and data <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code> : <a class="reference external" href="https://github.com/unit8co/darts/pull/3085">#3085</a> by <a class="reference external" href="https://github.com/jakubchlapek">Jakub Chłapek</a></p>
+<ul>
+<li><p>Added optional <code class="docutils literal notranslate"><span class="pre">insample</span></code> parameter to <code class="docutils literal notranslate"><span class="pre">inverse_transform()</span></code> to supply the transformed history needed by transformers like <code class="docutils literal notranslate"><span class="pre">Diff</span></code>, removing the need to manually concatenate the in-sample series before inverse-transforming a forecast.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Diff</span></code> can now be properly used inside a target series <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code> with <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code> via the <code class="docutils literal notranslate"><span class="pre">data_transformers</span></code> parameter. The backtested forecasts are correctly inverse-transformed back to the original scale.</p></li>
+</ul>
+</li>
+<li><p>Improvements to <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code> : <a class="reference external" href="https://github.com/unit8co/darts/pull/3041">#3041</a> by <a class="reference external" href="https://github.com/Jaco-Pastorius">Gabriel Margaria</a> and <a class="reference external" href="https://github.com/unit8co/darts/pull/3074">#3074</a> by <a class="reference external" href="https://github.com/shaun0927">Junghwan Na</a>.</p>
+<ul>
+<li><p>Base forecasting models using <code class="docutils literal notranslate"><span class="pre">output_chunk_shift&gt;0</span></code> are now fully supported. If you’re using a custom <code class="docutils literal notranslate"><span class="pre">regression_model</span></code>, simply set its output shift to be the same as that of the base models.</p></li>
+<li><p>Added support for <code class="docutils literal notranslate"><span class="pre">output_chunk_length&gt;1</span></code> for the ensemble (regression) model. This means that the ensemble model can now consume information from base model forecasts over the entire horizon.</p></li>
+</ul>
+</li>
+<li><p>Improvements to Gradient-Boosted Models:</p>
+<ul>
+<li><p>Added native multi-quantile support for <code class="docutils literal notranslate"><span class="pre">CatBoostModel</span></code> by using CatBoost’s <code class="docutils literal notranslate"><span class="pre">MultiQuantile</span></code> loss for faster training and inference. Set <code class="docutils literal notranslate"><span class="pre">likelihood=&quot;multiquantile&quot;</span></code> to enable this feature. <a class="reference external" href="https://github.com/unit8co/darts/pull/3032">#3032</a> by <a class="reference external" href="https://github.com/daidahao">Zhihao Dai</a></p></li>
+<li><p>Added native multi-quantile support for <code class="docutils literal notranslate"><span class="pre">XGBModel</span></code>. Similar to the regular quantile support, it still fits dedicated models per quantile, but it is more efficient due to fewer tabularization operations. Set <code class="docutils literal notranslate"><span class="pre">likelihood=&quot;multiquantile&quot;</span></code> to enable this feature. <a class="reference external" href="https://github.com/unit8co/darts/pull/3056">#3056</a> by <a class="reference external" href="https://github.com/ozink-u8">Oswald Zink</a></p></li>
+</ul>
+</li>
+<li><p>Improvements to metrics:</p>
+<ul>
+<li><p>Added new probabilistic metrics <code class="docutils literal notranslate"><span class="pre">crps()</span></code> (Continuous Ranked Probability Score) and <code class="docutils literal notranslate"><span class="pre">mcrps()</span></code> (Mean CRPS): a proper scoring rule that generalises the Mean Absolute Error (MAE) to probabilistic forecasts. <a class="reference external" href="https://github.com/unit8co/darts/pull/3089">#3089</a> by <a class="reference external" href="https://github.com/Boubker10">Boubker Bennani</a></p></li>
+<li><p>Added parameter <code class="docutils literal notranslate"><span class="pre">name</span></code> to all metric functions for customizing the displayed name. <a class="reference external" href="https://github.com/unit8co/darts/pull/3084">#3084</a> by <a class="reference external" href="https://github.com/BrunoDaC">Bruno Da Costa</a>.</p></li>
+<li><p>🔴 Scaled metrics (<code class="docutils literal notranslate"><span class="pre">ase</span></code>, <code class="docutils literal notranslate"><span class="pre">sse</span></code>, <code class="docutils literal notranslate"><span class="pre">mase</span></code>, <code class="docutils literal notranslate"><span class="pre">msse</span></code>, <code class="docutils literal notranslate"><span class="pre">rmsse</span></code>) no longer raise a hard <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> when the <code class="docutils literal notranslate"><span class="pre">insample</span></code> series has zero error scale (constant or perfectly seasonal signals). A new <code class="docutils literal notranslate"><span class="pre">zero_division</span></code> parameter controls the behavior: <a class="reference external" href="https://github.com/unit8co/darts/pull/3059">#3059</a> by <a class="reference external" href="https://github.com/mahi-ma">Mahima Sharma</a></p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;warn&quot;</span></code> (default) raises a warning and returns <code class="docutils literal notranslate"><span class="pre">np.nan</span></code> for non-zero forecast errors, and <code class="docutils literal notranslate"><span class="pre">1.0</span></code> otherwise (forecast is on-par with naive forecast).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;raise&quot;</span></code> preserves the legacy error.</p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>Other improvements:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">StatsForecastModel</span></code> now accepts <code class="docutils literal notranslate"><span class="pre">model</span></code> as a StatsForecast model name, class, or instance; <code class="docutils literal notranslate"><span class="pre">model_kwargs</span></code> supplies constructor arguments when <code class="docutils literal notranslate"><span class="pre">model</span></code> is a name or class. This simplifies config-driven setups. <a class="reference external" href="https://github.com/unit8co/darts/pull/3058">#3058</a> by <a class="reference external" href="https://github.com/tmchow">Trevin Chow</a>.</p></li>
+<li><p>🔴 We moved <code class="docutils literal notranslate"><span class="pre">NaiveEnsembleModel</span></code> from <code class="docutils literal notranslate"><span class="pre">darts.models.forecasting.baselines</span></code> into a dedicated module <code class="docutils literal notranslate"><span class="pre">darts.models.forecasting.naive_ensemble_model</span></code> to separate the heavier dependencies from the baseline models and improve import times. The import remains identical <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">darts.models</span> <span class="pre">import</span> <span class="pre">NaiveEnsembleModel</span></code> but pickled models that were saved in older Darts versions cannot be loaded anymore. To fix it, simply re-create the model and store it again. <a class="reference external" href="https://github.com/unit8co/darts/pull/3066">#3066</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a></p></li>
+</ul>
+</li>
+</ul>
+<p><strong>Fixed</strong></p>
+<ul class="simple">
+<li><p>Fixed a device mismatch error in <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> when moving a trained model to a different device (e.g., GPU to CPU for ONNX export). <code class="docutils literal notranslate"><span class="pre">attention_mask</span></code> and <code class="docutils literal notranslate"><span class="pre">relative_index</span></code> are now registered as non-persistent buffers so they are properly moved with the model. <a class="reference external" href="https://github.com/unit8co/darts/pull/3053">#3053</a> by <a class="reference external" href="https://github.com/trahflow">Wolfhart Feldmeier</a></p></li>
+<li><p>Fixed several issues when using a <code class="docutils literal notranslate"><span class="pre">StaticCovariatesTransformer</span></code> with a <code class="docutils literal notranslate"><span class="pre">OneHotEncoder</span></code> (OHE) for categorical static covariates:</p>
+<ul>
+<li><p>Fixed an issue where using the OHE parameter <code class="docutils literal notranslate"><span class="pre">drop</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">drop=&quot;first&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">drop=&quot;if_binary&quot;</span></code>) raised an exception due to wrong internal column mapping. <a class="reference external" href="https://github.com/unit8co/darts/pull/3065">#3065</a> by <a class="reference external" href="https://github.com/JKDasondee">Jay Dasondee</a></p></li>
+<li><p>Fixed an issue where using the OHE parameters <code class="docutils literal notranslate"><span class="pre">min_frequency</span></code> or <code class="docutils literal notranslate"><span class="pre">max_categories</span></code> silently truncated the column mapping. <a class="reference external" href="https://github.com/unit8co/darts/pull/3076">#3076</a> by <a class="reference external" href="https://github.com/shaun0927">Junghwan Na</a>.</p></li>
+</ul>
+</li>
+<li><p>Fixed a stale docstring in <code class="docutils literal notranslate"><span class="pre">Diff</span></code> that incorrectly stated a <code class="docutils literal notranslate"><span class="pre">component_mask</span></code> cannot be specified together with <code class="docutils literal notranslate"><span class="pre">dropna=True</span></code>. <a class="reference external" href="https://github.com/unit8co/darts/pull/3078">#3078</a> by <a class="reference external" href="https://github.com/shaun0927">Junghwan Na</a>.</p></li>
+</ul>
+</section>
+<section id="id25">
+<h3>For developers of the library:<a class="headerlink" href="#id25" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Significantly reduced test suite session loading times by deferring heavy third-party dependencies until they are actually needed. <a class="reference external" href="https://github.com/unit8co/darts/pull/3072">#3072</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a></p>
+<ul>
+<li><p>Test run sessions: 3x faster (6 → 2 seconds)</p></li>
+<li><p>Test debug sessions: 6x faster (36 → 6 seconds)</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="id29">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.43.0">0.43.0</a> (2026-03-23)<a class="headerlink" href="#id29" title="Link to this heading">#</a></h2>
+<section id="id30">
+<h3>For users of the library:<a class="headerlink" href="#id30" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>Improvements to data transformers:  <a class="reference external" href="https://github.com/unit8co/darts/pull/3023">#3023</a> by <a class="reference external" href="https://github.com/u8-krpeczek">Krzsztof Pęczek</a></p>
@@ -451,23 +527,24 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>🔴 <code class="docutils literal notranslate"><span class="pre">plot_attention()</span></code> now also returns the matplotlib figures for all explained series, instead of only the matplotlib axis for the last series.</p></li>
 </ul>
 </li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> now raises a warning when the input series have mixed data types, or the prediction series do not have the same data type as the series used for training. <a class="reference external" href="https://github.com/unit8co/darts/pull/3043">#3043</a> by <a class="reference external" href="https://github.com/ozink-u8">Oswald Zink</a></p></li>
 </ul>
 </section>
 </section>
-<section id="id8">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.42.1">0.42.1</a> (2026-03-07)<a class="headerlink" href="#id8" title="Link to this heading">#</a></h2>
-<section id="id9">
-<h3>For users of the library:<a class="headerlink" href="#id9" title="Link to this heading">#</a></h3>
+<section id="id36">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.42.1">0.42.1</a> (2026-03-07)<a class="headerlink" href="#id36" title="Link to this heading">#</a></h2>
+<section id="id37">
+<h3>For users of the library:<a class="headerlink" href="#id37" title="Link to this heading">#</a></h3>
 <p><strong>Fixed</strong></p>
 <ul class="simple">
 <li><p>Removed an incorrect warning being raised by <code class="docutils literal notranslate"><span class="pre">NeuralForecastModel</span></code> regarding using static covariates with multivariate base models. <a class="reference external" href="https://github.com/unit8co/darts/pull/3036">#3036</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
 </ul>
 </section>
 </section>
-<section id="id12">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.42.0">0.42.0</a> (2026-03-07)<a class="headerlink" href="#id12" title="Link to this heading">#</a></h2>
-<section id="id13">
-<h3>For users of the library:<a class="headerlink" href="#id13" title="Link to this heading">#</a></h3>
+<section id="id41">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.42.0">0.42.0</a> (2026-03-07)<a class="headerlink" href="#id41" title="Link to this heading">#</a></h2>
+<section id="id42">
+<h3>For users of the library:<a class="headerlink" href="#id42" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>🚀🚀 Added new forecasting model <code class="docutils literal notranslate"><span class="pre">NeuralForecastModel</span></code> to convert any of the <strong>30+ NeuralForecast base models</strong> into a Darts <code class="docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>. This includes models such as NBEATSx, PatchTST, TimeXer, KAN, and many more. Like all Darts torch models, it supports univariate, multivariate, probabilistic forecasting, optimized backtesting and more. Depending on the base model, it also supports past, future, and static covariates. <a class="reference external" href="https://github.com/unit8co/darts/pull/3002">#3002</a> by <a class="reference external" href="https://github.com/daidahao">Zhihao Dai</a></p>
@@ -493,18 +570,18 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>Removed the upper version cap on <code class="docutils literal notranslate"><span class="pre">scikit-learn&lt;1.8.0</span></code> since <code class="docutils literal notranslate"><span class="pre">catboost</span></code> added support in version <code class="docutils literal notranslate"><span class="pre">1.2.10</span></code>. <a class="reference external" href="https://github.com/unit8co/darts/pull/3025">#3025</a> by <a class="reference external" href="https://github.com/simonmichau">Simon Michau</a>.</p></li>
 </ul>
 </section>
-<section id="id26">
-<h3>For developers of the library:<a class="headerlink" href="#id26" title="Link to this heading">#</a></h3>
+<section id="id56">
+<h3>For developers of the library:<a class="headerlink" href="#id56" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Updated target-version to python310, and auto-refactored source code using ruff. <a class="reference external" href="https://github.com/unit8co/darts/pull/2589">#3017</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
 <li><p>Fixed all instances of <a class="reference external" href="https://docs.astral.sh/ty/reference/rules/#invalid-parameter-default">invalid-parameter-default</a> errors. Improves type checker’s ability to accurately reason about the code. <a class="reference external" href="https://github.com/unit8co/darts/pull/3027">#3027</a> by <a class="reference external" href="https://github.com/mizeller">Michel Zeller</a></p></li>
 </ul>
 </section>
 </section>
-<section id="id32">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.41.0">0.41.0</a> (2026-02-10)<a class="headerlink" href="#id32" title="Link to this heading">#</a></h2>
-<section id="id33">
-<h3>For users of the library:<a class="headerlink" href="#id33" title="Link to this heading">#</a></h3>
+<section id="id62">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.41.0">0.41.0</a> (2026-02-10)<a class="headerlink" href="#id62" title="Link to this heading">#</a></h2>
+<section id="id63">
+<h3>For users of the library:<a class="headerlink" href="#id63" title="Link to this heading">#</a></h3>
 <p><strong>Migration from PyPI “u8darts” package to “darts” package</strong></p>
 <ul class="simple">
 <li><p>The <code class="docutils literal notranslate"><span class="pre">darts</span></code> PyPI package now replaces <code class="docutils literal notranslate"><span class="pre">u8darts</span></code> with the same installation options (e.g. <code class="docutils literal notranslate"><span class="pre">darts</span></code>, <code class="docutils literal notranslate"><span class="pre">darts[torch]</span></code>, <code class="docutils literal notranslate"><span class="pre">darts[notorch]</span></code>, <code class="docutils literal notranslate"><span class="pre">darts[all]</span></code>). No code changes are required. See the <a class="reference external" href="https://github.com/unit8co/darts/blob/master/INSTALL.md#important-darts-pypi-package-changes-as-of-version-0410">migration guide</a> for details.</p>
@@ -563,18 +640,18 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>Added support for <code class="docutils literal notranslate"><span class="pre">pandas&gt;=3.0.0</span></code>, bumped minimum supported Pandas version to <code class="docutils literal notranslate"><span class="pre">pandas&gt;=2.2.0</span></code>, bumped minimum supported NumPy version to <code class="docutils literal notranslate"><span class="pre">numpy&gt;=2.2.0</span></code>. <a class="reference external" href="https://github.com/unit8co/darts/pull/3004">#3004</a> by <a class="reference external" href="https://github.com/jakubchlapek">Jakub Chłapek</a></p></li>
 </ul>
 </section>
-<section id="id52">
-<h3>For developers of the library:<a class="headerlink" href="#id52" title="Link to this heading">#</a></h3>
+<section id="id84">
+<h3>For developers of the library:<a class="headerlink" href="#id84" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Migrated the dependency management and tooling to <a class="reference external" href="https://docs.astral.sh/uv/">uv</a>. Use <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">sync</span> <span class="pre">--group</span> <span class="pre">dev-all</span> <span class="pre">--upgrade</span></code> to setup your development environment; See the <a class="reference external" href="https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md">contribution guide</a> for further information. <a class="reference external" href="https://github.com/unit8co/darts/pull/2993">#2993</a> by <a class="reference external" href="https://github.com/authierj">Jules Authier</a>.</p></li>
 <li><p>Removed unit tests from the package distribution (PyPI and conda-forge) to reduce package size. <a class="reference external" href="https://github.com/unit8co/darts/pull/2979">#2979</a> and <a class="reference external" href="https://github.com/conda-forge/u8darts-feedstock/pull/59">u8darts-feedstock#59</a> by <a class="reference external" href="https://github.com/daidahao">Zhihao Dai</a>.</p></li>
 </ul>
 </section>
 </section>
-<section id="id57">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.40.0">0.40.0</a> (2025-12-23)<a class="headerlink" href="#id57" title="Link to this heading">#</a></h2>
-<section id="id58">
-<h3>For users of the library:<a class="headerlink" href="#id58" title="Link to this heading">#</a></h3>
+<section id="id89">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.40.0">0.40.0</a> (2025-12-23)<a class="headerlink" href="#id89" title="Link to this heading">#</a></h2>
+<section id="id90">
+<h3>For users of the library:<a class="headerlink" href="#id90" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>Improvements to <code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code>:</p>
@@ -626,19 +703,19 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>We set an upper version cap on <code class="docutils literal notranslate"><span class="pre">scikit-learn&lt;1.8.0</span></code> until CatBoost officially supports it. <a class="reference external" href="https://github.com/unit8co/darts/pull/2972">#2972</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
 </ul>
 </section>
-<section id="id78">
-<h3>For developers of the library:<a class="headerlink" href="#id78" title="Link to this heading">#</a></h3>
+<section id="id110">
+<h3>For developers of the library:<a class="headerlink" href="#id110" title="Link to this heading">#</a></h3>
 </section>
 </section>
-<section id="id80">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.39.0">0.39.0</a> (2025-11-23)<a class="headerlink" href="#id80" title="Link to this heading">#</a></h2>
-<section id="id81">
-<h3>For users of the library:<a class="headerlink" href="#id81" title="Link to this heading">#</a></h3>
+<section id="id112">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.39.0">0.39.0</a> (2025-11-23)<a class="headerlink" href="#id112" title="Link to this heading">#</a></h2>
+<section id="id113">
+<h3>For users of the library:<a class="headerlink" href="#id113" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>Improvements to forecasting models:</p>
 <ul>
-<li><p>🚀🚀 Added new forecasting model <cite>Chronos2Model</cite>: Amazon’s pre-trained 120M-parameter foundational model for zero-shot forecasting. <cite>Chronos2Model</cite> can be used for univariate, multivariate, and multiple time series forecasting without any training. It supports past and future covariates and can output deterministic or probabilistic forecasts. Check out the new [Chronos-2 Foundation Model Notebook](<a class="reference external" href="https://unit8co.github.io/darts/examples/25-Chronos-2-examples.html">https://unit8co.github.io/darts/examples/25-Chronos-2-examples.html</a>) for examples and usage of Chronos-2. <a class="reference external" href="https://github.com/unit8co/darts/pull/2944">#2944</a> by <a class="reference external" href="https://github.com/daidahao">Zhihao Dai</a>.</p></li>
+<li><p>🚀🚀 Added new forecasting model <cite>Chronos2Model</cite>: Amazon’s pre-trained 120M-parameter foundational model for zero-shot forecasting. <cite>Chronos2Model</cite> can be used for univariate, multivariate, and multiple time series forecasting without any training. It supports past and future covariates and can output deterministic or probabilistic forecasts. Check out the new [Chronos-2 Foundation Model Notebook](<a class="reference external" href="https://unit8co.github.io/darts/examples/25-FoundationModel-examples.html">https://unit8co.github.io/darts/examples/25-FoundationModel-examples.html</a>) for examples and usage of Chronos-2. <a class="reference external" href="https://github.com/unit8co/darts/pull/2944">#2944</a> by <a class="reference external" href="https://github.com/daidahao">Zhihao Dai</a>.</p></li>
 </ul>
 </li>
 <li><p>Improvements to <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>:</p>
@@ -663,8 +740,8 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>Raised the minimum PyTorch version to <code class="docutils literal notranslate"><span class="pre">torch&gt;=2.0.0</span></code>. <a class="reference external" href="https://github.com/unit8co/darts/pull/2944">#2944</a> by <a class="reference external" href="https://github.com/daidahao">Zhihao Dai</a>.</p></li>
 </ul>
 </section>
-<section id="id94">
-<h3>For developers of the library:<a class="headerlink" href="#id94" title="Link to this heading">#</a></h3>
+<section id="id126">
+<h3>For developers of the library:<a class="headerlink" href="#id126" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Added <code class="docutils literal notranslate"><span class="pre">FoundationModel</span></code> as a new base class for foundation models in Darts. It inherits from <code class="docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> and therefore uses the same PyTorch Lightning backend as other torch models. <a class="reference external" href="https://github.com/unit8co/darts/pull/2944">#2944</a> by <a class="reference external" href="https://github.com/daidahao">Zhihao Dai</a>.</p></li>
 <li><p>Added <code class="docutils literal notranslate"><span class="pre">HuggingFaceConnector</span></code> utility class for downloading and loading model configurations and weights from Hugging Face Hub. <a class="reference external" href="https://github.com/unit8co/darts/pull/2944">#2944</a> by <a class="reference external" href="https://github.com/daidahao">Zhihao Dai</a>.</p></li>
@@ -675,10 +752,10 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 </ul>
 </section>
 </section>
-<section id="id107">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.38.0">0.38.0</a> (2025-10-03)<a class="headerlink" href="#id107" title="Link to this heading">#</a></h2>
-<section id="id108">
-<h3>For users of the library:<a class="headerlink" href="#id108" title="Link to this heading">#</a></h3>
+<section id="id139">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.38.0">0.38.0</a> (2025-10-03)<a class="headerlink" href="#id139" title="Link to this heading">#</a></h2>
+<section id="id140">
+<h3>For users of the library:<a class="headerlink" href="#id140" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>Improvements to <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code>, <code class="docutils literal notranslate"><span class="pre">backtest()</span></code> and <code class="docutils literal notranslate"><span class="pre">residuals()</span></code> : Added support for <strong>global simulation mode</strong>, <strong>moving validation sets</strong> for early stopping, and improved verbosity control for better model training workflows.</p>
@@ -731,14 +808,14 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>Updated the Docker image Python version from 3.9 to 3.12. <a class="reference external" href="https://github.com/unit8co/darts/pull/2913">#2913</a> by <a class="reference external" href="https://github.com/jakubchlapek">Jakub Chłapek</a>.</p></li>
 </ul>
 </section>
-<section id="id152">
-<h3>For developers of the library:<a class="headerlink" href="#id152" title="Link to this heading">#</a></h3>
+<section id="id184">
+<h3>For developers of the library:<a class="headerlink" href="#id184" title="Link to this heading">#</a></h3>
 </section>
 </section>
-<section id="id154">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.37.1">0.37.1</a> (2025-08-18)<a class="headerlink" href="#id154" title="Link to this heading">#</a></h2>
-<section id="id155">
-<h3>For users of the library:<a class="headerlink" href="#id155" title="Link to this heading">#</a></h3>
+<section id="id186">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.37.1">0.37.1</a> (2025-08-18)<a class="headerlink" href="#id186" title="Link to this heading">#</a></h2>
+<section id="id187">
+<h3>For users of the library:<a class="headerlink" href="#id187" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>Improved the documentation regarding the new classification models from version 0.37.0. <a class="reference external" href="https://github.com/unit8co/darts/pull/2875">#2875</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
@@ -749,10 +826,10 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 </ul>
 </section>
 </section>
-<section id="id161">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.37.0">0.37.0</a> (2025-08-17)<a class="headerlink" href="#id161" title="Link to this heading">#</a></h2>
-<section id="id162">
-<h3>For users of the library:<a class="headerlink" href="#id162" title="Link to this heading">#</a></h3>
+<section id="id193">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.37.0">0.37.0</a> (2025-08-17)<a class="headerlink" href="#id193" title="Link to this heading">#</a></h2>
+<section id="id194">
+<h3>For users of the library:<a class="headerlink" href="#id194" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>🚀🚀 Added the first <strong>classification forecasting models</strong> for time series labeling or forecasting future class labels. Check out <a class="reference external" href="https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html">this new notebook</a> that demonstrates all added capabilities on the example of time series labeling. <a class="reference external" href="https://github.com/unit8co/darts/pull/2765">#2765</a> by <a class="reference external" href="https://github.com/jonasblanc">Jonas Blanc</a> and <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p>
@@ -797,8 +874,8 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>We set an upper version cap on <code class="docutils literal notranslate"><span class="pre">pytorch-lightning&lt;2.5.3</span></code> until an issue with <code class="docutils literal notranslate"><span class="pre">lr_find()</span></code> is resolved. <a class="reference external" href="https://github.com/unit8co/darts/pull/2872">#2872</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
 </ul>
 </section>
-<section id="id188">
-<h3>For developers of the library:<a class="headerlink" href="#id188" title="Link to this heading">#</a></h3>
+<section id="id220">
+<h3>For developers of the library:<a class="headerlink" href="#id220" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Added <code class="docutils literal notranslate"><span class="pre">ClassProbabilityLikelihood</span></code> and set it as the default likelihood for classifiers to predict class probabilities with <code class="docutils literal notranslate"><span class="pre">predict_likelihood_parameters=True</span></code> when calling <code class="docutils literal notranslate"><span class="pre">predict()</span></code>. <a class="reference external" href="https://github.com/unit8co/darts/pull/2765">#2765</a> by <a class="reference external" href="https://github.com/jonasblanc">Jonas Blanc</a></p></li>
 <li><p>Renamed <code class="docutils literal notranslate"><span class="pre">RegressionModelWithCategoricalCovariates</span></code> to <code class="docutils literal notranslate"><span class="pre">RegressionModelWithCategoricalFeatures</span></code> which now also supports categorical target features. <a class="reference external" href="https://github.com/unit8co/darts/pull/2765">#2765</a> by <a class="reference external" href="https://github.com/jonasblanc">Jonas Blanc</a></p></li>
@@ -808,10 +885,10 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 </ul>
 </section>
 </section>
-<section id="id201">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.36.0">0.36.0</a> (2025-06-29)<a class="headerlink" href="#id201" title="Link to this heading">#</a></h2>
-<section id="id202">
-<h3>For users of the library:<a class="headerlink" href="#id202" title="Link to this heading">#</a></h3>
+<section id="id233">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.36.0">0.36.0</a> (2025-06-29)<a class="headerlink" href="#id233" title="Link to this heading">#</a></h2>
+<section id="id234">
+<h3>For users of the library:<a class="headerlink" href="#id234" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>Improvements to <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> :</p>
@@ -890,18 +967,18 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>We set an upper version cap on <code class="docutils literal notranslate"><span class="pre">scipy&lt;1.16.0</span></code> until <code class="docutils literal notranslate"><span class="pre">statsmodels</span></code> officially supports version <code class="docutils literal notranslate"><span class="pre">1.16.0</span></code>. <a class="reference external" href="https://github.com/unit8co/darts/pull/2832">#2832</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
 </ul>
 </section>
-<section id="id235">
-<h3>For developers of the library:<a class="headerlink" href="#id235" title="Link to this heading">#</a></h3>
+<section id="id267">
+<h3>For developers of the library:<a class="headerlink" href="#id267" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Moved all torch dataset related modules from <code class="docutils literal notranslate"><span class="pre">darts.utils.data.*</span></code> to <code class="docutils literal notranslate"><span class="pre">darts.utils.data.torch_datasets.*</span></code>. The objects can still be imported as before with <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">darts.utils.data</span> <span class="pre">import</span> <span class="pre">...</span></code></p></li>
 <li><p>Moved tabularization module from <code class="docutils literal notranslate"><span class="pre">darts.utils.data.tabularization</span></code> into <code class="docutils literal notranslate"><span class="pre">darts.utils.data.tabularization.tabularization</span></code>. The objects can still be imported as before with <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">darts.utils.data.tabularization</span> <span class="pre">import</span> <span class="pre">...</span></code> <a class="reference external" href="https://github.com/unit8co/darts/pull/2798">#2798</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
 </ul>
 </section>
 </section>
-<section id="id239">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.35.0">0.35.0</a> (2025-04-18)<a class="headerlink" href="#id239" title="Link to this heading">#</a></h2>
-<section id="id240">
-<h3>For users of the library:<a class="headerlink" href="#id240" title="Link to this heading">#</a></h3>
+<section id="id271">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.35.0">0.35.0</a> (2025-04-18)<a class="headerlink" href="#id271" title="Link to this heading">#</a></h2>
+<section id="id272">
+<h3>For users of the library:<a class="headerlink" href="#id272" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>🚀🚀 Added <strong>new forecasting models</strong>:</p>
@@ -948,8 +1025,8 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 </li>
 </ul>
 </section>
-<section id="id261">
-<h3>For developers of the library:<a class="headerlink" href="#id261" title="Link to this heading">#</a></h3>
+<section id="id293">
+<h3>For developers of the library:<a class="headerlink" href="#id293" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Refactored likelihoods: <a class="reference external" href="https://github.com/unit8co/darts/pull/2742">#2742</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p>
 <ul>
@@ -964,10 +1041,10 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 </ul>
 </section>
 </section>
-<section id="id267">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.34.0">0.34.0</a> (2025-03-09)<a class="headerlink" href="#id267" title="Link to this heading">#</a></h2>
-<section id="id268">
-<h3>For users of the library:<a class="headerlink" href="#id268" title="Link to this heading">#</a></h3>
+<section id="id299">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.34.0">0.34.0</a> (2025-03-09)<a class="headerlink" href="#id299" title="Link to this heading">#</a></h2>
+<section id="id300">
+<h3>For users of the library:<a class="headerlink" href="#id300" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>Improvements to <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>:</p>
@@ -1013,18 +1090,18 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>Various code changes to reflect the updated dependencies versions (sklearn, statsmodel) and eliminate various warnings. <a class="reference external" href="https://github.com/unit8co/darts/pull/2722">#2722</a> by <a class="reference external" href="https://github.com/madtoinou">Antoine Madrona</a></p></li>
 </ul>
 </section>
-<section id="id309">
-<h3>For developers of the library:<a class="headerlink" href="#id309" title="Link to this heading">#</a></h3>
+<section id="id341">
+<h3>For developers of the library:<a class="headerlink" href="#id341" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>Refactored and improved the multi-output support handling for <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>. <a class="reference external" href="https://github.com/unit8co/darts/pull/2659">#2659</a> by <a class="reference external" href="https://github.com/jonasblanc">Jonas Blanc</a></p></li>
 </ul>
 </section>
 </section>
-<section id="id313">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.33.0">0.33.0</a> (2025-02-14)<a class="headerlink" href="#id313" title="Link to this heading">#</a></h2>
-<section id="id314">
-<h3>For users of the library:<a class="headerlink" href="#id314" title="Link to this heading">#</a></h3>
+<section id="id345">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.33.0">0.33.0</a> (2025-02-14)<a class="headerlink" href="#id345" title="Link to this heading">#</a></h2>
+<section id="id346">
+<h3>For users of the library:<a class="headerlink" href="#id346" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>Improvements to <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>:</p>
@@ -1067,17 +1144,17 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>Removed the upper version cap on <code class="docutils literal notranslate"><span class="pre">sklearn&lt;1.6.0</span></code> since <code class="docutils literal notranslate"><span class="pre">xboost</span></code> added support in version <code class="docutils literal notranslate"><span class="pre">2.1.4</span></code>. <a class="reference external" href="https://github.com/unit8co/darts/pull/2665">#2665</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
 </ul>
 </section>
-<section id="id344">
-<h3>For developers of the library:<a class="headerlink" href="#id344" title="Link to this heading">#</a></h3>
+<section id="id376">
+<h3>For developers of the library:<a class="headerlink" href="#id376" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Bumped <code class="docutils literal notranslate"><span class="pre">jinja2</span></code> from 3.1.4 to 3.1.5 (release requirement). <a class="reference external" href="https://github.com/unit8co/darts/pull/2672">#2672</a> by dapendabot.</p></li>
 </ul>
 </section>
 </section>
-<section id="id347">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.32.0">0.32.0</a> (2024-12-21)<a class="headerlink" href="#id347" title="Link to this heading">#</a></h2>
-<section id="id348">
-<h3>For users of the library:<a class="headerlink" href="#id348" title="Link to this heading">#</a></h3>
+<section id="id379">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.32.0">0.32.0</a> (2024-12-21)<a class="headerlink" href="#id379" title="Link to this heading">#</a></h2>
+<section id="id380">
+<h3>For users of the library:<a class="headerlink" href="#id380" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>🚀🚀 Introducing Conformal Prediction: You can now add calibrated prediction intervals to any pre-trained global forecasting model with our first two conformal prediction models : <a class="reference external" href="https://github.com/unit8co/darts/pull/2552">#2552</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p>
@@ -1131,8 +1208,8 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>We set an upper version cap on <code class="docutils literal notranslate"><span class="pre">sklkearn&lt;=1.5.0</span></code> until <code class="docutils literal notranslate"><span class="pre">xgboost</span></code> officially supports version <code class="docutils literal notranslate"><span class="pre">1.6.0</span></code>. <a class="reference external" href="https://github.com/unit8co/darts/pull/2618">#2618</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
 </ul>
 </section>
-<section id="id379">
-<h3>For developers of the library:<a class="headerlink" href="#id379" title="Link to this heading">#</a></h3>
+<section id="id411">
+<h3>For developers of the library:<a class="headerlink" href="#id411" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>Improvements to CI/CD : <a class="reference external" href="https://github.com/unit8co/darts/pull/2584">#2584</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p>
@@ -1148,10 +1225,10 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 </ul>
 </section>
 </section>
-<section id="id386">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.31.0">0.31.0</a> (2024-10-13)<a class="headerlink" href="#id386" title="Link to this heading">#</a></h2>
-<section id="id387">
-<h3>For users of the library:<a class="headerlink" href="#id387" title="Link to this heading">#</a></h3>
+<section id="id418">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.31.0">0.31.0</a> (2024-10-13)<a class="headerlink" href="#id418" title="Link to this heading">#</a></h2>
+<section id="id419">
+<h3>For users of the library:<a class="headerlink" href="#id419" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>Improvements to <code class="docutils literal notranslate"><span class="pre">metrics</span></code>:</p>
@@ -1229,14 +1306,14 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 </li>
 </ul>
 </section>
-<section id="id438">
-<h3>For developers of the library:<a class="headerlink" href="#id438" title="Link to this heading">#</a></h3>
+<section id="id470">
+<h3>For developers of the library:<a class="headerlink" href="#id470" title="Link to this heading">#</a></h3>
 </section>
 </section>
-<section id="id440">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.30.0">0.30.0</a> (2024-06-19)<a class="headerlink" href="#id440" title="Link to this heading">#</a></h2>
-<section id="id441">
-<h3>For users of the library:<a class="headerlink" href="#id441" title="Link to this heading">#</a></h3>
+<section id="id472">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.30.0">0.30.0</a> (2024-06-19)<a class="headerlink" href="#id472" title="Link to this heading">#</a></h2>
+<section id="id473">
+<h3>For users of the library:<a class="headerlink" href="#id473" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>🚀🚀 All <code class="docutils literal notranslate"><span class="pre">GlobalForecastingModel</span></code> now support being trained with sample weights (regression-, ensemble-, and neural network models) : <a class="reference external" href="https://github.com/unit8co/darts/pull/2404">#2404</a>, <a class="reference external" href="https://github.com/unit8co/darts/pull/2410">#2410</a>, <a class="reference external" href="https://github.com/unit8co/darts/pull/2417">#2417</a> and <a class="reference external" href="https://github.com/unit8co/darts/pull/2418">#2418</a> by <a class="reference external" href="https://github.com/AntonRagot">Anton Ragot</a> and <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p>
@@ -1334,8 +1411,8 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>We set an upper version cap on <code class="docutils literal notranslate"><span class="pre">numpy&lt;2.0.0</span></code> until all dependencies have migrated. <a class="reference external" href="https://github.com/unit8co/darts/pull/2413">#2413</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
 </ul>
 </section>
-<section id="id467">
-<h3>For developers of the library:<a class="headerlink" href="#id467" title="Link to this heading">#</a></h3>
+<section id="id499">
+<h3>For developers of the library:<a class="headerlink" href="#id499" title="Link to this heading">#</a></h3>
 <p><strong>Dependencies</strong></p>
 <ul class="simple">
 <li><p>Improvements to linting via updated pre-commit configurations: <a class="reference external" href="https://github.com/unit8co/darts/pull/2324">#2324</a> by <a class="reference external" href="https://github.com/borda">Jirka Borovec</a>.</p></li>
@@ -1345,10 +1422,10 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 </ul>
 </section>
 </section>
-<section id="id476">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.29.0">0.29.0</a> (2024-04-17)<a class="headerlink" href="#id476" title="Link to this heading">#</a></h2>
-<section id="id477">
-<h3>For users of the library:<a class="headerlink" href="#id477" title="Link to this heading">#</a></h3>
+<section id="id508">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.29.0">0.29.0</a> (2024-04-17)<a class="headerlink" href="#id508" title="Link to this heading">#</a></h2>
+<section id="id509">
+<h3>For users of the library:<a class="headerlink" href="#id509" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>🚀🚀 New forecasting model: <code class="docutils literal notranslate"><span class="pre">TSMixerModel</span></code> as proposed in the <a class="reference external" href="https://arxiv.org/abs/2303.06053">TSMixer paper</a>. An MLP based model that combines temporal, static and cross-sectional feature information using stacked mixing layers. <a class="reference external" href="https://github.com/unit8co/darts/pull/2293">#2293</a>, by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a> and <a class="reference external" href="https://github.com/cristof-r">Cristof Rojas</a>.</p></li>
@@ -1468,8 +1545,8 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>Fixed type hint warning “Unexpected argument” when calling <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code> caused by the <code class="docutils literal notranslate"><span class="pre">_with_sanity_checks</span></code> decorator. The type hinting is now properly configured to expect any input arguments and return the output type of the method for which the sanity checks are performed for. <a class="reference external" href="https://github.com/unit8co/darts/pull/2286">#2286</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
 </ul>
 </section>
-<section id="id509">
-<h3>For developers of the library:<a class="headerlink" href="#id509" title="Link to this heading">#</a></h3>
+<section id="id541">
+<h3>For developers of the library:<a class="headerlink" href="#id541" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Fixed failing docs build by adding new dependency <code class="docutils literal notranslate"><span class="pre">lxml_html_clean</span></code> for <code class="docutils literal notranslate"><span class="pre">nbsphinx</span></code>. <a class="reference external" href="https://github.com/unit8co/darts/pull/2303">#2303</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
 <li><p>Bumped <code class="docutils literal notranslate"><span class="pre">black</span></code> from 24.1.1 to 24.3.0. <a class="reference external" href="https://github.com/unit8co/darts/pull/2308">#2308</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
@@ -1478,10 +1555,10 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 </ul>
 </section>
 </section>
-<section id="id520">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.28.0">0.28.0</a> (2024-03-05)<a class="headerlink" href="#id520" title="Link to this heading">#</a></h2>
-<section id="id521">
-<h3>For users of the library:<a class="headerlink" href="#id521" title="Link to this heading">#</a></h3>
+<section id="id552">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.28.0">0.28.0</a> (2024-03-05)<a class="headerlink" href="#id552" title="Link to this heading">#</a></h2>
+<section id="id553">
+<h3>For users of the library:<a class="headerlink" href="#id553" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>Improvements to <code class="docutils literal notranslate"><span class="pre">GlobalForecastingModel</span></code> :</p>
@@ -1546,8 +1623,8 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>Removed upper version cap (&lt;=v2.1.2) for PyTorch Lightning. <a class="reference external" href="https://github.com/unit8co/darts/pull/2251">#2251</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
 </ul>
 </section>
-<section id="id558">
-<h3>For developers of the library:<a class="headerlink" href="#id558" title="Link to this heading">#</a></h3>
+<section id="id590">
+<h3>For developers of the library:<a class="headerlink" href="#id590" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Updated pre-commit hooks to the latest version using <code class="docutils literal notranslate"><span class="pre">pre-commit</span> <span class="pre">autoupdate</span></code>. Change <code class="docutils literal notranslate"><span class="pre">pyupgrade</span></code> pre-commit hook argument to <code class="docutils literal notranslate"><span class="pre">--py38-plus</span></code>. <a class="reference external" href="https://github.com/unit8co/darts/pull/2228">#2228</a> by <a class="reference external" href="https://github.com/MarcBresson">MarcBresson</a>.</p></li>
 <li><p>Bumped dev dependencies to newest versions, <a class="reference external" href="https://github.com/unit8co/darts/pull/2248">#2248</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>:</p>
@@ -1561,10 +1638,10 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 </ul>
 </section>
 </section>
-<section id="id564">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.27.2">0.27.2</a> (2024-01-21)<a class="headerlink" href="#id564" title="Link to this heading">#</a></h2>
-<section id="id565">
-<h3>For users of the library:<a class="headerlink" href="#id565" title="Link to this heading">#</a></h3>
+<section id="id596">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.27.2">0.27.2</a> (2024-01-21)<a class="headerlink" href="#id596" title="Link to this heading">#</a></h2>
+<section id="id597">
+<h3>For users of the library:<a class="headerlink" href="#id597" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>Added <code class="docutils literal notranslate"><span class="pre">darts.utils.statistics.plot_ccf</span></code> that can be used to plot the cross correlation between a time series (e.g. target series) and the lagged values of another time series (e.g. covariates series). <a class="reference external" href="https://github.com/unit8co/darts/pull/2122">#2122</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
@@ -1575,14 +1652,14 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>Fixed a bug when using a <code class="docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> with <code class="docutils literal notranslate"><span class="pre">use_reversible_instance_norm=True</span></code> and predicting with <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">output_chunk_length</span></code>. The input normalized multiple times. <a class="reference external" href="https://github.com/unit8co/darts/pull/2160">#2160</a> by <a class="reference external" href="https://github.com/FourierMourier">FourierMourier</a>.</p></li>
 </ul>
 </section>
-<section id="id570">
-<h3>For developers of the library:<a class="headerlink" href="#id570" title="Link to this heading">#</a></h3>
+<section id="id602">
+<h3>For developers of the library:<a class="headerlink" href="#id602" title="Link to this heading">#</a></h3>
 </section>
 </section>
-<section id="id572">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.27.1">0.27.1</a> (2023-12-10)<a class="headerlink" href="#id572" title="Link to this heading">#</a></h2>
-<section id="id573">
-<h3>For users of the library:<a class="headerlink" href="#id573" title="Link to this heading">#</a></h3>
+<section id="id604">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.27.1">0.27.1</a> (2023-12-10)<a class="headerlink" href="#id604" title="Link to this heading">#</a></h2>
+<section id="id605">
+<h3>For users of the library:<a class="headerlink" href="#id605" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>🔴 Added <code class="docutils literal notranslate"><span class="pre">CustomRNNModule</span></code> and <code class="docutils literal notranslate"><span class="pre">CustomBlockRNNModule</span></code> for defining custom RNN modules that can be used with <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> and <code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code>. The custom <code class="docutils literal notranslate"><span class="pre">model</span></code> must now be a subclass of the custom modules. <a class="reference external" href="https://github.com/unit8co/darts/pull/2088">#2088</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
@@ -1594,17 +1671,17 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>Fixed a bug when creating a <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> with a custom <code class="docutils literal notranslate"><span class="pre">model</span></code>. <a class="reference external" href="https://github.com/unit8co/darts/pull/2088">#2088</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
 </ul>
 </section>
-<section id="id582">
-<h3>For developers of the library:<a class="headerlink" href="#id582" title="Link to this heading">#</a></h3>
+<section id="id614">
+<h3>For developers of the library:<a class="headerlink" href="#id614" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Added a folder <code class="docutils literal notranslate"><span class="pre">docs/generated_api</span></code> to define custom .rst files for generating the documentation. <a class="reference external" href="https://github.com/unit8co/darts/pull/2115">#2115</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
 </ul>
 </section>
 </section>
-<section id="id586">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.27.0">0.27.0</a> (2023-11-18)<a class="headerlink" href="#id586" title="Link to this heading">#</a></h2>
-<section id="id587">
-<h3>For users of the library:<a class="headerlink" href="#id587" title="Link to this heading">#</a></h3>
+<section id="id618">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.27.0">0.27.0</a> (2023-11-18)<a class="headerlink" href="#id618" title="Link to this heading">#</a></h2>
+<section id="id619">
+<h3>For users of the library:<a class="headerlink" href="#id619" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>Improvements to <code class="docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> :</p>
@@ -1651,15 +1728,15 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>Fixed a bug when using <code class="docutils literal notranslate"><span class="pre">DLinearModel</span></code> and <code class="docutils literal notranslate"><span class="pre">NLinearModel</span></code> on multivariate series with static covariates shared across components and <code class="docutils literal notranslate"><span class="pre">use_static_covariates=True</span></code>. <a class="reference external" href="https://github.com/unit8co/darts/pull/2070">#2070</a> by <a class="reference external" href="https://github.com/madtoinou">Antoine Madrona</a>.</p></li>
 </ul>
 </section>
-<section id="id626">
-<h3>For developers of the library:<a class="headerlink" href="#id626" title="Link to this heading">#</a></h3>
+<section id="id658">
+<h3>For developers of the library:<a class="headerlink" href="#id658" title="Link to this heading">#</a></h3>
 <p>No changes.</p>
 </section>
 </section>
-<section id="id628">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.26.0">0.26.0</a> (2023-09-16)<a class="headerlink" href="#id628" title="Link to this heading">#</a></h2>
-<section id="id629">
-<h3>For users of the library:<a class="headerlink" href="#id629" title="Link to this heading">#</a></h3>
+<section id="id660">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.26.0">0.26.0</a> (2023-09-16)<a class="headerlink" href="#id660" title="Link to this heading">#</a></h2>
+<section id="id661">
+<h3>For users of the library:<a class="headerlink" href="#id661" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>Improvements to <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>, <a class="reference external" href="https://github.com/unit8co/darts/pull/1962">#1962</a> by <a class="reference external" href="https://github.com/madtoinou">Antoine Madrona</a>:</p>
@@ -1707,18 +1784,18 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>🔴 Dropped support for lambda functions in <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code>’s “custom” encoder in favor of named functions to ensure that models can be exported. <a class="reference external" href="https://github.com/unit8co/darts/pull/1957">#1957</a> by <a class="reference external" href="https://github.com/madtoinou">Antoine Madrona</a>.</p></li>
 </ul>
 </section>
-<section id="id659">
-<h3>For developers of the library:<a class="headerlink" href="#id659" title="Link to this heading">#</a></h3>
+<section id="id691">
+<h3>For developers of the library:<a class="headerlink" href="#id691" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>Refactored all tests to use pytest instead of unittest. <a class="reference external" href="https://github.com/unit8co/darts/pull/1950">#1950</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
 </ul>
 </section>
 </section>
-<section id="id663">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.25.0">0.25.0</a> (2023-08-04)<a class="headerlink" href="#id663" title="Link to this heading">#</a></h2>
-<section id="id664">
-<h3>For users of the library:<a class="headerlink" href="#id664" title="Link to this heading">#</a></h3>
+<section id="id695">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.25.0">0.25.0</a> (2023-08-04)<a class="headerlink" href="#id695" title="Link to this heading">#</a></h2>
+<section id="id696">
+<h3>For users of the library:<a class="headerlink" href="#id696" title="Link to this heading">#</a></h3>
 <p><strong>Installation</strong></p>
 <ul class="simple">
 <li><p>🔴 Removed Prophet, LightGBM, and CatBoost dependencies from PyPI packages (<code class="docutils literal notranslate"><span class="pre">darts</span></code>, <code class="docutils literal notranslate"><span class="pre">u8darts</span></code>, <code class="docutils literal notranslate"><span class="pre">u8darts[torch]</span></code>), and conda-forge packages (<code class="docutils literal notranslate"><span class="pre">u8darts</span></code>, <code class="docutils literal notranslate"><span class="pre">u8darts-torch</span></code>) to avoid installation issues that some users were facing (installation on Apple M1/M2 devices, …). <a class="reference external" href="https://github.com/unit8co/darts/pull/1589">#1589</a> by <a class="reference external" href="https://github.com/hrzn">Julien Herzen</a> and <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p>
@@ -1785,8 +1862,8 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 <li><p>Fixed an issue when using <code class="docutils literal notranslate"><span class="pre">TFTModel.predict()</span></code> with <code class="docutils literal notranslate"><span class="pre">full_attention=True</span></code> where the attention mask was not applied properly. <a class="reference external" href="https://github.com/unit8co/darts/pull/1392">#1392</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
 </ul>
 </section>
-<section id="id722">
-<h3>For developers of the library:<a class="headerlink" href="#id722" title="Link to this heading">#</a></h3>
+<section id="id754">
+<h3>For developers of the library:<a class="headerlink" href="#id754" title="Link to this heading">#</a></h3>
 <p><strong>Improvements</strong></p>
 <ul class="simple">
 <li><p>Refactored the <code class="docutils literal notranslate"><span class="pre">ForecastingModelExplainer</span></code> and <code class="docutils literal notranslate"><span class="pre">ExplainabilityResult</span></code> to simplify implementation of new explainers. <a class="reference external" href="https://github.com/unit8co/darts/pull/1392">#1392</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
@@ -1794,10 +1871,10 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 </ul>
 </section>
 </section>
-<section id="id728">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.24.0">0.24.0</a> (2023-04-12)<a class="headerlink" href="#id728" title="Link to this heading">#</a></h2>
-<section id="id729">
-<h3>For users of the library:<a class="headerlink" href="#id729" title="Link to this heading">#</a></h3>
+<section id="id760">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.24.0">0.24.0</a> (2023-04-12)<a class="headerlink" href="#id760" title="Link to this heading">#</a></h2>
+<section id="id761">
+<h3>For users of the library:<a class="headerlink" href="#id761" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>General model improvements:</p>
@@ -1861,8 +1938,8 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 </li>
 </ul>
 </section>
-<section id="id799">
-<h3>For developers of the library:<a class="headerlink" href="#id799" title="Link to this heading">#</a></h3>
+<section id="id831">
+<h3>For developers of the library:<a class="headerlink" href="#id831" title="Link to this heading">#</a></h3>
 <p><strong>Improvements</strong></p>
 <ul class="simple">
 <li><p>Option to skip slow tests locally with <code class="docutils literal notranslate"><span class="pre">pytest</span> <span class="pre">.</span> <span class="pre">--no-cov</span> <span class="pre">-m</span> <span class="pre">&quot;not</span> <span class="pre">slow&quot;</span></code>. <a class="reference external" href="https://github.com/unit8co/darts/pull/1625">#1625</a> by <a class="reference external" href="https://github.com/BlazejNowicki">Blazej Nowicki</a>.</p></li>
@@ -1870,8 +1947,8 @@ but cannot always guarantee backwards compatibility. Changes that may <strong>br
 </ul>
 </section>
 </section>
-<section id="id804">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.23.1">0.23.1</a> (2023-01-12)<a class="headerlink" href="#id804" title="Link to this heading">#</a></h2>
+<section id="id836">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.23.1">0.23.1</a> (2023-01-12)<a class="headerlink" href="#id836" title="Link to this heading">#</a></h2>
 <p>Patch release</p>
 <p><strong>Fixed</strong></p>
 <ul class="simple">
@@ -1890,10 +1967,10 @@ by <a class="reference external" href="https://github.com/dumjax">Maxime Dumonal
 <a class="reference external" href="https://github.com/unit8co/darts/pull/1482">#1482</a> by <a class="reference external" href="https://github.com/hrzn">Julien Herzen</a>.</p></li>
 </ul>
 </section>
-<section id="id817">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.23.0">0.23.0</a> (2022-12-23)<a class="headerlink" href="#id817" title="Link to this heading">#</a></h2>
-<section id="id818">
-<h3>For users of the library:<a class="headerlink" href="#id818" title="Link to this heading">#</a></h3>
+<section id="id849">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.23.0">0.23.0</a> (2022-12-23)<a class="headerlink" href="#id849" title="Link to this heading">#</a></h2>
+<section id="id850">
+<h3>For users of the library:<a class="headerlink" href="#id850" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>🚀🚀🚀 Brand new Darts module dedicated to anomaly detection on time series: <code class="docutils literal notranslate"><span class="pre">darts.ad</span></code>.
@@ -1963,10 +2040,10 @@ by <a class="reference external" href="https://github.com/madtoinou">Antoine Mad
 </ul>
 </section>
 </section>
-<section id="id872">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.22.0">0.22.0</a> (2022-10-04)<a class="headerlink" href="#id872" title="Link to this heading">#</a></h2>
-<section id="id873">
-<h3>For users of the library:<a class="headerlink" href="#id873" title="Link to this heading">#</a></h3>
+<section id="id904">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.22.0">0.22.0</a> (2022-10-04)<a class="headerlink" href="#id904" title="Link to this heading">#</a></h2>
+<section id="id905">
+<h3>For users of the library:<a class="headerlink" href="#id905" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>New explainability feature. The class <code class="docutils literal notranslate"><span class="pre">ShapExplainer</span></code> in <code class="docutils literal notranslate"><span class="pre">darts.explainability</span></code> can provide Shap-values explanations of the importance of each lag and each dimension in producing each forecasting lag for <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>s. <a class="reference external" href="https://github.com/unit8co/darts/pull/909">#909</a> by <a class="reference external" href="https://github.com/dumjax">Maxime Dumonal</a>.</p></li>
@@ -1994,10 +2071,10 @@ by <a class="reference external" href="https://github.com/madtoinou">Antoine Mad
 </ul>
 </section>
 </section>
-<section id="id911">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.21.0">0.21.0</a> (2022-08-12)<a class="headerlink" href="#id911" title="Link to this heading">#</a></h2>
-<section id="id912">
-<h3>For users of the library:<a class="headerlink" href="#id912" title="Link to this heading">#</a></h3>
+<section id="id943">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.21.0">0.21.0</a> (2022-08-12)<a class="headerlink" href="#id943" title="Link to this heading">#</a></h2>
+<section id="id944">
+<h3>For users of the library:<a class="headerlink" href="#id944" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>New model: Catboost, incl <code class="docutils literal notranslate"><span class="pre">quantile</span></code>, <code class="docutils literal notranslate"><span class="pre">poisson</span></code> and <code class="docutils literal notranslate"><span class="pre">gaussian</span></code> likelihoods support. <a class="reference external" href="https://github.com/unit8co/darts/pull/1007">#1007</a>, <a class="reference external" href="https://github.com/unit8co/darts/pull/1044">#1044</a> by <a class="reference external" href="https://github.com/jonasracine">Jonas Racine</a>.</p></li>
@@ -2029,10 +2106,10 @@ by <a class="reference external" href="https://github.com/madtoinou">Antoine Mad
 </ul>
 </section>
 </section>
-<section id="id958">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.20.0">0.20.0</a> (2022-06-22)<a class="headerlink" href="#id958" title="Link to this heading">#</a></h2>
-<section id="id959">
-<h3>For users of the library:<a class="headerlink" href="#id959" title="Link to this heading">#</a></h3>
+<section id="id990">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.20.0">0.20.0</a> (2022-06-22)<a class="headerlink" href="#id990" title="Link to this heading">#</a></h2>
+<section id="id991">
+<h3>For users of the library:<a class="headerlink" href="#id991" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>Added support for static covariates in <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> class. <a class="reference external" href="https://github.com/unit8co/darts/pull/966">#966</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
@@ -2060,18 +2137,18 @@ by <a class="reference external" href="https://github.com/gdevos010">Greg DeVos<
 <li><p>An error in Gaussian Process filter happening with newer versions of sklearn <a class="reference external" href="https://github.com/unit8co/darts/pull/963">#963</a> by <a class="reference external" href="https://github.com/hrzn">Julien Herzen</a>.</p></li>
 </ul>
 </section>
-<section id="id994">
-<h3>For developers of the library:<a class="headerlink" href="#id994" title="Link to this heading">#</a></h3>
+<section id="id1026">
+<h3>For developers of the library:<a class="headerlink" href="#id1026" title="Link to this heading">#</a></h3>
 <p><strong>Fixed</strong></p>
 <ul class="simple">
 <li><p>An issue with LinearLR scheduler in tests. <a class="reference external" href="https://github.com/unit8co/darts/pull/928">#928</a> by <a class="reference external" href="https://github.com/dennisbader">Dennis Bader</a>.</p></li>
 </ul>
 </section>
 </section>
-<section id="id998">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.19.0">0.19.0</a> (2022-04-13)<a class="headerlink" href="#id998" title="Link to this heading">#</a></h2>
-<section id="id999">
-<h3>For users of the library:<a class="headerlink" href="#id999" title="Link to this heading">#</a></h3>
+<section id="id1030">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.19.0">0.19.0</a> (2022-04-13)<a class="headerlink" href="#id1030" title="Link to this heading">#</a></h2>
+<section id="id1031">
+<h3>For users of the library:<a class="headerlink" href="#id1031" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>New model: <code class="docutils literal notranslate"><span class="pre">NHiTS</span></code> implementing the N-HiTS model.
@@ -2098,10 +2175,10 @@ by <a class="reference external" href="https://github.com/hrzn">Julien Herzen</a
 </ul>
 </section>
 </section>
-<section id="id1016">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.18.0">0.18.0</a> (2022-03-22)<a class="headerlink" href="#id1016" title="Link to this heading">#</a></h2>
-<section id="id1017">
-<h3>For users of the library:<a class="headerlink" href="#id1017" title="Link to this heading">#</a></h3>
+<section id="id1048">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.18.0">0.18.0</a> (2022-03-22)<a class="headerlink" href="#id1048" title="Link to this heading">#</a></h2>
+<section id="id1049">
+<h3>For users of the library:<a class="headerlink" href="#id1049" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code> can now be probabilistic, supporting quantile
@@ -2136,11 +2213,11 @@ by <a class="reference external" href="https://github.com/dennisbader">Dennis Ba
 </ul>
 </section>
 </section>
-<section id="id1042">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.17.1">0.17.1</a> (2022-02-17)<a class="headerlink" href="#id1042" title="Link to this heading">#</a></h2>
+<section id="id1074">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.17.1">0.17.1</a> (2022-02-17)<a class="headerlink" href="#id1074" title="Link to this heading">#</a></h2>
 <p>Patch release</p>
-<section id="id1043">
-<h3>For users of the library:<a class="headerlink" href="#id1043" title="Link to this heading">#</a></h3>
+<section id="id1075">
+<h3>For users of the library:<a class="headerlink" href="#id1075" title="Link to this heading">#</a></h3>
 <p><strong>Fixed</strong></p>
 <ul class="simple">
 <li><p>Fixed issues with (now deprecated) <code class="docutils literal notranslate"><span class="pre">torch_device_str</span></code> parameter, and improved documentation
@@ -2155,10 +2232,10 @@ by <a class="reference external" href="https://github.com/vladimir-chernykh">Vla
 </ul>
 </section>
 </section>
-<section id="id1051">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.17.0">0.17.0</a> (2022-02-15)<a class="headerlink" href="#id1051" title="Link to this heading">#</a></h2>
-<section id="id1052">
-<h3>For users of the library:<a class="headerlink" href="#id1052" title="Link to this heading">#</a></h3>
+<section id="id1083">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.17.0">0.17.0</a> (2022-02-15)<a class="headerlink" href="#id1083" title="Link to this heading">#</a></h2>
+<section id="id1084">
+<h3>For users of the library:<a class="headerlink" href="#id1084" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>🚀 Support for <a class="reference external" href="https://github.com/PyTorchLightning/pytorch-lightning">PyTorch Lightning</a>: All deep learning
@@ -2193,19 +2270,19 @@ by <a class="reference external" href="https://github.com/hrzn">Julien Herzen</a
 by <a class="reference external" href="https://github.com/tomasvanpottelbergh">Tomas Van Pottelbergh</a>.</p></li>
 </ul>
 </section>
-<section id="id1069">
-<h3>For developers of the library:<a class="headerlink" href="#id1069" title="Link to this heading">#</a></h3>
+<section id="id1101">
+<h3>For developers of the library:<a class="headerlink" href="#id1101" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Some linting checks have been added to the CI pipeline. <a class="reference external" href="https://github.com/unit8co/darts/pull/749">#749</a>
 by <a class="reference external" href="https://github.com/tomasvanpottelbergh">Tomas Van Pottelbergh</a>.</p></li>
 </ul>
 </section>
 </section>
-<section id="id1073">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.16.1">0.16.1</a> (2022-01-24)<a class="headerlink" href="#id1073" title="Link to this heading">#</a></h2>
+<section id="id1105">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.16.1">0.16.1</a> (2022-01-24)<a class="headerlink" href="#id1105" title="Link to this heading">#</a></h2>
 <p>Patch release</p>
-<section id="id1074">
-<h3>For users of the library:<a class="headerlink" href="#id1074" title="Link to this heading">#</a></h3>
+<section id="id1106">
+<h3>For users of the library:<a class="headerlink" href="#id1106" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Fixed an incompatibility with latest version of Pandas (<a class="reference external" href="https://github.com/unit8co/darts/pull/752">#752</a>)
 by <a class="reference external" href="https://github.com/hrzn">Julien Herzen</a>.</p></li>
@@ -2215,8 +2292,8 @@ by <a class="reference external" href="https://github.com/dennisbader">Dennis Ba
 by <a class="reference external" href="https://github.com/brunnedu">Dustin Brunner</a>.</p></li>
 </ul>
 </section>
-<section id="id1081">
-<h3>For developers of the library:<a class="headerlink" href="#id1081" title="Link to this heading">#</a></h3>
+<section id="id1113">
+<h3>For developers of the library:<a class="headerlink" href="#id1113" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Added flake8 tests to CI pipelines (<a class="reference external" href="https://github.com/unit8co/darts/pull/749">#749</a>,
 <a class="reference external" href="https://github.com/unit8co/darts/pull/748">#748</a>, <a class="reference external" href="https://github.com/unit8co/darts/pull/745">#745</a>)
@@ -2225,10 +2302,10 @@ and <a class="reference external" href="https://github.com/dennisbader">Dennis B
 </ul>
 </section>
 </section>
-<section id="id1088">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.16.0">0.16.0</a> (2022-01-13)<a class="headerlink" href="#id1088" title="Link to this heading">#</a></h2>
-<section id="id1089">
-<h3>For users of the library:<a class="headerlink" href="#id1089" title="Link to this heading">#</a></h3>
+<section id="id1120">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.16.0">0.16.0</a> (2022-01-13)<a class="headerlink" href="#id1120" title="Link to this heading">#</a></h2>
+<section id="id1121">
+<h3>For users of the library:<a class="headerlink" href="#id1121" title="Link to this heading">#</a></h3>
 <p><strong>Improved</strong></p>
 <ul class="simple">
 <li><p>The <a class="reference external" href="https://unit8co.github.io/darts/index.html">documentation page</a> has been revamped and now contains
@@ -2247,18 +2324,18 @@ notably using <code class="docutils literal notranslate"><span class="pre">numpy
 <li><p>Fixed support for <code class="docutils literal notranslate"><span class="pre">ReduceLROnPlateau</span></code> scheduler.</p></li>
 </ul>
 </section>
-<section id="id1090">
-<h3>For developers of the library:<a class="headerlink" href="#id1090" title="Link to this heading">#</a></h3>
+<section id="id1122">
+<h3>For developers of the library:<a class="headerlink" href="#id1122" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>We have switched to <a class="reference external" href="https://black.readthedocs.io/en/stable/">black</a> for code formatting (this is checked
 by the CI pipeline).</p></li>
 </ul>
 </section>
 </section>
-<section id="id1092">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.15.0">0.15.0</a> (2021-12-24)<a class="headerlink" href="#id1092" title="Link to this heading">#</a></h2>
-<section id="id1093">
-<h3>For users of the library:<a class="headerlink" href="#id1093" title="Link to this heading">#</a></h3>
+<section id="id1124">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.15.0">0.15.0</a> (2021-12-24)<a class="headerlink" href="#id1124" title="Link to this heading">#</a></h2>
+<section id="id1125">
+<h3>For users of the library:<a class="headerlink" href="#id1125" title="Link to this heading">#</a></h3>
 <p><strong>Added</strong>:</p>
 <ul>
 <li><p>On-the-fly encoding of position and calendar information in Torch-based models.
@@ -2307,8 +2384,8 @@ not to be trained on the initial window when <code class="docutils literal notra
 <li><p>Fixed an issue causing <code class="docutils literal notranslate"><span class="pre">residuals()</span></code> to fail for Torch-based models.</p></li>
 </ul>
 </section>
-<section id="id1094">
-<h3>For developers of the library:<a class="headerlink" href="#id1094" title="Link to this heading">#</a></h3>
+<section id="id1126">
+<h3>For developers of the library:<a class="headerlink" href="#id1126" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Updated the <a class="reference external" href="https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md">contribution guidelines</a></p></li>
 <li><p>The unit tests have been re-organised with submodules following that of the library.</p></li>
@@ -2317,10 +2394,10 @@ not to be trained on the initial window when <code class="docutils literal notra
 </ul>
 </section>
 </section>
-<section id="id1096">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.14.0">0.14.0</a> (2021-11-28)<a class="headerlink" href="#id1096" title="Link to this heading">#</a></h2>
-<section id="id1097">
-<h3>For users of the library:<a class="headerlink" href="#id1097" title="Link to this heading">#</a></h3>
+<section id="id1128">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.14.0">0.14.0</a> (2021-11-28)<a class="headerlink" href="#id1128" title="Link to this heading">#</a></h2>
+<section id="id1129">
+<h3>For users of the library:<a class="headerlink" href="#id1129" title="Link to this heading">#</a></h3>
 <p><strong>Added</strong>:</p>
 <ul class="simple">
 <li><p>Probabilistic N-BEATS: The <code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code> can now produce probabilistic forecasts,
@@ -2347,10 +2424,10 @@ Future covariates don’t have to be specified when this is used.</p></li>
 </ul>
 </section>
 </section>
-<section id="id1099">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.13.1">0.13.1</a> (2021-11-08)<a class="headerlink" href="#id1099" title="Link to this heading">#</a></h2>
-<section id="id1100">
-<h3>For users of the library:<a class="headerlink" href="#id1100" title="Link to this heading">#</a></h3>
+<section id="id1131">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.13.1">0.13.1</a> (2021-11-08)<a class="headerlink" href="#id1131" title="Link to this heading">#</a></h2>
+<section id="id1132">
+<h3>For users of the library:<a class="headerlink" href="#id1132" title="Link to this heading">#</a></h3>
 <p><strong>Added</strong>:</p>
 <ul class="simple">
 <li><p>Factory methods in <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> are now <code class="docutils literal notranslate"><span class="pre">classmethods</span></code>, which makes inheritance of
@@ -2362,10 +2439,10 @@ Future covariates don’t have to be specified when this is used.</p></li>
 </ul>
 </section>
 </section>
-<section id="id1102">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.13.0">0.13.0</a> (2021-11-07)<a class="headerlink" href="#id1102" title="Link to this heading">#</a></h2>
-<section id="id1103">
-<h3>For users of the library:<a class="headerlink" href="#id1103" title="Link to this heading">#</a></h3>
+<section id="id1134">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.13.0">0.13.0</a> (2021-11-07)<a class="headerlink" href="#id1134" title="Link to this heading">#</a></h2>
+<section id="id1135">
+<h3>For users of the library:<a class="headerlink" href="#id1135" title="Link to this heading">#</a></h3>
 <p><strong>Added</strong>:</p>
 <ul class="simple">
 <li><p>New forecasting model, <a class="reference external" href="https://arxiv.org/abs/1912.09363">Temporal Fusion Transformer</a> (<code class="docutils literal notranslate"><span class="pre">TFTModel</span></code>).
@@ -2413,10 +2490,10 @@ Used by default in the Temporal Fusion Transformer.</p></li>
 </ul>
 </section>
 </section>
-<section id="id1105">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.12.0">0.12.0</a> (2021-09-25)<a class="headerlink" href="#id1105" title="Link to this heading">#</a></h2>
-<section id="id1106">
-<h3>For users of the library:<a class="headerlink" href="#id1106" title="Link to this heading">#</a></h3>
+<section id="id1137">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.12.0">0.12.0</a> (2021-09-25)<a class="headerlink" href="#id1137" title="Link to this heading">#</a></h2>
+<section id="id1138">
+<h3>For users of the library:<a class="headerlink" href="#id1138" title="Link to this heading">#</a></h3>
 <p><strong>Added</strong>:</p>
 <ul class="simple">
 <li><p>Improved probabilistic forecasting with neural networks</p>
@@ -2449,18 +2526,18 @@ especially for large series, and filling missing dates has also been significant
 <li><p>Fixed a column name issue in datetime attribute time series.</p></li>
 </ul>
 </section>
-<section id="id1107">
-<h3>For developers of the library:<a class="headerlink" href="#id1107" title="Link to this heading">#</a></h3>
+<section id="id1139">
+<h3>For developers of the library:<a class="headerlink" href="#id1139" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>We have removed the <code class="docutils literal notranslate"><span class="pre">develop</span></code> branch.</p></li>
 <li><p>We force sklearn&lt;1.0 has we have observed issues with pmdarima and sklearn==1.0</p></li>
 </ul>
 </section>
 </section>
-<section id="id1109">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.11.0">0.11.0</a> (2021-09-04)<a class="headerlink" href="#id1109" title="Link to this heading">#</a></h2>
-<section id="id1110">
-<h3>For users of the library:<a class="headerlink" href="#id1110" title="Link to this heading">#</a></h3>
+<section id="id1141">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.11.0">0.11.0</a> (2021-09-04)<a class="headerlink" href="#id1141" title="Link to this heading">#</a></h2>
+<section id="id1142">
+<h3>For users of the library:<a class="headerlink" href="#id1142" title="Link to this heading">#</a></h3>
 <p><strong>Added:</strong></p>
 <ul class="simple">
 <li><p>New model: <code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code> is a new regression model. Regression models allow to predict future values
@@ -2480,10 +2557,10 @@ the <a class="reference external" href="https://github.com/unit8co/darts/blob/ma
 </ul>
 </section>
 </section>
-<section id="id1112">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.10.1">0.10.1</a> (2021-08-19)<a class="headerlink" href="#id1112" title="Link to this heading">#</a></h2>
-<section id="id1113">
-<h3>For users of the library:<a class="headerlink" href="#id1113" title="Link to this heading">#</a></h3>
+<section id="id1144">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.10.1">0.10.1</a> (2021-08-19)<a class="headerlink" href="#id1144" title="Link to this heading">#</a></h2>
+<section id="id1145">
+<h3>For users of the library:<a class="headerlink" href="#id1145" title="Link to this heading">#</a></h3>
 <p><strong>Fixed:</strong></p>
 <ul class="simple">
 <li><p>A bug with memory pinning that was causing issues with training models on GPUs.</p></li>
@@ -2494,10 +2571,10 @@ the <a class="reference external" href="https://github.com/unit8co/darts/blob/ma
 </ul>
 </section>
 </section>
-<section id="id1115">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.10.0">0.10.0</a> (2021-08-13)<a class="headerlink" href="#id1115" title="Link to this heading">#</a></h2>
-<section id="id1116">
-<h3>For users of the library:<a class="headerlink" href="#id1116" title="Link to this heading">#</a></h3>
+<section id="id1147">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.10.0">0.10.0</a> (2021-08-13)<a class="headerlink" href="#id1147" title="Link to this heading">#</a></h2>
+<section id="id1148">
+<h3>For users of the library:<a class="headerlink" href="#id1148" title="Link to this heading">#</a></h3>
 <p><strong>Added:</strong></p>
 <ul class="simple">
 <li><p>🔴 Improvement of the covariates support. Before, some models were accepting a <code class="docutils literal notranslate"><span class="pre">covariates</span></code> (or <code class="docutils literal notranslate"><span class="pre">exog</span></code>)
@@ -2541,10 +2618,10 @@ vectorized, which improves inference performance.</p></li>
 </ul>
 </section>
 </section>
-<section id="id1118">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.9.1">0.9.1</a> (2021-07-17)<a class="headerlink" href="#id1118" title="Link to this heading">#</a></h2>
-<section id="id1119">
-<h3>For users of the library:<a class="headerlink" href="#id1119" title="Link to this heading">#</a></h3>
+<section id="id1150">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.9.1">0.9.1</a> (2021-07-17)<a class="headerlink" href="#id1150" title="Link to this heading">#</a></h2>
+<section id="id1151">
+<h3>For users of the library:<a class="headerlink" href="#id1151" title="Link to this heading">#</a></h3>
 <p><strong>Added:</strong></p>
 <ul class="simple">
 <li><p>Improved <code class="docutils literal notranslate"><span class="pre">GaussianProcessFilter</span></code>, now handling missing values, and better handling
@@ -2569,17 +2646,17 @@ of the documentation pages for <code class="docutils literal notranslate"><span 
 <li><p>The dependencies are not pinned to some exact versions anymore.</p></li>
 </ul>
 </section>
-<section id="id1120">
-<h3>For developers of the library:<a class="headerlink" href="#id1120" title="Link to this heading">#</a></h3>
+<section id="id1152">
+<h3>For developers of the library:<a class="headerlink" href="#id1152" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>We have fixed the building process.</p></li>
 </ul>
 </section>
 </section>
-<section id="id1122">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.9.0">0.9.0</a> (2021-07-09)<a class="headerlink" href="#id1122" title="Link to this heading">#</a></h2>
-<section id="id1123">
-<h3>For users of the library:<a class="headerlink" href="#id1123" title="Link to this heading">#</a></h3>
+<section id="id1154">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.9.0">0.9.0</a> (2021-07-09)<a class="headerlink" href="#id1154" title="Link to this heading">#</a></h2>
+<section id="id1155">
+<h3>For users of the library:<a class="headerlink" href="#id1155" title="Link to this heading">#</a></h3>
 <p><strong>Added:</strong></p>
 <ul class="simple">
 <li><p>Multiple forecasting models can now produce probabilistic forecasts by specifying a <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> parameter when calling <code class="docutils literal notranslate"><span class="pre">predict()</span></code>. Stochastic forecasts are stored by utilizing the new <code class="docutils literal notranslate"><span class="pre">samples</span></code> dimension in the refactored <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> class (see ‘Changed’ section). Models supporting probabilistic predictions so far are <code class="docutils literal notranslate"><span class="pre">ARIMA</span></code>, <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code>, <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> and <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code>.</p></li>
@@ -2610,8 +2687,8 @@ of the documentation pages for <code class="docutils literal notranslate"><span 
 </ul>
 </section>
 </section>
-<section id="id1125">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.8.1">0.8.1</a> (2021-05-22)<a class="headerlink" href="#id1125" title="Link to this heading">#</a></h2>
+<section id="id1157">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.8.1">0.8.1</a> (2021-05-22)<a class="headerlink" href="#id1157" title="Link to this heading">#</a></h2>
 <p><strong>Fixed:</strong></p>
 <ul class="simple">
 <li><p>Some fixes in the documentation</p></li>
@@ -2625,10 +2702,10 @@ of the documentation pages for <code class="docutils literal notranslate"><span 
 </pre></div>
 </div>
 </section>
-<section id="id1127">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.8.0">0.8.0</a> (2021-05-21)<a class="headerlink" href="#id1127" title="Link to this heading">#</a></h2>
-<section id="id1128">
-<h3>For users of the library:<a class="headerlink" href="#id1128" title="Link to this heading">#</a></h3>
+<section id="id1159">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.8.0">0.8.0</a> (2021-05-21)<a class="headerlink" href="#id1159" title="Link to this heading">#</a></h2>
+<section id="id1160">
+<h3>For users of the library:<a class="headerlink" href="#id1160" title="Link to this heading">#</a></h3>
 <p><strong>Added:</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">RandomForest</span></code> algorithm implemented. Uses the scikit-learn <code class="docutils literal notranslate"><span class="pre">RandomForestRegressor</span></code> to predict future values from (lagged) exogenous
@@ -2665,18 +2742,18 @@ another sklearn model should use the <code class="docutils literal notranslate">
 more closely.</p></li>
 </ul>
 </section>
-<section id="id1129">
-<h3>For developers of the library:<a class="headerlink" href="#id1129" title="Link to this heading">#</a></h3>
+<section id="id1161">
+<h3>For developers of the library:<a class="headerlink" href="#id1161" title="Link to this heading">#</a></h3>
 <p><strong>Added:</strong></p>
 <ul class="simple">
 <li><p>We have added some <a class="reference external" href="https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md">contribution guidelines</a>.</p></li>
 </ul>
 </section>
 </section>
-<section id="id1132">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.7.0">0.7.0</a> (2021-04-14)<a class="headerlink" href="#id1132" title="Link to this heading">#</a></h2>
-<section id="id1133">
-<h3>For users of the library:<a class="headerlink" href="#id1133" title="Link to this heading">#</a></h3>
+<section id="id1164">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.7.0">0.7.0</a> (2021-04-14)<a class="headerlink" href="#id1164" title="Link to this heading">#</a></h2>
+<section id="id1165">
+<h3>For users of the library:<a class="headerlink" href="#id1165" title="Link to this heading">#</a></h3>
 <p><strong>Added:</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">darts</span></code> Pypi package. It is now possible to <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">darts</span></code>. The older name <code class="docutils literal notranslate"><span class="pre">u8darts</span></code> is still maintained
@@ -2709,10 +2786,10 @@ timestamp) for the breaking point (e.g. specify 0.8 in order to obtain a 80%/20%
 </ul>
 </section>
 </section>
-<section id="id1135">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.6.0">0.6.0</a> (2021-02-02)<a class="headerlink" href="#id1135" title="Link to this heading">#</a></h2>
-<section id="id1136">
-<h3>For users of the library:<a class="headerlink" href="#id1136" title="Link to this heading">#</a></h3>
+<section id="id1167">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.6.0">0.6.0</a> (2021-02-02)<a class="headerlink" href="#id1167" title="Link to this heading">#</a></h2>
+<section id="id1168">
+<h3>For users of the library:<a class="headerlink" href="#id1168" title="Link to this heading">#</a></h3>
 <p><strong>Added:</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">Pipeline.invertible()</span></code> a getter which returns whether the pipeline is invertible or not.</p></li>
@@ -2749,10 +2826,10 @@ All implementations of <code class="docutils literal notranslate"><span class="p
 </ul>
 </section>
 </section>
-<section id="id1138">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.5.0">0.5.0</a> (2020-11-09)<a class="headerlink" href="#id1138" title="Link to this heading">#</a></h2>
-<section id="id1139">
-<h3>For users of the library:<a class="headerlink" href="#id1139" title="Link to this heading">#</a></h3>
+<section id="id1170">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.5.0">0.5.0</a> (2020-11-09)<a class="headerlink" href="#id1170" title="Link to this heading">#</a></h2>
+<section id="id1171">
+<h3>For users of the library:<a class="headerlink" href="#id1171" title="Link to this heading">#</a></h3>
 <p><strong>Added:</strong></p>
 <ul class="simple">
 <li><p>Ensemble models, a new kind of <code class="docutils literal notranslate"><span class="pre">ForecastingModel</span></code> which allows to ensemble multiple models to make predictions:</p>
@@ -2781,18 +2858,18 @@ All implementations of <code class="docutils literal notranslate"><span class="p
 <li><p>Small mistake in the <code class="docutils literal notranslate"><span class="pre">NaiveDrift</span></code> model implementation which caused the first predicted value to repeat the last training value.</p></li>
 </ul>
 </section>
-<section id="id1140">
-<h3>For developers of the library:<a class="headerlink" href="#id1140" title="Link to this heading">#</a></h3>
+<section id="id1172">
+<h3>For developers of the library:<a class="headerlink" href="#id1172" title="Link to this heading">#</a></h3>
 <p><strong>Changed:</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">&#64;random_method</span></code> decorator now always assigns a <code class="docutils literal notranslate"><span class="pre">_random_instance</span></code> field to decorated methods (seeded with a random seed). This doesn’t change the observed behavior, but allows to deterministically “reset” <code class="docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> by saving <code class="docutils literal notranslate"><span class="pre">_random_instance</span></code> along with the other parameters of the model upon creation.</p></li>
 </ul>
 </section>
 </section>
-<section id="id1142">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.4.0">0.4.0</a> (2020-10-28)<a class="headerlink" href="#id1142" title="Link to this heading">#</a></h2>
-<section id="id1143">
-<h3>For users of the library:<a class="headerlink" href="#id1143" title="Link to this heading">#</a></h3>
+<section id="id1174">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.4.0">0.4.0</a> (2020-10-28)<a class="headerlink" href="#id1174" title="Link to this heading">#</a></h2>
+<section id="id1175">
+<h3>For users of the library:<a class="headerlink" href="#id1175" title="Link to this heading">#</a></h3>
 <p><strong>Added:</strong></p>
 <ul class="simple">
 <li><p>Data (pre) processing abilities using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code>, <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code> :</p>
@@ -2862,8 +2939,8 @@ All implementations of <code class="docutils literal notranslate"><span class="p
 </li>
 </ul>
 </section>
-<section id="id1144">
-<h3>For developers of the library<a class="headerlink" href="#id1144" title="Link to this heading">#</a></h3>
+<section id="id1176">
+<h3>For developers of the library<a class="headerlink" href="#id1176" title="Link to this heading">#</a></h3>
 <p><strong>Changed:</strong></p>
 <ul class="simple">
 <li><p>GitHub release workflow is now triggered manually from the GitHub “Actions” tab in the repository, providing a <code class="docutils literal notranslate"><span class="pre">#major</span></code>, <code class="docutils literal notranslate"><span class="pre">#minor</span></code>, or <code class="docutils literal notranslate"><span class="pre">#patch</span></code> argument. <a class="reference external" href="https://github.com/unit8co/darts/pull/211">#211</a></p></li>
@@ -2871,10 +2948,10 @@ All implementations of <code class="docutils literal notranslate"><span class="p
 </ul>
 </section>
 </section>
-<section id="id1147">
-<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.3.0">0.3.0</a> (2020-10-05)<a class="headerlink" href="#id1147" title="Link to this heading">#</a></h2>
-<section id="id1148">
-<h3>For users of the library:<a class="headerlink" href="#id1148" title="Link to this heading">#</a></h3>
+<section id="id1179">
+<h2><a class="reference external" href="https://github.com/unit8co/darts/tree/0.3.0">0.3.0</a> (2020-10-05)<a class="headerlink" href="#id1179" title="Link to this heading">#</a></h2>
+<section id="id1180">
+<h3>For users of the library:<a class="headerlink" href="#id1180" title="Link to this heading">#</a></h3>
 <p><strong>Added:</strong></p>
 <ul class="simple">
 <li><p>Better indexing on TimeSeries (support for column/component indexing) <a class="reference external" href="https://github.com/unit8co/darts/pull/150">#150</a></p></li>
@@ -2936,8 +3013,8 @@ All implementations of <code class="docutils literal notranslate"><span class="p
 <li><p><code class="docutils literal notranslate"><span class="pre">ForecastingModel.backtest()</span></code> fails if <code class="docutils literal notranslate"><span class="pre">forecast_horizon</span></code> isn’t provided <a class="reference external" href="https://github.com/unit8co/darts/issues/186">#186</a></p></li>
 </ul>
 </section>
-<section id="id1164">
-<h3>For developers of the library<a class="headerlink" href="#id1164" title="Link to this heading">#</a></h3>
+<section id="id1196">
+<h3>For developers of the library<a class="headerlink" href="#id1196" title="Link to this heading">#</a></h3>
 <p><strong>Added:</strong></p>
 <ul class="simple">
 <li><p>Gradle to build docs, docker image, run tests, … <a class="reference external" href="https://github.com/unit8co/darts/pull/112">#112</a>, <a class="reference external" href="https://github.com/unit8co/darts/pull/127">#127</a>, <a class="reference external" href="https://github.com/unit8co/darts/pull/159">#159</a></p></li>
@@ -3004,238 +3081,243 @@ All implementations of <code class="docutils literal notranslate"><span class="p
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#for-developers-of-the-library">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">0.43.0 (2026-03-23)</a><ul class="nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">0.44.0 (2026-04-30)</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id25">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id8">0.42.1 (2026-03-07)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id9">For users of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id29">0.43.0 (2026-03-23)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id30">For users of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id12">0.42.0 (2026-03-07)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id13">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id26">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id36">0.42.1 (2026-03-07)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id37">For users of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id32">0.41.0 (2026-02-10)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id33">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id52">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id41">0.42.0 (2026-03-07)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id42">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id56">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id57">0.40.0 (2025-12-23)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id58">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id78">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id62">0.41.0 (2026-02-10)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id63">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id84">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id80">0.39.0 (2025-11-23)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id81">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id94">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id89">0.40.0 (2025-12-23)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id90">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id110">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id107">0.38.0 (2025-10-03)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id108">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id152">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id112">0.39.0 (2025-11-23)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id113">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id126">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id154">0.37.1 (2025-08-18)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id155">For users of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id139">0.38.0 (2025-10-03)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id140">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id184">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id161">0.37.0 (2025-08-17)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id162">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id188">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id186">0.37.1 (2025-08-18)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id187">For users of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id201">0.36.0 (2025-06-29)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id202">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id235">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id193">0.37.0 (2025-08-17)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id194">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id220">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id239">0.35.0 (2025-04-18)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id240">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id261">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id233">0.36.0 (2025-06-29)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id234">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id267">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id267">0.34.0 (2025-03-09)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id268">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id309">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id271">0.35.0 (2025-04-18)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id272">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id293">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id313">0.33.0 (2025-02-14)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id314">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id344">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id299">0.34.0 (2025-03-09)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id300">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id341">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id347">0.32.0 (2024-12-21)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id348">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id379">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id345">0.33.0 (2025-02-14)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id346">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id376">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id386">0.31.0 (2024-10-13)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id387">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id438">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id379">0.32.0 (2024-12-21)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id380">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id411">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id440">0.30.0 (2024-06-19)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id441">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id467">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id418">0.31.0 (2024-10-13)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id419">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id470">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id476">0.29.0 (2024-04-17)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id477">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id509">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id472">0.30.0 (2024-06-19)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id473">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id499">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id520">0.28.0 (2024-03-05)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id521">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id558">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id508">0.29.0 (2024-04-17)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id509">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id541">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id564">0.27.2 (2024-01-21)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id565">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id570">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id552">0.28.0 (2024-03-05)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id553">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id590">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id572">0.27.1 (2023-12-10)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id573">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id582">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id596">0.27.2 (2024-01-21)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id597">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id602">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id586">0.27.0 (2023-11-18)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id587">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id626">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id604">0.27.1 (2023-12-10)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id605">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id614">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id628">0.26.0 (2023-09-16)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id629">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id659">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id618">0.27.0 (2023-11-18)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id619">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id658">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id663">0.25.0 (2023-08-04)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id664">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id722">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id660">0.26.0 (2023-09-16)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id661">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id691">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id728">0.24.0 (2023-04-12)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id729">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id799">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id695">0.25.0 (2023-08-04)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id696">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id754">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id804">0.23.1 (2023-01-12)</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id817">0.23.0 (2022-12-23)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id818">For users of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id760">0.24.0 (2023-04-12)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id761">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id831">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id872">0.22.0 (2022-10-04)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id873">For users of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id836">0.23.1 (2023-01-12)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id849">0.23.0 (2022-12-23)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id850">For users of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id911">0.21.0 (2022-08-12)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id912">For users of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id904">0.22.0 (2022-10-04)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id905">For users of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id958">0.20.0 (2022-06-22)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id959">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id994">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id943">0.21.0 (2022-08-12)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id944">For users of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id998">0.19.0 (2022-04-13)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id999">For users of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id990">0.20.0 (2022-06-22)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id991">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1026">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1016">0.18.0 (2022-03-22)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1017">For users of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1030">0.19.0 (2022-04-13)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1031">For users of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1042">0.17.1 (2022-02-17)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1043">For users of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1048">0.18.0 (2022-03-22)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1049">For users of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1051">0.17.0 (2022-02-15)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1052">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1069">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1074">0.17.1 (2022-02-17)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1075">For users of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1073">0.16.1 (2022-01-24)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1074">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1081">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1083">0.17.0 (2022-02-15)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1084">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1101">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1088">0.16.0 (2022-01-13)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1089">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1090">For developers of the library:</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1092">0.15.0 (2021-12-24)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1093">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1094">For developers of the library:</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1096">0.14.0 (2021-11-28)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1097">For users of the library:</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1099">0.13.1 (2021-11-08)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1100">For users of the library:</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1102">0.13.0 (2021-11-07)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1103">For users of the library:</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1105">0.12.0 (2021-09-25)</a><ul class="nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1105">0.16.1 (2022-01-24)</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1106">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1107">For developers of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1113">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1109">0.11.0 (2021-09-04)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1110">For users of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1120">0.16.0 (2022-01-13)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1121">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1122">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1112">0.10.1 (2021-08-19)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1113">For users of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1124">0.15.0 (2021-12-24)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1125">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1126">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1115">0.10.0 (2021-08-13)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1116">For users of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1128">0.14.0 (2021-11-28)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1129">For users of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1118">0.9.1 (2021-07-17)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1119">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1120">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1131">0.13.1 (2021-11-08)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1132">For users of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1122">0.9.0 (2021-07-09)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1123">For users of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1134">0.13.0 (2021-11-07)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1135">For users of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1125">0.8.1 (2021-05-22)</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1127">0.8.0 (2021-05-21)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1128">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1129">For developers of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1137">0.12.0 (2021-09-25)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1138">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1139">For developers of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1132">0.7.0 (2021-04-14)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1133">For users of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1141">0.11.0 (2021-09-04)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1142">For users of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1135">0.6.0 (2021-02-02)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1136">For users of the library:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1144">0.10.1 (2021-08-19)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1145">For users of the library:</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1138">0.5.0 (2020-11-09)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1139">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1140">For developers of the library:</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1142">0.4.0 (2020-10-28)</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1143">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1144">For developers of the library</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1147">0.3.0 (2020-10-05)</a><ul class="nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1147">0.10.0 (2021-08-13)</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1148">For users of the library:</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1164">For developers of the library</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1150">0.9.1 (2021-07-17)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1151">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1152">For developers of the library:</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1154">0.9.0 (2021-07-09)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1155">For users of the library:</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1157">0.8.1 (2021-05-22)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1159">0.8.0 (2021-05-21)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1160">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1161">For developers of the library:</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1164">0.7.0 (2021-04-14)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1165">For users of the library:</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1167">0.6.0 (2021-02-02)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1168">For users of the library:</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1170">0.5.0 (2020-11-09)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1171">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1172">For developers of the library:</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1174">0.4.0 (2020-10-28)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1175">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1176">For developers of the library</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1179">0.3.0 (2020-10-05)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1180">For users of the library:</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1196">For developers of the library</a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#older-releases">Older releases</a></li>

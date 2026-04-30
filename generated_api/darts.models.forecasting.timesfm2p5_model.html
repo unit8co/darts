@@ -54,11 +54,11 @@
     <link rel="icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Transformer Model" href="darts.models.forecasting.transformer_model.html" />
+    <link rel="next" title="TiRex: Zero-Shot Forecasting" href="darts.models.forecasting.tirex_model.html" />
     <link rel="prev" title="Time-series Dense Encoder (TiDE)" href="darts.models.forecasting.tide_model.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -588,6 +588,8 @@
 
 
 
+
+
 <li class="toctree-l2"><a class="reference internal" href="darts.metrics.utils.html">Metric Utils</a></li>
 
 
@@ -609,7 +611,6 @@
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.arima.html">ARIMA</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.baselines.html">Baseline Models</a></li>
-
 
 
 
@@ -642,6 +643,8 @@
 
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">Linear Regression Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.naive_ensemble_model.html">Naive Ensemble Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nbeats.html">N-BEATS</a></li>
 
@@ -697,6 +700,8 @@
 
 <li class="toctree-l3 current active"><a class="current reference internal" href="#">TimesFM 2.5</a></li>
 
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tirex_model.html">TiRex: Zero-Shot Forecasting</a></li>
+
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.transformer_model.html">Transformer Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">Time-Series Mixer (TSMixer)</a></li>
@@ -729,6 +734,7 @@
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="darts.utils.likelihood_models.html">Likelihood Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">Likelihoods for SKLearnModel</a></li>
+
 
 
 
@@ -896,9 +902,9 @@
 <span id="module-darts.models.forecasting.timesfm2p5_model"></span><h1>TimesFM 2.5<a class="headerlink" href="#timesfm-2-5" title="Link to this heading">#</a></h1>
 <p>TimesFM 2.5 can be used the same way as other foundation models (e.g. Chronos2), with the exception
 that it does not support any type of covariates.</p>
-<p>For detailed examples and tutorials, check out the Chronos2 notebook:</p>
+<p>For detailed examples and tutorials, see:</p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://unit8co.github.io/darts/examples/25-Chronos-2-examples.html">Chronos-2 Foundation Model Examples</a></p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/examples/25-FoundationModel-examples.html">Foundation Model Examples</a></p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html">Fine-Tuning Examples</a></p></li>
 </ul>
 </section>
@@ -951,7 +957,7 @@ cannot generate autoregressive predictions (<cite>n &gt; output_chunk_length</ci
 <a class="reference internal" href="darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.QuantileRegression" title="darts.utils.likelihood_models.torch.QuantileRegression"><code class="xref py py-class docutils literal notranslate"><span class="pre">QuantileRegression</span></code></a>. If using <code class="docutils literal notranslate"><span class="pre">QuantileRegression</span></code>,
 the quantiles must be a subset of those used during TimesFM 2.5 pre-training:
 [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].
-Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>, which will make TimesFM 2.5 deterministic (median quantile only).
+Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>, which will make the model deterministic (median quantile only).
 When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to
 preserve the full distribution, regardless of the <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> setting. The <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> parameter
 only affects prediction output.</p></li>
@@ -2785,11 +2791,11 @@ is automatically saved under <code class="docutils literal notranslate"><span cl
       </div>
     </a>
     <a class="right-next"
-       href="darts.models.forecasting.transformer_model.html"
+       href="darts.models.forecasting.tirex_model.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Transformer Model</p>
+        <p class="prev-next-title">TiRex: Zero-Shot Forecasting</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

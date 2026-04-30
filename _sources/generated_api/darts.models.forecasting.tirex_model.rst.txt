@@ -1,0 +1,3 @@
+.. automodule:: darts.models.forecasting.tirex_model
+   :members:
+   :undoc-members:

@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -479,8 +479,8 @@
 <span class="sd">            `series.diff(n=1, periods=2).diff(n=1, periods=3)`.</span>
 <span class="sd">        dropna</span>
 <span class="sd">            Optionally, specifies if values which can&#39;t be differenced (i.e. at the start of the series) should be</span>
-<span class="sd">            dropped. Note that if `dropna = True`, then a `component_mask` cannot be specified, since the undifferenced</span>
-<span class="sd">            components will be of a different length to the differenced ones.</span>
+<span class="sd">            dropped. This applies to all time series columns, also the ones potentially ignored via the `columns`</span>
+<span class="sd">            parameter or any ``component_mask`` passed to downstream methods.</span>
 <span class="sd">        n_jobs</span>
 <span class="sd">            The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is</span>
 <span class="sd">            passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
@@ -490,10 +490,10 @@
 <span class="sd">        verbose</span>
 <span class="sd">            Whether to print operations progress</span>
 <span class="sd">        columns</span>
-<span class="sd">            Optionally, a string or list of strings specifying the names of the components (columns)</span>
-<span class="sd">            to transform. If specified, only these components will be transformed, and the remaining</span>
-<span class="sd">            components will be kept untouched. For more information refer to the `BaseDataTransformer`</span>
-<span class="sd">            documentation.</span>
+<span class="sd">            Optionally, a string or list of strings specifying the names of the components (columns) to transform.</span>
+<span class="sd">            If specified, only these components will be transformed, and the remaining components will be kept</span>
+<span class="sd">            untouched. For more information refer to the `BaseDataTransformer` documentation. In case the transformer</span>
+<span class="sd">            is applied on multiple TimeSeries, it is expected that all series have the same column order.</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
@@ -528,14 +528,16 @@
         <span class="c1"># Define fixed params (i.e. attributes defined before calling `super().__init__`):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_lags</span> <span class="o">=</span> <span class="n">lags</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_dropna</span> <span class="o">=</span> <span class="n">dropna</span>
-        <span class="c1"># Don&#39;t automatically apply `component_mask` - need to throw error when `dropna = True`</span>
-        <span class="c1"># and `component_mask` is specified:</span>
+        <span class="c1"># Don&#39;t let the base transformer apply ``component_mask`` automatically — ``ts_transform``</span>
+        <span class="c1"># handles masking explicitly so it can preserve the non-differenced components when</span>
+        <span class="c1"># ``dropna=True`` is combined with `columns` or `component_mask`.</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
             <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span>
             <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
             <span class="n">mask_components</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">,</span>
+            <span class="n">uses_insample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
 
 <div class="viewcode-block" id="Diff.ts_fit">
@@ -595,6 +597,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">ts_inverse_transform</span><span class="p">(</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
         <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">insample</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
         <span class="n">lags</span><span class="p">,</span> <span class="n">dropna</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">][</span><span class="s2">&quot;_lags&quot;</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">][</span><span class="s2">&quot;_dropna&quot;</span><span class="p">]</span>
@@ -607,13 +610,20 @@
                 <span class="p">),</span>
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
+
+        <span class="c1"># if given, add the historic part of `insample` to the `series`</span>
+        <span class="n">series</span><span class="p">,</span> <span class="n">n_forecast_output</span> <span class="o">=</span> <span class="n">InvertibleDataTransformer</span><span class="o">.</span><span class="n">_maybe_prepend_insample</span><span class="p">(</span>
+            <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+            <span class="n">insample</span><span class="o">=</span><span class="n">insample</span><span class="p">,</span>
+        <span class="p">)</span>
+
         <span class="c1"># Start dates &#39;missing&#39; from differenced series if dropna = True, so need to shift forward:</span>
         <span class="n">expected_start</span> <span class="o">=</span> <span class="n">start_time</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">lags</span><span class="p">)</span> <span class="o">*</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span> <span class="k">if</span> <span class="n">dropna</span> <span class="k">else</span> <span class="n">start_time</span>
         <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span> <span class="o">!=</span> <span class="n">expected_start</span><span class="p">:</span>
             <span class="n">raise_log</span><span class="p">(</span>
                 <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Expected series to begin at time </span><span class="si">{</span><span class="n">expected_start</span><span class="si">}</span><span class="s2">; &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;instead, it begins at time </span><span class="si">{</span><span class="n">series</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Expected the </span><span class="si">{</span><span class="s1">&#39;`insample` series&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">n_forecast_output</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;`series`&#39;</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;to begin at time </span><span class="si">{</span><span class="n">expected_start</span><span class="si">}</span><span class="s2">; instead, it begins at time </span><span class="si">{</span><span class="n">series</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span>
                 <span class="p">),</span>
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
@@ -667,13 +677,16 @@
                 <span class="n">to_undiff</span><span class="p">[</span><span class="n">i</span><span class="p">::</span><span class="n">lag</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">to_undiff</span><span class="p">[</span><span class="n">i</span><span class="p">::</span><span class="n">lag</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
             <span class="n">vals</span><span class="p">[</span><span class="n">cutoff</span><span class="p">:,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">to_undiff</span>
         <span class="n">vals</span> <span class="o">=</span> <span class="n">Diff</span><span class="o">.</span><span class="n">unapply_component_mask</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
             <span class="n">times</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
             <span class="n">values</span><span class="o">=</span><span class="n">vals</span><span class="p">,</span>
             <span class="n">components</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
             <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="o">**</span><span class="n">series</span><span class="o">.</span><span class="n">_attrs</span><span class="p">,</span>
-        <span class="p">)</span></div>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">n_forecast_output</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="o">-</span><span class="n">n_forecast_output</span><span class="p">:]</span>
+        <span class="k">return</span> <span class="n">result</span></div>
 </div>
 
 </pre></div>

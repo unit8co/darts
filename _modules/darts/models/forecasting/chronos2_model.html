@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -416,8 +416,8 @@
 
 <span class="sd">For detailed examples and tutorials, see:</span>
 
-<span class="sd">* `Chronos-2 Foundation Model Examples</span>
-<span class="sd">  &lt;https://unit8co.github.io/darts/examples/25-Chronos-2-examples.html&gt;`__</span>
+<span class="sd">* `Foundation Model Examples</span>
+<span class="sd">  &lt;https://unit8co.github.io/darts/examples/25-FoundationModel-examples.html&gt;`__</span>
 <span class="sd">* `Fine-Tuning Examples</span>
 <span class="sd">  &lt;https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html&gt;`__</span>
 <span class="sd">&quot;&quot;&quot;</span>
@@ -1072,7 +1072,7 @@
 <span class="sd">            the quantiles must be a subset of those used during Chronos-2 pre-training:</span>
 <span class="sd">            [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9,</span>
 <span class="sd">            0.95, 0.99].</span>
-<span class="sd">            Default: ``None``, which will make Chronos-2 deterministic (median quantile only).</span>
+<span class="sd">            Default: ``None``, which will make the model deterministic (median quantile only).</span>
 <span class="sd">            When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to</span>
 <span class="sd">            preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood`` parameter</span>
 <span class="sd">            only affects prediction output.</span>

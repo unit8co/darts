@@ -58,7 +58,7 @@
     <link rel="prev" title="Missing Values Filler" href="darts.dataprocessing.transformers.missing_values_filler.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -588,6 +588,8 @@
 
 
 
+
+
 <li class="toctree-l2"><a class="reference internal" href="darts.metrics.utils.html">Metric Utils</a></li>
 
 
@@ -609,7 +611,6 @@
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.arima.html">ARIMA</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.baselines.html">Baseline Models</a></li>
-
 
 
 
@@ -642,6 +643,8 @@
 
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">Linear Regression Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.naive_ensemble_model.html">Naive Ensemble Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nbeats.html">N-BEATS</a></li>
 
@@ -697,6 +700,8 @@
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.timesfm2p5_model.html">TimesFM 2.5</a></li>
 
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tirex_model.html">TiRex: Zero-Shot Forecasting</a></li>
+
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.transformer_model.html">Transformer Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">Time-Series Mixer (TSMixer)</a></li>
@@ -729,6 +734,7 @@
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="darts.utils.likelihood_models.html">Likelihood Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">Likelihoods for SKLearnModel</a></li>
+
 
 
 
@@ -901,7 +907,7 @@ It can be added to a <code class="docutils literal notranslate"><span class="pre
 </section>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.reconciliation.</span></span><span class="sig-name descname"><span class="pre">BottomUpReconciliator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BaseDataTransformer'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/reconciliation.html#BottomUpReconciliator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.reconciliation.</span></span><span class="sig-name descname"><span class="pre">BottomUpReconciliator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BaseDataTransformer'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uses_insample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/reconciliation.html#BottomUpReconciliator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer" title="darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseDataTransformer</span></code></a></p>
 <p>Performs bottom up reconciliation, as defined <a class="reference external" href="https://otexts.com/fpp3/reconciliation.html">here</a>.</p>
 <p class="rubric">Attributes</p>
@@ -1004,6 +1010,11 @@ See <cite>apply_component_mask</cite> for further details.</p></li>
 to transform. If specified, only these components will be transformed, and the remaining
 components will be kept untouched. If <cite>None</cite>, all components are transformed. Note that
 if <cite>columns</cite> is provided, the <cite>mask_components</cite> attribute must be set to <cite>True</cite>.</p></li>
+<li><p><strong>uses_insample</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether the transformer requires the in-sample (historic) series during inverse transformation.
+If <cite>True</cite>, <cite>inverse_transform</cite> will use the <code class="docutils literal notranslate"><span class="pre">insample</span></code> argument to pass the transformed
+historic series to <cite>ts_inverse_transform</cite>. This is needed when inverse transforming a partial
+series (e.g. a forecast) requires information from earlier times (e.g. for
+<a class="reference internal" href="darts.dataprocessing.transformers.diff.html#darts.dataprocessing.transformers.diff.Diff" title="darts.dataprocessing.transformers.diff.Diff"><code class="xref py py-class docutils literal notranslate"><span class="pre">Diff</span></code></a>).</p></li>
 </ul>
 </dd>
 </dl>
@@ -1797,7 +1808,7 @@ from this.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.reconciliation.</span></span><span class="sig-name descname"><span class="pre">TopDownReconciliator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'FittableDataTransformer'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/reconciliation.html#TopDownReconciliator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.reconciliation.</span></span><span class="sig-name descname"><span class="pre">TopDownReconciliator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'FittableDataTransformer'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uses_insample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/reconciliation.html#TopDownReconciliator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">FittableDataTransformer</span></code></a></p>
 <p>Performs top down reconciliation, as defined <a class="reference external" href="https://otexts.com/fpp3/reconciliation.html">here</a>.</p>
 <p>This estimator computes the proportions (of the base components w.r.t. the top component)
@@ -1889,16 +1900,21 @@ before passing them to the called method; the masked components will also be aut
 ‘unmasked’ in the returned <cite>TimeSeries</cite>. If <cite>False</cite>, then <cite>component_mask</cite> (if provided) will
 be passed as a keyword argument, but won’t automatically be applied to the input timeseries.
 See <cite>apply_component_mask</cite> method of <cite>BaseDataTransformer</cite> for further details.</p></li>
-<li><p><strong>columns</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, a string or list of strings specifying the names of the components (columns)
-to transform. If specified, only these components will be transformed, and the remaining
-components will be kept untouched. For more information refer to the <cite>BaseDataTransformer</cite>
-documentation.</p></li>
+<li><p><strong>columns</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, a string or list of strings specifying the names of the components (columns) to transform.
+If specified, only these components will be transformed, and the remaining components will be kept
+untouched. For more information refer to the <cite>BaseDataTransformer</cite> documentation. In case the transformer
+is applied on multiple TimeSeries, it is expected that all series have the same column order.</p></li>
 <li><p><strong>global_fit</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Optionally, whether all <cite>TimeSeries</cite> passed to the <cite>fit()</cite> method should be used to fit
 a <em>single</em> set of parameters, or if a different set of parameters should be independently fitted
 to each provided <cite>TimeSeries</cite>. If <cite>True</cite>, then a <cite>Sequence[TimeSeries]</cite> is passed to <cite>ts_fit</cite>
 and a single set of parameters is fitted using all provided <cite>TimeSeries</cite>. If <cite>False</cite>, then
 each <cite>TimeSeries</cite> is individually passed to <cite>ts_fit</cite>, and a different set of fitted parameters
 if yielded for each of these fitting operations. See <cite>ts_fit</cite> for further details.</p></li>
+<li><p><strong>uses_insample</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether the transformer requires the in-sample (historic) series during inverse transformation.
+If <cite>True</cite>, <cite>inverse_transform</cite> will use the <code class="docutils literal notranslate"><span class="pre">insample</span></code> argument to pass the transformed
+historic series to <cite>ts_inverse_transform</cite>. This is needed when inverse transforming a partial
+series (e.g. a forecast) requires information from earlier times (e.g. for
+<a class="reference internal" href="darts.dataprocessing.transformers.diff.html#darts.dataprocessing.transformers.diff.Diff" title="darts.dataprocessing.transformers.diff.Diff"><code class="xref py py-class docutils literal notranslate"><span class="pre">Diff</span></code></a>).</p></li>
 </ul>
 </dd>
 </dl>

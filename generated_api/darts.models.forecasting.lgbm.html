@@ -58,7 +58,7 @@
     <link rel="prev" title="Kalman Filter Forecaster" href="darts.models.forecasting.kalman_forecaster.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -588,6 +588,8 @@
 
 
 
+
+
 <li class="toctree-l2"><a class="reference internal" href="darts.metrics.utils.html">Metric Utils</a></li>
 
 
@@ -609,7 +611,6 @@
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.arima.html">ARIMA</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.baselines.html">Baseline Models</a></li>
-
 
 
 
@@ -642,6 +643,8 @@
 
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">Linear Regression Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.naive_ensemble_model.html">Naive Ensemble Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nbeats.html">N-BEATS</a></li>
 
@@ -697,6 +700,8 @@
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.timesfm2p5_model.html">TimesFM 2.5</a></li>
 
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tirex_model.html">TiRex: Zero-Shot Forecasting</a></li>
+
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.transformer_model.html">Transformer Model</a></li>
 
 <li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">Time-Series Mixer (TSMixer)</a></li>
@@ -729,6 +734,7 @@
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="darts.utils.likelihood_models.html">Likelihood Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">Likelihoods for SKLearnModel</a></li>
+
 
 
 
@@ -989,9 +995,9 @@ corresponding covariates lags with <cite>lags_past_covariates</cite> and / or <c
 in <cite>predict()</cite> will forecast class probabilities.
 Default: ‘classprobability’</p></li>
 <li><p><strong>random_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Controls the randomness for reproducible forecasting.</p></li>
-<li><p><strong>multi_models</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – If True, a separate model will be trained for each future lag to predict. If False, a single model
-is trained to predict all the steps in ‘output_chunk_length’ (features lags are shifted back by
-<cite>output_chunk_length - n</cite> for each step <cite>n</cite>). Default: True.</p></li>
+<li><p><strong>multi_models</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, a separate model will be trained for each future lag to predict. If <code class="docutils literal notranslate"><span class="pre">False</span></code>, a single model
+is trained to predict all the steps in <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> (features lags are shifted back by
+<code class="docutils literal notranslate"><span class="pre">output_chunk_length</span> <span class="pre">-</span> <span class="pre">n</span></code> for each step <cite>n</cite>). Default: <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
 <li><p><strong>use_static_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether the model should use static covariate information in case the input <cite>series</cite> passed to <code class="docutils literal notranslate"><span class="pre">fit()</span></code>
 contain static covariates. If <code class="docutils literal notranslate"><span class="pre">True</span></code>, and static covariates are available at fitting time, will enforce
 that all target <cite>series</cite> have the same static covariate dimensionality in <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code>.</p></li>
@@ -1136,7 +1142,7 @@ must be integer-encoded.</p></li>
 <td><p>Generates covariate encodings for the inference/prediction set and returns a tuple of past, and future covariates series with the original and encoded covariates stacked together.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMClassifierModel.get_estimator" title="darts.models.forecasting.lgbm.LightGBMClassifierModel.get_estimator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_estimator</span></code></a>(horizon, target_dim[, quantile])</p></td>
-<td><p>Returns the estimator that forecasts the step <cite>horizon</cite> of the target component <cite>target_dim</cite>.</p></td>
+<td><p>Returns the estimator that forecasts the step <code class="docutils literal notranslate"><span class="pre">horizon</span></code> of the target component <code class="docutils literal notranslate"><span class="pre">target_dim</span></code>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMClassifierModel.gridsearch" title="darts.models.forecasting.lgbm.LightGBMClassifierModel.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
 <td><p>Find the best hyper-parameters among a given set using a grid search.</p></td>
@@ -1435,7 +1441,7 @@ If some series turn out to have a length that would allow more than <cite>max_sa
 most recent <cite>max_samples_per_ts</cite> samples will be considered.</p></li>
 <li><p><strong>n_jobs_multioutput_wrapper</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Number of jobs of the MultiOutputRegressor wrapper to run in parallel. Only used if the model doesn’t
 support multi-output regression natively.</p></li>
-<li><p><strong>sample_weight</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, some sample weights to apply to the target <cite>series</cite> labels. They are applied per observation,
+<li><p><strong>sample_weight</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, some sample weights to apply to the target <cite>series</cite> labels. They are applied per observation,
 per label (each step in <cite>output_chunk_length</cite>), and per component.
 If a series or sequence of series, then those weights are used. If the weight series only have a single
 component / column, then the weights are applied globally to all components in <cite>series</cite>. Otherwise, for
@@ -1445,6 +1451,9 @@ If a string, then the weights are generated using built-in weighting functions. 
 computed globally based on the length of the longest series in <cite>series</cite>. Then for each series, the weights
 are extracted from the end of the global weights. This gives a common time weighting across all series.</p></li>
 <li><p><strong>val_sample_weight</strong> – Same as for <cite>sample_weight</cite> but for the evaluation dataset.</p></li>
+<li><p><strong>stride</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The number of time steps between consecutive samples, applied starting from the end of the series. The same
+stride will be applied to both the training and evaluation set (if supplied and supported). This should be
+used with caution as it might introduce bias in the forecasts.</p></li>
 <li><p><strong>verbose</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, set the fit verbosity. Not effective for all models.</p></li>
 <li><p><strong>**kwargs</strong> – Additional kwargs passed to <cite>lightgbm.LGBRegressor.fit()</cite></p></li>
 </ul>
@@ -1536,20 +1545,26 @@ encoded covariates.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.lgbm.LightGBMClassifierModel.get_estimator">
 <span class="sig-name descname"><span class="pre">get_estimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">horizon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.lgbm.LightGBMClassifierModel.get_estimator" title="Link to this definition">#</a></dt>
-<dd><p>Returns the estimator that forecasts the step <cite>horizon</cite> of the target component <cite>target_dim</cite>.</p>
-<p>For probabilistic models fitting quantiles, a desired <cite>quantile</cite> can also be passed. If not passed, it will
-return the model predicting the median (quantile=0.5).</p>
+<dd><p>Returns the estimator that forecasts the step <code class="docutils literal notranslate"><span class="pre">horizon</span></code> of the target component <code class="docutils literal notranslate"><span class="pre">target_dim</span></code>.</p>
+<p>For probabilistic models fitting quantiles, a desired <code class="docutils literal notranslate"><span class="pre">quantile</span></code> can also be passed. If not passed, it will
+return the estimator predicting the median quantile.</p>
 <p>If the (quantile) model supports multi-output natively, it will return the model that can predict the entire
 horizon and all target components jointly.</p>
-<p>Note: Internally, estimators are grouped by <cite>output_chunk_length</cite> position, then by component. For probabilistic
-models fitting quantiles, there is an additional abstraction layer, grouping the estimators by <cite>quantile</cite>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Internally, estimators are grouped by <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> position, then by component. For
+probabilistic models fitting quantiles (<code class="docutils literal notranslate"><span class="pre">likelihood=&quot;quantile&quot;</span></code>), there will be an additional
+abstraction layer, grouping the estimators by <code class="docutils literal notranslate"><span class="pre">quantile</span></code>. Models using a single native multi-quantile
+estimator (<code class="docutils literal notranslate"><span class="pre">likelihood=&quot;multiquantile&quot;</span></code>) do not use this extra quantile grouping, and <code class="docutils literal notranslate"><span class="pre">quantile</span></code>
+must be set to <code class="docutils literal notranslate"><span class="pre">None</span></code> to obtain the correct estimator.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>horizon</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The index of the forecasting point within <cite>output_chunk_length</cite>.</p></li>
+<li><p><strong>horizon</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The index of the forecasting point within <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>.</p></li>
 <li><p><strong>target_dim</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The index of the target component.</p></li>
-<li><p><strong>quantile</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, for probabilistic model with <cite>likelihood=”quantile”</cite>, the desired quantile value. If <cite>None</cite> and
-<cite>likelihood=”quantile”</cite>, returns the model predicting the median (quantile=0.5).</p></li>
+<li><p><strong>quantile</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, for probabilistic model with <code class="docutils literal notranslate"><span class="pre">likelihood=&quot;quantile&quot;</span></code>, the desired quantile value. If <code class="docutils literal notranslate"><span class="pre">None</span></code>
+and the model uses per-quantile estimators, returns the model predicting the median quantile.</p></li>
 </ul>
 </dd>
 </dl>
@@ -2356,11 +2371,13 @@ corresponding covariates lags with <cite>lags_past_covariates</cite> and / or <c
 </p></li>
 <li><p><strong>likelihood</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Can be set to <cite>quantile</cite> or <cite>poisson</cite>. If set, the model will be probabilistic, allowing sampling at
 prediction time. This will overwrite any <cite>objective</cite> parameter.</p></li>
-<li><p><strong>quantiles</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Fit the model to these quantiles if the <cite>likelihood</cite> is set to <cite>quantile</cite>.</p></li>
+<li><p><strong>quantiles</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Fit the model to these quantiles if the <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> is set to <code class="docutils literal notranslate"><span class="pre">&quot;quantile&quot;</span></code>.
+Default is <code class="docutils literal notranslate"><span class="pre">None</span></code> and will use <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.QuantileRegression" title="darts.utils.likelihood_models.sklearn.QuantileRegression"><code class="xref py py-class docutils literal notranslate"><span class="pre">QuantileRegression</span></code></a>’s
+default quantiles.</p></li>
 <li><p><strong>random_state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Controls the randomness for reproducible forecasting.</p></li>
-<li><p><strong>multi_models</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – If True, a separate model will be trained for each future lag to predict. If False, a single model
-is trained to predict all the steps in ‘output_chunk_length’ (features lags are shifted back by
-<cite>output_chunk_length - n</cite> for each step <cite>n</cite>). Default: True.</p></li>
+<li><p><strong>multi_models</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, a separate model will be trained for each future lag to predict. If <code class="docutils literal notranslate"><span class="pre">False</span></code>, a single model
+is trained to predict all the steps in <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> (features lags are shifted back by
+<code class="docutils literal notranslate"><span class="pre">output_chunk_length</span> <span class="pre">-</span> <span class="pre">n</span></code> for each step <cite>n</cite>). Default: <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
 <li><p><strong>use_static_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether the model should use static covariate information in case the input <cite>series</cite> passed to <code class="docutils literal notranslate"><span class="pre">fit()</span></code>
 contain static covariates. If <code class="docutils literal notranslate"><span class="pre">True</span></code>, and static covariates are available at fitting time, will enforce
 that all target <cite>series</cite> have the same static covariate dimensionality in <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code>.</p></li>
@@ -2504,7 +2521,7 @@ must be integer-encoded.</p></li>
 <td><p>Generates covariate encodings for the inference/prediction set and returns a tuple of past, and future covariates series with the original and encoded covariates stacked together.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.get_estimator" title="darts.models.forecasting.lgbm.LightGBMModel.get_estimator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_estimator</span></code></a>(horizon, target_dim[, quantile])</p></td>
-<td><p>Returns the estimator that forecasts the step <cite>horizon</cite> of the target component <cite>target_dim</cite>.</p></td>
+<td><p>Returns the estimator that forecasts the step <code class="docutils literal notranslate"><span class="pre">horizon</span></code> of the target component <code class="docutils literal notranslate"><span class="pre">target_dim</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.gridsearch" title="darts.models.forecasting.lgbm.LightGBMModel.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
 <td><p>Find the best hyper-parameters among a given set using a grid search.</p></td>
@@ -2770,7 +2787,7 @@ lag and maximum target lags potentially different from -1 and 0.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.lgbm.LightGBMModel.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs_multioutput_wrapper</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_sample_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/lgbm.html#LightGBMModel.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.lgbm.LightGBMModel.fit" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs_multioutput_wrapper</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_sample_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/lgbm.html#LightGBMModel.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.lgbm.LightGBMModel.fit" title="Link to this definition">#</a></dt>
 <dd><p>Fits/trains the model using the provided list of features time series and the target time series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -2799,6 +2816,9 @@ If a string, then the weights are generated using built-in weighting functions. 
 computed globally based on the length of the longest series in <cite>series</cite>. Then for each series, the weights
 are extracted from the end of the global weights. This gives a common time weighting across all series.</p></li>
 <li><p><strong>val_sample_weight</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Same as for <cite>sample_weight</cite> but for the evaluation dataset.</p></li>
+<li><p><strong>stride</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The number of time steps between consecutive samples, applied starting from the end of the series. The same
+stride will be applied to both the training and evaluation set (if supplied and supported). This should be
+used with caution as it might introduce bias in the forecasts.</p></li>
 <li><p><strong>verbose</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, set the fit verbosity. Not effective for all models.</p></li>
 <li><p><strong>**kwargs</strong> – Additional kwargs passed to <cite>lightgbm.LGBRegressor.fit()</cite></p></li>
 </ul>
@@ -2890,20 +2910,26 @@ encoded covariates.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.lgbm.LightGBMModel.get_estimator">
 <span class="sig-name descname"><span class="pre">get_estimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">horizon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.lgbm.LightGBMModel.get_estimator" title="Link to this definition">#</a></dt>
-<dd><p>Returns the estimator that forecasts the step <cite>horizon</cite> of the target component <cite>target_dim</cite>.</p>
-<p>For probabilistic models fitting quantiles, a desired <cite>quantile</cite> can also be passed. If not passed, it will
-return the model predicting the median (quantile=0.5).</p>
+<dd><p>Returns the estimator that forecasts the step <code class="docutils literal notranslate"><span class="pre">horizon</span></code> of the target component <code class="docutils literal notranslate"><span class="pre">target_dim</span></code>.</p>
+<p>For probabilistic models fitting quantiles, a desired <code class="docutils literal notranslate"><span class="pre">quantile</span></code> can also be passed. If not passed, it will
+return the estimator predicting the median quantile.</p>
 <p>If the (quantile) model supports multi-output natively, it will return the model that can predict the entire
 horizon and all target components jointly.</p>
-<p>Note: Internally, estimators are grouped by <cite>output_chunk_length</cite> position, then by component. For probabilistic
-models fitting quantiles, there is an additional abstraction layer, grouping the estimators by <cite>quantile</cite>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Internally, estimators are grouped by <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> position, then by component. For
+probabilistic models fitting quantiles (<code class="docutils literal notranslate"><span class="pre">likelihood=&quot;quantile&quot;</span></code>), there will be an additional
+abstraction layer, grouping the estimators by <code class="docutils literal notranslate"><span class="pre">quantile</span></code>. Models using a single native multi-quantile
+estimator (<code class="docutils literal notranslate"><span class="pre">likelihood=&quot;multiquantile&quot;</span></code>) do not use this extra quantile grouping, and <code class="docutils literal notranslate"><span class="pre">quantile</span></code>
+must be set to <code class="docutils literal notranslate"><span class="pre">None</span></code> to obtain the correct estimator.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>horizon</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The index of the forecasting point within <cite>output_chunk_length</cite>.</p></li>
+<li><p><strong>horizon</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The index of the forecasting point within <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>.</p></li>
 <li><p><strong>target_dim</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The index of the target component.</p></li>
-<li><p><strong>quantile</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, for probabilistic model with <cite>likelihood=”quantile”</cite>, the desired quantile value. If <cite>None</cite> and
-<cite>likelihood=”quantile”</cite>, returns the model predicting the median (quantile=0.5).</p></li>
+<li><p><strong>quantile</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optionally, for probabilistic model with <code class="docutils literal notranslate"><span class="pre">likelihood=&quot;quantile&quot;</span></code>, the desired quantile value. If <code class="docutils literal notranslate"><span class="pre">None</span></code>
+and the model uses per-quantile estimators, returns the model predicting the median quantile.</p></li>
 </ul>
 </dd>
 </dl>

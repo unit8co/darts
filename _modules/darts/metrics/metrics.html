@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.42.1" />
+  <meta name="docsearch:version" content="0.43.0" />
   </head>
   
   
@@ -436,6 +436,7 @@
     <span class="n">_get_values_or_raise</span><span class="p">,</span>
     <span class="n">_get_wrapped_metric</span><span class="p">,</span>
     <span class="n">_LabelReduction</span><span class="p">,</span>
+    <span class="n">_safe_scaled_divide</span><span class="p">,</span>
     <span class="n">classification_support</span><span class="p">,</span>
     <span class="n">interval_support</span><span class="p">,</span>
     <span class="n">multi_ts_support</span><span class="p">,</span>
@@ -461,6 +462,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Error (ERR).</span>
 
@@ -506,6 +508,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -557,6 +561,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Mean Error (MERR).</span>
 
@@ -597,6 +602,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -646,6 +653,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Absolute Error (AE).</span>
 
@@ -691,6 +699,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -742,6 +752,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Mean Absolute Error (MAE).</span>
 
@@ -782,6 +793,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -828,11 +841,13 @@
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">q</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">zero_division</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;warn&quot;</span><span class="p">,</span>
     <span class="n">time_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">component_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">,</span>
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Absolute Scaled Error (ASE) (see [1]_ for more information on scaled forecasting errors).</span>
 
@@ -871,6 +886,13 @@
 <span class="sd">        will consider the values only over their common time interval (intersection in time).</span>
 <span class="sd">    q</span>
 <span class="sd">        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.</span>
+<span class="sd">    zero_division</span>
+<span class="sd">        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is</span>
+<span class="sd">        constant or perfectly seasonal with period ``m``.</span>
+
+<span class="sd">        * ``&quot;warn&quot;`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``</span>
+<span class="sd">          when the numerator is also zero (on par with naive baseline), and emits a warning.</span>
+<span class="sd">        * ``&quot;raise&quot;`` – raises a ``ValueError`` (legacy behavior).</span>
 <span class="sd">    time_reduction</span>
 <span class="sd">        Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`</span>
 <span class="sd">        of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a</span>
@@ -893,12 +915,14 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
 <span class="sd">    ValueError</span>
-<span class="sd">        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one</span>
-<span class="sd">        time step before the start of the corresponding forecast in `pred_series`.</span>
+<span class="sd">        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast</span>
+<span class="sd">        in  `pred_series`.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -935,7 +959,7 @@
         <span class="n">intersect</span><span class="p">,</span>
         <span class="n">q</span><span class="o">=</span><span class="n">q</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="n">errors</span> <span class="o">/</span> <span class="n">error_scale</span></div>
+    <span class="k">return</span> <span class="n">_safe_scaled_divide</span><span class="p">(</span><span class="n">errors</span><span class="p">,</span> <span class="n">error_scale</span><span class="p">,</span> <span class="n">zero_division</span><span class="o">=</span><span class="n">zero_division</span><span class="p">)</span></div>
 
 
 
@@ -951,10 +975,12 @@
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">q</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">zero_division</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;warn&quot;</span><span class="p">,</span>
     <span class="n">component_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">,</span>
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Mean Absolute Scaled Error (MASE) (see [1]_ for more information on scaled forecasting errors).</span>
 
@@ -993,6 +1019,13 @@
 <span class="sd">        will consider the values only over their common time interval (intersection in time).</span>
 <span class="sd">    q</span>
 <span class="sd">        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.</span>
+<span class="sd">    zero_division</span>
+<span class="sd">        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is</span>
+<span class="sd">        constant or perfectly seasonal with period ``m``.</span>
+
+<span class="sd">        * ``&quot;warn&quot;`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``</span>
+<span class="sd">          when the numerator is also zero (on par with naive baseline), and emits a warning.</span>
+<span class="sd">        * ``&quot;raise&quot;`` – raises a ``ValueError`` (legacy behavior).</span>
 <span class="sd">    component_reduction</span>
 <span class="sd">        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`</span>
 <span class="sd">        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a</span>
@@ -1010,12 +1043,14 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
 <span class="sd">    ValueError</span>
-<span class="sd">        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one</span>
-<span class="sd">        time step before the start of the corresponding forecast in `pred_series`.</span>
+<span class="sd">        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast</span>
+<span class="sd">        in  `pred_series`.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1050,6 +1085,7 @@
             <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">,</span>
             <span class="n">intersect</span><span class="o">=</span><span class="n">intersect</span><span class="p">,</span>
             <span class="n">q</span><span class="o">=</span><span class="n">q</span><span class="p">,</span>
+            <span class="n">zero_division</span><span class="o">=</span><span class="n">zero_division</span><span class="p">,</span>
         <span class="p">),</span>
         <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">,</span>
     <span class="p">)</span></div>
@@ -1071,6 +1107,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Squared Error (SE).</span>
 
@@ -1116,6 +1153,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1167,6 +1206,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Mean Squared Error (MSE).</span>
 
@@ -1207,6 +1247,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1253,11 +1295,13 @@
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">q</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">zero_division</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;warn&quot;</span><span class="p">,</span>
     <span class="n">time_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">component_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">,</span>
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Squared Scaled Error (SSE) (see [1]_ for more information on scaled forecasting errors).</span>
 
@@ -1296,6 +1340,13 @@
 <span class="sd">        will consider the values only over their common time interval (intersection in time).</span>
 <span class="sd">    q</span>
 <span class="sd">        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.</span>
+<span class="sd">    zero_division</span>
+<span class="sd">        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is</span>
+<span class="sd">        constant or perfectly seasonal with period ``m``.</span>
+
+<span class="sd">        * ``&quot;warn&quot;`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``</span>
+<span class="sd">          when the numerator is also zero (on par with naive baseline), and emits a warning.</span>
+<span class="sd">        * ``&quot;raise&quot;`` – raises a ``ValueError`` (legacy behavior).</span>
 <span class="sd">    time_reduction</span>
 <span class="sd">        Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`</span>
 <span class="sd">        of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a</span>
@@ -1318,12 +1369,14 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
 <span class="sd">    ValueError</span>
-<span class="sd">        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one</span>
-<span class="sd">        time step before the start of the corresponding forecast in `pred_series`.</span>
+<span class="sd">        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast</span>
+<span class="sd">        in  `pred_series`.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1360,7 +1413,7 @@
         <span class="n">intersect</span><span class="p">,</span>
         <span class="n">q</span><span class="o">=</span><span class="n">q</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="n">errors</span> <span class="o">/</span> <span class="n">error_scale</span></div>
+    <span class="k">return</span> <span class="n">_safe_scaled_divide</span><span class="p">(</span><span class="n">errors</span><span class="p">,</span> <span class="n">error_scale</span><span class="p">,</span> <span class="n">zero_division</span><span class="o">=</span><span class="n">zero_division</span><span class="p">)</span></div>
 
 
 
@@ -1376,10 +1429,12 @@
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">q</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">zero_division</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;warn&quot;</span><span class="p">,</span>
     <span class="n">component_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">,</span>
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Mean Squared Scaled Error (MSSE) (see [1]_ for more information on scaled forecasting errors).</span>
 
@@ -1418,6 +1473,13 @@
 <span class="sd">        will consider the values only over their common time interval (intersection in time).</span>
 <span class="sd">    q</span>
 <span class="sd">        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.</span>
+<span class="sd">    zero_division</span>
+<span class="sd">        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is</span>
+<span class="sd">        constant or perfectly seasonal with period ``m``.</span>
+
+<span class="sd">        * ``&quot;warn&quot;`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``</span>
+<span class="sd">          when the numerator is also zero (on par with naive baseline), and emits a warning.</span>
+<span class="sd">        * ``&quot;raise&quot;`` – raises a ``ValueError`` (legacy behavior).</span>
 <span class="sd">    component_reduction</span>
 <span class="sd">        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`</span>
 <span class="sd">        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a</span>
@@ -1435,12 +1497,14 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
 <span class="sd">    ValueError</span>
-<span class="sd">        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one</span>
-<span class="sd">        time step before the start of the corresponding forecast in `pred_series`.</span>
+<span class="sd">        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast</span>
+<span class="sd">        in  `pred_series`.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1475,6 +1539,7 @@
             <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">,</span>
             <span class="n">intersect</span><span class="o">=</span><span class="n">intersect</span><span class="p">,</span>
             <span class="n">q</span><span class="o">=</span><span class="n">q</span><span class="p">,</span>
+            <span class="n">zero_division</span><span class="o">=</span><span class="n">zero_division</span><span class="p">,</span>
         <span class="p">),</span>
         <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">,</span>
     <span class="p">)</span></div>
@@ -1495,6 +1560,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Root Mean Squared Error (RMSE).</span>
 
@@ -1535,6 +1601,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1580,10 +1648,12 @@
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">q</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">zero_division</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;warn&quot;</span><span class="p">,</span>
     <span class="n">component_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">,</span>
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Root Mean Squared Scaled Error (RMSSE) (see [1]_ for more information on scaled forecasting errors).</span>
 
@@ -1622,6 +1692,13 @@
 <span class="sd">        will consider the values only over their common time interval (intersection in time).</span>
 <span class="sd">    q</span>
 <span class="sd">        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.</span>
+<span class="sd">    zero_division</span>
+<span class="sd">        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is</span>
+<span class="sd">        constant or perfectly seasonal with period ``m``.</span>
+
+<span class="sd">        * ``&quot;warn&quot;`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``</span>
+<span class="sd">          when the numerator is also zero (on par with naive baseline), and emits a warning.</span>
+<span class="sd">        * ``&quot;raise&quot;`` – raises a ``ValueError`` (legacy behavior).</span>
 <span class="sd">    component_reduction</span>
 <span class="sd">        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`</span>
 <span class="sd">        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a</span>
@@ -1639,12 +1716,14 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
 <span class="sd">    ValueError</span>
-<span class="sd">        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one</span>
-<span class="sd">        time step before the start of the corresponding forecast in `pred_series`.</span>
+<span class="sd">        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast</span>
+<span class="sd">        in  `pred_series`.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1678,7 +1757,7 @@
         <span class="n">intersect</span><span class="p">,</span>
         <span class="n">q</span><span class="o">=</span><span class="n">q</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="n">errors</span> <span class="o">/</span> <span class="n">error_scale</span></div>
+    <span class="k">return</span> <span class="n">_safe_scaled_divide</span><span class="p">(</span><span class="n">errors</span><span class="p">,</span> <span class="n">error_scale</span><span class="p">,</span> <span class="n">zero_division</span><span class="o">=</span><span class="n">zero_division</span><span class="p">)</span></div>
 
 
 
@@ -1697,6 +1776,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Squared Log Error (SLE).</span>
 
@@ -1744,6 +1824,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1796,6 +1878,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Root Mean Squared Log Error (RMSLE).</span>
 
@@ -1838,6 +1921,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1889,6 +1974,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Absolute Percentage Error (APE).</span>
 
@@ -1937,6 +2023,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -2000,6 +2088,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Mean Absolute Percentage Error (MAPE).</span>
 
@@ -2043,6 +2132,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -2097,6 +2188,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Weighted Mean Absolute Percentage Error (WMAPE). (see [1]_ for more information).</span>
 
@@ -2137,6 +2229,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -2200,6 +2294,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;symmetric Absolute Percentage Error (sAPE).</span>
 
@@ -2249,6 +2344,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -2307,6 +2404,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;symmetric Mean Absolute Percentage Error (sMAPE).</span>
 
@@ -2352,6 +2450,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -2401,6 +2501,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Overall Percentage Error (OPE).</span>
 
@@ -2442,6 +2543,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -2507,6 +2610,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Absolute Ranged Relative Error (ARRE).</span>
 
@@ -2552,6 +2656,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -2618,6 +2724,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Mean Absolute Ranged Relative Error (MARRE).</span>
 
@@ -2659,6 +2766,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -2707,6 +2816,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Coefficient of Determination :math:`R^2` (see [1]_ for more details).</span>
 
@@ -2751,6 +2861,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -2805,6 +2917,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Coefficient of Variation (percentage).</span>
 
@@ -2848,6 +2961,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -2902,6 +3017,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes the tolerance coverages for different tolerance levels.</span>
 
@@ -2963,6 +3079,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Area Under Tolerance Curve (AUTC).</span>
 
@@ -3024,6 +3141,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -3090,6 +3209,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -3125,6 +3245,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -3171,6 +3293,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Quantile Risk (QR)</span>
 
@@ -3217,6 +3340,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -3285,6 +3410,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Quantile Loss (QL).</span>
 
@@ -3336,6 +3462,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -3389,6 +3517,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Mean Quantile Loss (MQL).</span>
 
@@ -3436,6 +3565,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -3470,6 +3601,232 @@
 
 
 
+<div class="viewcode-block" id="crps">
+<a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.crps">[docs]</a>
+<span class="nd">@multi_ts_support</span>
+<span class="nd">@multivariate_support</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">crps</span><span class="p">(</span>
+    <span class="n">actual_series</span><span class="p">:</span> <span class="n">TimeSeriesLike</span><span class="p">,</span>
+    <span class="n">pred_series</span><span class="p">:</span> <span class="n">TimeSeriesLike</span><span class="p">,</span>
+    <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">time_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">component_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">,</span>
+    <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Continuous Ranked Probability Score (CRPS).</span>
+
+<span class="sd">    CRPS is a proper scoring rule that generalises the Mean Absolute Error (MAE) to probabilistic forecasts.</span>
+<span class="sd">    It measures the compatibility of a predictive sample distribution with a scalar observation.</span>
+
+<span class="sd">    For the true series :math:`y` and predicted stochastic series (containing N samples) :math:`\\hat{y}`</span>
+<span class="sd">    of shape :math:`T \\times N`, it is computed per column/component and time step :math:`t` as:</span>
+
+<span class="sd">    .. math:: \\frac{1}{N}\\sum_{i=1}^{N}|\\hat{y}_{t,i} - y_t|</span>
+<span class="sd">              - \\frac{1}{2N^2}\\sum_{i=1}^{N}\\sum_{j=1}^{N}|\\hat{y}_{t,i} - \\hat{y}_{t,j}|,</span>
+
+<span class="sd">    where :math:`\\hat{y}_{t,i}` is the :math:`i`-th sample at time :math:`t`.</span>
+
+<span class="sd">    A CRPS of 0 indicates a perfect forecast. When all N samples are identical, CRPS reduces to the</span>
+<span class="sd">    Absolute Error (:func:`~darts.metrics.metrics.ae`).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    actual_series</span>
+<span class="sd">        The (sequence of) actual series.</span>
+<span class="sd">    pred_series</span>
+<span class="sd">        The (sequence of) predicted series.</span>
+<span class="sd">    intersect</span>
+<span class="sd">        For time series that are overlapping in time without having the same time index, setting `True`</span>
+<span class="sd">        will consider the values only over their common time interval (intersection in time).</span>
+<span class="sd">    time_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the</span>
+<span class="sd">        time axis. If `None`, will return a metric per time step.</span>
+<span class="sd">    component_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the</span>
+<span class="sd">        component axis. If `None`, will return a metric per component.</span>
+<span class="sd">    series_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the</span>
+<span class="sd">        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will</span>
+<span class="sd">        return a metric per component.</span>
+<span class="sd">    n_jobs</span>
+<span class="sd">        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is</span>
+<span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
+<span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
+<span class="sd">    verbose</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        A single metric score for:</span>
+
+<span class="sd">        - a single univariate series.</span>
+<span class="sd">        - a single multivariate series with `component_reduction`.</span>
+<span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and</span>
+<span class="sd">          `time_reduction`.</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components) without time- and</span>
+<span class="sd">        component reductions. For:</span>
+
+<span class="sd">        - the same input arguments that result in the `float` return case from above but with ``time_reduction=None``.</span>
+<span class="sd">        - a single multivariate series and at least `component_reduction=None`.</span>
+<span class="sd">        - a single uni/multivariate series and at least `time_reduction=None`.</span>
+<span class="sd">        - a sequence of uni/multivariate series including `series_reduction` and at least one of</span>
+<span class="sd">          `component_reduction=None` or `time_reduction=None`.</span>
+<span class="sd">    list[float]</span>
+<span class="sd">        Same as for type `float` but for a sequence of series.</span>
+<span class="sd">    list[np.ndarray]</span>
+<span class="sd">        Same as for type `np.ndarray` but for a sequence of series.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If `pred_series` is not stochastic (i.e., does not contain multiple samples).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">pred_series</span><span class="o">.</span><span class="n">is_stochastic</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;`pred_series` must be a stochastic (contain multiple predicted samples).&quot;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span>
+        <span class="n">actual_series</span><span class="p">,</span>
+        <span class="n">pred_series</span><span class="p">,</span>
+        <span class="n">intersect</span><span class="p">,</span>
+        <span class="n">q</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="c1"># y_true: (T, C, 1), y_pred: (T, C, N)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">y_pred</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">SMPL_AX</span><span class="p">]</span>
+    <span class="n">term1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_pred</span> <span class="o">-</span> <span class="n">y_true</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="n">SMPL_AX</span><span class="p">)</span>  <span class="c1"># (T, C)</span>
+
+    <span class="c1"># term2: `sum of |x_i - x_j| over i,j` has complexity O(N^2);</span>
+    <span class="c1"># instead we can compute `2 * sum_k (2k - (n - 1)) * x_{(k)}` for sorted x and 0-based k;</span>
+    <span class="c1"># it gives identical result but more efficient with O(N log N) time and O(N) memory per (T, C) slice.</span>
+    <span class="n">y_sorted</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">SMPL_AX</span><span class="p">)</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">y_pred</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">coeff</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">k</span> <span class="o">-</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">term2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">coeff</span> <span class="o">*</span> <span class="n">y_sorted</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">SMPL_AX</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">n</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># (T, C)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">term1</span> <span class="o">-</span> <span class="n">term2</span><span class="p">)[:,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>  <span class="c1"># (T, C, 1)</span></div>
+
+
+
+<div class="viewcode-block" id="mcrps">
+<a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.mcrps">[docs]</a>
+<span class="nd">@multi_ts_support</span>
+<span class="nd">@multivariate_support</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mcrps</span><span class="p">(</span>
+    <span class="n">actual_series</span><span class="p">:</span> <span class="n">TimeSeriesLike</span><span class="p">,</span>
+    <span class="n">pred_series</span><span class="p">:</span> <span class="n">TimeSeriesLike</span><span class="p">,</span>
+    <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">component_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">,</span>
+    <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Mean Continuous Ranked Probability Score (MCRPS).</span>
+
+<span class="sd">    MCRPS is a proper scoring rule that generalises the Mean Absolute Error (MAE) to probabilistic forecasts.</span>
+<span class="sd">    It measures the compatibility of a predictive sample distribution with scalar observations, averaged over</span>
+<span class="sd">    all time steps.</span>
+
+<span class="sd">    MCRPS first computes the CRPS per time step (:func:`~darts.metrics.metrics.crps`), and then takes the</span>
+<span class="sd">    mean over the time axis.</span>
+
+<span class="sd">    For the true series :math:`y` and predicted stochastic series (containing N samples) :math:`\\hat{y}`</span>
+<span class="sd">    of shape :math:`T \\times N`, it is computed per column/component as:</span>
+
+<span class="sd">    .. math:: \\frac{1}{T}\\sum_{t=1}^{T}\\left(</span>
+<span class="sd">              \\frac{1}{N}\\sum_{i=1}^{N}|\\hat{y}_{t,i} - y_t|</span>
+<span class="sd">              - \\frac{1}{2N^2}\\sum_{i=1}^{N}\\sum_{j=1}^{N}|\\hat{y}_{t,i} - \\hat{y}_{t,j}|</span>
+<span class="sd">              \\right),</span>
+
+<span class="sd">    where :math:`\\hat{y}_{t,i}` is the :math:`i`-th sample at time :math:`t`.</span>
+
+<span class="sd">    A MCRPS of 0 indicates a perfect forecast. When all N samples are identical, MCRPS reduces to the</span>
+<span class="sd">    Mean Absolute Error (:func:`~darts.metrics.metrics.mae`).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    actual_series</span>
+<span class="sd">        The (sequence of) actual series.</span>
+<span class="sd">    pred_series</span>
+<span class="sd">        The (sequence of) predicted series.</span>
+<span class="sd">    intersect</span>
+<span class="sd">        For time series that are overlapping in time without having the same time index, setting `True`</span>
+<span class="sd">        will consider the values only over their common time interval (intersection in time).</span>
+<span class="sd">    component_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the</span>
+<span class="sd">        component axis. If `None`, will return a metric per component.</span>
+<span class="sd">    series_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the</span>
+<span class="sd">        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will</span>
+<span class="sd">        return a metric per component.</span>
+<span class="sd">    n_jobs</span>
+<span class="sd">        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is</span>
+<span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
+<span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
+<span class="sd">    verbose</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        A single metric score for:</span>
+
+<span class="sd">        - a single univariate series.</span>
+<span class="sd">        - a single multivariate series with `component_reduction`.</span>
+<span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n components,) without component reduction.</span>
+<span class="sd">        For:</span>
+
+<span class="sd">        - the same input arguments that result in the `float` return case from above but with</span>
+<span class="sd">          `component_reduction=None`.</span>
+<span class="sd">        - a single multivariate series and `component_reduction=None`.</span>
+<span class="sd">        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.</span>
+<span class="sd">    list[float]</span>
+<span class="sd">        Same as for type `float` but for a sequence of series.</span>
+<span class="sd">    list[np.ndarray]</span>
+<span class="sd">        Same as for type `np.ndarray` but for a sequence of series.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If `pred_series` is not stochastic (i.e., does not contain multiple samples).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span>
+        <span class="n">_get_wrapped_metric</span><span class="p">(</span><span class="n">crps</span><span class="p">)(</span>
+            <span class="n">actual_series</span><span class="p">,</span>
+            <span class="n">pred_series</span><span class="p">,</span>
+            <span class="n">intersect</span><span class="o">=</span><span class="n">intersect</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
 <div class="viewcode-block" id="iw">
 <a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.iw">[docs]</a>
 <span class="nd">@interval_support</span>
@@ -3487,6 +3844,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Interval Width (IW).</span>
 
@@ -3538,6 +3896,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -3591,6 +3951,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Mean Interval Width (MIW).</span>
 
@@ -3637,6 +3998,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -3689,6 +4052,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Interval Winkler Score (IWS) [1]_.</span>
 
@@ -3746,6 +4110,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -3820,6 +4186,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Mean Interval Winkler Score (IWS) [1]_.</span>
 
@@ -3864,6 +4231,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -3920,6 +4289,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Interval Coverage (IC).</span>
 
@@ -3976,6 +4346,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -4029,6 +4401,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Mean Interval Coverage (MIC).</span>
 
@@ -4073,6 +4446,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -4126,6 +4501,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Interval Non-Conformity Score for Quantile Regression (INCS_QR).</span>
 
@@ -4180,6 +4556,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -4237,6 +4615,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Mean Interval Non-Conformity Score for Quantile Regression (MINCS_QR).</span>
 
@@ -4284,6 +4663,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -4334,6 +4715,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Accuracy Score [1]_.</span>
 
@@ -4375,6 +4757,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -4426,6 +4810,7 @@
     <span class="n">label_reduction</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">_LabelReduction</span> <span class="o">=</span> <span class="n">_LabelReduction</span><span class="o">.</span><span class="n">MACRO</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Precision Score [1]_.</span>
 
@@ -4479,6 +4864,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -4544,6 +4931,7 @@
     <span class="n">label_reduction</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">_LabelReduction</span> <span class="o">=</span> <span class="n">_LabelReduction</span><span class="o">.</span><span class="n">MACRO</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Recall Score [1]_.</span>
 
@@ -4597,6 +4985,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -4662,6 +5052,7 @@
     <span class="n">label_reduction</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">_LabelReduction</span> <span class="o">=</span> <span class="n">_LabelReduction</span><span class="o">.</span><span class="n">MACRO</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;F1 Score [1]_.</span>
 
@@ -4716,6 +5107,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -4781,6 +5174,7 @@
     <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Confusion Matrix (CM) [1]_.</span>
 
@@ -4824,6 +5218,8 @@
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
 <span class="sd">        Optionally, whether to print operations progress.</span>
+<span class="sd">    name</span>
+<span class="sd">        Optionally, the metric name to display. If `None`, will use the metric function name.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
