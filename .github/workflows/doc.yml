@@ -47,9 +47,9 @@ jobs:
           uv cache prune --ci
 
       - name: "Publish documentation to gh-pages"
-        uses: s0/git-publish-subdir-action@v2.2.0
         env:
-          REPO: self
-          BRANCH: gh-pages
-          FOLDER: docs/build/html
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git subtree push --prefix docs/build/html origin gh-pages
