@@ -439,7 +439,7 @@ It will exit the training process once the validation loss has not significantly
 You can use Early Stopping with any `TorchForecastingModel`, leveraging PyTorch Lightning's [EarlyStopping](https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.EarlyStopping.html#lightning.pytorch.callbacks.EarlyStopping) callback:
 ```python
 import pandas as pd
-from pytorch_lightning.callbacks import EarlyStopping
+from lightning.pytorch.callbacks import EarlyStopping
 from torchmetrics import MeanAbsolutePercentageError
 
 from darts.dataprocessing.transformers import Scaler
@@ -500,7 +500,7 @@ tensorboad --log_dir darts_logs
 
 Let's check out how to implement a **custom callback** to make the model losses accessible in Python.
 ```python
-from pytorch_lightning.callbacks import Callback
+from lightning.pytorch.callbacks import Callback
 
 class LossLogger(Callback):
     def __init__(self):

@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from functools import wraps
 from typing import Any
 
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 import torch
 import torch.nn as nn
 import torchmetrics

@@ -34,13 +34,13 @@ if sys.version_info >= (3, 11):
 else:
     from typing_extensions import Self
 
+import lightning.pytorch as pl
 import numpy as np
 import pandas as pd
-import pytorch_lightning as pl
 import torch
-from pytorch_lightning import loggers as pl_loggers
-from pytorch_lightning.callbacks import ProgressBar
-from pytorch_lightning.tuner import Tuner
+from lightning.pytorch import loggers as pl_loggers
+from lightning.pytorch.callbacks import ProgressBar
+from lightning.pytorch.tuner import Tuner
 from torch.utils.data import DataLoader
 
 from darts import TimeSeries
@@ -155,7 +155,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         This class is meant to be inherited to create a new PL-based forecasting model.
         It governs the interactions between:
             - Darts forecasting models (module) :class:`PLTorchForecastingModel`
-            - Darts integrated PL Lightning Trainer :class:`pytorch_lightning.Trainer` or custom PL Trainers
+            - Darts integrated PL Lightning Trainer :class:`lightning.pytorch.Trainer` or custom PL Trainers
             - Dataset loaders :class:`TorchTrainingDataset` and :class:`TorchInferenceDataset` or custom Dataset
               Loaders.
 
@@ -224,7 +224,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             checkpointing, tensorboard logging, setting the torch device and more.
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
+            <https://lightning.ai/docs/pytorch/stable/common/trainer.html>`__ for more information about the
             supported kwargs. Default: ``None``.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
@@ -236,21 +236,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
             For more info, see here:
             `trainer flags
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags>`__,
+            <https://lightning.ai/docs/pytorch/stable/common/trainer.html#trainer-flags>`__,
             and `training on multiple gpus
-            <https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus>`__.
+            <https://lightning.ai/docs/pytorch/stable/accelerators/gpu_basic.html#train-on-multiple-gpus>`__.
 
             With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
             :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
             The model will stop training early if the validation loss `val_loss` does not improve beyond
             specifications. For more information on callbacks, visit:
             `PyTorch Lightning Callbacks
-            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
+            <https://lightning.ai/docs/pytorch/stable/extensions/callbacks.html>`__
 
             .. highlight:: python
             .. code-block:: python
 
-                from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+                from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
                 # stop training when validation loss does not decrease more than 0.05 (`min_delta`) over
                 # a period of 5 epochs (`patience`)
@@ -960,7 +960,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Training is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
         ``pl_trainer_kwargs`` used at model creation. You can also use a custom Trainer with optional parameter
         ``trainer``. For more information on PyTorch Lightning Trainers check out `this link
-        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__.
+        <https://lightning.ai/docs/pytorch/stable/common/trainer.html>`__.
 
         This function can be called several times to do some extra training. If ``epochs`` is specified, the model
         will be trained for some (extra) ``epochs`` epochs.
@@ -1218,7 +1218,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Training is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
         ``pl_trainer_kwargs`` used at model creation. You can also use a custom Trainer with optional parameter
         ``trainer``. For more information on PyTorch Lightning Trainers check out `this link
-        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__.
+        <https://lightning.ai/docs/pytorch/stable/common/trainer.html>`__.
 
         This function can be called several times to do some extra training. If ``epochs`` is specified, the model
         will be trained for some (extra) ``epochs`` epochs.
@@ -1469,7 +1469,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     "Loading the best model will be skipped (`load_best` is ignored), as it requires "
                     "active checkpointing and a validation set to be provided to the current fit method."
                     "If not using a custom `trainer`, make sure to set `save_checkpoints=True` at model creation. "
-                    "Otherwise, make sure the custom `trainer` uses a pytorch-lightning `ModelCheckpoint` callback."
+                    "Otherwise, make sure the custom `trainer` uses a PyTorch Lightning `ModelCheckpoint` callback."
                 )
                 load_best = False
         else:
@@ -1519,7 +1519,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         A wrapper around PyTorch Lightning's `Tuner.lr_find()`. Performs a range test of good initial learning rates,
         to reduce the amount of guesswork in picking a good starting learning rate. For more information on PyTorch
         Lightning's Tuner check out `this link
-        <https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.tuner.tuning.Tuner.html>`__.
+        <https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.tuner.tuning.Tuner.html>`__.
         It is recommended to increase the number of `epochs` if the tuner did not give satisfactory results.
         Consider creating a new model object with the suggested learning rate for example using model creation
         parameters `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, and `lr_scheduler_kwargs`.
@@ -1671,7 +1671,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Prediction is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
         ``pl_trainer_kwargs`` used at model creation. You can also use a custom Trainer with optional parameter
         ``trainer``. For more information on PyTorch Lightning Trainers check out `this link
-        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__.
+        <https://lightning.ai/docs/pytorch/stable/common/trainer.html>`__.
 
         Below, all possible parameters are documented, but not all models support all parameters. For instance,
         all the :class:`PastCovariatesTorchModel` support only ``past_covariates`` and not ``future_covariates``.
@@ -1850,7 +1850,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Prediction is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
         ``pl_trainer_kwargs`` used at model creation. You can also use a custom Trainer with optional parameter
         ``trainer``. For more information on PyTorch Lightning Trainers check out `this link
-        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__.
+        <https://lightning.ai/docs/pytorch/stable/common/trainer.html>`__.
 
         Parameters
         ----------
@@ -2164,12 +2164,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, a set of kwargs to create a new Lightning Trainer used to configure the model for downstream
             tasks (e.g. prediction).
             Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
-            `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__
+            `Lightning Trainer documentation <https://lightning.ai/docs/pytorch/stable/common/trainer.html>`__
             for more information about the supported kwargs.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one on which it was saved.
-            For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
+            For more information, read the `official documentation <https://lightning.ai/docs/pytorch/stable/
             common/lightning_module.html#load-from-checkpoint>`__.
         """
         # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule)
@@ -2251,7 +2251,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one from which it was saved.
-            For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
+            For more information, read the `official documentation <https://lightning.ai/docs/pytorch/stable/
             common/lightning_module.html#load-from-checkpoint>`__.
 
 

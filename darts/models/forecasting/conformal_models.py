@@ -1453,12 +1453,12 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Optionally, a set of kwargs to create a new Lightning Trainer used to configure the model for downstream
             tasks (e.g. prediction).
             Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
-            `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__
+            `Lightning Trainer documentation <https://lightning.ai/docs/pytorch/stable/common/trainer.html>`__
             for more information about the supported kwargs.
         **kwargs
             Only effective if the underlying forecasting model is a `TorchForecastingModel`.
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
-            For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
+            For more information, read the `official documentation <https://lightning.ai/docs/pytorch/stable/
             common/lightning_module.html#load-from-checkpoint>`__.
         """
         model: ConformalModel = GlobalForecastingModel.load(path)

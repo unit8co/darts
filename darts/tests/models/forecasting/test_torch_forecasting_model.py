@@ -16,14 +16,14 @@ import os
 from typing import Any
 from unittest.mock import patch
 
+import lightning.pytorch as pl
 import numpy as np
 import pandas as pd
 import pytest
-import pytorch_lightning as pl
 import torch
-from pytorch_lightning.callbacks import Callback, ModelCheckpoint
-from pytorch_lightning.loggers.logger import DummyLogger
-from pytorch_lightning.tuner.lr_finder import _LRFinder
+from lightning.pytorch.callbacks import Callback, ModelCheckpoint
+from lightning.pytorch.loggers.logger import DummyLogger
+from lightning.pytorch.tuner.lr_finder import _LRFinder
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 from torchmetrics import (
     MeanAbsoluteError,
@@ -1759,14 +1759,14 @@ class TestTorchForecastingModel:
     @pytest.mark.parametrize("model_config", models)
     def test_val_set(self, model_config):
         """Test whether these evaluation set parameters are passed to the PyTorch Lightning Trainer"""
-        with patch("pytorch_lightning.Trainer.fit") as fit_patch:
+        with patch("lightning.pytorch.Trainer.fit") as fit_patch:
             self.helper_check_val_set(*model_config, fit_patch)
 
     def test_dataloader_kwargs_setup(self):
         train_series, val_series = self.series[:-40], self.series[-40:]
         model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
 
-        with patch("pytorch_lightning.Trainer.fit") as fit_patch:
+        with patch("lightning.pytorch.Trainer.fit") as fit_patch:
             model.fit(train_series, val_series=val_series)
             assert "train_dataloaders" in fit_patch.call_args.kwargs
             assert "val_dataloaders" in fit_patch.call_args.kwargs
@@ -1798,7 +1798,7 @@ class TestTorchForecastingModel:
             assert all([getattr(train_dl, k) == v for k, v in dl_custom.items()])
             assert all([getattr(val_dl, k) == v for k, v in dl_custom.items()])
 
-        with patch("pytorch_lightning.Trainer.predict") as pred_patch:
+        with patch("lightning.pytorch.Trainer.predict") as pred_patch:
             # calling predict with the patch will raise an error, but we only need to
             # check the dataloader setup
             with pytest.raises(Exception):
@@ -2934,7 +2934,7 @@ class TestTorchForecastingModelFineTuning:
         assert model.enable_finetuning is True
         assert model._requires_training is True
 
-        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+        with patch("lightning.pytorch.Trainer.fit") as mock_fit:
             model.fit(self.series)
             mock_fit.assert_called_once()
 
@@ -2953,7 +2953,7 @@ class TestTorchForecastingModelFineTuning:
         assert model.enable_finetuning is False
         assert model._requires_training is False
 
-        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+        with patch("lightning.pytorch.Trainer.fit") as mock_fit:
             model.fit(self.series)
             mock_fit.assert_not_called()
 
@@ -2971,7 +2971,7 @@ class TestTorchForecastingModelFineTuning:
             **self.base_kwargs,
         )
 
-        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+        with patch("lightning.pytorch.Trainer.fit") as mock_fit:
             model.fit(self.series)
             mock_fit.assert_called_once()
 
@@ -2998,7 +2998,7 @@ class TestTorchForecastingModelFineTuning:
             **self.base_kwargs,
         )
 
-        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+        with patch("lightning.pytorch.Trainer.fit") as mock_fit:
             model.fit(self.series)
             mock_fit.assert_called_once()
 

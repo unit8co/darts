@@ -73,7 +73,7 @@ class TestFoundationModel:
         mock_method.assert_called()
 
         # calling `fit()` should not use `trainer.fit()`
-        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+        with patch("lightning.pytorch.Trainer.fit") as mock_fit:
             model.fit(
                 series=self.series,
                 future_covariates=self.future_cov,
@@ -162,7 +162,7 @@ class TestFoundationModel:
         )
 
         # calling `fit()` should not use `trainer.fit()`
-        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+        with patch("lightning.pytorch.Trainer.fit") as mock_fit:
             model.fit(
                 series=self.series,
                 future_covariates=self.future_cov,
@@ -248,7 +248,7 @@ class TestFoundationModel:
         mock_method.assert_called()
 
         # calling `fit()` should NOT use `trainer.fit()` when finetuning is disabled
-        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+        with patch("lightning.pytorch.Trainer.fit") as mock_fit:
             model.fit(
                 series=self.series,
                 future_covariates=self.future_cov,

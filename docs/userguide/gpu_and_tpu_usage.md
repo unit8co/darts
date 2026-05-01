@@ -82,7 +82,7 @@ Epoch 299: 100% 8/8 [00:00<00:00, 42.49it/s, loss=0.00285, v_num=logs]
 Now the model is ready to start predicting, which won't be shown here since it's included in the example linked in the start of this guide.
 
 ## Use a GPU
-GPUs can dramatically improve the performance of your model in terms of processing time. By using an Accelerator in the [Pytorch Lightning Trainer](https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#accelerator), we can enjoy the benefits of a GPU. We only need to instruct our model to use our machine's GPU through PyTorch Lightning Trainer parameters, which are expressed as the `pl_trainer_kwargs` dictionary, like this:
+GPUs can dramatically improve the performance of your model in terms of processing time. By using an Accelerator in the [Pytorch Lightning Trainer](https://lightning.ai/docs/pytorch/stable/common/trainer.html#accelerator), we can enjoy the benefits of a GPU. We only need to instruct our model to use our machine's GPU through PyTorch Lightning Trainer parameters, which are expressed as the `pl_trainer_kwargs` dictionary, like this:
 
 ```python
 my_model = RNNModel(
@@ -122,13 +122,13 @@ From the output we can see that the GPU is both available and used. The rest of 
 
 ### Multi GPU support
 
-Darts utilizes [Lightning's multi GPU capabilities](https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html) to be able to capitalize on scalable hardware.
+Darts utilizes [Lightning's multi GPU capabilities](https://lightning.ai/docs/pytorch/stable/accelerators/gpu_intermediate.html) to be able to capitalize on scalable hardware.
 
 Multiple parallelization strategies exist for multiple GPU training, which - because of different strategies for multiprocessing and data handling - interact strongly with the execution environment.
 
 Currently in Darts the `ddp_spawn` distribution strategy is tested.
 
-As per the description of the [Lightning documentation](https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html#distributed-data-parallel-spawn) has some noteworthy limitations, eg. it __can not run__ in:
+As per the description of the [Lightning documentation](https://lightning.ai/docs/pytorch/stable/accelerators/gpu_intermediate.html#distributed-data-parallel-spawn) has some noteworthy limitations, eg. it __can not run__ in:
 
 - Jupyter Notebook, Google COLAB, Kaggle, etc.
 
@@ -152,7 +152,7 @@ Beyond this, no other major modification to your models is necessary other than 
 
 This method automatically selects all available GPUs for training. Manual setting of the number of devices is also possible.
 
-The `ddp` family of strategies creates individual subprocesses for each GPU, so contents of the memory (notably the `Dataloder`) gets copied over. Thus, as per the [description of lightning docs](https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html#distributed-data-parallel) caution is advised in setting the `Dataloader(num_workers=N)` too high, since according to it:
+The `ddp` family of strategies creates individual subprocesses for each GPU, so contents of the memory (notably the `Dataloder`) gets copied over. Thus, as per the [description of lightning docs](https://lightning.ai/docs/pytorch/stable/accelerators/gpu_intermediate.html#distributed-data-parallel) caution is advised in setting the `Dataloader(num_workers=N)` too high, since according to it:
 
 "Dataloader(num_workers=N), where N is large, bottlenecks training with DDP… ie: it will be VERY slow or won’t work at all. This is a PyTorch limitation."
 

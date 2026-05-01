@@ -9,7 +9,7 @@ if not TORCH_AVAILABLE:
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 
 from darts.models.forecasting.rnn_model import RNNModel
 

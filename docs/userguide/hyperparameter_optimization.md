@@ -20,7 +20,7 @@ import numpy as np
 import optuna
 import torch
 from optuna.integration import PyTorchLightningPruningCallback
-from pytorch_lightning.callbacks import Callback, EarlyStopping
+from lightning.pytorch.callbacks import Callback, EarlyStopping
 from sklearn.preprocessing import MaxAbsScaler
 
 from darts.dataprocessing.transformers import Scaler
@@ -43,7 +43,7 @@ val = scaler.transform(val)
 
 
 #  workaround found in https://github.com/Lightning-AI/pytorch-lightning/issues/17485
-# to avoid import of both lightning and pytorch_lightning
+# to avoid import of both lightning and lightning.pytorch
 class PatchedPruningCallback(optuna.integration.PyTorchLightningPruningCallback, Callback):
     pass
 
@@ -152,8 +152,8 @@ Here is an example of how to use Ray Tune to with the `NBEATSModel` model using 
 ```python
 import numpy as np
 import pandas as pd
-import pytorch_lightning as pl
-from pytorch_lightning.callbacks import EarlyStopping
+import lightning.pytorch as pl
+from lightning.pytorch.callbacks import EarlyStopping
 from ray import tune
 from ray.train import RunConfig
 from ray.tune import CLIReporter

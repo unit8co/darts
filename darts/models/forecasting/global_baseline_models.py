@@ -137,7 +137,7 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         **kwargs
-            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
+            Optional arguments to initialize the lightning.pytorch.Module, lightning.pytorch.Trainer, and
             Darts' :class:`TorchForecastingModel`.
             Since naive models are not trained, the following parameters will have no effect:
             `loss_fn`, `likelihood`, `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, `lr_scheduler_kwargs`,
@@ -348,7 +348,7 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
                     return torch.mean(x, dim=dim)
             ..
         **kwargs
-            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
+            Optional arguments to initialize the lightning.pytorch.Module, lightning.pytorch.Trainer, and
             Darts' :class:`TorchForecastingModel`.
             Since naive models are not trained, the following parameters will have no effect:
             `loss_fn`, `likelihood`, `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, `lr_scheduler_kwargs`,
@@ -492,7 +492,7 @@ class GlobalNaiveSeasonal(_NoCovariatesMixin, _GlobalNaiveModel):
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
             cannot generate autoregressive predictions (`n > output_chunk_length`).
         **kwargs
-            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
+            Optional arguments to initialize the lightning.pytorch.Module, lightning.pytorch.Trainer, and
             Darts' :class:`TorchForecastingModel`.
             Since naive models are not trained, the following parameters will have no effect:
             `loss_fn`, `likelihood`, `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, `lr_scheduler_kwargs`,
@@ -603,7 +603,7 @@ class GlobalNaiveDrift(_NoCovariatesMixin, _GlobalNaiveModel):
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
             cannot generate autoregressive predictions (`n > output_chunk_length`).
         **kwargs
-            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
+            Optional arguments to initialize the lightning.pytorch.Module, lightning.pytorch.Trainer, and
             Darts' :class:`TorchForecastingModel`.
             Since naive models are not trained, the following parameters will have no effect:
             `loss_fn`, `likelihood`, `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, `lr_scheduler_kwargs`,

@@ -16,8 +16,8 @@ from ray import tune
 from ray.tune.tuner import Tuner
 
 if TORCH_AVAILABLE:
-    from pytorch_lightning.callbacks import Callback, EarlyStopping
-    from pytorch_lightning.loggers import CSVLogger
+    from lightning.pytorch.callbacks import Callback, EarlyStopping
+    from lightning.pytorch.loggers import CSVLogger
     from ray.tune.integration.pytorch_lightning import TuneReportCheckpointCallback
     from torchmetrics import (
         MeanAbsoluteError,

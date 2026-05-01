@@ -21,10 +21,10 @@ import optuna
 
 if TORCH_AVAILABLE:
     import torch
-    from pytorch_lightning.callbacks import Callback, EarlyStopping
+    from lightning.pytorch.callbacks import Callback, EarlyStopping
 
     # hacky workaround found in https://github.com/Lightning-AI/pytorch-lightning/issues/17485
-    # to avoid import of both lightning and pytorch_lightning
+    # to avoid import of both lightning and lightning.pytorch
     class PatchedPruningCallback(
         optuna.integration.PyTorchLightningPruningCallback, Callback
     ):

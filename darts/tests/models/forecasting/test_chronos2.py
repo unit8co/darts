@@ -279,7 +279,7 @@ class TestChronos2Model:
         )
 
         # calling `fit()` should not use `trainer.fit()`
-        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+        with patch("lightning.pytorch.Trainer.fit") as mock_fit:
             model.fit(series=self.series)
             mock_fit.assert_not_called()
         assert model.model_created
@@ -310,7 +310,7 @@ class TestChronos2Model:
         )
 
         # calling `fit()` should not use `trainer.fit()`
-        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+        with patch("lightning.pytorch.Trainer.fit") as mock_fit:
             model.fit(series=self.series)
             mock_fit.assert_not_called()
         assert model.model_created

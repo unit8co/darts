@@ -23,7 +23,7 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
         This class is meant to be inherited to create a new foundation forecasting model.
         It governs the interactions between:
         - Darts forecasting models (module) :class:`PLTorchForecastingModel`
-        - Darts integrated PL Lightning Trainer :class:`pytorch_lightning.Trainer` or custom PL Trainers
+        - Darts integrated PL Lightning Trainer :class:`lightning.pytorch.Trainer` or custom PL Trainers
         - Dataset loaders :class:`TorchTrainingDataset` and :class:`TorchInferenceDataset` or custom Dataset
           Loaders.
 
@@ -106,7 +106,7 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
             checkpointing, tensorboard logging, setting the torch device and more.
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
+            <https://lightning.ai/docs/pytorch/stable/common/trainer.html>`__ for more information about the
             supported kwargs. Default: ``None``.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
@@ -118,21 +118,21 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
 
             For more info, see here:
             `trainer flags
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags>`__,
+            <https://lightning.ai/docs/pytorch/stable/common/trainer.html#trainer-flags>`__,
             and `training on multiple gpus
-            <https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus>`__.
+            <https://lightning.ai/docs/pytorch/stable/accelerators/gpu_basic.html#train-on-multiple-gpus>`__.
 
             With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
             :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
             The model will stop training early if the validation loss `val_loss` does not improve beyond
             specifications. For more information on callbacks, visit:
             `PyTorch Lightning Callbacks
-            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
+            <https://lightning.ai/docs/pytorch/stable/extensions/callbacks.html>`__
 
             .. highlight:: python
             .. code-block:: python
 
-                from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+                from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
                 # stop training when validation loss does not decrease more than 0.05 (`min_delta`) over
                 # a period of 5 epochs (`patience`)
