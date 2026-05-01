@@ -72,6 +72,16 @@ notorch = [
 ]
 all = ["darts[torch,notorch]"]
 
+[tool.uv]
+# Cooldown period for PyPI releases to mitigate supply chain attacks.
+exclude-newer = "7 days"
+# Must resolve dependencies for major platforms in uv.lock
+required-environments = [
+    "sys_platform == 'darwin'",
+    "sys_platform == 'linux'",
+    "sys_platform == 'win32'",
+]
+
 [tool.uv.sources]
 # Use PyTorch CPU-only index when torch-cpu group is enabled
 torch = { index = "pytorch-cpu", group = "torch-cpu" }
