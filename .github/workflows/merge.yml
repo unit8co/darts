@@ -87,7 +87,7 @@ jobs:
 
       - name: "Codecov upload"
         if: ${{ matrix.flavour == 'all' }}
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
