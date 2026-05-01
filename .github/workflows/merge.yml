@@ -18,9 +18,9 @@ jobs:
           python-version: '3.12'
 
       - name: "Install uv"
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.1.0
         with:
-          version: "0.9.26"
+          version: "0.11.7"
           python-version: '3.12'
 
       - name: "Install Dev Dependencies"
@@ -50,9 +50,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: "Install uv"
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.1.0
         with:
-          version: "0.9.26"
+          version: "0.11.7"
           python-version: ${{ matrix.python-version }}
 
       - name: "Install Dependencies Flavour ${{ matrix.flavour }}"
@@ -107,9 +107,9 @@ jobs:
           python-version: '3.11'
 
       - name: "Install uv"
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.1.0
         with:
-          version: "0.9.26"
+          version: "0.11.7"
           enable-cache: true
           python-version: '3.11'
 
@@ -146,9 +146,9 @@ jobs:
           python-version: '3.11'
 
       - name: "Install uv"
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.1.0
         with:
-          version: "0.9.26"
+          version: "0.11.7"
           enable-cache: true
           python-version: '3.11'
 
