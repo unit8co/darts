@@ -75,9 +75,11 @@ all = ["darts[torch,notorch]"]
 [tool.uv]
 # Cooldown period for PyPI releases to mitigate supply chain attacks.
 exclude-newer = "7 days"
+# Must resolve dependencies for major platforms in uv.lock
 required-environments = [
-    "sys_platform == 'darwin' and platform_machine == 'arm64'",  # Apple Silicon
-    "sys_platform == 'linux' and platform_machine == 'x86_64'",  # Linux x86_64
+    "sys_platform == 'darwin'",
+    "sys_platform == 'linux'",
+    "sys_platform == 'win32'",
 ]
 
 [tool.uv.sources]
