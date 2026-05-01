@@ -19,7 +19,7 @@ jobs:
       version: ${{ steps.bump_version.outputs.current-version }}
     steps:
       - name: "Clone repository"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.RELEASE_WORKFLOW_TOKEN_NEW_FINE_GRAINED }}
           fetch-depth: '1'
@@ -112,7 +112,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Clone repository at release tag"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.release.outputs.version }}
 
@@ -139,7 +139,7 @@ jobs:
     needs: [release]
     steps:
       - name: "Clone repository"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: "Set up Python 3.11"
         uses: actions/setup-python@v5
