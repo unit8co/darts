@@ -14,6 +14,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Dependencies**
 
 - Added a `uv` 7-day cooldown period to reduce supply-chain risk from newly published packages during dependency resolution. [#3096](https://github.com/unit8co/darts/pull/3096) by [Zhihao Dai](https://github.com/daidahao)
+- Removed the `pytorch-lightning` extra from `optuna-integration` in dev-only dependency groups to avoid pulling the `lightning` package. [#](https://github.com/unit8co/darts/pull/) by [Zhihao Dai](https://github.com/daidahao)
 
 ## [0.44.0](https://github.com/unit8co/darts/tree/0.44.0) (2026-04-30)
 
