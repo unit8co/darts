@@ -82,6 +82,10 @@ required-environments = [
     "sys_platform == 'win32'",
 ]
 
+[tool.uv.pip]
+# Use only binary dependency wheels to prevent arbitrary code execution
+only-binary = [":all:"]
+
 [tool.uv.sources]
 # Use PyTorch CPU-only index when torch-cpu group is enabled
 torch = { index = "pytorch-cpu", group = "torch-cpu" }
