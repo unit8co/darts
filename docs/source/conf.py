@@ -41,7 +41,7 @@ extensions = [
     "sphinx_autodoc_typehints",
     "sphinx_copybutton",
     "nbsphinx",
-    "m2r2",
+    "myst_parser",
     "numpydoc",
     "sphinx_design",
 ]
@@ -88,6 +88,11 @@ templates_path = ["templates"]
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
 language = "en"
+
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".md": "markdown",
+}
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
