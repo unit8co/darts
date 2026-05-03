@@ -94,7 +94,7 @@ jobs:
   publish-pypi:
     needs: [build-package]
     runs-on: ubuntu-latest
-    environment: release-env
+    environment: pypi
     permissions:
       id-token: write
     steps:
