@@ -21,17 +21,19 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Fixed several bugs in `SKLearnExplainer` including mismatched SHAP method enum values, feature naming conventions, inconsistent instance count in `explain()`. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 - Fixed a bug in explainability utils where stationarity tests were not properly conducted due to usage of `all()`. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
-- Fixed rendering issues of `CustomBlockRNNModule` and `CustomRNNModule` in the documentation. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao).
-- Fixed rendering issues of `20-SKLearnModel-examples` notebook in the documentation. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao).
+- Fixed rendering issues of `CustomBlockRNNModule` and `CustomRNNModule` in the documentation. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao)
+- Fixed rendering issues of `20-SKLearnModel-examples` notebook in the documentation. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao)
 
 ### For developers of the library:
 
+- PyPI package release is now part of the release workflow using secure Trusted Publishing via OpenID Connect (OIDC). [#3100](https://github.com/unit8co/darts/pull/3100) by [Dennis Bader](https://github.com/dennisbader)
+- Sped up the documentation build by utilizing multiple CPU cores. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao)
 - Added `SHAPSingleExplainabilityResult` class as the return type of `explain_single()` method in `SKLearnExplainer` and `TorchExplainer` and to store the SHAP results of a single instance explanation. This is in contrast to the existing `SHAPExplainabilityResult` which stores results for batched explanations. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
-- Sped up the documentation build by utilizing multiple CPU cores. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao).
 
 **Dependencies**
 
 - Added a `uv` 7-day cooldown period to reduce supply-chain risk from newly published packages during dependency resolution. [#3096](https://github.com/unit8co/darts/pull/3096) by [Zhihao Dai](https://github.com/daidahao)
+- Configured `uv` to install only binary wheels for all dependencies to reduce supply-chain risk from source-distribution build execution. [#3099](https://github.com/unit8co/darts/pull/3099) by [Zhihao Dai](https://github.com/daidahao)
 
 ## [0.44.0](https://github.com/unit8co/darts/tree/0.44.0) (2026-04-30)
 

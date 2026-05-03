@@ -75,12 +75,17 @@ all = ["darts[torch,notorch]"]
 [tool.uv]
 # Cooldown period for PyPI releases to mitigate supply chain attacks.
 exclude-newer = "7 days"
+exclude-newer-package = { jupyterlab = "3 days" }
 # Must resolve dependencies for major platforms in uv.lock
 required-environments = [
     "sys_platform == 'darwin'",
     "sys_platform == 'linux'",
     "sys_platform == 'win32'",
 ]
+
+[tool.uv.pip]
+# Use only binary dependency wheels to prevent arbitrary code execution
+only-binary = [":all:"]
 
 [tool.uv.sources]
 # Use PyTorch CPU-only index when torch-cpu group is enabled
@@ -181,7 +186,7 @@ release = [
     "ipython-genutils==0.2.0",
     "ipywidgets==8.1.8",
     "jinja2==3.1.6",
-    "jupyterlab==4.4.10",
+    "jupyterlab==4.5.7",
     "lxml-html-clean==0.4.4",
     "m2r2==0.3.4",
     "nbsphinx==0.9.7",

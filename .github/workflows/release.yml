@@ -15,6 +15,8 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump_version.outputs.current-version }}
     steps:
       - name: "Clone repository"
         uses: actions/checkout@v4
@@ -60,20 +62,59 @@ jobs:
           draft: false
           body_path: .github/RELEASE_TEMPLATE/release_body.md
 
+  build-package:
+    needs: [release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Clone repository at release tag"
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.version }}
+
+      - name: "Set up Python 3.11"
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: "Install uv"
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.26"
+          python-version: '3.11'
+
+      - name: "Build package"
+        run: uv build
+
+      - name: "Upload dists as artifacts"
+        uses: actions/upload-artifact@v4
+        with:
+          name: dists
+          path: dist/
+
+  publish-pypi:
+    needs: [build-package]
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: "Download dists"
+        uses: actions/download-artifact@v4
+        with:
+          name: dists
+          path: dist/
+
+      - name: "Publish to PyPI"
+        uses: pypa/gh-action-pypi-publish@release/v1
+
   deploy-docker:
     needs: [release]
     runs-on: ubuntu-latest
     steps:
-      - name: "Clone repository"
+      - name: "Clone repository at release tag"
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch all history and tags
-
-      - name: "Get latest version tag"
-        id: get_version
-        run: |
-          VERSION=$(git describe --tags --abbrev=0)
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          ref: ${{ needs.release.outputs.version }}
 
       - name: "Set up QEMU"
         uses: docker/setup-qemu-action@v3
@@ -91,7 +132,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: unit8/darts:${{ steps.get_version.outputs.version }}, unit8/darts:latest
+          tags: unit8/darts:${{ needs.release.outputs.version }}, unit8/darts:latest
 
   deploy-docs:
     runs-on: ubuntu-latest
