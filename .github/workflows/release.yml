@@ -67,12 +67,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Clone repository at release tag"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.release.outputs.version }}
 
       - name: "Set up Python 3.11"
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -86,7 +86,7 @@ jobs:
         run: uv build
 
       - name: "Upload dists as artifacts"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dists
           path: dist/
@@ -99,7 +99,7 @@ jobs:
       id-token: write
     steps:
       - name: "Download dists"
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dists
           path: dist/
