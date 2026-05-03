@@ -1488,7 +1488,7 @@ class SKLearnModel(GlobalForecastingModel):
 
             - ``{name}`` the static covariate name of the (first) series
             - ``{comp}`` the target component name of the (first) that the static covariate act on. If the static
-                covariate acts globally on a multivariate target series, will show "global".
+                covariate acts globally on a multivariate target series, will show "global_components".
         """
         return self._lagged_feature_names
 

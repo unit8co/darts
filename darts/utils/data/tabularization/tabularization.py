@@ -897,7 +897,7 @@ def create_lagged_component_names(
 
     - ``{name}`` the static covariate name of the (first) series
     - ``{comp}`` the target component name of the (first) that the static covariate act on. If the static
-      covariate acts globally on a multivariate target series, will show "global".
+      covariate acts globally on a multivariate target series, will show "global_components".
 
     The naming convention for labels is: ``"{name}_target_hrz{i}"``, where:
 

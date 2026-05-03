@@ -9,7 +9,16 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 
+**Improved**
+
+**Fixed**
+
+- Fixed rendering issues of `CustomBlockRNNModule` and `CustomRNNModule` in the documentation. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao).
+- Fixed rendering issues of `20-SKLearnModel-examples` notebook in the documentation. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao).
+
 ### For developers of the library:
+
+- Sped up the documentation build by utilizing multiple CPU cores. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao).
 
 **Dependencies**
 
