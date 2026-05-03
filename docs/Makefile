@@ -24,7 +24,6 @@ clean:
 	@rm -rf "./$(SOURCEDIR)/quickstart"
 	@rm -rf "./$(SOURCEDIR)/userguide"
 	@rm -rf "./$(SOURCEDIR)/release_notes"
-	@rm -rf "./$(SOURCEDIR)/README.rst"
 
 copy-examples:
 	@echo "[Makefile] copying examples..."
@@ -38,16 +37,14 @@ copy-quickstart:
 	@cp -r ../examples/static "$(SOURCEDIR)/quickstart/"
 
 generate-release_notes:
-	@echo "[Makefile] generating RELEASE_NOTES rst file..."
+	@echo "[Makefile] copying RELEASE_NOTES markdown file..."
 	@mkdir -p "$(SOURCEDIR)/release_notes"
-	@m2r2 ../CHANGELOG.md
-	@mv ../CHANGELOG.rst "$(SOURCEDIR)/release_notes/RELEASE_NOTES.rst"
+	@cp ../CHANGELOG.md "$(SOURCEDIR)/release_notes/RELEASE_NOTES.md"
 
 generate-userguide:
-	@echo "[Makefile] generating userguide rst files..."
-	@find $(USERGUIDEDIR)/*.md -exec m2r2 {} \;
+	@echo "[Makefile] copying userguide markdown files..."
 	@mkdir -p "$(SOURCEDIR)/userguide"
-	@mv $(USERGUIDEDIR)/*.rst "$(SOURCEDIR)/userguide/"
+	@cp $(USERGUIDEDIR)/*.md "$(SOURCEDIR)/userguide/"
 	@cp -r "$(USERGUIDEDIR)/images" "$(SOURCEDIR)/userguide/"
 
 generate-api:
