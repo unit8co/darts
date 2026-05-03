@@ -5,8 +5,8 @@ Explainability Result
 Contains the explainability results obtained from :func:`_ForecastingModelExplainer.explain()
 <darts.explainability.explainability._ForecastingModelExplainer.explain>`.
 
-- :class:`ShapExplainabilityResult <ShapExplainabilityResult>` for :class:`ShapExplainer
-  <darts.explainability.shap_explainer.ShapExplainer>`
+- :class:`SHAPExplainabilityResult <SHAPExplainabilityResult>` for :class:`SKLearnExplainer
+  <darts.explainability.sklearn_explainer.SKLearnExplainer>`
 - :class:`TFTExplainabilityResult <TFTExplainabilityResult>` for :class:`TFTExplainer
   <darts.explainability.tft_explainer.TFTExplainer>`
 - :class:`ComponentBasedExplainabilityResult <ComponentBasedExplainabilityResult>` for component based explainability
@@ -320,27 +320,28 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
         return component
 
 
-class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
+class SHAPExplainabilityResult(HorizonBasedExplainabilityResult):
     """
-    Stores the explainability results of a :class:`ShapExplainer <darts.explainability.shap_explainer.ShapExplainer>`
+    Stores the explainability results of a :class:`SKLearnExplainer
+    <darts.explainability.sklearn_explainer.SKLearnExplainer>`
     with convenient access to the results. It extends the :class:`HorizonBasedExplainabilityResult
     <HorizonBasedExplainabilityResult>` and carries additional information specific to the Shap explainers.
     In particular, in addition to the `explained_forecasts` (which in the case of the `ShapExplainer` are the
     shap values), it also provides access to the corresponding `feature_values` and the underlying `shap.Explanation`
     object.
 
-    - :func:`get_explanation() <ShapExplainabilityResult.get_explanation>`: explained forecast for a given horizon
+    - :func:`get_explanation() <SHAPExplainabilityResult.get_explanation>`: explained forecast for a given horizon
       (and target component)
-    - :func:`get_feature_values() <ShapExplainabilityResult.get_feature_values>`: feature values for a given horizon
+    - :func:`get_feature_values() <SHAPExplainabilityResult.get_feature_values>`: feature values for a given horizon
       (and target component).
-    - :func:`get_shap_explanation_object() <ShapExplainabilityResult.get_shap_explanation_object>`: `shap.Explanation`
+    - :func:`get_shap_explanation_object() <SHAPExplainabilityResult.get_shap_explanation_object>`: `shap.Explanation`
       object for a given horizon (and target component).
 
     Examples
     --------
-    >>> explainer = ShapExplainer(model)  # requires `background` if model was trained on multiple series
+    >>> explainer = SKLearnExplainer(model)  # requires `background` if model was trained on multiple series
     >>> explain_results = explainer.explain()
-    >>> exlained_fc = explain_results.get_explanation(horizon=1)
+    >>> explained_fc = explain_results.get_explanation(horizon=1)  # requires `component` if target is multivariate
     >>> feature_values = explain_results.get_feature_values(horizon=1)
     >>> shap_objects = explain_results.get_shap_explanation_objects(horizon=1)
     """

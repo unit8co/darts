@@ -11,6 +11,10 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Improvements to Explainability:
+  - 🔴 Renamed `ShapExplainer` to `SKLearnExplainer` to better reflect its scope of explaining sklearn-based models. [#3103](https://github.com/unit8co/darts/pull/3103) by [Zhihao Dai](https://github.com/daidahao).
+  - Renamed `ShapExplainabilityResult` to `SHAPExplainabilityResult` to better reflect SHAP-based explainability results. [#3103](https://github.com/unit8co/darts/pull/3103) by [Zhihao Dai](https://github.com/daidahao).
+
 **Fixed**
 
 - Fixed rendering issues of `CustomBlockRNNModule` and `CustomRNNModule` in the documentation. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao)
