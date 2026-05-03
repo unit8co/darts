@@ -194,6 +194,7 @@ jobs:
       id-token: write   # to verify the deployment originates from an appropriate source
     steps:
       - name: "Deploy to GitHub Pages"
+        id: deployment
         uses: actions/deploy-pages@v5.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
