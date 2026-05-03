@@ -37,3 +37,9 @@ jobs:
         # only update dependencies after auditing has passed
         run: |
           uv sync --group dev-all --group torch-cpu
+
+      - name: "Optimize cache for CI"
+        run: |
+          # Remove pre-built wheels but keep source-built wheels
+          # This reduces cache size while retaining expensive-to-rebuild packages
+          uv cache prune --ci
