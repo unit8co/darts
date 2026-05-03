@@ -75,6 +75,7 @@ all = ["darts[torch,notorch]"]
 [tool.uv]
 # Cooldown period for PyPI releases to mitigate supply chain attacks.
 exclude-newer = "7 days"
+exclude-newer-package = { jupyterlab = "3 days" }
 # Must resolve dependencies for major platforms in uv.lock
 required-environments = [
     "sys_platform == 'darwin'",
