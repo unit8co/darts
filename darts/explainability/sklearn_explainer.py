@@ -36,7 +36,7 @@ from sklearn.multioutput import MultiOutputRegressor
 
 from darts import TimeSeries
 from darts.explainability.explainability import _ForecastingModelExplainer
-from darts.explainability.explainability_result import ShapExplainabilityResult
+from darts.explainability.explainability_result import SHAPExplainabilityResult
 from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
@@ -62,7 +62,7 @@ class _ShapMethod(Enum):
 ShapMethod = NewType("ShapMethod", _ShapMethod)
 
 
-class ShapExplainer(_ForecastingModelExplainer):
+class SKLearnExplainer(_ForecastingModelExplainer):
     model: SKLearnModel
 
     def __init__(
@@ -114,7 +114,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.explainability.shap_explainer import ShapExplainer
+        >>> from darts.explainability import SKLearnExplainer
         >>> from darts.models import LinearRegressionModel
         >>> series = AirPassengersDataset().load()
         >>> model = LinearRegressionModel(lags=12)
@@ -201,12 +201,12 @@ class ShapExplainer(_ForecastingModelExplainer):
         foreground_future_covariates: TimeSeriesLike | None = None,
         horizons: Sequence[int] | None = None,
         target_components: Sequence[str] | None = None,
-    ) -> ShapExplainabilityResult:
+    ) -> SHAPExplainabilityResult:
         """
-        Explains a foreground time series and returns a :class:`ShapExplainabilityResult
-        <darts.explainability.explainability_result.ShapExplainabilityResult>`.
+        Explains a foreground time series and returns a :class:`SHAPExplainabilityResult
+        <darts.explainability.explainability_result.SHAPExplainabilityResult>`.
         The results can be retrieved with method :func:`get_explanation()
-        <darts.explainability.explainability_result.ShapExplainabilityResult.get_explanation>`.
+        <darts.explainability.explainability_result.SHAPExplainabilityResult.get_explanation>`.
         The result is a multivariate `TimeSeries` instance containing the 'explanation'
         for the (horizon, target_component) forecast at any timestamp forecastable corresponding to
         the foreground `TimeSeries` input.
@@ -237,7 +237,7 @@ class ShapExplainer(_ForecastingModelExplainer):
 
         Returns
         -------
-        ShapExplainabilityResult
+        SHAPExplainabilityResult
             The forecast explanations
 
         Examples
@@ -360,7 +360,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             feature_values_list = feature_values_list[0]
             shap_explanation_object_list = shap_explanation_object_list[0]
 
-        return ShapExplainabilityResult(
+        return SHAPExplainabilityResult(
             shap_values_list, feature_values_list, shap_explanation_object_list
         )
 
