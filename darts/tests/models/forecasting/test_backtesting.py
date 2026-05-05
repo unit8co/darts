@@ -24,6 +24,10 @@ from darts.models import (
     Theta,
 )
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.utils.likelihood_models.base import (
+    likelihood_component_names,
+    quantile_names,
+)
 from darts.utils.timeseries_generation import constant_timeseries as ct
 from darts.utils.timeseries_generation import gaussian_timeseries as gt
 from darts.utils.timeseries_generation import linear_timeseries as lt
@@ -1632,6 +1636,71 @@ class TestBacktesting:
         for bt in bts:
             assert bt.shape == shape_expected
             np.testing.assert_array_almost_equal(bt, bt_expected)
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [1, 2],  # number of target components (uni / multivariate)
+            [[0.1, 0.5, 0.9], [0.5]],  # quantiles (multiple / single)
+            [None, np.nanmean],  # component_reduction
+        ),
+    )
+    def test_backtest_overlap_end_empty_intersection(self, config):
+        """When overlap_end=True and predict_likelihood_parameters=True, the
+        last forecast window can extend beyond the series end, producing an
+        empty intersection. The reshape in _get_values must handle a size-0
+        array without raising."""
+        np.random.seed(0)
+        n_components, qs, component_reduction = config
+
+        series_length = 10
+        y = lt(length=series_length)
+        if n_components > 1:
+            y = y.stack(y + 1.0)
+
+        q_param_names = quantile_names(qs)
+        q_comp_names = likelihood_component_names(
+            components=y.components,
+            parameter_names=q_param_names,
+        )
+
+        n_q_cols = n_components * len(qs)
+        hfc_overlap = TimeSeries.from_times_and_values(
+            times=generate_index(
+                start=y.start_time(),
+                length=10,
+            ),
+            values=np.random.random((10, n_q_cols, 1)),
+            columns=q_comp_names,
+        )
+        hfc_no_overlap = TimeSeries.from_times_and_values(
+            times=generate_index(
+                start=y.end_time() + y.freq,
+                length=5,
+            ),
+            values=np.random.random((5, n_q_cols, 1)),
+            columns=q_comp_names,
+        )
+        hfc = [hfc_overlap, hfc_no_overlap]
+
+        model = NaiveDrift()
+        metric_kwargs = [
+            {"q": qs, "component_reduction": component_reduction},
+        ]
+        bt = model.backtest(
+            series=y,
+            historical_forecasts=hfc,
+            last_points_only=False,
+            metric=[metrics.mae],
+            metric_kwargs=metric_kwargs,
+            reduction=None,
+        )
+        assert len(bt) == 2
+        expected_bt = metrics.mae(
+            y, hfc_overlap, q=qs, component_reduction=component_reduction
+        )
+        np.testing.assert_array_almost_equal(bt[0], expected_bt)
+        assert np.all(np.isnan(bt[1]))
 
     @pytest.mark.parametrize(
         "config",
