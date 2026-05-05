@@ -24,6 +24,7 @@ import inspect
 import os
 import shutil
 import sys
+import tempfile
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from glob import glob
@@ -97,6 +98,11 @@ TORCH_NP_DTYPES = {
 # pickling a TorchForecastingModel will not save below attributes: the keys specify the
 # attributes to be ignored, and the values are the default values getting assigned upon loading
 TFM_ATTRS_NO_PICKLE = {"model": None, "trainer": None}
+
+# key used in the pickled state dict to carry an in-memory checkpoint of the underlying
+# PyTorch Lightning module so that a fitted ``TorchForecastingModel`` survives a plain
+# ``pickle`` round-trip (see :issue:`3106`).
+_TFM_PICKLED_CHECKPOINT_KEY = "_tfm_pickled_ckpt"
 
 logger = get_logger(__name__)
 
@@ -2814,15 +2820,90 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             raise_log(ValueError("\n".join(msg)), logger)
 
     def __getstate__(self):
-        # do not pickle the PyTorch LightningModule, and Trainer
-        return {k: v for k, v in self.__dict__.items() if k not in TFM_ATTRS_NO_PICKLE}
+        # Do not pickle the PyTorch LightningModule and Trainer directly: they are
+        # not always picklable (DataLoader workers, hooks, ...). Instead, when the
+        # underlying ``self.model`` is set, we serialize a Lightning checkpoint to
+        # an in-memory bytes buffer and stash it on the pickled state. ``__setstate__``
+        # uses the buffer to rebuild ``self.model`` so that a plain ``pickle`` round-trip
+        # of a fitted model preserves prediction-readiness (see #3106).
+        state = {k: v for k, v in self.__dict__.items() if k not in TFM_ATTRS_NO_PICKLE}
+        if self.model is not None:
+            ckpt_bytes = self._dump_pl_module_checkpoint()
+            if ckpt_bytes is not None:
+                state[_TFM_PICKLED_CHECKPOINT_KEY] = ckpt_bytes
+        return state
 
     def __setstate__(self, d):
+        ckpt_bytes = d.pop(_TFM_PICKLED_CHECKPOINT_KEY, None)
         self.__dict__ = d
         # upon loading the pickled object, add back the PyTorch LightningModule, and Trainer attribute with
         # default values
         for attr, default_val in TFM_ATTRS_NO_PICKLE.items():
             setattr(self, attr, default_val)
+        # restore the underlying PyTorch Lightning module from the in-memory checkpoint
+        # so that ``predict()`` works after a plain ``pickle`` round-trip.
+        if ckpt_bytes is not None:
+            self._load_pl_module_from_bytes(ckpt_bytes)
+
+    def _dump_pl_module_checkpoint(self) -> bytes | None:
+        """Serialize the underlying ``PLForecastingModule`` to an in-memory checkpoint.
+
+        Uses the existing ``Trainer`` if one is attached (this is the case for a
+        freshly fitted model), otherwise falls back to a minimal checkpoint built
+        from the module's ``state_dict`` and ``hparams`` (this covers models that
+        were loaded via :meth:`load`, where ``trainer`` is ``None``).
+
+        Returns ``None`` if the checkpoint cannot be produced for any reason; the
+        pickle then falls back to the historical behaviour of dropping ``self.model``.
+        """
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".ckpt", delete=False) as f:
+                ckpt_path = f.name
+            try:
+                if self.trainer is not None:
+                    self.trainer.save_checkpoint(ckpt_path)
+                else:
+                    # No trainer attached (e.g. model was loaded via ``load()``).
+                    # Build a minimal checkpoint compatible with ``LightningModule.load_from_checkpoint``
+                    # and let the module's ``on_save_checkpoint`` hook populate Darts-specific keys.
+                    checkpoint = {
+                        "state_dict": self.model.state_dict(),
+                        "hyper_parameters": dict(self.model.hparams),
+                        "pytorch-lightning_version": pl.__version__,
+                    }
+                    self.model.on_save_checkpoint(checkpoint)
+                    torch.save(checkpoint, ckpt_path)
+                with open(ckpt_path, "rb") as fin:
+                    return fin.read()
+            finally:
+                if os.path.exists(ckpt_path):
+                    os.remove(ckpt_path)
+        except Exception as exc:  # pragma: no cover - defensive; pickle still succeeds
+            logger.warning(
+                f"Could not serialize the underlying PyTorch Lightning module during pickling "
+                f"({type(exc).__name__}: {exc}). The unpickled model will have ``model=None``; "
+                f"call ``fit()`` again before ``predict()``."
+            )
+            return None
+
+    def _load_pl_module_from_bytes(self, ckpt_bytes: bytes) -> None:
+        """Restore ``self.model`` from a checkpoint produced by :meth:`_dump_pl_module_checkpoint`."""
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".ckpt", delete=False) as f:
+                ckpt_path = f.name
+                f.write(ckpt_bytes)
+            try:
+                self.model = self._load_from_checkpoint(ckpt_path)
+            finally:
+                if os.path.exists(ckpt_path):
+                    os.remove(ckpt_path)
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning(
+                f"Could not restore the underlying PyTorch Lightning module after unpickling "
+                f"({type(exc).__name__}: {exc}). The unpickled model will have ``model=None``; "
+                f"call ``fit()`` again before ``predict()``."
+            )
+            self.model = None
 
 
 def _raise_if_wrong_type(obj, exp_type, msg="expected type {}, got: {}"):

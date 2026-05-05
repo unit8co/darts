@@ -17,6 +17,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed `TorchForecastingModel` losing its underlying PyTorch Lightning module after a plain `pickle` round-trip, which made `predict()` raise `AttributeError`. The pickled state now carries an in-memory checkpoint that is restored on unpickling, so a fitted model survives `pickle.dump`/`pickle.load` and remains prediction-ready. [#3106](https://github.com/unit8co/darts/issues/3106)
 - Fixed rendering issues of `CustomBlockRNNModule` and `CustomRNNModule` in the documentation. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao)
 - Fixed rendering issues of `20-SKLearnModel-examples` notebook in the documentation. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao)
 

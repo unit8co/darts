@@ -165,6 +165,106 @@ class TestTorchForecastingModel:
         assert params_old.keys() == params_new.keys()
         assert all([params_old[k] == params_new[k] for k in params_old])
 
+    @pytest.mark.parametrize(
+        "model_cls,extra_kwargs",
+        [
+            (
+                GlobalNaiveSeasonal,
+                {
+                    "input_chunk_length": 7,
+                    "output_chunk_length": 3,
+                    **tfm_kwargs,
+                },
+            ),
+            (
+                NBEATSModel,
+                {
+                    "input_chunk_length": 14,
+                    "output_chunk_length": 3,
+                    "n_epochs": 1,
+                    "random_state": 42,
+                    **tfm_kwargs,
+                },
+            ),
+        ],
+    )
+    def test_pickle_roundtrip_preserves_inner_module(self, model_cls, extra_kwargs):
+        """Regression test for #3106: a fitted ``TorchForecastingModel`` must keep
+        its inner LightningModule (and remain prediction-ready) after a plain
+        ``pickle`` round-trip.
+        """
+        import io
+        import pickle
+
+        times = pd.date_range("2024-01-01", periods=60, freq="D")
+        values = np.sin(np.arange(60) * 2 * np.pi / 7) + 10.0
+        ts = TimeSeries.from_times_and_values(times, values)
+
+        model = model_cls(**extra_kwargs)
+        model.fit(ts)
+        pred_before = model.predict(3)
+        assert model.model is not None
+
+        buf = io.BytesIO()
+        pickle.dump(model, buf)
+        buf.seek(0)
+        restored = pickle.load(buf)
+
+        assert restored.model is not None
+        assert type(restored.model).__name__ == type(model.model).__name__
+        pred_after = restored.predict(3)
+        np.testing.assert_allclose(pred_before.values(), pred_after.values(), atol=1e-5)
+
+    def test_pickle_roundtrip_after_save_load(self, tmpdir):
+        """A model that was saved to disk and reloaded via ``load()`` (no trainer
+        attached) must also survive a subsequent pickle round-trip (#3106)."""
+        import io
+        import pickle
+
+        model = NBEATSModel(
+            input_chunk_length=14,
+            output_chunk_length=3,
+            n_epochs=1,
+            random_state=42,
+            **tfm_kwargs,
+        )
+        model.fit(self.series)
+        pred_before = model.predict(3)
+
+        save_path = os.path.join(str(tmpdir), "m.pt")
+        model.save(save_path)
+        loaded = NBEATSModel.load(save_path)
+        assert loaded.trainer is None
+        assert loaded.model is not None
+
+        buf = io.BytesIO()
+        pickle.dump(loaded, buf)
+        buf.seek(0)
+        restored = pickle.load(buf)
+
+        assert restored.model is not None
+        pred_after = restored.predict(3)
+        np.testing.assert_allclose(pred_before.values(), pred_after.values(), atol=1e-5)
+
+    def test_pickle_roundtrip_unfitted_model(self):
+        """Pickling an unfitted model is a no-op for ``self.model`` and should not error."""
+        import io
+        import pickle
+
+        model = NBEATSModel(
+            input_chunk_length=14,
+            output_chunk_length=3,
+            n_epochs=1,
+            **tfm_kwargs,
+        )
+        assert model.model is None
+
+        buf = io.BytesIO()
+        pickle.dump(model, buf)
+        buf.seek(0)
+        restored = pickle.load(buf)
+        assert restored.model is None
+
     @patch(
         "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.save"
     )
