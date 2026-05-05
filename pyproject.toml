@@ -35,7 +35,7 @@ dependencies = [
     "matplotlib>=3.3.0",
     "narwhals>=1.25.1",
     "nfoursid>=1.0.0",
-    "numpy>=2.2.0",
+    "numpy>=1.26.0",
     "pandas>=2.2.0",
     "pyod>=0.9.5",
     "requests>=2.22.0",
@@ -165,7 +165,7 @@ dev = [
 ]
 torch-cpu = ["torch>=2.0.0"]
 optional = [
-    "onnx>=1.20.1",
+    "onnx>=1.0.0",
     "onnxruntime>=1.24.1; python_version >= '3.11'",
     "onnxruntime<1.24.1; python_version < '3.11'",  # 1.24.1 dropped python 3.10 support
     "optuna>=4.7.0",
