@@ -19,13 +19,13 @@ jobs:
       version: ${{ steps.bump_version.outputs.current-version }}
     steps:
       - name: "Clone repository"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.RELEASE_WORKFLOW_TOKEN_NEW_FINE_GRAINED }}
           fetch-depth: '1'
 
       - name: "Set up Python 3.11"
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -67,12 +67,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Clone repository at release tag"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.release.outputs.version }}
 
       - name: "Set up Python 3.11"
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -86,7 +86,7 @@ jobs:
         run: uv build
 
       - name: "Upload dists as artifacts"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dists
           path: dist/
@@ -99,7 +99,7 @@ jobs:
       id-token: write
     steps:
       - name: "Download dists"
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dists
           path: dist/
@@ -112,24 +112,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Clone repository at release tag"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.release.outputs.version }}
 
       - name: "Set up QEMU"
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: "Set up Docker Buildx"
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: "Login to Docker Hub"
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: "Build and push"
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           push: true
           tags: unit8/darts:${{ needs.release.outputs.version }}, unit8/darts:latest
@@ -139,10 +139,10 @@ jobs:
     needs: [release]
     steps:
       - name: "Clone repository"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: "Set up Python 3.11"
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
