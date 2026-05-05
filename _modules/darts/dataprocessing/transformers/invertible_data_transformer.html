@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.43.0" />
+  <meta name="docsearch:version" content="0.44.0" />
   </head>
   
   
@@ -434,7 +434,7 @@
 
 
 <div class="viewcode-block" id="InvertibleDataTransformer">
-<a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer">[docs]</a>
+<a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.boxcox.InvertibleDataTransformer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">InvertibleDataTransformer</span><span class="p">(</span><span class="n">BaseDataTransformer</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -575,7 +575,7 @@
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">ts_inverse_transform</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 <div class="viewcode-block" id="InvertibleDataTransformer.ts_inverse_transform">
-<a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform">[docs]</a>
+<a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.boxcox.InvertibleDataTransformer.ts_inverse_transform">[docs]</a>
     <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">ts_inverse_transform</span><span class="p">(</span>
@@ -659,7 +659,7 @@
 
 
 <div class="viewcode-block" id="InvertibleDataTransformer.inverse_transform">
-<a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.inverse_transform">[docs]</a>
+<a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.boxcox.InvertibleDataTransformer.inverse_transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">inverse_transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeriesLike</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>

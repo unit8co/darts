@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.43.0" />
+  <meta name="docsearch:version" content="0.44.0" />
   </head>
   
   
@@ -974,7 +974,8 @@
             <span class="c1"># we extract the relevant quantile components with shape (times, components * quantiles)</span>
             <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span><span class="p">[:,</span> <span class="n">vals_components</span><span class="o">.</span><span class="n">get_indexer</span><span class="p">(</span><span class="n">q_names</span><span class="p">)]</span>
             <span class="c1"># rearrange into (times, components, quantiles)</span>
-            <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">actual_components</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">n_quantiles</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="nb">len</span><span class="p">(</span><span class="n">actual_components</span><span class="p">)</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">actual_components</span><span class="p">),</span> <span class="n">n_quantiles</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">vals</span>
 
     <span class="c1"># probabilistic input</span>

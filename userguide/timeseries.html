@@ -58,7 +58,7 @@
     <link rel="prev" title="User Guide" href="../userguide.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.43.0" />
+  <meta name="docsearch:version" content="0.44.0" />
   </head>
   
   
@@ -453,11 +453,9 @@
 <p>Sometimes the dimensions are called <em>components</em>. A single <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object can be either univariate (if it has a single component), or multivariate (if it has multiple components). In a multivariate series, all components share the same time axis. I.e., they all share the same time stamps.</p>
 <p>Some models in Darts (and all machine learning models) support multivariate series. This means that they can take multivariate series in inputs (either as targets or as covariates), and the forecasts they produce will have a dimensionality matching that of the targets.</p>
 <p>In addition, some models can work on <em>multiple time series</em>, meaning that they can be trained on multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects, and used to forecasts multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects in one go. This is sometimes referred to as panel data. In such cases, the different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> need not share the same time index – for instance, some series might be in 1990 and others in 2000. In fact, the series need not even have the same frequency. The models handling multiple series expect Python <code class="docutils literal notranslate"><span class="pre">Sequence</span></code>s of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> in inputs (for example, a simple list of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>).</p>
-<a class="reference external image-reference" href="./images/timeseries/multivariate.png"><img alt="figure1" src="../_images/multivariate.png" />
-</a>
+<p><img alt="figure1" src="../_images/multivariate.png" /></p>
 <p><strong>Figure 1:</strong> A single multivariate series. In Darts this is represented by a single <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object.</p>
-<a class="reference external image-reference" href="./images/timeseries/multiple-ts.png"><img alt="figure2" src="../_images/multiple-ts.png" />
-</a>
+<p><img alt="figure2" src="../_images/multiple-ts.png" /></p>
 <p><strong>Figure 2:</strong> Multiple time series. In Darts this is represented by multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects. The series may or may not share the same time axis, and may or may not be multivariate.</p>
 <ul class="simple">
 <li><p><strong>Example of a multivariate series:</strong> The blood pressure and heart rate of a single patient over time (one multivariate series with 2 components).</p></li>
@@ -516,7 +514,7 @@
 <li><p>Sensor type</p></li>
 <li><p>…</p></li>
 </ul>
-<p>The static covariates have to be specified by a pandas DataFrame whose rows match the <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>‘s components, and whose columns represent the dimensions of the static covariates. They can be added to a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> when using most factory methods, using the <code class="docutils literal notranslate"><span class="pre">static_covariates</span></code> parameter. They can also be added to an existing <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> using the <code class="docutils literal notranslate"><span class="pre">with_static_covariates()</span></code> method.</p>
+<p>The static covariates have to be specified by a pandas DataFrame whose rows match the <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>’s components, and whose columns represent the dimensions of the static covariates. They can be added to a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> when using most factory methods, using the <code class="docutils literal notranslate"><span class="pre">static_covariates</span></code> parameter. They can also be added to an existing <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> using the <code class="docutils literal notranslate"><span class="pre">with_static_covariates()</span></code> method.</p>
 </section>
 <section id="hierarchical-time-series">
 <h2>Hierarchical Time Series<a class="headerlink" href="#hierarchical-time-series" title="Link to this heading">#</a></h2>
@@ -598,7 +596,7 @@
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/userguide/timeseries.rst.txt"
+      <li><a href="../_sources/userguide/timeseries.md.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>

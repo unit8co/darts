@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.43.0" />
+  <meta name="docsearch:version" content="0.44.0" />
   </head>
   
   
@@ -413,6 +413,11 @@
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Block Recurrent Neural Networks</span>
 <span class="sd">-------------------------------</span>
+<span class="sd">.. autoclass:: CustomBlockRNNModule</span>
+<span class="sd">   :members: forward</span>
+<span class="sd">   :no-inherited-members:</span>
+<span class="sd">   :no-undoc-members:</span>
+<span class="sd">   :no-special-members:</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
@@ -456,13 +461,13 @@
 
 <span class="sd">        To create a new module, subclass from :class:`CustomBlockRNNModule` and:</span>
 
-<span class="sd">        * Define the architecture in the module constructor (`__init__()`)</span>
+<span class="sd">        * Define the architecture in the module constructor (``__init__()``)</span>
 
-<span class="sd">        * Add the `forward()` method and define the logic of your module&#39;s forward pass</span>
+<span class="sd">        * Add the ``forward()`` method and define the logic of your module&#39;s forward pass</span>
 
-<span class="sd">        * Use the custom module class when creating a new :class:`BlockRNNModel` with parameter `model`.</span>
+<span class="sd">        * Use the custom module class when creating a new :class:`BlockRNNModel` with parameter ``model``.</span>
 
-<span class="sd">        You can use `darts.models.forecasting.block_rnn_model._BlockRNNModule` as an example.</span>
+<span class="sd">        You can use ``darts.models.forecasting.block_rnn_model._BlockRNNModule`` as an example.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -949,7 +954,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_considers_static_covariates</span> <span class="o">=</span> <span class="n">use_static_covariates</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">TorchTrainingSample</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">TorchTrainingSample</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PLForecastingModule</span><span class="p">:</span>
         <span class="c1"># samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)</span>
         <span class="p">(</span><span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">static_covariates</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">train_sample</span>

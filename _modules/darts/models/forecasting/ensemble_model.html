@@ -1,0 +1,1351 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>darts.models.forecasting.ensemble_model &#8212; darts  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/darts/models/forecasting/ensemble_model';</script>
+    <link rel="icon" href="../../../../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.44.0" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../../../../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">darts.models.forecasting.ensemble_model</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for darts.models.forecasting.ensemble_model</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Base Ensemble Model</span>
+<span class="sd">-------------------</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">BinaryIO</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.sklearn_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">SKLearnModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LikelihoodType</span>
+
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">):</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Self</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Self</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">concatenate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ForecastingModel</span><span class="p">,</span>
+    <span class="n">GlobalForecastingModel</span><span class="p">,</span>
+    <span class="n">LocalForecastingModel</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeriesLike</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.ts_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">series2seq</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">TORCH_AVAILABLE</span>
+
+<span class="k">if</span> <span class="n">TORCH_AVAILABLE</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.torch_forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">TFM_ATTRS_NO_PICKLE</span><span class="p">,</span>
+        <span class="n">TorchForecastingModel</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">TorchForecastingModel</span><span class="p">,</span> <span class="n">TFM_ATTRS_NO_PICKLE</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">EnsembleModel</span><span class="p">(</span><span class="n">GlobalForecastingModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Abstract base class for ensemble models.</span>
+<span class="sd">    Ensemble models take in a list of forecasting models and ensemble their predictions</span>
+<span class="sd">    to make a single one according to the rule defined by their `ensemble()` method.</span>
+
+<span class="sd">    If `future_covariates` or `past_covariates` are provided at training or inference time,</span>
+<span class="sd">    they will be passed only to the models supporting them.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    forecasting_models</span>
+<span class="sd">        List of forecasting models whose predictions to ensemble</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">                if all the models are probabilistic, the `EnsembleModel` will also be probabilistic.</span>
+<span class="sd">        ..</span>
+<span class="sd">    train_num_samples</span>
+<span class="sd">        Number of prediction samples from each forecasting model for multi-level ensembles. The n_samples</span>
+<span class="sd">        dimension will be reduced using the `train_samples_reduction` method.</span>
+<span class="sd">    train_samples_reduction</span>
+<span class="sd">        If `forecasting_models` are probabilistic and `train_num_samples` &gt; 1, method used to reduce the</span>
+<span class="sd">        samples dimension to 1. Possible values: &quot;mean&quot;, &quot;median&quot; or float value corresponding to the</span>
+<span class="sd">        desired quantile.</span>
+<span class="sd">    train_forecasting_models</span>
+<span class="sd">        If set to `False`, the `forecasting_models` are not retrained when calling `fit()` (only supported</span>
+<span class="sd">        if all the `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.</span>
+<span class="sd">    train_n_points</span>
+<span class="sd">        The number of points per series to use to train the ensemble model. Can be set to `-1` to use the</span>
+<span class="sd">        entire series to train the regressor if `forecasting_models` are already fitted and</span>
+<span class="sd">        `train_forecasting_models=False`.</span>
+<span class="sd">    show_warnings</span>
+<span class="sd">        Whether to show warnings related to models covariates support.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">forecasting_models</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ForecastingModel</span><span class="p">],</span>
+        <span class="n">ensemble_model</span><span class="p">:</span> <span class="n">SKLearnModel</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">train_num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">train_samples_reduction</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">train_forecasting_models</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">train_n_points</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">forecasting_models</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">forecasting_models</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;`forecasting_models` must be a non-empty list of forecasting models.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">is_local_model</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">LocalForecastingModel</span><span class="p">)</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">forecasting_models</span>
+        <span class="p">]</span>
+        <span class="n">is_global_model</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">GlobalForecastingModel</span><span class="p">)</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">forecasting_models</span>
+        <span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_local_ensemble</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_local_model</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_global_ensemble</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_global_model</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span>
+            <span class="n">local_model</span> <span class="ow">or</span> <span class="n">global_model</span>
+            <span class="k">for</span> <span class="n">local_model</span><span class="p">,</span> <span class="n">global_model</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">is_local_model</span><span class="p">,</span> <span class="n">is_global_model</span><span class="p">)</span>
+        <span class="p">]):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;All models must be of type `GlobalForecastingModel`, or `LocalForecastingModel`. &quot;</span>
+                    <span class="s2">&quot;Also, make sure that all `forecasting_models` are instantiated.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">model_fit_status</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">_fit_called</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">forecasting_models</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_trained</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span><span class="n">model_fit_status</span><span class="p">)</span>
+        <span class="n">some_trained</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">model_fit_status</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_global_ensemble</span> <span class="ow">and</span> <span class="n">some_trained</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Some models in `forecasting_models` are already fitted. Using pre-trained models is &quot;</span>
+                    <span class="s2">&quot;only supported if all models are of type `GlobalForecastingModel`. &quot;</span>
+                    <span class="s2">&quot;Consider resetting all models with `my_model.untrained_model()`.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_global_ensemble</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_trained</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">some_trained</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;All `forecasting_models` are global but there is a mixture of fitted and unfitted models. &quot;</span>
+                    <span class="s2">&quot;Consider resetting all models with `my_model.untrained_model()` or using only trained &quot;</span>
+                    <span class="s2">&quot;`GlobalForecastingModel` together with `train_forecasting_models=False`.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">train_forecasting_models</span><span class="p">:</span>
+            <span class="c1"># prevent issues with pytorch-lightning trainer during retraining</span>
+            <span class="k">if</span> <span class="n">some_trained</span><span class="p">:</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;`train_forecasting_models=True` but some `forecasting_models` were already fitted. &quot;</span>
+                        <span class="s2">&quot;Consider resetting all the `forecasting_models` with `my_model.untrained_model()` &quot;</span>
+                        <span class="s2">&quot;before passing them to the `EnsembleModel`.&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_global_ensemble</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_trained</span><span class="p">):</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;`train_forecasting_models=False` is supported only if all the `forecasting_models` are &quot;</span>
+                        <span class="s2">&quot;already trained `GlobalForecastingModels`.&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">train_num_samples</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">train_num_samples</span> <span class="o">&gt;</span> <span class="mi">1</span>
+            <span class="ow">and</span> <span class="nb">all</span><span class="p">([</span>
+                <span class="ow">not</span> <span class="n">m</span><span class="o">.</span><span class="n">supports_probabilistic_prediction</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">forecasting_models</span>
+            <span class="p">])</span>
+        <span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;`train_num_samples` is greater than 1 but the `RegressionEnsembleModel` &quot;</span>
+                    <span class="s2">&quot;contains only deterministic `forecasting_models`.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">supported_reduction</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">,</span> <span class="s2">&quot;median&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">train_samples_reduction</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">train_samples_reduction</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mf">0.0</span> <span class="o">&lt;</span> <span class="n">train_samples_reduction</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">):</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;if a float, `train_samples_reduction` must be between &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;0 and 1, received (</span><span class="si">{</span><span class="n">train_samples_reduction</span><span class="si">}</span><span class="s2">)&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">train_samples_reduction</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">train_samples_reduction</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_reduction</span><span class="p">:</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;if a string, `train_samples_reduction` must be one of </span><span class="si">{</span><span class="n">supported_reduction</span><span class="si">}</span><span class="s2">, &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;received (</span><span class="si">{</span><span class="n">train_samples_reduction</span><span class="si">}</span><span class="s2">)&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;`train_samples_reduction` type not supported &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">train_samples_reduction</span><span class="si">}</span><span class="s2">). Must be `float` &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; or one of </span><span class="si">{</span><span class="n">supported_reduction</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">train_n_points</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_trained</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">train_forecasting_models</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;`regression_train_n_points` can only be `-1` if `retrain_forecasting_model=False` and &quot;</span>
+                    <span class="s2">&quot;all `forecasting_models` are already fitted.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># ensemble model checks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span> <span class="o">=</span> <span class="n">forecasting_models</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ensemble_model</span> <span class="o">=</span> <span class="n">ensemble_model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_num_samples</span> <span class="o">=</span> <span class="n">train_num_samples</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_samples_reduction</span> <span class="o">=</span> <span class="n">train_samples_reduction</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_forecasting_models</span> <span class="o">=</span> <span class="n">train_forecasting_models</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_warnings</span> <span class="o">=</span> <span class="n">show_warnings</span>
+        <span class="c1"># regression_train_n_points=-1 is converted to actual n points at fitting time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">train_n_points</span>
+
+        <span class="k">if</span> <span class="n">show_warnings</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">supports_past_covariates</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_full_past_covariates_support</span><span class="p">()</span>
+            <span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;Some `forecasting_models` in the ensemble do not support past covariates, the past covariates &quot;</span>
+                    <span class="s2">&quot;will be provided only to the models supporting them when calling fit()` or `predict()`. &quot;</span>
+                    <span class="s2">&quot;To hide these warnings, set `show_warnings=False`.&quot;</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">supports_future_covariates</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_full_future_covariates_support</span><span class="p">()</span>
+            <span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;Some `forecasting_models` in the ensemble do not support future covariates, the future covariates&quot;</span>
+                    <span class="s2">&quot; will be provided only to the models supporting them when calling `fit()` or `predict()`. &quot;</span>
+                    <span class="s2">&quot;To hide these warnings, set `show_warnings=False`.&quot;</span>
+                <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">untrained_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="o">**</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_params</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_forecasting_models</span><span class="p">:</span>
+            <span class="c1"># torch models drop the underlying network when calling `untrained_model()`;</span>
+            <span class="c1"># add them back in case the models are not retrained</span>
+            <span class="k">for</span> <span class="n">sub_model</span><span class="p">,</span> <span class="n">sub_model_orig</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
+            <span class="p">):</span>
+                <span class="k">if</span> <span class="n">TORCH_AVAILABLE</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sub_model</span><span class="p">,</span> <span class="n">TorchForecastingModel</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">TFM_ATTRS_NO_PICKLE</span><span class="p">:</span>
+                        <span class="nb">setattr</span><span class="p">(</span><span class="n">sub_model</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">sub_model_orig</span><span class="p">,</span> <span class="n">attr</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">model</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeriesLike</span><span class="p">,</span>
+        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">TimeSeriesLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">TimeSeriesLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fits the model on the provided series.</span>
+<span class="sd">        Note that `EnsembleModel.fit()` does NOT call `fit()` on each of its constituent forecasting models.</span>
+<span class="sd">        It is left to classes inheriting from EnsembleModel to do so appropriately when overriding `fit()`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">is_single_series</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span>
+
+        <span class="c1"># local models OR mix of local and global models</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_global_ensemble</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_single_series</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;The `forecasting_models` contain at least one LocalForecastingModel, &quot;</span>
+                    <span class="s2">&quot;which does not support training on multiple series.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># check that if timeseries is single series, that covariates are as well and vice versa</span>
+        <span class="n">error_past_cov</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">error_future_cov</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">error_past_cov</span> <span class="o">=</span> <span class="n">is_single_series</span> <span class="o">!=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">past_covariates</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">error_future_cov</span> <span class="o">=</span> <span class="n">is_single_series</span> <span class="o">!=</span> <span class="nb">isinstance</span><span class="p">(</span>
+                <span class="n">future_covariates</span><span class="p">,</span> <span class="n">TimeSeries</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">error_past_cov</span> <span class="ow">or</span> <span class="n">error_future_cov</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Both series and covariates have to be either single TimeSeries or sequences of TimeSeries.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_verify_past_future_covariates</span><span class="p">(</span><span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
+
+        <span class="c1"># the minimum train series length includes the training requirements from `forecasting_models` as</span>
+        <span class="c1"># well as the ones from the ensemble model</span>
+        <span class="n">min_train_series_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_train_series_length</span>
+        <span class="k">if</span> <span class="n">is_single_series</span><span class="p">:</span>
+            <span class="n">series_too_short</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">min_train_series_length</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">series_too_short</span> <span class="o">=</span> <span class="nb">any</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">min_train_series_length</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">series</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">series_too_short</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;All time series in &#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="n">is_single_series</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">`series` must have &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;a minimum length of `</span><span class="si">{</span><span class="n">min_train_series_length</span><span class="si">}</span><span class="s2">` to fit the model.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_stack_ts_seq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">):</span>
+        <span class="c1"># stacks list of predictions into one multivariate timeseries</span>
+        <span class="k">return</span> <span class="n">concatenate</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_stack_ts_multiseq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictions_list</span><span class="p">):</span>
+        <span class="c1"># stacks multiple sequences of timeseries elementwise</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_stack_ts_seq</span><span class="p">(</span><span class="n">ts_list</span><span class="p">)</span> <span class="k">for</span> <span class="n">ts_list</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">predictions_list</span><span class="p">)]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_model_encoder_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s2">&quot;Encoders are not supported by EnsembleModels. Instead add encoders to the underlying `forecasting_models`.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_base_model_predict_n</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Minimum prediction horizon for base models to satisfy the ensemble</span>
+<span class="sd">        (regression) model&#39;s future covariate requirements during predict.</span>
+
+<span class="sd">        The base model predictions start at ``series.end_time() + (shift + 1) * freq``</span>
+<span class="sd">        (shifted output). The regression model needs covariates from</span>
+<span class="sd">        ``series.end_time() + (min(lags) + 1) * freq``. Since all models share the</span>
+<span class="sd">        same shift, ``min(lags) &gt;= shift``, and we subtract the shift to avoid</span>
+<span class="sd">        requesting autoregression the base models cannot perform.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ensemble_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">n</span>
+        <span class="n">ens_lags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ensemble_model</span><span class="o">.</span><span class="n">lags</span><span class="p">[</span><span class="s2">&quot;future&quot;</span><span class="p">]</span>
+        <span class="n">base_shift</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_shift</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="nb">max</span><span class="p">(</span><span class="n">ens_lags</span><span class="p">)</span>
+            <span class="o">+</span> <span class="mi">1</span>
+            <span class="o">-</span> <span class="n">base_shift</span>
+            <span class="o">+</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">ensemble_model</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_make_multiple_predictions</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeriesLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">TimeSeriesLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">TimeSeriesLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeriesLike</span><span class="p">:</span>
+        <span class="n">is_single_series</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="ow">or</span> <span class="n">series</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="c1"># maximize covariate usage</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">_predict_wrapper</span><span class="p">(</span>
+                <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+                <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+                <span class="n">past_covariates</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">past_covariates</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="p">),</span>
+                <span class="n">future_covariates</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">future_covariates</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="p">),</span>
+                <span class="n">num_samples</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">num_samples</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_probabilistic_prediction</span> <span class="k">else</span> <span class="mi">1</span>
+                <span class="p">),</span>
+                <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
+                <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+                <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
+        <span class="p">]</span>
+
+        <span class="c1"># reduce the probabilistics series</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_samples_reduction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_num_samples</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">predictions</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_predictions_reduction</span><span class="p">(</span><span class="n">prediction</span><span class="p">)</span> <span class="k">for</span> <span class="n">prediction</span> <span class="ow">in</span> <span class="n">predictions</span>
+            <span class="p">]</span>
+
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stack_ts_seq</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">is_single_series</span>
+            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stack_ts_multiseq</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeriesLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">TimeSeriesLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">TimeSeriesLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeriesLike</span><span class="p">:</span>
+        <span class="c1"># ensure forecasting models all rely on the same series during inference</span>
+        <span class="k">if</span> <span class="n">series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
+        <span class="k">if</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">past_covariates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">past_covariate_series</span>
+        <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">future_covariates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_covariate_series</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+            <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+            <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+            <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+            <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+            <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
+            <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># for single-level ensemble, probabilistic forecast is obtained directly from forecasting models</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_samples_reduction</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pred_num_samples</span> <span class="o">=</span> <span class="n">num_samples</span>
+            <span class="n">forecast_models_pred_likelihood_params</span> <span class="o">=</span> <span class="n">predict_likelihood_parameters</span>
+        <span class="c1"># for multi-levels ensemble, forecasting models can generate arbitrary number of samples</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pred_num_samples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_num_samples</span>
+            <span class="c1"># second layer model (regression) cannot be trained on likelihood parameters</span>
+            <span class="n">forecast_models_pred_likelihood_params</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_verify_past_future_covariates</span><span class="p">(</span><span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
+
+        <span class="n">base_n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base_model_predict_n</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_multiple_predictions</span><span class="p">(</span>
+            <span class="n">n</span><span class="o">=</span><span class="n">base_n</span><span class="p">,</span>
+            <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+            <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+            <span class="n">num_samples</span><span class="o">=</span><span class="n">pred_num_samples</span><span class="p">,</span>
+            <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">forecast_models_pred_likelihood_params</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ensemble</span><span class="p">(</span>
+            <span class="n">predictions</span><span class="p">,</span>
+            <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+            <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+            <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
+            <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ensemble</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">predictions</span><span class="p">:</span> <span class="n">TimeSeriesLike</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeriesLike</span><span class="p">,</span>
+        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeriesLike</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Defines how to ensemble the individual models&#39; predictions to produce a single prediction.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        predictions</span>
+<span class="sd">            Individual predictions to ensemble</span>
+<span class="sd">        series</span>
+<span class="sd">            Sequence of timeseries to predict on. Optional, since it only makes sense for sequences of timeseries -</span>
+<span class="sd">            local models retain timeseries for prediction.</span>
+<span class="sd">        n</span>
+<span class="sd">            The number of output time steps the ensemble should produce.</span>
+<span class="sd">        num_samples</span>
+<span class="sd">            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.</span>
+<span class="sd">        predict_likelihood_parameters</span>
+<span class="sd">            If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only</span>
+<span class="sd">            supported for probabilistic models with a likelihood, `num_samples = 1` and `n&lt;=output_chunk_length`.</span>
+<span class="sd">            Default: ``False``</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Controls the randomness of probabilistic predictions.</span>
+<span class="sd">        verbose</span>
+<span class="sd">            Optionally, set the prediction verbosity. Not effective for all models.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        TimeSeries or Sequence[TimeSeries]</span>
+<span class="sd">            The predicted ``TimeSeries`` or sequence of ``TimeSeries`` obtained by ensembling the individual predictions</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_predictions_reduction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">:</span> <span class="n">TimeSeriesLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeriesLike</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reduce the sample dimension of the forecasting models predictions&quot;&quot;&quot;</span>
+        <span class="n">is_single_series</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_samples_reduction</span> <span class="o">==</span> <span class="s2">&quot;median&quot;</span><span class="p">:</span>
+            <span class="n">predictions</span> <span class="o">=</span> <span class="p">[</span><span class="n">pred</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_samples_reduction</span> <span class="o">==</span> <span class="s2">&quot;mean&quot;</span><span class="p">:</span>
+            <span class="n">predictions</span> <span class="o">=</span> <span class="p">[</span><span class="n">pred</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">predictions</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">pred</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_samples_reduction</span><span class="p">)</span> <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">predictions</span>
+            <span class="p">]</span>
+        <span class="k">return</span> <span class="n">predictions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">is_single_series</span> <span class="k">else</span> <span class="n">predictions</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_clean</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Cleans the model and sub-models.&quot;&quot;&quot;</span>
+        <span class="n">cleaned_model</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_clean</span><span class="p">()</span>
+        <span class="n">cleaned_model</span><span class="o">.</span><span class="n">forecasting_models</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">_clean</span><span class="p">()</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">cleaned_model</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">|</span> <span class="n">BinaryIO</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">clean</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">pkl_kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Saves the ensemble model under a given path or file handle.</span>
+
+<span class="sd">        Additionally, two files are stored for each `TorchForecastingModel` under the forecasting models.</span>
+
+<span class="sd">        Example for saving and loading a :class:`RegressionEnsembleModel`:</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                from darts.models import RegressionEnsembleModel, LinearRegressionModel, TiDEModel</span>
+
+<span class="sd">                model = RegressionEnsembleModel(</span>
+<span class="sd">                    forecasting_models = [</span>
+<span class="sd">                        LinearRegressionModel(lags=4),</span>
+<span class="sd">                        TiDEModel(input_chunk_length=4, output_chunk_length=4),</span>
+<span class="sd">                        ],</span>
+<span class="sd">                        regression_train_n_points=10,</span>
+<span class="sd">                )</span>
+
+<span class="sd">                model.save(&quot;my_ensemble_model.pkl&quot;)</span>
+<span class="sd">                model_loaded = RegressionEnsembleModel.load(&quot;my_ensemble_model.pkl&quot;)</span>
+<span class="sd">            ..</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path</span>
+<span class="sd">            Path or file handle under which to save the ensemble model at its current state. If no path is specified,</span>
+<span class="sd">            the ensemble model is automatically saved under ``&quot;{RegressionEnsembleModel}_{YYYY-mm-dd_HH_MM_SS}.pkl&quot;``.</span>
+<span class="sd">            If the i-th model of `forecasting_models` is a TorchForecastingModel, two files (model object and</span>
+<span class="sd">            checkpoint) are saved under ``&quot;{path}.{ithModelClass}_{i}.pt&quot;`` and ``&quot;{path}.{ithModelClass}_{i}.ckpt&quot;``.</span>
+<span class="sd">        clean</span>
+<span class="sd">            Whether to store a cleaned version of the model. If `True`, the training series and covariates are removed.</span>
+<span class="sd">            If the underlying `forecasting_models` contain any `TorchForecastingModel`, will additionally remove all of</span>
+<span class="sd">            their Lightning Trainer-related parameters.</span>
+
+<span class="sd">            Note: After loading a model stored with `clean=True`, a `series` must be passed &#39;predict()&#39;,</span>
+<span class="sd">            `historical_forecasts()` and other forecasting methods.</span>
+<span class="sd">        pkl_kwargs</span>
+<span class="sd">            Keyword arguments passed to `pickle.dump()`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># default path</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_save_path</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;.pkl&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">clean</span><span class="o">=</span><span class="n">clean</span><span class="p">,</span> <span class="o">**</span><span class="n">pkl_kwargs</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">TORCH_AVAILABLE</span> <span class="ow">and</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">m</span><span class="p">),</span> <span class="n">TorchForecastingModel</span><span class="p">):</span>
+                <span class="n">path_tfm</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">m</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">.pt&quot;</span>
+                <span class="n">m</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path_tfm</span><span class="p">,</span> <span class="n">clean</span><span class="o">=</span><span class="n">clean</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span>
+        <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">|</span> <span class="n">BinaryIO</span><span class="p">,</span>
+        <span class="n">pl_trainer_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;EnsembleModel&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads a model from a given path or file handle.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path</span>
+<span class="sd">            Path or file handle from which to load the model.</span>
+<span class="sd">        pl_trainer_kwargs</span>
+<span class="sd">            Only effective if the underlying forecasting models contain a `TorchForecastingModel`.</span>
+<span class="sd">            Optionally, a set of kwargs to create a new Lightning Trainer used to configure the model for downstream</span>
+<span class="sd">            tasks (e.g. prediction).</span>
+<span class="sd">            Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the</span>
+<span class="sd">            `Lightning Trainer documentation &lt;https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html&gt;`__</span>
+<span class="sd">            for more information about the supported kwargs.</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Only effective if the underlying forecasting models contain a `TorchForecastingModel`.</span>
+<span class="sd">            Additional kwargs for PyTorch Lightning&#39;s :func:`LightningModule.load_from_checkpoint()` method,</span>
+<span class="sd">            For more information, read the `official documentation &lt;https://pytorch-lightning.readthedocs.io/en/stable/</span>
+<span class="sd">            common/lightning_module.html#load-from-checkpoint&gt;`__.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">EnsembleModel</span> <span class="o">=</span> <span class="n">GlobalForecastingModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">TORCH_AVAILABLE</span> <span class="ow">and</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">m</span><span class="p">),</span> <span class="n">TorchForecastingModel</span><span class="p">):</span>
+                <span class="n">path_tfm</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">m</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">.pt&quot;</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">TorchForecastingModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+                    <span class="n">path_tfm</span><span class="p">,</span> <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="n">pl_trainer_kwargs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">min_train_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">train_n_points</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_forecasting_models</span><span class="p">:</span>
+            <span class="c1"># if base models are re-trained, it is the max of the sub-models&#39; min samples + train_n_points</span>
+            <span class="n">min_train_samples</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="nb">max</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">min_train_samples</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">)</span>
+                <span class="o">+</span> <span class="n">train_n_points</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># if base models not re-trained, we might already have some training points within the base model&#39;s</span>
+            <span class="c1"># first output chunk; if we need more, we add them as additional required samples</span>
+            <span class="n">base_ocl</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extreme_lags</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">min_train_samples</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">train_n_points</span> <span class="o">-</span> <span class="n">base_ocl</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">min_train_samples</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_target_window_lengths</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+        <span class="n">extreme_lags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extreme_lags</span>
+        <span class="n">input_length</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">extreme_lags</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">if</span> <span class="n">extreme_lags</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="n">output_length</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">extreme_lags</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">input_length</span><span class="p">,</span> <span class="n">output_length</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extreme_lags</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span>
+        <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="nb">int</span><span class="p">,</span>
+    <span class="p">]:</span>
+        <span class="c1"># the extreme lags are:</span>
+        <span class="c1"># - min target lag</span>
+        <span class="c1"># - max target lag</span>
+        <span class="c1"># - min past covariate lag</span>
+        <span class="c1"># - max past covariate lag</span>
+        <span class="c1"># - min future covariate lag</span>
+        <span class="c1"># - max future covariate lag</span>
+        <span class="c1"># - output shift</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ensemble_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># use the max of the ensemble model&#39;s max target lag</span>
+            <span class="n">ft_lag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ensemble_model</span><span class="o">.</span><span class="n">extreme_lags</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># or simulate a local forecasting model max target lag</span>
+            <span class="n">ft_lag</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+        <span class="c1"># adjust the right-bound lags if the ensemble models has a larger max target lag than the submodels</span>
+        <span class="n">extreme_lags_adjusted</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">:</span>
+            <span class="n">model_extreme_lags</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">extreme_lags</span>
+            <span class="n">model_ft_lag</span> <span class="o">=</span> <span class="n">model_extreme_lags</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="c1"># only adjust global models (model_ft_lag &gt;= 0); local models</span>
+            <span class="c1"># (model_ft_lag &lt; 0) have no fixed output window and their training</span>
+            <span class="c1"># data requirements should not be inflated</span>
+            <span class="n">ft_lag_diff</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">ft_lag</span> <span class="o">-</span> <span class="n">model_ft_lag</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="n">model_ft_lag</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+
+            <span class="n">extreme_lags_adjusted</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model_extreme_lags</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">extreme_lags_adjusted</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model_extreme_lags</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">ft_lag_diff</span><span class="p">)</span>
+            <span class="n">extreme_lags_adjusted</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model_extreme_lags</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="n">extreme_lags_adjusted</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">model_extreme_lags</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="n">ft_lag_diff</span>
+                <span class="k">if</span> <span class="n">model_extreme_lags</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">)</span>
+            <span class="n">extreme_lags_adjusted</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model_extreme_lags</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+            <span class="n">extreme_lags_adjusted</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">model_extreme_lags</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">+</span> <span class="n">ft_lag_diff</span>
+                <span class="k">if</span> <span class="n">model_extreme_lags</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">)</span>
+            <span class="n">extreme_lags_adjusted</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model_extreme_lags</span><span class="p">[</span><span class="mi">6</span><span class="p">])</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">find_max_lag_or_none</span><span class="p">(</span><span class="n">lag_id</span><span class="p">,</span> <span class="n">aggregator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">max_lag</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">for</span> <span class="n">curr_lag</span> <span class="ow">in</span> <span class="n">extreme_lags_adjusted</span><span class="p">[</span><span class="n">lag_id</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">max_lag</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">max_lag</span> <span class="o">=</span> <span class="n">curr_lag</span>
+                <span class="k">elif</span> <span class="n">curr_lag</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">max_lag</span> <span class="o">=</span> <span class="n">aggregator</span><span class="p">(</span><span class="n">max_lag</span><span class="p">,</span> <span class="n">curr_lag</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">max_lag</span>
+
+        <span class="c1"># extreme lags is given by the min or max of the extreme lags of the sub-models</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">find_max_lag_or_none</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">min</span><span class="p">),</span>
+            <span class="n">find_max_lag_or_none</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">max</span><span class="p">),</span>
+            <span class="n">find_max_lag_or_none</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="nb">min</span><span class="p">),</span>
+            <span class="n">find_max_lag_or_none</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="nb">max</span><span class="p">),</span>
+            <span class="n">find_max_lag_or_none</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="nb">min</span><span class="p">),</span>
+            <span class="n">find_max_lag_or_none</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="nb">max</span><span class="p">),</span>
+            <span class="n">find_max_lag_or_none</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="nb">max</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">output_chunk_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># either it&#39;s the ensemble model&#39;s output_chunk_length</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ensemble_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ensemble_model</span><span class="o">.</span><span class="n">output_chunk_length</span>
+
+        <span class="c1"># or the smallest base model output chunk length</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">output_chunk_length</span>
+            <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
+            <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">output_chunk_shift</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="c1"># either use the ensemble model&#39;s output shift</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ensemble_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ensemble_model</span><span class="o">.</span><span class="n">output_chunk_shift</span>
+
+        <span class="c1"># or the output shift of the sub models (enforced to be identical at model creation)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">extreme_lags</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_models_are_probabilistic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">([</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">supports_probabilistic_prediction</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
+        <span class="p">])</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_models_same_likelihood</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return `True` if all the `forecasting_models` are probabilistic and fit the same distribution.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_models_are_probabilistic</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="n">models_likelihood</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">lkl_same_params</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">tmp_quantiles</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">:</span>
+            <span class="n">likelihood</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">likelihood</span>
+            <span class="n">lkl_type</span> <span class="o">=</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">type</span>
+            <span class="n">models_likelihood</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">lkl_type</span><span class="p">)</span>
+
+            <span class="c1"># check the quantiles</span>
+            <span class="k">if</span> <span class="n">lkl_type</span> <span class="ow">is</span> <span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Quantile</span><span class="p">:</span>
+                <span class="n">quantiles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">quantiles</span>
+                <span class="k">if</span> <span class="n">tmp_quantiles</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">tmp_quantiles</span> <span class="o">=</span> <span class="n">quantiles</span>
+                <span class="k">elif</span> <span class="n">tmp_quantiles</span> <span class="o">!=</span> <span class="n">quantiles</span><span class="p">:</span>
+                    <span class="n">lkl_same_params</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">models_likelihood</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">lkl_same_params</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_likelihood_parameter_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;EnsembleModel can predict likelihood parameters if all its forecasting models were fitted with the</span>
+<span class="sd">        same likelihood.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="nb">all</span><span class="p">([</span>
+                <span class="n">m</span><span class="o">.</span><span class="n">supports_likelihood_parameter_prediction</span>
+                <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
+            <span class="p">])</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_models_same_likelihood</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_probabilistic_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_models_are_probabilistic</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">([</span><span class="n">model</span><span class="o">.</span><span class="n">supports_multivariate</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">])</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_past_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">any</span><span class="p">([</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
+        <span class="p">])</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_future_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">any</span><span class="p">([</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
+        <span class="p">])</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_optimized_historical_forecasts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Whether the model supports optimized historical forecasts</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_supports_non_retrainable_historical_forecasts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_global_ensemble</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_full_past_covariates_support</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">([</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
+        <span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_full_future_covariates_support</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">([</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
+        <span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_verify_past_future_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Verify that any non-None covariates comply with the model type.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">supports_past_covariates</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;`past_covariates` were provided to an `EnsembleModel` but none of its &quot;</span>
+                    <span class="s2">&quot;`forecasting_models` support such covariates.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">supports_future_covariates</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;`future_covariates` were provided to an `EnsembleModel` but none of its &quot;</span>
+                    <span class="s2">&quot;`forecasting_models` support such covariates.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2026, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

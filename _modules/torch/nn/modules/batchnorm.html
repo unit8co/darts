@@ -1,0 +1,1391 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>torch.nn.modules.batchnorm &#8212; darts  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/torch/nn/modules/batchnorm';</script>
+    <link rel="icon" href="../../../../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.44.0" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../../../../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">torch.nn.modules.batchnorm</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for torch.nn.modules.batchnorm</h1><div class="highlight"><pre>
+<span></span><span class="c1"># mypy: allow-untyped-defs</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tensor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="kn">import</span> <span class="n">functional</span> <span class="k">as</span> <span class="n">F</span><span class="p">,</span> <span class="n">init</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch.nn.parameter</span><span class="w"> </span><span class="kn">import</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">UninitializedBuffer</span><span class="p">,</span> <span class="n">UninitializedParameter</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">._functions</span><span class="w"> </span><span class="kn">import</span> <span class="n">SyncBatchNorm</span> <span class="k">as</span> <span class="n">sync_batch_norm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.lazy</span><span class="w"> </span><span class="kn">import</span> <span class="n">LazyModuleMixin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.module</span><span class="w"> </span><span class="kn">import</span> <span class="n">Module</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;BatchNorm1d&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;LazyBatchNorm1d&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BatchNorm2d&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;LazyBatchNorm2d&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BatchNorm3d&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;LazyBatchNorm3d&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;SyncBatchNorm&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_NormBase</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Common base of _InstanceNorm and _BatchNorm.&quot;&quot;&quot;</span>
+
+    <span class="n">_version</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">__constants__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;track_running_stats&quot;</span><span class="p">,</span> <span class="s2">&quot;momentum&quot;</span><span class="p">,</span> <span class="s2">&quot;eps&quot;</span><span class="p">,</span> <span class="s2">&quot;num_features&quot;</span><span class="p">,</span> <span class="s2">&quot;affine&quot;</span><span class="p">]</span>
+    <span class="n">num_features</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">momentum</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">affine</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">track_running_stats</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="c1"># WARNING: weight and bias purposely not defined here.</span>
+    <span class="c1"># See https://github.com/pytorch/pytorch/issues/39670</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">num_features</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span>
+        <span class="n">momentum</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">affine</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">track_running_stats</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;device&quot;</span><span class="p">:</span> <span class="n">device</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">:</span> <span class="n">dtype</span><span class="p">}</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_features</span> <span class="o">=</span> <span class="n">num_features</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eps</span> <span class="o">=</span> <span class="n">eps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">momentum</span> <span class="o">=</span> <span class="n">momentum</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">affine</span> <span class="o">=</span> <span class="n">affine</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">track_running_stats</span> <span class="o">=</span> <span class="n">track_running_stats</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_features</span><span class="p">,</span> <span class="o">**</span><span class="n">factory_kwargs</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_features</span><span class="p">,</span> <span class="o">**</span><span class="n">factory_kwargs</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_parameter</span><span class="p">(</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_parameter</span><span class="p">(</span><span class="s2">&quot;bias&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">track_running_stats</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span>
+                <span class="s2">&quot;running_mean&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_features</span><span class="p">,</span> <span class="o">**</span><span class="n">factory_kwargs</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span>
+                <span class="s2">&quot;running_var&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">num_features</span><span class="p">,</span> <span class="o">**</span><span class="n">factory_kwargs</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">running_mean</span><span class="p">:</span> <span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">running_var</span><span class="p">:</span> <span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span>
+                <span class="s2">&quot;num_batches_tracked&quot;</span><span class="p">,</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
+                    <span class="mi">0</span><span class="p">,</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span>
+                    <span class="c1"># pyrefly: ignore [bad-argument-type]</span>
+                    <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">factory_kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="s2">&quot;dtype&quot;</span><span class="p">},</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_batches_tracked</span><span class="p">:</span> <span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;running_mean&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;running_var&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;num_batches_tracked&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_running_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">track_running_stats</span><span class="p">:</span>
+            <span class="c1"># running_mean/running_var/num_batches... are registered at runtime depending</span>
+            <span class="c1"># if self.track_running_stats is on</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">running_mean</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span>  <span class="c1"># type: ignore[union-attr]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">running_var</span><span class="o">.</span><span class="n">fill_</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># type: ignore[union-attr]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_batches_tracked</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span>  <span class="c1"># type: ignore[union-attr,operator]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset_running_stats</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="p">:</span>
+            <span class="n">init</span><span class="o">.</span><span class="n">ones_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
+            <span class="n">init</span><span class="o">.</span><span class="n">zeros_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_input_dim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">&quot;</span><span class="si">{num_features}</span><span class="s2">, eps=</span><span class="si">{eps}</span><span class="s2">, momentum=</span><span class="si">{momentum}</span><span class="s2">, affine=</span><span class="si">{affine}</span><span class="s2">, &quot;</span>
+            <span class="s2">&quot;track_running_stats=</span><span class="si">{track_running_stats}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load_from_state_dict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">state_dict</span><span class="p">,</span>
+        <span class="n">prefix</span><span class="p">,</span>
+        <span class="n">local_metadata</span><span class="p">,</span>
+        <span class="n">strict</span><span class="p">,</span>
+        <span class="n">missing_keys</span><span class="p">,</span>
+        <span class="n">unexpected_keys</span><span class="p">,</span>
+        <span class="n">error_msgs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">version</span> <span class="o">=</span> <span class="n">local_metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;version&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">version</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">version</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">track_running_stats</span><span class="p">:</span>
+            <span class="c1"># at version 2: added num_batches_tracked buffer</span>
+            <span class="c1">#               this should have a default value of 0</span>
+            <span class="n">num_batches_tracked_key</span> <span class="o">=</span> <span class="n">prefix</span> <span class="o">+</span> <span class="s2">&quot;num_batches_tracked&quot;</span>
+            <span class="k">if</span> <span class="n">num_batches_tracked_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">state_dict</span><span class="p">:</span>
+                <span class="n">state_dict</span><span class="p">[</span><span class="n">num_batches_tracked_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">num_batches_tracked</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_batches_tracked</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                    <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_batches_tracked</span><span class="o">.</span><span class="n">device</span> <span class="o">!=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;meta&quot;</span><span class="p">)</span>
+                    <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span>
+                <span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_load_from_state_dict</span><span class="p">(</span>
+            <span class="n">state_dict</span><span class="p">,</span>
+            <span class="n">prefix</span><span class="p">,</span>
+            <span class="n">local_metadata</span><span class="p">,</span>
+            <span class="n">strict</span><span class="p">,</span>
+            <span class="n">missing_keys</span><span class="p">,</span>
+            <span class="n">unexpected_keys</span><span class="p">,</span>
+            <span class="n">error_msgs</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_BatchNorm</span><span class="p">(</span><span class="n">_NormBase</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">num_features</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span>
+        <span class="n">momentum</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">affine</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">track_running_stats</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;device&quot;</span><span class="p">:</span> <span class="n">device</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">:</span> <span class="n">dtype</span><span class="p">}</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">num_features</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">momentum</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span> <span class="n">track_running_stats</span><span class="p">,</span> <span class="o">**</span><span class="n">factory_kwargs</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_input_dim</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+
+        <span class="c1"># exponential_average_factor is set to self.momentum</span>
+        <span class="c1"># (when it is available) only so that it gets updated</span>
+        <span class="c1"># in ONNX graph when this node is exported to ONNX.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">momentum</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">exponential_average_factor</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">exponential_average_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">momentum</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">track_running_stats</span><span class="p">:</span>
+            <span class="c1"># TODO: if statement only here to tell the jit to skip emitting this when it is None</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_batches_tracked</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># type: ignore[has-type]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">num_batches_tracked</span><span class="o">.</span><span class="n">add_</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># type: ignore[has-type]</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">momentum</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># use cumulative moving average</span>
+                    <span class="n">exponential_average_factor</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_batches_tracked</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>  <span class="c1"># use exponential moving average</span>
+                    <span class="n">exponential_average_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">momentum</span>
+
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Decide whether the mini-batch stats should be used for normalization rather than the buffers.</span>
+<span class="sd">        Mini-batch stats are used in training mode, and in eval mode when buffers are None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
+            <span class="n">bn_training</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">bn_training</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">running_mean</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">running_var</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span>
+
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Buffers are only updated if they are to be tracked and we are in training mode. Thus they only need to be</span>
+<span class="sd">        passed when the update should occur (i.e. in training mode when they are tracked), or when buffer stats are</span>
+<span class="sd">        used for normalization (i.e. in eval mode when buffers are not None).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">batch_norm</span><span class="p">(</span>
+            <span class="nb">input</span><span class="p">,</span>
+            <span class="c1"># If buffers are not to be tracked, ensure that they won&#39;t be updated</span>
+            <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">running_mean</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">track_running_stats</span>
+                <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">running_var</span> <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">track_running_stats</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span>
+            <span class="n">bn_training</span><span class="p">,</span>
+            <span class="n">exponential_average_factor</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_LazyNormBase</span><span class="p">(</span><span class="n">LazyModuleMixin</span><span class="p">,</span> <span class="n">_NormBase</span><span class="p">):</span>
+    <span class="n">weight</span><span class="p">:</span> <span class="n">UninitializedParameter</span>  <span class="c1"># type: ignore[assignment]</span>
+    <span class="n">bias</span><span class="p">:</span> <span class="n">UninitializedParameter</span>  <span class="c1"># type: ignore[assignment]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">eps</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span>
+        <span class="n">momentum</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">affine</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">track_running_stats</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;device&quot;</span><span class="p">:</span> <span class="n">device</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">:</span> <span class="n">dtype</span><span class="p">}</span>
+        <span class="c1"># pyrefly: ignore [bad-argument-type]</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="c1"># affine and track_running_stats are hardcoded to False to</span>
+            <span class="c1"># avoid creating tensors that will soon be overwritten.</span>
+            <span class="mi">0</span><span class="p">,</span>
+            <span class="n">eps</span><span class="p">,</span>
+            <span class="n">momentum</span><span class="p">,</span>
+            <span class="kc">False</span><span class="p">,</span>
+            <span class="kc">False</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">factory_kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">affine</span> <span class="o">=</span> <span class="n">affine</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">track_running_stats</span> <span class="o">=</span> <span class="n">track_running_stats</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="p">:</span>
+            <span class="c1"># pyrefly: ignore [unexpected-keyword]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">UninitializedParameter</span><span class="p">(</span><span class="o">**</span><span class="n">factory_kwargs</span><span class="p">)</span>
+            <span class="c1"># pyrefly: ignore [unexpected-keyword]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">UninitializedParameter</span><span class="p">(</span><span class="o">**</span><span class="n">factory_kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">track_running_stats</span><span class="p">:</span>
+            <span class="c1"># pyrefly: ignore [unexpected-keyword]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">running_mean</span> <span class="o">=</span> <span class="n">UninitializedBuffer</span><span class="p">(</span><span class="o">**</span><span class="n">factory_kwargs</span><span class="p">)</span>
+            <span class="c1"># pyrefly: ignore [unexpected-keyword]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">running_var</span> <span class="o">=</span> <span class="n">UninitializedBuffer</span><span class="p">(</span><span class="o">**</span><span class="n">factory_kwargs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_batches_tracked</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
+                <span class="mi">0</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span>
+                <span class="c1"># pyrefly: ignore [bad-argument-type]</span>
+                <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">factory_kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="s2">&quot;dtype&quot;</span><span class="p">},</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># pyrefly: ignore [bad-argument-type]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_uninitialized_params</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_features</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">initialize_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># type: ignore[override]</span>
+        <span class="c1"># pyrefly: ignore [bad-argument-type]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_uninitialized_params</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_features</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">UninitializedParameter</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span>
+                        <span class="s2">&quot;self.weight must be an UninitializedParameter&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span> <span class="n">UninitializedParameter</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;self.bias must be an UninitializedParameter&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">materialize</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features</span><span class="p">,))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="o">.</span><span class="n">materialize</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features</span><span class="p">,))</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">track_running_stats</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">running_mean</span><span class="o">.</span><span class="n">materialize</span><span class="p">(</span>  <span class="c1"># type:ignore[union-attr]</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features</span><span class="p">,)</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">running_var</span><span class="o">.</span><span class="n">materialize</span><span class="p">(</span>  <span class="c1"># type:ignore[union-attr]</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_features</span><span class="p">,)</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">()</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">BatchNorm1d</span><span class="p">(</span><span class="n">_BatchNorm</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Applies Batch Normalization over a 2D or 3D input.</span>
+
+<span class="sd">    Method described in the paper</span>
+<span class="sd">    `Batch Normalization: Accelerating Deep Network Training by Reducing</span>
+<span class="sd">    Internal Covariate Shift &lt;https://arxiv.org/abs/1502.03167&gt;`__ .</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta</span>
+
+<span class="sd">    The mean and standard-deviation are calculated per-dimension over</span>
+<span class="sd">    the mini-batches and :math:`\gamma` and :math:`\beta` are learnable parameter vectors</span>
+<span class="sd">    of size `C` (where `C` is the number of features or channels of the input). By default, the</span>
+<span class="sd">    elements of :math:`\gamma` are set to 1 and the elements of :math:`\beta` are set to 0.</span>
+<span class="sd">    At train time in the forward pass, the variance is calculated via the biased estimator,</span>
+<span class="sd">    equivalent to ``torch.var(input, correction=0)``. However, the value stored in the</span>
+<span class="sd">    moving average of the variance is calculated via the unbiased  estimator, equivalent to</span>
+<span class="sd">    ``torch.var(input, correction=1)``.</span>
+
+<span class="sd">    Also by default, during training this layer keeps running estimates of its</span>
+<span class="sd">    computed mean and variance, which are then used for normalization during</span>
+<span class="sd">    evaluation. The running estimates are kept with a default :attr:`momentum`</span>
+<span class="sd">    of 0.1.</span>
+
+<span class="sd">    If :attr:`track_running_stats` is set to ``False``, this layer then does not</span>
+<span class="sd">    keep running estimates, and batch statistics are instead used during</span>
+<span class="sd">    evaluation time as well.</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">        This :attr:`momentum` argument is different from one used in optimizer</span>
+<span class="sd">        classes and the conventional notion of momentum. Mathematically, the</span>
+<span class="sd">        update rule for running statistics here is</span>
+<span class="sd">        :math:`\hat{x}_\text{new} = (1 - \text{momentum}) \times \hat{x} + \text{momentum} \times x_t`,</span>
+<span class="sd">        where :math:`\hat{x}` is the estimated statistic and :math:`x_t` is the</span>
+<span class="sd">        new observed value.</span>
+
+<span class="sd">    Because the Batch Normalization is done over the `C` dimension, computing statistics</span>
+<span class="sd">    on `(N, L)` slices, it&#39;s common terminology to call this Temporal Batch Normalization.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        num_features: number of features or channels :math:`C` of the input</span>
+<span class="sd">        eps: a value added to the denominator for numerical stability.</span>
+<span class="sd">            Default: 1e-5</span>
+<span class="sd">        momentum: the value used for the running_mean and running_var</span>
+<span class="sd">            computation. Can be set to ``None`` for cumulative moving average</span>
+<span class="sd">            (i.e. simple average). Default: 0.1</span>
+<span class="sd">        affine: a boolean value that when set to ``True``, this module has</span>
+<span class="sd">            learnable affine parameters. Default: ``True``</span>
+<span class="sd">        track_running_stats: a boolean value that when set to ``True``, this</span>
+<span class="sd">            module tracks the running mean and variance, and when set to ``False``,</span>
+<span class="sd">            this module does not track such statistics, and initializes statistics</span>
+<span class="sd">            buffers :attr:`running_mean` and :attr:`running_var` as ``None``.</span>
+<span class="sd">            When these buffers are ``None``, this module always uses batch statistics.</span>
+<span class="sd">            in both training and eval modes. Default: ``True``</span>
+
+<span class="sd">    Shape:</span>
+<span class="sd">        - Input: :math:`(N, C)` or :math:`(N, C, L)`, where :math:`N` is the batch size,</span>
+<span class="sd">          :math:`C` is the number of features or channels, and :math:`L` is the sequence length</span>
+<span class="sd">        - Output: :math:`(N, C)` or :math:`(N, C, L)` (same shape as input)</span>
+
+<span class="sd">    Examples::</span>
+
+<span class="sd">        &gt;&gt;&gt; # With Learnable Parameters</span>
+<span class="sd">        &gt;&gt;&gt; m = nn.BatchNorm1d(100)</span>
+<span class="sd">        &gt;&gt;&gt; # Without Learnable Parameters</span>
+<span class="sd">        &gt;&gt;&gt; m = nn.BatchNorm1d(100, affine=False)</span>
+<span class="sd">        &gt;&gt;&gt; input = torch.randn(20, 100)</span>
+<span class="sd">        &gt;&gt;&gt; output = m(input)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_input_dim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">input</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">and</span> <span class="nb">input</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;expected 2D or 3D input (got </span><span class="si">{</span><span class="nb">input</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span><span class="si">}</span><span class="s2">D input)&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">LazyBatchNorm1d</span><span class="p">(</span><span class="n">_LazyNormBase</span><span class="p">,</span> <span class="n">_BatchNorm</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;A :class:`torch.nn.BatchNorm1d` module with lazy initialization.</span>
+
+<span class="sd">    Lazy initialization based on the ``num_features`` argument of the :class:`BatchNorm1d` that is inferred</span>
+<span class="sd">    from the ``input.size(1)``.</span>
+<span class="sd">    The attributes that will be lazily initialized are `weight`, `bias`,</span>
+<span class="sd">    `running_mean` and `running_var`.</span>
+
+<span class="sd">    Check the :class:`torch.nn.modules.lazy.LazyModuleMixin` for further documentation</span>
+<span class="sd">    on lazy modules and their limitations.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        eps: a value added to the denominator for numerical stability.</span>
+<span class="sd">            Default: 1e-5</span>
+<span class="sd">        momentum: the value used for the running_mean and running_var</span>
+<span class="sd">            computation. Can be set to ``None`` for cumulative moving average</span>
+<span class="sd">            (i.e. simple average). Default: 0.1</span>
+<span class="sd">        affine: a boolean value that when set to ``True``, this module has</span>
+<span class="sd">            learnable affine parameters. Default: ``True``</span>
+<span class="sd">        track_running_stats: a boolean value that when set to ``True``, this</span>
+<span class="sd">            module tracks the running mean and variance, and when set to ``False``,</span>
+<span class="sd">            this module does not track such statistics, and initializes statistics</span>
+<span class="sd">            buffers :attr:`running_mean` and :attr:`running_var` as ``None``.</span>
+<span class="sd">            When these buffers are ``None``, this module always uses batch statistics.</span>
+<span class="sd">            in both training and eval modes. Default: ``True``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">cls_to_become</span> <span class="o">=</span> <span class="n">BatchNorm1d</span>  <span class="c1"># type: ignore[assignment]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_input_dim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">input</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">and</span> <span class="nb">input</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;expected 2D or 3D input (got </span><span class="si">{</span><span class="nb">input</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span><span class="si">}</span><span class="s2">D input)&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">BatchNorm2d</span><span class="p">(</span><span class="n">_BatchNorm</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Applies Batch Normalization over a 4D input.</span>
+
+<span class="sd">    4D is a mini-batch of 2D inputs</span>
+<span class="sd">    with additional channel dimension. Method described in the paper</span>
+<span class="sd">    `Batch Normalization: Accelerating Deep Network Training by Reducing</span>
+<span class="sd">    Internal Covariate Shift &lt;https://arxiv.org/abs/1502.03167&gt;`__ .</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        y = \frac{x - \mathrm{E}[x]}{ \sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta</span>
+
+<span class="sd">    The mean and standard-deviation are calculated per-dimension over</span>
+<span class="sd">    the mini-batches and :math:`\gamma` and :math:`\beta` are learnable parameter vectors</span>
+<span class="sd">    of size `C` (where `C` is the input size). By default, the elements of :math:`\gamma` are set</span>
+<span class="sd">    to 1 and the elements of :math:`\beta` are set to 0. At train time in the forward pass, the</span>
+<span class="sd">    standard-deviation is calculated via the biased estimator, equivalent to</span>
+<span class="sd">    ``torch.var(input, correction=0)``. However, the value stored in the moving average of the</span>
+<span class="sd">    standard-deviation is calculated via the unbiased  estimator, equivalent to</span>
+<span class="sd">    ``torch.var(input, correction=1)``.</span>
+
+<span class="sd">    Also by default, during training this layer keeps running estimates of its</span>
+<span class="sd">    computed mean and variance, which are then used for normalization during</span>
+<span class="sd">    evaluation. The running estimates are kept with a default :attr:`momentum`</span>
+<span class="sd">    of 0.1.</span>
+
+<span class="sd">    If :attr:`track_running_stats` is set to ``False``, this layer then does not</span>
+<span class="sd">    keep running estimates, and batch statistics are instead used during</span>
+<span class="sd">    evaluation time as well.</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">        This :attr:`momentum` argument is different from one used in optimizer</span>
+<span class="sd">        classes and the conventional notion of momentum. Mathematically, the</span>
+<span class="sd">        update rule for running statistics here is</span>
+<span class="sd">        :math:`\hat{x}_\text{new} = (1 - \text{momentum}) \times \hat{x} + \text{momentum} \times x_t`,</span>
+<span class="sd">        where :math:`\hat{x}` is the estimated statistic and :math:`x_t` is the</span>
+<span class="sd">        new observed value.</span>
+
+<span class="sd">    Because the Batch Normalization is done over the `C` dimension, computing statistics</span>
+<span class="sd">    on `(N, H, W)` slices, it&#39;s common terminology to call this Spatial Batch Normalization.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        num_features: :math:`C` from an expected input of size</span>
+<span class="sd">            :math:`(N, C, H, W)`</span>
+<span class="sd">        eps: a value added to the denominator for numerical stability.</span>
+<span class="sd">            Default: 1e-5</span>
+<span class="sd">        momentum: the value used for the running_mean and running_var</span>
+<span class="sd">            computation. Can be set to ``None`` for cumulative moving average</span>
+<span class="sd">            (i.e. simple average). Default: 0.1</span>
+<span class="sd">        affine: a boolean value that when set to ``True``, this module has</span>
+<span class="sd">            learnable affine parameters. Default: ``True``</span>
+<span class="sd">        track_running_stats: a boolean value that when set to ``True``, this</span>
+<span class="sd">            module tracks the running mean and variance, and when set to ``False``,</span>
+<span class="sd">            this module does not track such statistics, and initializes statistics</span>
+<span class="sd">            buffers :attr:`running_mean` and :attr:`running_var` as ``None``.</span>
+<span class="sd">            When these buffers are ``None``, this module always uses batch statistics.</span>
+<span class="sd">            in both training and eval modes. Default: ``True``</span>
+
+<span class="sd">    Shape:</span>
+<span class="sd">        - Input: :math:`(N, C, H, W)`</span>
+<span class="sd">        - Output: :math:`(N, C, H, W)` (same shape as input)</span>
+
+<span class="sd">    Examples::</span>
+
+<span class="sd">        &gt;&gt;&gt; # With Learnable Parameters</span>
+<span class="sd">        &gt;&gt;&gt; m = nn.BatchNorm2d(100)</span>
+<span class="sd">        &gt;&gt;&gt; # Without Learnable Parameters</span>
+<span class="sd">        &gt;&gt;&gt; m = nn.BatchNorm2d(100, affine=False)</span>
+<span class="sd">        &gt;&gt;&gt; input = torch.randn(20, 100, 35, 45)</span>
+<span class="sd">        &gt;&gt;&gt; output = m(input)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_input_dim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">input</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;expected 4D input (got </span><span class="si">{</span><span class="nb">input</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span><span class="si">}</span><span class="s2">D input)&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">LazyBatchNorm2d</span><span class="p">(</span><span class="n">_LazyNormBase</span><span class="p">,</span> <span class="n">_BatchNorm</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;A :class:`torch.nn.BatchNorm2d` module with lazy initialization.</span>
+
+<span class="sd">    Lazy initialization is done for the ``num_features`` argument of the :class:`BatchNorm2d` that is inferred</span>
+<span class="sd">    from the ``input.size(1)``.</span>
+<span class="sd">    The attributes that will be lazily initialized are `weight`, `bias`,</span>
+<span class="sd">    `running_mean` and `running_var`.</span>
+
+<span class="sd">    Check the :class:`torch.nn.modules.lazy.LazyModuleMixin` for further documentation</span>
+<span class="sd">    on lazy modules and their limitations.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        eps: a value added to the denominator for numerical stability.</span>
+<span class="sd">            Default: 1e-5</span>
+<span class="sd">        momentum: the value used for the running_mean and running_var</span>
+<span class="sd">            computation. Can be set to ``None`` for cumulative moving average</span>
+<span class="sd">            (i.e. simple average). Default: 0.1</span>
+<span class="sd">        affine: a boolean value that when set to ``True``, this module has</span>
+<span class="sd">            learnable affine parameters. Default: ``True``</span>
+<span class="sd">        track_running_stats: a boolean value that when set to ``True``, this</span>
+<span class="sd">            module tracks the running mean and variance, and when set to ``False``,</span>
+<span class="sd">            this module does not track such statistics, and initializes statistics</span>
+<span class="sd">            buffers :attr:`running_mean` and :attr:`running_var` as ``None``.</span>
+<span class="sd">            When these buffers are ``None``, this module always uses batch statistics.</span>
+<span class="sd">            in both training and eval modes. Default: ``True``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">cls_to_become</span> <span class="o">=</span> <span class="n">BatchNorm2d</span>  <span class="c1"># type: ignore[assignment]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_input_dim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">input</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;expected 4D input (got </span><span class="si">{</span><span class="nb">input</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span><span class="si">}</span><span class="s2">D input)&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">BatchNorm3d</span><span class="p">(</span><span class="n">_BatchNorm</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Applies Batch Normalization over a 5D input.</span>
+
+<span class="sd">    5D is a mini-batch of 3D inputs with additional channel dimension as described in the paper</span>
+<span class="sd">    `Batch Normalization: Accelerating Deep Network Training by Reducing</span>
+<span class="sd">    Internal Covariate Shift &lt;https://arxiv.org/abs/1502.03167&gt;`__ .</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        y = \frac{x - \mathrm{E}[x]}{ \sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta</span>
+
+<span class="sd">    The mean and standard-deviation are calculated per-dimension over</span>
+<span class="sd">    the mini-batches and :math:`\gamma` and :math:`\beta` are learnable parameter vectors</span>
+<span class="sd">    of size `C` (where `C` is the input size). By default, the elements of :math:`\gamma` are set</span>
+<span class="sd">    to 1 and the elements of :math:`\beta` are set to 0. At train time in the forward pass, the</span>
+<span class="sd">    standard-deviation is calculated via the biased estimator, equivalent to</span>
+<span class="sd">    ``torch.var(input, correction=0)``. However, the value stored in the moving average of the</span>
+<span class="sd">    standard-deviation is calculated via the unbiased  estimator, equivalent to</span>
+<span class="sd">    ``torch.var(input, correction=1)``.</span>
+
+<span class="sd">    Also by default, during training this layer keeps running estimates of its</span>
+<span class="sd">    computed mean and variance, which are then used for normalization during</span>
+<span class="sd">    evaluation. The running estimates are kept with a default :attr:`momentum`</span>
+<span class="sd">    of 0.1.</span>
+
+<span class="sd">    If :attr:`track_running_stats` is set to ``False``, this layer then does not</span>
+<span class="sd">    keep running estimates, and batch statistics are instead used during</span>
+<span class="sd">    evaluation time as well.</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">        This :attr:`momentum` argument is different from one used in optimizer</span>
+<span class="sd">        classes and the conventional notion of momentum. Mathematically, the</span>
+<span class="sd">        update rule for running statistics here is</span>
+<span class="sd">        :math:`\hat{x}_\text{new} = (1 - \text{momentum}) \times \hat{x} + \text{momentum} \times x_t`,</span>
+<span class="sd">        where :math:`\hat{x}` is the estimated statistic and :math:`x_t` is the</span>
+<span class="sd">        new observed value.</span>
+
+<span class="sd">    Because the Batch Normalization is done over the `C` dimension, computing statistics</span>
+<span class="sd">    on `(N, D, H, W)` slices, it&#39;s common terminology to call this Volumetric Batch Normalization</span>
+<span class="sd">    or Spatio-temporal Batch Normalization.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        num_features: :math:`C` from an expected input of size</span>
+<span class="sd">            :math:`(N, C, D, H, W)`</span>
+<span class="sd">        eps: a value added to the denominator for numerical stability.</span>
+<span class="sd">            Default: 1e-5</span>
+<span class="sd">        momentum: the value used for the running_mean and running_var</span>
+<span class="sd">            computation. Can be set to ``None`` for cumulative moving average</span>
+<span class="sd">            (i.e. simple average). Default: 0.1</span>
+<span class="sd">        affine: a boolean value that when set to ``True``, this module has</span>
+<span class="sd">            learnable affine parameters. Default: ``True``</span>
+<span class="sd">        track_running_stats: a boolean value that when set to ``True``, this</span>
+<span class="sd">            module tracks the running mean and variance, and when set to ``False``,</span>
+<span class="sd">            this module does not track such statistics, and initializes statistics</span>
+<span class="sd">            buffers :attr:`running_mean` and :attr:`running_var` as ``None``.</span>
+<span class="sd">            When these buffers are ``None``, this module always uses batch statistics.</span>
+<span class="sd">            in both training and eval modes. Default: ``True``</span>
+
+<span class="sd">    Shape:</span>
+<span class="sd">        - Input: :math:`(N, C, D, H, W)`</span>
+<span class="sd">        - Output: :math:`(N, C, D, H, W)` (same shape as input)</span>
+
+<span class="sd">    Examples::</span>
+
+<span class="sd">        &gt;&gt;&gt; # With Learnable Parameters</span>
+<span class="sd">        &gt;&gt;&gt; m = nn.BatchNorm3d(100)</span>
+<span class="sd">        &gt;&gt;&gt; # Without Learnable Parameters</span>
+<span class="sd">        &gt;&gt;&gt; m = nn.BatchNorm3d(100, affine=False)</span>
+<span class="sd">        &gt;&gt;&gt; input = torch.randn(20, 100, 35, 45, 10)</span>
+<span class="sd">        &gt;&gt;&gt; output = m(input)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_input_dim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">input</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;expected 5D input (got </span><span class="si">{</span><span class="nb">input</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span><span class="si">}</span><span class="s2">D input)&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">LazyBatchNorm3d</span><span class="p">(</span><span class="n">_LazyNormBase</span><span class="p">,</span> <span class="n">_BatchNorm</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;A :class:`torch.nn.BatchNorm3d` module with lazy initialization.</span>
+
+<span class="sd">    Lazy initialization is done for the ``num_features`` argument of the :class:`BatchNorm3d` that is inferred</span>
+<span class="sd">    from the ``input.size(1)``.</span>
+<span class="sd">    The attributes that will be lazily initialized are `weight`, `bias`,</span>
+<span class="sd">    `running_mean` and `running_var`.</span>
+
+<span class="sd">    Check the :class:`torch.nn.modules.lazy.LazyModuleMixin` for further documentation</span>
+<span class="sd">    on lazy modules and their limitations.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        eps: a value added to the denominator for numerical stability.</span>
+<span class="sd">            Default: 1e-5</span>
+<span class="sd">        momentum: the value used for the running_mean and running_var</span>
+<span class="sd">            computation. Can be set to ``None`` for cumulative moving average</span>
+<span class="sd">            (i.e. simple average). Default: 0.1</span>
+<span class="sd">        affine: a boolean value that when set to ``True``, this module has</span>
+<span class="sd">            learnable affine parameters. Default: ``True``</span>
+<span class="sd">        track_running_stats: a boolean value that when set to ``True``, this</span>
+<span class="sd">            module tracks the running mean and variance, and when set to ``False``,</span>
+<span class="sd">            this module does not track such statistics, and initializes statistics</span>
+<span class="sd">            buffers :attr:`running_mean` and :attr:`running_var` as ``None``.</span>
+<span class="sd">            When these buffers are ``None``, this module always uses batch statistics.</span>
+<span class="sd">            in both training and eval modes. Default: ``True``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">cls_to_become</span> <span class="o">=</span> <span class="n">BatchNorm3d</span>  <span class="c1"># type: ignore[assignment]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_input_dim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">input</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;expected 5D input (got </span><span class="si">{</span><span class="nb">input</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span><span class="si">}</span><span class="s2">D input)&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">SyncBatchNorm</span><span class="p">(</span><span class="n">_BatchNorm</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Applies Batch Normalization over a N-Dimensional input.</span>
+
+<span class="sd">    The N-D input is a mini-batch of [N-2]D inputs with additional channel dimension) as described in the paper</span>
+<span class="sd">    `Batch Normalization: Accelerating Deep Network Training by Reducing</span>
+<span class="sd">    Internal Covariate Shift &lt;https://arxiv.org/abs/1502.03167&gt;`__ .</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        y = \frac{x - \mathrm{E}[x]}{ \sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta</span>
+
+<span class="sd">    The mean and standard-deviation are calculated per-dimension over all</span>
+<span class="sd">    mini-batches of the same process groups. :math:`\gamma` and :math:`\beta`</span>
+<span class="sd">    are learnable parameter vectors of size `C` (where `C` is the input size).</span>
+<span class="sd">    By default, the elements of :math:`\gamma` are sampled from</span>
+<span class="sd">    :math:`\mathcal{U}(0, 1)` and the elements of :math:`\beta` are set to 0.</span>
+<span class="sd">    The standard-deviation is calculated via the biased estimator, equivalent to</span>
+<span class="sd">    `torch.var(input, correction=0)`.</span>
+
+<span class="sd">    Also by default, during training this layer keeps running estimates of its</span>
+<span class="sd">    computed mean and variance, which are then used for normalization during</span>
+<span class="sd">    evaluation. The running estimates are kept with a default :attr:`momentum`</span>
+<span class="sd">    of 0.1.</span>
+
+<span class="sd">    If :attr:`track_running_stats` is set to ``False``, this layer then does not</span>
+<span class="sd">    keep running estimates, and batch statistics are instead used during</span>
+<span class="sd">    evaluation time as well.</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">        This :attr:`momentum` argument is different from one used in optimizer</span>
+<span class="sd">        classes and the conventional notion of momentum. Mathematically, the</span>
+<span class="sd">        update rule for running statistics here is</span>
+<span class="sd">        :math:`\hat{x}_\text{new} = (1 - \text{momentum}) \times \hat{x} + \text{momentum} \times x_t`,</span>
+<span class="sd">        where :math:`\hat{x}` is the estimated statistic and :math:`x_t` is the</span>
+<span class="sd">        new observed value.</span>
+
+<span class="sd">    Because the Batch Normalization is done for each channel in the ``C`` dimension, computing</span>
+<span class="sd">    statistics on ``(N, +)`` slices, it&#39;s common terminology to call this Volumetric Batch</span>
+<span class="sd">    Normalization or Spatio-temporal Batch Normalization.</span>
+
+<span class="sd">    Currently :class:`SyncBatchNorm` only supports</span>
+<span class="sd">    :class:`~torch.nn.DistributedDataParallel` (DDP) with single GPU per process. Use</span>
+<span class="sd">    :meth:`torch.nn.SyncBatchNorm.convert_sync_batchnorm()` to convert</span>
+<span class="sd">    :attr:`BatchNorm*D` layer to :class:`SyncBatchNorm` before wrapping</span>
+<span class="sd">    Network with DDP.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        num_features: :math:`C` from an expected input of size</span>
+<span class="sd">            :math:`(N, C, +)`</span>
+<span class="sd">        eps: a value added to the denominator for numerical stability.</span>
+<span class="sd">            Default: ``1e-5``</span>
+<span class="sd">        momentum: the value used for the running_mean and running_var</span>
+<span class="sd">            computation. Can be set to ``None`` for cumulative moving average</span>
+<span class="sd">            (i.e. simple average). Default: 0.1</span>
+<span class="sd">        affine: a boolean value that when set to ``True``, this module has</span>
+<span class="sd">            learnable affine parameters. Default: ``True``</span>
+<span class="sd">        track_running_stats: a boolean value that when set to ``True``, this</span>
+<span class="sd">            module tracks the running mean and variance, and when set to ``False``,</span>
+<span class="sd">            this module does not track such statistics, and initializes statistics</span>
+<span class="sd">            buffers :attr:`running_mean` and :attr:`running_var` as ``None``.</span>
+<span class="sd">            When these buffers are ``None``, this module always uses batch statistics.</span>
+<span class="sd">            in both training and eval modes. Default: ``True``</span>
+<span class="sd">        process_group: synchronization of stats happen within each process group</span>
+<span class="sd">            individually. Default behavior is synchronization across the whole</span>
+<span class="sd">            world</span>
+
+<span class="sd">    Shape:</span>
+<span class="sd">        - Input: :math:`(N, C, +)`</span>
+<span class="sd">        - Output: :math:`(N, C, +)` (same shape as input)</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">        Synchronization of batchnorm statistics occurs only while training, i.e.</span>
+<span class="sd">        synchronization is disabled when ``model.eval()`` is set or if</span>
+<span class="sd">        ``self.training`` is otherwise ``False``.</span>
+
+<span class="sd">    Examples::</span>
+
+<span class="sd">        &gt;&gt;&gt; # xdoctest: +SKIP</span>
+<span class="sd">        &gt;&gt;&gt; # With Learnable Parameters</span>
+<span class="sd">        &gt;&gt;&gt; m = nn.SyncBatchNorm(100)</span>
+<span class="sd">        &gt;&gt;&gt; # creating process group (optional)</span>
+<span class="sd">        &gt;&gt;&gt; # ranks is a list of int identifying rank ids.</span>
+<span class="sd">        &gt;&gt;&gt; ranks = list(range(8))</span>
+<span class="sd">        &gt;&gt;&gt; r1, r2 = ranks[:4], ranks[4:]</span>
+<span class="sd">        &gt;&gt;&gt; # Note: every rank calls into new_group for every</span>
+<span class="sd">        &gt;&gt;&gt; # process group created, even if that rank is not</span>
+<span class="sd">        &gt;&gt;&gt; # part of the group.</span>
+<span class="sd">        &gt;&gt;&gt; process_groups = [torch.distributed.new_group(pids) for pids in [r1, r2]]</span>
+<span class="sd">        &gt;&gt;&gt; process_group = process_groups[0 if dist.get_rank() &lt;= 3 else 1]</span>
+<span class="sd">        &gt;&gt;&gt; # Without Learnable Parameters</span>
+<span class="sd">        &gt;&gt;&gt; m = nn.BatchNorm3d(100, affine=False, process_group=process_group)</span>
+<span class="sd">        &gt;&gt;&gt; input = torch.randn(20, 100, 35, 45, 10)</span>
+<span class="sd">        &gt;&gt;&gt; output = m(input)</span>
+
+<span class="sd">        &gt;&gt;&gt; # network is nn.BatchNorm layer</span>
+<span class="sd">        &gt;&gt;&gt; sync_bn_network = nn.SyncBatchNorm.convert_sync_batchnorm(network, process_group)</span>
+<span class="sd">        &gt;&gt;&gt; # only single gpu per process is currently supported</span>
+<span class="sd">        &gt;&gt;&gt; ddp_sync_bn_network = torch.nn.parallel.DistributedDataParallel(</span>
+<span class="sd">        &gt;&gt;&gt;                         sync_bn_network,</span>
+<span class="sd">        &gt;&gt;&gt;                         device_ids=[args.local_rank],</span>
+<span class="sd">        &gt;&gt;&gt;                         output_device=args.local_rank)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">num_features</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span>
+        <span class="n">momentum</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">affine</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">track_running_stats</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">process_group</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;device&quot;</span><span class="p">:</span> <span class="n">device</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">:</span> <span class="n">dtype</span><span class="p">}</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">num_features</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">momentum</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span> <span class="n">track_running_stats</span><span class="p">,</span> <span class="o">**</span><span class="n">factory_kwargs</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">process_group</span> <span class="o">=</span> <span class="n">process_group</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_input_dim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">input</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;expected at least 2D input (got </span><span class="si">{</span><span class="nb">input</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span><span class="si">}</span><span class="s2">D input)&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_non_zero_input_channels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">input</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;SyncBatchNorm number of input channels should be non-zero&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Runs the forward pass.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_input_dim</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_non_zero_input_channels</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+
+        <span class="c1"># exponential_average_factor is set to self.momentum</span>
+        <span class="c1"># (when it is available) only so that it gets updated</span>
+        <span class="c1"># in ONNX graph when this node is exported to ONNX.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">momentum</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">exponential_average_factor</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">exponential_average_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">momentum</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">track_running_stats</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_batches_tracked</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;num_batches_tracked must not be None&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_batches_tracked</span><span class="o">.</span><span class="n">add_</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">momentum</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># use cumulative moving average</span>
+                <span class="n">exponential_average_factor</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_batches_tracked</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># use exponential moving average</span>
+                <span class="n">exponential_average_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">momentum</span>
+
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Decide whether the mini-batch stats should be used for normalization rather than the buffers.</span>
+<span class="sd">        Mini-batch stats are used in training mode, and in eval mode when buffers are None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
+            <span class="n">bn_training</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">bn_training</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">running_mean</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">running_var</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span>
+
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Buffers are only updated if they are to be tracked and we are in training mode. Thus they only need to be</span>
+<span class="sd">        passed when the update should occur (i.e. in training mode when they are tracked), or when buffer stats are</span>
+<span class="sd">        used for normalization (i.e. in eval mode when buffers are not None).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># If buffers are not to be tracked, ensure that they won&#39;t be updated</span>
+        <span class="n">running_mean</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">running_mean</span> <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">track_running_stats</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="n">running_var</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">running_var</span> <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">track_running_stats</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Don&#39;t sync batchnorm stats in inference mode (model.eval()).</span>
+        <span class="n">need_sync</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">bn_training</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span>
+            <span class="ow">and</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributed</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributed</span><span class="o">.</span><span class="n">is_initialized</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">need_sync</span><span class="p">:</span>
+            <span class="c1"># currently only GPU/PrivateUse1 input is supported</span>
+            <span class="k">if</span> <span class="nb">input</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span>
+                <span class="s2">&quot;cuda&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;hpu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;xpu&quot;</span><span class="p">,</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">_C</span><span class="o">.</span><span class="n">_get_privateuse1_backend_name</span><span class="p">(),</span>
+            <span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;SyncBatchNorm expected input tensor to be on GPU or XPU or &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">_C</span><span class="o">.</span><span class="n">_get_privateuse1_backend_name</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+            <span class="n">process_group</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributed</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">WORLD</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_group</span><span class="p">:</span>
+                <span class="n">process_group</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_group</span>
+            <span class="n">world_size</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributed</span><span class="o">.</span><span class="n">get_world_size</span><span class="p">(</span><span class="n">process_group</span><span class="p">)</span>
+            <span class="n">need_sync</span> <span class="o">=</span> <span class="n">world_size</span> <span class="o">&gt;</span> <span class="mi">1</span>
+
+        <span class="c1"># fallback to framework BN when synchronization is not necessary</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">need_sync</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">batch_norm</span><span class="p">(</span>
+                <span class="nb">input</span><span class="p">,</span>
+                <span class="n">running_mean</span><span class="p">,</span>
+                <span class="n">running_var</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span>
+                <span class="n">bn_training</span><span class="p">,</span>
+                <span class="n">exponential_average_factor</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">bn_training</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;bn_training must be True&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">sync_batch_norm</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+                <span class="nb">input</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span>
+                <span class="n">running_mean</span><span class="p">,</span>
+                <span class="n">running_var</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="p">,</span>
+                <span class="n">exponential_average_factor</span><span class="p">,</span>
+                <span class="n">process_group</span><span class="p">,</span>  <span class="c1"># type: ignore[possibly-undefined]</span>
+                <span class="n">world_size</span><span class="p">,</span>  <span class="c1"># type: ignore[possibly-undefined]</span>
+            <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">convert_sync_batchnorm</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="n">process_group</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Converts all :attr:`BatchNorm*D` layers in the model to :class:`torch.nn.SyncBatchNorm` layers.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            module (nn.Module): module containing one or more :attr:`BatchNorm*D` layers</span>
+<span class="sd">            process_group (optional): process group to scope synchronization,</span>
+<span class="sd">                default is the whole world</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The original :attr:`module` with the converted :class:`torch.nn.SyncBatchNorm`</span>
+<span class="sd">            layers. If the original :attr:`module` is a :attr:`BatchNorm*D` layer,</span>
+<span class="sd">            a new :class:`torch.nn.SyncBatchNorm` layer object will be returned</span>
+<span class="sd">            instead.</span>
+
+<span class="sd">        Example::</span>
+
+<span class="sd">            &gt;&gt;&gt; # Network with nn.BatchNorm layer</span>
+<span class="sd">            &gt;&gt;&gt; # xdoctest: +REQUIRES(env:TORCH_DOCTEST_CUDA)</span>
+<span class="sd">            &gt;&gt;&gt; module = torch.nn.Sequential(</span>
+<span class="sd">            &gt;&gt;&gt;            torch.nn.Linear(20, 100),</span>
+<span class="sd">            &gt;&gt;&gt;            torch.nn.BatchNorm1d(100),</span>
+<span class="sd">            &gt;&gt;&gt;          ).cuda()</span>
+<span class="sd">            &gt;&gt;&gt; # creating process group (optional)</span>
+<span class="sd">            &gt;&gt;&gt; # ranks is a list of int identifying rank ids.</span>
+<span class="sd">            &gt;&gt;&gt; ranks = list(range(8))</span>
+<span class="sd">            &gt;&gt;&gt; r1, r2 = ranks[:4], ranks[4:]</span>
+<span class="sd">            &gt;&gt;&gt; # Note: every rank calls into new_group for every</span>
+<span class="sd">            &gt;&gt;&gt; # process group created, even if that rank is not</span>
+<span class="sd">            &gt;&gt;&gt; # part of the group.</span>
+<span class="sd">            &gt;&gt;&gt; # xdoctest: +SKIP(&quot;distributed&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; process_groups = [torch.distributed.new_group(pids) for pids in [r1, r2]]</span>
+<span class="sd">            &gt;&gt;&gt; process_group = process_groups[0 if dist.get_rank() &lt;= 3 else 1]</span>
+<span class="sd">            &gt;&gt;&gt; sync_bn_module = torch.nn.SyncBatchNorm.convert_sync_batchnorm(module, process_group)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">module_output</span> <span class="o">=</span> <span class="n">module</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">batchnorm</span><span class="o">.</span><span class="n">_BatchNorm</span><span class="p">):</span>
+            <span class="n">module_output</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">SyncBatchNorm</span><span class="p">(</span>
+                <span class="n">module</span><span class="o">.</span><span class="n">num_features</span><span class="p">,</span>
+                <span class="n">module</span><span class="o">.</span><span class="n">eps</span><span class="p">,</span>
+                <span class="n">module</span><span class="o">.</span><span class="n">momentum</span><span class="p">,</span>
+                <span class="n">module</span><span class="o">.</span><span class="n">affine</span><span class="p">,</span>
+                <span class="n">module</span><span class="o">.</span><span class="n">track_running_stats</span><span class="p">,</span>
+                <span class="n">process_group</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">module</span><span class="o">.</span><span class="n">affine</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+                    <span class="n">module_output</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">weight</span>
+                    <span class="n">module_output</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">bias</span>
+            <span class="n">module_output</span><span class="o">.</span><span class="n">running_mean</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">running_mean</span>
+            <span class="n">module_output</span><span class="o">.</span><span class="n">running_var</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">running_var</span>
+            <span class="n">module_output</span><span class="o">.</span><span class="n">num_batches_tracked</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">num_batches_tracked</span>
+            <span class="n">module_output</span><span class="o">.</span><span class="n">training</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">training</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="s2">&quot;qconfig&quot;</span><span class="p">):</span>
+                <span class="n">module_output</span><span class="o">.</span><span class="n">qconfig</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">qconfig</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">module</span><span class="o">.</span><span class="n">named_children</span><span class="p">():</span>
+            <span class="n">module_output</span><span class="o">.</span><span class="n">add_module</span><span class="p">(</span>
+                <span class="n">name</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">convert_sync_batchnorm</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">process_group</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">del</span> <span class="n">module</span>
+        <span class="k">return</span> <span class="n">module_output</span>
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2026, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

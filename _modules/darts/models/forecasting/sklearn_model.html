@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.43.0" />
+  <meta name="docsearch:version" content="0.44.0" />
   </head>
   
   
@@ -517,7 +517,7 @@
 
 
 <div class="viewcode-block" id="SKLearnModel">
-<a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModel">[docs]</a>
+<a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.catboost_model.SKLearnModel">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SKLearnModel</span><span class="p">(</span><span class="n">GlobalForecastingModel</span><span class="p">):</span>
     <span class="nd">@random_method</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
@@ -1046,7 +1046,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output_chunk_shift</span>
 
 <div class="viewcode-block" id="SKLearnModel.get_estimator">
-<a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModel.get_estimator">[docs]</a>
+<a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.catboost_model.SKLearnModel.get_estimator">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_estimator</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">target_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">quantile</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">):</span>
@@ -1340,7 +1340,7 @@
         <span class="p">)</span>
 
 <div class="viewcode-block" id="SKLearnModel.fit">
-<a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModel.fit">[docs]</a>
+<a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.catboost_model.SKLearnModel.fit">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeriesLike</span><span class="p">,</span>
@@ -1569,7 +1569,7 @@
 
 
 <div class="viewcode-block" id="SKLearnModel.predict">
-<a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModel.predict">[docs]</a>
+<a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.catboost_model.SKLearnModel.predict">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -1911,7 +1911,7 @@
 
 <span class="sd">            - ``{name}`` the static covariate name of the (first) series</span>
 <span class="sd">            - ``{comp}`` the target component name of the (first) that the static covariate act on. If the static</span>
-<span class="sd">                covariate acts globally on a multivariate target series, will show &quot;global&quot;.</span>
+<span class="sd">                covariate acts globally on a multivariate target series, will show &quot;global_components&quot;.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lagged_feature_names</span>
 
@@ -2046,7 +2046,7 @@
 
 
 <div class="viewcode-block" id="SKLearnModelWithCategoricalFeatures">
-<a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModelWithCategoricalFeatures">[docs]</a>
+<a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.catboost_model.SKLearnModelWithCategoricalFeatures">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SKLearnModelWithCategoricalFeatures</span><span class="p">(</span><span class="n">SKLearnModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -2371,7 +2371,7 @@
 
 
 <div class="viewcode-block" id="RegressionModel">
-<a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.RegressionModel">[docs]</a>
+<a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.catboost_model.RegressionModel">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">RegressionModel</span><span class="p">(</span><span class="n">SKLearnModel</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -2630,7 +2630,7 @@
 
 
 <div class="viewcode-block" id="SKLearnClassifierModel">
-<a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnClassifierModel">[docs]</a>
+<a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.catboost_model.SKLearnClassifierModel">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SKLearnClassifierModel</span><span class="p">(</span><span class="n">_ClassifierMixin</span><span class="p">,</span> <span class="n">SKLearnModel</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>

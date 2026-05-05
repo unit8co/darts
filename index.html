@@ -59,7 +59,7 @@
     <link rel="next" title="Quickstart" href="quickstart/00-quickstart.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.43.0" />
+  <meta name="docsearch:version" content="0.44.0" />
   </head>
   
   
@@ -624,7 +624,7 @@ then use it over validation scores to get binary anomaly classification:</p>
 <li><p><strong>Regression Models:</strong> It is possible to plug-in any scikit-learn compatible model to obtain forecasts as functions of lagged values of the target series and covariates.</p></li>
 <li><p><strong>Training with Sample Weights:</strong> All global models support being trained with sample weights. They can be applied to each observation, forecasted time step and target column.</p></li>
 <li><p><strong>Forecast Start Shifting:</strong> All global models support training and prediction on a shifted output window. This is useful for example for Day-Ahead Market forecasts, or when the covariates (or target series) are reported with a delay.</p></li>
-<li><p><strong>Explainability:</strong> Darts has the ability to <em>explain</em> some forecasting models using Shap values.</p></li>
+<li><p><strong>Explainability:</strong> Darts has the ability to <em>explain</em> some forecasting models using SHAP values.</p></li>
 <li><p><strong>Data Processing:</strong> Tools to easily apply (and revert) common transformations on time series data (scaling, filling missing values, differencing, boxcox, …)</p></li>
 <li><p><strong>Metrics:</strong> A variety of metrics for evaluating time series’ goodness of fit; from R2-scores to Mean Absolute Scaled Error.</p></li>
 <li><p><strong>Backtesting:</strong> Utilities for simulating historical forecasts, using moving time windows.</p></li>

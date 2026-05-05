@@ -58,7 +58,7 @@
     <link rel="prev" title="Overview of Forecasting Models" href="forecasting_overview.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.43.0" />
+  <meta name="docsearch:version" content="0.44.0" />
   </head>
   
   
@@ -519,10 +519,9 @@
 <p>In Figure 1 you can see how your data is distributed to the input and output chunks for each sample when calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code> or <code class="docutils literal notranslate"><span class="pre">predict()</span></code>. For this example we look at data with daily frequency. The input chunk extracts values from <code class="docutils literal notranslate"><span class="pre">target</span></code> and optionally from <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> and / or <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> that fall into the input chunk time span. These “past” values of <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> are called “historic future covariates”.</p>
 <p>The output chunk only takes optional <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> values that fall into the output chunk time span. The future values of our <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> - “future past covariates” - are only used to provide the input chunk of upcoming samples with new data.</p>
 <p>All this information is used to predict the “future target” - the next <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> points after the end of “past target”.</p>
-<a class="reference external image-reference" href="./images/covariates/tfm.png"><img alt="figure0" src="../_images/tfm.png" />
-</a>
+<p><img alt="figure0" src="../_images/tfm.png" /></p>
 <p><strong>Figure 1: Top level look at training / predicting on chunks with Torch Forecasting Models</strong></p>
-<p>When calling <code class="docutils literal notranslate"><span class="pre">predict()</span></code> and depending on your forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code>, the model can either predict in one go (if <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&lt;=</span> <span class="pre">output_chunk_length</span></code>), or auto-regressively, by predicting on multiple chunks in the future (if <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">output_chunk_length</span></code>). That is the reason why when predicting with <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> you might have to supply additional “future values of your <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>“.</p>
+<p>When calling <code class="docutils literal notranslate"><span class="pre">predict()</span></code> and depending on your forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code>, the model can either predict in one go (if <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&lt;=</span> <span class="pre">output_chunk_length</span></code>), or auto-regressively, by predicting on multiple chunks in the future (if <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">output_chunk_length</span></code>). That is the reason why when predicting with <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> you might have to supply additional “future values of your <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>”.</p>
 </section>
 <section id="torch-forecasting-model-covariates-support">
 <h2>Torch Forecasting Model Covariates Support<a class="headerlink" href="#torch-forecasting-model-covariates-support" title="Link to this heading">#</a></h2>
@@ -530,42 +529,42 @@
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Class</p></th>
-<th class="head"><p>past covariates</p></th>
-<th class="head"><p>future past covariates</p></th>
-<th class="head"><p>future covariates</p></th>
-<th class="head"><p>historic future covariates</p></th>
+<th class="head text-center"><p>past covariates</p></th>
+<th class="head text-center"><p>future past covariates</p></th>
+<th class="head text-center"><p>future covariates</p></th>
+<th class="head text-center"><p>historic future covariates</p></th>
 </tr>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PastCovariatesModel</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
+<td class="text-center"><p>✅</p></td>
+<td class="text-center"><p>✅</p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FutureCovariatesModel</span></code></p></td>
-<td></td>
-<td></td>
-<td><p>✅</p></td>
-<td></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p>✅</p></td>
+<td class="text-center"><p></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DualCovariatesModel</span></code></p></td>
-<td></td>
-<td></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p>✅</p></td>
+<td class="text-center"><p>✅</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SplitCovariatesModel</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td></td>
+<td class="text-center"><p>✅</p></td>
+<td class="text-center"><p>✅</p></td>
+<td class="text-center"><p>✅</p></td>
+<td class="text-center"><p></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">MixedCovariatesModel</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
+<td class="text-center"><p>✅</p></td>
+<td class="text-center"><p>✅</p></td>
+<td class="text-center"><p>✅</p></td>
+<td class="text-center"><p>✅</p></td>
 </tr>
 </tbody>
 </table>
@@ -575,83 +574,83 @@
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>TFM</p></th>
-<th class="head"><p><code class="docutils literal notranslate"><span class="pre">Past</span></code></p></th>
-<th class="head"><p><code class="docutils literal notranslate"><span class="pre">Future</span></code></p></th>
-<th class="head"><p><code class="docutils literal notranslate"><span class="pre">Dual</span></code></p></th>
-<th class="head"><p><code class="docutils literal notranslate"><span class="pre">Split</span></code></p></th>
-<th class="head"><p><code class="docutils literal notranslate"><span class="pre">Mixed</span></code></p></th>
+<th class="head text-center"><p><code class="docutils literal notranslate"><span class="pre">Past</span></code></p></th>
+<th class="head text-center"><p><code class="docutils literal notranslate"><span class="pre">Future</span></code></p></th>
+<th class="head text-center"><p><code class="docutils literal notranslate"><span class="pre">Dual</span></code></p></th>
+<th class="head text-center"><p><code class="docutils literal notranslate"><span class="pre">Split</span></code></p></th>
+<th class="head text-center"><p><code class="docutils literal notranslate"><span class="pre">Mixed</span></code></p></th>
 </tr>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RNNModel</span></code></p></td>
-<td></td>
-<td></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p>✅</p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td class="text-center"><p>✅</p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td class="text-center"><p>✅</p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TCNModel</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td class="text-center"><p>✅</p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TransformerModel</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td class="text-center"><p>✅</p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TFTModel</span></code></p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p>✅</p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p>✅</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NLinearModel</span></code></p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p>✅</p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p>✅</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DLinearModel</span></code></p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p>✅</p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p>✅</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TiDEModel</span></code></p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p>✅</p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p>✅</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TSMixerModel</span></code></p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p>✅</p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p></p></td>
+<td class="text-center"><p>✅</p></td>
 </tr>
 </tbody>
 </table>
@@ -703,13 +702,11 @@ The <code class="docutils literal notranslate"><span class="pre">output_chunk_le
           <span class="n">future_covariates</span><span class="o">=</span><span class="n">weekday</span><span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference external image-reference" href="./images/covariates/seq_covs_single.png"><img alt="figure4" src="../_images/seq_covs_single.png" />
-</a>
+<p><img alt="figure4" src="../_images/seq_covs_single.png" /></p>
 <p><strong>Figure 2: Overview of a single sequence from our ice-cream sales example</strong>; Mon1 - Sun1 stand for the first 7 days from our training dataset (week 1 of the year). Mon2 is the Monday of week 2.</p>
 <p>When calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code>, the models will build an appropriate <code class="docutils literal notranslate"><span class="pre">darts.utils.data.TorchTrainingDataset</span></code>, which specifies how to slice the data to obtain training samples. If you want to control this slicing yourself, you can instantiate your own <code class="docutils literal notranslate"><span class="pre">TorchTrainingDataset</span></code> and call <code class="docutils literal notranslate"><span class="pre">model.fit_from_dataset()</span></code> instead of <code class="docutils literal notranslate"><span class="pre">fit()</span></code>. By default, most models (though not all) will build <em>sequential</em> datasets, which basically means that all sub-slices of length <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span> <span class="pre">+</span> <span class="pre">output_chunk_length</span></code> in the provided series will be used for training.</p>
 <p>So during training, the torch models will go through the training data in sequences (see Figure 3). Using information from the <strong>input chunk</strong> and <strong>output chunk</strong>, the model predicts the future target on the output chunk. The training loss is evaluated between the predicted future target and the actual target value on the output chunk. The model trains itself by minimizing the loss over all sequences.</p>
-<a class="reference external image-reference" href="./images/covariates/seq_covs_1.png"><img alt="figure5" src="../_images/seq_covs_1.png" />
-</a>
+<p><img alt="figure5" src="../_images/seq_covs_1.png" /></p>
 <p><strong>Figure 3: Prediction and loss evaluation in a single sequence</strong></p>
 <p>After having completed computations on the first sequence, the model moves to the next one and performs the same training steps. <em>The starting point of each sequence is selected randomly from the sequential dataset</em>. Figure 4 shows how this would look like if by pure chance the second sequence started one time step (day) after the first.</p>
 <p>This sequence-to-sequence process is repeated until all 365 days were covered.</p>
@@ -718,8 +715,7 @@ The <code class="docutils literal notranslate"><span class="pre">output_chunk_le
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference external image-reference" href="./images/covariates/sequential_training.png"><img alt="figure6" src="../_images/sequential_training.png" />
-</a>
+<p><img alt="figure6" src="../_images/sequential_training.png" /></p>
 <p><strong>Figure 4: Sequence-to-sequence: Move to next sequence and repeat training steps</strong></p>
 </section>
 <section id="training-with-a-validation-dataset">
@@ -769,11 +765,9 @@ from <a class="reference internal" href="#required-target-time-spans-for-trainin
                            <span class="n">future_covariates</span><span class="o">=</span><span class="n">weekday</span><span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference external image-reference" href="./images/covariates/prediction_once.png"><img alt="figure7" src="../_images/prediction_once.png" />
-</a>
+<p><img alt="figure7" src="../_images/prediction_once.png" /></p>
 <p><strong>Figure 5: Forecast with a single sequence for n &lt;= output_chunk_length</strong></p>
-<a class="reference external image-reference" href="./images/covariates/prediction_multi.png"><img alt="figure8" src="../_images/prediction_multi.png" />
-</a>
+<p><img alt="figure8" src="../_images/prediction_multi.png" /></p>
 <p><strong>Figure 6: Auto-regressive forecast for n &gt; output_chunk_length</strong></p>
 </section>
 <section id="advanced-functionnalities">
@@ -1201,13 +1195,13 @@ We train two models; <code class="docutils literal notranslate"><span class="pre
 <td><p>4</p></td>
 <td><p>12.3s</p></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<tr class="row-odd"><td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code></p></td>
 <td><p>Energy</p></td>
@@ -1297,13 +1291,13 @@ We train two models; <code class="docutils literal notranslate"><span class="pre
 <td><p>4</p></td>
 <td><p>1.8s</p></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<tr class="row-odd"><td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TFTModel</span></code></p></td>
 <td><p>Energy</p></td>
@@ -1393,13 +1387,13 @@ We train two models; <code class="docutils literal notranslate"><span class="pre
 <td><p>4</p></td>
 <td><p>50s</p></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<tr class="row-odd"><td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TFTModel</span></code></p></td>
 <td><p>Energy</p></td>
@@ -1588,7 +1582,7 @@ We train two models; <code class="docutils literal notranslate"><span class="pre
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/userguide/torch_forecasting_models.rst.txt"
+      <li><a href="../_sources/userguide/torch_forecasting_models.md.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>

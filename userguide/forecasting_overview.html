@@ -58,7 +58,7 @@
     <link rel="prev" title="TimeSeries" href="timeseries.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.43.0" />
+  <meta name="docsearch:version" content="0.44.0" />
   </head>
   
   
@@ -530,8 +530,7 @@ during fit and predict stage can have multiple dimensions. The model will then i
 <span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference external image-reference" href="./images/forecast_multiv.png"><img alt="Forecasting a multivariate series" src="../_images/forecast_multiv.png" />
-</a>
+<p><img alt="Forecasting a multivariate series" src="../_images/forecast_multiv.png" /></p>
 <p>These models are shown with a “✅” under the <code class="docutils literal notranslate"><span class="pre">Multivariate</span></code> column on the <a class="reference external" href="https://github.com/unit8co/darts#forecasting-models">model list</a>.</p>
 </section>
 <section id="handling-multiple-series">
@@ -559,8 +558,7 @@ We distinguish between <em>past covariates</em> and <em>future covariates</em>:<
 <li><p>Past covariates are covariate time series whose values are <strong>not</strong> known into the future at prediction time. Those can for instance represent signals that have to be measured and are not known upfront. Models do not use the future values of <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> when making forecasts.</p></li>
 <li><p>Future covariates are covariate time series whose values are known into the future at prediction time (up until the forecast horizon). These can represent signals such as calendar information, holidays, weather forecasts, etc. Models that accept <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> will consume the future values (up to the forecast horizon) when making forecasts.</p></li>
 </ul>
-<a class="reference external image-reference" href="./images/covariates/covariates-highlevel.png"><img alt="covariates" src="../_images/covariates-highlevel1.png" />
-</a>
+<p><img alt="covariates" src="../_images/covariates-highlevel1.png" /></p>
 <p>Past and future covariates can be used by providing respectively <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> and <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> arguments to <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code>.
 When a model is trained on multiple target series, one covariate has to be provided per target series. The covariate series themselves can be multivariate
 and contain multiple “covariate dimensions”; see the <a class="reference external" href="https://unit8co.github.io/darts/userguide/timeseries.html">TimeSeries guide</a> for how to build multivariate series.</p>
@@ -590,8 +588,7 @@ The actual probabilistic distribution of the forecasts depends on the model.</p>
 <span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference external image-reference" href="./images/probabilistic/example_ets.png"><img alt="Exponential Smoothing" src="../_images/example_ets.png" />
-</a>
+<p><img alt="Exponential Smoothing" src="../_images/example_ets.png" /></p>
 <section id="probabilistic-neural-networks">
 <h3>Probabilistic neural networks<a class="headerlink" href="#probabilistic-neural-networks" title="Link to this heading">#</a></h3>
 <p>All neural networks (torch-based models) in Darts have a rich support to estimate different kinds of probability distributions.
@@ -624,8 +621,7 @@ The strength of this regularization term can also be specified when creating the
 <span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference external image-reference" href="./images/probabilistic/example_tcn_laplace.png"><img alt="TCN Laplace regression" src="../_images/example_tcn_laplace.png" />
-</a>
+<p><img alt="TCN Laplace regression" src="../_images/example_tcn_laplace.png" /></p>
 <p>It is also possible to perform quantile regression (using arbitrary quantiles) with neural networks, by using <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.QuantileRegression">darts.utils.likelihood_models.torch.QuantileRegression</a>, in which case the network will be trained with the pinball loss. This produces an empirical non-parametric distribution, and it can often be a good option in practice, when one is not sure of the “real” distribution, or when fitting parametric likelihoods give poor results.
 For example, the code snippet below is almost exactly the same as the preceding snippet; the only difference is that it now uses a <code class="docutils literal notranslate"><span class="pre">QuantileRegression</span></code> likelihood, which means that the neural network will be trained with a pinball loss, and its number of outputs will be dynamically configured to match the number of quantiles.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
@@ -652,8 +648,7 @@ For example, the code snippet below is almost exactly the same as the preceding 
 <span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference external image-reference" href="./images/probabilistic/example_tcn_quantile.png"><img alt="TCN quantile regression" src="../_images/example_tcn_quantile.png" />
-</a>
+<p><img alt="TCN quantile regression" src="../_images/example_tcn_quantile.png" /></p>
 </section>
 <section id="capturing-model-uncertainty-using-monte-carlo-dropout">
 <h3>Capturing model uncertainty using Monte Carlo Dropout<a class="headerlink" href="#capturing-model-uncertainty-using-monte-carlo-dropout" title="Link to this heading">#</a></h3>
@@ -683,8 +678,7 @@ For example, the code snippet below is almost exactly the same as the preceding 
 <span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference external image-reference" href="./images/probabilistic/example_mc_dropout.png"><img alt="TCN quantile regression" src="../_images/example_mc_dropout.png" />
-</a>
+<p><img alt="TCN quantile regression" src="../_images/example_mc_dropout.png" /></p>
 <p>Monte Carlo Dropout can be combined with other likelihood estimation in Darts, which can be interpreted as a way to capture both epistemic and aleatoric uncertainty.</p>
 </section>
 <section id="probabilistic-regression-models">
@@ -708,8 +702,7 @@ For example, the code snippet below is almost exactly the same as the preceding 
 <span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference external image-reference" href="./images/probabilistic/example_linreg_quantile.png"><img alt="quantile linear regression" src="../_images/example_linreg_quantile.png" />
-</a>
+<p><img alt="quantile linear regression" src="../_images/example_linreg_quantile.png" /></p>
 <p>[1] Yarin Gal, Zoubin Ghahramani, <a class="reference external" href="https://arxiv.org/abs/1506.02142">“Dropout as a Bayesian Approximation: Representing Model Uncertainty in Deep Learning”</a></p>
 </section>
 </section>
@@ -780,7 +773,7 @@ For example, the code snippet below is almost exactly the same as the preceding 
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/userguide/forecasting_overview.rst.txt"
+      <li><a href="../_sources/userguide/forecasting_overview.md.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>
