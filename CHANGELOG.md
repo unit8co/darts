@@ -5,7 +5,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.44.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.44.1...master)
 
 ### For users of the library:
 
@@ -21,19 +21,41 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Fixed several bugs in `SKLearnExplainer` including mismatched SHAP method enum values, feature naming conventions, inconsistent instance count in `explain()`. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 - Fixed a bug in explainability utils where stationarity tests were not properly conducted due to usage of `all()`. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+
+**Dependencies**
+
+### For developers of the library:
+
+- Added `SHAPSingleExplainabilityResult` class as the return type of `explain_single()` method in `SKLearnExplainer` and `TorchExplainer` and to store the SHAP results of a single instance explanation. This is in contrast to the existing `SHAPExplainabilityResult` which stores results for batched explanations. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+
+## [0.44.1](https://github.com/unit8co/darts/tree/0.44.1) (2026-05-05)
+
+### For users of the library:
+
+**Improved**
+
+**Fixed**
+
+- Fixed a `ValueError` in `backtest()` when using `overlap_end=True` with `predict_likelihood_parameters=True` and a quantile metric. The final forecast window could extend beyond the series end, producing an empty intersection that caused a reshape failure in the metric computation. [#3111](https://github.com/unit8co/darts/pull/3111) by [Dennis Bader](https://github.com/dennisbader)
 - Fixed rendering issues of `CustomBlockRNNModule` and `CustomRNNModule` in the documentation. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao)
 - Fixed rendering issues of `20-SKLearnModel-examples` notebook in the documentation. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao)
+
+**Dependencies**
+
+- Re-added support for numpy < 2 (numpy>=1.26.0) to allow compatibility with cloud platforms that require older numpy versions (e.g., Foundry Transforms due to Spark 3). [#3110](https://github.com/unit8co/darts/pull/3110) by [Dennis Bader](https://github.com/dennisbader)
 
 ### For developers of the library:
 
 - PyPI package release is now part of the release workflow using secure Trusted Publishing via OpenID Connect (OIDC). [#3100](https://github.com/unit8co/darts/pull/3100) by [Dennis Bader](https://github.com/dennisbader)
-- Sped up the documentation build by utilizing multiple CPU cores. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao)
-- Added `SHAPSingleExplainabilityResult` class as the return type of `explain_single()` method in `SKLearnExplainer` and `TorchExplainer` and to store the SHAP results of a single instance explanation. This is in contrast to the existing `SHAPExplainabilityResult` which stores results for batched explanations. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+- Sped up the documentation build by utilizing multiple CPU cores. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao).
+- Added a weekly GitHub Actions workflow to run `uv audit` and fail CI when vulnerabilities are found in the dependencies. [#3102](https://github.com/unit8co/darts/pull/3102) by [Zhihao Dai](https://github.com/daidahao).
+- Updated GitHub Actions to use Node.js 24 runtime as Node.js 20 has reached end-of-life. [#3105](https://github.com/unit8co/darts/pull/3105) by [Zhihao Dai](https://github.com/daidahao).
 
 **Dependencies**
 
 - Added a `uv` 7-day cooldown period to reduce supply-chain risk from newly published packages during dependency resolution. [#3096](https://github.com/unit8co/darts/pull/3096) by [Zhihao Dai](https://github.com/daidahao)
 - Configured `uv` to install only binary wheels for all dependencies to reduce supply-chain risk from source-distribution build execution. [#3099](https://github.com/unit8co/darts/pull/3099) by [Zhihao Dai](https://github.com/daidahao)
+- Replaced `m2r2` and `recommonmark` with `myst-parser` for Sphinx Markdown support, fixing 3 `nbconvert` vulnerabilities caused by `m2r2` pinning `mistune==0.8.4`. [#3104](https://github.com/unit8co/darts/pull/3104) by [Dennis Bader](https://github.com/dennisbader)
 
 ## [0.44.0](https://github.com/unit8co/darts/tree/0.44.0) (2026-04-30)
 

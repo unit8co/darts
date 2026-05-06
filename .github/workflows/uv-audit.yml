@@ -1,0 +1,45 @@
+name: weekly uv audit
+
+on:
+  schedule:
+    - cron: '0 12 * * 1' # every Monday at 12:00 UTC
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Clone repository"
+        uses: actions/checkout@v6
+
+      - name: "Set up Python 3.11"
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: "Install uv"
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          # uv audit requires 0.10.8 or later
+          version: "0.11.7"
+          enable-cache: true
+          python-version: '3.11'
+
+      - name: "Update lockfile"
+        run: |
+          uv lock -U
+
+      - name: "Run uv audit"
+        run: |
+          uv audit
+
+      - name: "Update dependencies"
+        # only update dependencies after auditing has passed
+        run: |
+          uv sync --group dev-all --group torch-cpu
+
+      - name: "Optimize cache for CI"
+        run: |
+          # Remove pre-built wheels but keep source-built wheels
+          # This reduces cache size while retaining expensive-to-rebuild packages
+          uv cache prune --ci

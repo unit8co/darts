@@ -108,6 +108,7 @@ if TYPE_CHECKING:
     from darts.models.forecasting.timesfm2p5_model import (
         TimesFM2p5Model as TimesFM2p5Model,
     )
+    from darts.models.forecasting.tirex_model import TiRexModel as TiRexModel
     from darts.models.forecasting.transformer_model import (
         TransformerModel as TransformerModel,
     )

@@ -8,17 +8,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Clone repository"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: "Set up Python 3.11"
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
       - name: "Install uv"
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.1.0
         with:
-          version: "0.9.26"
+          version: "0.11.7"
           enable-cache: true
           python-version: '3.11'
 
