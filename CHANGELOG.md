@@ -17,6 +17,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For developers of the library:
 
+- Used GitHub Actions to publish the documentation to GitHub Pages, replacing the previous third-party branch-based deployment method. [#3107](https://github.com/unit8co/darts/pull/3107) by [Zhihao Dai](https://github.com/daidahao)
+
 ## [0.44.1](https://github.com/unit8co/darts/tree/0.44.1) (2026-05-05)
 
 ### For users of the library:
@@ -39,7 +41,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Sped up the documentation build by utilizing multiple CPU cores. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao).
 - Added a weekly GitHub Actions workflow to run `uv audit` and fail CI when vulnerabilities are found in the dependencies. [#3102](https://github.com/unit8co/darts/pull/3102) by [Zhihao Dai](https://github.com/daidahao).
 - Updated GitHub Actions to use Node.js 24 runtime as Node.js 20 has reached end-of-life. [#3105](https://github.com/unit8co/darts/pull/3105) by [Zhihao Dai](https://github.com/daidahao).
-- Used GitHub Actions to publish the documentation to GitHub Pages, replacing the previous third-party branch-based deployment method. [#3107](https://github.com/unit8co/darts/pull/3107) by [Zhihao Dai](https://github.com/daidahao)
 
 **Dependencies**
 
