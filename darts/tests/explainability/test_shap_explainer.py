@@ -13,10 +13,10 @@ from sklearn.preprocessing import MinMaxScaler
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
-from darts.explainability.explainability_result import SHAPExplainabilityResult
-from darts.explainability.sklearn_explainer import (
+from darts.explainability.explainability_result import ShapExplainabilityResult
+from darts.explainability.shap_explainer import (
     MIN_BACKGROUND_SAMPLE,
-    SKLearnExplainer,
+    ShapExplainer,
 )
 from darts.models import (
     CatBoostModel,
@@ -51,7 +51,7 @@ class CallableAdditiveRegressor(BaseEstimator, RegressorMixin):
         return self.predict(X)
 
 
-class TestSKLearnExplainer:
+class TestShapExplainer:
     np.random.seed(42)
 
     scaler = MinMaxScaler(feature_range=(-1, 1))
@@ -197,7 +197,7 @@ class TestSKLearnExplainer:
         m = model_cls(**config)
 
         with pytest.raises(ValueError):
-            SKLearnExplainer(m, self.target_ts, self.past_cov_ts, self.fut_cov_ts)
+            ShapExplainer(m, self.target_ts, self.past_cov_ts, self.fut_cov_ts)
 
         m.fit(
             series=self.target_ts,
@@ -207,7 +207,7 @@ class TestSKLearnExplainer:
 
         # Should have the same number of target, past and futures in the respective lists
         with pytest.raises(ValueError):
-            SKLearnExplainer(
+            ShapExplainer(
                 m,
                 [self.target_ts, self.target_ts],
                 self.past_cov_ts,
@@ -216,18 +216,18 @@ class TestSKLearnExplainer:
 
         # Missing a future covariate if you choose to use a new background
         with pytest.raises(ValueError):
-            SKLearnExplainer(
+            ShapExplainer(
                 m, self.target_ts, background_past_covariates=self.past_cov_ts
             )
 
         # Missing a past covariate if you choose to use a new background
         with pytest.raises(ValueError):
-            SKLearnExplainer(
+            ShapExplainer(
                 m, self.target_ts, background_future_covariates=self.fut_cov_ts
             )
 
         # Good type of explainers
-        shap_explain = SKLearnExplainer(m)
+        shap_explain = ShapExplainer(m)
         if m._supports_native_multioutput:
             # since xgboost > 2.1.0, model supports native multi-output regression
             # CatBoostModel supports multi-output for certain loss functions
@@ -239,14 +239,14 @@ class TestSKLearnExplainer:
 
         # Bad choice of shap explainer
         with pytest.raises(ValueError):
-            SKLearnExplainer(m, shap_method="bad_choice")
+            ShapExplainer(m, shap_method="bad_choice")
 
     def test_creation(self):
         # Model should be a SKLearnModel
         m = ExponentialSmoothing()
         m.fit(self.target_ts["price"])
         with pytest.raises(ValueError):
-            SKLearnExplainer(m)
+            ShapExplainer(m)
 
         # For now, multi_models=False not allowed
         m = LinearRegressionModel(lags=1, output_chunk_length=2, multi_models=False)
@@ -254,7 +254,7 @@ class TestSKLearnExplainer:
             series=self.target_ts,
         )
         with pytest.raises(ValueError):
-            SKLearnExplainer(
+            ShapExplainer(
                 m,
                 self.target_ts,
             )
@@ -271,7 +271,7 @@ class TestSKLearnExplainer:
             past_covariates=self.past_cov_ts,
             future_covariates=self.fut_cov_ts,
         )
-        shap_explain = SKLearnExplainer(m)
+        shap_explain = ShapExplainer(m)
         assert isinstance(shap_explain.explainers.explainers, shap.explainers.Linear)
 
         # ExtraTreesRegressor - also not a MultiOutputRegressor
@@ -287,7 +287,7 @@ class TestSKLearnExplainer:
             past_covariates=self.past_cov_ts,
             future_covariates=self.fut_cov_ts,
         )
-        shap_explain = SKLearnExplainer(m)
+        shap_explain = ShapExplainer(m)
         assert isinstance(shap_explain.explainers.explainers, shap.explainers.Tree)
 
         # No past or future covariates
@@ -299,7 +299,7 @@ class TestSKLearnExplainer:
             series=self.target_ts,
         )
 
-        shap_explain = SKLearnExplainer(m)
+        shap_explain = ShapExplainer(m)
         assert isinstance(shap_explain.explainers.explainers, shap.explainers.Linear)
 
     def test_explain(self):
@@ -317,7 +317,7 @@ class TestSKLearnExplainer:
             future_covariates=self.fut_cov_ts,
         )
 
-        shap_explain = SKLearnExplainer(m)
+        shap_explain = ShapExplainer(m)
         with pytest.raises(ValueError):
             _ = shap_explain.explain(horizons=[1, 5])  # horizon > output_chunk_length
         with pytest.raises(ValueError):
@@ -394,7 +394,7 @@ class TestSKLearnExplainer:
             results.get_feature_values(horizon=1, component="test")
 
         # right instance
-        assert isinstance(results, SHAPExplainabilityResult)
+        assert isinstance(results, ShapExplainabilityResult)
 
         components_list = [
             "price_target_lag-4",
@@ -456,9 +456,9 @@ class TestSKLearnExplainer:
         m.fit(
             series=self.target_ts,
         )
-        shap_explain = SKLearnExplainer(m)
+        shap_explain = ShapExplainer(m)
 
-        assert isinstance(shap_explain.explain(), SHAPExplainabilityResult)
+        assert isinstance(shap_explain.explain(), ShapExplainabilityResult)
 
     def test_explain_with_lags_future_covariates_series_of_same_length_as_target(self):
         model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
@@ -475,7 +475,7 @@ class TestSKLearnExplainer:
             future_covariates=self.fut_cov_ts,
         )
 
-        shap_explain = SKLearnExplainer(model)
+        shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
         for component in ["power", "price"]:
             explanation = explanation_results.get_explanation(
@@ -511,7 +511,7 @@ class TestSKLearnExplainer:
             future_covariates=fut_cov_ts,
         )
 
-        shap_explain = SKLearnExplainer(model)
+        shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
         for component in ["power", "price"]:
             explanation = explanation_results.get_explanation(
@@ -547,7 +547,7 @@ class TestSKLearnExplainer:
             future_covariates=fut_cov_ts,
         )
 
-        shap_explain = SKLearnExplainer(model)
+        shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
         for component in ["power", "price"]:
             explanation = explanation_results.get_explanation(
@@ -574,7 +574,7 @@ class TestSKLearnExplainer:
             future_covariates=self.fut_cov_ts,
         )
 
-        shap_explain = SKLearnExplainer(m_0)
+        shap_explain = ShapExplainer(m_0)
 
         # We need at least 5 points for force_plot
         with pytest.raises(ValueError):
@@ -651,7 +651,7 @@ class TestSKLearnExplainer:
             series=self.target_ts,
         )
 
-        shap_explain = SKLearnExplainer(m)
+        shap_explain = ShapExplainer(m)
         fplot = shap_explain.force_plot(
             foreground_series=self.target_ts[100:105],
             horizon=1,
@@ -668,7 +668,7 @@ class TestSKLearnExplainer:
         model.fit(
             series=self.target_ts,
         )
-        shap_explain = SKLearnExplainer(model)
+        shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
         df = pd.merge(
             self.target_ts.to_dataframe(),
@@ -695,7 +695,7 @@ class TestSKLearnExplainer:
         model.fit(
             series=self.target_ts,
         )
-        shap_explain = SKLearnExplainer(model)
+        shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
 
         feature_values = explanation_results.get_feature_values(
@@ -726,7 +726,7 @@ class TestSKLearnExplainer:
             past_covariates=self.past_cov_ts,
             future_covariates=self.fut_cov_ts,
         )
-        shap_explain = SKLearnExplainer(model)
+        shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
 
         assert isinstance(
@@ -763,7 +763,7 @@ class TestSKLearnExplainer:
             past_covariates=self.past_cov_ts,
             future_covariates=self.fut_cov_ts,
         )
-        shap_explain = SKLearnExplainer(model)
+        shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
         # check that explain() with selected components gives identical results
         for comp in self.target_ts.components:
@@ -796,7 +796,7 @@ class TestSKLearnExplainer:
         model.fit(
             series=ts,
         )
-        shap_explain = SKLearnExplainer(model)
+        shap_explain = ShapExplainer(model)
 
         # different static covariates dimensions should raise an error
         with pytest.raises(ValueError):
@@ -816,7 +816,7 @@ class TestSKLearnExplainer:
         model.fit(
             series=self.target_ts_with_multi_component_static_covs,
         )
-        shap_explain = SKLearnExplainer(model)
+        shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
         assert len(explanation_results.feature_values[1]) == 2
         for comp in self.target_ts_with_multi_component_static_covs.components:
@@ -841,7 +841,7 @@ class TestSKLearnExplainer:
         model.fit(
             series=self.target_ts_multiple_series_with_different_static_covs,
         )
-        shap_explain = SKLearnExplainer(
+        shap_explain = ShapExplainer(
             model,
             background_series=self.target_ts_multiple_series_with_different_static_covs,
         )
@@ -876,7 +876,7 @@ class TestSKLearnExplainer:
             )
         )
         model.fit(ts)
-        shap_explain = SKLearnExplainer(model)
+        shap_explain = ShapExplainer(model)
 
         # one column per lag, grouped by components
         expected_columns = [
@@ -908,7 +908,7 @@ class TestSKLearnExplainer:
         )
         model.fit(series=self.target_ts)
 
-        explainer = SKLearnExplainer(model)
+        explainer = ShapExplainer(model)
         foreground_series = self.target_ts[-10:]
         results = explainer.explain_single(
             foreground_series=foreground_series,
@@ -981,7 +981,7 @@ class TestSKLearnExplainer:
         foreground_series = series[-10:]
 
         model.fit(series=series)
-        explainer = SKLearnExplainer(model)
+        explainer = ShapExplainer(model)
         results = explainer.explain_single(foreground_series=foreground_series)
 
         explanation = results.get_explanation()
@@ -1031,7 +1031,7 @@ class TestSKLearnExplainer:
         foreground_series = series[-10:]
 
         model.fit(series=series)
-        explainer = SKLearnExplainer(model)
+        explainer = ShapExplainer(model)
         results = explainer.explain_single(foreground_series=foreground_series)
 
         explanation = results.get_explanation()
@@ -1055,7 +1055,7 @@ class TestSKLearnExplainer:
         )
         model.fit(series=series)
 
-        explainer = SKLearnExplainer(
+        explainer = ShapExplainer(
             model,
             background_series=series[-20:],
             shap_method="permutation",
@@ -1126,7 +1126,7 @@ class TestSKLearnExplainer:
         series = linear_timeseries(length=40, column_name="price")
         model.fit(series=series)
 
-        explainer = SKLearnExplainer(
+        explainer = ShapExplainer(
             model,
             background_series=series[-20:],
             shap_method=shap_method,
@@ -1145,7 +1145,7 @@ class TestSKLearnExplainer:
         model.fit(series=series)
 
         with pytest.raises(ValueError, match="Invalid `shap_method`"):
-            SKLearnExplainer(
+            ShapExplainer(
                 model,
                 background_series=series[-20:],
                 shap_method="gradient",
@@ -1159,7 +1159,7 @@ class TestSKLearnExplainer:
         )
         model.fit(series=series)
 
-        shap_explain = SKLearnExplainer(model)
+        shap_explain = ShapExplainer(model)
         fplot = shap_explain.force_plot(
             foreground_series=series[100:105],
             horizon=1,
@@ -1180,13 +1180,13 @@ class TestSKLearnExplainer:
             column_name="price",
         )
         with pytest.raises(ValueError, match="background dataset is too small"):
-            SKLearnExplainer(
+            ShapExplainer(
                 linear_model,
                 background_series=too_small_background,
                 shap_method="linear",
             )
 
-        linear_explainer = SKLearnExplainer(
+        linear_explainer = ShapExplainer(
             linear_model,
             background_series=series[-20:],
             background_num_samples=1,
@@ -1203,7 +1203,7 @@ class TestSKLearnExplainer:
             model=sklearn.dummy.DummyRegressor(),
         )
         kernel_model.fit(series=series)
-        kernel_explainer = SKLearnExplainer(
+        kernel_explainer = ShapExplainer(
             kernel_model,
             background_series=series[-20:],
             background_num_samples=1,

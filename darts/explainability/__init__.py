@@ -7,7 +7,7 @@ model-specific explainability methods.
 
 `SHAP <https://github.com/slundberg/shap>`__-Based Explainers
 -------------------------------------------------------------
-- :class:`~darts.explainability.sklearn_explainer.SKLearnExplainer`: SHAP-based explainer for Darts' SKLearn
+- :class:`~darts.explainability.shap_explainer.ShapExplainer`: SHAP-based explainer for Darts' SKLearn
   models.
 - :class:`~darts.explainability.torch_explainer.TorchExplainer`: SHAP-based explainer for Darts' PyTorch models.
 
@@ -24,28 +24,26 @@ from darts.utils._lazy import setup_lazy_imports
 
 if TYPE_CHECKING:
     from darts.explainability.explainability_result import (
-        SHAPExplainabilityResult as SHAPExplainabilityResult,
+        ShapExplainabilityResult as ShapExplainabilityResult,
     )
     from darts.explainability.explainability_result import (
-        SHAPSingleExplainabilityResult as SHAPSingleExplainabilityResult,
+        ShapSingleExplainabilityResult as ShapSingleExplainabilityResult,
     )
     from darts.explainability.explainability_result import (
         TFTExplainabilityResult as TFTExplainabilityResult,
     )
-    from darts.explainability.sklearn_explainer import (
-        SKLearnExplainer as SKLearnExplainer,
-    )
+    from darts.explainability.shap_explainer import ShapExplainer as ShapExplainer
     from darts.explainability.tft_explainer import TFTExplainer as TFTExplainer
     from darts.explainability.torch_explainer import TorchExplainer as TorchExplainer
 
 _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
-    "SHAPExplainabilityResult": ("darts.explainability.explainability_result", None),
-    "SHAPSingleExplainabilityResult": (
+    "ShapExplainabilityResult": ("darts.explainability.explainability_result", None),
+    "ShapSingleExplainabilityResult": (
         "darts.explainability.explainability_result",
         None,
     ),
     "TFTExplainabilityResult": ("darts.explainability.explainability_result", None),
-    "SKLearnExplainer": ("darts.explainability.sklearn_explainer", None),
+    "ShapExplainer": ("darts.explainability.shap_explainer", None),
     "TFTExplainer": ("darts.explainability.tft_explainer", "(Py)Torch"),
     "TorchExplainer": ("darts.explainability.torch_explainer", "(Py)Torch"),
 }

@@ -5,12 +5,12 @@ Explainability Result
 Contains the explainability results obtained from :func:`_ForecastingModelExplainer.explain()
 <darts.explainability.explainability._ForecastingModelExplainer.explain>`.
 
-- :class:`SHAPExplainabilityResult <SHAPExplainabilityResult>` for :class:`SKLearnExplainer
-  <darts.explainability.sklearn_explainer.SKLearnExplainer>` or :class:`TorchExplainer
+- :class:`ShapExplainabilityResult <ShapExplainabilityResult>` for :class:`ShapExplainer
+  <darts.explainability.shap_explainer.ShapExplainer>` or :class:`TorchExplainer
   <darts.explainability.torch_explainer.TorchExplainer>`. Contains general forecasting model explainability result
   based on SHAP values.
-- :class:`SHAPSingleExplainabilityResult <SHAPSingleExplainabilityResult>` for :class:`SKLearnExplainer
-  <darts.explainability.sklearn_explainer.SKLearnExplainer>` or :class:`TorchExplainer
+- :class:`ShapSingleExplainabilityResult <ShapSingleExplainabilityResult>` for :class:`ShapExplainer
+  <darts.explainability.shap_explainer.ShapExplainer>` or :class:`TorchExplainer
   <darts.explainability.torch_explainer.TorchExplainer>`. Contains the explainability result for
   a single model forecast.
 - :class:`TFTExplainabilityResult <TFTExplainabilityResult>` for :class:`TFTExplainer
@@ -349,10 +349,10 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
         return component_out
 
 
-class SHAPExplainabilityResult(HorizonBasedExplainabilityResult):
+class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
     """
-    Stores the explainability results of :class:`SKLearnExplainer
-    <darts.explainability.sklearn_explainer.SKLearnExplainer>` or :class:`TorchExplainer
+    Stores the explainability results of :class:`ShapExplainer
+    <darts.explainability.shap_explainer.ShapExplainer>` or :class:`TorchExplainer
     <darts.explainability.torch_explainer.TorchExplainer>` with convenient access to the results.
 
     It extends the :class:`HorizonBasedExplainabilityResult
@@ -367,7 +367,7 @@ class SHAPExplainabilityResult(HorizonBasedExplainabilityResult):
 
     Examples
     --------
-    >>> explainer = SKLearnExplainer(model)  # requires `background` if model was trained on multiple series
+    >>> explainer = ShapExplainer(model)  # requires `background` if model was trained on multiple series
     >>> explain_results = explainer.explain()
     >>> explained_fc = explain_results.get_explanation(horizon=1)  # requires `component` if target is multivariate
     >>> feature_values = explain_results.get_feature_values(horizon=1)
@@ -424,7 +424,7 @@ class SHAPExplainabilityResult(HorizonBasedExplainabilityResult):
         )
 
 
-class SHAPSingleExplainabilityResult(ComponentBasedExplainabilityResult):
+class ShapSingleExplainabilityResult(ComponentBasedExplainabilityResult):
     def __init__(
         self,
         explained_components: dict[str, TimeSeries],
@@ -432,8 +432,8 @@ class SHAPSingleExplainabilityResult(ComponentBasedExplainabilityResult):
         shap_explanation_object: dict[str, shap.Explanation],
     ):
         """
-        Stores the explainability results of :class:`SKLearnExplainer
-        <darts.explainability.sklearn_explainer.SKLearnExplainer>` or :class:`TorchExplainer
+        Stores the explainability results of :class:`ShapExplainer
+        <darts.explainability.shap_explainer.ShapExplainer>` or :class:`TorchExplainer
         <darts.explainability.torch_explainer.TorchExplainer>` for a single model forecast with convenient access to
         the results.
 
@@ -449,7 +449,7 @@ class SHAPSingleExplainabilityResult(ComponentBasedExplainabilityResult):
 
         Examples
         --------
-        >>> explainer = SKLearnExplainer(model)  # requires `background` if model was trained on multiple series
+        >>> explainer = ShapExplainer(model)  # requires `background` if model was trained on multiple series
         >>> explain_results = explainer.explain_single()
         >>> explained_fc = explain_results.get_explanation() # requires `component` if target is multivariate
         >>> feature_values = explain_results.get_feature_values()

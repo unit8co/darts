@@ -12,21 +12,21 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 
 - Improvements to Explainability:
-  - 🚀🚀 Added SHAP-based explainer `TorchExplainer` for torch forecasting models. This allows for explaining the predictions of any `TorchForecastingModel` with SHAP permutation explainer and others, in a consistent API with existing `SKLearnExplainer`. It supports global and local explanations and can output SHAP values for further analysis. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
-    - Check out the new [Explainability of Forecasting Models Notebook](https://unit8co.github.io/darts/examples/28-Explainability-examples.html) for usage of `SKLearnExplainer` and `TorchExplainer`.
-  - 🔴 Renamed `ShapExplainer` to `SKLearnExplainer` to better reflect its scope of explaining sklearn-based models. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
-  - Added `explain_single()` method to `SKLearnExplainer` and `TorchExplainer` to allow explaining a single forecast instance, in addition to the existing batched method `explain()`. This is useful for local explanations of individual predictions with reduced computational cost. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+  - 🚀🚀 Added SHAP-based explainer `TorchExplainer` for torch forecasting models. This allows for explaining the predictions of any `TorchForecastingModel` with SHAP permutation explainer and others, in a consistent API with existing `ShapExplainer`. It supports global and local explanations and can output SHAP values for further analysis. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+    - Check out the new [Explainability of Forecasting Models Notebook](https://unit8co.github.io/darts/examples/28-Explainability-examples.html) for usage of `ShapExplainer` and `TorchExplainer`.
+  - 🔴 Renamed `ShapExplainer` to `ShapExplainer` to better reflect its scope of explaining sklearn-based models. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+  - Added `explain_single()` method to `ShapExplainer` and `TorchExplainer` to allow explaining a single forecast instance, in addition to the existing batched method `explain()`. This is useful for local explanations of individual predictions with reduced computational cost. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 
 **Fixed**
 
-- Fixed several bugs in `SKLearnExplainer` including mismatched SHAP method enum values, feature naming conventions, inconsistent instance count in `explain()`. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+- Fixed several bugs in `ShapExplainer` including mismatched SHAP method enum values, feature naming conventions, inconsistent instance count in `explain()`. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 - Fixed a bug in explainability utils where stationarity tests were not properly conducted due to usage of `all()`. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 
 **Dependencies**
 
 ### For developers of the library:
 
-- Added `SHAPSingleExplainabilityResult` class as the return type of `explain_single()` method in `SKLearnExplainer` and `TorchExplainer` and to store the SHAP results of a single instance explanation. This is in contrast to the existing `SHAPExplainabilityResult` which stores results for batched explanations. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+- Added `ShapSingleExplainabilityResult` class as the return type of `explain_single()` method in `ShapExplainer` and `TorchExplainer` and to store the SHAP results of a single instance explanation. This is in contrast to the existing `ShapExplainabilityResult` which stores results for batched explanations. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 
 ## [0.44.1](https://github.com/unit8co/darts/tree/0.44.1) (2026-05-05)
 

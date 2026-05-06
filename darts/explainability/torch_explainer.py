@@ -42,7 +42,7 @@ Depending on the model and training data, features can include:
 
 - :func:`explain() <TorchExplainer.explain>` computes SHAP values per forecast horizon and target component.
 - :func:`summary_plot() <TorchExplainer.summary_plot>` shows SHAP value distributions by feature.
-- :func:`force_plot() <SKLearnExplainer.force_plot>` shows additive SHAP contributions for one target component and
+- :func:`force_plot() <ShapExplainer.force_plot>` shows additive SHAP contributions for one target component and
   horizon.
 
 :class:`TorchExplainer` also provides :func:`explain_single() <TorchExplainer.explain_single>` for explaining
@@ -66,8 +66,8 @@ from matplotlib import pyplot as plt
 from darts import TimeSeries
 from darts.explainability.explainability import _ForecastingModelExplainer
 from darts.explainability.explainability_result import (
-    SHAPExplainabilityResult,
-    SHAPSingleExplainabilityResult,
+    ShapExplainabilityResult,
+    ShapSingleExplainabilityResult,
 )
 from darts.explainability.utils import process_horizons_and_targets
 from darts.logging import get_logger, raise_log
@@ -239,13 +239,13 @@ class TorchExplainer(_ForecastingModelExplainer):
         horizons: int | Sequence[int] | None = None,
         target_components: Sequence[str] | None = None,
         **kwargs,
-    ) -> SHAPExplainabilityResult:
+    ) -> ShapExplainabilityResult:
         """
-        Explains foreground time series forecasts and returns a :class:`SHAPExplainabilityResult
-        <darts.explainability.explainability_result.SHAPExplainabilityResult>` of SHAP values.
+        Explains foreground time series forecasts and returns a :class:`ShapExplainabilityResult
+        <darts.explainability.explainability_result.ShapExplainabilityResult>` of SHAP values.
 
         The results can then be retrieved with method :func:`get_explanation()
-        <darts.explainability.explainability_result.SHAPExplainabilityResult.get_explanation>`,
+        <darts.explainability.explainability_result.ShapExplainabilityResult.get_explanation>`,
         which returns a multivariate ``TimeSeries`` instance containing the SHAP values for the
         ``(horizon, target_component)`` forecasts at all timestamps forecastable in the foreground series.
 
@@ -273,7 +273,7 @@ class TorchExplainer(_ForecastingModelExplainer):
 
         Returns
         -------
-        SHAPExplainabilityResult
+        ShapExplainabilityResult
             The forecast explanations of the specified horizons and target components.
 
         Examples
@@ -294,7 +294,7 @@ class TorchExplainer(_ForecastingModelExplainer):
         >>>     foreground_past_covariates=foreground_past_covariates,
         >>>     foreground_future_covariates=foreground_future_covariates)
 
-        Calling the method returns a ``SHAPExplainabilityResult`` object containing the SHAP values, feature values,
+        Calling the method returns a ``ShapExplainabilityResult`` object containing the SHAP values, feature values,
         and raw ``shap.Explanation`` objects for each horizon and target component. They can be accessed with:
 
         >>> # Get SHAP values for forecasting "T_1" at horizon 1 as a `TimeSeries`
@@ -404,7 +404,7 @@ class TorchExplainer(_ForecastingModelExplainer):
             feature_values_list = feature_values_list[0]
             shap_explanation_object_list = shap_explanation_object_list[0]
 
-        return SHAPExplainabilityResult(
+        return ShapExplainabilityResult(
             shap_values_list, feature_values_list, shap_explanation_object_list
         )
 
@@ -418,11 +418,11 @@ class TorchExplainer(_ForecastingModelExplainer):
     ):
         """
         Explains a foreground time series forecast starting from one last forecastable timestamp and returns a
-        :class:`SHAPSingleExplainabilityResult
-        <darts.explainability.explainability_result.SHAPSingleExplainabilityResult>` of SHAP values.
+        :class:`ShapSingleExplainabilityResult
+        <darts.explainability.explainability_result.ShapSingleExplainabilityResult>` of SHAP values.
 
         The results can then be retrieved with method :func:`get_explanation()
-        <darts.explainability.explainability_result.SHAPSingleExplainabilityResult.get_explanation>`,
+        <darts.explainability.explainability_result.ShapSingleExplainabilityResult.get_explanation>`,
         which returns a multivariate ``TimeSeries`` instance containing the SHAP values for ``target_component``
         starting from the last forecastable timestamp.
 
@@ -446,7 +446,7 @@ class TorchExplainer(_ForecastingModelExplainer):
 
         Returns
         -------
-        SHAPSingleExplainabilityResult
+        ShapSingleExplainabilityResult
             The forecast explanations of the specified target components for the single forecasted timestamp.
 
         Examples
@@ -467,7 +467,7 @@ class TorchExplainer(_ForecastingModelExplainer):
         >>>     foreground_past_covariates=foreground_past_covariates,
         >>>     foreground_future_covariates=foreground_future_covariates)
 
-        Calling the method returns a ``SHAPSingleExplainabilityResult`` object containing the SHAP values,
+        Calling the method returns a ``ShapSingleExplainabilityResult`` object containing the SHAP values,
         feature values, and raw ``shap.Explanation`` objects for each target component at the single forecasted
         timestamp (timestamp index 6 in our example, as it is the last forecastable).
 
@@ -568,7 +568,7 @@ class TorchExplainer(_ForecastingModelExplainer):
             )
             shap_explanation_object_dict[t] = shap_[t]
 
-        return SHAPSingleExplainabilityResult(
+        return ShapSingleExplainabilityResult(
             shap_values_dict,
             feature_values_dict,
             shap_explanation_object_dict,
