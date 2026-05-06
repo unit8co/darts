@@ -5,20 +5,33 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.44.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.44.1...master)
 
 ### For users of the library:
 
 **Improved**
 
-- Improvements to Explainability:
-  - 🔴 Renamed `ShapExplainer` to `SKLearnExplainer` to better reflect its scope of explaining sklearn-based models. [#3103](https://github.com/unit8co/darts/pull/3103) by [Zhihao Dai](https://github.com/daidahao).
-  - Renamed `ShapExplainabilityResult` to `SHAPExplainabilityResult` to better reflect SHAP-based explainability results. [#3103](https://github.com/unit8co/darts/pull/3103) by [Zhihao Dai](https://github.com/daidahao).
+**Fixed**
+
+**Dependencies**
+
+### For developers of the library:
+
+## [0.44.1](https://github.com/unit8co/darts/tree/0.44.1) (2026-05-05)
+
+### For users of the library:
+
+**Improved**
 
 **Fixed**
 
+- Fixed a `ValueError` in `backtest()` when using `overlap_end=True` with `predict_likelihood_parameters=True` and a quantile metric. The final forecast window could extend beyond the series end, producing an empty intersection that caused a reshape failure in the metric computation. [#3111](https://github.com/unit8co/darts/pull/3111) by [Dennis Bader](https://github.com/dennisbader)
 - Fixed rendering issues of `CustomBlockRNNModule` and `CustomRNNModule` in the documentation. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao)
 - Fixed rendering issues of `20-SKLearnModel-examples` notebook in the documentation. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao)
+
+**Dependencies**
+
+- Re-added support for numpy < 2 (numpy>=1.26.0) to allow compatibility with cloud platforms that require older numpy versions (e.g., Foundry Transforms due to Spark 3). [#3110](https://github.com/unit8co/darts/pull/3110) by [Dennis Bader](https://github.com/dennisbader)
 
 ### For developers of the library:
 

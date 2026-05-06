@@ -15,6 +15,9 @@ from darts.utils.likelihood_models.base import (
     quantile_names,
 )
 
+_NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
+_NP_TRAPEZOID_FN = np.trapezoid if _NP_2_OR_ABOVE else np.trapz
+
 
 def sklearn_mape(*args, **kwargs):
     return sklearn.metrics.mean_absolute_percentage_error(*args, **kwargs) * 100.0
@@ -166,7 +169,7 @@ def metric_autc(y_true, y_pred, n_tolerances=101, **kwargs):
     normalized_errors = abs_errors / half_range
     tolerances = np.linspace(0, 1, n_tolerances)
     coverages = np.array([np.mean(normalized_errors <= tol) for tol in tolerances])
-    return np.trapezoid(coverages, tolerances)
+    return _NP_TRAPEZOID_FN(coverages, tolerances)
 
 
 class TestMetrics:
