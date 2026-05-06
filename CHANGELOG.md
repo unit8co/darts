@@ -12,8 +12,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 - Fixed `_ScaledDotProductAttention` float16 overflow in `masked_fill` under mixed precision training. [#3087](https://github.com/unit8co/darts/pull/3087) by [Robert Ruidisch](https://github.com/robrui).
-  - Uses `torch.finfo(attn.dtype).min` instead of hardcoded `-1e9` for the mask fill value — dtype-safe for float16/bfloat16 autocast regimes.
-  - Creates the scaling dimension tensor on the correct device/dtype to avoid unnecessary cross-device overhead.
 
 **Improved**
 
