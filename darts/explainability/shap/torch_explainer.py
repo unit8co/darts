@@ -29,109 +29,6 @@ INPUT_STATIC_INDICES = [5]
 class TorchShapExplainer(BaseShapExplainer):
     model: TorchForecastingModel
 
-    def __init__(
-        self,
-        model: TorchForecastingModel,
-        n: int,
-        target_components: Sequence[str],
-        past_covariates_components: Sequence[str] | None,
-        future_covariates_components: Sequence[str] | None,
-        static_covariates_components: Sequence[str] | None,
-        background_series: Sequence[TimeSeries],
-        background_past_covariates: Sequence[TimeSeries] | None,
-        background_future_covariates: Sequence[TimeSeries] | None,
-        shap_method: str | None,
-        background_num_samples: int | None = None,
-        batch_size: int | None = None,
-        **kwargs,
-    ):
-        self.input_chunk_length = model.input_chunk_length
-        super().__init__(
-            model=model,
-            n=n,
-            target_components=target_components,
-            past_covariates_components=past_covariates_components,
-            future_covariates_components=future_covariates_components,
-            static_covariates_components=static_covariates_components,
-            background_series=background_series,
-            background_past_covariates=background_past_covariates,
-            background_future_covariates=background_future_covariates,
-            shap_method=shap_method,
-            background_num_samples=background_num_samples,
-            batch_size=batch_size,
-            **kwargs,
-        )
-
-    def shap_explanations(
-        self,
-        foreground_X: np.ndarray,
-        horizons: Sequence[int],
-        target_components: Sequence[str],
-        **kwargs,
-    ) -> dict[int, dict[str, shap.Explanation]]:
-        """
-        Computes SHAP explanations for the given foreground data, horizons, and target components.
-        It returns a nested dictionary of SHAP Explanation objects for each horizon and target component, where the SHAP
-        values are extracted from the raw Explanation object returned by the SHAP explainer and reshaped
-        into the expected format for easier accessibility.
-
-        Parameters
-        ----------
-        foreground_X
-            A numpy array of shape `(num_samples, num_features)` containing the input features for SHAP explanations.
-        horizons
-            A sequence of integers representing which points/steps in the future to explain, starting from the first
-            prediction step at 1. Each horizon must be no greater than ``output_chunk_length`` of the explained
-            forecasting model.
-        target_components
-            A sequence of strings with the target components to explain. Each component must be among the target
-            components of the explained forecasting model.
-        **kwargs
-            Additional keyword arguments to be passed to the SHAP explainer when calling it for explanations.
-             This can include parameters for sampling or approximation methods used by some SHAP explainers.
-
-        Returns
-        -------
-        dict[int, dict[str, shap.Explanation]]
-            A nested dictionary ``{horizon : {target_component : shap.Explanation}}`` containing the SHAP Explanation
-            objects for each horizon and target component, where the SHAP values are extracted and reshaped for
-            easier accessibility.
-        """
-        shap_explanation_tmp: shap.Explanation = self.explainer(foreground_X, **kwargs)
-        shap_values: np.ndarray = shap_explanation_tmp.values
-        shap_data: np.ndarray = shap_explanation_tmp.data
-        shap_base_values: np.ndarray = shap_explanation_tmp.base_values
-        if shap_base_values.ndim == 1:
-            # for unknown reasons, some SHAP explainers (`shap.SamplingExplainer`) returns 1D base values, which
-            # need to be reshaped and repeated to match the expected shape for accessibility
-            shap_base_values = shap_base_values[np.newaxis, :]
-            shap_base_values = np.repeat(
-                shap_base_values, repeats=shap_values.shape[0], axis=0
-            )
-
-        # create a nested dictionary {horizon : {target_component : shap.Explanation}}
-        # for better accessibility of the explanations
-        shap_explanations = {}
-
-        for h in horizons:
-            tmp_n = {}
-            for t_idx, t in enumerate(self.target_components_likelihood):
-                if t not in target_components:
-                    continue
-                tmp_t = shap.Explanation(
-                    shap_values[:, :, self.n_targets_likelihood * (h - 1) + t_idx],
-                    data=shap_data,
-                    base_values=shap_base_values[
-                        :, self.n_targets_likelihood * (h - 1) + t_idx
-                    ].ravel(),
-                    feature_names=self.feature_names,
-                )
-
-                tmp_n[t] = tmp_t
-            shap_explanations[h] = tmp_n
-
-        return shap_explanations
-
     def create_shap_array(
         self,
         series: TimeSeriesLike,
@@ -291,8 +188,9 @@ class TorchShapExplainer(BaseShapExplainer):
 
     def _build_feature_names(self) -> list[str]:
         feature_names = []
-        for i in range(self.input_chunk_length):
-            lag = self.input_chunk_length - i
+        input_chunk_length = self.model.input_chunk_length
+        for i in range(input_chunk_length):
+            lag = input_chunk_length - i
             for t in self.target_components:
                 feature_names.append(f"{t}_target_lag-{lag}")
             if self.past_covariates_components is not None:
@@ -388,8 +286,8 @@ class TorchShapExplainer(BaseShapExplainer):
             predictions for each target component at each horizon, to be used by the SHAP explainer.
         """
         pl_module: PLForecastingModule = self.model.model
-
-        past_slice = slice(0, self.input_chunk_length * self.n_variables)
+        input_chunk_length = self.model.input_chunk_length
+        past_slice = slice(0, input_chunk_length * self.n_variables)
         future_slice = slice(
             past_slice.stop,
             past_slice.stop + self.output_chunk_length * self.n_future_covs,
@@ -400,7 +298,7 @@ class TorchShapExplainer(BaseShapExplainer):
         num_samples = x.shape[0]
 
         x_past = x[:, past_slice]
-        x_past = x_past.reshape(num_samples, self.input_chunk_length, self.n_variables)
+        x_past = x_past.reshape(num_samples, input_chunk_length, self.n_variables)
 
         if self.n_future_covs > 0:
             x_future = x[:, future_slice]
@@ -484,7 +382,9 @@ class TorchShapExplainer(BaseShapExplainer):
         Creates the bounds for the inference dataset based on the input series and whether it is for training or not.
         """
         offset = self.output_chunk_length if train else 0
-        bounds = np.array([(self.input_chunk_length, len(s) - offset) for s in series])
+        bounds = np.array([
+            (self.model.input_chunk_length, len(s) - offset) for s in series
+        ])
         return bounds
 
     @property

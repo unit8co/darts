@@ -1,4 +1,3 @@
-from collections.abc import Sequence
 from typing import Any
 
 import pandas as pd
@@ -18,6 +17,7 @@ MAX_BACKGROUND_SAMPLE = 1000
 
 
 class SKLearnShapExplainer(BaseShapExplainer):
+    model: SKLearnModel
     default_sklearn_shap_explainers: dict[str, SHAPMethod] = {
         # Gradient boosting models
         "LGBMRegressor": SHAPMethod.TREE,
@@ -60,75 +60,6 @@ class SKLearnShapExplainer(BaseShapExplainer):
         # Neural network
         "MLPRegressor": SHAPMethod.PERMUTATION,
     }
-
-    def shap_explanations(
-        self,
-        foreground_X: pd.DataFrame,
-        horizons: Sequence[int] | None = None,
-        target_components: Sequence[str] | None = None,
-        **kwargs,
-    ) -> dict[int, dict[str, shap.Explanation]]:
-        """
-        Return a dictionary of dictionaries of shap.Explanation instances:
-        - the first dimension corresponds to the n forecasts ahead we want to explain (Horizon).
-        - the second dimension corresponds to each component of the target time series.
-        Parameters
-        ----------
-        foreground_X
-            the Dataframe of lags features specific of darts SKLearnModel.
-        horizons
-            Optionally, a list of integers representing which points/steps in the future we want to explain,
-            starting from the first prediction step at 1. Currently, only forecasting models are supported which
-            provide an `output_chunk_length` parameter. `horizons` must not be larger than `output_chunk_length`.
-        target_components
-            Optionally, a list of strings with the target components we want to explain.
-        **kwargs
-            Other keyword arguments to be passed to the SHAP explainer.
-
-        """
-
-        # create a unified dictionary between multiOutputRegressor estimators and
-        # native multiOutput estimators
-        shap_explanations = {}
-        if self.is_multioutputregressor:
-            for h in horizons:
-                tmp_n = {}
-                for t_idx, t in enumerate(self.target_components):
-                    if t not in target_components:
-                        continue
-                    explainer = self.explainer[h - 1][t_idx](foreground_X, **kwargs)
-                    explainer.base_values = explainer.base_values.ravel()
-                    explainer.time_index = foreground_X.index
-                    tmp_n[t] = explainer
-                shap_explanations[h] = tmp_n
-        else:
-            # the native multioutput forces us to recompute all horizons and targets
-            shap_explanation_tmp = self.explainer(foreground_X, **kwargs)
-            for h in horizons:
-                tmp_n = {}
-                for t_idx, t in enumerate(self.target_components):
-                    if t not in target_components:
-                        continue
-                    if not self.single_output:
-                        tmp_t = shap.Explanation(
-                            shap_explanation_tmp.values[
-                                :, :, self.target_dim * (h - 1) + t_idx
-                            ]
-                        )
-                        tmp_t.data = shap_explanation_tmp.data
-                        tmp_t.base_values = shap_explanation_tmp.base_values[
-                            :, self.target_dim * (h - 1) + t_idx
-                        ].ravel()
-                    else:
-                        tmp_t = shap_explanation_tmp
-                        tmp_t.base_values = shap_explanation_tmp.base_values.ravel()
-
-                    tmp_t.feature_names = shap_explanation_tmp.feature_names
-                    tmp_t.time_index = foreground_X.index
-                    tmp_n[t] = tmp_t
-                shap_explanations[h] = tmp_n
-
-        return shap_explanations
 
     def _build_explainer(
         self,

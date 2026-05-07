@@ -134,71 +134,92 @@ class BaseShapExplainer(ABC):
     def shap_explanations(
         self,
         foreground_X: pd.DataFrame,
-        horizons: Sequence[int] | None = None,
-        target_components: Sequence[str] | None = None,
+        horizons: Sequence[int],
+        target_components: Sequence[str],
         **kwargs,
     ) -> dict[int, dict[str, shap.Explanation]]:
         """
-        Return a dictionary of dictionaries of shap.Explanation instances:
-        - the first dimension corresponds to the n forecasts ahead we want to explain (Horizon).
-        - the second dimension corresponds to each component of the target time series.
+        Computes SHAP explanations for the given foreground data, horizons, and target components.
+        It returns a nested dictionary of SHAP Explanation objects for each horizon and target component:
+
+        - first dimension: each step in the forecast horizon.
+        - second dimension: each component of the target time series.
+
         Parameters
         ----------
         foreground_X
-            the Dataframe of lags features specific of darts SKLearnModel.
+            A numpy array of shape `(num_samples, num_features)` containing the input features for SHAP explanations.
         horizons
-            Optionally, a list of integers representing which points/steps in the future we want to explain,
-            starting from the first prediction step at 1. Currently, only forecasting models are supported which
-            provide an `output_chunk_length` parameter. `horizons` must not be larger than `output_chunk_length`.
+            A sequence of integers representing which points/steps in the future to explain, starting from the first
+            prediction step at 1. Each horizon must be no greater than ``output_chunk_length`` of the explained
+            forecasting model.
         target_components
-            Optionally, a list of strings with the target components we want to explain.
+            A sequence of strings with the target components to explain. Each component must be among the target
+            components of the explained forecasting model.
         **kwargs
-            Other keyword arguments to be passed to the SHAP explainer.
+            Additional keyword arguments to be passed to the SHAP explainer when calling it for explanations.
+             This can include parameters for sampling or approximation methods used by some SHAP explainers.
 
+        Returns
+        -------
+        dict[int, dict[str, shap.Explanation]]
+            A nested dictionary ``{horizon : {target_component : shap.Explanation}}`` containing the SHAP Explanation
+            objects for each horizon and target component, where the SHAP values are extracted and reshaped for
+            easier accessibility.
         """
-
-        # create a unified dictionary between multiOutputRegressor estimators and
-        # native multiOutput estimators
-        shap_explanations = {}
+        # create a nested dictionary {horizon : {target_component : shap.Explanation}}
+        # for better accessibility of the explanations
+        explanations = {}
         if isinstance(self.explainer, dict):
             for h in horizons:
                 tmp_n = {}
-                for t_idx, t in enumerate(self.target_components):
+                for t_idx, t in enumerate(self.target_components_likelihood):
                     if t not in target_components:
                         continue
-                    explainer = self.explainer[h - 1][t_idx](foreground_X, **kwargs)
-                    explainer.base_values = explainer.base_values.ravel()
-                    explainer.time_index = foreground_X.index
-                    tmp_n[t] = explainer
-                shap_explanations[h] = tmp_n
-        else:
-            # the native multioutput forces us to recompute all horizons and targets
-            shap_explanation_tmp = self.explainer(foreground_X, **kwargs)
-            for h in horizons:
-                tmp_n = {}
-                for t_idx, t in enumerate(self.target_components):
-                    if t not in target_components:
-                        continue
-                    if not self.single_output:
-                        tmp_t = shap.Explanation(
-                            shap_explanation_tmp.values[
-                                :, :, self.target_dim * (h - 1) + t_idx
-                            ]
-                        )
-                        tmp_t.data = shap_explanation_tmp.data
-                        tmp_t.base_values = shap_explanation_tmp.base_values[
-                            :, self.target_dim * (h - 1) + t_idx
-                        ].ravel()
-                    else:
-                        tmp_t = shap_explanation_tmp
-                        tmp_t.base_values = shap_explanation_tmp.base_values.ravel()
+                    explanation = self.explainer[h - 1][t_idx](foreground_X, **kwargs)
+                    explanation.base_values = explanation.base_values.ravel()
+                    explanation.time_index = foreground_X.index
+                    tmp_n[t] = explanation
+                explanations[h] = tmp_n
+            return explanations
 
-                    tmp_t.feature_names = shap_explanation_tmp.feature_names
+        # the native multioutput forces us to recompute all horizons and targets
+        explanation: shap.Explanation = self.explainer(foreground_X, **kwargs)
+        base_values: np.ndarray = explanation.base_values
+        if base_values.ndim == 1:
+            # for unknown reasons, some SHAP explainers (`shap.SamplingExplainer`) returns 1D base values, which
+            # need to be reshaped and repeated to match the expected shape for accessibility
+            base_values = base_values[np.newaxis, :]
+            base_values = np.repeat(
+                base_values, repeats=explanation.values.shape[0], axis=0
+            )
+
+        for h in horizons:
+            tmp_n = {}
+            for t_idx, t in enumerate(self.target_components_likelihood):
+                if t not in target_components:
+                    continue
+                tmp_t = shap.Explanation(
+                    values=explanation.values[
+                        :, :, self.n_targets_likelihood * (h - 1) + t_idx
+                    ],
+                    data=explanation.data,
+                    base_values=base_values[
+                        :, self.n_targets_likelihood * (h - 1) + t_idx
+                    ].ravel(),
+                    feature_names=self.feature_names,
+                )
+                # TODO: for torch we should infer the index somehow
+                if hasattr(foreground_X, "index"):
                     tmp_t.time_index = foreground_X.index
-                    tmp_n[t] = tmp_t
-                shap_explanations[h] = tmp_n
 
-        return shap_explanations
+                # TODO: we might have to distinguish again with `self.single_output` as mentioned in
+                #  `shap_explanations_single()`
+
+                tmp_n[t] = tmp_t
+            explanations[h] = tmp_n
+
+        return explanations
 
     def shap_explanations_single(
         self,
@@ -232,83 +253,77 @@ class BaseShapExplainer(ABC):
         """
         # create a nested dictionary {target_component : shap.Explanation}
         # for better accessibility of the explanations
-        shap_explanations = {}
-        if not isinstance(self.explainer, dict):
-            # the native multioutput forces us to recompute all horizons and targets
-            shap_explanation_tmp: shap.Explanation = self.explainer(
-                foreground_X, **kwargs
-            )
-            shap_values: np.ndarray = shap_explanation_tmp.values
-            shap_data: np.ndarray = shap_explanation_tmp.data
-            shap_base_values: np.ndarray = shap_explanation_tmp.base_values
-            if shap_base_values.ndim == 1:
-                # for unknown reasons, some SHAP explainers (`shap.SamplingExplainer`) returns 1D base values, which
-                # need to be reshaped and repeated to match the expected shape for accessibility
-                shap_base_values = shap_base_values[np.newaxis, :]
-                shap_base_values = np.repeat(
-                    shap_base_values, repeats=shap_values.shape[0], axis=0
-                )
-
-            for t_idx, t in enumerate(self.target_components_likelihood):
+        explanations = {}
+        if isinstance(self.explainer, dict):
+            for t_idx, t in enumerate(self.target_components):
                 if t not in target_components:
                     continue
-
-                tmp_t = shap.Explanation(
-                    values=shap_values[0, :, t_idx :: self.n_targets_likelihood].T,
-                    data=np.repeat(shap_data, repeats=self.n, axis=0),
-                    base_values=shap_base_values[
-                        :, t_idx :: self.n_targets_likelihood
-                    ].ravel(),
-                    feature_names=self.feature_names,
+                values_list, data_list, base_values_list = [], [], []
+                feature_names = None
+                for h in range(1, self.n + 1):
+                    explanation = self.explainer[h - 1][t_idx](foreground_X, **kwargs)
+                    values_list.append(explanation.values.ravel())
+                    data_list.append(explanation.data.ravel())
+                    base_values_list.append(explanation.base_values.ravel())
+                    if feature_names is None:
+                        feature_names = explanation.feature_names
+                values = np.array(values_list)
+                data = np.array(data_list)
+                base_values = np.array(base_values_list).ravel()
+                explanations[t] = shap.Explanation(
+                    values=values,
+                    data=data,
+                    base_values=base_values,
+                    feature_names=feature_names,
                 )
-                shap_explanations[t] = tmp_t
-                # # TODO 1: the distinguishment with `self.single_output` might not be necessary anymore due to the
-                # #  new reshaping above
-                # if not self.single_output:
-                #     tmp_t = shap.Explanation(
-                #         values=shap_values[0, :, t_idx :: self.n_targets_likelihood].T,
-                #         data=np.repeat(shap_data, repeats=self.n, axis=0),
-                #         base_values=shap_base_values[:, t_idx :: self.n_targets_likelihood].ravel(),
-                #         feature_names=self.feature_names,
-                #     )
-                # else:
-                #     tmp_t = shap.Explanation(
-                #         values=shap_values.reshape(1, -1),
-                #         data=shap_data,
-                #         base_values=shap_base_values.ravel(),
-                #         feature_names=self.feature_names,
-                #     )
-                # # TODO 2: for torch, we might need:
-                # #  tmp_t = shap.Explanation(
-                # #      values=shap_values[0, :, t_idx :: self.n_targets_likelihood].T,
-                # #      data=np.repeat(shap_data, repeats=self.n, axis=0),
-                # #      base_values=shap_base_values[0, t_idx :: self.n_targets_likelihood].ravel(),
-                # #      feature_names=self.feature_names,
-                # #  )
-            return shap_explanations
+            return explanations
 
-        for t_idx, t in enumerate(self.target_components):
+        # the native multioutput forces us to recompute all horizons and targets
+        explanation: shap.Explanation = self.explainer(foreground_X, **kwargs)
+        base_values: np.ndarray = explanation.base_values
+        if base_values.ndim == 1:
+            # for unknown reasons, some SHAP explainers (`shap.SamplingExplainer`) returns 1D base values, which
+            # need to be reshaped and repeated to match the expected shape for accessibility
+            base_values = base_values[np.newaxis, :]
+            base_values = np.repeat(
+                base_values, repeats=explanation.values.shape[0], axis=0
+            )
+
+        for t_idx, t in enumerate(self.target_components_likelihood):
             if t not in target_components:
                 continue
-            shap_values_list, shap_data_list, base_values_list = [], [], []
-            feature_names = None
-            for h in range(1, self.n + 1):
-                sub_explanation = self.explainer[h - 1][t_idx](foreground_X, **kwargs)
-                shap_values_list.append(sub_explanation.values.ravel())
-                shap_data_list.append(sub_explanation.data.ravel())
-                base_values_list.append(sub_explanation.base_values.ravel())
-                if feature_names is None:
-                    feature_names = sub_explanation.feature_names
-            shap_values = np.array(shap_values_list)
-            shap_data = np.array(shap_data_list)
-            base_values = np.array(base_values_list).ravel()
-            shap_explanations[t] = shap.Explanation(
-                values=shap_values,
-                data=shap_data,
-                base_values=base_values,
-                feature_names=feature_names,
+
+            tmp_t = shap.Explanation(
+                values=explanation.values[0, :, t_idx :: self.n_targets_likelihood].T,
+                data=np.repeat(explanation.data, repeats=self.n, axis=0),
+                base_values=base_values[:, t_idx :: self.n_targets_likelihood].ravel(),
+                feature_names=self.feature_names,
             )
-        return shap_explanations
+            explanations[t] = tmp_t
+            # # TODO 1: the distinguishment with `self.single_output` might not be necessary anymore due to the
+            # #  new reshaping above
+            # if not self.single_output:
+            #     tmp_t = shap.Explanation(
+            #         values=values[0, :, t_idx :: self.n_targets_likelihood].T,
+            #         data=np.repeat(data, repeats=self.n, axis=0),
+            #         base_values=base_values[:, t_idx :: self.n_targets_likelihood].ravel(),
+            #         feature_names=self.feature_names,
+            #     )
+            # else:
+            #     tmp_t = shap.Explanation(
+            #         values=values.reshape(1, -1),
+            #         data=data,
+            #         base_values=base_values.ravel(),
+            #         feature_names=self.feature_names,
+            #     )
+            # # TODO 2: for torch, we might need:
+            # #  tmp_t = shap.Explanation(
+            # #      values=values[0, :, t_idx :: self.n_targets_likelihood].T,
+            # #      data=np.repeat(data, repeats=self.n, axis=0),
+            # #      base_values=base_values[0, t_idx :: self.n_targets_likelihood].ravel(),
+            # #      feature_names=self.feature_names,
+            # #  )
+        return explanations
 
     @abstractmethod
     def _build_feature_names(self) -> list[str]:
