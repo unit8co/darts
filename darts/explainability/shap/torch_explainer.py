@@ -12,7 +12,7 @@ from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.models.forecasting.rnn_model import CustomRNNModule
 from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
-from darts.typing import TimeSeriesLike
+from darts.typing import TimeIndex, TimeSeriesLike
 from darts.utils.data.torch_datasets.utils import TorchInferenceDatasetOutput
 from darts.utils.ts_utils import series2seq
 
@@ -36,7 +36,7 @@ class TorchShapExplainer(BaseShapExplainer):
         future_covariates: TimeSeriesLike | None,
         n_samples: int | None = None,
         train: bool = False,
-    ) -> tuple[np.ndarray, list[dict[str, Any]], pd.Index]:
+    ) -> tuple[np.ndarray, list[dict[str, Any]], TimeIndex]:
         """
         Creates the SHAP array for the given input series and covariates, by following the logic of the torch
         forecasting model's inference dataset and prediction step. It returns the SHAP array, the schemas of the

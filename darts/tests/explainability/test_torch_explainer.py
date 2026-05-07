@@ -18,14 +18,14 @@ if not TORCH_AVAILABLE:
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
 from darts.explainability import TorchExplainer
-from darts.explainability.torch_explainer import (
+from darts.explainability.shap.base_explainer import (
     MAX_BACKGROUND_SAMPLE,
     MIN_BACKGROUND_SAMPLE,
-    _available_shap_methods,
 )
 from darts.models import (
     BlockRNNModel,
     DLinearModel,
+    NaiveSeasonal,
     NBEATSModel,
     NHiTSModel,
     RNNModel,
@@ -2177,8 +2177,6 @@ class TestTorchExplainer:
                 assert waterfall_plot is not None
 
     def test_validation_and_helper_branches(self):
-        assert _available_shap_methods() == SHAP_METHODS
-
         model = DLinearModel(
             input_chunk_length=6,
             output_chunk_length=3,
@@ -2202,7 +2200,7 @@ class TestTorchExplainer:
             background_series.start_time()
         )
 
-        with pytest.raises(ValueError, match="Invalid `shap_method`=invalid"):
+        with pytest.raises(ValueError, match="Invalid `shap_method='invalid'`"):
             TorchExplainer(
                 model,
                 background_series=background_series,
@@ -2261,6 +2259,10 @@ class TestTorchExplainer:
             background_future_covariates=background_future_covariates,
             background_num_samples=10,
         )
+
+        assert {
+            el.name.lower() for el in explainer.explainer._supported_shap_methods
+        } == set(SHAP_METHODS)
 
         force_plot = explainer.force_plot(
             foreground_series=series[-10:],
@@ -2363,4 +2365,4 @@ class TestTorchExplainer:
             ValueError,
             match="Only models of type `TorchForecastingModel` are supported",
         ):
-            TorchExplainer(object())
+            TorchExplainer(NaiveSeasonal(K=1).fit(self.univariate_series))

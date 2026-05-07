@@ -279,6 +279,7 @@ class TorchExplainer(_ForecastingModelExplainer):
             _,
             _,
             _,
+            _,
         ) = self._process_foreground(
             foreground_series,
             foreground_past_covariates,
@@ -464,6 +465,7 @@ class TorchExplainer(_ForecastingModelExplainer):
             _,
             _,
             _,
+            _,
         ) = self._process_foreground(
             foreground_series,
             foreground_past_covariates,
@@ -577,6 +579,7 @@ class TorchExplainer(_ForecastingModelExplainer):
             _,
             _,
             _,
+            _,
         ) = self._process_foreground(
             foreground_series,
             foreground_past_covariates,
@@ -672,6 +675,7 @@ class TorchExplainer(_ForecastingModelExplainer):
             foreground_series_,
             foreground_past_covariates_,
             foreground_future_covariates_,
+            _,
             _,
             _,
             _,

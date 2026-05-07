@@ -7,8 +7,9 @@ from sklearn.multioutput import MultiOutputRegressor
 from darts.explainability.shap.base_explainer import BaseShapExplainer, SHAPMethod
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
-from darts.typing import TimeSeriesLike
+from darts.typing import TimeIndex, TimeSeriesLike
 from darts.utils.data.tabularization import create_lagged_prediction_data
+from darts.utils.multioutput import MultiOutputMixin
 
 logger = get_logger(__name__)
 
@@ -143,7 +144,7 @@ class SKLearnShapExplainer(BaseShapExplainer):
         future_covariates: TimeSeriesLike | None,
         n_samples: int | None = None,
         train: bool = False,
-    ) -> pd.DataFrame:
+    ) -> tuple[pd.DataFrame, list[dict[str, Any]] | None, TimeIndex | None]:
         """
         Creates the SHAP format input for regression models.
         The output is a pandas DataFrame representing all lags of different covariates, and with adequate
@@ -192,10 +193,10 @@ class SKLearnShapExplainer(BaseShapExplainer):
                 for idx, name in enumerate(X.columns.to_list())
             }
         )
-        return X
+        return X, None, None
 
     def _build_feature_names(self) -> list[str]:
-        return self.feature_names
+        return self.model.lagged_feature_names
 
     @property
     def _supported_shap_methods(self) -> set[SHAPMethod]:
@@ -210,8 +211,13 @@ class SKLearnShapExplainer(BaseShapExplainer):
             SHAPMethod.ADDITIVE,
         }
 
-    def _get_default_shap_method(self, model) -> SHAPMethod:
-        model_name = model.__class__.__name__
+    def _get_default_shap_method(self, model: SKLearnModel) -> SHAPMethod:
+        if isinstance(model.model, MultiOutputMixin):
+            sklearn_model = model.get_estimator(horizon=0, target_dim=0)
+        else:
+            sklearn_model = model.model
+
+        model_name = type(sklearn_model).__name__
         if model_name in self.default_sklearn_shap_explainers:
             shap_method = self.default_sklearn_shap_explainers[model_name]
         else:
@@ -228,7 +234,7 @@ class SKLearnShapExplainer(BaseShapExplainer):
                 logger,
             )
 
-        if not self.model.multi_models:
+        if not model.multi_models:
             raise_log(
                 ValueError(
                     "Invalid `multi_models` value `False`. Currently, "
@@ -238,7 +244,7 @@ class SKLearnShapExplainer(BaseShapExplainer):
                 logger,
             )
 
-        if self.model.supports_probabilistic_prediction:
+        if model.supports_probabilistic_prediction:
             logger.warning(
                 "The model is probabilistic, but num_samples=1 will be used for explainability."
             )

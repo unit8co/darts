@@ -66,6 +66,11 @@ class _ForecastingModelExplainer(ABC):
         test_stationarity
             Whether to raise a warning if not all `background_series` are stationary.
         """
+        if not isinstance(model, ForecastingModel):
+            raise_log(
+                ValueError("`model` must be a Darts `ForecastingModel` object."),
+                logger,
+            )
         if not model._fit_called:
             raise_log(
                 ValueError(
@@ -83,6 +88,7 @@ class _ForecastingModelExplainer(ABC):
             self.background_past_covariates,
             self.background_future_covariates,
             self.target_components,
+            self.target_components_likelihood,
             self.static_covariates_components,
             self.past_covariates_components,
             self.future_covariates_components,
@@ -173,6 +179,6 @@ class _ForecastingModelExplainer(ABC):
             horizons=horizons,
             fallback_horizon=self.n,
             target_components=target_components,
-            fallback_target_components=self.target_components,
+            fallback_target_components=self.target_components_likelihood,
             check_component_names=self.check_component_names,
         )

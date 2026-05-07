@@ -10,7 +10,7 @@ import shap
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
-from darts.typing import TimeSeriesLike
+from darts.typing import TimeIndex, TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -56,12 +56,12 @@ class BaseShapExplainer(ABC):
 
         if isinstance(shap_method, str):
             shap_method_upper = shap_method.upper()
-            if shap_method in {sm.__name__ for sm in self._supported_shap_methods}:
+            if shap_method_upper in {sm.name for sm in self._supported_shap_methods}:
                 self.shap_method = SHAPMethod[shap_method_upper]
             else:
                 raise_log(
                     ValueError(
-                        f"Invalid `shap_method`. Expected one of the following:"
+                        f"Invalid `shap_method='{shap_method}'`. Expected one of the following:"
                         f" {[e.name.lower() for e in self._supported_shap_methods]}."
                     )
                 )
@@ -99,7 +99,6 @@ class BaseShapExplainer(ABC):
         self.past_covariates_components = past_covariates_components
         self.future_covariates_components = future_covariates_components
         self.static_covariates_components = static_covariates_components
-        self.feature_names = self._build_feature_names()
 
         self.n_targets = len(target_components)
         self.n_targets_likelihood = len(target_components_likelihood)
@@ -129,8 +128,9 @@ class BaseShapExplainer(ABC):
         self.background_series = background_series
         self.background_past_covariates = background_past_covariates
         self.background_future_covariates = background_future_covariates
+        self.feature_names = self._build_feature_names()
 
-        self.background_X = self.create_shap_array(
+        self.background_X, _, _ = self.create_shap_array(
             series=self.background_series,
             past_covariates=self.background_past_covariates,
             future_covariates=self.background_future_covariates,
@@ -213,22 +213,25 @@ class BaseShapExplainer(ABC):
             for t_idx, t in enumerate(self.target_components_likelihood):
                 if t not in target_components:
                     continue
-                tmp_t = shap.Explanation(
-                    values=explanation.values[
-                        :, :, self.n_targets_likelihood * (h - 1) + t_idx
-                    ],
-                    data=explanation.data,
-                    base_values=base_values[
-                        :, self.n_targets_likelihood * (h - 1) + t_idx
-                    ].ravel(),
-                    feature_names=self.feature_names,
-                )
+
+                if not self.single_output:
+                    tmp_t = shap.Explanation(
+                        values=explanation.values[
+                            :, :, self.n_targets_likelihood * (h - 1) + t_idx
+                        ],
+                        data=explanation.data,
+                        base_values=base_values[
+                            :, self.n_targets_likelihood * (h - 1) + t_idx
+                        ].ravel(),
+                        feature_names=self.feature_names,
+                    )
+                else:
+                    tmp_t = explanation
+                    tmp_t.base_values = base_values.ravel()
+
                 # TODO: for torch we should infer the index somehow
                 if hasattr(foreground_X, "index"):
                     tmp_t.time_index = foreground_X.index
-
-                # TODO: we might have to distinguish again with `self.single_output` as mentioned in
-                #  `shap_explanations_single()`
 
                 tmp_n[t] = tmp_t
             explanations[h] = tmp_n
@@ -307,33 +310,30 @@ class BaseShapExplainer(ABC):
             if t not in target_components:
                 continue
 
-            tmp_t = shap.Explanation(
-                values=explanation.values[0, :, t_idx :: self.n_targets_likelihood].T,
-                data=np.repeat(explanation.data, repeats=self.n, axis=0),
-                base_values=base_values[:, t_idx :: self.n_targets_likelihood].ravel(),
-                feature_names=self.feature_names,
-            )
+            if not self.single_output:
+                tmp_t = shap.Explanation(
+                    values=explanation.values[
+                        0, :, t_idx :: self.n_targets_likelihood
+                    ].T,
+                    data=np.repeat(explanation.data, repeats=self.n, axis=0),
+                    base_values=base_values[
+                        :, t_idx :: self.n_targets_likelihood
+                    ].ravel(),
+                    feature_names=self.feature_names,
+                )
+            else:
+                tmp_t = shap.Explanation(
+                    values=explanation.values.reshape(1, -1),
+                    data=explanation.data,
+                    base_values=base_values.ravel(),
+                    feature_names=self.feature_names,
+                )
             explanations[t] = tmp_t
-            # # TODO 1: the distinguishment with `self.single_output` might not be necessary anymore due to the
-            # #  new reshaping above
-            # if not self.single_output:
-            #     tmp_t = shap.Explanation(
-            #         values=values[0, :, t_idx :: self.n_targets_likelihood].T,
-            #         data=np.repeat(data, repeats=self.n, axis=0),
-            #         base_values=base_values[:, t_idx :: self.n_targets_likelihood].ravel(),
-            #         feature_names=self.feature_names,
-            #     )
-            # else:
-            #     tmp_t = shap.Explanation(
-            #         values=values.reshape(1, -1),
-            #         data=data,
-            #         base_values=base_values.ravel(),
-            #         feature_names=self.feature_names,
-            #     )
-            # # TODO 2: for torch, we might need:
+
+            # # TODO: for torch, we might need:
             # #  tmp_t = shap.Explanation(
-            # #      values=values[0, :, t_idx :: self.n_targets_likelihood].T,
-            # #      data=np.repeat(data, repeats=self.n, axis=0),
+            # #      values=explanation.values[0, :, t_idx :: self.n_targets_likelihood].T,
+            # #      data=np.repeat(explanation.data, repeats=self.n, axis=0),
             # #      base_values=base_values[0, t_idx :: self.n_targets_likelihood].ravel(),
             # #      feature_names=self.feature_names,
             # #  )
@@ -379,7 +379,9 @@ class BaseShapExplainer(ABC):
         future_covariates: TimeSeriesLike | None,
         n_samples: int | None = None,
         train: bool = False,
-    ) -> Any:
+    ) -> tuple[
+        np.ndarray | pd.DataFrame, list[dict[str, Any]] | None, TimeIndex | None
+    ]:
         """
         Creates the SHAP array for the given input series and covariates, by following the logic of the model's
         prediction / inference dataset and prediction step. It returns the SHAP array, the schemas of the

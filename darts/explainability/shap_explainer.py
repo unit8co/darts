@@ -145,7 +145,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             test_stationarity=True,
         )
 
-        self.explainers = SKLearnShapExplainer(
+        self.explainer = SKLearnShapExplainer(
             model=self.model,
             n=self.n,
             target_components=self.target_components,
@@ -262,6 +262,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             _,
             _,
             _,
+            _,
         ) = self._process_foreground(
             foreground_series,
             foreground_past_covariates,
@@ -285,14 +286,14 @@ class ShapExplainer(_ForecastingModelExplainer):
             if foreground_future_covariates:
                 foreground_future_cov_ts = foreground_future_covariates[idx]
 
-            foreground_X = self.explainers._create_regression_model_shap_X(
-                foreground_ts,
-                foreground_past_cov_ts,
-                foreground_future_cov_ts,
+            foreground_X, _, _ = self.explainer.create_shap_array(
+                series=foreground_ts,
+                past_covariates=foreground_past_cov_ts,
+                future_covariates=foreground_future_cov_ts,
                 train=False,
             )
 
-            shap_ = self.explainers.shap_explanations(
+            shap_ = self.explainer.shap_explanations(
                 foreground_X, horizons, target_names, **kwargs
             )
 
@@ -445,6 +446,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             _,
             _,
             _,
+            _,
         ) = self._process_foreground(
             foreground_series,
             foreground_past_covariates,
@@ -452,17 +454,17 @@ class ShapExplainer(_ForecastingModelExplainer):
         )
         _, target_names = self._process_horizons_and_targets(None, target_components)
 
-        foreground_X = self.explainers._create_regression_model_shap_X(
-            foreground_series_,
-            foreground_past_covariates_,
-            foreground_future_covariates_,
+        foreground_X, _, _ = self.explainer.create_shap_array(
+            series=foreground_series_,
+            past_covariates=foreground_past_covariates_,
+            future_covariates=foreground_future_covariates_,
             train=False,
         )
 
         # explain only the last forecasted timestamp
         foreground_X = foreground_X[-1:]
 
-        shap_ = self.explainers.shap_explanations_single(
+        shap_ = self.explainer.shap_explanations_single(
             foreground_X, target_names, **kwargs
         )
 
@@ -560,6 +562,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             _,
             _,
             _,
+            _,
         ) = self._process_foreground(
             foreground_series,
             foreground_past_covariates,
@@ -569,15 +572,15 @@ class ShapExplainer(_ForecastingModelExplainer):
             horizons, target_components
         )
 
-        foreground_X = self.explainers._create_regression_model_shap_X(
-            foreground_series,
-            foreground_past_covariates,
-            foreground_future_covariates,
+        foreground_X, _, _ = self.explainer.create_shap_array(
+            series=foreground_series,
+            past_covariates=foreground_past_covariates,
+            future_covariates=foreground_future_covariates,
             n_samples=num_samples,
             train=False,
         )
 
-        shaps_ = self.explainers.shap_explanations(
+        shaps_ = self.explainer.shap_explanations(
             foreground_X, horizons, target_components, **kwargs
         )
 
@@ -657,6 +660,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             _,
             _,
             _,
+            _,
         ) = self._process_foreground(
             foreground_series,
             foreground_past_covariates,
@@ -668,11 +672,14 @@ class ShapExplainer(_ForecastingModelExplainer):
         )
         horizon, target_component = horizons[0], target_components[0]
 
-        foreground_X = self.explainers._create_regression_model_shap_X(
-            foreground_series, foreground_past_covariates, foreground_future_covariates
+        foreground_X, _, _ = self.explainer.create_shap_array(
+            series=foreground_series,
+            past_covariates=foreground_past_covariates,
+            future_covariates=foreground_future_covariates,
+            train=False,
         )
 
-        shap_ = self.explainers.shap_explanations(
+        shap_ = self.explainer.shap_explanations(
             foreground_X, [horizon], [target_component], **kwargs
         )
 

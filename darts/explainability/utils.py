@@ -34,6 +34,7 @@ def process_input(
     Sequence[TimeSeries] | None,
     Sequence[TimeSeries] | None,
     Sequence[str],
+    Sequence[str],
     Sequence[str] | None,
     Sequence[str] | None,
     Sequence[str] | None,
@@ -169,6 +170,14 @@ def process_input(
         test_stationarity=test_stationarity,
     )
 
+    likelihood = model.likelihood
+    if likelihood is not None:
+        target_components_likelihood = likelihood.component_names(
+            components=target_components
+        )
+    else:
+        target_components_likelihood = target_components
+
     # make sure to remove any encodings from covariates if downstream tasks require covariates without encodings
     if not requires_covariates_encoding and model.encoders.encoding_available:
         if past_covariates is not None and model.encoders.past_encoders:
@@ -198,6 +207,7 @@ def process_input(
         past_covariates,
         future_covariates,
         target_components,
+        target_components_likelihood,
         static_covariates_components,
         past_covariates_components,
         future_covariates_components,
