@@ -1,12 +1,10 @@
 from collections.abc import Sequence
 from typing import Any
 
-import numpy as np
 import pandas as pd
 import shap
 from sklearn.multioutput import MultiOutputRegressor
 
-from darts import TimeSeries
 from darts.explainability.shap.base_explainer import BaseShapExplainer, SHAPMethod
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
@@ -62,48 +60,6 @@ class SKLearnShapExplainer(BaseShapExplainer):
         # Neural network
         "MLPRegressor": SHAPMethod.PERMUTATION,
     }
-
-    def __init__(
-        self,
-        model: SKLearnModel,
-        n: int,
-        target_components: Sequence[str],
-        past_covariates_components: Sequence[str] | None,
-        future_covariates_components: Sequence[str] | None,
-        static_covariates_components: Sequence[str] | None,
-        background_series: Sequence[TimeSeries],
-        background_past_covariates: Sequence[TimeSeries] | None,
-        background_future_covariates: Sequence[TimeSeries] | None,
-        shap_method: str | None,
-        background_num_samples: int | None = None,
-        batch_size: int | None = None,
-        **kwargs,
-    ):
-        super().__init__(
-            model=model,
-            n=n,
-            target_components=target_components,
-            past_covariates_components=past_covariates_components,
-            future_covariates_components=future_covariates_components,
-            static_covariates_components=static_covariates_components,
-            background_series=background_series,
-            background_past_covariates=background_past_covariates,
-            background_future_covariates=background_future_covariates,
-            shap_method=shap_method,
-            background_num_samples=background_num_samples,
-            batch_size=batch_size,
-            **kwargs,
-        )
-
-        # TODO: sklearn-only
-        self.target_dim = self.model.input_dim["target"]
-        self.is_multioutputregressor = isinstance(
-            self.model.model, MultiOutputRegressor
-        )
-
-        self.single_output = False
-        if self.n == 1 and self.target_dim == 1:
-            self.single_output = True
 
     def shap_explanations(
         self,
@@ -174,78 +130,6 @@ class SKLearnShapExplainer(BaseShapExplainer):
 
         return shap_explanations
 
-    def shap_explanations_single(
-        self,
-        foreground_X: pd.DataFrame,
-        target_components: Sequence[str],
-        **kwargs,
-    ) -> dict[str, shap.Explanation]:
-        """
-        Return a dictionary of dictionaries of shap.Explanation instances:
-        - the first dimension corresponds to the n forecasts ahead we want to explain (Horizon).
-        - the second dimension corresponds to each component of the target time series.
-        Parameters
-        ----------
-        foreground_X
-            the Dataframe of lags features specific of darts SKLearnModel.
-        target_components
-            A list of strings with the target components we want to explain.
-        **kwargs
-            Other keyword arguments to be passed to the SHAP explainer.
-        """
-        # create a unified dictionary {target_component : shap.Explanation}
-        # between multiOutputRegressor estimators and native multiOutput estimators
-        shap_explanations = {}
-        if isinstance(self.explainer, shap.Explainer):
-            # the native multioutput forces us to recompute all horizons and targets
-            shap_explanation_tmp = self.explainer(foreground_X, **kwargs)
-            shap_values: np.ndarray = shap_explanation_tmp.values
-            shap_data: np.ndarray = shap_explanation_tmp.data
-            base_values: np.ndarray = shap_explanation_tmp.base_values
-            feature_names = shap_explanation_tmp.feature_names
-            for t_idx, t in enumerate(self.target_components):
-                if t not in target_components:
-                    continue
-                if not self.single_output:
-                    tmp_t = shap.Explanation(
-                        values=shap_values[0, :, t_idx :: self.target_dim].T,
-                        data=np.repeat(shap_data, self.n, axis=0),
-                        base_values=base_values[:, t_idx :: self.target_dim].ravel(),
-                        feature_names=feature_names,
-                    )
-                else:
-                    tmp_t = shap.Explanation(
-                        values=shap_values.reshape(1, -1),
-                        data=shap_data,
-                        base_values=base_values.ravel(),
-                        feature_names=feature_names,
-                    )
-                shap_explanations[t] = tmp_t
-            return shap_explanations
-
-        for t_idx, t in enumerate(self.target_components):
-            if t not in target_components:
-                continue
-            shap_values_list, shap_data_list, base_values_list = [], [], []
-            feature_names = None
-            for h in range(1, self.n + 1):
-                sub_explanation = self.explainer[h - 1][t_idx](foreground_X, **kwargs)
-                shap_values_list.append(sub_explanation.values.ravel())
-                shap_data_list.append(sub_explanation.data.ravel())
-                base_values_list.append(sub_explanation.base_values.ravel())
-                if feature_names is None:
-                    feature_names = sub_explanation.feature_names
-            shap_values = np.array(shap_values_list)
-            shap_data = np.array(shap_data_list)
-            base_values = np.array(base_values_list).ravel()
-            shap_explanations[t] = shap.Explanation(
-                values=shap_values,
-                data=shap_data,
-                base_values=base_values,
-                feature_names=feature_names,
-            )
-        return shap_explanations
-
     def _build_explainer(
         self,
         model: SKLearnModel,
@@ -269,7 +153,7 @@ class SKLearnShapExplainer(BaseShapExplainer):
         **kwargs
             Additional keyword arguments to be passed to the SHAP explainer constructor.
         """
-        if not self.is_multioutputregressor:
+        if not isinstance(self.model.model, MultiOutputRegressor):
             return self._build_explainer_sklearn(
                 model.model, self.background_X, self.shap_method, **kwargs
             )
@@ -277,7 +161,7 @@ class SKLearnShapExplainer(BaseShapExplainer):
         explainers = {}
         for i in range(self.n):
             explainers[i] = {}
-            for j in range(self.target_dim):
+            for j in range(self.n_targets_likelihood):
                 explainers[i][j] = self._build_explainer_sklearn(
                     model.get_estimator(horizon=i, target_dim=j),
                     self.background_X,
