@@ -217,3 +217,28 @@ class SKLearnShapExplainer(BaseShapExplainer):
         else:
             shap_method = SHAPMethod.KERNEL
         return shap_method
+
+    def _validate_model(self, model: SKLearnModel) -> None:
+        if not isinstance(model, SKLearnModel):
+            raise_log(
+                ValueError(
+                    f"Invalid `model` type: `{type(model)}`. Only models of type "
+                    f"`SKLearnModel` are supported."
+                ),
+                logger,
+            )
+
+        if not self.model.multi_models:
+            raise_log(
+                ValueError(
+                    "Invalid `multi_models` value `False`. Currently, "
+                    "ShapExplainer only supports SKLearnModels "
+                    "with `multi_models=True`."
+                ),
+                logger,
+            )
+
+        if self.model.supports_probabilistic_prediction:
+            logger.warning(
+                "The model is probabilistic, but num_samples=1 will be used for explainability."
+            )

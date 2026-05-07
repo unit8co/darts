@@ -398,3 +398,13 @@ class TorchShapExplainer(BaseShapExplainer):
 
     def _get_default_shap_method(self, model) -> SHAPMethod:
         return SHAPMethod.PERMUTATION
+
+    def _validate_model(self, model: TorchForecastingModel) -> None:
+        if not isinstance(model, TorchForecastingModel):
+            raise_log(
+                ValueError(
+                    f"Invalid `model` type: `{type(model)}`. Only models of type "
+                    f"`TorchForecastingModel` are supported."
+                ),
+                logger,
+            )

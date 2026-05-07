@@ -41,8 +41,8 @@ class BaseShapExplainer(ABC):
         background_series: Sequence[TimeSeries],
         background_past_covariates: Sequence[TimeSeries] | None,
         background_future_covariates: Sequence[TimeSeries] | None,
+        background_num_samples: int | None,
         shap_method: str | None,
-        background_num_samples: int | None = None,
         batch_size: int | None = None,
         **kwargs,
     ):
@@ -52,6 +52,8 @@ class BaseShapExplainer(ABC):
         Aim to provide SHAP values for any type of SKLearnModel. Manage the MultioutputRegressor cases.
         For darts SKLearnModel only.
         """
+        self._validate_model(model)
+
         if isinstance(shap_method, str):
             shap_method_upper = shap_method.upper()
             if shap_method in {sm.__name__ for sm in self._supported_shap_methods}:
@@ -65,6 +67,18 @@ class BaseShapExplainer(ABC):
                 )
         else:
             self.shap_method = self._get_default_shap_method(model)
+
+        if (
+            background_num_samples is not None
+            and background_num_samples > MAX_BACKGROUND_SAMPLE
+        ):
+            raise_log(
+                ValueError(
+                    f"`background_num_samples` must be less than or equal to "
+                    f"MAX_BACKGROUND_SAMPLE={MAX_BACKGROUND_SAMPLE}. Got {background_num_samples}."
+                ),
+                logger,
+            )
 
         self.model = model
 
@@ -398,3 +412,7 @@ class BaseShapExplainer(ABC):
     @abstractmethod
     def _get_default_shap_method(self, model) -> SHAPMethod:
         """Return the default SHAP method."""
+
+    @abstractmethod
+    def _validate_model(self, model: ForecastingModel) -> None:
+        """Validates the model."""
