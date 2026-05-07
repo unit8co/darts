@@ -187,20 +187,6 @@ class ShapExplainer(_ForecastingModelExplainer):
                 "The model is probabilistic, but num_samples=1 will be used for explainability."
             )
 
-        if shap_method is not None:
-            shap_method = shap_method.upper()
-            if shap_method in _SHAPMethod.__members__:
-                self.shap_method = _SHAPMethod[shap_method]
-            else:
-                raise_log(
-                    ValueError(
-                        f"Invalid `shap_method`. Please choose one value among the following:"
-                        f" {[e.name.lower() for e in _SHAPMethod]}."
-                    )
-                )
-        else:
-            self.shap_method = None
-
         self.explainers = _RegressionSHAPExplainers(
             model=self.model,
             n=self.n,
@@ -210,7 +196,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             background_series=self.background_series,
             background_past_covariates=self.background_past_covariates,
             background_future_covariates=self.background_future_covariates,
-            shap_method=self.shap_method,
+            shap_method=shap_method,
             background_num_samples=background_num_samples,
             **kwargs,
         )
