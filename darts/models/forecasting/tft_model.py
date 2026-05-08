@@ -741,7 +741,7 @@ class TFTModel(MixedCovariatesTorchModel):
             ``{"some_column": (64, 8)}``.
             Note that ``TorchForecastingModels`` only support numeric data. Consider transforming/encoding your data
             with `darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer`.
-            When training via ``TorchForecastingModel.fit_from_dataset()``, categorical embeddings are resolved by
+            When training via ``fit_from_dataset()``, categorical embeddings are resolved by
             static covariate column integer index (not by column name). The keys of ``categorical_embedding_sizes``
             must align positionally with the static covariate columns.
         add_relative_index
