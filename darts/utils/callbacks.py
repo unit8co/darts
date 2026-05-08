@@ -117,6 +117,8 @@ class TFMProgressBar(TQDMProgressBar):
         )
 
 
+# Adapted from optuna-integration (MIT License, Copyright (c) 2018 Preferred Networks, Inc.)
+# https://github.com/optuna/optuna-integration/blob/main/optuna_integration/pytorch_lightning/pytorch_lightning.py
 class PyTorchLightningPruningCallback(Callback):
     """PyTorch Lightning callback to prune unpromising Optuna trials.
 
