@@ -1067,7 +1067,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             future_covariates=seq2series(future_covariates),
             verbose=verbose,
         )
-        return self.fit_from_dataset(*params)
+        return self.fit_from_dataset(*params, _called_internally=True)
 
     def _setup_for_fit_from_dataset(
         self,
@@ -1208,6 +1208,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs: int = 0,
         dataloader_kwargs: dict[str, Any] | None = None,
         load_best: bool = False,
+        _called_internally: bool = False,
     ) -> "TorchForecastingModel":
         """
         Train the model with a specific :class:`darts.utils.data.TorchTrainingDataset` instance.
@@ -1223,8 +1224,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         This function can be called several times to do some extra training. If ``epochs`` is specified, the model
         will be trained for some (extra) ``epochs`` epochs.
 
-        Encoders configured via ``add_encoders`` at model creation are not applied here; ``train_dataset``
-        (and ``val_dataset`` if given) must already include any encoder-generated covariates.
+        .. note::
+            Encoders configured via ``add_encoders`` at model creation are not applied here; ``train_dataset``
+            (and ``val_dataset`` if given) must already include any encoder-generated covariates.
 
         Parameters
         ----------
@@ -1259,7 +1261,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self
             Fitted model.
         """
-        if self.encoders is not None and self.encoders.encoding_available:
+        if (
+            not _called_internally
+            and self.encoders is not None
+            and self.encoders.encoding_available
+        ):
             logger.warning(
                 "The model was created with `add_encoders`, but encoders are not "
                 "applied when calling `fit_from_dataset()`. The provided "
@@ -1831,6 +1837,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             mc_dropout=mc_dropout,
             predict_likelihood_parameters=predict_likelihood_parameters,
             random_state=random_state,
+            _called_internally=True,
         )
 
         return predictions[0] if called_with_single_series else predictions
@@ -1851,6 +1858,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         predict_likelihood_parameters: bool = False,
         random_state: int | None = None,
         values_only: bool = False,
+        _called_internally: bool = False,
     ) -> Sequence[TimeSeries]:
         """
         This method allows for predicting with a specific :class:`darts.utils.data.TorchInferenceDataset` instance.
@@ -1863,8 +1871,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ``trainer``. For more information on PyTorch Lightning Trainers check out `this link
         <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__.
 
-        Encoders configured via ``add_encoders`` at model creation are not applied here; ``dataset`` must already
-        include any encoder-generated covariates.
+        .. note::
+            Encoders configured via ``add_encoders`` at model creation are not applied here; ``dataset`` must already
+            include any encoder-generated covariates.
 
         Parameters
         ----------
@@ -1924,7 +1933,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         self._verify_inference_dataset_type(dataset)
 
-        if self.encoders is not None and self.encoders.encoding_available:
+        if (
+            not _called_internally
+            and self.encoders is not None
+            and self.encoders.encoding_available
+        ):
             logger.warning(
                 "The model was created with `add_encoders`, but encoders are not "
                 "applied when calling `predict_from_dataset()`. The provided "
