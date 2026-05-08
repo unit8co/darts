@@ -17,7 +17,7 @@ if not TORCH_AVAILABLE:
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
-from darts.explainability import TorchExplainer
+from darts.explainability import ShapExplainer as TorchExplainer
 from darts.explainability.shap.base_explainer import (
     MAX_BACKGROUND_SAMPLE,
     MIN_BACKGROUND_SAMPLE,
@@ -1653,14 +1653,11 @@ class TestTorchExplainer:
         assert set(explanation.components) == components
         assert np.isfinite(explanation.values()).all()
 
-        # for single explanation without foreground, the equivalent prediction
-        # is backshifted by `output_chunk_length` since the explanation is based
-        # on the background data where future covariates are only available up
-        # to the end of the background series.
+        # for single explanation without foreground, it explains the background forecast
         prediction = model.predict(
             n=model.output_chunk_length,
-            series=background_series[: -model.output_chunk_length],
-            past_covariates=background_past_covariates[: -model.output_chunk_length],
+            series=background_series,
+            past_covariates=background_past_covariates,
             future_covariates=background_future_covariates,
         )
         assert isinstance(prediction, TimeSeries)

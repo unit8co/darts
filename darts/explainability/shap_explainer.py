@@ -1,8 +1,9 @@
 """
-SHAP Explainer for SKLearn Models
----------------------------------
+SHAP Explainer for SKLearn and Torch Models
+-------------------------------------------
 
-A `SHAP <https://github.com/slundberg/shap>`__ explainer for Darts ``SKLearnModel`` instances.
+A `SHAP <https://github.com/slundberg/shap>`__ explainer for Darts ``SKLearnModel`` and ``TorchForecastingModel``
+instances.
 
 For detailed examples and tutorials, see:
 
@@ -14,9 +15,9 @@ relative to a baseline (average prediction).
 
 Depending on the model and training data, features can include:
 
-- lags of the target series,
-- lags of past covariates,
-- lags of future covariates,
+- lags of the target series (input chunk for torch models),
+- lags of past covariates  (input chunk for torch models),
+- lags of future covariates (input and output chunk for torch models),
 - static covariates (global or component-specific).
 
 .. note::
@@ -53,8 +54,10 @@ a single forecast (equivalent to calling ``model.predict(n=output_chunk_length)`
     If foreground data is not provided, background data is used for both.
 """
 
+from __future__ import annotations
+
 from collections.abc import Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
 import shap
@@ -65,11 +68,13 @@ from darts.explainability.explainability_result import (
     ShapExplainabilityResult,
     ShapSingleExplainabilityResult,
 )
-from darts.explainability.shap.sklearn_explainer import SKLearnShapExplainer
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
 from darts.utils.utils import generate_index
+
+if TYPE_CHECKING:
+    from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 
 logger = get_logger(__name__)
 
@@ -77,22 +82,22 @@ logger = get_logger(__name__)
 class ShapExplainer(_ForecastingModelExplainer):
     def __init__(
         self,
-        model: SKLearnModel,
+        model: SKLearnModel | TorchForecastingModel,
         background_series: TimeSeriesLike | None = None,
         background_past_covariates: TimeSeriesLike | None = None,
         background_future_covariates: TimeSeriesLike | None = None,
         background_num_samples: int | None = None,
         shap_method: str | None = None,
+        batch_size: int | None = None,
         **kwargs,
     ):
-        """SKLearn Model Explainer.
+        """SHAP Explainer for SKLearn and Torch Models.
 
         **Definitions**:
 
         - A background series is a ``TimeSeries`` used to train the SHAP explainer.
         - A foreground series is a ``TimeSeries`` that can be explained by a SHAP explainer after it has been fitted.
 
-        Currently, ``ShapExplainer`` only works with ``SKLearnModel`` forecasting models.
         The number of explained horizons `(t+1, t+2, ...)` cannot be greater than ``output_chunk_length`` of ``model``.
 
         Parameters
@@ -119,17 +124,29 @@ class ShapExplainer(_ForecastingModelExplainer):
             to select the most appropriate method based on a pre-defined set of known models
             internal mapping. Supported values: ``"tree"``, ``"kernel"``, ``"partition"``,
             ``"linear"``, ``"permutation"``, and ``"additive"``.
+        batch_size
+            TODO: add description
         **kwargs
             Optionally, additional keyword arguments passed to ``shap_method``.
 
         Examples
         --------
+
+        For ``SKLearnModel``:
         >>> from darts.datasets import AirPassengersDataset
         >>> from darts.explainability import ShapExplainer
         >>> from darts.models import LinearRegressionModel
-        >>> series = AirPassengersDataset().load()
+        >>> series = AirPassengersDataset().load().astype("float32")
         >>> model = LinearRegressionModel(lags=12).fit(series[:-36])
         >>> explainer = ShapExplainer(model)
+        >>> results = explainer.explain()
+        >>> explainer.summary_plot()
+        >>> explainer.force_plot()
+
+        For ``TorchForecastingModel`` (extending the previous example):
+        >>> from darts.models import TiDEModel
+        >>> model = TiDEModel(12, 12).fit(series[:36])
+        >>> explainer = TorchExplainer(model)
         >>> results = explainer.explain()
         >>> explainer.summary_plot()
         >>> explainer.force_plot()
@@ -145,7 +162,16 @@ class ShapExplainer(_ForecastingModelExplainer):
             test_stationarity=True,
         )
 
-        self.explainer = SKLearnShapExplainer(
+        if isinstance(self.model, SKLearnModel):
+            from darts.explainability.shap.sklearn_explainer import SKLearnShapExplainer
+
+            explainer_cls = SKLearnShapExplainer
+        else:
+            from darts.explainability.shap.torch_explainer import TorchShapExplainer
+
+            explainer_cls = TorchShapExplainer
+
+        self.explainer = explainer_cls(
             model=self.model,
             n=self.n,
             target_components=self.target_components,
@@ -157,6 +183,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             background_future_covariates=self.background_future_covariates,
             background_num_samples=background_num_samples,
             shap_method=shap_method,
+            batch_size=batch_size,
             **kwargs,
         )
 
@@ -286,7 +313,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             if foreground_future_covariates:
                 foreground_future_cov_ts = foreground_future_covariates[idx]
 
-            foreground_X, _, _ = self.explainer.create_shap_array(
+            foreground_X, _, prediction_times = self.explainer.create_shap_array(
                 series=foreground_ts,
                 past_covariates=foreground_past_cov_ts,
                 future_covariates=foreground_future_cov_ts,
@@ -305,14 +332,19 @@ class ShapExplainer(_ForecastingModelExplainer):
                 feature_values_dict_single_h = {}
                 shap_explanation_object_dict_single_h = {}
                 for t in target_names:
+                    prediction_times_single_h = (
+                        prediction_times
+                        if prediction_times is not None
+                        else shap_[h][t].time_index
+                    )
                     shap_values_dict_single_h[t] = TimeSeries(
-                        times=shap_[h][t].time_index,
+                        times=prediction_times_single_h,
                         values=shap_[h][t].values,
                         components=shap_[h][t].feature_names,
                         copy=False,
                     )
                     feature_values_dict_single_h[t] = TimeSeries(
-                        times=shap_[h][t].time_index,
+                        times=prediction_times_single_h,
                         values=shap_[h][t].data,
                         components=shap_[h][t].feature_names,
                         copy=False,
@@ -454,7 +486,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         )
         _, target_names = self._process_horizons_and_targets(None, target_components)
 
-        foreground_X, _, _ = self.explainer.create_shap_array(
+        foreground_X, schemas, prediction_times = self.explainer.create_shap_array(
             series=foreground_series_,
             past_covariates=foreground_past_covariates_,
             future_covariates=foreground_future_covariates_,
@@ -464,13 +496,20 @@ class ShapExplainer(_ForecastingModelExplainer):
         # explain only the last forecasted timestamp
         foreground_X = foreground_X[-1:]
 
-        shap_ = self.explainer.shap_explanations_single(
-            foreground_X, target_names, **kwargs
+        # TODO: maybe unify the logic for SKLearn and Torch `create_shap_array()` so we don't need to distinguish here
+        freq = (
+            schemas[0]["time_freq"]
+            if schemas is not None
+            else foreground_series_[0].freq
+        )
+        prediction_time = (
+            prediction_times[-1]
+            if prediction_times is not None
+            else foreground_X.index[-1] + self.model.output_chunk_shift * freq
         )
 
-        freq = foreground_series_[0].freq
-        prediction_time = (
-            foreground_X.index[-1] + (self.model.output_chunk_shift) * freq
+        shap_ = self.explainer.shap_explanations_single(
+            foreground_X, target_names, **kwargs
         )
 
         shap_values_dict = {}
@@ -481,7 +520,7 @@ class ShapExplainer(_ForecastingModelExplainer):
                 times=generate_index(
                     start=prediction_time,
                     freq=freq,
-                    length=self.n,
+                    length=shap_[t].values.shape[0],
                 ),
                 values=shap_[t].values,
                 components=shap_[t].feature_names,
@@ -555,9 +594,9 @@ class ShapExplainer(_ForecastingModelExplainer):
             for all the horizons and components.
         """
         (
-            foreground_series,
-            foreground_past_covariates,
-            foreground_future_covariates,
+            foreground_series_,
+            foreground_past_covariates_,
+            foreground_future_covariates_,
             _,
             _,
             _,
@@ -573,9 +612,9 @@ class ShapExplainer(_ForecastingModelExplainer):
         )
 
         foreground_X, _, _ = self.explainer.create_shap_array(
-            series=foreground_series,
-            past_covariates=foreground_past_covariates,
-            future_covariates=foreground_future_covariates,
+            series=foreground_series_,
+            past_covariates=foreground_past_covariates_,
+            future_covariates=foreground_future_covariates_,
             n_samples=num_samples,
             train=False,
         )
@@ -587,9 +626,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         for t in target_components:
             for h in horizons:
                 plt.title(
-                    "Target: `{}` - Horizon: {}".format(
-                        t, "t+" + str(h + self.model.output_chunk_shift)
-                    )
+                    f"Target: `{t}` - Horizon: t+{h + self.model.output_chunk_shift}"
                 )
                 shap.summary_plot(
                     shaps_[h][t],
@@ -640,22 +677,22 @@ class ShapExplainer(_ForecastingModelExplainer):
         **kwargs
             Other keyword arguments to be passed to the SHAP explainer.
         """
-        if target_component is None and len(self.target_components) > 1:
+        if target_component is None and len(self.target_components_likelihood) > 1:
             raise_log(
                 ValueError(
                     f"The `target_component` parameter is required when the model has more than one component. "
-                    f"Please select a component from {self.target_components}."
+                    f"Please select a component from {self.target_components_likelihood}."
                 ),
                 logger,
             )
 
         if target_component is None:
-            target_component = self.target_components[0]
+            target_component = self.target_components_likelihood[0]
 
         (
-            foreground_series,
-            foreground_past_covariates,
-            foreground_future_covariates,
+            foreground_series_,
+            foreground_past_covariates_,
+            foreground_future_covariates_,
             _,
             _,
             _,
@@ -673,9 +710,9 @@ class ShapExplainer(_ForecastingModelExplainer):
         horizon, target_component = horizons[0], target_components[0]
 
         foreground_X, _, _ = self.explainer.create_shap_array(
-            series=foreground_series,
-            past_covariates=foreground_past_covariates,
-            future_covariates=foreground_future_covariates,
+            series=foreground_series_,
+            past_covariates=foreground_past_covariates_,
+            future_covariates=foreground_future_covariates_,
             train=False,
         )
 
