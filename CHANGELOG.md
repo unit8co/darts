@@ -18,6 +18,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 - Fixed rendering issues of `CustomBlockRNNModule` and `CustomRNNModule` in the documentation. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao)
+- Removed `optuna-integration[pytorch-lightning]` dependency and ported `PyTorchLightningPruningCallback` in `darts.utils.callbacks`, resolving a platform-specific dependency resolution failure. [#3114](https://github.com/unit8co/darts/pull/3114) by [Jakub Chłapek](https://github.com/jakubchlapek).
 - Fixed rendering issues of `20-SKLearnModel-examples` notebook in the documentation. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao)
 
 ### For developers of the library:
