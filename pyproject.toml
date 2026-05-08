@@ -169,7 +169,6 @@ optional = [
     "onnxruntime>=1.24.1; python_version >= '3.11'",
     "onnxruntime<1.24.1; python_version < '3.11'",  # 1.24.1 dropped python 3.10 support
     "optuna>=4.7.0",
-    "optuna-integration[pytorch-lightning]>=4.7.0",
     "polars>=1.37.1",
     "pydantic>=2.12.5",
     "ray>=2.53.0",
