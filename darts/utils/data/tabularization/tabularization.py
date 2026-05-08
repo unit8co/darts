@@ -25,7 +25,8 @@ from darts.utils.utils import n_steps_between
 
 logger = get_logger(__name__)
 
-STABLE_SORT_KWARGS = {"stable": True}
+NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
+STABLE_SORT_KWARGS = {"stable": True} if NP_2_OR_ABOVE else {"kind": "stable"}
 
 ArrayOrArraySequence = np.ndarray | Sequence[np.ndarray]
 

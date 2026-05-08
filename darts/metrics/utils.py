@@ -550,7 +550,8 @@ def _get_values(
             # we extract the relevant quantile components with shape (times, components * quantiles)
             vals = vals[:, vals_components.get_indexer(q_names)]
             # rearrange into (times, components, quantiles)
-            vals = vals.reshape((len(vals), len(actual_components), -1))
+            n_quantiles = vals.shape[1] // len(actual_components)
+            vals = vals.reshape((len(vals), len(actual_components), n_quantiles))
         return vals
 
     # probabilistic input
