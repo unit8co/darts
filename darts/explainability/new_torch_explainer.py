@@ -1,9 +1,6 @@
 from collections.abc import Sequence
-from typing import Any
 
 import pandas as pd
-import shap
-from matplotlib import pyplot as plt
 
 from darts import TimeSeries
 from darts.explainability.explainability import _ForecastingModelExplainer
@@ -362,98 +359,3 @@ class TorchExplainer(_ForecastingModelExplainer):
             feature_values_dict,
             shap_explanation_object_dict,
         )
-
-    def summary_plot(
-        self,
-        foreground_series: TimeSeriesLike | None = None,
-        foreground_past_covariates: TimeSeriesLike | None = None,
-        foreground_future_covariates: TimeSeriesLike | None = None,
-        horizons: int | Sequence[int] | None = None,
-        target_components: str | Sequence[str] | None = None,
-        num_samples: int | None = None,
-        plot_type: str | None = "dot",
-        plot_kwargs: dict[str, Any] | None = None,
-        **kwargs,
-    ) -> dict[int, dict[str, shap.Explanation]]:
-        """
-        Display a SHAP "Summary Plot" for each horizon and each component dimension of the target.
-
-        On each summary plot, SHAP values of each input feature are plotted with dots (``plot_type="dot"``,
-        each dot corresponds to a forecasted timestamp), a bar (``plot_type="bar"``), or a violin
-        (``plot_type="violin"``). The input features are sorted by importance, defined as the mean absolute SHAP value.
-
-        Parameters
-        ----------
-        foreground_series
-            Optionally, one or a sequence of target ``TimeSeries`` to be explained. Can be multivariate.
-            If not provided, the background ``TimeSeries`` will be explained instead.
-        foreground_past_covariates
-            Optionally, one or a sequence of past covariates ``TimeSeries`` if required by the forecasting model.
-        foreground_future_covariates
-            Optionally, one or a sequence of future covariates ``TimeSeries`` if required by the forecasting model.
-        horizons
-            Optionally, an integer or sequence of integers representing which points/steps in the future to explain,
-            starting from the first prediction step at 1. Each horizon must be no greater than ``output_chunk_length``
-            of the explained forecasting model. Default: ``None``, which means that all horizons will be plotted.
-        target_components
-            Optionally, a string or sequence of strings with the target components to explain.
-            Default: ``None``, which means that all target components will be plotted.
-        num_samples
-            Optionally, an integer for sampling the foreground series for the sake of performance.
-        plot_type
-            Optionally, specify which of the SHAP library plot type to use. Can be one of ``"dot"``, ``"bar"``,
-            ``"violin"``.
-        plot_kwargs
-            Optionally, a dictionary of keyword arguments to be passed to ``shap.summary_plot()``.
-        **kwargs
-            Additional keyword arguments to be passed to the SHAP explainer when calling it for explanations, e.g.,
-            `npermutations` for the default permutation explainer.
-
-        Returns
-        -------
-        dict[int, dict[str, shap.Explanation]]
-            A nested dictionary ``{horizon : {component : shap.Explanation}}`` containing the raw Explanation objects
-            for all the horizons and components.
-        """
-        (
-            foreground_series_,
-            foreground_past_covariates_,
-            foreground_future_covariates_,
-            _,
-            _,
-            _,
-            _,
-            _,
-        ) = self._process_foreground(
-            foreground_series,
-            foreground_past_covariates,
-            foreground_future_covariates,
-        )
-        horizons, target_components = self._process_horizons_and_targets(
-            horizons, target_components
-        )
-
-        foreground_X, _, _ = self.explainer.create_shap_array(
-            foreground_series_,
-            foreground_past_covariates_,
-            foreground_future_covariates_,
-            n_samples=num_samples,
-            train=foreground_series is None,
-        )
-
-        shaps_ = self.explainer.shap_explanations(
-            foreground_X, horizons, target_components, **kwargs
-        )
-
-        for t in target_components:
-            for h in horizons:
-                plt.title(
-                    f"Target: `{t}` - Horizon: t+{h + self.model.output_chunk_shift}"
-                )
-                shap.summary_plot(
-                    shaps_[h][t],
-                    foreground_X,
-                    plot_type=plot_type,
-                    **(plot_kwargs or {}),
-                )
-        return shaps_

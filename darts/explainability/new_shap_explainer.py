@@ -582,9 +582,9 @@ class ShapExplainer(_ForecastingModelExplainer):
             for all the horizons and components.
         """
         (
-            foreground_series,
-            foreground_past_covariates,
-            foreground_future_covariates,
+            foreground_series_,
+            foreground_past_covariates_,
+            foreground_future_covariates_,
             _,
             _,
             _,
@@ -600,11 +600,11 @@ class ShapExplainer(_ForecastingModelExplainer):
         )
 
         foreground_X, _, _ = self.explainer.create_shap_array(
-            series=foreground_series,
-            past_covariates=foreground_past_covariates,
-            future_covariates=foreground_future_covariates,
+            series=foreground_series_,
+            past_covariates=foreground_past_covariates_,
+            future_covariates=foreground_future_covariates_,
             n_samples=num_samples,
-            train=False,
+            train=foreground_series is None,
         )
 
         shaps_ = self.explainer.shap_explanations(
@@ -614,9 +614,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         for t in target_components:
             for h in horizons:
                 plt.title(
-                    "Target: `{}` - Horizon: {}".format(
-                        t, "t+" + str(h + self.model.output_chunk_shift)
-                    )
+                    f"Target: `{t}` - Horizon: t+{h + self.model.output_chunk_shift}"
                 )
                 shap.summary_plot(
                     shaps_[h][t],
