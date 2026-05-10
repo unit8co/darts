@@ -167,9 +167,22 @@ class ShapExplainer(_ForecastingModelExplainer):
 
             explainer_cls = SKLearnShapExplainer
         else:
+            # lazily import torch dependencies
             from darts.explainability.shap.torch_explainer import TorchShapExplainer
+            from darts.models.forecasting.torch_forecasting_model import (
+                TorchForecastingModel,
+            )
 
-            explainer_cls = TorchShapExplainer
+            if isinstance(self.model, TorchForecastingModel):
+                explainer_cls = TorchShapExplainer
+            else:
+                raise_log(
+                    ValueError(
+                        f"Invalid `model` type: `{type(model)}`. Only models of type "
+                        f"`SKLearnModel` or `TorchForecastingModel` are supported."
+                    ),
+                    logger,
+                )
 
         self.explainer = explainer_cls(
             model=self.model,
@@ -278,6 +291,7 @@ class ShapExplainer(_ForecastingModelExplainer):
 
         Each series has length 3, as the model can explain 5-3+1 forecasts (timestamp indices 4, 5, and 6).
         """
+        input_type = "foreground" if foreground_series is not None else "background"
         super().explain(
             foreground_series, foreground_past_covariates, foreground_future_covariates
         )
@@ -317,7 +331,8 @@ class ShapExplainer(_ForecastingModelExplainer):
                 series=foreground_ts,
                 past_covariates=foreground_past_cov_ts,
                 future_covariates=foreground_future_cov_ts,
-                train=False,
+                n_samples=None,
+                input_type=input_type,
             )
 
             shap_ = self.explainer.shap_explanations(
@@ -470,6 +485,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             As a result, the forecast explained would be backshifted to the last timestamp when future covariates are
             known.
         """
+        input_type = "foreground" if foreground_series is not None else "background"
         (
             foreground_series_,
             foreground_past_covariates_,
@@ -490,7 +506,8 @@ class ShapExplainer(_ForecastingModelExplainer):
             series=foreground_series_,
             past_covariates=foreground_past_covariates_,
             future_covariates=foreground_future_covariates_,
-            train=False,
+            n_samples=None,
+            input_type=input_type,
         )
 
         # explain only the last forecasted timestamp
@@ -593,6 +610,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             A nested dictionary ``{horizon : {component : shap.Explanation}}`` containing the raw Explanation objects
             for all the horizons and components.
         """
+        input_type = "foreground" if foreground_series is not None else "background"
         (
             foreground_series_,
             foreground_past_covariates_,
@@ -616,7 +634,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             past_covariates=foreground_past_covariates_,
             future_covariates=foreground_future_covariates_,
             n_samples=num_samples,
-            train=False,
+            input_type=input_type,
         )
 
         shaps_ = self.explainer.shap_explanations(
@@ -677,6 +695,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         **kwargs
             Other keyword arguments to be passed to the SHAP explainer.
         """
+        input_type = "foreground" if foreground_series is not None else "background"
         if target_component is None and len(self.target_components_likelihood) > 1:
             raise_log(
                 ValueError(
@@ -713,7 +732,8 @@ class ShapExplainer(_ForecastingModelExplainer):
             series=foreground_series_,
             past_covariates=foreground_past_covariates_,
             future_covariates=foreground_future_covariates_,
-            train=False,
+            n_samples=None,
+            input_type=input_type,
         )
 
         shap_ = self.explainer.shap_explanations(

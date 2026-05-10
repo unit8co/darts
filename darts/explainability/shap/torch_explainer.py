@@ -14,6 +14,9 @@ from darts.models.forecasting.rnn_model import CustomRNNModule
 from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 from darts.typing import TimeIndex, TimeSeriesLike
 from darts.utils.data.torch_datasets.utils import TorchInferenceDatasetOutput
+from darts.utils.historical_forecasts.optimized_historical_forecasts_torch import (
+    _create_dataset_bounds,
+)
 from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
@@ -35,51 +38,24 @@ class TorchShapExplainer(BaseShapExplainer):
         past_covariates: TimeSeriesLike | None,
         future_covariates: TimeSeriesLike | None,
         n_samples: int | None = None,
-        train: bool = False,
+        input_type: str = "background",
     ) -> tuple[np.ndarray, list[dict[str, Any]], TimeIndex]:
-        """
-        Creates the SHAP array for the given input series and covariates, by following the logic of the torch
-        forecasting model's inference dataset and prediction step. It returns the SHAP array, the schemas of the
-        samples, and the prediction times corresponding to each sample in the SHAP array.
-
-        Parameters
-        ----------
-        series
-            A sequence of target series to be explained. Can be a single TimeSeries or a sequence of TimeSeries.
-        past_covariates
-            Optionally, a sequence of past covariate series if required by the forecasting model. Can be a single
-            TimeSeries or a sequence of TimeSeries. Must be provided if the model uses past covariates.
-        future_covariates
-            Optionally, a sequence of future covariate series if required by the forecasting model. Can be a single
-            TimeSeries or a sequence of TimeSeries. Must be provided if the model uses future covariates.
-        n_samples
-            Optionally, an integer for sampling the dataset for the sake of performance. If ``train=True``,
-            the samples will be randomly drawn from the dataset. If ``train=False``, the last ``n_samples`` samples
-            will be taken from the dataset. Default: ``None``, which means that all samples in the dataset will be used.
-        train
-            A boolean indicating whether the SHAP array is being created for training (background) data or for
-            foreground data. This affects how the dataset is sampled and how the bounds are created. Default: ``False``.
-        """
         # convert to sequence of TimeSeries if not already
         series_: Sequence[TimeSeries] = series2seq(series)
         past_covariates_: Sequence[TimeSeries] | None = series2seq(past_covariates)
         future_covariates_: Sequence[TimeSeries] | None = series2seq(future_covariates)
 
-        # if future covariates are used, trim the series if the last timestamp of the series where making a forecast
-        # is possible is before the end of the series. This is to avoid creating samples in the dataset that would not
-        # be able to make a forecast.
-        if future_covariates_ is not None:
-            for i in range(len(series_)):
-                if train:
-                    shift = 0
-                else:
-                    shift = self.output_chunk_length + self.output_chunk_shift
-                end_time = (
-                    future_covariates_[i].end_time()
-                    - shift * future_covariates_[i].freq
-                )
-                if end_time < series_[i].end_time():
-                    series_[i] = series_[i][:end_time]
+        bounds, _ = _create_dataset_bounds(
+            model=self.model,
+            series=series_,
+            past_covariates=past_covariates_,
+            future_covariates=future_covariates_,
+            start=None,
+            forecast_horizon=self.n,
+            stride=1,
+            overlap_end=True,
+            show_warnings=False,
+        )
 
         # create inference dataset
         dataset = self.model._build_inference_dataset(
@@ -88,12 +64,12 @@ class TorchShapExplainer(BaseShapExplainer):
             past_covariates=past_covariates_,
             future_covariates=future_covariates_,
             stride=1,
-            bounds=self._create_dataset_bounds(series_, train=train),
+            bounds=bounds,
         )
 
         # sample from dataset if required
         n_samples = n_samples or len(dataset)
-        if train:
+        if input_type == "background":
             if len(dataset) < MIN_BACKGROUND_SAMPLE:
                 raise_log(
                     ValueError(
@@ -102,42 +78,23 @@ class TorchShapExplainer(BaseShapExplainer):
                     ),
                     logger,
                 )
-            if n_samples > len(dataset):
-                raise_log(
-                    ValueError(
-                        f"`background_num_samples` must be less than or equal to the number of samples in the dataset. "
-                        f"Got `background_num_samples={n_samples}` but dataset length={len(dataset)}."
-                    ),
-                    logger,
-                )
             if n_samples > MAX_BACKGROUND_SAMPLE:
                 logger.warning(
-                    f"Background series contains more than MIN_BACKGROUND_SAMPLE={MAX_BACKGROUND_SAMPLE} samples. "
+                    f"Background series contains more than MAX_BACKGROUND_SAMPLE={MAX_BACKGROUND_SAMPLE} samples. "
                     f"Sampling {MAX_BACKGROUND_SAMPLE} samples to create the background for SHAP explanations."
                 )
                 n_samples = MAX_BACKGROUND_SAMPLE
-        else:
-            if n_samples > len(dataset):
-                raise_log(
-                    ValueError(
-                        f"`n_samples` must be less than or equal to the number of samples in the dataset. "
-                        f"Got `n_samples={n_samples}` but dataset length={len(dataset)}."
-                    ),
-                    logger,
-                )
 
         # follow the logic of `TorchForecastingModel.predict_from_dataset()`
         # to collect samples and collate them into a sample tuple
         # collect batch of samples from the end of the dataset
         batch: list[TorchInferenceDatasetOutput] = []
-        if train:
-            if n_samples < len(dataset):
-                # randomly sample from the dataset if in training mode
-                indices = np.random.choice(len(dataset), size=n_samples, replace=False)
-            else:
-                indices = range(len(dataset))
+        if n_samples < len(dataset):
+            # randomly sample from the dataset if in training mode
+            indices = np.random.choice(len(dataset), size=n_samples, replace=False)
         else:
-            indices = range(len(dataset) - n_samples, len(dataset))
+            indices = range(len(dataset))
+
         for i in indices:
             batch.append(dataset[i])
 
@@ -372,20 +329,6 @@ class TorchShapExplainer(BaseShapExplainer):
         output = output.flatten(start_dim=1)
 
         return output.cpu().numpy()
-
-    def _create_dataset_bounds(
-        self,
-        series: Sequence[TimeSeries],
-        train: bool,
-    ) -> np.ndarray:
-        """
-        Creates the bounds for the inference dataset based on the input series and whether it is for training or not.
-        """
-        offset = self.output_chunk_length if train else 0
-        bounds = np.array([
-            (self.model.input_chunk_length, len(s) - offset) for s in series
-        ])
-        return bounds
 
     @property
     def _supported_shap_methods(self) -> set[SHAPMethod]:

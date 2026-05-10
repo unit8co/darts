@@ -135,7 +135,7 @@ class BaseShapExplainer(ABC):
             past_covariates=self.background_past_covariates,
             future_covariates=self.background_future_covariates,
             n_samples=background_num_samples,
-            train=True,
+            input_type="background",
         )
 
         self.explainer = self._build_explainer(
@@ -378,7 +378,7 @@ class BaseShapExplainer(ABC):
         past_covariates: TimeSeriesLike | None,
         future_covariates: TimeSeriesLike | None,
         n_samples: int | None = None,
-        train: bool = False,
+        input_type: str = "background",
     ) -> tuple[
         np.ndarray | pd.DataFrame, list[dict[str, Any]] | None, TimeIndex | None
     ]:
@@ -401,9 +401,9 @@ class BaseShapExplainer(ABC):
             Optionally, an integer for sampling the dataset for the sake of performance. If ``train=True``,
             the samples will be randomly drawn from the dataset. If ``train=False``, the last ``n_samples`` samples
             will be taken from the dataset. Default: ``None``, which means that all samples in the dataset will be used.
-        train
-            A boolean indicating whether the SHAP array is being created for training (background) data or for
-            foreground data. This affects how the dataset is sampled and how the bounds are created. Default: ``False``.
+        input_type
+            A string indicating whether the SHAP array is being created for the background or foreground data. This
+            affects how the dataset is sampled and how the bounds are created. Default: ``background``.
         """
 
     @property

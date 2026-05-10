@@ -29,6 +29,7 @@ from darts.tests.conftest import (
     LGBM_AVAILABLE,
 )
 from darts.utils.timeseries_generation import linear_timeseries
+from darts.utils.utils import generate_index
 
 xgb_test_params = {
     "n_estimators": 1,
@@ -267,7 +268,8 @@ class TestShapExplainer:
         m = ExponentialSmoothing()
         m.fit(self.target_ts["price"])
         with pytest.raises(
-            ValueError, match="Only models of type `SKLearnModel` are supported."
+            ValueError,
+            match="Only models of type `SKLearnModel` or `TorchForecastingModel` are supported.",
         ):
             ShapExplainer(m)
 
@@ -927,6 +929,11 @@ class TestShapExplainer:
                 [np.arange(1, 29), np.arange(3, 31), np.arange(106, 161, 2)], axis=1
             ),
             columns=expected_columns,
+            index=generate_index(
+                end=ts.end_time() + ts.freq,
+                length=28,
+                freq=ts.freq,
+            ),
         )
 
         # check that the appropriate lags are extracted

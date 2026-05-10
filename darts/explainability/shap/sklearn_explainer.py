@@ -69,22 +69,6 @@ class SKLearnShapExplainer(BaseShapExplainer):
         shap_method: SHAPMethod,
         **kwargs,
     ) -> shap.Explainer | dict[int, dict[int, shap.Explainer]]:
-        """
-        Builds the SHAP explainer based on the specified SHAP method.
-
-        Parameters
-        ----------
-        func
-            The function wrapper that takes a numpy array of input features and outputs model predictions, to be passed
-            to the SHAP explainer.
-        background_X
-            The background dataset in the form of a numpy array, to be passed to the SHAP explainer.
-        shap_method
-            The SHAP method to use for explanations. Must be one of the methods available in the SHAP library,
-            specified in the enum ``SHAPMethod``.
-        **kwargs
-            Additional keyword arguments to be passed to the SHAP explainer constructor.
-        """
         if not isinstance(self.model.model, MultiOutputRegressor):
             return self._build_explainer_sklearn(
                 model.model, self.background_X, self.shap_method, **kwargs
@@ -143,14 +127,8 @@ class SKLearnShapExplainer(BaseShapExplainer):
         past_covariates: TimeSeriesLike | None,
         future_covariates: TimeSeriesLike | None,
         n_samples: int | None = None,
-        train: bool = False,
+        input_type: str = "background",
     ) -> tuple[pd.DataFrame, list[dict[str, Any]] | None, TimeIndex | None]:
-        """
-        Creates the SHAP format input for regression models.
-        The output is a pandas DataFrame representing all lags of different covariates, and with adequate
-        column names in order to map feature / SHAP values.
-        It uses create_lagged_data also used in SKLearnModel to build the tabular dataset.
-        """
         lags_list = self.model._get_lags("target")
         lags_past_covariates_list = self.model._get_lags("past")
         lags_future_covariates_list = self.model._get_lags("future")
@@ -172,27 +150,26 @@ class SKLearnShapExplainer(BaseShapExplainer):
         # Remove sample axis:
         X = X[:, :, 0]
 
-        if train:
-            X = pd.DataFrame(X)
-            if len(X) <= MIN_BACKGROUND_SAMPLE:
-                raise_log(
-                    ValueError(
-                        "The number of samples in the background dataset is too small to compute SHAP values."
-                    )
+        if input_type == "background" and len(X) <= MIN_BACKGROUND_SAMPLE:
+            raise_log(
+                ValueError(
+                    "The number of samples in the background dataset is too small to compute SHAP values."
                 )
-        else:
-            X = pd.DataFrame(X, index=indexes[0])
+            )
+
+        index_complete = indexes[0]
+        for index_i in indexes[1:]:
+            index_complete = index_complete.append(index_i)
+
+        X = pd.DataFrame(
+            X,
+            columns=self.feature_names,
+            index=index_complete,
+        )
 
         if n_samples:
             X = shap.utils.sample(X, n_samples)
 
-        # rename output columns to the matching lagged features names
-        X = X.rename(
-            columns={
-                name: self.feature_names[idx]
-                for idx, name in enumerate(X.columns.to_list())
-            }
-        )
         return X, None, None
 
     def _build_feature_names(self) -> list[str]:

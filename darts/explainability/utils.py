@@ -125,21 +125,12 @@ def process_input(
     # if `requires_covariates_encoding=False`)
     else:
         if model.encoders.encoding_available:
-            if input_type == "background":
-                past_covariates, future_covariates = model.generate_fit_encodings(
-                    series=series,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
-                )
-            else:
-                past_covariates, future_covariates = (
-                    model.generate_fit_predict_encodings(
-                        n=n,
-                        series=series,
-                        past_covariates=past_covariates,
-                        future_covariates=future_covariates,
-                    )
-                )
+            past_covariates, future_covariates = model.generate_fit_predict_encodings(
+                n=n,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )
 
     series = series2seq(series)
     past_covariates = series2seq(past_covariates)
