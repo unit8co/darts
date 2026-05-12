@@ -11,9 +11,13 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added `PyTorchLightningPruningCallback` to `darts.utils.callbacks`, a self-contained Optuna pruning callback for use with PyTorch Lightning-based forecasting models. This removes the need for the `PatchedPruningCallback` multiple-inheritance workaround when using Optuna with Darts. [#3093](https://github.com/unit8co/darts/issues/3093)
+
 **Fixed**
 
 **Dependencies**
+
+- Dropped the `optuna-integration[pytorch-lightning]` optional dependency. The vendored `PyTorchLightningPruningCallback` is now imported from `darts.utils.callbacks`. [#3093](https://github.com/unit8co/darts/issues/3093)
 
 ### For developers of the library:
 

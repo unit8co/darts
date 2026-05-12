@@ -21,16 +21,10 @@ import optuna
 
 if TORCH_AVAILABLE:
     import torch
-    from pytorch_lightning.callbacks import Callback, EarlyStopping
-
-    # hacky workaround found in https://github.com/Lightning-AI/pytorch-lightning/issues/17485
-    # to avoid import of both lightning and pytorch_lightning
-    class PatchedPruningCallback(
-        optuna.integration.PyTorchLightningPruningCallback, Callback
-    ):
-        pass
+    from pytorch_lightning.callbacks import EarlyStopping
 
     from darts.models import TCNModel
+    from darts.utils.callbacks import PyTorchLightningPruningCallback
     from darts.utils.likelihood_models.torch import GaussianLikelihood
 
 
@@ -62,7 +56,7 @@ class TestOptuna:
             include_year = trial.suggest_categorical("year", [False, True])
 
             # throughout training we'll monitor the validation loss for both pruning and early stopping
-            pruner = PatchedPruningCallback(trial, monitor="val_loss")
+            pruner = PyTorchLightningPruningCallback(trial, monitor="val_loss")
             early_stopper = EarlyStopping(
                 "val_loss", min_delta=0.001, patience=3, verbose=True
             )
@@ -128,6 +122,109 @@ class TestOptuna:
         # optimize hyperparameters by minimizing the sMAPE on the validation set
         study = optuna.create_study(direction="minimize")
         study.optimize(objective, n_trials=3)
+
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
+    def test_pruning_callback_inherits_from_pl_callback(self):
+        """The Darts callback must satisfy PyTorch Lightning's `Callback`
+        type so that it can be registered via ``pl_trainer_kwargs`` without
+        the multiple-inheritance workaround used historically."""
+        from pytorch_lightning.callbacks import Callback as PLCallback
+
+        study = optuna.create_study(direction="minimize")
+        trial = study.ask()
+        callback = PyTorchLightningPruningCallback(trial, monitor="val_loss")
+        assert isinstance(callback, PLCallback)
+        assert callback.monitor == "val_loss"
+        assert callback.is_ddp_backend is False
+
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
+    def test_pruning_callback_warns_on_missing_metric(self):
+        """When the monitored metric is absent from ``callback_metrics``,
+        the callback must warn (not crash) and skip reporting."""
+
+        class _StubTrainer:
+            sanity_checking = False
+            callback_metrics: dict = {}
+
+        class _StubModule:
+            current_epoch = 0
+
+        study = optuna.create_study(direction="minimize")
+        trial = study.ask()
+        callback = PyTorchLightningPruningCallback(trial, monitor="missing_metric")
+
+        with pytest.warns(UserWarning, match="missing_metric"):
+            callback.on_validation_end(_StubTrainer(), _StubModule())  # type: ignore[arg-type]
+
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
+    def test_pruning_callback_raises_when_trial_should_prune(self):
+        """When the trial's pruner decides to prune, the callback must
+        raise :class:`optuna.TrialPruned`."""
+
+        class _AlwaysPruningTrial:
+            def __init__(self, real_trial):
+                self._real = real_trial
+
+            def report(self, value, step):
+                self._real.report(value, step)
+
+            def should_prune(self):
+                return True
+
+        class _StubTrainer:
+            sanity_checking = False
+            callback_metrics = {"val_loss": torch.tensor(1.0)}
+
+        class _StubModule:
+            current_epoch = 0
+
+        study = optuna.create_study(direction="minimize")
+        real_trial = study.ask()
+        callback = PyTorchLightningPruningCallback(
+            _AlwaysPruningTrial(real_trial), monitor="val_loss"
+        )
+
+        with pytest.raises(optuna.TrialPruned):
+            callback.on_validation_end(_StubTrainer(), _StubModule())  # type: ignore[arg-type]
+
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
+    def test_pruning_callback_skips_during_sanity_check(self):
+        """``Trainer`` invokes ``on_validation_end`` for the sanity check at
+        epoch 0. The callback must short-circuit in that case so it does not
+        call ``trial.report`` twice."""
+
+        class _ReportRecorder:
+            def __init__(self):
+                self.reports: list = []
+
+            def report(self, value, step):
+                self.reports.append((value, step))
+
+            def should_prune(self):
+                return False
+
+        class _StubTrainer:
+            sanity_checking = True
+            callback_metrics = {"val_loss": torch.tensor(1.0)}
+
+        class _StubModule:
+            current_epoch = 0
+
+        recorder = _ReportRecorder()
+        callback = PyTorchLightningPruningCallback(recorder, monitor="val_loss")
+        callback.on_validation_end(_StubTrainer(), _StubModule())  # type: ignore[arg-type]
+        assert recorder.reports == []
+
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
+    def test_pruning_callback_check_pruned_is_noop_outside_ddp(self):
+        """Outside of a DDP + RDB-storage context, ``check_pruned`` must be
+        a no-op so callers can invoke it unconditionally after fit()."""
+        study = optuna.create_study(direction="minimize")
+        trial = study.ask()
+        callback = PyTorchLightningPruningCallback(trial, monitor="val_loss")
+        # No exception expected; the method returns silently when the
+        # study storage is not the DDP-aware CachedStorage.
+        callback.check_pruned()
 
     @pytest.mark.parametrize(
         "params",
