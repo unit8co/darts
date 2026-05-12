@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 project = "darts"
 copyright = f"2020 - {datetime.now().year}, Unit8 SA (Apache 2.0 License)"
 author = "Unit8 SA"
-version = "0.43.0"
+version = "0.44.1"
 
 
 # -- General configuration ---------------------------------------------------
@@ -41,7 +41,7 @@ extensions = [
     "sphinx_autodoc_typehints",
     "sphinx_copybutton",
     "nbsphinx",
-    "m2r2",
+    "myst_parser",
     "numpydoc",
     "sphinx_design",
 ]
@@ -65,6 +65,8 @@ exclude_members = [
     "initialize_encoders",
     "SplitTimeSeriesSequence",
     "randint",
+    "CustomRNNModule",
+    "CustomBlockRNNModule",
 ]
 
 autodoc_default_options = {
@@ -86,6 +88,11 @@ templates_path = ["templates"]
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
 language = "en"
+
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".md": "markdown",
+}
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

@@ -32,6 +32,9 @@ from darts.metrics.utils import (
 )
 from darts.typing import TimeSeriesLike
 
+_NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
+_NP_TRAPEZOID_FN = np.trapezoid if _NP_2_OR_ABOVE else np.trapz
+
 logger = get_logger(__name__)
 
 
@@ -2699,7 +2702,7 @@ def autc(
         max_tolerance=max_tolerance,
         step=step,
     )
-    return np.trapezoid(coverages, tolerances, axis=0)
+    return _NP_TRAPEZOID_FN(coverages, tolerances, axis=0)
 
 
 # Dynamic Time Warping

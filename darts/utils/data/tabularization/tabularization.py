@@ -25,7 +25,8 @@ from darts.utils.utils import n_steps_between
 
 logger = get_logger(__name__)
 
-STABLE_SORT_KWARGS = {"stable": True}
+NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
+STABLE_SORT_KWARGS = {"stable": True} if NP_2_OR_ABOVE else {"kind": "stable"}
 
 ArrayOrArraySequence = np.ndarray | Sequence[np.ndarray]
 
@@ -897,7 +898,7 @@ def create_lagged_component_names(
 
     - ``{name}`` the static covariate name of the (first) series
     - ``{comp}`` the target component name of the (first) that the static covariate act on. If the static
-      covariate acts globally on a multivariate target series, will show "global".
+      covariate acts globally on a multivariate target series, will show "global_components".
 
     The naming convention for labels is: ``"{name}_target_hrz{i}"``, where:
 
