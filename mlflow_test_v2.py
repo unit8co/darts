@@ -82,33 +82,6 @@ def _managed_run_scenarios(model, train, val, log) -> None:
         Params and metric all land in the same single run.
         Result: one run per model with both params and metric logged.
     """
-    model_name = type(model).__name__
-
-    # ── Scenario A: bare fit ──────────────────────────────────────────
-    # Expected: one run with params logged; no metrics.
-    log(f"[{model_name}] Scenario A — bare fit")
-    model.fit(train)
-    pred = model.predict(n=len(val))
-
-    # ── Scenario B: metric outside any run ───────────────────────────
-    # Expected: nothing logged (metrics have manage_run=False).
-    log(f"[{model_name}] Scenario B — metric with no active run (expect: not logged)")
-    darts_metrics.mape(val, pred)
-
-    # ── Scenario C: metric inside explicit start_run ──────────────────
-    # Expected: one run with rmse logged, no params.
-    log(f"[{model_name}] Scenario C — metric inside explicit start_run")
-    with mlflow.start_run():
-        darts_metrics.rmse(val, pred)
-
-    # ── Scenario D: fit + metric inside explicit start_run ───────────
-    # Expected: one run with both params (from fit) and mape logged.
-    # fit() reuses the caller's run — no nesting.
-    log(f"[{model_name}] Scenario D — fit + metric inside explicit start_run")
-    with mlflow.start_run():
-        model.fit(train)
-        pred = model.predict(n=len(val))
-        darts_metrics.mape(val, pred)
 
 
 def _magic(model, train, val, series, log) -> None:
@@ -160,7 +133,8 @@ def _magic(model, train, val, series, log) -> None:
         series=series,
         historical_forecasts=hfc,
         last_points_only=False,
-        metric=[darts_metrics.mape, darts_metrics.rmse, darts_metrics.ape],
+        metric=[darts_metrics.mape, darts_metrics.rmse, darts_metrics.ape, darts_metrics.mase, darts_metrics.mase],
+        metric_kwargs=[{}, {}, {}, {"m": 1}, {"m": 2}],
         reduction=None,
     )
     log(f"[{model_name}] Run complete: {mlflow.active_run().info.run_id}")
@@ -200,9 +174,9 @@ def _backtest_reduction_scenarios(model, train, series, log) -> None:
 
     reductions = [
         (None, "reduction=None (per-window steps)"),
-        (np.mean, "reduction=np.mean"),
-        (np.median, "reduction=np.median"),
-        (lambda x, axis=None: np.percentile(x, 90, axis=axis), "reduction=p90"),
+        # (np.mean, "reduction=np.mean"),
+        # (np.median, "reduction=np.median"),
+        # (lambda x, axis=None: np.percentile(x, 90, axis=axis), "reduction=p90"),
     ]
 
     for reduction_fn, label in reductions:
@@ -220,6 +194,11 @@ def _backtest_reduction_scenarios(model, train, series, log) -> None:
 # ── Data setup ----------------------------------------------------------------
 # Cast to float32: MPS doesn't support float64 tensors
 series = AirPassengersDataset().load().astype(np.float32)
+# TODO: implement/test the follwoing cases!
+series_multiple = [series, series / 3.]
+series_multivariate = series.stack(series / 3.)
+series_multiple_multivariate = [series.stack(series / 3.), series.stack(series / 10.)]
+
 train, val = series.split_after(0.75)
 FORECAST_HORIZON, STRIDE, BT_START = 1, 2, 0.75
 
@@ -244,7 +223,7 @@ models = [
     LinearRegressionModel(lags=12, output_chunk_length=FORECAST_HORIZON),
     # LinearRegressionModel(lags=24, output_chunk_length=FORECAST_HORIZON),  # same model, more lags
     ExponentialSmoothing(),
-    NBEATSModel(**_torch_kwargs),
+    # NBEATSModel(**_torch_kwargs),
     # NBEATSModel(**_torch_kwargs, num_stacks=4, num_blocks=2),  # same model, deeper architecture
     # NHiTSModel(**_torch_kwargs),
     # TCNModel(**_torch_kwargs),
@@ -254,10 +233,13 @@ models = [
 # fit() auto-creates and closes a run per model — no start_run() needed.
 exp_name: str = coolname.generate_slug(2)
 mlflow.set_experiment(exp_name)
-mlflow_darts.autolog(manage_run=True)
+mlflow_darts.autolog()
 logger.info(f"[Use case 1] Experiment: {exp_name}")
 for model in models:
-    _managed_run_scenarios(model, train, val, log)
+    with mlflow.start_run():
+        model.fit(train)
+        pred = model.predict(n=len(val))
+        darts_metrics.mape(val, pred)
 
 # ── Use case 2: manage_run=False + backtest ───────────────────────────────────
 # Caller opens the run so predict, val metrics, and backtest all land in it.
@@ -265,7 +247,7 @@ for model in models:
 #       nesting runs and ensures all metrics land in the same run.
 exp_name = coolname.generate_slug(2)
 mlflow.set_experiment(exp_name)
-mlflow_darts.autolog(manage_run=False)
+mlflow_darts.autolog()
 logger.info(f"[Use case 2] Experiment: {exp_name}")
 for i, model in enumerate(models):
     model_name = type(model).__name__
