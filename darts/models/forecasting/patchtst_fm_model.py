@@ -391,47 +391,54 @@ class PatchTSTFMModel(FoundationModel):
 
         This is an implementation of IBM's PatchTST-FM model [1]_, ported from
         `ibm-granite/granite-tsfm <https://github.com/ibm-granite/granite-tsfm>`_
-        with adaptations to use the Darts API. PatchTST-FM is a ~260M-parameter, univariate,
-        pretrained time series foundation model for probabilistic forecasting. It uses a
-        patch-based transformer encoder architecture with a quantile head producing 99 quantiles
-        (0.01 to 0.99).
+        with adaptations to use the Darts API. PatchTST-FM is a ~260M-parameter, pretrained time series foundation
+        model for probabilistic forecasting. It uses a patch-based transformer encoder architecture with a quantile
+        head producing 99 quantiles (0.01 to 0.99).
 
-        PatchTST-FM is univariate-only and does not support any covariates. Multi-component target
-        series are handled independently per component (channel-independent processing).
+        This model supports either univariate or multivariate time series, but does not support covariates.
+        For multivariate time series, the model is applied independently to each component.
 
-        By default, using this model will automatically download and cache the pre-trained model from
-        HuggingFace Hub (ibm-granite/granite-timeseries-patchtst-fm-r1). Alternatively, you can specify
-        a local directory containing the model config and weights using the ``local_dir`` parameter.
+        Using this model will automatically download and cache the pre-trained model from HuggingFace Hub
+        (`ibm-granite/granite-timeseries-patchtst-fm-r1
+        <https://huggingface.co/ibm-granite/granite-timeseries-patchtst-fm-r1>`_).
+        Alternatively, you can specify a local directory containing the model config and weights using the ``local_dir``
+        parameter.
 
-        By default, this model is deterministic and outputs only the median (0.5 quantile). To enable
-        probabilistic forecasts, pass a :class:`~darts.utils.likelihood_models.torch.QuantileRegression`
-        instance to the ``likelihood`` parameter. The quantiles used must be a subset of those used during
-        PatchTST-FM pre-training (0.01 to 0.99 in steps of 0.01). It is recommended to call
-        :func:`predict()` with ``predict_likelihood_parameters=True`` or ``num_samples >> 1`` to get
-        meaningful results.
+        By default, this model is deterministic and outputs only the median (0.5 quantile). To enable probabilistic
+        forecasts, pass a :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the
+        ``likelihood`` parameter. The quantiles used must be a subset of those used during PatchTST-FM pre-training,
+        see below for details. It is recommended to call :func:`predict()` with ``predict_likelihood_parameters=True``
+        or ``num_samples >> 1`` to get meaningful results.
 
         .. tip::
-            You can perform full or partial fine-tuning of the model by setting the ``enable_finetuning``
-            parameter. Read more in the parameter description below and in the `Fine-Tuning Examples
+            You can perform full or partial fine-tuning of the model by setting the ``enable_finetuning`` parameter.
+            Read more in the parameter description below and in the `Fine-Tuning Examples
             <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__.
+        .. note::
+            PatchTST-FM weights from ``ibm-granite/granite-timeseries-patchtst-fm-r1`` are licensed under
+            the `Apache-2.0 License <https://github.com/ibm-granite/granite-tsfm/blob/main/LICENSE>`_,
+            copyright IBM. By using this model, you agree to the terms and conditions of the license.
 
         Parameters
         ----------
         input_chunk_length
             Number of time steps in the past to take as a model input (per chunk). Applies to the target
-            series. Maximum value depends on the model's context length minus the output chunk length:
-            ``input_chunk_length + output_chunk_length + output_chunk_shift <= 8192``.
+            series, and past and/or future covariates (if the model supports it).
+            For PatchTST-FM, `input_chunk_length` must be `<=8192`.
         output_chunk_length
-            Number of time steps predicted at once (per chunk) by the internal model. It is not the same
-            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points
-            generated using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length`
-            prevents auto-regression.
+            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
+            from future covariates to use as a model input (if the model supports future covariates). It is not the same
+            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
+            using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents
+            auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
+            the model from using future values of past and / or future covariates for prediction (depending on the
+            model's covariate support).
         output_chunk_shift
-            Optionally, the number of steps to shift the start of the output chunk into the future (relative
-            to the input chunk end). This will create a gap between the input and output. Predictions will
-            start `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift`
-            is set, the model cannot generate autoregressive predictions
-            (`n > output_chunk_length`).
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
         likelihood
             The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of
             :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. If using ``QuantileRegression``,
@@ -439,8 +446,8 @@ class PatchTSTFMModel(FoundationModel):
             [0.01, 0.02, ..., 0.99].
             Default: ``None``, which will make the model deterministic (median quantile only).
             When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to
-            preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood``
-            parameter only affects prediction output.
+            preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood`` parameter
+            only affects prediction output.
         hub_model_name
             The model ID on HuggingFace Hub.
             Default: ``"ibm-granite/granite-timeseries-patchtst-fm-r1"`` (Apache-2.0).
@@ -448,28 +455,29 @@ class PatchTSTFMModel(FoundationModel):
             The model version to use. This can be a branch name, tag name, or commit hash. Default is
             ``None``, which will use the default branch from ``hub_model_name``.
         local_dir
-            Optional local directory to load the pre-downloaded model. If specified and the directory is
-            empty, the model will be downloaded from HuggingFace Hub and saved to this directory. Default
-            is ``None``, which will use a cache directory managed by ``huggingface_hub`` instead.
+            Optional local directory to load the pre-downloaded model. If specified and the directory is empty, the
+            model will be downloaded from HuggingFace Hub and saved to this directory. Default is ``None``, which will
+            use a cache directory managed by ``huggingface_hub`` instead. Note that this is different from the
+            ``work_dir`` parameter used for saving model checkpoints during fine-tuning.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
 
         loss_fn
-            PyTorch loss function used for fine-tuning a deterministic PatchTST-FM model. Ignored for
-            probabilistic PatchTST-FM when ``likelihood`` is specified. Default: ``nn.MSELoss()``.
+            PyTorch loss function used for fine-tuning a deterministic TimesFM 2.5 model. Ignored for probabilistic
+            models when ``likelihood`` is specified. Default: ``nn.MSELoss()``.
         torch_metrics
-            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics
-            can be found at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         optimizer_cls
             The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
         optimizer_kwargs
             Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
-            for specifying a learning rate). Otherwise, the default values of the selected
-            ``optimizer_cls`` will be used. Default: ``None``.
+            for specifying a learning rate). Otherwise, the default values of the selected ``optimizer_cls``
+            will be used. Default: ``None``.
         lr_scheduler_cls
-            Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None``
-            corresponds to using a constant learning rate. Default: ``None``.
+            Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds
+            to using a constant learning rate. Default: ``None``.
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         batch_size
@@ -478,9 +486,10 @@ class PatchTSTFMModel(FoundationModel):
             Number of epochs over which to train the model. Default: ``100``.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial
-            part of the name is formatted with the local date and time, while PID is the processed ID
-            (preventing models spawned at the same time by different processes to share the same model_name).
+            defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
+            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            spawned at the same time by different processes to share the same model_name). E.g.,
+            ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
             Default: current working directory.
@@ -491,36 +500,94 @@ class PatchTSTFMModel(FoundationModel):
             Number of epochs to wait before evaluating the validation loss (if a validation
             ``TimeSeries`` is passed to the :func:`fit()` method). Default: ``1``.
         force_reset
-            If set to ``True``, any previously-existing model with the same name will be reset (all
-            checkpoints will be discarded). Default: ``False``.
+            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
+            be discarded). Default: ``False``.
         save_checkpoints
-            Whether to automatically save the untrained model and checkpoints from training. Default: ``False``.
+            Whether to automatically save the untrained model and checkpoints from training.
+            To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
+            :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
+            :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
+            :func:`save()` and loaded using :func:`load()`. Default: ``False``.
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
-            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions
-            that will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler`
-            can be added to transform the generated covariates. This happens all under one hood and only needs
-            to be specified at model creation.
-            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more
-            about ``add_encoders``. Default: ``None``.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'past': ['relative'], 'future': ['relative']},
+                    'custom': {'past': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
+                }
+            ..
         random_state
             Controls the randomness of the weights initialization and reproducible forecasting.
         pl_trainer_kwargs
-            By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful
-            presets that performs the training, validation and prediction processes. These presets include
-            automatic checkpointing, tensorboard logging, setting the torch device and more.
-            With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning
-            trainer object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information
-            about the supported kwargs. Default: ``None``.
+            By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
+            that performs the training, validation and prediction processes. These presets include automatic
+            checkpointing, tensorboard logging, setting the torch device and more.
+            With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
+            object. Check the `PL Trainer documentation
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
+            supported kwargs. Default: ``None``.
+            Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
+            "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
+            dict:
+
+            - ``{"accelerator": "cpu"}`` for CPU,
+            - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+
+            For more info, see here:
+            https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
+            https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus
+
+            With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
+            :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
+            The model will stop training early if the validation loss `val_loss` does not improve beyond
+            specifications. For more information on callbacks, visit:
+            `PyTorch Lightning Callbacks
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+
+                # stop training when validation loss does not decrease more than 0.05 (`min_delta`) over
+                # a period of 5 epochs (`patience`)
+                my_stopper = EarlyStopping(
+                    monitor="val_loss",
+                    patience=5,
+                    min_delta=0.05,
+                    mode='min',
+                )
+
+                pl_trainer_kwargs={"callbacks": [my_stopper]}
+            ..
+
+            Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional
+            parameter ``trainer`` in :func:`fit()` and :func:`predict()`.
         show_warnings
-            Whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
+            whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
         enable_finetuning
             Enables model fine-tuning. Only effective if not ``None``.
-            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated)
-            or keep all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only
-            contain one key-value record. Can be used to:
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
 
             - Unfreeze specific parameters, while keeping everything else frozen:
               ``{"unfreeze": ["param.name.patterns.*"]}``
@@ -537,21 +604,46 @@ class PatchTSTFMModel(FoundationModel):
 
         Examples
         --------
-        >>> from darts.datasets import WeatherDataset
-        >>> from darts.models import PatchTSTFMModel
-        >>> series = WeatherDataset().load().astype("float32")
-        >>> target = series['p (mbar)'][:100]
-        >>> model = PatchTSTFMModel(
-        >>>     input_chunk_length=64,
-        >>>     output_chunk_length=16,
-        >>> )
-        >>> model.fit(target)
-        >>> pred = model.predict(16)
+        Point forecasting:
 
-        .. note::
-            PatchTST-FM weights from ``ibm-granite/granite-timeseries-patchtst-fm-r1`` are licensed under
-            the `Apache-2.0 License <https://github.com/ibm-granite/granite-tsfm/blob/main/LICENSE>`_,
-            copyright IBM. By using this model, you agree to the terms and conditions of the license.
+        >>> from darts.models import PatchTSTFMModel
+        >>> from darts.datasets import AirPassengersDataset
+        >>> series = AirPassengersDataset().load().astype("float32")
+        >>> model = PatchTSTFMModel(
+        ...     input_chunk_length=12,
+        ...     output_chunk_length=6,
+        ... )
+        >>> model.fit(series)
+        >>> pred = model.predict(n=6)
+        >>> pred
+                    #Passengers
+        Month
+        1961-01-01   507.465973
+        1961-02-01   517.345459
+        1961-03-01   519.231140
+        1961-04-01   506.727661
+        1961-05-01   504.759125
+        1961-06-01   496.883820
+
+        Probabilistic forecasting:
+
+        >>> from darts.utils.likelihood_models import QuantileRegression
+        >>> model = PatchTSTFMModel(
+        ...     input_chunk_length=12,
+        ...     output_chunk_length=6,
+        ...     likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
+        ... )
+        >>> model.fit(series)
+        >>> pred = model.predict(n=6, predict_likelihood_parameters=True)
+        >>> pred
+                    #Passengers_q0.100  #Passengers_q0.500  #Passengers_q0.900
+        Month
+        1961-01-01          395.053131          507.465973          602.820312
+        1961-02-01          402.696472          517.345459          612.596741
+        1961-03-01          394.399231          519.231140          625.937439
+        1961-04-01          381.966797          506.727661          619.151367
+        1961-05-01          388.510803          504.759125          635.277893
+        1961-06-01          375.241638          496.883820          635.320679
         """
         hf_connector = HuggingFaceConnector(
             model_name=hub_model_name,
@@ -563,25 +655,24 @@ class PatchTSTFMModel(FoundationModel):
 
         # validate input_chunk_length + output_chunk_length <= context_length
         context_length = config["context_length"]
-        total_length = input_chunk_length + output_chunk_length + output_chunk_shift
-        if total_length > context_length:
+        if input_chunk_length > context_length:
             raise_log(
                 ValueError(
-                    f"`input_chunk_length` ({input_chunk_length}) + `output_chunk_length` "
-                    f"({output_chunk_length}) + `output_chunk_shift` ({output_chunk_shift}) = "
-                    f"{total_length} cannot exceed model's context_length ({context_length})."
+                    f"`input_chunk_length` cannot be greater than model's maximum "
+                    f"context_length {context_length}"
                 ),
                 logger,
             )
 
         quantile_levels = config["quantile_levels"]
         # by default (`likelihood=None`), model is deterministic
-        # otherwise, only QuantileRegression likelihood is supported
+        # otherwise, only QuantileRegression likelihood is supported and quantiles must be
+        # a subset of the pre-trained quantiles
         if likelihood is not None:
             if not isinstance(likelihood, QuantileRegression):
                 raise_log(
                     ValueError(
-                        f"Only QuantileRegression likelihood is supported for PatchTSTFMModel in Darts. "
+                        f"Only QuantileRegression likelihood is supported for PatchTST-FM in Darts. "
                         f"Got {type(likelihood)}."
                     ),
                     logger,

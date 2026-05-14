@@ -630,6 +630,13 @@ class Chronos2Model(FoundationModel):
             You can perform full or partial fine-tuning of the model by setting the ``enable_finetuning`` parameter.
             Read more in the parameter description below and in the `Fine-Tuning Examples
             <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__.
+        .. note::
+            Chronos-2 is licensed under the `Apache-2.0 License <https://github.com/amazon-science/chronos-forecasting/blob/main/LICENSE>`_,
+            copyright Amazon.com, Inc. or its affiliates. By using this model, you agree to the terms and conditions of
+            the license.
+        .. note::
+            Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from
+            those obtained using the original implementation when prediction horizon `n` is larger than 1024.
 
         Parameters
         ----------
@@ -678,8 +685,8 @@ class Chronos2Model(FoundationModel):
             Darts' :class:`TorchForecastingModel`.
 
         loss_fn
-            PyTorch loss function used for fine-tuning a deterministic Chronos-2 model. Ignored for probabilistic
-            Chronos-2 when ``likelihood`` is specified. Default: ``nn.MSELoss()``.
+            PyTorch loss function used for fine-tuning a deterministic TimesFM 2.5 model. Ignored for probabilistic
+            models when ``likelihood`` is specified. Default: ``nn.MSELoss()``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
             at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
@@ -819,43 +826,49 @@ class Chronos2Model(FoundationModel):
 
         Examples
         --------
-        >>> from darts.datasets import WeatherDataset
+        Point forecasting:
+
         >>> from darts.models import Chronos2Model
-        >>> # load data in float32 format (macOS issues with float64 and PyTorch)
-        >>> series = WeatherDataset().load().astype("float32")
-        >>> # predicting atmospheric pressure
-        >>> target = series['p (mbar)'][:100]
-        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
-        >>> past_cov = series['rain (mm)'][:100]
-        >>> # optionally, use future temperatures (pretending this component is a forecast)
-        >>> future_cov = series['T (degC)'][:106]
-        >>> # by default, Chronos2Model is deterministic; to enable probabilistic forecasts,
-        >>> # set likelihood to QuantileRegression and use a subset of the pre-trained quantiles
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries as dat
+        >>> series = AirPassengersDataset().load().astype("float32")
+        >>> # generate future covariates containing a cyclic encoding of the month value
+        >>> future_cov = dat(series, "month", cyclic=True, add_length=6, dtype="float32")
         >>> model = Chronos2Model(
-        >>>     input_chunk_length=6,
+        >>>     input_chunk_length=12,
         >>>     output_chunk_length=6,
         >>> )
-        >>> # calling fit is still mandatory to ensure consistent number of components; however,
-        >>> # Chronos2Model is training-free and the model weights are not updated
-        >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
-        >>> # when Chronos2Model is probabilistic, set ``predict_likelihood_parameters=True``
-        >>> # or ``num_samples>>1`` to get meaningful results
-        >>> pred = model.predict(6)
-        >>> print(pred.all_values())
-        [[[1005.7576 ]]
-        [[1005.7418 ]]
-        [[1005.7186 ]]
-        [[1005.7074 ]]
-        [[1005.6928 ]]
-        [[1005.69617]]]
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(n=6)
+        >>> pred
+                    #Passengers
+        Month
+        1961-01-01   420.806458
+        1961-02-01   428.115662
+        1961-03-01   447.146454
+        1961-04-01   480.961609
+        1961-05-01   530.656006
+        1961-06-01   552.928589
 
-        .. note::
-            Chronos-2 is licensed under the `Apache-2.0 License <https://github.com/amazon-science/chronos-forecasting/blob/main/LICENSE>`_,
-            copyright Amazon.com, Inc. or its affiliates. By using this model, you agree to the terms and conditions of
-            the license.
-        .. warning::
-            Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from
-            those obtained using the original implementation when prediction horizon `n` is larger than 1024.
+        Probabilistic forecasting:
+
+        >>> from darts.utils.likelihood_models import QuantileRegression
+        >>> model = Chronos2Model(
+        >>>     input_chunk_length=12,
+        >>>     output_chunk_length=6,
+        >>>     likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
+        >>> )
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(n=6, predict_likelihood_parameters=True)
+        >>> pred
+                    #Passengers_q0.100  #Passengers_q0.500  #Passengers_q0.900
+        Month
+        1961-01-01          377.162231          420.806458          469.667480
+        1961-02-01          363.401550          428.115662          500.943939
+        1961-03-01          369.062866          447.146454          547.883057
+        1961-04-01          379.869171          480.961609          619.510010
+        1961-05-01          403.206635          530.656006          689.074951
+        1961-06-01          407.336609          552.928589          720.469299
         """
         hf_connector = HuggingFaceConnector(
             model_name=hub_model_name,

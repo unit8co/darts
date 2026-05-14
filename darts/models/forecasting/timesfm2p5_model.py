@@ -368,6 +368,17 @@ class TimesFM2p5Model(FoundationModel):
             You can perform full or partial fine-tuning of the model by setting the ``enable_finetuning`` parameter.
             Read more in the parameter description below and in the `Fine-Tuning Examples
             <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__.
+        .. note::
+            TimesFM 2.5 is licensed under the `Apache-2.0 License <https://github.com/google-research/timesfm/blob/master/LICENSE>`_,
+            Copyright 2025 Google LLC. By using this model, you agree to the terms and conditions of the license.
+        .. note::
+            TimesFM 2.5 does not support covariates natively. The source implementation uses `Xreg` to fit a ridge
+            regression between covariates and the target series (or forecast residuals) as a pre/post-processing step.
+            You can implement a similar approach externally in Darts.
+            See `Issue #2976 <https://github.com/unit8co/darts/issues/2976#issuecomment-3691415141>`_ for details.
+        .. note::
+            Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from
+            those obtained using the original implementation when prediction horizon `n` is larger than 128.
 
         Parameters
         ----------
@@ -416,7 +427,7 @@ class TimesFM2p5Model(FoundationModel):
 
         loss_fn
             PyTorch loss function used for fine-tuning a deterministic TimesFM 2.5 model. Ignored for probabilistic
-            TimesFM 2.5 when ``likelihood`` is specified. Default: ``nn.MSELoss()``.
+            models when ``likelihood`` is specified. Default: ``nn.MSELoss()``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
             at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
@@ -556,43 +567,46 @@ class TimesFM2p5Model(FoundationModel):
 
         Examples
         --------
-        >>> from darts.datasets import WeatherDataset
-        >>> from darts.models import TimesFM2p5Model
-        >>> # load data in float32 format (macOS issues with float64 and PyTorch)
-        >>> series = WeatherDataset().load().astype("float32")
-        >>> # predicting atmospheric pressure
-        >>> target = series['p (mbar)'][:100]
-        >>> # by default, TimesFM2p5Model is deterministic; to enable probabilistic forecasts,
-        >>> # set likelihood to QuantileRegression and use a subset of the pre-trained quantiles
-        >>> model = TimesFM2p5Model(
-        >>>     input_chunk_length=6,
-        >>>     output_chunk_length=6,
-        >>> )
-        >>> # calling fit is still mandatory to ensure consistent number of components; however,
-        >>> # TimesFM2p5Model is training-free and the model weights are not updated
-        >>> model.fit(target)
-        >>> # when TimesFM2p5Model is probabilistic, set ``predict_likelihood_parameters=True``
-        >>> # or ``num_samples>>1`` to get meaningful results
-        >>> pred = model.predict(6)
-        >>> print(pred.all_values())
-        [[[1005.7797 ]]
-        [[1005.78766]]
-        [[1005.7985 ]]
-        [[1005.7852 ]]
-        [[1005.7882 ]]
-        [[1005.79565]]]
+        Point forecasting:
 
-        .. note::
-            TimesFM 2.5 does not support covariates natively. The source implementation uses `Xreg` to fit a ridge
-            regression between covariates and the target series (or forecast residuals) as a pre/post-processing step.
-            You can implement a similar approach externally in Darts.
-            See `Issue #2976 <https://github.com/unit8co/darts/issues/2976#issuecomment-3691415141>`_ for details.
-        .. note::
-            TimesFM 2.5 is licensed under the `Apache-2.0 License <https://github.com/google-research/timesfm/blob/master/LICENSE>`_,
-            Copyright 2025 Google LLC. By using this model, you agree to the terms and conditions of the license.
-        .. warning::
-            Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from
-            those obtained using the original implementation when prediction horizon `n` is larger than 128.
+        >>> from darts.models import TimesFM2p5Model
+        >>> from darts.datasets import AirPassengersDataset
+        >>> series = AirPassengersDataset().load().astype("float32")
+        >>> model = TimesFM2p5Model(
+        ...     input_chunk_length=12,
+        ...     output_chunk_length=6,
+        ... )
+        >>> model.fit(series)
+        >>> pred = model.predict(n=6)
+        >>> pred
+                    #Passengers
+        Month
+        1961-01-01   413.913574
+        1961-02-01   421.871552
+        1961-03-01   432.572906
+        1961-04-01   454.879333
+        1961-05-01   468.185883
+        1961-06-01   465.574554
+
+        Probabilistic forecasting:
+
+        >>> from darts.utils.likelihood_models import QuantileRegression
+        >>> model = TimesFM2p5Model(
+        ...     input_chunk_length=12,
+        ...     output_chunk_length=6,
+        ...     likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
+        ... )
+        >>> model.fit(series)
+        >>> pred = model.predict(n=6, predict_likelihood_parameters=True)
+        >>> pred
+                    #Passengers_q0.100  #Passengers_q0.500  #Passengers_q0.900
+        Month
+        1961-01-01          368.495789          413.913574          479.579163
+        1961-02-01          375.655243          421.871552          482.435364
+        1961-03-01          380.316833          432.572906          505.683807
+        1961-04-01          392.675629          454.879333          521.257202
+        1961-05-01          405.622437          468.185883          541.932739
+        1961-06-01          394.438660          465.574554          539.628723
         """
         hf_connector = HuggingFaceConnector(
             model_name=hub_model_name,

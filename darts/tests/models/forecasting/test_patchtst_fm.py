@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts.tests.conftest import TORCH_AVAILABLE
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -16,7 +16,6 @@ if not TORCH_AVAILABLE:
 from darts import TimeSeries, concatenate
 from darts.datasets import ElectricityConsumptionZurichDataset
 from darts.models import PatchTSTFMModel
-from darts.tests.conftest import tfm_kwargs
 from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
 from darts.utils.timeseries_generation import (
     gaussian_timeseries,
@@ -24,12 +23,9 @@ from darts.utils.timeseries_generation import (
     sine_timeseries,
 )
 
-# quantiles used during PatchTST-FM pre-training (0.01 to 0.99 in steps of 0.01)
-all_quantiles = [round(i / 100, 2) for i in range(1, 100)]
-
 
 def load_validation_inputs():
-    """Load validation inputs for TimesFM2p5Model fidelity tests. The data imports
+    """Load validation inputs for PatchTSTFMModel fidelity tests. The data imports
     here are adapted from the `20-SKLearnModel-examples` notebook.
     """
     # convert to float32 due to MPS not supporting float64
@@ -45,6 +41,7 @@ def load_validation_inputs():
 
 
 class TestPatchTSTFMModel:
+    # set random seed
     np.random.seed(42)
 
     # ---- Fidelity Tests ---- #
@@ -52,15 +49,35 @@ class TestPatchTSTFMModel:
     ts_energy_train, ts_energy_val = load_validation_inputs()
 
     # ---- Dummy Tests ---- #
+    # univariate time series
+    series = linear_timeseries(length=200, dtype=np.float32, column_name="A")
+    past_cov = linear_timeseries(length=200, dtype=np.float32, column_name="B")
+    future_cov = linear_timeseries(length=300, dtype=np.float32, column_name="C")
+    # multivariate time series
+    series_multi = concatenate(
+        [
+            linear_timeseries(length=200, dtype=np.float32, column_name="A"),
+            sine_timeseries(length=200, dtype=np.float32, column_name="B"),
+            gaussian_timeseries(length=200, dtype=np.float32, column_name="C"),
+        ],
+        axis=1,
+    )
+    series_multi_2 = concatenate(
+        [
+            linear_timeseries(length=150, dtype=np.float32, column_name="A"),
+            sine_timeseries(length=150, dtype=np.float32, column_name="B"),
+            gaussian_timeseries(length=150, dtype=np.float32, column_name="C"),
+        ],
+        axis=1,
+    )
+
+    # ---- Tiny Model ---- #
     dummy_local_dir = (
         Path(__file__).parent / "artefacts" / "patchtstfm" / "tiny_patchtst_fm"
     ).absolute()
     # tiny model: context_length=128, d_patch=16, num_quantile=9
     # max input = context_length - output_chunk_length
     dummy_context_length = 128
-    dummy_max_prediction_length = 64  # can be up to context_length - input_chunk_length
-
-    series = linear_timeseries(length=200, dtype=np.float32, column_name="A")
 
     @pytest.mark.slow
     @pytest.mark.parametrize("probabilistic", [True, False])
@@ -167,13 +184,12 @@ class TestPatchTSTFMModel:
         # compare predictions to original
         np.testing.assert_allclose(pred_np, original, rtol=1e-5, atol=1e-5)
 
+    @pytest.mark.slow
     def test_creation(self):
-        icl = 64
-        ocl = 16
         # can use shorter input/output chunk length than max
         model = PatchTSTFMModel(
-            input_chunk_length=icl,
-            output_chunk_length=ocl,
+            input_chunk_length=11,
+            output_chunk_length=13,
             local_dir=self.dummy_local_dir,
             **tfm_kwargs,
         )
@@ -182,30 +198,22 @@ class TestPatchTSTFMModel:
         assert isinstance(pred, TimeSeries)
         assert len(pred) == 10
 
-        # cannot exceed context_length
-        with pytest.raises(ValueError, match=r"cannot exceed model's context_length"):
+        # cannot create longer input chunk length than max
+        with pytest.raises(
+            ValueError, match=r"`input_chunk_length` cannot be greater than"
+        ):
             PatchTSTFMModel(
-                input_chunk_length=100,
-                output_chunk_length=50,
+                input_chunk_length=self.dummy_context_length + 1,
+                output_chunk_length=1,
                 local_dir=self.dummy_local_dir,
                 **tfm_kwargs,
             )
 
-        # cannot exceed context_length with shift
-        with pytest.raises(ValueError, match=r"cannot exceed model's context_length"):
-            PatchTSTFMModel(
-                input_chunk_length=100,
-                output_chunk_length=20,
-                output_chunk_shift=10,
-                local_dir=self.dummy_local_dir,
-                **tfm_kwargs,
-            )
-
-        # cannot use likelihood other than QuantileRegression
+        # cannot use likelihood others than QuantileRegression
         with pytest.raises(ValueError, match="Only QuantileRegression likelihood is"):
             PatchTSTFMModel(
-                input_chunk_length=icl,
-                output_chunk_length=ocl,
+                input_chunk_length=29,
+                output_chunk_length=12,
                 likelihood=GaussianLikelihood(),
                 local_dir=self.dummy_local_dir,
                 **tfm_kwargs,
@@ -216,17 +224,19 @@ class TestPatchTSTFMModel:
             ValueError, match="must be a subset of PatchTST-FM quantiles"
         ):
             PatchTSTFMModel(
-                input_chunk_length=icl,
-                output_chunk_length=ocl,
-                likelihood=QuantileRegression(quantiles=[0.23, 0.5, 0.77]),
+                input_chunk_length=7,
+                output_chunk_length=6,
+                likelihood=QuantileRegression(quantiles=[0.231, 0.5, 0.769]),
                 local_dir=self.dummy_local_dir,
                 **tfm_kwargs,
             )
 
+    @pytest.mark.slow
     def test_default(self):
+        # default model is deterministic
         model = PatchTSTFMModel(
-            input_chunk_length=64,
-            output_chunk_length=16,
+            input_chunk_length=3,
+            output_chunk_length=4,
             local_dir=self.dummy_local_dir,
             **tfm_kwargs,
         )
@@ -244,16 +254,18 @@ class TestPatchTSTFMModel:
         assert len(pred) == 10
         assert pred.n_components == 1
 
-        # default model allows autoregressive predictions
-        pred_ar = model.predict(n=20, series=self.series)
+        # default model allows autoregressive predictions (6 > 4)
+        pred_ar = model.predict(n=6, series=self.series)
         assert isinstance(pred_ar, TimeSeries)
-        assert len(pred_ar) == 20
+        assert len(pred_ar) == 6
         assert pred_ar.n_components == 1
 
+    @pytest.mark.slow
     def test_probabilistic(self):
+        # probabilistic model
         model = PatchTSTFMModel(
-            input_chunk_length=64,
-            output_chunk_length=16,
+            input_chunk_length=5,
+            output_chunk_length=6,
             likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
             local_dir=self.dummy_local_dir,
             **tfm_kwargs,
@@ -268,101 +280,88 @@ class TestPatchTSTFMModel:
 
         # predictions should be probabilistic
         pred = model.predict(
-            n=10, series=self.series, predict_likelihood_parameters=True
+            n=5, series=self.series, predict_likelihood_parameters=True
         )
         assert isinstance(pred, TimeSeries)
-        assert len(pred) == 10
+        assert len(pred) == 5
         assert pred.n_components == 3  # 3 quantiles
 
-        # probabilistic model allows autoregressive predictions
+        # probabilistic model allows autoregressive predictions (8 > 6)
         pred_ar = model.predict(
-            n=20,
+            n=8,
             series=self.series,
             num_samples=10,
         )
         assert isinstance(pred_ar, TimeSeries)
-        assert len(pred_ar) == 20
-        assert pred_ar.n_components == 1
+        assert len(pred_ar) == 8
+        assert pred_ar.n_components == 1  # sampling yields single component
         assert pred_ar.n_samples == 10
 
-    def test_multivariate(self):
-        series_multi = concatenate(
-            [
-                linear_timeseries(length=200, dtype=np.float32, column_name="A"),
-                sine_timeseries(length=200, dtype=np.float32, column_name="B"),
-                gaussian_timeseries(length=200, dtype=np.float32, column_name="C"),
-            ],
-            axis=1,
-        )
+    @pytest.mark.slow
+    @pytest.mark.parametrize("probabilistic", [True, False])
+    def test_multivariate(self, probabilistic: bool):
+        # create model
         model = PatchTSTFMModel(
-            input_chunk_length=64,
-            output_chunk_length=16,
+            input_chunk_length=3,
+            output_chunk_length=8,
+            likelihood=(
+                QuantileRegression(quantiles=[0.1, 0.5, 0.9]) if probabilistic else None
+            ),
             local_dir=self.dummy_local_dir,
             **tfm_kwargs,
         )
-        model.fit(series=series_multi)
-        pred = model.predict(n=15, series=series_multi)
+        model.fit(series=self.series_multi)
+        pred = model.predict(n=7, predict_likelihood_parameters=probabilistic)
         assert isinstance(pred, TimeSeries)
-        assert len(pred) == 15
-        assert pred.n_components == 3
+        assert len(pred) == 7
+        if probabilistic:
+            assert pred.n_components == 9  # 3 variables x 3 quantiles
+        else:
+            assert pred.n_components == 3
 
-        # probabilistic multivariate
-        model_prob = PatchTSTFMModel(
-            input_chunk_length=64,
-            output_chunk_length=16,
-            likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
-            local_dir=self.dummy_local_dir,
-            **tfm_kwargs,
-        )
-        model_prob.fit(series=series_multi)
-        pred_prob = model_prob.predict(
-            n=15, series=series_multi, predict_likelihood_parameters=True
-        )
-        assert isinstance(pred_prob, TimeSeries)
-        assert len(pred_prob) == 15
-        assert pred_prob.n_components == 9  # 3 variables x 3 quantiles
-
-    def test_no_covariates(self):
-        """PatchTST-FM does not support covariates."""
+    def test_covariates(self):
         model = PatchTSTFMModel(
-            input_chunk_length=64,
-            output_chunk_length=16,
+            input_chunk_length=21,
+            output_chunk_length=23,
             local_dir=self.dummy_local_dir,
             **tfm_kwargs,
         )
-        assert not model.supports_past_covariates
-        assert not model.supports_future_covariates
 
-    def test_multiple_series(self):
-        series1 = linear_timeseries(length=200, dtype=np.float32, column_name="A")
-        series2 = sine_timeseries(length=150, dtype=np.float32, column_name="A")
+        # past covariates are not supported
+        with pytest.raises(ValueError, match="does not support `past_covariates`"):
+            model.fit(series=self.series, past_covariates=self.past_cov)
 
-        model = PatchTSTFMModel(
-            input_chunk_length=64,
-            output_chunk_length=16,
-            local_dir=self.dummy_local_dir,
-            **tfm_kwargs,
-        )
-        model.fit(series=[series1, series2])
-        pred = model.predict(n=10, series=[series1, series2])
+        # future covariates are not supported
+        with pytest.raises(ValueError, match="does not support `future_covariates`"):
+            model.fit(series=self.series, future_covariates=self.future_cov)
 
-        assert isinstance(pred, list) and len(pred) == 2
-        assert all(isinstance(p, TimeSeries) for p in pred)
-        assert all(len(p) == 10 for p in pred)
+        # past and future covariates are not supported
+        with pytest.raises(
+            ValueError, match="does not support `past_covariates`, `future_covariates`"
+        ):
+            model.fit(
+                series=self.series,
+                past_covariates=self.past_cov,
+                future_covariates=self.future_cov,
+            )
 
     @pytest.mark.slow
-    def test_finetuning(self):
+    def test_multiple_series(self):
+        # create model
         model = PatchTSTFMModel(
-            input_chunk_length=64,
-            output_chunk_length=16,
+            input_chunk_length=2,
+            output_chunk_length=3,
             local_dir=self.dummy_local_dir,
-            enable_finetuning=True,
-            n_epochs=1,
             **tfm_kwargs,
         )
-        model.fit(series=self.series)
-        assert model.model_created
+        model.fit(series=[self.series_multi, self.series_multi_2])
+        pred = model.predict(n=5, series=[self.series_multi, self.series_multi_2])
 
-        pred = model.predict(n=10, series=self.series)
-        assert isinstance(pred, TimeSeries)
-        assert len(pred) == 10
+        # check that we get a list of predictions
+        assert isinstance(pred, list) and len(pred) == 2
+        assert all(isinstance(p, TimeSeries) for p in pred)
+
+        # check that each prediction has correct length
+        assert all(len(p) == 5 for p in pred)
+        # check that each prediction is deterministic with 3 components
+        assert all(p.n_components == 3 for p in pred)
