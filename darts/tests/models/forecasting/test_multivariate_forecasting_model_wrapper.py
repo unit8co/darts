@@ -1,5 +1,3 @@
-import copy
-
 import pytest
 
 from darts import TimeSeries
@@ -27,26 +25,26 @@ from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
-local_models = [
-    NaiveMean(),
-    NaiveMovingAverage(5),
-    NaiveSeasonal(),
-    ExponentialSmoothing(),
-    StatsForecastAutoTheta(season_length=12),
-    StatsForecastAutoCES(season_length=12, model="Z"),
-    Theta(1),
-    FourTheta(1),
-    FFT(trend="poly"),
-    TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True),
-    BATS(use_trend=True, use_arma_errors=True, use_box_cox=True),
+local_models_kwargs = [
+    (NaiveMean, {}),
+    (NaiveMovingAverage, {"input_chunk_length": 5}),
+    (NaiveSeasonal, {}),
+    (ExponentialSmoothing, {}),
+    (StatsForecastAutoTheta, {"season_length": 12}),
+    (StatsForecastAutoCES, {"season_length": 12, "model": "Z"}),
+    (Theta, {"theta": 1}),
+    (FourTheta, {"theta": 1}),
+    (FFT, {"trend": "poly"}),
+    (TBATS, {"use_trend": True, "use_arma_errors": True, "use_box_cox": True}),
+    (BATS, {"use_trend": True, "use_arma_errors": True, "use_box_cox": True}),
 ]
 
-future_covariates_models = [
-    Prophet(),
-    Croston(),
-    AutoARIMA(),
-    ARIMA(12, 1, 1),
-    KalmanForecaster(),
+future_covariates_models_kwargs = [
+    (Prophet, {}),
+    (Croston, {}),
+    (AutoARIMA, {}),
+    (ARIMA, {"p": 12, "d": 1, "q": 1}),
+    (KalmanForecaster, {}),
 ]
 
 
@@ -61,36 +59,35 @@ class TestMultivariateForecastingModelWrapper:
 
     future_covariates = tg.gaussian_timeseries(length=ts_length + n_pred, mean=50)
 
-    @pytest.mark.parametrize("model", local_models)
+    @pytest.mark.parametrize("config", local_models_kwargs)
     @pytest.mark.parametrize("series", [univariate, multivariate])
-    def test_fit_predict_local_models(self, model, series):
-        self._test_predict_with_base_model(model, series)
+    def test_fit_predict_local_models(self, config, series):
+        model_cls, model_kwargs = config
+        self._test_predict_with_base_model(model_cls(**model_kwargs), series)
 
-    @pytest.mark.parametrize("model", future_covariates_models)
-    @pytest.mark.parametrize("series", [univariate, multivariate])
-    def test_fit_predict_local_future_covariates_models(self, model, series):
-        self._test_predict_with_base_model(model, series, self.future_covariates)
-
-    @pytest.mark.parametrize("model_object", future_covariates_models)
+    @pytest.mark.parametrize("config", future_covariates_models_kwargs)
     @pytest.mark.parametrize("series", [univariate, multivariate])
     @pytest.mark.parametrize("future_covariates", [future_covariates, None])
-    def test_encoders_support(self, model_object, series, future_covariates):
-        add_encoders = {
-            "position": {"future": ["relative"]},
-        }
+    def test_fit_predict_local_future_covariates_models(
+        self, config, series, future_covariates
+    ):
+        model_cls, model_kwargs = config
+        self._test_predict_with_base_model(
+            model_cls(**model_kwargs), series, future_covariates
+        )
 
-        model_params = {
-            k: vals for k, vals in copy.deepcopy(model_object.model_params).items()
-        }
-        model_params["add_encoders"] = add_encoders
-        model = model_object.__class__(**model_params)
-
+    @pytest.mark.parametrize("config", future_covariates_models_kwargs)
+    @pytest.mark.parametrize("series", [univariate, multivariate])
+    @pytest.mark.parametrize("future_covariates", [future_covariates, None])
+    def test_encoders_support(self, config, series, future_covariates):
+        model_cls, model_kwargs = config
+        add_encoders = {"position": {"future": ["relative"]}}
+        model = model_cls(**{**model_kwargs, "add_encoders": add_encoders})
         self._test_predict_with_base_model(model, series, future_covariates)
 
     def _test_predict_with_base_model(
         self, model, series: TimeSeries, future_covariates=None
     ):
-        print(type(series), isinstance(series, TimeSeries))
         preds = self.trained_model_predictions(
             model, self.n_pred, series, future_covariates
         )
@@ -106,7 +103,6 @@ class TestMultivariateForecastingModelWrapper:
 
     def trained_model_predictions(self, base_model, n, series, future_covariates):
         model = MultivariateForecastingModelWrapper(base_model)
-        print(series)
         model.fit(series, future_covariates=future_covariates)
         return model.predict(n=n, series=series, future_covariates=future_covariates)
 
@@ -116,7 +112,6 @@ class TestMultivariateForecastingModelWrapper:
         predictions = []
         for component in range(series.n_components):
             single_series = series.univariate_component(component)
-
             model = base_model.untrained_model()
             if model.supports_future_covariates:
                 model.fit(single_series, future_covariates=future_covariates)
