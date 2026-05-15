@@ -7,8 +7,6 @@ for each component of the target series, independently of the others hence ignor
 its components.
 """
 
-from typing import List, Optional, Tuple
-
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.forecasting_model import (
     FutureCovariatesLocalForecastingModel,
@@ -35,9 +33,9 @@ class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel)
         super().__init__()
 
         self.model: LocalForecastingModel = model
-        self._trained_models: List[LocalForecastingModel] = []
+        self._trained_models: list[LocalForecastingModel] = []
 
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+    def _fit(self, series: TimeSeries, future_covariates: TimeSeries | None = None):
         super()._fit(series, future_covariates)
         self._trained_models = []
 
@@ -58,8 +56,8 @@ class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel)
     def predict(
         self,
         n: int,
-        series: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
         num_samples: int = 1,
         **kwargs,
     ) -> TimeSeries:
@@ -68,7 +66,7 @@ class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel)
     def _predict(
         self,
         n: int,
-        future_covariates: Optional[TimeSeries] = None,
+        future_covariates: TimeSeries | None = None,
         num_samples: int = 1,
         verbose: bool = False,
         **kwargs,
@@ -90,26 +88,26 @@ class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel)
     @property
     def extreme_lags(
         self,
-    ) -> Tuple[
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
+    ) -> tuple[
+        int | None,
+        int | None,
+        int | None,
+        int | None,
+        int | None,
+        int | None,
     ]:
         return self.model.extreme_lags
 
     @property
     def _model_encoder_settings(
         self,
-    ) -> Tuple[
-        Optional[int],
-        Optional[int],
+    ) -> tuple[
+        int | None,
+        int | None,
         bool,
         bool,
-        Optional[List[int]],
-        Optional[List[int]],
+        list[int] | None,
+        list[int] | None,
     ]:
         return None, None, False, self.supports_future_covariates, None, None
 
