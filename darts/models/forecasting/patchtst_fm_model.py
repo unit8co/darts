@@ -43,8 +43,9 @@ logger = get_logger(__name__)
 class _PatchTSTFMBackbone(nn.Module):
     """The PatchTST-FM backbone: patch embedding, transformer encoder, quantile head.
 
-    This matches the parameter naming of the original ``PatchTSTFMModel`` class from
-    ``granite-tsfm`` so that safetensors weights can be loaded directly.
+    Faithful port of ``PatchTSTFMModel`` from ``ibm-granite/granite-tsfm``
+    (branch ``patchtst-fm``).  Parameter names match the original so that
+    safetensors weights can be loaded directly.
     """
 
     def __init__(
@@ -67,10 +68,12 @@ class _PatchTSTFMBackbone(nn.Module):
         self.num_quantile = num_quantile
 
         self.pos_embed = _LearnedPositionalEmbedding(
-            d_model=d_model, max_len=self.n_patch
+            d_model=d_model, max_len=self.n_patch, kind="add"
         )
         self.blocks = nn.ModuleList([
-            _TransformerBlock(d_model, n_head, mlp_ratio=4.0, dropout=0.1)
+            _TransformerBlock(
+                d_model, n_head, mlp_ratio=4.0, norm_first=True, dropout=0.1
+            )
             for _ in range(n_layer)
         ])
         self.in_layer = _ResidualBlock(d_patch * 2, d_model, d_model)
@@ -81,13 +84,20 @@ class _PatchTSTFMBackbone(nn.Module):
         self,
         inputs: torch.Tensor,
         pred_mask: torch.Tensor,
-        pad_mask: torch.Tensor,
         miss_mask: torch.Tensor,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Run the PatchTST-FM backbone forward pass.
+        pad_mask: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Run the backbone forward pass (matches ``PatchTSTFMModel.forward``).
 
-        Returns the quantile predictions (unnormalized) and the combined
-        pred_mask & pad_mask & miss_mask for loss computation.
+        Returns
+        -------
+        quantile_predictions
+            Raw (normalised-space) quantile predictions, shape
+            ``(B, context_length, num_quantile)``.
+        loss_mask
+            Float mask for loss computation, shape ``(B, context_length)``.
+        normed_target
+            Instance-normalised target, shape ``(B, context_length)``.
         """
         x = inputs
         pad_mask = pad_mask.bool()
@@ -106,28 +116,22 @@ class _PatchTSTFMBackbone(nn.Module):
             pad_mask.reshape(B, self.n_patch, self.d_patch).float().mean(dim=-1).gt(0.9)
         )
 
-        q_pred = self._decode(
+        q_pred = self.decode(
             x=x_patch, mask=mask_patch.float(), t_pad_mask=pad_patch_mask
         )
 
-        # q_pred shape: (B, num_quantile, n_patch, d_patch) -> (B, T, num_quantile)
+        # q_pred: (B, num_quantile, n_patch, d_patch) -> (B, context_length, num_quantile)
         q_pred = q_pred.permute(0, 2, 3, 1)
         B, N, D, Q = q_pred.shape
         q_pred = q_pred.reshape(B, N * D, Q)
+        return q_pred
 
-        # inverse normalization: shape (B, Q, T)
-        q_out = q_pred.permute(0, 2, 1)
-        q_out = self.norm_fn.inverse_transform(q_out)
-
-        loss_mask = (pred_mask & ~pad_mask & ~miss_mask).float()
-        return q_out, loss_mask, x_target
-
-    def _decode(
+    def decode(
         self,
         x: torch.Tensor,
         mask: torch.Tensor,
         t_pad_mask: torch.Tensor,
-    ) -> torch.Tensor:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Decode patches through transformer and quantile head."""
         B, N, D = x.shape
         x = self.in_layer(torch.cat([x, 1 - mask], dim=-1))
@@ -307,8 +311,12 @@ class _PatchTSTFMModule(PLForecastingModule):
         )
 
         # forward pass through backbone
-        # `q_out`: (B * C, W, CONT)
-        q_out, _, _ = self.backbone(full_input, pred_mask, pad_mask, miss_mask)
+        # `q_pred`: (B * C, CONT, W)  -- raw normalised-space quantile predictions
+        q_pred = self.backbone(full_input, pred_mask, miss_mask, pad_mask)
+
+        # inverse normalization: (B * C, CONT, W) -> (B * C, W, CONT)
+        q_out = q_pred.permute(0, 2, 1)
+        q_out = self.backbone.norm_fn.inverse_transform(q_out)
 
         # extract forecast region
         # `q_forecast`: (B * C, W, T)

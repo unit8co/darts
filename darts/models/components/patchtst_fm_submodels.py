@@ -6,20 +6,36 @@
 #   Yunshi Wen, Wesley M. Gifford, Chandra Reddy, Lam M. Nguyen, Jayant Kalagnanam,
 #   and Anak Agung Julius, "Revisiting the Generic Transformer: Deconstructing a Strong
 #   Baseline for Time Series Foundation Models," arXiv:2602.06909, 2026.
-"""PatchTST-FM submodel components."""
+"""PatchTST-FM submodel components.
+
+Faithful port of the submodules from ``ibm-granite/granite-tsfm`` (branch
+``patchtst-fm``), keeping parameter names and constructor signatures so that
+pre-trained weights load directly.
+"""
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from darts.logging import get_logger, raise_log
+
+logger = get_logger(__name__)
+
 
 class _RevIN(nn.Module):
     """Reversible Instance Normalization with optional asinh transform."""
 
-    def __init__(self, dim: int = -1, std_min: float = 1e-5, use_sinh: bool = True):
+    def __init__(
+        self,
+        dim: int = -1,
+        std_min: float = 1e-5,
+        max_val: float = 100,
+        use_sinh: bool = False,
+    ):
         super().__init__()
         self.dim = dim
         self.std_min = std_min
+        self.max_val = max_val
         self.use_sinh = use_sinh
         self.mean: torch.Tensor
         self.std: torch.Tensor
@@ -47,6 +63,9 @@ class _RevIN(nn.Module):
             else:
                 x = x * self.std + self.mean
             return x
+
+    def get_statistics(self) -> tuple[torch.Tensor, torch.Tensor]:
+        return self.mean, self.std
 
     def _get_statistics(self, x: torch.Tensor, mask: torch.Tensor | None = None):
         if mask is None:
@@ -84,16 +103,25 @@ class _ResidualBlock(nn.Module):
 class _LearnedPositionalEmbedding(nn.Module):
     """Learned positional embedding added to patch embeddings."""
 
-    def __init__(self, d_model: int, max_len: int = 5000):
+    def __init__(self, d_model: int, max_len: int = 5000, kind: str = "add"):
         super().__init__()
         self.embedding = nn.Embedding(max_len, d_model)
+        if kind not in ["add", "mul"]:
+            raise_log(
+                ValueError(f"Invalid `kind`: {kind}"),
+                logger=logger,
+            )
+        self.kind = kind
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         positions = torch.arange(x.size(-2), device=x.device).unsqueeze(0)
         pe = self.embedding(positions)
         if x.ndim == 4:
             pe = pe.unsqueeze(1)
-        return x + pe
+        if self.kind == "add":
+            return x + pe
+        else:  # "mul"
+            return x * pe
 
 
 class _MLP(nn.Module):
@@ -106,27 +134,55 @@ class _MLP(nn.Module):
         hidden_dim: int = 256,
         num_hidden_layers: int = 1,
         dropout: float = 0.0,
+        norm: bool = False,
         activation: nn.Module | None = None,
+        output_activation: nn.Module | None = None,
+        norm_layer: type[nn.Module] = nn.LayerNorm,
     ):
         super().__init__()
         if activation is None:
             activation = nn.GELU(approximate="tanh")
+        if output_activation is None:
+            output_activation = nn.Identity()
         layers: list[nn.Module] = []
         layers.append(nn.Linear(in_dim, hidden_dim))
         layers.append(activation)
         for _ in range(num_hidden_layers - 1):
             layers.append(nn.Dropout(dropout))
-            layers.append(nn.Identity())
+            layers.append(norm_layer(hidden_dim) if norm else nn.Identity())
             layers.append(nn.Linear(hidden_dim, hidden_dim))
             layers.append(activation)
         layers.append(nn.Dropout(dropout))
-        layers.append(nn.Identity())
+        layers.append(norm_layer(hidden_dim) if norm else nn.Identity())
         layers.append(nn.Linear(hidden_dim, out_dim))
-        layers.append(nn.Identity())
+        layers.append(output_activation)
         self.layers = nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.layers(x)
+
+
+class _SwiGLU(nn.Module):
+    """SwiGLU feed-forward network (alternative to MLP in transformer blocks)."""
+
+    def __init__(
+        self,
+        in_dim: int,
+        out_dim: int,
+        hidden_dim: int = 384,
+        dropout: float = 0.0,
+    ):
+        super().__init__()
+        hidden_dim = round(hidden_dim * 2 / 3)
+        self.fc1 = nn.Linear(in_dim, hidden_dim)
+        self.fc2 = nn.Linear(in_dim, hidden_dim)
+        self.fc3 = nn.Linear(hidden_dim, out_dim)
+        self.activation = nn.SiLU()
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.fc1(x) * self.activation(self.fc2(x))
+        return self.dropout(self.fc3(x))
 
 
 class _Attention(nn.Module):
@@ -137,20 +193,22 @@ class _Attention(nn.Module):
         dim: int,
         num_heads: int = 8,
         qkv_bias: bool = False,
+        qk_norm: bool = False,
+        proj_bias: bool = True,
         attn_drop: float = 0.0,
         proj_drop: float = 0.0,
         norm_layer: type[nn.Module] = nn.LayerNorm,
     ):
         super().__init__()
-        assert dim % num_heads == 0
         self.num_heads = num_heads
         self.head_dim = dim // num_heads
+        self.scale = self.head_dim**-0.5
 
         self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
-        self.q_norm = nn.Identity()
-        self.k_norm = nn.Identity()
+        self.q_norm = norm_layer(self.head_dim) if qk_norm else nn.Identity()
+        self.k_norm = norm_layer(self.head_dim) if qk_norm else nn.Identity()
         self.attn_drop = nn.Dropout(attn_drop)
-        self.proj = nn.Linear(dim, dim, bias=True)
+        self.proj = nn.Linear(dim, dim, bias=proj_bias)
         self.proj_drop = nn.Dropout(proj_drop)
 
     def forward(
@@ -172,13 +230,14 @@ class _Attention(nn.Module):
             attn_mask=attn_mask,
         )
         x = x.transpose(1, 2).reshape(B, N, C)
+
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
 
 
 class _TransformerBlock(nn.Module):
-    """Pre-norm transformer encoder block with self-attention and MLP."""
+    """Standard Transformer block with self-attention and MLP."""
 
     def __init__(
         self,
@@ -186,33 +245,65 @@ class _TransformerBlock(nn.Module):
         num_heads: int,
         mlp_ratio: float = 4.0,
         dropout: float = 0.1,
+        norm_first: bool = True,
+        norm_layer: type[nn.Module] = nn.LayerNorm,
+        mlp_type: str = "mlp",
     ):
         super().__init__()
-        self.norm1 = nn.LayerNorm(d_model, elementwise_affine=True, eps=1e-6)
+        self.norm_first = norm_first
+        self.norm1 = norm_layer(d_model, elementwise_affine=True, eps=1e-6)
         self.attn = _Attention(
             d_model, num_heads, qkv_bias=True, attn_drop=dropout, proj_drop=dropout
         )
-        self.norm2 = nn.LayerNorm(d_model, elementwise_affine=True, eps=1e-6)
-        self.mlp = _MLP(
-            in_dim=d_model,
-            out_dim=d_model,
-            hidden_dim=int(mlp_ratio * d_model),
-            dropout=dropout,
-        )
+        self.norm2 = norm_layer(d_model, elementwise_affine=True, eps=1e-6)
+        if mlp_type == "swiglu":
+            self.mlp = _SwiGLU(
+                d_model,
+                d_model,
+                hidden_dim=int(mlp_ratio * d_model),
+                dropout=dropout,
+            )
+        elif mlp_type == "mlp":
+            self.mlp = _MLP(
+                in_dim=d_model,
+                out_dim=d_model,
+                hidden_dim=int(mlp_ratio * d_model),
+                dropout=dropout,
+            )
+        else:
+            raise_log(
+                ValueError(f"Unsupported `mlp_type`: {mlp_type}"),
+                logger=logger,
+            )
         self.dropout = nn.Dropout(dropout)
 
     def forward(
         self, x: torch.Tensor, attn_mask: torch.Tensor | None = None
     ) -> torch.Tensor:
-        x = x + self.attn(self.norm1(x), attn_mask)
-        x = x + self.dropout(self.mlp(self.norm2(x)))
+        if self.norm_first:
+            x = x + self.attn(self.norm1(x), attn_mask)
+            x = x + self.dropout(self.mlp(self.norm2(x)))
+        else:
+            x = self.norm1(x + self.attn(x, attn_mask))
+            x = self.norm2(x + self.dropout(self.mlp(x)))
         return x
 
 
 def _make_attn_mask(query_pad: torch.Tensor, key_pad: torch.Tensor) -> torch.Tensor:
-    """Build additive attention mask from padding masks.
+    """Build an additive attention mask of shape (B, Q, K) from query/key padding masks.
 
-    Masked positions get -inf, valid positions get 0.0.
+    Parameters
+    ----------
+    query_pad
+        (B, Q) bool or 0/1 tensor. 1/True = padded query position.
+    key_pad
+        (B, K) bool or 0/1 tensor. 1/True = padded key position.
+
+    Returns
+    -------
+    attn_mask
+        (B, Q, K) float tensor, where masked positions are -inf and valid positions are 0.0
+        (for use with SDPA).
     """
     q_pad = query_pad.bool()
     k_pad = key_pad.bool()
