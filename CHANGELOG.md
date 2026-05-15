@@ -17,6 +17,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed `examples/14-transfer-learning.ipynb` raising a NaN error on the `air` dataset: the `load_air()` helper now calls `fill_missing_values(..., fill="auto")` after `longest_contiguous_slice()` to handle residual gaps in the raw `carrier_passengers.csv`. Closes [#2752](https://github.com/unit8co/darts/issues/2752).
+
 **Dependencies**
 
 ### For developers of the library:
