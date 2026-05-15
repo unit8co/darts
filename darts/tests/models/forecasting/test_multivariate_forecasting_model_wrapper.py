@@ -4,10 +4,11 @@ from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models import (
     ARIMA,
-    BATS,
     FFT,
     TBATS,
     AutoARIMA,
+    AutoCES,
+    AutoTheta,
     Croston,
     ExponentialSmoothing,
     FourTheta,
@@ -17,8 +18,6 @@ from darts.models import (
     NaiveMovingAverage,
     NaiveSeasonal,
     Prophet,
-    StatsForecastAutoCES,
-    StatsForecastAutoTheta,
     Theta,
 )
 from darts.utils import timeseries_generation as tg
@@ -30,13 +29,20 @@ local_models_kwargs = [
     (NaiveMovingAverage, {"input_chunk_length": 5}),
     (NaiveSeasonal, {}),
     (ExponentialSmoothing, {}),
-    (StatsForecastAutoTheta, {"season_length": 12}),
-    (StatsForecastAutoCES, {"season_length": 12, "model": "Z"}),
+    (AutoTheta, {"season_length": 12}),
+    (AutoCES, {"season_length": 12, "model": "Z"}),
     (Theta, {"theta": 1}),
     (FourTheta, {"theta": 1}),
     (FFT, {"trend": "poly"}),
-    (TBATS, {"use_trend": True, "use_arma_errors": True, "use_box_cox": True}),
-    (BATS, {"use_trend": True, "use_arma_errors": True, "use_box_cox": True}),
+    (
+        TBATS,
+        {
+            "use_trend": True,
+            "use_arma_errors": True,
+            "use_boxcox": True,
+            "season_length": [12],
+        },
+    ),
 ]
 
 future_covariates_models_kwargs = [

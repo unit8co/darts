@@ -35,7 +35,12 @@ class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel)
         self.model: LocalForecastingModel = model
         self._trained_models: list[LocalForecastingModel] = []
 
-    def _fit(self, series: TimeSeries, future_covariates: TimeSeries | None = None):
+    def _fit(
+        self,
+        series: TimeSeries,
+        future_covariates: TimeSeries | None = None,
+        verbose: bool | None = None,
+    ):
         super()._fit(series, future_covariates)
         self._trained_models = []
 
