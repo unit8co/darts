@@ -218,34 +218,6 @@ class _PatchTSTFMModule(PLForecastingModule):
             self._finetuning_likelihood = None
             self._finetuning_quantile_indices = None
 
-    def _forward(
-        self,
-        inputs: torch.Tensor,
-        pred_mask: torch.Tensor,
-        pad_mask: torch.Tensor,
-        miss_mask: torch.Tensor,
-    ) -> torch.Tensor:
-        """Original PatchTST-FM forward pass.
-
-        Parameters
-        ----------
-        inputs
-            Tensor of shape (batch, context_length) containing the padded time series.
-        pred_mask
-            Boolean mask indicating forecast positions.
-        pad_mask
-            Boolean mask indicating left-padding positions.
-        miss_mask
-            Boolean mask indicating missing/NaN positions.
-
-        Returns
-        -------
-        torch.Tensor
-            Quantile predictions of shape (batch, num_quantile, context_length).
-        """
-        q_out, _, _ = self.backbone(inputs, pred_mask, pad_mask, miss_mask)
-        return q_out
-
     @io_processor
     def forward(self, x_in: PLModuleInput, *args, **kwargs) -> Any:
         """PatchTST-FM model forward pass adapted for Darts interface.
@@ -264,67 +236,67 @@ class _PatchTSTFMModule(PLForecastingModule):
             probabilistic forecasts, or `(n_samples, n_time_steps, n_targets, 1)` for
             deterministic forecasts.
         """
+        # B: batch size
+        # L: input chunk length
+        # T: output chunk length
+        # CONT = 8192: context length
+        # W = 99: quantiles
+        # C: target components
+        # N: likelihood quantiles (user-specified)
+
+        # `x_past`: (B, L, C)
         x_past, _, _ = x_in
         batch_size, past_length, n_variables = x_past.shape
         output_chunk_length = self.output_chunk_length or 0
         output_chunk_shift = self.output_chunk_shift
         forecast_length = output_chunk_shift + output_chunk_length
 
-        # PatchTST-FM is univariate (channel-independent): reshape to (batch * vars, time)
+        # PatchTST-FM is a univariate model and its inputs does not have a variable dimension,
+        # so here we reshape `x_past` to (B * C, L)
         context = x_past.permute(0, 2, 1).reshape(-1, past_length)
         effective_batch = context.shape[0]
 
-        # compute the mean for padding
+        # compute the mean for padding: (B * C, 1)
         context_mean = context.nanmean(dim=1, keepdim=True)
         nan_mask = torch.isnan(context)
         context = torch.where(nan_mask, context_mean.expand_as(context), context)
 
-        # Build the full window: context + forecast region
-        total_length = past_length + forecast_length
-        if total_length <= self.context_length:
-            left_pad = self.context_length - total_length
-            # pad context to the left with mean values
-            pad_values = context_mean.expand(effective_batch, left_pad)
-            full_input = torch.cat(
-                [
-                    pad_values,
-                    context,
-                    context_mean.expand(effective_batch, forecast_length),
-                ],
-                dim=1,
-            )
-            # masks
-            pad_mask = torch.cat(
-                [
-                    torch.ones(effective_batch, left_pad, device=context.device),
-                    torch.zeros(
-                        effective_batch,
-                        past_length + forecast_length,
-                        device=context.device,
-                    ),
-                ],
-                dim=1,
-            )
-            pred_mask = torch.cat(
-                [
-                    torch.zeros(
-                        effective_batch, left_pad + past_length, device=context.device
-                    ),
-                    torch.ones(effective_batch, forecast_length, device=context.device),
-                ],
-                dim=1,
-            )
-        else:
-            raise_log(
-                ValueError(
-                    f"input_chunk_length ({past_length}) + output_chunk_length ({output_chunk_length}) "
-                    f"+ output_chunk_shift ({output_chunk_shift}) exceeds "
-                    f"model context_length ({self.context_length}). "
-                    f"Please reduce input_chunk_length or output_chunk_length."
+        # Build the full context window
+        left_pad = self.context_length - (past_length + forecast_length)
+        # pad context to the left with mean values: (B * C, CONT - L - T)
+        pad_values = context_mean.expand(effective_batch, left_pad)
+        # `full_input`: (B * C, CONT)
+        full_input = torch.cat(
+            [
+                pad_values,
+                context,
+                context_mean.expand(effective_batch, forecast_length),
+            ],
+            dim=1,
+        )
+        # `pad_mask`: (B * C, CONT)
+        pad_mask = torch.cat(
+            [
+                torch.ones(effective_batch, left_pad, device=context.device),
+                torch.zeros(
+                    effective_batch,
+                    past_length + forecast_length,
+                    device=context.device,
                 ),
-                logger,
-            )
-
+            ],
+            dim=1,
+        )
+        # `pred_mask`: (B * C, CONT)
+        pred_mask = torch.cat(
+            [
+                torch.zeros(
+                    effective_batch, left_pad + past_length, device=context.device
+                ),
+                torch.ones(effective_batch, forecast_length, device=context.device),
+            ],
+            dim=1,
+        )
+        # `miss_mask`: (B * C, CONT)
         miss_mask = torch.cat(
             [
                 torch.zeros(effective_batch, left_pad, device=context.device),
@@ -335,30 +307,25 @@ class _PatchTSTFMModule(PLForecastingModule):
         )
 
         # forward pass through backbone
+        # `q_out`: (B * C, W, CONT)
         q_out, _, _ = self.backbone(full_input, pred_mask, pad_mask, miss_mask)
 
-        # q_out shape: (effective_batch, num_quantile, context_length)
         # extract forecast region
-        forecast_start = left_pad + past_length
+        # `q_forecast`: (B * C, W, T)
+        forecast_start = left_pad + past_length + output_chunk_shift
         forecast_end = forecast_start + forecast_length
         q_forecast = q_out[:, :, forecast_start:forecast_end]
 
-        # select output_chunk_length after shift
-        q_forecast = q_forecast[:, :, output_chunk_shift:]
-
-        # reshape: (batch * vars, num_quantile, output_chunk_length)
-        #       -> (batch, vars, num_quantile, output_chunk_length)
-        #       -> (batch, output_chunk_length, vars, num_quantile)
+        # -> (B, C, W, T)
         q_forecast = q_forecast.reshape(
             batch_size, n_variables, self.num_quantile, output_chunk_length
         )
+        # -> (B, T, C, W)
         q_forecast = q_forecast.permute(0, 3, 1, 2)
-
-        # select only target variables
-        q_forecast = q_forecast[:, :, : self.n_targets, :]
 
         # during training, output all pre-trained quantiles for loss
         # during prediction, output only user-specified quantiles
+        # -> (B, T, C, N)
         if self.training:
             q_forecast = q_forecast[:, :, :, self._finetuning_quantile_indices]
         else:
@@ -653,12 +620,16 @@ class PatchTSTFMModel(FoundationModel):
 
         config = hf_connector.load_config()
 
-        # validate input_chunk_length + output_chunk_length <= context_length
+        # validate input_chunk_length + output_chunk_length + output_chunk_shift <= context_length
         context_length = config["context_length"]
-        if input_chunk_length > context_length:
+        if (
+            input_chunk_length + output_chunk_length + output_chunk_shift
+            > context_length
+        ):
             raise_log(
                 ValueError(
-                    f"`input_chunk_length` cannot be greater than model's maximum "
+                    f"`input_chunk_length` {input_chunk_length} plus `output_chunk_length` {output_chunk_length} "
+                    f"plus `output_chunk_shift` {output_chunk_shift} cannot be greater than model's maximum "
                     f"context_length {context_length}"
                 ),
                 logger,

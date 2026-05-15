@@ -198,13 +198,21 @@ class TestPatchTSTFMModel:
         assert isinstance(pred, TimeSeries)
         assert len(pred) == 10
 
-        # cannot create longer input chunk length than max
-        with pytest.raises(
-            ValueError, match=r"`input_chunk_length` cannot be greater than"
-        ):
+        # (icl + ocl + ocs) must be <= context length
+        with pytest.raises(ValueError, match=r"`input_chunk_length` \d+ plus"):
             PatchTSTFMModel(
-                input_chunk_length=self.dummy_context_length + 1,
+                input_chunk_length=self.dummy_context_length,
                 output_chunk_length=1,
+                local_dir=self.dummy_local_dir,
+                **tfm_kwargs,
+            )
+
+        # (icl + ocl + ocs) must be <= context length
+        with pytest.raises(ValueError, match=r"`input_chunk_length` \d+ plus"):
+            PatchTSTFMModel(
+                input_chunk_length=self.dummy_context_length - 1,
+                output_chunk_length=1,
+                output_chunk_shift=1,
                 local_dir=self.dummy_local_dir,
                 **tfm_kwargs,
             )
