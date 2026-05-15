@@ -303,53 +303,60 @@ class _TransformerModule(PLForecastingModule):
 
         src = x_in[0].permute(1, 0, 2)
         pad_size = (0, self.input_size - self.target_size)
-
-        # start token
         start_token = src[-1:, :, :]
+
+        # encode src once; memory is reused by both the teacher-forcing and
+        # autoregressive paths, avoiding redundant encoder passes
+        memory = self._encode_src(src)
 
         if len(x_in) == 2:  # teacher forcing
             tgt = x_in[-1].permute(1, 0, 2)
             tgt = F.pad(tgt, pad_size)
             tgt = torch.cat([start_token, tgt], dim=0)
-            return self._prediction_step(src, tgt)[:, :-1, :, :]
+            return self._decode(memory, tgt)[:, :-1, :, :]
 
-        tgt = start_token
-
+        # autoregressive: cache tgt embeddings and extend by one token per step
+        # so the linear projection and positional encoding are not recomputed for
+        # previously seen positions
+        tgt_emb = self._embed(start_token, pos=0)
         predictions = []
-        for _ in range(self.target_length):
-            pred = self._prediction_step(src, tgt)[:, -1, :, :]
+        for t in range(self.target_length):
+            pred = self._decode_from_emb(memory, tgt_emb)[:, -1, :, :]
             predictions.append(pred)
-            tgt = torch.cat(
-                [tgt, F.pad(pred.mean(dim=2).unsqueeze(dim=0), pad_size)],
-                dim=0,
-            )  # take average of samples
+            next_token = F.pad(pred.mean(dim=2).unsqueeze(0), pad_size)
+            tgt_emb = torch.cat([tgt_emb, self._embed(next_token, pos=t + 1)], dim=0)
         return torch.stack(predictions, dim=1)
 
-    def _prediction_step(self, src: torch.Tensor, tgt: torch.Tensor):
-        target_length = tgt.shape[0]
-        # "math.sqrt(self.input_size)" is a normalization factor
+    def _encode_src(self, src: torch.Tensor) -> torch.Tensor:
         # see section 3.2.1 in 'Attention is All you Need' by Vaswani et al. (2017)
         src = self.encoder(src) * math.sqrt(self.d_model)
-        tgt = self.encoder(tgt) * math.sqrt(self.d_model)
-
         src = self.positional_encoding(src)
-        tgt = self.positional_encoding(tgt)
+        return self.transformer.encoder(src)
 
+    def _embed(self, x: torch.Tensor, pos: int) -> torch.Tensor:
+        """Project to d_model and add positional encoding starting at `pos`."""
+        x = self.encoder(x) * math.sqrt(self.d_model)
+        x = x + self.positional_encoding.pe[pos : pos + x.shape[0]]
+        return self.positional_encoding.dropout(x)
+
+    def _decode(self, memory: torch.Tensor, tgt: torch.Tensor) -> torch.Tensor:
+        tgt_emb = self.encoder(tgt) * math.sqrt(self.d_model)
+        tgt_emb = self.positional_encoding(tgt_emb)
+        return self._decode_from_emb(memory, tgt_emb)
+
+    def _decode_from_emb(
+        self, memory: torch.Tensor, tgt_emb: torch.Tensor
+    ) -> torch.Tensor:
+        target_length = tgt_emb.shape[0]
         tgt_mask = self.generate_square_subsequent_mask(
-            target_length, src.device, src.dtype
+            target_length, memory.device, memory.dtype
         )
-
-        x = self.transformer(src=src, tgt=tgt, tgt_mask=tgt_mask)
+        x = self.transformer.decoder(tgt=tgt_emb, memory=memory, tgt_mask=tgt_mask)
         out = self.decoder(x)
-
-        # Here we change the data format
-        # from (1, batch_size, output_chunk_length * output_size)
-        # to (batch_size, output_chunk_length, output_size, nr_params)
         predictions = out.permute(1, 0, 2)
         predictions = predictions.view(
             -1, target_length, self.target_size, self.nr_params
         )
-
         return predictions
 
     def generate_square_subsequent_mask(self, sz, device, dtype):
