@@ -4,20 +4,21 @@ Temporal Convolutional Network
 """
 
 import math
-from typing import Optional, Sequence, Tuple
+from collections.abc import Sequence
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.pl_forecasting_module import (
-    PLPastCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
-from darts.timeseries import TimeSeries
-from darts.utils.data import PastCovariatesShiftedDataset
+from darts.utils.data import ShiftedTorchTrainingDataset, TorchTrainingDataset
+from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -98,8 +99,8 @@ class _ResidualBlock(nn.Module):
         )
         if weight_norm:
             self.conv1, self.conv2 = (
-                nn.utils.weight_norm(self.conv1),
-                nn.utils.weight_norm(self.conv2),
+                nn.utils.parametrizations.weight_norm(self.conv1),
+                nn.utils.parametrizations.weight_norm(self.conv2),
             )
 
         if input_dim != output_dim:
@@ -130,13 +131,13 @@ class _ResidualBlock(nn.Module):
         return x
 
 
-class _TCNModule(PLPastCovariatesModule):
+class _TCNModule(PLForecastingModule):
     def __init__(
         self,
         input_size: int,
         kernel_size: int,
         num_filters: int,
-        num_layers: Optional[int],
+        num_layers: int | None,
         dilation_base: int,
         weight_norm: bool,
         target_size: int,
@@ -236,8 +237,8 @@ class _TCNModule(PLPastCovariatesModule):
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
     @io_processor
-    def forward(self, x_in: Tuple):
-        x, _ = x_in
+    def forward(self, x_in: PLModuleInput):
+        x, _, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
         x = x.transpose(1, 2)
@@ -265,7 +266,7 @@ class TCNModel(PastCovariatesTorchModel):
         output_chunk_shift: int = 0,
         kernel_size: int = 3,
         num_filters: int = 3,
-        num_layers: Optional[int] = None,
+        num_layers: int | None = None,
         dilation_base: int = 2,
         weight_norm: bool = False,
         dropout: float = 0.2,
@@ -319,7 +320,7 @@ class TCNModel(PastCovariatesTorchModel):
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
         likelihood
-            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
+            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.torch.TorchLikelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
@@ -337,7 +338,9 @@ class TCNModel(PastCovariatesTorchModel):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
-            It is only applied to the features of the target series and not the covariates.
+            It is only applied to the features of the target series and not the covariates. If ``True``,
+            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
+            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -391,16 +394,14 @@ class TCNModel(PastCovariatesTorchModel):
                 }
             ..
         random_state
-            Control the randomness of the weights initialization. Check this
-            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
-            Default: ``None``.
+            Controls the randomness of the weights initialization and reproducible forecasting.
         pl_trainer_kwargs
             By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
             that performs the training, validation and prediction processes. These presets include automatic
             checkpointing, tensorboard logging, setting the torch device and more.
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
             supported kwargs. Default: ``None``.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
@@ -420,7 +421,7 @@ class TCNModel(PastCovariatesTorchModel):
             The model will stop training early if the validation loss `val_loss` does not improve beyond
             specifications. For more information on callbacks, visit:
             `PyTorch Lightning Callbacks
-            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
 
             .. highlight:: python
             .. code-block:: python
@@ -444,6 +445,18 @@ class TCNModel(PastCovariatesTorchModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         References
         ----------
@@ -468,16 +481,16 @@ class TCNModel(PastCovariatesTorchModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[-80.48476824],
-               [-80.47896667],
-               [-41.77135603],
-               [-41.76158729],
-               [-41.76854107],
-               [-41.78166819]])
+        >>> print(pred.values())
+        [[-80.48476824]
+         [-80.47896667]
+         [-41.77135603]
+         [-41.76158729]
+         [-41.76854107]
+         [-41.78166819]]
 
         .. note::
-            `DeepTCN example notebook <https://unit8co.github.io/darts/examples/09-DeepTCN-examples.html>`_ presents
+            `DeepTCN example notebook <https://unit8co.github.io/darts/examples/09-DeepTCN-examples.html>`__ presents
             techniques that can be used to improve the forecasts quality compared to this simple usage example.
         """
 
@@ -504,16 +517,13 @@ class TCNModel(PastCovariatesTorchModel):
         self.dropout = dropout
         self.weight_norm = weight_norm
 
-    @property
-    def supports_multivariate(self) -> bool:
-        return True
-
-    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
-        # samples are made of (past_target, past_covariates, future_target)
-        input_dim = train_sample[0].shape[1] + (
-            train_sample[1].shape[1] if train_sample[1] is not None else 0
+    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
+        # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
+        (past_target, past_covariates, _, _, _, _) = train_sample
+        input_dim = past_target.shape[1] + (
+            past_covariates.shape[1] if past_covariates is not None else 0
         )
-        output_dim = train_sample[-1].shape[1]
+        output_dim = past_target.shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
         return _TCNModule(
@@ -532,17 +542,21 @@ class TCNModel(PastCovariatesTorchModel):
 
     def _build_train_dataset(
         self,
-        target: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        sample_weight: Optional[Sequence[TimeSeries]],
-        max_samples_per_ts: Optional[int],
-    ) -> PastCovariatesShiftedDataset:
-        return PastCovariatesShiftedDataset(
-            target_series=target,
-            covariates=past_covariates,
-            length=self.input_chunk_length,
+        series: Sequence[TimeSeries],
+        past_covariates: Sequence[TimeSeries] | None,
+        future_covariates: Sequence[TimeSeries] | None,
+        sample_weight: Sequence[TimeSeries] | str | None,
+        max_samples_per_ts: int | None,
+        stride: int = 1,
+    ) -> TorchTrainingDataset:
+        return ShiftedTorchTrainingDataset(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            input_chunk_length=self.input_chunk_length,
+            output_chunk_length=self.input_chunk_length,
             shift=self.output_chunk_length + self.output_chunk_shift,
+            stride=stride,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
             sample_weight=sample_weight,

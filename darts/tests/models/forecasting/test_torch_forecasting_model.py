@@ -1,27 +1,27 @@
-import copy
-import itertools
-import os
-from typing import Any, Dict, Optional
-from unittest.mock import patch
-
-import numpy as np
-import pandas as pd
 import pytest
 
-import darts.utils.timeseries_generation as tg
-from darts import TimeSeries
-from darts.dataprocessing.encoders import SequentialEncoder
-from darts.dataprocessing.transformers import BoxCox, Scaler
-from darts.metrics import mape
-from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.conftest import NF_AVAILABLE, TORCH_AVAILABLE
 
 if not TORCH_AVAILABLE:
     pytest.skip(
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+
+import copy
+import itertools
+import logging
+import math
+import os
+from typing import Any
+from unittest.mock import patch
+
+import numpy as np
+import pandas as pd
+import pytest
+import pytorch_lightning as pl
 import torch
-from pytorch_lightning.callbacks import Callback
+from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from pytorch_lightning.loggers.logger import DummyLogger
 from pytorch_lightning.tuner.lr_finder import _LRFinder
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
@@ -30,8 +30,14 @@ from torchmetrics import (
     MeanAbsolutePercentageError,
     Metric,
     MetricCollection,
+    R2Score,
 )
 
+import darts.utils.timeseries_generation as tg
+from darts import TimeSeries
+from darts.dataprocessing.encoders import SequentialEncoder
+from darts.dataprocessing.transformers import BoxCox, Scaler
+from darts.metrics import mape
 from darts.models import (
     BlockRNNModel,
     DLinearModel,
@@ -50,12 +56,19 @@ from darts.models import (
 )
 from darts.models.components.layer_norm_variants import RINorm
 from darts.models.forecasting.global_baseline_models import _GlobalNaiveModel
-from darts.utils.likelihood_models import (
+from darts.tests.conftest import tfm_kwargs, tfm_kwargs_dev
+from darts.utils.data.torch_datasets.inference_dataset import (
+    SequentialTorchInferenceDataset,
+)
+from darts.utils.data.torch_datasets.training_dataset import (
+    SequentialTorchTrainingDataset,
+)
+from darts.utils.likelihood_models.torch import (
     CauchyLikelihood,
     GaussianLikelihood,
     LaplaceLikelihood,
-    Likelihood,
     QuantileRegression,
+    TorchLikelihood,
 )
 
 kwargs = {
@@ -107,6 +120,20 @@ models = [
     (GlobalNaiveAggregate, kwargs),
     (GlobalNaiveDrift, kwargs),
 ]
+
+if NF_AVAILABLE:
+    nf_tide_kwargs = {
+        "model": "TiDE",
+    }
+    nf_tsmixerx_kwargs = {
+        "model": "TSMixerx",
+    }
+    from darts.models.forecasting.nf_model import NeuralForecastModel
+
+    models += [
+        (NeuralForecastModel, dict(kwargs, **nf_tide_kwargs)),
+        (NeuralForecastModel, dict(kwargs, **nf_tsmixerx_kwargs)),
+    ]
 
 
 class NumsCalled(Metric):
@@ -176,50 +203,71 @@ class TestTorchForecastingModel:
         model1.save(path=os.path.join(tmpdir_fn, model_name))
         patch_save_model.assert_called()
 
-    def test_manual_save_and_load(self, tmpdir_fn):
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [False, True],
+            [(RNNModel, {"model": "RNN", "hidden_dim": 10, "n_rnn_layers": 10})]
+            + ([(NeuralForecastModel, {})] if NF_AVAILABLE else []),
+        ),
+    )
+    def test_manual_save_and_load(self, tmpdir_fn, config):
         """validate manual save with automatic save files by comparing output between the two"""
+        clean, (model_cls, model_kwargs) = config
+
+        class CustomCallback(Callback):
+            def on_train_epoch_end(self, trainer, pl_module):
+                pass
+
+        kwargs = copy.deepcopy(tfm_kwargs)
+        kwargs = dict(
+            kwargs,
+            **{
+                "input_chunk_length": 12,
+                "output_chunk_length": 1,
+                "n_epochs": 5,
+                "random_state": 42,
+                "work_dir": tmpdir_fn,
+            },
+            **model_kwargs,
+        )
+
+        kwargs_with_callback = copy.deepcopy(kwargs)
+        if clean:
+            custom_callback = CustomCallback()
+            kwargs_with_callback["pl_trainer_kwargs"]["callbacks"] = [custom_callback]
 
         model_dir = os.path.join(tmpdir_fn)
         manual_name = "test_save_manual"
         auto_name = "test_save_automatic"
-        model_manual_save = RNNModel(
-            12,
-            "RNN",
-            10,
-            10,
+        model_manual_save = model_cls(
             model_name=manual_name,
-            work_dir=tmpdir_fn,
             save_checkpoints=False,
-            random_state=42,
-            **tfm_kwargs,
+            **kwargs_with_callback,
         )
-        model_auto_save = RNNModel(
-            12,
-            "RNN",
-            10,
-            10,
+        model_auto_save = model_cls(
             model_name=auto_name,
-            work_dir=tmpdir_fn,
             save_checkpoints=True,
-            random_state=42,
-            **tfm_kwargs,
+            **kwargs,
         )
 
         # save model without training
-        no_training_ckpt = "no_training.pth.tar"
-        no_training_ckpt_path = os.path.join(model_dir, no_training_ckpt)
-        model_manual_save.save(no_training_ckpt_path)
+        no_training_ckpt_path = os.path.join(model_dir, "no_training.pth.tar")
+
+        model_manual_save.save(no_training_ckpt_path, clean=clean)
+
         # check that model object file was created
         assert os.path.exists(no_training_ckpt_path)
         # check that the PyTorch Ligthning ckpt does not exist
         assert not os.path.exists(no_training_ckpt_path + ".ckpt")
         # informative exception about `fit()` not called
         with pytest.raises(ValueError) as err:
-            no_train_model = RNNModel.load(no_training_ckpt_path)
+            no_train_model = model_cls.load(no_training_ckpt_path)
             no_train_model.predict(n=4)
         assert str(err.value) == (
-            "Input `series` must be provided. This is the result either from "
-            "fitting on multiple series, or from not having fit the model yet."
+            "Input `series` must be provided. This is the result either from fitting on multiple series, "
+            "from fitting with `fit_from_dataset()`, from not having fit the model yet, or from loading a "
+            "model saved with `clean=True`."
         )
 
         model_manual_save.fit(self.series, epochs=1)
@@ -234,27 +282,69 @@ class TestTorchForecastingModel:
         checkpoint_path_manual = os.path.join(model_dir, manual_name)
         os.mkdir(checkpoint_path_manual)
 
-        checkpoint_file_name = "checkpoint_0.pth.tar"
-        model_path_manual = os.path.join(checkpoint_path_manual, checkpoint_file_name)
-        checkpoint_file_name_cpkt = "checkpoint_0.pth.tar.ckpt"
+        model_path_manual = os.path.join(checkpoint_path_manual, "checkpoint_0.pth.tar")
         model_path_manual_ckpt = os.path.join(
-            checkpoint_path_manual, checkpoint_file_name_cpkt
+            checkpoint_path_manual, "checkpoint_0.pth.tar.ckpt"
         )
 
-        # save manually saved model
-        model_manual_save.save(model_path_manual)
+        # save manually clean model
+        training_series = model_manual_save.training_series.copy()
+        model_manual_save.save(model_path_manual, clean=clean)
+        assert model_manual_save.training_series == training_series
+
         assert os.path.exists(model_path_manual)
 
         # check that the PTL checkpoint path is also there
         assert os.path.exists(model_path_manual_ckpt)
 
         # load manual save model and compare with automatic model results
-        model_manual_save = RNNModel.load(model_path_manual, map_location="cpu")
-        model_manual_save.to_cpu()
-        assert model_manual_save.predict(n=4) == model_auto_save.predict(n=4)
+        pl_kwargs_load = {"accelerator": "cpu"}
+        model_manual_save = model_cls.load(
+            model_path_manual, pl_trainer_kwargs=pl_kwargs_load
+        )
+
+        if clean:
+            # Training params are not saved with `clean=True`
+            assert model_manual_save.trainer is None
+            assert model_manual_save.training_series is None
+            assert model_manual_save.past_covariate_series is None
+            assert model_manual_save.future_covariate_series is None
+            assert model_manual_save.trainer_params == pl_kwargs_load
+            assert (
+                model_manual_save._model_params["pl_trainer_kwargs"] == pl_kwargs_load
+            )
+
+            # Predicting without giving the series in args
+            with pytest.raises(ValueError) as err:
+                model_manual_save.predict(n=4)
+            assert str(err.value) == (
+                "Input `series` must be provided. This is the result either from fitting on multiple series, "
+                "from fitting with `fit_from_dataset()`, from not having fit the model yet, or from loading a "
+                "model saved with `clean=True`."
+            )
+            # Predicting while giving the training series in args should yield same prediction
+            assert model_manual_save.predict(
+                n=4, series=self.series
+            ) == model_auto_save.predict(n=4)
+
+            model_manual_save_custom_trainer = model_cls.load(
+                model_path_manual,
+                pl_trainer_kwargs={"accelerator": "gpu", "enable_progress_bar": False},
+            )
+
+            assert model_manual_save_custom_trainer.trainer_params == {
+                "accelerator": "gpu",
+                "enable_progress_bar": False,
+            }
+            assert model_manual_save_custom_trainer.model_params[
+                "pl_trainer_kwargs"
+            ] == {"accelerator": "gpu", "enable_progress_bar": False}
+
+        else:
+            assert model_manual_save.predict(n=4) == model_auto_save.predict(n=4)
 
         # load automatically saved model with manual load() and load_from_checkpoint()
-        model_auto_save1 = RNNModel.load_from_checkpoint(
+        model_auto_save1 = model_cls.load_from_checkpoint(
             model_name=auto_name,
             work_dir=tmpdir_fn,
             best=False,
@@ -262,7 +352,9 @@ class TestTorchForecastingModel:
         )
         model_auto_save1.to_cpu()
         # compare loaded checkpoint with manual save
-        assert model_manual_save.predict(n=4) == model_auto_save1.predict(n=4)
+        assert model_manual_save.predict(
+            n=4, series=self.series
+        ) == model_auto_save.predict(n=4)
 
         # save() model directly after load_from_checkpoint()
         checkpoint_file_name_2 = "checkpoint_1.pth.tar"
@@ -274,22 +366,67 @@ class TestTorchForecastingModel:
         model_path_manual_ckpt_2 = os.path.join(
             checkpoint_path_manual, checkpoint_file_name_cpkt_2
         )
-        model_auto_save2 = RNNModel.load_from_checkpoint(
+        model_auto_save2 = model_cls.load_from_checkpoint(
             model_name=auto_name,
             work_dir=tmpdir_fn,
             best=False,
             map_location="cpu",
         )
         # save model directly after loading, model has no trainer
-        model_auto_save2.save(model_path_manual_2)
+        model_auto_save2.save(model_path_manual_2, clean=clean)
 
         # assert original .ckpt checkpoint was correctly copied
         assert os.path.exists(model_path_manual_ckpt_2)
 
-        model_chained_load_save = RNNModel.load(model_path_manual_2, map_location="cpu")
+        model_chained_load_save = model_cls.load(
+            model_path_manual_2, pl_trainer_kwargs=pl_kwargs_load
+        )
 
         # compare chained load_from_checkpoint() save() with manual save
-        assert model_chained_load_save.predict(n=4) == model_manual_save.predict(n=4)
+        assert model_chained_load_save.predict(
+            n=4, series=self.series
+        ) == model_manual_save.predict(n=4, series=self.series)
+
+    @pytest.mark.parametrize("clean", [False, True])
+    def test_manual_save_and_load_precision(self, tmpdir_fn, clean):
+        # test precision (type) of the model
+
+        tfm_kwargs_32 = copy.deepcopy(tfm_kwargs)
+        tfm_kwargs_32["pl_trainer_kwargs"]["precision"] = "32-true"
+
+        model_32_name = "test_save_32"
+        model_32 = RNNModel(
+            12,
+            "RNN",
+            10,
+            10,
+            model_name=model_32_name,
+            work_dir=tmpdir_fn,
+            save_checkpoints=False,
+            random_state=42,
+            **tfm_kwargs_32,
+        )
+
+        series_32 = self.series.astype(np.float32)
+        series_64 = self.series.astype(np.float64)
+
+        model_32.fit(series_32, epochs=1)
+
+        model_32_path = os.path.join(tmpdir_fn, f"{model_32_name}.pth.tar")
+
+        model_32.save(model_32_path, clean=clean)
+
+        model_32_loaded = RNNModel.load(
+            model_32_path, pl_trainer_kwargs={"accelerator": "cpu"}
+        )
+
+        assert model_32_loaded.predict(n=4, series=series_32) == model_32.predict(n=4)
+        with pytest.raises(ValueError) as err:
+            model_32_loaded.predict(n=4, series=series_64)
+        assert all(el in str(err.value) for el in ["torch.float32", "torch.float64"])
+
+    def test_load_accelerator(self, tmpdir_fn):
+        pass
 
     def test_valid_save_and_load_weights_with_different_params(self, tmpdir_fn):
         """
@@ -327,6 +464,63 @@ class TestTorchForecastingModel:
         for kwargs_ in kwargs_valid:
             model_new = create_model(**kwargs_)
             model_new.load_weights(model_path_manual)
+
+    @pytest.mark.parametrize(
+        "params",
+        itertools.product(
+            [DLinearModel, NBEATSModel, RNNModel],  # model_cls
+            [True, False],  # past_covs
+            [True, False],  # future_covs
+            [True, False],  # static covs
+        ),
+    )
+    def test_save_and_load_weights_covs_usage_attributes(self, tmpdir_fn, params):
+        """
+        Verify that save/load correctly preserve the use_[past/future/static]_covariates attribute.
+        """
+        model_cls, use_pc, use_fc, use_sc = params
+        model = model_cls(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            n_epochs=1,
+            **tfm_kwargs_dev,
+        )
+        # skip test if the combination of covariates is not supported by the model
+        if (
+            (use_pc and not model.supports_past_covariates)
+            or (use_fc and not model.supports_future_covariates)
+            or (use_sc and not model.supports_static_covariates)
+        ):
+            return
+
+        model.fit(
+            series=self.series
+            if not use_sc
+            else self.series.with_static_covariates(pd.Series([12], ["loc"])),
+            past_covariates=self.series + 10 if use_pc else None,
+            future_covariates=self.series - 5 if use_fc else None,
+        )
+        # save and load the model
+        filename_ckpt = f"{model.model_name}.pt"
+        model.save(filename_ckpt)
+        model_loaded = model_cls(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            **tfm_kwargs_dev,
+        )
+        model_loaded.load_weights(filename_ckpt)
+
+        assert model.uses_past_covariates == model_loaded.uses_past_covariates == use_pc
+        assert (
+            model.uses_future_covariates
+            == model_loaded.uses_future_covariates
+            == use_fc
+        )
+        assert (
+            model.uses_static_covariates
+            == model_loaded.uses_static_covariates
+            == use_sc
+        )
 
     def test_save_and_load_weights_w_encoders(self, tmpdir_fn):
         """
@@ -412,7 +606,7 @@ class TestTorchForecastingModel:
                 load_encoders=False,
                 map_location="cpu",
             )
-        # overwritte undeclared encoders
+        # overwrite undeclared encoders
         model_no_enc.load_weights_from_checkpoint(
             auto_name,
             work_dir=tmpdir_fn,
@@ -466,7 +660,7 @@ class TestTorchForecastingModel:
             model_name="other_encoder_load",
             add_encoders=encoders_other_past,
         )
-        # cannot overwritte different declared encoders
+        # cannot overwrite different declared encoders
         with pytest.raises(ValueError):
             model_other_enc_load.load_weights(
                 model_path_manual,
@@ -528,7 +722,7 @@ class TestTorchForecastingModel:
             model_name="same_encoder_other_transform",
             add_encoders=encoders_past_other_transformer,
         )
-        # cannot overwritte different declared encoders
+        # cannot overwrite different declared encoders
         with pytest.raises(ValueError):
             model_new_enc_other_transformer.load_weights(
                 model_path_manual,
@@ -555,7 +749,7 @@ class TestTorchForecastingModel:
             model_name="encoder_2_components_past",
             add_encoders=encoders_2_past,
         )
-        # cannot overwritte different declared encoders
+        # cannot overwrite different declared encoders
         with pytest.raises(ValueError):
             model_new_enc_2_past.load_weights(
                 model_path_manual,
@@ -576,7 +770,7 @@ class TestTorchForecastingModel:
             model_name="encoder_past_n_future",
             add_encoders=encoders_past_n_future,
         )
-        # cannot overwritte different declared encoders
+        # cannot overwrite different declared encoders
         with pytest.raises(ValueError):
             model_new_enc_past_n_future.load_weights(
                 model_path_manual,
@@ -664,7 +858,8 @@ class TestTorchForecastingModel:
         )
         # check that weights from checkpoint give identical predictions as weights from manual save
         assert preds_manual_from_weights == preds_auto_from_weights
-        # model with explicitely no likelihood
+
+        # model with explicitly no likelihood
         model_no_likelihood = self.helper_create_DLinearModel(
             work_dir=tmpdir_fn, model_name="no_likelihood", likelihood=None
         )
@@ -706,6 +901,21 @@ class TestTorchForecastingModel:
             "missing"
         )
 
+        # model with the same likelihood but different parameters (output remains the same so does not matter)
+        model_same_likelihood_other_prior = self.helper_create_DLinearModel(
+            work_dir=tmpdir_fn,
+            model_name="same_likelihood_other_prior",
+            likelihood=GaussianLikelihood(),
+        )
+        with pytest.raises(ValueError) as error_msg:
+            model_same_likelihood_other_prior.load_weights_from_checkpoint(
+                auto_name, work_dir=tmpdir_fn, best=False, map_location="cpu"
+            )
+        assert str(error_msg.value).startswith(
+            "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+            "incorrect"
+        )
+
         # model with a different likelihood
         model_other_likelihood = self.helper_create_DLinearModel(
             work_dir=tmpdir_fn,
@@ -714,21 +924,6 @@ class TestTorchForecastingModel:
         )
         with pytest.raises(ValueError) as error_msg:
             model_other_likelihood.load_weights(model_path_manual, map_location="cpu")
-        assert str(error_msg.value).startswith(
-            "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
-            "incorrect"
-        )
-
-        # model with the same likelihood but different parameters
-        model_same_likelihood_other_prior = self.helper_create_DLinearModel(
-            work_dir=tmpdir_fn,
-            model_name="same_likelihood_other_prior",
-            likelihood=GaussianLikelihood(),
-        )
-        with pytest.raises(ValueError) as error_msg:
-            model_same_likelihood_other_prior.load_weights(
-                model_path_manual, map_location="cpu"
-            )
         assert str(error_msg.value).startswith(
             "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
             "incorrect"
@@ -955,6 +1150,56 @@ class TestTorchForecastingModel:
         model1.fit(self.series, epochs=15)
         assert 15 == model1.epochs_trained
 
+    @pytest.mark.parametrize(
+        "dtype,auto_precision",
+        [
+            (np.float16, "bf16-true"),
+            (np.float32, "32-true"),
+            (np.float64, "64-true"),
+        ],
+    )
+    def test_auto_precision_casting(self, dtype, auto_precision):
+        model = RNNModel(
+            12,
+            "RNN",
+            10,
+            10,
+            n_epochs=20,
+            **tfm_kwargs,
+        )
+        model.fit(self.series.astype(dtype), epochs=1)
+        assert 1 == model.epochs_trained
+        assert model.trainer.precision == auto_precision
+
+        preds = model.predict(n=10)
+        if dtype != np.float16:
+            # predictions should have same dtype as input except for float16
+            assert preds.dtype == dtype
+        else:
+            # predictions are float32 when input is float16
+            assert preds.dtype == np.float32
+        # predictions should not contain NaNs or infs
+        assert np.all(np.isfinite(preds.values()))
+
+    def test_mixed_precision_training(self):
+        # test model training with mixed precision (16-mixed and bf16-mixed)
+        for precision in ["16-mixed", "bf16-mixed"]:
+            kwargs = copy.deepcopy(tfm_kwargs)
+            kwargs["pl_trainer_kwargs"]["precision"] = precision
+            model = RNNModel(
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=20,
+                **kwargs,
+            )
+            model.fit(self.series.astype(np.float32), epochs=1)
+            assert 1 == model.epochs_trained
+
+            preds = model.predict(n=10)
+            assert preds.dtype == np.float32
+
     def test_load_weights_from_checkpoint(self, tmpdir_fn):
         ts_training, ts_test = self.series.split_before(90)
         original_model_name = "original"
@@ -1034,23 +1279,30 @@ class TestTorchForecastingModel:
                 map_location="cpu",
             )
 
-    def test_load_weights(self, tmpdir_fn):
+    @pytest.mark.parametrize(
+        "config",
+        [(RNNModel, {"model": "RNN", "hidden_dim": 5, "n_rnn_layers": 1})]
+        + ([(NeuralForecastModel, {})] if NF_AVAILABLE else []),
+    )
+    def test_load_weights(self, tmpdir_fn, config):
+        model_cls, model_kwargs = config
+        kwargs = dict(
+            dict(
+                input_chunk_length=12,
+                output_chunk_length=1,
+                n_epochs=5,
+                work_dir=tmpdir_fn,
+                save_checkpoints=False,
+                random_state=1,
+            ),
+            **model_kwargs,
+            **tfm_kwargs,
+        )
         ts_training, ts_test = self.series.split_before(90)
         original_model_name = "original"
         retrained_model_name = "retrained"
         # original model, checkpoints are saved
-        model = RNNModel(
-            12,
-            "RNN",
-            5,
-            1,
-            n_epochs=5,
-            work_dir=tmpdir_fn,
-            save_checkpoints=False,
-            model_name=original_model_name,
-            random_state=1,
-            **tfm_kwargs,
-        )
+        model = model_cls(model_name=original_model_name, **kwargs)
         model.fit(ts_training)
         path_manual_save = os.path.join(tmpdir_fn, "RNN_manual_save.pt")
         model.save(path_manual_save)
@@ -1058,17 +1310,7 @@ class TestTorchForecastingModel:
         original_mape = mape(original_preds, ts_test)
 
         # load last checkpoint of original model, train it for 2 additional epochs
-        model_rt = RNNModel(
-            12,
-            "RNN",
-            5,
-            1,
-            n_epochs=5,
-            work_dir=tmpdir_fn,
-            model_name=retrained_model_name,
-            random_state=1,
-            **tfm_kwargs,
-        )
+        model_rt = model_cls(model_name=retrained_model_name, **kwargs)
         model_rt.load_weights(path=path_manual_save, map_location="cpu")
 
         # must indicate series otherwise self.training_series must be saved in checkpoint
@@ -1090,9 +1332,7 @@ class TestTorchForecastingModel:
         ckpt_path = os.path.join(tmpdir_fn, f"{model_name}.pt")
         # barebone model
         model = DLinearModel(
-            input_chunk_length=4,
-            output_chunk_length=1,
-            n_epochs=1,
+            input_chunk_length=4, output_chunk_length=1, n_epochs=1, **tfm_kwargs
         )
         model.fit(ts_float32)
         model.save(ckpt_path)
@@ -1100,8 +1340,7 @@ class TestTorchForecastingModel:
 
         # identical model
         loading_model = DLinearModel(
-            input_chunk_length=4,
-            output_chunk_length=1,
+            input_chunk_length=4, output_chunk_length=1, **tfm_kwargs
         )
         loading_model.load_weights(ckpt_path)
         loading_model.fit(ts_float32)
@@ -1267,13 +1506,40 @@ class TestTorchForecastingModel:
         with pytest.raises(ValueError):
             _ = RNNModel(12, "RNN", 10, 10, **invalid_kwarg)
 
-    def test_metrics(self):
-        metric = MeanAbsolutePercentageError()
-        metric_collection = MetricCollection([
-            MeanAbsolutePercentageError(),
-            MeanAbsoluteError(),
-        ])
+    def test_inherited_wrong_model_creation_params(self):
+        # test using inheritance class
+        class RnnModelLambda(RNNModel):
+            def __init__(self, positional_param, named_param=0, *args, **kwargs):
+                super().__init__(*args, **kwargs)
 
+        valid_kwargs = {
+            "pl_trainer_kwargs": {},
+            "named_param": 1,
+            "positional_param": 1,
+        }
+        invalid_kwargs = {"some_invalid_kwarg": None}
+
+        # valid params should not raise an error
+        _ = RnnModelLambda(0, input_chunk_length=12, **valid_kwargs)
+
+        # invalid params should raise an error
+        with pytest.raises(ValueError):
+            _ = RnnModelLambda(0, input_chunk_length=12, **invalid_kwargs)
+
+    @pytest.mark.parametrize(
+        "metric",
+        [
+            MeanAbsolutePercentageError(),  # single metric
+            MetricCollection([
+                MeanAbsolutePercentageError(),
+                MeanAbsoluteError(),
+                R2Score(),
+            ]),  # metric collection
+            {"metric_name": MeanAbsolutePercentageError()},  # dict of metrics
+            [MeanAbsolutePercentageError()],  # sequence of metrics
+        ],
+    )
+    def test_metrics(self, metric):
         model_kwargs = {
             "logger": DummyLogger(),
             "log_every_n_steps": 1,
@@ -1287,18 +1553,6 @@ class TestTorchForecastingModel:
             10,
             n_epochs=1,
             torch_metrics=metric,
-            pl_trainer_kwargs=model_kwargs,
-        )
-        model.fit(self.series)
-
-        # test metric collection
-        model = RNNModel(
-            12,
-            "RNN",
-            10,
-            10,
-            n_epochs=1,
-            torch_metrics=metric_collection,
             pl_trainer_kwargs=model_kwargs,
         )
         model.fit(self.series)
@@ -1320,6 +1574,7 @@ class TestTorchForecastingModel:
         metric_collection = MetricCollection([
             MeanAbsolutePercentageError(),
             MeanAbsoluteError(),
+            R2Score(),
         ])
         model_kwargs = {
             "logger": DummyLogger(),
@@ -1367,7 +1622,7 @@ class TestTorchForecastingModel:
 
     def test_invalid_metrics(self):
         torch_metrics = ["invalid"]
-        with pytest.raises(AttributeError):
+        with pytest.raises(ValueError):
             model = RNNModel(
                 12,
                 "RNN",
@@ -1898,7 +2153,9 @@ class TestTorchForecastingModel:
                     cov_name + "_covariates": covs[cov_name + "_covariates"][:-1]
                 }
                 _ = model_fc_shift.predict(n=ocl, **add_covs)
-            assert f"provided {cov_name} covariates at dataset index" in str(err.value)
+            assert f"provided `{cov_name}_covariates` at series sequence index" in str(
+                err.value
+            )
 
     @pytest.mark.parametrize("config", itertools.product(models, [2, 3, 4]))
     def test_multi_ts_prediction(self, config):
@@ -1936,6 +2193,10 @@ class TestTorchForecastingModel:
         model_kwargs["pl_trainer_kwargs"]["fast_dev_run"] = False
         # create more than one batch sample as otherwise linear sample weight would always be `1.`
         ts = tg.linear_timeseries(
+            length=model_kwargs["input_chunk_length"]
+            + model_kwargs["output_chunk_length"]
+            + 1
+        ) + tg.sine_timeseries(
             length=model_kwargs["input_chunk_length"]
             + model_kwargs["output_chunk_length"]
             + 1
@@ -2018,7 +2279,7 @@ class TestTorchForecastingModel:
             model.fit(ts, sample_weight=ts[:-1])
         assert (
             str(err.value)
-            == "Missing sample weights; could not find sample weights in index value range: "
+            == "Invalid `sample_weight`; could not find values in index range: "
             "2000-01-11 00:00:00 - 2000-01-11 00:00:00."
         )
 
@@ -2039,7 +2300,7 @@ class TestTorchForecastingModel:
         assert (
             str(err.value)
             == "The number of components in `sample_weight` must either be `1` or match the "
-            "number of target series components `1`. (0-th series)"
+            "number of target series components `1` (at series sequence idx `0`)."
         )
         # with correct number it works
         model = model_cls(**model_kwargs)
@@ -2095,8 +2356,485 @@ class TestTorchForecastingModel:
                 pred.all_values(), pred_no_weight.all_values()
             )
 
+    def test_validate_predict_samples(self, tmpdir_fn):
+        model = self.helper_create_DLinearModel(work_dir=tmpdir_fn)
+
+        # train model with all features types
+        series = self.series.with_static_covariates(pd.DataFrame({"st1": [1.0]}))
+        # dummy past cov with more features
+        pc = series.stack(series)
+        # dummy future cov with even more features
+        fc = series.stack(pc)
+        model.fit(
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+        )
+
+        # train sample has (past_target, past_covariates, historic_future_covariates, future_covariates,
+        # static covariates, future_target)
+        train_sample = model.train_sample
+        # predict sample has (past_target, past_covariates, future_past_covariates, historic_future_covariates,
+        # future_covariates, static_covariates, target series, prediction start time)
+        valid_sample = (
+            train_sample[:2]
+            + (None,)
+            + train_sample[2:-1]
+            + (series, series.end_time() + series.freq)
+        )
+
+        # valid sample works
+        model._validate_predict_sample(model.train_sample, valid_sample)
+
+        with pytest.raises(ValueError) as exc:
+            model._validate_predict_sample(model.train_sample, valid_sample[:-1])
+        assert str(exc.value).startswith(
+            "Mismatch between number of training features `5` and prediction features `4`."
+        )
+
+        target_wrong_comp = np.empty((train_sample[0].shape[0], 2))
+        with pytest.raises(ValueError) as exc:
+            model._validate_predict_sample(
+                model.train_sample, (target_wrong_comp,) + valid_sample[1:]
+            )
+        assert str(exc.value) == (
+            "The provided `series` must have equal number of components as the `series` used to train the model. "
+            "Received number of components: `2`, expected: `1`."
+        )
+
+        with pytest.raises(ValueError) as exc:
+            model._validate_predict_sample(
+                model.train_sample, (None,) + valid_sample[1:]
+            )
+        assert str(exc.value).startswith(
+            "This model has been trained with `series`; some `series` "
+            "of matching dimensionality are needed for prediction."
+        )
+
+        with pytest.raises(ValueError) as exc:
+            model._validate_predict_sample(
+                (None,) + model.train_sample[1:], valid_sample
+            )
+        assert str(exc.value).startswith(
+            "This model has been trained without `series`; No `series` "
+            "should be provided for prediction."
+        )
+
+        # incorrect number of pred features
+        pred_sample = [1.0, 1.0]
+        with pytest.raises(ValueError) as exc:
+            model._validate_predict_sample(model.train_sample, pred_sample)
+        assert str(exc.value).startswith(
+            "Mismatch between number of training features `5` "
+            "and prediction features `2`."
+        )
+
+    def test_to_dtype(self, tmpdir_fn):
+        model = self.helper_create_DLinearModel(work_dir=tmpdir_fn)
+        model.fit(self.series[:24])
+
+        assert model.model.dtype is torch.float64
+        model.model.to_dtype(torch.float64)
+        assert model.model.dtype is torch.float64
+        model.model.to_dtype(torch.float32)
+        assert model.model.dtype is torch.float32
+        model.model.to_dtype(torch.float16)
+        assert model.model.dtype is torch.float16
+
+        with pytest.raises(ValueError) as exc:
+            model.model.to_dtype(np.float64)
+        assert str(exc.value).startswith(
+            "Trying to load dtype `<class 'numpy.float64'>`."
+        )
+
+    @pytest.mark.parametrize("stride", [1, 2])
+    def test_fit_with_stride(self, stride):
+        # mocking `fit_from_dataset` to check that `stride` was passed properly
+        icl, ocl = 5, 1
+        with patch(
+            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.fit_from_dataset"
+        ) as fit_patch:
+            model = DLinearModel(
+                input_chunk_length=5, output_chunk_length=1, n_epochs=1, **tfm_kwargs
+            )
+            # this should extract 3 samples with stride == 1
+            model.fit(
+                series=self.series[: icl + ocl + 2],
+                val_series=self.series[: icl + ocl + 2],
+                stride=stride,
+            )
+            input_args = fit_patch.call_args.args
+            train_set = input_args[0]
+            val_set = input_args[1]
+            assert len(train_set) == len(val_set) == math.ceil(3 / stride)
+            assert train_set.stride == val_set.stride == stride
+
+    def test_predict_after_fit_from_dataset(self):
+        """Test that the model can predict after being trained with `fit_from_dataset` using all covariates."""
+        icl, ocl = kwargs["input_chunk_length"], kwargs["output_chunk_length"]
+        n = 1
+        series = [
+            self.series[: icl + ocl].with_static_covariates(pd.DataFrame({"sc": [0.0]}))
+        ]
+        pc = [self.series[: icl + ocl]]
+        fc = [self.series[: icl + ocl + n]]
+
+        model = TiDEModel(**kwargs)
+
+        train_dataset = SequentialTorchTrainingDataset(
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            use_static_covariates=True,
+        )
+
+        # check training works and covariates are used
+        model.fit_from_dataset(train_dataset=train_dataset)
+        assert model.uses_past_covariates
+        assert model.uses_future_covariates
+        assert model.uses_static_covariates
+        assert model._expect_past_covariates
+        assert model._expect_future_covariates
+        assert model._expect_static_covariates
+
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict(n=n)
+        assert str(exc.value).startswith("Input `series` must be provided.")
+
+        hfc_kwargs = {"forecast_horizon": n, "retrain": False, "overlap_end": True}
+        self.helper_predict_raise_on_missing_input(
+            model, "predict", series, pc, fc, n=n
+        )
+        self.helper_predict_raise_on_missing_input(
+            model, "historical_forecasts", series, pc, fc, **hfc_kwargs
+        )
+        self.helper_predict_from_ds_raise_on_missing_input(
+            model,
+            series,
+            pc,
+            fc,
+            n=n,
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+        )
+
+        # check predict methods
+        inference_dataset = SequentialTorchInferenceDataset(
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+            n=n,
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            use_static_covariates=True,
+        )
+        pred1 = model.predict(
+            n=n, series=series, past_covariates=pc, future_covariates=fc
+        )[0]
+        pred2 = model.predict_from_dataset(n=n, dataset=inference_dataset)[0]
+        pred3 = model.historical_forecasts(
+            forecast_horizon=n,
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+            retrain=False,
+            overlap_end=True,
+        )[0]
+        # extract only the last hist fc which should be the same as the regular predictions
+        pred3 = pred3[-1]
+        assert pred1 == pred2
+        np.testing.assert_array_almost_equal(pred3.all_values(), pred1.all_values())
+        assert pred3.time_index.equals(pred1.time_index)
+        assert pred3.static_covariates.equals(series[0].static_covariates)
+
+    @pytest.mark.parametrize("use_custom_trainer", [False, True])
+    def test_load_best(self, tmpdir_fn, use_custom_trainer):
+        """Tests the load_best parameter in fit() and its effect on epochs_trained."""
+        # Create series where validation loss is likely to decrease and then increase (overfitting)
+        # This makes it likely that the best model is not the last one.
+        series_train = tg.sine_timeseries(length=50, value_y_offset=0).astype(
+            np.float32
+        )
+        series_val = tg.sine_timeseries(length=25, value_y_offset=0.1).astype(
+            np.float32
+        )
+        n_epochs = 5
+
+        common_kwargs = {
+            "input_chunk_length": 12,
+            "model": "RNN",
+            "hidden_dim": 10,
+            "n_rnn_layers": 10,
+            "n_epochs": n_epochs,
+            "work_dir": tmpdir_fn,
+            "random_state": 42,
+            **tfm_kwargs,
+        }
+
+        kwargs_last = dict(
+            common_kwargs, model_name="last_model", save_checkpoints=True
+        )
+        if not use_custom_trainer:
+            # Case A: Darts' automatic checkpointing
+            trainer_best = None
+            kwargs_best = dict(
+                common_kwargs, model_name="best_model", save_checkpoints=True
+            )
+        else:
+            # Case B: Darts' automatic checkpointing is deactivated but user provides a custom `trainer` with a
+            # ModelCheckpoint callback
+            kwargs_best = dict(
+                common_kwargs, model_name="best_model", save_checkpoints=False
+            )
+            ckpt_folder = os.path.join(tmpdir_fn, "best_model", "checkpoints")
+            os.makedirs(ckpt_folder, exist_ok=True)
+            checkpoint_callback_last = ModelCheckpoint(
+                dirpath=ckpt_folder,
+                save_last=True,
+                monitor="val_loss",
+            )
+            trainer_best = pl.Trainer(
+                max_epochs=n_epochs,
+                callbacks=[checkpoint_callback_last],
+                **tfm_kwargs["pl_trainer_kwargs"],
+            )
+
+        model_last = RNNModel(**kwargs_last)
+        model_last.fit(
+            series_train,
+            val_series=series_val,
+            load_best=False,
+            trainer=None,
+        )
+        last_model_epochs_trained = model_last.epochs_trained
+
+        model_best = RNNModel(**kwargs_best)
+        model_best.fit(
+            series_train, val_series=series_val, load_best=True, trainer=trainer_best
+        )
+        best_model_epochs_trained = model_best.epochs_trained
+
+        # The model trained to the end should have n_epochs trained
+        assert last_model_epochs_trained == n_epochs
+        # The model loading the best checkpoint should have trained fewer epochs (or equal if best is last)
+        # With our crafted data, it's highly likely to be less.
+        assert best_model_epochs_trained < last_model_epochs_trained
+
+        # We can also check that the trainer object confirms the best model was loaded
+        trainer_to_check = trainer_best if use_custom_trainer else model_best.trainer
+        best_model_path = trainer_to_check.checkpoint_callback.best_model_path
+        assert best_model_path and os.path.exists(best_model_path)
+
+        # predictions must work and be different
+        preds_last = model_last.predict(n=1)
+        preds_best = model_best.predict(n=1)
+        assert preds_last != preds_best
+
+        # Check that loading the best model from the training run of `model_last`
+        # is equivalent to the model obtained from `fit(..., load_best=True)`.
+        model_last_best = RNNModel.load_from_checkpoint(
+            model_name=model_last.model_name,
+            work_dir=model_last.work_dir,
+            best=True,
+        )
+        preds_last_best = model_last_best.predict(n=1)
+        assert preds_last_best == preds_best
+
+    @pytest.mark.parametrize(
+        "save_checkpoints, val_series_provided", [(False, True), (True, False)]
+    )
+    def test_load_best_ignored(
+        self, tmpdir_fn, caplog, save_checkpoints, val_series_provided
+    ):
+        """Tests that `load_best` is ignored with a warning when conditions are not met."""
+        series_train = tg.sine_timeseries(length=50).astype(np.float32)
+        series_val = (
+            tg.sine_timeseries(length=25).astype(np.float32)
+            if val_series_provided
+            else None
+        )
+        n_epochs = 3
+
+        model_kwargs = {
+            "input_chunk_length": 12,
+            "n_epochs": n_epochs,
+            "work_dir": tmpdir_fn,
+            "random_state": 42,
+            "save_checkpoints": save_checkpoints,
+            **tfm_kwargs,
+        }
+
+        model = RNNModel(**model_kwargs)
+
+        with caplog.at_level(logging.WARNING):
+            model.fit(
+                series_train,
+                val_series=series_val,
+                load_best=True,
+            )
+
+        # Check that the specific warning is logged
+        assert (
+            "Loading the best model will be skipped (`load_best` is ignored)"
+            in caplog.text
+        )
+
+        # Model should have trained for all epochs since load_best was ignored.
+        assert model.epochs_trained == n_epochs
+
+        # also check that prediction works
+        model.predict(n=1)
+
+    @pytest.mark.parametrize(
+        "cov_type, expect_warning",
+        [
+            ("past_covariates", False),
+            ("past_covariates", True),
+            # future_covariates covers both fc and hfc (historic part) since they come from the same series
+            ("future_covariates", False),
+            ("future_covariates", True),
+            # static_covariates are cast to the target series dtype on creation via with_static_covariates,
+            # so a dtype mismatch cannot occur through the normal API
+        ],
+    )
+    def test_verify_dtypes_warning(self, caplog, cov_type, expect_warning):
+        """Tests that a warning is raised when input data have mixed dtypes."""
+        target_dtype = np.float32
+        cov_dtype = np.float64 if expect_warning else np.float32
+
+        series = tg.sine_timeseries(length=13).astype(target_dtype)
+        fit_kwargs = {
+            "series": series,
+            cov_type: tg.sine_timeseries(length=14).astype(cov_dtype),
+        }
+
+        model = NLinearModel(
+            input_chunk_length=12, output_chunk_length=1, **tfm_kwargs_dev
+        )
+
+        with caplog.at_level(logging.WARNING):
+            if expect_warning:
+                # user is warned before downstream model exception is raised
+                with pytest.raises(RuntimeError):
+                    model.fit(**fit_kwargs)
+            else:
+                model.fit(**fit_kwargs)
+
+        assert (
+            "Observed mixed data types in the dataset output" in caplog.text
+        ) == expect_warning
+        caplog.clear()
+
+        if expect_warning:
+            return
+
+        # also warn if prediction input does not have the same dtype as the data the model was trained on
+        with caplog.at_level(logging.WARNING):
+            with pytest.raises(RuntimeError):
+                _ = model.predict(
+                    n=1, **{k: v.astype("float64") for k, v in fit_kwargs.items()}
+                )
+        assert "Dataset output has a different data type" in caplog.text
+        caplog.clear()
+
+        # if everything is okay, there is no warning
+        with caplog.at_level(logging.WARNING):
+            _ = model.predict(
+                n=1, **{k: v.astype("float32") for k, v in fit_kwargs.items()}
+            )
+        assert "Dataset output has a different data type" not in caplog.text
+
+    def helper_predict_raise_on_missing_input(
+        self, model, fn: str, series, pc, fc, **kwargs
+    ):
+        """Helper function to test that the model raises an error when calling `predict()` or `historical_forecasts()`
+        after `fit_from_dataset()` with missing inputs."""
+        with pytest.raises(ValueError) as exc:
+            _ = getattr(model, fn)(series=series, **kwargs)
+        assert str(exc.value).startswith("The model was trained with past covariates.")
+        with pytest.raises(ValueError) as exc:
+            _ = getattr(model, fn)(series=series, past_covariates=pc, **kwargs)
+        assert str(exc.value).startswith(
+            "The model was trained with future covariates."
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = getattr(model, fn)(series=series, future_covariates=fc, **kwargs)
+        assert str(exc.value).startswith("The model was trained with past covariates.")
+        with pytest.raises(ValueError) as exc:
+            _ = getattr(model, fn)(
+                series=[series[0].with_static_covariates(None)],
+                past_covariates=pc,
+                future_covariates=fc,
+                **kwargs,
+            )
+        assert str(exc.value).startswith(
+            "The model was trained with static covariates."
+        )
+
+    def helper_predict_from_ds_raise_on_missing_input(
+        self,
+        model,
+        series,
+        pc,
+        fc,
+        n,
+        **kwargs,
+    ):
+        """Helper function to test that the model raises an error when calling `predict_from_dataset()` after
+        `fit_from_dataset()` with missing inputs."""
+        inf_dataset = SequentialTorchInferenceDataset(
+            n=n,
+            series=series,
+            **kwargs,
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict_from_dataset(n=n, dataset=inf_dataset)
+        assert str(exc.value).startswith(
+            "This model has been trained with `past_covariates`"
+        )
+
+        inf_dataset = SequentialTorchInferenceDataset(
+            n=n,
+            series=series,
+            past_covariates=pc,
+            **kwargs,
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict_from_dataset(n=n, dataset=inf_dataset)
+        assert str(exc.value).startswith(
+            "This model has been trained with `historic_future_covariates`"
+        )
+
+        inf_dataset = SequentialTorchInferenceDataset(
+            n=n,
+            series=series,
+            future_covariates=fc,
+            **kwargs,
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict_from_dataset(n=n, dataset=inf_dataset)
+        assert str(exc.value).startswith(
+            "This model has been trained with `past_covariates`"
+        )
+
+        inf_dataset = SequentialTorchInferenceDataset(
+            n=n,
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+            use_static_covariates=False,
+            **kwargs,
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict_from_dataset(n=n, dataset=inf_dataset)
+        assert str(exc.value).startswith(
+            "This model has been trained with `static_covariates`"
+        )
+
     def helper_equality_encoders(
-        self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
+        self, first_encoders: dict[str, Any], second_encoders: dict[str, Any]
     ):
         if first_encoders is None:
             first_encoders = {}
@@ -2107,7 +2845,7 @@ class TestTorchForecastingModel:
         }
 
     def helper_equality_encoders_transfo(
-        self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
+        self, first_encoders: dict[str, Any], second_encoders: dict[str, Any]
     ):
         if first_encoders is None:
             first_encoders = {}
@@ -2139,11 +2877,11 @@ class TestTorchForecastingModel:
 
     def helper_create_DLinearModel(
         self,
-        work_dir: Optional[str] = None,
+        work_dir: str | None = None,
         model_name: str = "unitest_model",
-        add_encoders: Optional[Dict] = None,
+        add_encoders: dict | None = None,
         save_checkpoints: bool = False,
-        likelihood: Optional[Likelihood] = None,
+        likelihood: TorchLikelihood | None = None,
         output_chunk_length: int = 1,
         **kwargs,
     ):
@@ -2173,3 +2911,220 @@ class TestTorchForecastingModel:
         params.update(tfm_kwargs)
         params.update(kwargs)
         return model_cls(**params)
+
+
+class TestTorchForecastingModelFineTuning:
+    """Tests for enable_finetuning on TorchForecastingModel using DLinearModel."""
+
+    series = tg.sine_timeseries(length=40, value_frequency=0.05).astype(np.float32)
+
+    base_kwargs = {
+        "input_chunk_length": 10,
+        "output_chunk_length": 2,
+        "random_state": 42,
+        **tfm_kwargs,
+    }
+
+    def test_full_finetuning(self):
+        model = DLinearModel(
+            enable_finetuning=True,
+            n_epochs=1,
+            **self.base_kwargs,
+        )
+        assert model.enable_finetuning is True
+        assert model._requires_training is True
+
+        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+            model.fit(self.series)
+            mock_fit.assert_called_once()
+
+        for name, p in model.model.named_parameters():
+            assert p.requires_grad is True
+
+        preds = model.predict(n=10, series=self.series)
+        assert len(preds) == 10
+
+    def test_no_training(self):
+        model = DLinearModel(
+            enable_finetuning=False,
+            n_epochs=1,
+            **self.base_kwargs,
+        )
+        assert model.enable_finetuning is False
+        assert model._requires_training is False
+
+        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+            model.fit(self.series)
+            mock_fit.assert_not_called()
+
+        for name, p in model.model.named_parameters():
+            assert p.requires_grad is False
+
+        preds = model.predict(n=10, series=self.series)
+        assert len(preds) == 10
+
+    @pytest.mark.parametrize("freeze", [["linear_seasonal.*"], ["*linear_seasonal*"]])
+    def test_partial_freeze(self, freeze):
+        model = DLinearModel(
+            enable_finetuning={"freeze": freeze},
+            n_epochs=1,
+            **self.base_kwargs,
+        )
+
+        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+            model.fit(self.series)
+            mock_fit.assert_called_once()
+
+        frozen_found = False
+        trainable_found = False
+        for name, p in model.model.named_parameters():
+            if "linear_seasonal" in name:
+                assert p.requires_grad is False
+                frozen_found = True
+            else:
+                assert p.requires_grad is True
+                trainable_found = True
+
+        assert frozen_found
+        assert trainable_found
+
+        preds = model.predict(n=10, series=self.series)
+        assert len(preds) == 10
+
+    def test_partial_unfreeze(self):
+        model = DLinearModel(
+            enable_finetuning={"unfreeze": ["linear_seasonal.*"]},
+            n_epochs=1,
+            **self.base_kwargs,
+        )
+
+        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+            model.fit(self.series)
+            mock_fit.assert_called_once()
+
+        unfrozen_found = False
+        frozen_found = False
+        for name, p in model.model.named_parameters():
+            if "linear_seasonal" in name:
+                assert p.requires_grad is True
+                unfrozen_found = True
+            else:
+                assert p.requires_grad is False
+                frozen_found = True
+
+        assert unfrozen_found
+        assert frozen_found
+
+        preds = model.predict(n=10, series=self.series)
+        assert len(preds) == 10
+
+    def test_finetuning_misconfiguration(self):
+        with pytest.raises(
+            ValueError,
+            match="must contain exactly one key: 'freeze' or 'unfreeze'",
+        ):
+            DLinearModel(
+                enable_finetuning={"invalid_key": ["pattern"]},
+                **self.base_kwargs,
+            )
+
+        with pytest.raises(ValueError, match="must be a list of strings"):
+            DLinearModel(
+                enable_finetuning={"freeze": "not_a_list"},
+                **self.base_kwargs,
+            )
+
+        with pytest.raises(ValueError, match="must contain exactly one key"):
+            DLinearModel(
+                enable_finetuning={"freeze": ["p1"], "unfreeze": ["p2"]},
+                **self.base_kwargs,
+            )
+
+    def test_save_load_roundtrip(self, tmpdir):
+        model = DLinearModel(
+            enable_finetuning=True,
+            n_epochs=1,
+            **self.base_kwargs,
+        )
+        model.fit(self.series)
+
+        pred_before = model.predict(n=2, series=self.series)
+
+        save_path = os.path.join(str(tmpdir), "finetuned_model.pt")
+        model.save(save_path)
+
+        loaded_model = DLinearModel.load(save_path)
+        assert loaded_model.enable_finetuning is True
+
+        pred_after = loaded_model.predict(n=2, series=self.series)
+        np.testing.assert_allclose(
+            pred_before.values(),
+            pred_after.values(),
+            atol=1e-6,
+        )
+
+    def test_enable_finetuning_with_load_weights(self, tmpdir):
+        # 1. Train and save a base model (no fine-tuning flags)
+        base_model = DLinearModel(
+            n_epochs=1,
+            **self.base_kwargs,
+        )
+        base_model.fit(self.series)
+        save_path = os.path.join(str(tmpdir), "base_model.pt")
+        base_model.save(save_path)
+
+        base_state = {n: p.clone() for n, p in base_model.model.named_parameters()}
+
+        # 2. Create a NEW model with enable_finetuning and load_weights
+        ft_model = DLinearModel(
+            enable_finetuning={"freeze": ["linear_seasonal.*"]},
+            n_epochs=1,
+            **self.base_kwargs,
+        )
+        ft_model.load_weights(save_path)
+
+        # 3. Verify requires_grad is correctly set after load_weights
+        frozen_found = False
+        for name, p in ft_model.model.named_parameters():
+            if "linear_seasonal" in name:
+                assert p.requires_grad is False
+                frozen_found = True
+            else:
+                assert p.requires_grad is True
+
+        assert frozen_found
+
+        # 4. Verify loaded weights match saved weights
+        for name, p in ft_model.model.named_parameters():
+            np.testing.assert_allclose(
+                p.detach().cpu().numpy(),
+                base_state[name].detach().cpu().numpy(),
+                atol=1e-6,
+            )
+
+        # 5. Fine-tune (fit) the model — only unfrozen params should change
+        frozen_before = {n: p.clone() for n, p in ft_model.model.named_parameters()}
+        ft_model.fit(self.series)
+        for name, p in ft_model.model.named_parameters():
+            if "linear_seasonal" in name:
+                np.testing.assert_allclose(
+                    p.detach().cpu().numpy(),
+                    frozen_before[name].detach().cpu().numpy(),
+                    atol=1e-6,
+                )
+            else:
+                with pytest.raises(AssertionError):
+                    np.testing.assert_allclose(
+                        p.detach().cpu().numpy(),
+                        frozen_before[name].detach().cpu().numpy(),
+                        atol=1e-6,
+                    )
+
+    def test_enable_finetuning_none_is_default(self):
+        model = DLinearModel(n_epochs=1, **self.base_kwargs)
+        assert model.enable_finetuning is None
+        assert model._requires_training is True
+
+        model.fit(self.series)
+        for _, p in model.model.named_parameters():
+            assert p.requires_grad is True

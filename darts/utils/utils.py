@@ -3,26 +3,74 @@ Additional util functions
 -------------------------
 """
 
+import contextlib
+import importlib.util
+import math
+from collections.abc import Callable, Iterator
 from enum import Enum
 from functools import wraps
 from inspect import Parameter, getcallargs, signature
-from typing import Callable, Iterator, List, Optional, Tuple, TypeVar, Union
+from typing import Any, TypeVar
 
+import narwhals as nw
 import numpy as np
 import pandas as pd
-from joblib import Parallel, delayed
+from narwhals import DataFrame
 from pandas._libs.tslibs.offsets import BusinessMixin
-from tqdm import tqdm
-from tqdm.notebook import tqdm as tqdm_notebook
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.typing import TimeIndex
 
-try:
-    from IPython import get_ipython
-except ModuleNotFoundError:
-    get_ipython = None
+TORCH_AVAILABLE = importlib.util.find_spec("torch") is not None
 
 logger = get_logger(__name__)
+
+MAX_TORCH_SEED_VALUE = (1 << 31) - 1  # to accommodate 32-bit architectures
+MAX_NUMPY_SEED_VALUE = (1 << 31) - 1
+
+SUPPORTED_RESAMPLE_METHODS = [
+    "all",
+    "any",
+    "asfreq",
+    "backfill",
+    "bfill",
+    "count",
+    "ffill",
+    "first",
+    "interpolate",
+    "last",
+    "max",
+    "mean",
+    "median",
+    "min",
+    "nearest",
+    "pad",
+    "prod",
+    "quantile",
+    "reduce",
+    "std",
+    "sum",
+    "var",
+]
+
+
+class NotImportedModule:
+    """Helper class for handling import errors of optional dependencies."""
+
+    usable = False
+
+    def __init__(self, module_name: str, warn: bool = True):
+        self.error_message = (
+            f"The `{module_name}` module could not be imported. "
+            f"To enable {module_name} support in Darts, follow the detailed "
+            f"instructions in the installation guide: "
+            f"https://github.com/unit8co/darts/blob/master/INSTALL.md"
+        )
+        if warn:
+            logger.warning(self.error_message)
+
+    def __call__(self, *args, **kwargs):
+        raise_log(ImportError(self.error_message), logger=logger)
 
 
 # Enums
@@ -43,30 +91,6 @@ class ModelMode(Enum):
     NONE = None
 
 
-# TODO: remove this once bumping min python version from 3.8 to 3.9 (pandas v2.2.0 not available for p38)
-pd_above_v22 = pd.__version__ >= "2.2"
-freqs = {
-    "YE": "YE" if pd_above_v22 else "A",
-    "YS": "YS" if pd_above_v22 else "AS",
-    "BYS": "BYS" if pd_above_v22 else "BAS",
-    "BYE": "BYE" if pd_above_v22 else "BA",
-    "QE": "QE" if pd_above_v22 else "Q",
-    "BQE": "BQE" if pd_above_v22 else "BQ",
-    "ME": "ME" if pd_above_v22 else "M",
-    "SME": "SME" if pd_above_v22 else "SM",
-    "BME": "BME" if pd_above_v22 else "BM",
-    "CBME": "CBME" if pd_above_v22 else "CBM",
-    "h": "h" if pd_above_v22 else "H",
-    "bh": "bh" if pd_above_v22 else "BH",
-    "cbh": "cbh" if pd_above_v22 else "CBH",
-    "min": "min" if pd_above_v22 else "T",
-    "s": "s" if pd_above_v22 else "S",
-    "ms": "ms" if pd_above_v22 else "L",
-    "us": "us" if pd_above_v22 else "U",
-    "ns": "ns" if pd_above_v22 else "N",
-}
-
-
 def _build_tqdm_iterator(iterable, verbose, **kwargs):
     """
     Build an iterable, possibly using tqdm (either in notebook or regular mode)
@@ -81,6 +105,13 @@ def _build_tqdm_iterator(iterable, verbose, **kwargs):
     Returns
     -------
     """
+    from tqdm import tqdm
+    from tqdm.notebook import tqdm as tqdm_notebook
+
+    try:
+        from IPython import get_ipython
+    except ModuleNotFoundError:
+        get_ipython = None
 
     def _isnotebook():
         if get_ipython is None:
@@ -174,8 +205,8 @@ def _with_sanity_checks(
 
 
 def _parallel_apply(
-    iterator: Iterator[Tuple], fn: Callable, n_jobs: int, fn_args, fn_kwargs
-) -> List:
+    iterator: Iterator[tuple], fn: Callable, n_jobs: int, fn_args, fn_kwargs
+) -> list:
     """
     Utility function that parallelise the execution of a function over an Iterator
 
@@ -198,10 +229,29 @@ def _parallel_apply(
 
     """
 
+    from joblib import Parallel, delayed
+
     returned_data = Parallel(n_jobs=n_jobs)(
         delayed(fn)(*sample, *fn_args, **fn_kwargs) for sample in iterator
     )
     return returned_data
+
+
+def _is_method(func: Callable[..., Any]) -> bool:
+    """Check if the specified function is a method.
+
+    Parameters
+    ----------
+    func
+        the function to inspect.
+
+    Returns
+    -------
+    bool
+        true if `func` is a method, false otherwise.
+    """
+    spec = signature(func)
+    return len(spec.parameters) > 0 and list(spec.parameters.keys())[0] == "self"
 
 
 def _check_quantiles(quantiles):
@@ -228,10 +278,10 @@ def _check_quantiles(quantiles):
 
 
 def slice_index(
-    index: Union[pd.RangeIndex, pd.DatetimeIndex],
-    start: Union[int, pd.Timestamp],
-    end: Union[int, pd.Timestamp],
-) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
+    index: TimeIndex,
+    start: int | pd.Timestamp,
+    end: int | pd.Timestamp,
+) -> TimeIndex:
     """
     Returns a new Index with the same type as the input `index`, containing the values between `start`
     and `end` included. If start and end are not in the index, the closest values are used instead.
@@ -250,7 +300,7 @@ def slice_index(
 
     Returns
     -------
-    Union[pd.RangeIndex, pd.DatetimeIndex]
+    pd.RangeIndex | pd.DatetimeIndex
         A new index with the same type as the input `index`, but with only the values between `start` and `end`
         included.
     """
@@ -287,9 +337,9 @@ def slice_index(
 
 
 def drop_before_index(
-    index: Union[pd.RangeIndex, pd.DatetimeIndex],
-    split_point: Union[int, pd.Timestamp],
-) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
+    index: TimeIndex,
+    split_point: int | pd.Timestamp,
+) -> TimeIndex:
     """
     Drops everything before the provided time `split_point` (excluded) from the index.
 
@@ -302,16 +352,16 @@ def drop_before_index(
 
     Returns
     -------
-    Union[pd.RangeIndex, pd.DatetimeIndex]
+    TimeIndex
         A new index with values before `split_point` dropped.
     """
     return slice_index(index, split_point, index[-1])
 
 
 def drop_after_index(
-    index: Union[pd.RangeIndex, pd.DatetimeIndex],
-    split_point: Union[int, pd.Timestamp],
-) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
+    index: TimeIndex,
+    split_point: int | pd.Timestamp,
+) -> TimeIndex:
     """
     Drops everything after the provided time `split_point` (excluded) from the index.
 
@@ -324,7 +374,7 @@ def drop_after_index(
 
     Returns
     -------
-    Union[pd.RangeIndex, pd.DatetimeIndex]
+    TimeIndex
         A new index with values after `split_point` dropped.
     """
 
@@ -332,9 +382,9 @@ def drop_after_index(
 
 
 def n_steps_between(
-    end: Union[pd.Timestamp, int],
-    start: Union[pd.Timestamp, int],
-    freq: Union[pd.DateOffset, int, str],
+    end: pd.Timestamp | int,
+    start: pd.Timestamp | int,
+    freq: pd.DateOffset | int | str,
 ) -> int:
     """Get the number of time steps with a given frequency `freq` between `end` and `start`.
     Works for both integers and time stamps.
@@ -390,8 +440,9 @@ def n_steps_between(
             ),
             logger=logger,
         )
-    # Series frequency represents a non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’, 'W')
-    if pd.to_timedelta(freq, errors="coerce") is not pd.NaT:
+
+    # frequency has a fixed period (e.g. non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’, 'W'), or integer step)
+    if isinstance(freq, int) or pd.to_timedelta(freq, errors="coerce") is not pd.NaT:
         diff = end - start
         if abs(diff) != diff:
             # (A) when diff is negative, not perfectly divisible by freq, and freq is a multiple of a base frequency
@@ -428,20 +479,65 @@ def n_steps_between(
     return n_steps
 
 
+def infer_freq_intersection(
+    freq: int | str | pd.tseries.offsets.DateOffset,
+    other: int | str | pd.tseries.offsets.DateOffset,
+) -> int | pd.tseries.offsets.DateOffset:
+    """Infers the frequency at which two frequencies `freq` and `other` intersect.
+
+    Parameters
+    ----------
+    freq
+        The first frequency.
+    other
+        The other frequency.
+
+    Raises
+    ------
+    ValueError
+        If the intersecting frequency cannot be inferred.
+    """
+    freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
+    other = pd.tseries.frequencies.to_offset(other) if isinstance(other, str) else other
+
+    if freq == other:
+        return freq
+
+    if isinstance(freq, int):
+        # e.g. (4, 1), (24, 3)
+        n_freq, n_other = freq, other
+    elif freq.base == other.base:
+        # e.g. (4W-MON, W-MON), (24h, 3h); frequency with the same base frequency
+        n_freq, n_other = freq.n, other.n
+    else:
+        try:
+            # e.g. (4D, 2h), (24h, 3min); only frequency with constant / fixed period
+            n_freq, n_other = freq.nanos, other.nanos
+        except ValueError as exc:
+            # e.g. (W-MON, MS, ...); frequencies with non-fixed period
+            raise_log(
+                ValueError(
+                    f"Cannot find intersecting frequency between ({freq}, {other}): {exc}"
+                ),
+                logger=logger,
+            )
+    return freq * (math.lcm(n_freq, n_other) // n_freq)
+
+
 def generate_index(
-    start: Optional[Union[pd.Timestamp, int]] = None,
-    end: Optional[Union[pd.Timestamp, int]] = None,
-    length: Optional[int] = None,
-    freq: Union[str, int, pd.DateOffset] = None,
-    name: str = None,
-) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
+    start: pd.Timestamp | str | int | None = None,
+    end: pd.Timestamp | str | int | None = None,
+    length: int | None = None,
+    freq: str | int | pd.DateOffset | None = None,
+    name: str | None = None,
+) -> TimeIndex:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
     or a pandas RangeIndex. The index starts at
 
     Parameters
     ----------
     start
-        The start of the returned index. If a pandas Timestamp is passed, the index will be a pandas
+        The start of the returned index. If a pandas Timestamp or a date string is passed, the index will be a pandas
         DatetimeIndex. If an integer is passed, the index will be a pandas RangeIndex index. Works only with
         either `length` or `end`.
     end
@@ -452,7 +548,7 @@ def generate_index(
     freq
         The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
         a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`__.
         By default, "D" (daily) is used.
         If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
         The freq is optional for generating an integer index (if not specified, 1 is used).
@@ -471,6 +567,10 @@ def generate_index(
         f"`start` to None.",
         logger,
     )
+
+    start = pd.Timestamp(start) if isinstance(start, str) else start
+    end = pd.Timestamp(end) if isinstance(end, str) else end
+
     raise_if(
         end is not None and start is not None and type(start) is not type(end),
         "index generation with `start` and `end` requires equal object types of `start` and `end`",
@@ -480,6 +580,16 @@ def generate_index(
     if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
         freq = "D" if freq is None else freq
         freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
+
+        # performance notes: rolling a timestamp is only costly if the timestamp does not intersect
+        # with the offset (frequency)
+        if start is not None:
+            # adjust `start` so that it intersects with `freq`
+            start = freq.rollforward(start) if freq.n >= 0 else freq.rollback(start)
+        if end is not None:
+            # adjust `end` so that it intersects with `freq`
+            end = freq.rollback(end) if freq.n >= 0 else freq.rollforward(end)
+
         index = pd.date_range(
             start=start,
             end=end,
@@ -487,14 +597,6 @@ def generate_index(
             freq=freq,
             name=name,
         )
-        if freq.n < 0:
-            if start is not None and not freq.is_on_offset(start):
-                # for anchored negative frequencies, and `start` does not intersect with `freq`:
-                # pandas (v2.2.1) generates an index that starts one step before `start` -> remove this step
-                index = index[1:]
-            elif end is not None and not freq.is_on_offset(end):
-                # if `start` intersects with `freq`, then the same can happen for `end` -> remove this step
-                index = index[:-1]
     else:  # int
         step = 1 if freq is None else freq
         if start is None:
@@ -523,3 +625,198 @@ def expand_arr(arr: np.ndarray, ndim: int):
     if len(shape) != ndim:
         arr = arr.reshape(shape + tuple(1 for _ in range(ndim - len(shape))))
     return arr
+
+
+def sample_from_quantiles(
+    vals: np.ndarray,
+    quantiles: np.ndarray,
+    num_samples: int,
+):
+    """Generates `num_samples` samples from quantile predictions using linear interpolation. The generated samples
+    should have quantile values close to the quantile predictions. For the lowest and highest quantiles, the lowest
+    and highest quantile predictions are repeated.
+
+    Parameters
+    ----------
+    vals
+        A numpy array of quantile predictions/values. Either an array with two dimensions
+        (n times, n components * n quantiles), or with three dimensions (n times, n components, n quantiles).
+        In the two-dimensional case, the order is first by ascending column, then by ascending quantile value
+        `(comp_0_q_0, comp_0_q_1, ... comp_n_q_m)`
+    quantiles
+        A numpy array of quantiles.
+    num_samples
+        The number of samples to generate.
+    """
+    if not 2 <= vals.ndim <= 3:
+        raise_log(
+            ValueError(
+                "`vals` must have either two dimensions with `(n times, n components * n quantiles)` or three "
+                "dimensions with shape `(n times, n components, n quantiles)`"
+            )
+        )
+    n_time_steps = len(vals)
+    n_quantiles = len(quantiles)
+    if vals.ndim == 2:
+        if vals.shape[1] % n_quantiles > 0:
+            raise_log(
+                ValueError(
+                    "`vals` with two dimension must have shape `(n times, n components * n quantiles)`."
+                )
+            )
+        vals = vals.reshape((n_time_steps, -1, n_quantiles))
+    elif vals.ndim == 3 and vals.shape[2] != n_quantiles:
+        raise_log(
+            ValueError(
+                "`vals` with three dimension must have shape `(n times, n components, n quantiles)`."
+            )
+        )
+    n_columns = vals.shape[1]
+
+    # Generate uniform random samples
+    random_samples = np.random.uniform(0, 1, (n_time_steps, n_columns, num_samples))
+    # Find the indices of the quantiles just below and above the random samples
+    lower_indices = np.searchsorted(quantiles, random_samples, side="right") - 1
+    upper_indices = lower_indices + 1
+
+    # Handle edge cases
+    lower_indices = np.clip(lower_indices, 0, n_quantiles - 1)
+    upper_indices = np.clip(upper_indices, 0, n_quantiles - 1)
+
+    # Gather the corresponding quantile values and vals values
+    q_lower = quantiles[lower_indices]
+    q_upper = quantiles[upper_indices]
+    z_lower = np.take_along_axis(vals, lower_indices, axis=2)
+    z_upper = np.take_along_axis(vals, upper_indices, axis=2)
+
+    y = z_lower
+    # Linear interpolation
+    mask = q_lower != q_upper
+    y[mask] = z_lower[mask] + (z_upper[mask] - z_lower[mask]) * (
+        random_samples[mask] - q_lower[mask]
+    ) / (q_upper[mask] - q_lower[mask])
+    return y
+
+
+def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
+    """Decorator usable on any method within a class that will provide a random context.
+
+    The decorator will store a `_random_instance` property on the object in order to persist successive calls to the
+    RNG.
+
+    This is the equivalent to `darts.utils.torch.random_method` but for non-torch models.
+
+    Parameters
+    ----------
+    decorated
+        A method to be run in an isolated torch random context.
+    """
+    from sklearn.utils import check_random_state
+
+    # check that @random_method has been applied to a method.
+    if not _is_method(decorated):
+        raise_log(ValueError("@random_method can only be used on methods."), logger)
+
+    @wraps(decorated)
+    def decorator(self, *args, **kwargs):
+        store_instance = True
+        random_instance = None
+        if "random_state" in kwargs.keys() and kwargs["random_state"] is not None:
+            # get random state from model constructor or `predict()`
+            random_instance = check_random_state(kwargs["random_state"]).get_state()
+            if hasattr(self, "_random_instance"):
+                # do not store random instance when called from `predict()`
+                store_instance = False
+        elif not hasattr(self, "_random_instance"):
+            # get random state for first time from other method
+            random_instance = check_random_state(
+                np.random.randint(0, high=MAX_NUMPY_SEED_VALUE)
+            ).get_state()
+
+        # if no random instance is provided, use the one stored in the class
+        if random_instance is None:
+            random_instance = self._random_instance
+
+        if store_instance:
+            self._random_instance = random_instance
+
+        # handle the randomness
+        np.random.set_state(random_instance)
+        result = decorated(self, *args, **kwargs)
+
+        # update the random state after the function call
+        if store_instance:
+            self._random_instance = np.random.get_state()
+        return result
+
+    return decorator
+
+
+class ModelType(Enum):
+    FORECASTING_REGRESSOR = 0
+    FORECASTING_CLASSIFIER = 1
+
+
+def dataframe_col_to_time_index(
+    df: DataFrame,
+    time_col: str,
+) -> pd.Index | pd.DatetimeIndex:
+    """Convert a dataframe column to a pandas Index or DatetimeIndex.
+
+    Parameters
+    ----------
+    df
+        The dataframe containing the time column.
+    time_col
+        The name of the time column.
+    skip_uniqueness_check
+        Whether to skip uniqueness checks in case of an integer index.
+    """
+    if time_col not in df.columns:
+        raise_log(AttributeError(f"time_col='{time_col}' is not present."))
+
+    time_col_vals = df.get_column(time_col)
+
+    if time_col_vals.dtype == nw.String:
+        # Try to convert to integers if needed
+        with contextlib.suppress(Exception):
+            time_col_vals = time_col_vals.cast(nw.Int64)
+
+    if time_col_vals.dtype.is_integer():
+        # Temporarily use an integer `pd.Index` to sort the values; later replaced with
+        # a `pd.RangeIndex` in `__init__()`
+        time_index = pd.Index(time_col_vals)
+
+    elif isinstance(time_col_vals.dtype, nw.String):
+        # The integer conversion failed; try datetimes
+        try:
+            time_index = pd.DatetimeIndex(time_col_vals)
+        except ValueError:
+            raise_log(
+                AttributeError(
+                    "'time_col' is of 'String' dtype but doesn't contain valid timestamps"
+                )
+            )
+    elif isinstance(time_col_vals.dtype, nw.Datetime):
+        # force time index to be timezone naive, as polars converts to UTC
+        time_zone = time_col_vals.dtype.time_zone
+        if time_zone is not None:
+            logger.warning(
+                "The provided DatetimeIndex was associated with a timezone (tz), which is currently not "
+                "supported. To avoid unexpected behaviour, the tz information was removed. Consider calling "
+                f"`ts.time_index.tz_localize({time_zone})` when exporting the results."
+                "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
+                "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
+                "original timezone."
+            )
+            time_col_vals = time_col_vals.dt.replace_time_zone(None)
+        time_index = pd.DatetimeIndex(time_col_vals)
+    else:
+        raise_log(
+            AttributeError(
+                "Invalid type of `time_col`: it needs to be of either 'String', 'Datetime' or 'Int' dtype."
+            )
+        )
+    if not time_index.name:
+        time_index.name = time_col
+    return time_index

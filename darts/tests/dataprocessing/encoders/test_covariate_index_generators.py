@@ -221,7 +221,7 @@ class TestCovariatesIndexGenerator:
             input_chunk_length=3,
             output_chunk_length=3,
         )
-        # RegressionModel scenario
+        # SKLearnModel scenario
         _ = ig_cls(
             input_chunk_length=3,
             output_chunk_length=3,
@@ -381,7 +381,7 @@ class TestCovariatesIndexGenerator:
             assert idx.equals(self.cov_time_inf_short.time_index)
             assert target_end == target.end_time()
 
-        # lags are required for RegressionModels
+        # lags are required for SKLearnModels
         # case 1: abs(min_lags) == icl and abs(max_lag) == -1:
         # will give identical results as without setting lags
         min_lag = -12  # = -icl

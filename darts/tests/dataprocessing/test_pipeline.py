@@ -1,17 +1,22 @@
-from typing import Any, Mapping
+from collections.abc import Mapping, Sequence
+from typing import Any
 
+import numpy as np
 import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing import Pipeline
 from darts.dataprocessing.transformers import (
     BaseDataTransformer,
+    Diff,
     FittableDataTransformer,
     InvertibleDataTransformer,
     InvertibleMapper,
     Mapper,
+    Scaler,
 )
-from darts.utils.timeseries_generation import constant_timeseries
+from darts.typing import TimeSeriesLike
+from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
 
 
 class TestPipeline:
@@ -48,7 +53,9 @@ class TestPipeline:
 
         @staticmethod
         def ts_inverse_transform(
-            series: TimeSeries, params: Mapping[str, Any]
+            series: TimeSeries,
+            params: Mapping[str, Any],
+            insample: TimeSeries | None = None,
         ) -> TimeSeries:
             return series
 
@@ -79,7 +86,9 @@ class TestPipeline:
 
         @staticmethod
         def ts_inverse_transform(
-            series: TimeSeries, params: Mapping[str, Any]
+            series: TimeSeries,
+            params: Mapping[str, Any],
+            insample: TimeSeries | None = None,
         ) -> TimeSeries:
             return series.map(lambda x: x - 10)
 
@@ -88,14 +97,48 @@ class TestPipeline:
             super().__init__(name="*2 transformer")
 
         @staticmethod
-        def ts_transform(data: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
-            return data.map(lambda x: x * 2)
+        def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
+            return series.map(lambda x: x * 2)
 
         @staticmethod
         def ts_inverse_transform(
-            data: TimeSeries, params: Mapping[str, Any]
+            series: TimeSeries,
+            params: Mapping[str, Any],
+            insample: TimeSeries | None = None,
         ) -> TimeSeries:
-            return data.map(lambda x: x / 2)
+            return series.map(lambda x: x / 2)
+
+    class ExtendTransformer(FittableDataTransformer, InvertibleDataTransformer):
+        def __init__(self, global_fit: bool, coef: int):
+            self.coef = coef
+            super().__init__(
+                name="fittable extending transformer", global_fit=global_fit
+            )
+
+        @staticmethod
+        def ts_fit(
+            series: TimeSeriesLike,
+            params: Mapping[str, Any],
+            *args,
+            **kwargs,
+        ):
+            coef = params["fixed"]["coef"]
+            if isinstance(series, Sequence):
+                return sum(ts.values()[0] for ts in series) + coef
+            else:
+                return series.values()[0] + coef
+
+        @staticmethod
+        def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
+            return series + params["fitted"]
+
+        @staticmethod
+        def ts_inverse_transform(
+            series: TimeSeries,
+            params: Mapping[str, Any],
+            insample: TimeSeries | None = None,
+        ) -> TimeSeries:
+            return series - params["fitted"]
 
     def test_transform(self):
         # given
@@ -114,6 +157,91 @@ class TestPipeline:
         for t in transformers:
             assert t.transform_called
             assert not t.inverse_transform_called
+
+    def test_transform_prefitted(self):
+        """Check that when multiple series are passed to fit transformers with global_fit=False,
+        transform behave as expected when series_idx is specified.
+
+        Note: the transformers are fitted independently to make the expected results more intuitive
+        """
+        data = [
+            constant_timeseries(value=0, length=2),
+            constant_timeseries(value=10, length=2),
+        ]
+
+        def get_transf(global_fit: bool, fit: bool, coef: int):
+            transf = self.ExtendTransformer(global_fit=global_fit, coef=coef)
+            if fit:
+                transf.fit(data)
+            return transf
+
+        # multiple series, global_fit=False
+        p = Pipeline([
+            get_transf(global_fit=False, fit=True, coef=1),
+            get_transf(global_fit=False, fit=True, coef=5),
+        ])
+        transformed = p.transform(data)
+
+        # ts + (data[0][0] + 1) + (data[0][0] + 5) = 6
+        np.testing.assert_array_almost_equal(
+            transformed[0].values(), np.array([[6, 6]]).T
+        )
+        # ts + (data[1][0] + 1) + (data[1][0] + 5) = 10 + 11 + 15 = 36
+        np.testing.assert_array_almost_equal(
+            transformed[1].values(), np.array([[36, 36]]).T
+        )
+        # implicitly use the first params of each transformer
+        np.testing.assert_array_almost_equal(
+            transformed[0].values(), p.transform(data[0]).values()
+        )
+        # explicitly use the first params of each transformer
+        np.testing.assert_array_almost_equal(
+            transformed[0].values(), p.transform(data[0], series_idx=[0]).values()
+        )
+        # implicitly use the first params of each transformer
+        # ts + (data[0][0] + 1) + (data[0][0] + 5) = 10 + 1 + 5 = 16
+        np.testing.assert_array_almost_equal(
+            np.array([[16, 16]]).T, p.transform(data[1]).values()
+        )
+        # explicitly use the second params of each transformer
+        np.testing.assert_array_almost_equal(
+            transformed[1].values(), p.transform(data[1], series_idx=[1]).values()
+        )
+
+        # multiple series, mixture of local and global transformers
+        p = Pipeline([
+            get_transf(global_fit=False, fit=True, coef=1),
+            get_transf(global_fit=True, fit=True, coef=90),
+        ])
+        transformed = p.transform(data)
+        # ts + (data[0][0] + 1) + (sum(data[;, 0]) + 90) = 0 + 1 + 100
+        np.testing.assert_array_almost_equal(
+            transformed[0].values(), np.array([[101, 101]]).T
+        )
+        # ts + (data[1][0] + 1) + (sum(data[;, 0]) + 90) = 10 + 11 + 100
+        np.testing.assert_array_almost_equal(
+            transformed[1].values(), np.array([[121, 121]]).T
+        )
+        # implicitly use the first params of first transformer, the second is global
+        np.testing.assert_array_almost_equal(
+            transformed[0].values(), p.transform(data[0]).values()
+        )
+        # explicitly use the first params of first transformer, the second is global
+        np.testing.assert_array_almost_equal(
+            transformed[0].values(), p.transform(data[0], series_idx=[0]).values()
+        )
+        # implicitly use the first params of first transformer, the second is global
+        # ts + (data[0][0] + 1) + (sum(data[;, 0]) + 90) = 10 + 1 + 100
+        np.testing.assert_array_almost_equal(
+            np.array([[111, 111]]).T, p.transform(data[1]).values()
+        )
+        # explicitly use the second params of first transformer, the second is global
+        np.testing.assert_array_almost_equal(
+            transformed[1].values(), p.transform(data[1], series_idx=[1]).values()
+        )
+
+        # reversing input, and explicitly selecting reversed indexes
+        assert transformed[::-1] == p.transform(data[::-1], series_idx=[1, 0])
 
     def test_inverse_raise_exception(self):
         # given
@@ -205,6 +333,145 @@ class TestPipeline:
 
         # then
         assert data == back
+
+    def test_inverse_transform_insample_diff(self):
+        """Pipeline([Diff]) inverse with ``insample`` matches manual prepend + slice."""
+        # given
+        n_forecast = 10
+        series = linear_timeseries(length=50, start_value=1.0, end_value=5.0)
+
+        pipeline = Pipeline([Diff(lags=1, dropna=True)])
+        series_tf = pipeline.fit_transform(series)
+
+        insample_tf = series_tf[:-n_forecast]
+        forecast_tf = series_tf[-n_forecast:]
+
+        diff = pipeline._transformers[0]
+        result_manual = diff.inverse_transform(insample_tf.append(forecast_tf))[
+            -n_forecast:
+        ]
+        result_insample = pipeline.inverse_transform(forecast_tf, insample=insample_tf)
+
+        np.testing.assert_array_almost_equal(
+            result_insample.values(), result_manual.values()
+        )
+        assert result_insample.time_index.equals(result_manual.time_index)
+
+    @pytest.mark.parametrize("reverse_order", [False, True])
+    def test_inverse_transform_insample_scaler_diff(self, reverse_order):
+        """Pipeline([Scaler, Diff]) keeps insample aligned through inverse steps."""
+        # given
+        n_forecast = 10
+        series = linear_timeseries(length=50, start_value=1.0, end_value=5.0)
+
+        tfs = [Scaler(), Diff(lags=1, dropna=True)]
+        if reverse_order:
+            tfs = tfs[::-1]
+
+        pipeline = Pipeline(tfs)
+        series_tf = pipeline.fit_transform(series)
+
+        insample_tf = series_tf[:-n_forecast]
+        forecast_tf = series_tf[-n_forecast:]
+
+        result_manual = pipeline.inverse_transform(insample_tf.append(forecast_tf))[
+            -n_forecast:
+        ]
+        result_insample = pipeline.inverse_transform(forecast_tf, insample=insample_tf)
+
+        np.testing.assert_array_almost_equal(
+            result_insample.values(), result_manual.values()
+        )
+        assert result_insample.time_index.equals(result_manual.time_index)
+
+    def test_inverse_transform_prefitted(self):
+        """Check that when multiple series are passed to fit transformers with global_fit=False,
+        inverse_transform behave as expected when series_idx is specified.
+
+        Note: the transformers are fitted independently to make the expected results more intuitive
+        """
+        data = [
+            constant_timeseries(value=0, length=2),
+            constant_timeseries(value=10, length=2),
+        ]
+
+        def get_transf(global_fit: bool, fit: bool, coef: int):
+            transf = self.ExtendTransformer(global_fit=global_fit, coef=coef)
+            if fit:
+                transf.fit(data)
+            return transf
+
+        # multiple series, global_fit=False
+        p = Pipeline([
+            get_transf(global_fit=False, fit=True, coef=1),
+            get_transf(global_fit=False, fit=True, coef=5),
+        ])
+        transformed = p.transform(data)
+
+        # implicitly use the first params of each transformer
+        np.testing.assert_array_almost_equal(
+            data[0].values(), p.inverse_transform(transformed[0]).values()
+        )
+        # explicitly use the first params of each transformer
+        np.testing.assert_array_almost_equal(
+            data[0].values(),
+            p.inverse_transform(transformed[0], series_idx=[0]).values(),
+        )
+
+        # 10 + 11 + 15
+        np.testing.assert_array_almost_equal(
+            np.array([[36, 36]]).T, transformed[1].values()
+        )
+        # implicitly use the first params of each transformer
+        # inverse_transform[0][0] = lambda x: x - 1, inverse_transform[1][0] = lambda x: x - 5
+        np.testing.assert_array_almost_equal(
+            np.array([[30, 30]]).T, p.inverse_transform(transformed[1]).values()
+        )
+        np.testing.assert_array_almost_equal(
+            np.array([[30, 30]]).T,
+            p.inverse_transform(transformed[1], series_idx=0).values(),
+        )
+        # explicitly use the second params of each transformer
+        # inverse_transform[0][0] = lambda x: x - 11, inverse_transform[1][0] = lambda x: x - 15
+        np.testing.assert_array_almost_equal(
+            data[1].values(), p.inverse_transform(transformed[1], series_idx=1).values()
+        )
+
+        # multiple series, mixture of local and global transformers
+        p = Pipeline([
+            get_transf(global_fit=False, fit=True, coef=1),
+            get_transf(global_fit=True, fit=True, coef=90),
+        ])
+        transformed = p.transform(data)
+
+        # implicitly use the first params of each transformer
+        np.testing.assert_array_almost_equal(
+            data[0].values(), p.inverse_transform(transformed[0]).values()
+        )
+        # explicitly use the first params of each transformer
+        np.testing.assert_array_almost_equal(
+            data[0].values(),
+            p.inverse_transform(transformed[0], series_idx=[0]).values(),
+        )
+        # 10 + 11 + 100
+        np.testing.assert_array_almost_equal(
+            np.array([[121, 121]]).T, transformed[1].values()
+        )
+
+        # implicitly use the first params of each transformer
+        # inverse_transform[0][0] = lambda x: x - 1, inverse_transform = lambda x: x - 100
+        np.testing.assert_array_almost_equal(
+            np.array([[20, 20]]).T, p.inverse_transform(transformed[1]).values()
+        )
+        # explicitly use the second params of each transformer
+        # inverse_transform[0][1] = lambda x: x - 11, inverse_transform = lambda x: x - 100
+        np.testing.assert_array_almost_equal(
+            data[1].values(),
+            p.inverse_transform(transformed[1], series_idx=[1]).values(),
+        )
+
+        # reversing input, and explicitly selecting reversed indexes
+        assert transformed[::-1] == p.transform(data[::-1], series_idx=[1, 0])
 
     def test_getitem(self):
         # given
@@ -327,3 +594,23 @@ class TestPipeline:
 
         for transformer in pipeline:
             assert transformer._n_jobs == n_jobs_value
+
+    def test_pipeline_on_columns_subset(self):
+        """Test pipeline with transformers acting only on a subset of columns."""
+        # shape = (10, 3, 2)
+        vals = np.array([np.arange(6).reshape(3, 2)] * 10)
+
+        # scalers should only consider True columns
+        s = TimeSeries.from_values(vals)
+        columns = s.columns[[True, False, True]]
+
+        pipeline = Pipeline(transformers=[Scaler(columns=col) for col in columns])
+        scaler = Scaler(columns=columns)
+
+        ss_pipeline = pipeline.fit_transform(s)
+        ss_sc = scaler.fit_transform(s)
+        assert ss_pipeline == ss_sc
+
+        ss_i_pipeline = pipeline.inverse_transform(ss_pipeline)
+        ss_i_sc = scaler.inverse_transform(ss_sc)
+        assert ss_i_pipeline == ss_i_sc == s

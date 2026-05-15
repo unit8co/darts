@@ -18,7 +18,7 @@ import torch
 
 from darts.models.forecasting.dlinear import DLinearModel
 from darts.models.forecasting.nlinear import NLinearModel
-from darts.utils.likelihood_models import GaussianLikelihood
+from darts.utils.likelihood_models.torch import GaussianLikelihood
 
 
 class TestDlinearNlinearModels:
@@ -49,7 +49,7 @@ class TestDlinearNlinearModels:
         for model_cls, kwargs in [
             (DLinearModel, {"kernel_size": 5}),
             (DLinearModel, {"kernel_size": 6}),
-            (NLinearModel, {}),
+            (NLinearModel, {"normalize": False}),
         ]:
             # Test basic fit and predict
             model = model_cls(
@@ -180,6 +180,7 @@ class TestDlinearNlinearModels:
                 likelihood=lkl,
                 random_state=42,
                 **tfm_kwargs,
+                **kwargs,
             )
 
             model.fit(
@@ -217,16 +218,22 @@ class TestDlinearNlinearModels:
 
         train1, val1 = series1.split_after(0.7)
         train2, val2 = series2.split_after(0.7)
-        past_cov1 = train1.copy()
-        past_cov2 = train2.copy()
-        val_past_cov1 = val1.copy()
-        val_past_cov2 = val2.copy()
 
         for model, lkl in product(
             [DLinearModel, NLinearModel], [None, GaussianLikelihood()]
         ):
+            kwargs = {"normalize": False} if model is NLinearModel else {}
+
             e1, e2 = _eval_model(
-                train1, train2, val1, val2, fut_cov1, fut_cov2, cls=model, lkl=lkl
+                train1,
+                train2,
+                val1,
+                val2,
+                fut_cov1,
+                fut_cov2,
+                cls=model,
+                lkl=lkl,
+                **kwargs,
             )
             assert e1 <= 0.34
             assert e2 <= 0.28
@@ -240,12 +247,21 @@ class TestDlinearNlinearModels:
                 fut_cov2,
                 cls=model,
                 lkl=lkl,
+                **kwargs,
             )
             assert e1 <= 0.32
             assert e2 <= 0.28
 
             e1, e2 = _eval_model(
-                train1, train2, val1, val2, None, None, cls=model, lkl=lkl
+                train1,
+                train2,
+                val1,
+                val2,
+                None,
+                None,
+                cls=model,
+                lkl=lkl,
+                **kwargs,
             )
             assert e1 <= 0.40
             assert e2 <= 0.34
@@ -259,25 +275,11 @@ class TestDlinearNlinearModels:
                 None,
                 cls=model,
                 lkl=lkl,
+                **kwargs,
             )
             assert e1 <= 0.40
             assert e2 <= 0.34
 
-        e1, e2 = _eval_model(
-            train1,
-            train2,
-            val1,
-            val2,
-            fut_cov1,
-            fut_cov2,
-            past_cov1=past_cov1,
-            past_cov2=past_cov2,
-            val_past_cov1=val_past_cov1,
-            val_past_cov2=val_past_cov2,
-            cls=NLinearModel,
-            lkl=None,
-            normalize=True,
-        )
         # can only fit models with past/future covariates when shared_weights=False
         for model in [DLinearModel, NLinearModel]:
             for shared_weights in [True, False]:
@@ -289,6 +291,63 @@ class TestDlinearNlinearModels:
                 if shared_weights:
                     with pytest.raises(ValueError):
                         model_instance.fit(series1, future_covariates=fut_cov1)
+
+    def test_normalize(self):
+        np.random.seed(42)
+        torch.manual_seed(42)
+
+        base = tg.sine_timeseries(length=400, value_frequency=0.1)
+        noise = tg.gaussian_timeseries(length=400, std=0.5)
+        series = base + noise
+
+        # past coviriates as leading indicator
+        past_cov = noise.shift(-10)
+
+        # make equal length and split
+        series = series[: past_cov.end_time()]
+        past_cov = past_cov[series.start_time() :]
+        train, val = series.split_before(0.7)
+
+        # Add distribution shift
+        val = val + 10
+        past_cov_val = past_cov + 10
+
+        def eval_model(normalize, use_past_covar):
+            model = NLinearModel(
+                input_chunk_length=50,
+                output_chunk_length=10,
+                shared_weights=False,
+                const_init=True,
+                random_state=42,
+                normalize=normalize,
+                **tfm_kwargs,
+            )
+
+            model.fit(
+                train,
+                past_covariates=past_cov if use_past_covar else None,
+                epochs=10,
+            )
+
+            pred = model.predict(
+                series=val[:-10],
+                past_covariates=past_cov_val if use_past_covar else None,
+                n=10,
+            )
+
+            return rmse(val, pred)
+
+        # Without normalization doesn't handle distribution shift
+        e = eval_model(normalize=False, use_past_covar=True)
+        assert e > 2.0
+
+        # With normalization handles distribution shift
+        e = eval_model(normalize=True, use_past_covar=True)
+        assert e < 0.6
+
+        # Covars contribute to prediction
+        e = eval_model(normalize=True, use_past_covar=False)
+        assert 0.6 < e < 0.7
 
     def test_optional_static_covariates(self):
         series = tg.sine_timeseries(length=20).with_static_covariates(

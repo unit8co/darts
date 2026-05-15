@@ -1,15 +1,32 @@
 import copy
+import itertools
+import logging
 import os
 
+import narwhals as nw
 import numpy as np
 import pandas as pd
 import pytest
 
-from darts import TimeSeries, concatenate
+from darts import TimeSeries, concatenate, to_group_dataframe
 from darts.dataprocessing.transformers import BoxCox, Scaler
-from darts.timeseries import DEFAULT_GLOBAL_STATIC_COV_NAME, STATIC_COV_TAG
+from darts.tests.conftest import PANDAS_30_OR_GREATER, POLARS_AVAILABLE
+from darts.timeseries import (
+    DEFAULT_GLOBAL_STATIC_COV_NAME,
+    METADATA_TAG,
+    STATIC_COV_TAG,
+)
 from darts.utils.timeseries_generation import linear_timeseries
 from darts.utils.utils import generate_index
+
+TEST_BACKENDS = ["pandas"]
+
+if POLARS_AVAILABLE:
+    import polars as pl
+
+    TEST_BACKENDS.append("polars")
+else:
+    pl = None
 
 
 def setup_test_case():
@@ -47,43 +64,59 @@ def setup_test_case():
     return n_groups, len_ts, df_long_uni, df_long_multi
 
 
+def setup_tag(tag, ts):
+    if tag == METADATA_TAG:
+        x = {"st1": 0.0, "st2": 1.0}
+        ts = ts.with_metadata(x)
+    else:
+        x = pd.Series([0.0, 1.0], index=["st1", "st2"])
+        ts = ts.with_static_covariates(x)
+    return ts, x
+
+
 class TestTimeSeriesStaticCovariate:
     n_groups, len_ts, df_long_uni, df_long_multi = setup_test_case()
 
-    def test_ts_from_x(self, tmpdir_module):
-        ts = linear_timeseries(length=10).with_static_covariates(
-            pd.Series([0.0, 1.0], index=["st1", "st2"])
-        )
+    @staticmethod
+    def pd_to_backend(df, backend, index=False):
+        if backend == "pandas":
+            return df
+        elif backend == "polars":
+            if index:
+                return pl.from_pandas(df.reset_index())
+            return pl.from_pandas(df)
 
-        self.helper_test_cov_transfer(ts, TimeSeries.from_xarray(ts.data_array()))
-        self.helper_test_cov_transfer(
-            ts,
-            TimeSeries.from_dataframe(
-                ts.pd_dataframe(), static_covariates=ts.static_covariates
-            ),
+    @pytest.mark.parametrize("tag", [STATIC_COV_TAG, METADATA_TAG])
+    def test_ts_from_x(self, tag, tmpdir_module):
+        ts = linear_timeseries(length=10)
+        ts, x = setup_tag(tag, ts)
+        kwargs = {tag: x}
+
+        self.helper_test_transfer(tag, ts, TimeSeries.from_xarray(ts.data_array()))
+        self.helper_test_transfer(
+            tag, ts, TimeSeries.from_dataframe(ts.to_dataframe(), **kwargs)
         )
-        self.helper_test_cov_transfer(
-            ts,
-            TimeSeries.from_series(
-                ts.pd_series(), static_covariates=ts.static_covariates
-            ),
+        self.helper_test_transfer(
+            tag, ts, TimeSeries.from_series(ts.to_series(), **kwargs)
         )
-        self.helper_test_cov_transfer(
+        self.helper_test_transfer(
+            tag,
             ts,
             TimeSeries.from_times_and_values(
                 times=ts.time_index,
                 values=ts.all_values(),
                 columns=ts.components,
-                static_covariates=ts.static_covariates,
+                **kwargs,
             ),
         )
 
-        self.helper_test_cov_transfer(
+        self.helper_test_transfer(
+            tag,
             ts,
             TimeSeries.from_values(
                 values=ts.all_values(),
                 columns=ts.components,
-                static_covariates=ts.static_covariates,
+                **kwargs,
             ),
         )
 
@@ -93,26 +126,391 @@ class TestTimeSeriesStaticCovariate:
         ts.to_pickle(f_pkl)
         ts_json = ts.to_json()
 
-        self.helper_test_cov_transfer(
-            ts,
-            TimeSeries.from_csv(
-                f_csv, time_col="time", static_covariates=ts.static_covariates
-            ),
+        self.helper_test_transfer(
+            tag, ts, TimeSeries.from_csv(f_csv, time_col="time", **kwargs)
         )
-        self.helper_test_cov_transfer(ts, TimeSeries.from_pickle(f_pkl))
-        self.helper_test_cov_transfer(
-            ts, TimeSeries.from_json(ts_json, static_covariates=ts.static_covariates)
+        self.helper_test_transfer(tag, ts, TimeSeries.from_pickle(f_pkl))
+        # Test with kwargs (backward compatibility)
+        self.helper_test_transfer(tag, ts, TimeSeries.from_json(ts_json, **kwargs))
+        # Test without kwargs (new automatic serialization)
+        self.helper_test_transfer(tag, ts, TimeSeries.from_json(ts_json))
+
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_to_dataframe_add_static_covariates(self, backend):
+        """Tests adding global as well as component specific static covariates to dataframe."""
+        df = pd.DataFrame({
+            "time": [0, 1, 2],
+            "a": [1.0, 2.0, 3.0],
+            "b": [4.0, 5.0, 6.0],
+        })
+        df = self.pd_to_backend(df, backend)
+        static_covs = pd.DataFrame(
+            {"sc1": ["a"], "sc2": ["b"]}, index=["global_components"]
+        )
+        series = TimeSeries.from_dataframe(
+            df,
+            time_col="time",
+            static_covariates=static_covs,
+        )
+        assert series.static_covariates.equals(static_covs)
+
+        # sanity check that by default no static covs are added
+        kwargs = {"backend": backend, "time_as_index": False}
+        assert series.to_dataframe(**kwargs).equals(df)
+
+        # adding all static covariates
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_static_covariates=True)
+        ).to_pandas()
+        assert df_out.columns.tolist() == ["time", "a", "b", "sc1", "sc2"]
+        assert (df_out[["sc1", "sc2"]] == static_covs.values).all().all()
+
+        # adding a single column as string
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_static_covariates="sc2")
+        ).to_pandas()
+        assert df_out.columns.tolist() == ["time", "a", "b", "sc2"]
+        assert (df_out[["sc2"]] == static_covs[["sc2"]].values).all().all()
+
+        # adding a list of columns with different order
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_static_covariates=["sc2", "sc1"])
+        ).to_pandas()
+        assert df_out.columns.tolist() == ["time", "a", "b", "sc2", "sc1"]
+        assert (
+            (df_out[["sc2", "sc1"]] == static_covs[["sc2", "sc1"]].values).all().all()
         )
 
-    def test_timeseries_from_longitudinal_df(self):
+        with pytest.raises(ValueError, match="`add_static_covariates` do not exist"):
+            _ = series.to_dataframe(
+                **kwargs, add_static_covariates=["does_not_exist", "sc1"]
+            )
+
+        # component specific static covariates
+        static_covs = pd.DataFrame(
+            {"sc1": ["aa", "ab"], "sc2": ["ba", "bb"]}, index=["a", "b"]
+        )
+        series = TimeSeries.from_dataframe(
+            df,
+            time_col="time",
+            static_covariates=static_covs,
+        )
+        assert series.static_covariates.equals(static_covs)
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_static_covariates=True)
+        ).to_pandas()
+        assert df_out.columns.tolist() == [
+            "time",
+            "a",
+            "b",
+            "sc1_a",
+            "sc1_b",
+            "sc2_a",
+            "sc2_b",
+        ]
+        assert (
+            (
+                df_out[["sc1_a", "sc1_b", "sc2_a", "sc2_b"]]
+                == static_covs.values.flatten(order="K")
+            )
+            .all()
+            .all()
+        )
+
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_to_dataframe_add_metadata(self, backend):
+        """Tests adding metadata to dataframe."""
+        df = pd.DataFrame({
+            "time": [0, 1, 2],
+            "a": [1.0, 2.0, 3.0],
+            "b": [4.0, 5.0, 6.0],
+        })
+        df = self.pd_to_backend(df, backend)
+        metadata = {"sc1": "a", "sc2": "b"}
+        series = TimeSeries.from_dataframe(
+            df,
+            time_col="time",
+            metadata=metadata,
+        )
+        assert series.metadata == metadata
+
+        # sanity check that by default no metadata are added
+        kwargs = {"backend": backend, "time_as_index": False}
+        assert series.to_dataframe(**kwargs).equals(df)
+
+        # adding all metadata
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_metadata=True)
+        ).to_pandas()
+        assert df_out.columns.tolist() == ["time", "a", "b", "sc1", "sc2"]
+        assert (df_out[["sc1", "sc2"]] == metadata.values()).all().all()
+
+        # adding a single column as string
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_metadata="sc2")
+        ).to_pandas()
+        assert df_out.columns.tolist() == ["time", "a", "b", "sc2"]
+        assert (df_out[["sc2"]] == metadata["sc2"]).all().all()
+
+        # adding a list of columns with different order
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_metadata=["sc2", "sc1"])
+        ).to_pandas()
+        assert df_out.columns.tolist() == ["time", "a", "b", "sc2", "sc1"]
+        assert (
+            (df_out[["sc2", "sc1"]] == [metadata[key] for key in ["sc2", "sc1"]])
+            .all()
+            .all()
+        )
+
+        with pytest.raises(ValueError, match="`add_metadata` do not exist"):
+            _ = series.to_dataframe(**kwargs, add_metadata=["does_not_exist", "sc1"])
+
+    def test_invalid_metadata(self):
+        ts = linear_timeseries(length=10)
+        with pytest.raises(ValueError) as exc:
+            _ = ts.with_metadata(0.0)
+        assert (
+            str(exc.value)
+            == "`metadata` must be of type `dict` mapping metadata attributes to their values."
+        )
+
+    @pytest.mark.parametrize(
+        "config", itertools.product(["int", "dt", "str"], TEST_BACKENDS)
+    )
+    def test_from_group_dataframe(self, config):
+        """Tests correct extract of TimeSeries groups from a long DataFrame with unsorted (time/integer) index"""
+        index_type, backend = config
+        group = ["a", "a", "a", "b", "b", "b"]
+        values = np.arange(len(group))
+
+        if index_type == "int":
+            index_expected = pd.RangeIndex(3, name="time")
+            time = [2, 1, 0, 0, 1, 2]
+        else:
+            index_expected = pd.date_range("2024-01-01", periods=3, name="time")
+            time = index_expected[::-1].append(index_expected)
+            if index_type == "str":
+                time = time.astype(str)
+
+        # create a df with unsorted time
+        df = pd.DataFrame({
+            "group": group,
+            "time": time,
+            "x": values,
+        })
+        ts = TimeSeries.from_group_dataframe(
+            self.pd_to_backend(df, backend), group_cols="group", time_col="time"
+        )
+
+        # check the time index
+        assert ts[0].time_index.equals(index_expected)
+        assert ts[1].time_index.equals(index_expected)
+
+        # check the values
+        assert (ts[0].values().flatten() == [values[2], values[1], values[0]]).all()
+        assert (ts[1].values().flatten() == [values[3], values[4], values[5]]).all()
+
+    @pytest.mark.parametrize(
+        "backend,time_as_index",
+        itertools.product(
+            TEST_BACKENDS,
+            [True, False],
+        ),
+    )
+    def test_to_group_dataframe_creation(self, backend, time_as_index):
+        df_pd = pd.DataFrame(
+            data={
+                "time": pd.date_range(start="2023-01-01", periods=10, freq="D"),
+                "value": [float(i) for i in range(10)],
+                "ID": [0.0] * 5 + [1.0] * 5,
+            }
+        )
+        df = self.pd_to_backend(df_pd, backend)
+        series = TimeSeries.from_group_dataframe(
+            df,
+            time_col="time",
+            group_cols="ID",
+            value_cols="value",
+        )
+
+        if time_as_index and backend == "polars":
+            time_as_index = False
+        elif time_as_index:
+            df_pd = df_pd.set_index("time")
+
+        reconstructed = to_group_dataframe(
+            series,
+            add_static_covariates=True,
+            backend=backend,
+            time_as_index=time_as_index,
+        )
+        reconstructed_pd = nw.from_native(reconstructed).to_pandas()
+        expected = df_pd.sort_values(["ID", "time"])
+        reconstructed_pd = reconstructed_pd.sort_values(["ID", "time"])
+        assert reconstructed_pd.equals(expected)
+
+    @pytest.mark.parametrize(
+        "add_metadata,metadata_cols",
+        [
+            (True, ["source", "version", "created"]),
+            (["source", "version", "created"], ["source", "version", "created"]),
+            ("source", "source"),
+        ],
+    )
+    def test_to_group_dataframe_metadata_support(self, add_metadata, metadata_cols):
+        df = pd.DataFrame({
+            "value": [float(i) for i in range(10)] * 2,
+            "ID": [0.0] * 10 + [1.0] * 10,
+        })
+        metadata = {
+            "source": "test_data",
+            "version": "1.0",
+            "created": "2025-01-09",
+        }
+        for k, v in metadata.items():
+            df[k] = v
+
+        if add_metadata is True:
+            cols_to_include = ["value", "ID"] + list(metadata.keys())
+        else:
+            if isinstance(metadata_cols, str):
+                metadata_cols = [metadata_cols]
+            cols_to_include = ["value", "ID"] + metadata_cols
+
+        df_subset = df[cols_to_include]
+
+        ts_list = TimeSeries.from_group_dataframe(
+            df_subset, group_cols="ID", metadata_cols=metadata_cols
+        )
+        reconstructed = to_group_dataframe(
+            ts_list, add_static_covariates=True, add_metadata=add_metadata
+        )
+
+        expected = df_subset.sort_values("ID")
+        reconstructed = reconstructed.sort_values("ID")
+        assert reconstructed.equals(expected)
+
+    @pytest.mark.parametrize(
+        "add_static_cov,expected_cols",
+        [
+            (True, ["split", "set"]),
+            (["split", "set", "ID"], ["split", "set"]),
+            (["set", "ID"], "set"),
+        ],
+    )
+    def test_to_group_dataframe_global_static_cov_support(
+        self, add_static_cov, expected_cols
+    ):
+        df = pd.DataFrame({
+            "value": [float(i) for i in range(10)] * 3,
+            "ID": [0.0] * 10 + [1.0] * 10 + [2.0] * 10,
+            "split": ["test"] * 10 + ["train"] * 20,
+            "set": ["B"] * 20 + ["A"] * 10,
+        })
+        expected_cols = (
+            [expected_cols] if isinstance(expected_cols, str) else expected_cols
+        )
+        df_subset = df[["value", "ID", *expected_cols]]
+        ts_list = TimeSeries.from_group_dataframe(
+            df_subset, group_cols="ID", static_cols=expected_cols
+        )
+        reconstructed = to_group_dataframe(
+            ts_list, add_static_covariates=add_static_cov, add_metadata=True
+        )
+        expected = df_subset.sort_values(["ID"])
+        reconstructed = reconstructed.sort_values(["ID"])
+        reconstructed = reconstructed[expected.columns]
+        assert reconstructed.equals(expected)
+
+    def test_to_group_dataframe_component_static_cov_support(self):
+        df = pd.DataFrame({
+            "time": pd.date_range("2023-01-01", periods=3, freq="D").tolist() * 2,
+            "value1": [1.0, 2.0, 3.0] * 2,
+            "value2": [4.0, 5.0, 6.0] * 2,
+            "ID": [0.0] * 3 + [1.0] * 3,
+        })
+        static_covs = pd.DataFrame(
+            {
+                "source": ["sensor_A", "sensor_B"],
+                "region": ["EU", "US"],
+            },
+            index=[0, 1],
+        )
+
+        ts_list = [
+            ts.with_static_covariates(static_covs)
+            for ts in TimeSeries.from_group_dataframe(
+                df,
+                group_cols="ID",
+                value_cols=["value1", "value2"],
+                time_col="time",
+            )
+        ]
+
+        reconstructed = to_group_dataframe(
+            ts_list,
+            add_static_covariates=True,
+            add_metadata=False,
+            time_as_index=False,
+        )
+        expected_cols = [
+            "source_value1",
+            "source_value2",
+            "region_value1",
+            "region_value2",
+        ]
+        assert all(col in reconstructed.columns for col in expected_cols)
+
+        assert (reconstructed["source_value1"] == static_covs["source"].loc[0]).all()
+        assert (reconstructed["source_value2"] == static_covs["source"].loc[1]).all()
+        assert (reconstructed["region_value1"] == static_covs["region"].loc[0]).all()
+        assert (reconstructed["region_value2"] == static_covs["region"].loc[1]).all()
+
+    @pytest.mark.parametrize("add_group_col", [True, "added_group_col"])
+    def test_to_group_dataframe_add_group_col(self, add_group_col):
+        df = pd.DataFrame({
+            "time": pd.date_range("2023-01-01", periods=10, freq="D"),
+            "value": np.arange(10).astype("float"),
+            "ID": [0] * 5 + [1] * 5,
+        })
+
+        ts = TimeSeries.from_group_dataframe(
+            df,
+            group_cols="ID",
+            value_cols="value",
+            time_col="time",
+        )
+
+        reconstructed = to_group_dataframe(
+            ts,
+            add_static_covariates=False,
+            add_metadata=False,
+            add_group_col=add_group_col,
+            time_as_index=False,
+        )
+        if not isinstance(add_group_col, str):
+            add_group_col = "group"
+
+        assert "ID" not in reconstructed.columns
+        reconstructed = reconstructed.rename(columns={add_group_col: "ID"})[df.columns]
+        assert reconstructed.equals(df)
+
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_timeseries_from_longitudinal_df(self, backend):
         # univariate static covs: only group by "st1", keep static covs "st1"
         value_cols = ["a", "b", "c"]
+
+        df_long_uni = self.pd_to_backend(self.df_long_uni, backend)
+        df_long_multi = self.pd_to_backend(self.df_long_multi, backend)
+
         ts_groups1 = TimeSeries.from_group_dataframe(
-            df=self.df_long_uni,
+            df=df_long_uni,
             group_cols="st1",
             static_cols=None,
             time_col="times",
             value_cols=value_cols,
+            metadata_cols=["st1", "constant"],
         )
         assert len(ts_groups1) == self.n_groups
         for i, ts in enumerate(ts_groups1):
@@ -122,28 +520,32 @@ class TestTimeSeriesStaticCovariate:
             assert ts.static_covariates.shape == (1, 1)
             assert ts.static_covariates.columns.equals(pd.Index(["st1"]))
             assert (ts.static_covariates_values(copy=False) == [[i]]).all()
+            assert ts.metadata == {"st1": i, "constant": 1}
 
         # multivariate static covs: only group by "st1", keep static covs "st1", "constant"
         ts_groups2 = TimeSeries.from_group_dataframe(
-            df=self.df_long_multi,
+            df=df_long_multi,
             group_cols=["st1"],
             static_cols="constant",
             time_col="times",
             value_cols=value_cols,
+            metadata_cols=["st1", "constant"],
         )
         assert len(ts_groups2) == self.n_groups
         for i, ts in enumerate(ts_groups2):
             assert ts.static_covariates.shape == (1, 2)
             assert ts.static_covariates.columns.equals(pd.Index(["st1", "constant"]))
             assert (ts.static_covariates_values(copy=False) == [[i, 1]]).all()
+            assert ts.metadata == {"st1": i, "constant": 1}
 
         # multivariate static covs: group by "st1" and "st2", keep static covs "st1", "st2", "constant"
         ts_groups3 = TimeSeries.from_group_dataframe(
-            df=self.df_long_multi,
+            df=df_long_multi,
             group_cols=["st1", "st2"],
             static_cols=["constant"],
             time_col="times",
             value_cols=value_cols,
+            metadata_cols=["st1", "st2", "constant"],
         )
         assert len(ts_groups3) == self.n_groups * 2
         for idx, ts in enumerate(ts_groups3):
@@ -154,58 +556,67 @@ class TestTimeSeriesStaticCovariate:
                 pd.Index(["st1", "st2", "constant"])
             )
             assert (ts.static_covariates_values(copy=False) == [[i, j, 1]]).all()
+            assert ts.metadata == {"st1": i, "st2": j, "constant": 1}
 
         # drop group columns gives same time series with dropped static covariates
         # drop first column
         ts_groups4 = TimeSeries.from_group_dataframe(
-            df=self.df_long_multi,
+            df=df_long_multi,
             group_cols=["st1", "st2"],
             static_cols=["constant"],
             time_col="times",
             value_cols=value_cols,
             drop_group_cols=["st1"],
+            metadata_cols=["st1", "st2", "constant"],
         )
         assert len(ts_groups4) == self.n_groups * 2
         for idx, ts in enumerate(ts_groups4):
+            i = idx // 2
             j = idx % 2
             assert ts.static_covariates.shape == (1, 2)
             assert ts.static_covariates.columns.equals(pd.Index(["st2", "constant"]))
             assert (ts.static_covariates_values(copy=False) == [[j, 1]]).all()
+            assert ts.metadata == {"st1": i, "st2": j, "constant": 1}
 
         # drop last column
         ts_groups5 = TimeSeries.from_group_dataframe(
-            df=self.df_long_multi,
+            df=df_long_multi,
             group_cols=["st1", "st2"],
             static_cols=["constant"],
             time_col="times",
             value_cols=value_cols,
             drop_group_cols=["st2"],
+            metadata_cols=["st1", "st2", "constant"],
         )
         assert len(ts_groups5) == self.n_groups * 2
         for idx, ts in enumerate(ts_groups5):
             i = idx // 2
+            j = idx % 2
             assert ts.static_covariates.shape == (1, 2)
             assert ts.static_covariates.columns.equals(pd.Index(["st1", "constant"]))
             assert (ts.static_covariates_values(copy=False) == [[i, 1]]).all()
+            assert ts.metadata == {"st1": i, "st2": j, "constant": 1}
 
         # drop all columns
         ts_groups6 = TimeSeries.from_group_dataframe(
-            df=self.df_long_multi,
+            df=df_long_multi,
             group_cols=["st1", "st2"],
             static_cols=["constant"],
             time_col="times",
             value_cols=value_cols,
             drop_group_cols=["st1", "st2"],
+            metadata_cols="constant",
         )
         assert len(ts_groups6) == self.n_groups * 2
         for ts in ts_groups6:
             assert ts.static_covariates.shape == (1, 1)
             assert ts.static_covariates.columns.equals(pd.Index(["constant"]))
             assert (ts.static_covariates_values(copy=False) == [[1]]).all()
+            assert ts.metadata == {"constant": 1}
 
-        # drop all static covariates (no `static_cols`, all `group_cols` dropped)
+        # drop all static covariates (no `static_cols`, all `group_cols` dropped) and no metadata cols
         ts_groups7 = TimeSeries.from_group_dataframe(
-            df=self.df_long_multi,
+            df=df_long_multi,
             group_cols=["st1", "st2"],
             time_col="times",
             value_cols=value_cols,
@@ -214,9 +625,10 @@ class TestTimeSeriesStaticCovariate:
         assert len(ts_groups7) == self.n_groups * 2
         for ts in ts_groups7:
             assert ts.static_covariates is None
+            assert ts.metadata is None
 
         ts_groups7_parallel = TimeSeries.from_group_dataframe(
-            df=self.df_long_multi,
+            df=df_long_multi,
             group_cols=["st1", "st2"],
             time_col="times",
             value_cols=value_cols,
@@ -225,11 +637,12 @@ class TestTimeSeriesStaticCovariate:
         )
         assert ts_groups7_parallel == ts_groups7
 
-    def test_from_group_dataframe_invalid_drop_cols(self):
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_from_group_dataframe_invalid_drop_cols(self, backend):
         # drop col is not part of `group_cols`
         with pytest.raises(ValueError) as err:
             _ = TimeSeries.from_group_dataframe(
-                df=self.df_long_multi,
+                df=self.pd_to_backend(self.df_long_multi, backend),
                 group_cols=["st1"],
                 time_col="times",
                 value_cols="a",
@@ -237,10 +650,12 @@ class TestTimeSeriesStaticCovariate:
             )
         assert str(err.value).endswith("received: {'invalid'}.")
 
-    def test_from_group_dataframe_groups_too_short(self):
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_from_group_dataframe_groups_too_short(self, backend):
         # groups that are too short for TimeSeries requirements should raise an error
         df = copy.deepcopy(self.df_long_multi)
         df.loc[:, "non_static"] = np.arange(len(df))
+        df = self.pd_to_backend(df, backend)
         with pytest.raises(ValueError) as err:
             _ = TimeSeries.from_group_dataframe(
                 df=df,
@@ -249,8 +664,79 @@ class TestTimeSeriesStaticCovariate:
                 value_cols="a",
             )
         assert str(err.value).startswith(
-            "The time index of the provided DataArray is missing the freq attribute"
+            "The time index is missing the `freq` attribute"
         )
+
+    def test_from_group_dataframe_not_unique(self):
+        # it is assumed that all static / metadata columns have only 1 unique value.
+        # it will always pick the first encountered value
+        series = TimeSeries.from_group_dataframe(
+            df=self.df_long_multi,
+            group_cols=["st1"],
+            drop_group_cols="st1",
+            static_cols="st2",
+            time_col="times",
+            value_cols="a",
+            metadata_cols="st2",
+        )
+        first_values = [
+            df["st2"].values[0] for idx, df in self.df_long_multi.groupby("st1")
+        ]
+        for s_, val in zip(series, first_values):
+            assert s_.static_covariates_values()[0, 0] == val
+            assert s_.metadata == {"st2": val}
+
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_from_group_dataframe_non_pandas_requires_time_col(self, backend):
+        value_cols = ["a", "b", "c"]
+        df = copy.deepcopy(self.pd_to_backend(self.df_long_multi, backend))
+        if backend == "pandas":
+            df = df.set_index("times")
+            ts_groups = TimeSeries.from_group_dataframe(
+                df=df,
+                group_cols="st1",
+                static_cols=None,
+                time_col=None,
+                value_cols=value_cols,
+                metadata_cols=["st1", "constant"],
+            )
+            assert len(ts_groups) == self.n_groups
+            for i, ts in enumerate(ts_groups):
+                assert ts.static_covariates.index.equals(
+                    pd.Index([DEFAULT_GLOBAL_STATIC_COV_NAME])
+                )
+                assert ts.static_covariates.shape == (1, 1)
+                assert ts.static_covariates.columns.equals(pd.Index(["st1"]))
+                assert (ts.static_covariates_values(copy=False) == [[i]]).all()
+                assert ts.metadata == {"st1": i, "constant": 1}
+        else:
+            with pytest.raises(ValueError) as exc:
+                _ = TimeSeries.from_group_dataframe(
+                    df=df,
+                    group_cols="st1",
+                    time_col=None,
+                )
+            assert (
+                str(exc.value)
+                == "`time_col` is required when `df` is not a `pandas.DataFrame`."
+            )
+
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_from_group_dataframe_warn_on_sorted_index(self, backend, caplog):
+        df = copy.deepcopy(self.pd_to_backend(self.df_long_multi, backend))
+        df = nw.from_native(df)
+        df = df.sort(by="times")
+        with caplog.at_level(logging.WARNING):
+            _ = TimeSeries.from_group_dataframe(
+                df=df,
+                group_cols="st1",
+                time_col="times",
+            )
+            assert (
+                "UserWarning: The (time) index from `df` is monotonically increasing."
+                in caplog.text
+            )
+        caplog.clear()
 
     def test_with_static_covariates_univariate(self):
         ts = linear_timeseries(length=10)
@@ -303,12 +789,32 @@ class TestTimeSeriesStaticCovariate:
         assert (ts.static_covariates_values(copy=False) != -1.0).all()
 
         # changing values of view should change original DataFrame
-        vals = ts.static_covariates_values(copy=False)
-        vals[:] = -1.0
-        assert (ts.static_covariates_values(copy=False) == -1.0).all()
+        # In pandas 3.0+, DataFrame.values returns a read-only array
+        if not PANDAS_30_OR_GREATER:
+            vals = ts.static_covariates_values(copy=False)
+            vals[:] = -1.0
+            assert (ts.static_covariates_values(copy=False) == -1.0).all()
 
         ts = ts.with_static_covariates(None)
+        assert ts.static_covariates is None
         assert ts.static_covariates_values() is None
+
+    def test_metadata_values(self):
+        ts = linear_timeseries(length=10)
+        assert not ts.has_metadata
+
+        metadata = {"st1": 0, "st2": 1}
+        ts = ts.with_metadata(metadata)
+
+        assert ts.has_metadata
+        assert ts.metadata == metadata
+        # changing values of metadata is allowed
+        ts.metadata["st1"] = 2
+        assert ts.metadata == {"st1": 2, "st2": 1}
+
+        # removing metadata
+        ts = ts.with_metadata(None)
+        assert ts.metadata is None
 
     def test_with_static_covariates_multivariate(self):
         ts = linear_timeseries(length=10)
@@ -390,6 +896,17 @@ class TestTimeSeriesStaticCovariate:
         # invalid univar ts with univar static covariates + multivar ts with univar static covariates
         with pytest.raises(ValueError):
             _ = ts_uni.stack(ts_multi.with_static_covariates(static_covs_uni1))
+
+    def test_stack_metadata(self):
+        metadata = {"a": 0, "b": 1}
+        ts = linear_timeseries(length=10)
+        ts_md = ts.with_metadata(metadata)
+
+        # stacking will always use the metadata of `self`
+        assert ts.stack(ts).metadata is None
+        assert ts.stack(ts_md).metadata is None
+        assert ts_md.stack(ts).metadata == metadata
+        assert ts_md.stack(ts_md).metadata == metadata
 
     def test_concatenate_dim_component(self):
         """
@@ -506,6 +1023,22 @@ class TestTimeSeriesStaticCovariate:
         ts_concat = concatenate([ts_left, ts_right], axis=2)
         assert ts_concat.static_covariates.equals(ts_left.static_covariates)
 
+    def test_concatenate_metadata(self):
+        metadata = {"a": 0, "b": 1}
+        ts = linear_timeseries(length=10)
+        ts_md = ts.with_metadata(metadata)
+
+        # concatenate will always use the metadata of `self`
+        for axis in [1, 2]:
+            assert ts.concatenate(ts, axis=axis).metadata is None
+            assert ts.concatenate(ts_md, axis=axis).metadata is None
+            assert ts_md.concatenate(ts, axis=axis).metadata == metadata
+            assert ts_md.concatenate(ts_md, axis=axis).metadata == metadata
+
+        # over axis=0 requires shifting
+        assert ts.concatenate(ts_md.shift(10), axis=0).metadata is None
+        assert ts_md.concatenate(ts.shift(10), axis=0).metadata == metadata
+
     def test_scalers_with_static_covariates(self):
         ts = linear_timeseries(start_value=1.0, end_value=2.0, length=10)
         static_covs = pd.Series([0.0, 2.0], index=["st1", "st2"])
@@ -527,11 +1060,16 @@ class TestTimeSeriesStaticCovariate:
             values=np.random.random((10, 2))
         ).with_static_covariates(static_covs)
         assert ts.static_covariates.dtypes["num"] == ts.dtype == "float64"
-        assert ts.static_covariates.dtypes["cat"] == object
+        assert isinstance(ts.static_covariates.dtypes["cat"], object)
 
         ts = ts.astype(np.float32)
         assert ts.static_covariates.dtypes["num"] == ts.dtype == "float32"
-        assert ts.static_covariates.dtypes["cat"] == object
+        assert isinstance(ts.static_covariates.dtypes["cat"], object)
+
+    def test_non_numerical_metadata(self):
+        metadata = {"a": 0, "b": "foo"}
+        ts = linear_timeseries(length=10)
+        assert ts.with_metadata(metadata).metadata == metadata
 
     def test_get_item(self):
         # multi component static covariates
@@ -594,131 +1132,300 @@ class TestTimeSeriesStaticCovariate:
         assert ts4.static_covariates.index.equals(pd.Index(["comp2"]))
         assert isinstance(ts4.static_covariates, pd.DataFrame)
 
-    def test_operations(self):
-        static_covs = pd.DataFrame([[0, 1]], columns=["st1", "st2"])
+    @pytest.mark.parametrize(
+        "get_item",
+        [0, slice(0, 2), "comp1", slice("comp1", "comp2"), ["comp1", "comp2"]],
+    )
+    def test_get_item_metadata(self, get_item):
+        metadata = {"a": 0, "b": 1}
         ts = TimeSeries.from_values(
-            values=np.random.random((10, 2))
-        ).with_static_covariates(static_covs)
+            values=np.random.random((10, 2)), columns=["comp1", "comp2"]
+        ).with_metadata(metadata)
+        assert ts[get_item].metadata == metadata
+
+    @pytest.mark.parametrize("tag", [STATIC_COV_TAG, METADATA_TAG])
+    def test_operations(self, tag):
+        ts = TimeSeries.from_values(values=np.random.random((10, 2)))
+        ts, x = setup_tag(tag, ts)
 
         # arithmetics with series (left) and non-series (right)
-        self.helper_test_cov_transfer(ts, ts / 3)
-        self.helper_test_cov_transfer(ts, ts * 3)
-        self.helper_test_cov_transfer(ts, ts**3)
-        self.helper_test_cov_transfer(ts, ts + 3)
-        self.helper_test_cov_transfer(ts, ts - 3)
+        self.helper_test_transfer(tag, ts, ts / 3)
+        self.helper_test_transfer(tag, ts, ts * 3)
+        self.helper_test_transfer(tag, ts, ts**3)
+        self.helper_test_transfer(tag, ts, ts + 3)
+        self.helper_test_transfer(tag, ts, ts - 3)
 
         # conditions
-        self.helper_test_cov_transfer_xa(ts, ts < 3)
-        self.helper_test_cov_transfer_xa(ts, ts >= 3)
-        self.helper_test_cov_transfer_xa(ts, ts > 3)
-        self.helper_test_cov_transfer_xa(ts, ts >= 3)
+        self.helper_test_transfer_np(tag, ts, ts > 3)
+        self.helper_test_transfer_np(tag, ts, ts >= 3)
+        self.helper_test_transfer_np(tag, ts, ts < 3)
+        self.helper_test_transfer_np(tag, ts, ts <= 3)
 
         # arithmetics with non-series (left) and series (right)
-        self.helper_test_cov_transfer(ts, 3 * ts)
-        self.helper_test_cov_transfer(ts, 3 + ts)
-        self.helper_test_cov_transfer(ts, 3 - ts)
+        self.helper_test_transfer(tag, ts, 3 * ts)
+        self.helper_test_transfer(tag, ts, 3 + ts)
+        self.helper_test_transfer(tag, ts, 3 - ts)
+
         # conditions
-        self.helper_test_cov_transfer_xa(ts, 3 > ts)
-        self.helper_test_cov_transfer_xa(ts, 3 >= ts)
-        self.helper_test_cov_transfer_xa(ts, 3 < ts)
-        self.helper_test_cov_transfer_xa(ts, 3 <= ts)
+        self.helper_test_transfer_np(tag, ts, 3 > ts)
+        self.helper_test_transfer_np(tag, ts, 3 >= ts)
+        self.helper_test_transfer_np(tag, ts, 3 < ts)
+        self.helper_test_transfer_np(tag, ts, 3 <= ts)
 
         # arithmetics with two series
-        self.helper_test_cov_transfer(ts, ts / ts)
-        self.helper_test_cov_transfer(ts, ts * ts)
-        self.helper_test_cov_transfer(ts, ts**ts)
-        self.helper_test_cov_transfer(ts, ts + ts)
-        self.helper_test_cov_transfer(ts, ts - ts)
+        self.helper_test_transfer(tag, ts, ts / ts)
+        self.helper_test_transfer(tag, ts, ts * ts)
+        self.helper_test_transfer(tag, ts, ts**ts)
+        self.helper_test_transfer(tag, ts, ts + ts)
+        self.helper_test_transfer(tag, ts, ts - ts)
+
         # conditions
-        self.helper_test_cov_transfer_xa(ts, ts > ts)
-        self.helper_test_cov_transfer_xa(ts, ts >= ts)
-        self.helper_test_cov_transfer_xa(ts, ts < ts)
-        self.helper_test_cov_transfer_xa(ts, ts <= ts)
+        self.helper_test_transfer_np(tag, ts, ts > ts)
+        self.helper_test_transfer_np(tag, ts, ts >= ts)
+        self.helper_test_transfer_np(tag, ts, ts < ts)
+        self.helper_test_transfer_np(tag, ts, ts <= ts)
 
         # other operations
-        self.helper_test_cov_transfer(ts, abs(ts))
-        self.helper_test_cov_transfer(ts, -ts)
-        self.helper_test_cov_transfer(ts, round(ts, 2))
+        self.helper_test_transfer(tag, ts, abs(ts))
+        self.helper_test_transfer(tag, ts, -ts)
+        self.helper_test_transfer(tag, ts, round(ts, 2))
 
-    def test_ts_methods_with_static_covariates(self):
+    @pytest.mark.parametrize("tag", [STATIC_COV_TAG, METADATA_TAG])
+    def test_ts_methods(self, tag):
         ts = linear_timeseries(length=10, start_value=1.0, end_value=2.0).astype(
             "float64"
         )
-        static_covs = pd.Series([0, 1], index=["st1", "st2"]).astype(int)
-        ts = ts.with_static_covariates(static_covs)
-
-        assert ts.static_covariates.dtypes.iloc[0] == "float64"
-        ts = ts.astype("float32")
-        assert ts.static_covariates.dtypes.iloc[0] == "float32"
+        ts, x = setup_tag(tag, ts)
+        kwargs = {tag: x}
 
         ts_stoch = ts.from_times_and_values(
             times=ts.time_index,
             values=np.random.randint(low=0, high=10, size=(10, 1, 3)),
-            static_covariates=static_covs,
+            **kwargs,
         )
-        assert ts_stoch.static_covariates.index.equals(ts_stoch.components)
 
-        self.helper_test_cov_transfer(ts, ts.with_values(ts.all_values()))
-        self.helper_test_cov_transfer(
-            ts, ts.with_columns_renamed(ts.components.tolist(), ts.components.tolist())
-        )
-        self.helper_test_cov_transfer(ts, ts.copy())
-        self.helper_test_cov_transfer(ts, ts.mean())
-        self.helper_test_cov_transfer(ts, ts.median())
-        self.helper_test_cov_transfer(ts, ts.sum())
-        self.helper_test_cov_transfer(ts, ts.min())
-        self.helper_test_cov_transfer(ts, ts.max())
-        self.helper_test_cov_transfer(ts, ts.head())
-        self.helper_test_cov_transfer(ts, ts.tail())
-        self.helper_test_cov_transfer(ts, ts.split_after(0.5)[0])
-        self.helper_test_cov_transfer(ts, ts.split_after(0.5)[1])
-        self.helper_test_cov_transfer(ts, ts.split_before(0.5)[0])
-        self.helper_test_cov_transfer(ts, ts.split_before(0.5)[1])
-        self.helper_test_cov_transfer(ts, ts.drop_before(0.5))
-        self.helper_test_cov_transfer(ts, ts.drop_after(0.5))
-        self.helper_test_cov_transfer(
-            ts, ts.slice(ts.start_time() + ts.freq, ts.end_time() - ts.freq)
-        )
-        self.helper_test_cov_transfer(ts, ts.slice_n_points_after(ts.start_time(), 5))
-        self.helper_test_cov_transfer(ts, ts.slice_n_points_before(ts.end_time(), 5))
-        self.helper_test_cov_transfer(ts, ts.slice_intersect(ts[2:]))
-        self.helper_test_cov_transfer(ts, ts.strip())
-        self.helper_test_cov_transfer(ts, ts.longest_contiguous_slice())
-        self.helper_test_cov_transfer(ts, ts.rescale_with_value(2.0))
-        self.helper_test_cov_transfer(ts, ts.shift(2.0))
-        self.helper_test_cov_transfer(ts, ts.diff())
-        self.helper_test_cov_transfer(ts, ts.univariate_component(0))
-        self.helper_test_cov_transfer(ts, ts.map(lambda x: x + 1))
-        self.helper_test_cov_transfer(ts, ts.resample(ts.freq))
-        self.helper_test_cov_transfer(ts, ts[:5].append(ts[5:]))
-        self.helper_test_cov_transfer(ts, ts.append_values(ts.all_values()))
+        if tag == STATIC_COV_TAG:
+            assert ts.static_covariates.dtypes.iloc[0] == "float64"
+            ts = ts.astype("float32")
+            assert ts.static_covariates.dtypes.iloc[0] == "float32"
+            assert ts_stoch.static_covariates.index.equals(ts_stoch.components)
 
-        self.helper_test_cov_transfer(ts_stoch, ts_stoch.var())
-        self.helper_test_cov_transfer(ts_stoch, ts_stoch.std())
-        self.helper_test_cov_transfer(ts_stoch, ts_stoch.skew())
-        self.helper_test_cov_transfer(ts_stoch, ts_stoch.kurtosis())
+        self.helper_test_transfer(tag, ts, ts.with_values(ts.all_values()))
+        self.helper_test_transfer(
+            tag,
+            ts,
+            ts.with_columns_renamed(ts.components.tolist(), ts.components.tolist()),
+        )
+        self.helper_test_transfer(tag, ts, ts.copy())
+        self.helper_test_transfer(tag, ts, ts.mean())
+        self.helper_test_transfer(tag, ts, ts.median())
+        self.helper_test_transfer(tag, ts, ts.sum())
+        self.helper_test_transfer(tag, ts, ts.min())
+        self.helper_test_transfer(tag, ts, ts.max())
+        self.helper_test_transfer(tag, ts, ts.head())
+        self.helper_test_transfer(tag, ts, ts.tail())
+        self.helper_test_transfer(tag, ts, ts.split_after(0.5)[0])
+        self.helper_test_transfer(tag, ts, ts.split_after(0.5)[1])
+        self.helper_test_transfer(tag, ts, ts.split_before(0.5)[0])
+        self.helper_test_transfer(tag, ts, ts.split_before(0.5)[1])
+        self.helper_test_transfer(tag, ts, ts.drop_before(0.5))
+        self.helper_test_transfer(tag, ts, ts.drop_after(0.5))
+        self.helper_test_transfer(
+            tag, ts, ts.slice(ts.start_time() + ts.freq, ts.end_time() - ts.freq)
+        )
+        self.helper_test_transfer(tag, ts, ts.slice_n_points_after(ts.start_time(), 5))
+        self.helper_test_transfer(tag, ts, ts.slice_n_points_before(ts.end_time(), 5))
+        self.helper_test_transfer(tag, ts, ts.slice_intersect(ts[2:]))
+        self.helper_test_transfer(tag, ts, ts.strip())
+        self.helper_test_transfer(tag, ts, ts.longest_contiguous_slice())
+        self.helper_test_transfer(tag, ts, ts.rescale_with_value(2.0))
+        self.helper_test_transfer(tag, ts, ts.shift(2.0))
+        self.helper_test_transfer(tag, ts, ts.diff())
+        self.helper_test_transfer(tag, ts, ts.univariate_component(0))
+        self.helper_test_transfer(tag, ts, ts.map(lambda x: x + 1))
+        self.helper_test_transfer(tag, ts, ts.resample(ts.freq))
+        self.helper_test_transfer(tag, ts, ts[:5].append(ts[5:]))
+        self.helper_test_transfer(tag, ts, ts.append_values(ts.all_values()))
+
+        self.helper_test_transfer(tag, ts_stoch, ts_stoch.var())
+        self.helper_test_transfer(tag, ts_stoch, ts_stoch.std())
+        self.helper_test_transfer(tag, ts_stoch, ts_stoch.skew())
+        self.helper_test_transfer(tag, ts_stoch, ts_stoch.kurtosis())
 
         # will append "_quantile" to component names
-        self.helper_test_cov_transfer_values(ts_stoch, ts_stoch.quantile_timeseries())
-        self.helper_test_cov_transfer_values(ts_stoch, ts_stoch.quantile(0.5))
+        self.helper_test_transfer_values(tag, ts_stoch, ts_stoch.quantile())
+        self.helper_test_transfer_values(tag, ts_stoch, ts_stoch.quantile(0.5))
         # will change component names
-        self.helper_test_cov_transfer_values(ts, ts.add_datetime_attribute("hour"))
-        self.helper_test_cov_transfer_values(ts, ts.add_holidays("US"))
+        self.helper_test_transfer_values(tag, ts, ts.add_datetime_attribute("hour"))
+        self.helper_test_transfer_values(tag, ts, ts.add_holidays("US"))
 
-    def helper_test_cov_transfer(self, ts, ts_new):
-        """static cov dataframes must be identical"""
-        assert ts_new.static_covariates.equals(ts.static_covariates)
+    @staticmethod
+    def helper_test_transfer(tag, ts, ts_new):
+        """static cov or metadata must be identical"""
+        if tag == STATIC_COV_TAG:
+            assert ts_new.static_covariates.equals(ts.static_covariates)
+        else:  # metadata
+            assert ts_new.metadata == ts.metadata
 
-    def helper_test_cov_transfer_xa(self, ts, xa_new):
-        """static cov dataframes must be identical between xarray and TimeSeries"""
-        assert xa_new.attrs[STATIC_COV_TAG].equals(ts.static_covariates)
+    @staticmethod
+    def helper_test_transfer_np(tag, ts, values):
+        """static cov and metadata are not transferred when performing value comparisons. Output is a `np.ndarray`"""
+        assert isinstance(values, np.ndarray)
+        assert values.shape == ts.shape
 
-    def helper_test_cov_transfer_values(self, ts, ts_new):
-        """values of static cov dataframes must match but not row index (component names).
-        I.e. series.quantile_timeseries() adds "_quantiles" to component names
+    @staticmethod
+    def helper_test_transfer_values(tag, ts, ts_new):
+        """values of static cov or metadata must match but not row index (component names).
+        I.e. series.quantile() adds "_quantiles" to component names
         """
-        assert not ts_new.static_covariates.index.equals(ts.components)
-        np.testing.assert_almost_equal(
-            ts_new.static_covariates_values(copy=False),
-            ts.static_covariates_values(copy=False),
+        if tag == STATIC_COV_TAG:
+            assert not ts_new.static_covariates.index.equals(ts.components)
+            np.testing.assert_almost_equal(
+                ts_new.static_covariates_values(copy=False),
+                ts.static_covariates_values(copy=False),
+            )
+        else:  # metadata
+            assert ts_new.metadata == ts.metadata
+
+
+class TestTimeSeriesJSONSerialization:
+    """Test JSON serialization with static_covariates, metadata, and hierarchy."""
+
+    def test_json_with_static_covariates(self):
+        """Test that static covariates are preserved in JSON serialization."""
+        ts = linear_timeseries(length=10)
+        static_cov = pd.Series([0.0, 1.0], index=["st1", "st2"])
+        ts = ts.with_static_covariates(static_cov)
+
+        # Serialize and deserialize
+        json_str = ts.to_json()
+        ts_restored = TimeSeries.from_json(json_str)
+
+        # Check that static covariates are preserved
+        assert ts_restored.static_covariates is not None
+        assert ts_restored.static_covariates.equals(ts.static_covariates)
+
+    def test_json_with_metadata(self):
+        """Test that metadata is preserved in JSON serialization."""
+        ts = linear_timeseries(length=10)
+        metadata = {"key1": "value1", "key2": 42, "key3": [1, 2, 3]}
+        ts = ts.with_metadata(metadata)
+
+        # Serialize and deserialize
+        json_str = ts.to_json()
+        ts_restored = TimeSeries.from_json(json_str)
+
+        # Check that metadata is preserved
+        assert ts_restored.metadata is not None
+        assert ts_restored.metadata == ts.metadata
+
+    def test_json_with_hierarchy(self):
+        """Test that hierarchy is preserved in JSON serialization."""
+        components = ["total", "a", "b", "ax", "bx"]
+        hierarchy = {
+            "ax": ["a"],
+            "bx": ["b"],
+            "a": ["total"],
+            "b": ["total"],
+        }
+        ts = TimeSeries.from_values(
+            values=np.random.rand(10, len(components)),
+            columns=components,
+            hierarchy=hierarchy,
         )
+
+        # Serialize and deserialize
+        json_str = ts.to_json()
+        ts_restored = TimeSeries.from_json(json_str)
+
+        # Check that hierarchy is preserved
+        assert ts_restored.hierarchy is not None
+        assert ts_restored.hierarchy == ts.hierarchy
+        assert ts_restored.top_level_component == ts.top_level_component
+        assert ts_restored.bottom_level_components == ts.bottom_level_components
+
+    def test_json_with_all_attributes(self):
+        """Test JSON serialization with all attributes (static_covariates, metadata, hierarchy)."""
+        components = ["total", "a", "b"]
+        hierarchy = {"a": ["total"], "b": ["total"]}
+        static_cov = pd.DataFrame(
+            [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]],
+            index=components,
+            columns=["sc1", "sc2"],
+        )
+        metadata = {"description": "test series", "version": 1}
+
+        ts = TimeSeries.from_values(
+            values=np.random.rand(10, len(components)),
+            columns=components,
+            hierarchy=hierarchy,
+            static_covariates=static_cov,
+            metadata=metadata,
+        )
+
+        # Serialize and deserialize
+        json_str = ts.to_json()
+        ts_restored = TimeSeries.from_json(json_str)
+
+        # Check all attributes are preserved
+        assert ts_restored.static_covariates is not None
+        assert ts_restored.static_covariates.equals(ts.static_covariates)
+        assert ts_restored.metadata == ts.metadata
+        assert ts_restored.hierarchy == ts.hierarchy
+        assert ts_restored.top_level_component == ts.top_level_component
+        assert ts_restored.bottom_level_components == ts.bottom_level_components
+
+    def test_json_override_attributes(self):
+        """Test that from_json parameters can override JSON-embedded attributes."""
+        components = ["total", "a", "b"]
+        hierarchy = {"a": ["total"], "b": ["total"]}
+        static_cov = pd.DataFrame(
+            [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]],
+            index=components,
+            columns=["sc1", "sc2"],
+        )
+        metadata = {"description": "test series", "version": 1}
+
+        ts = TimeSeries.from_values(
+            values=np.random.rand(10, len(components)),
+            columns=components,
+            hierarchy=hierarchy,
+            static_covariates=static_cov,
+            metadata=metadata,
+        )
+        json_str = ts.to_json()
+
+        # Override with different values
+        new_static_cov = pd.DataFrame(
+            [[10.0, 11.0], [12.0, 13.0], [14.0, 5.0]],
+            index=components,
+            columns=["sc_new1", "sc_new2"],
+        )
+        new_metadata = {"key2": "value2"}
+        new_hierarchy = {"total": ["b"], "b": ["a"]}
+        ts_restored = TimeSeries.from_json(
+            json_str,
+            static_covariates=new_static_cov,
+            metadata=new_metadata,
+            hierarchy=new_hierarchy,
+        )
+
+        # Check that overrides worked
+        # When a Series is passed, it becomes a single-row DataFrame with the series index as columns
+        assert ts_restored.static_covariates is not None
+        assert ts_restored.static_covariates.equals(new_static_cov)
+        assert ts_restored.metadata == new_metadata
+        assert ts_restored.hierarchy == new_hierarchy
+
+    def test_json_without_attributes(self):
+        """Test JSON serialization for series without optional attributes."""
+        ts = linear_timeseries(length=10)
+
+        # Serialize and deserialize
+        json_str = ts.to_json()
+        ts_restored = TimeSeries.from_json(json_str)
+
+        # Check that optional attributes are None
+        assert ts_restored.static_covariates is None
+        assert ts_restored.metadata is None
+        assert ts_restored.hierarchy is None

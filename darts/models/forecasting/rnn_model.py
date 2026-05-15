@@ -1,28 +1,38 @@
 """
 Recurrent Neural Networks
 -------------------------
+.. autoclass:: CustomRNNModule
+   :members: forward
+   :no-inherited-members:
+   :no-undoc-members:
+   :no-special-members:
 """
 
 import inspect
 from abc import ABC, abstractmethod
-from typing import Optional, Sequence, Tuple, Type, Union
+from collections.abc import Sequence
 
 import torch
 import torch.nn as nn
 
-from darts.logging import get_logger, raise_if_not, raise_log
+from darts import TimeSeries
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
-    PLDualCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
-from darts.timeseries import TimeSeries
-from darts.utils.data import DualCovariatesShiftedDataset, TrainingDataset
+from darts.utils.data import ShiftedTorchTrainingDataset
+from darts.utils.data.torch_datasets.utils import (
+    PLModuleInput,
+    TorchBatch,
+    TorchTrainingSample,
+)
 
 logger = get_logger(__name__)
 
 
-class CustomRNNModule(PLDualCovariatesModule, ABC):
+class CustomRNNModule(PLForecastingModule, ABC):
     def __init__(
         self,
         input_size: int,
@@ -39,13 +49,13 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
 
         To create a new module, subclass from :class:`CustomRNNModule` and:
 
-        * Define the architecture in the module constructor (`__init__()`)
+        * Define the architecture in the module constructor (``__init__()``)
 
-        * Add the `forward()` method and define the logic of your module's forward pass
+        * Add the ``forward()`` method and define the logic of your module's forward pass
 
-        * Use the custom module class when creating a new :class:`RNNModel` with parameter `model`.
+        * Use the custom module class when creating a new :class:`RNNModel` with parameter ``model``.
 
-        You can use `darts.models.forecasting.rnn_model._RNNModule` as an example.
+        You can use ``darts.models.forecasting.rnn_model._RNNModule`` as an example.
 
         Parameters
         ----------
@@ -79,8 +89,8 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
     @io_processor
     @abstractmethod
     def forward(
-        self, x_in: Tuple, h: Optional[torch.Tensor] = None
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        self, x_in: PLModuleInput, h: torch.Tensor | None = None
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """RNN Module forward.
 
         Parameters
@@ -102,28 +112,32 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
         """
         pass
 
-    def _produce_train_output(self, input_batch: Tuple) -> torch.Tensor:
+    def _produce_train_output(self, input_batch: TorchBatch) -> torch.Tensor:
+        # only return the forecast, not the hidden state
+        return self(self._process_input_batch(input_batch))[0]
+
+    def _process_input_batch(self, input_batch: TorchBatch) -> PLModuleInput:
         (
             past_target,
-            historic_future_covariates,
+            _,  # past covariates
+            _,  # historic future covariates
             future_covariates,
             static_covariates,
         ) = input_batch
         # For the RNN we concatenate the past_target with the future_covariates
         # (they have the same length because we enforce a Shift dataset for RNNs)
-        model_input = (
-            (
-                torch.cat([past_target, future_covariates], dim=2)
-                if future_covariates is not None
-                else past_target
-            ),
+        input_batch = (
+            past_target,
+            future_covariates,  # future covariates as past covariates for RNN input
+            None,
+            None,
             static_covariates,
         )
-        return self(model_input)[0]
+        return super()._process_input_batch(input_batch)
 
     def _produce_predict_output(
-        self, x: Tuple, last_hidden_state: Optional[torch.Tensor] = None
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        self, x: PLModuleInput, last_hidden_state: torch.Tensor | None = None
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """overwrite parent classes `_produce_predict_output` method"""
         output, hidden = self(x, last_hidden_state)
         if self.likelihood:
@@ -135,7 +149,7 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
             return output.squeeze(dim=-1), hidden
 
     def _get_batch_prediction(
-        self, n: int, input_batch: Tuple, roll_size: int
+        self, n: int, input_batch: tuple[torch.Tensor | None, ...], roll_size: int
     ) -> torch.Tensor:
         """
         This model is recurrent, so we have to write a specific way to
@@ -143,12 +157,14 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
         """
         (
             past_target,
+            _,  # past covariates
+            _,  # future past covariates
             historic_future_covariates,
             future_covariates,
             static_covariates,
         ) = input_batch
 
-        if historic_future_covariates is not None:
+        if historic_future_covariates is not None and future_covariates is not None:
             # RNNs need as inputs (target[t] and covariates[t+1]) so here we shift the covariates
             all_covariates = torch.cat(
                 [historic_future_covariates[:, 1:, :], future_covariates], dim=1
@@ -165,6 +181,7 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
         batch_prediction = []
         out, last_hidden_state = self._produce_predict_output((
             input_series,
+            None,
             static_covariates,
         ))
         batch_prediction.append(out[:, -1:, :])
@@ -186,7 +203,7 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
 
             # feed new input to model, including the last hidden state from the previous iteration
             out, last_hidden_state = self._produce_predict_output(
-                (new_input, static_covariates), last_hidden_state
+                (new_input, None, static_covariates), last_hidden_state
             )
 
             # append prediction to batch prediction array, increase counter
@@ -251,9 +268,9 @@ class _RNNModule(CustomRNNModule):
 
     @io_processor
     def forward(
-        self, x_in: Tuple, h: Optional[torch.Tensor] = None
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
-        x, _ = x_in
+        self, x_in: PLModuleInput, h: torch.Tensor | None = None
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        x, _, _ = x_in
         # data is of size (batch_size, input_length, input_size)
         batch_size = x.shape[0]
 
@@ -274,7 +291,7 @@ class RNNModel(DualCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,
-        model: Union[str, Type[CustomRNNModule]] = "RNN",
+        model: str | type[CustomRNNModule] = "RNN",
         hidden_dim: int = 25,
         n_rnn_layers: int = 1,
         dropout: float = 0.0,
@@ -318,12 +335,13 @@ class RNNModel(DualCovariatesTorchModel):
         n_rnn_layers
             The number of recurrent layers.
         dropout
-            Fraction of neurons afected by Dropout.
+            Fraction of neurons affected by Dropout.
         training_length
             The length of both input (target and covariates) and output (target) time series used during
-            training. Must have a larger value than `input_chunk_length`, because otherwise during training
-            the RNN is never run for as many iterations as it will during inference. For more information on
-            this parameter, please see `darts.utils.data.ShiftedDataset`.
+            training. Must be `>input_chunk_length`, because otherwise during training the RNN is never run for as
+            many iterations as it will during inference. For training, a
+            :class:`~darts.utils.data.torch_datasets.training_dataset.ShiftedTorchTrainingDataset` is used with
+            parameters `input_chunk_length=output_chunk_length=training_length` and `shift=1`.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -333,7 +351,7 @@ class RNNModel(DualCovariatesTorchModel):
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
         likelihood
-            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
+            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.torch.TorchLikelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
@@ -402,16 +420,14 @@ class RNNModel(DualCovariatesTorchModel):
                 }
             ..
         random_state
-            Control the randomness of the weights initialization. Check this
-            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
-            Default: ``None``.
+            Controls the randomness of the weights initialization and reproducible forecasting.
         pl_trainer_kwargs
             By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
             that performs the training, validation and prediction processes. These presets include automatic
             checkpointing, tensorboard logging, setting the torch device and more.
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
             supported kwargs. Default: ``None``.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
@@ -430,7 +446,7 @@ class RNNModel(DualCovariatesTorchModel):
             The model will stop training early if the validation loss `val_loss` does not improve beyond
             specifications. For more information on callbacks, visit:
             `PyTorch Lightning Callbacks
-            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
 
             .. highlight:: python
             .. code-block:: python
@@ -454,6 +470,18 @@ class RNNModel(DualCovariatesTorchModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         Examples
         --------
@@ -473,16 +501,16 @@ class RNNModel(DualCovariatesTorchModel):
         >>> )
         >>> model.fit(target, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[ 3.18922903],
-               [ 1.17791019],
-               [ 0.39992814],
-               [ 0.13277921],
-               [ 0.02523252],
-               [-0.01829086]])
+        >>> print(pred.values())
+        [[ 3.18922903]
+         [ 1.17791019]
+         [ 0.39992814]
+         [ 0.13277921]
+         [ 0.02523252]
+         [-0.01829086]]
 
         .. note::
-            `RNN example notebook <https://unit8co.github.io/darts/examples/04-RNN-examples.html>`_ presents techniques
+            `RNN example notebook <https://unit8co.github.io/darts/examples/04-RNN-examples.html>`__ presents techniques
             that can be used to improve the forecasts quality compared to this simple usage example.
         """
         if training_length < input_chunk_length:
@@ -532,13 +560,13 @@ class RNNModel(DualCovariatesTorchModel):
         self.n_rnn_layers = n_rnn_layers
         self.training_length = training_length
 
-    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
-        # samples are made of (past_target, historic_future_covariates, future_covariates, future_target)
-        # historic_future_covariates and future_covariates have the same width
-        input_dim = train_sample[0].shape[1] + (
-            train_sample[1].shape[1] if train_sample[1] is not None else 0
+    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
+        # samples are made of (past target, past cov, historic future cov, future cov, static cov, future target)
+        (past_target, _, _, future_covariates, _, _) = train_sample
+        input_dim = past_target.shape[1] + (
+            future_covariates.shape[1] if future_covariates is not None else 0
         )
-        output_dim = train_sample[-1].shape[1]
+        output_dim = past_target.shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
         kwargs = {}
@@ -560,60 +588,45 @@ class RNNModel(DualCovariatesTorchModel):
 
     def _build_train_dataset(
         self,
-        target: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        sample_weight: Optional[Sequence[TimeSeries]],
-        max_samples_per_ts: Optional[int],
-    ) -> DualCovariatesShiftedDataset:
-        return DualCovariatesShiftedDataset(
-            target_series=target,
-            covariates=future_covariates,
-            length=self.training_length,
+        series: Sequence[TimeSeries],
+        past_covariates: Sequence[TimeSeries] | None,
+        future_covariates: Sequence[TimeSeries] | None,
+        sample_weight: Sequence[TimeSeries] | str | None,
+        max_samples_per_ts: int | None,
+        stride: int = 1,
+    ) -> ShiftedTorchTrainingDataset:
+        return ShiftedTorchTrainingDataset(
+            series=series,
+            future_covariates=future_covariates,
+            input_chunk_length=self.training_length,
+            output_chunk_length=self.training_length,
             shift=1,
+            stride=stride,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
             sample_weight=sample_weight,
         )
 
-    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
-        raise_if_not(
-            isinstance(train_dataset, DualCovariatesShiftedDataset),
-            "RNNModel requires a training dataset of type DualCovariatesShiftedDataset.",
-        )
-        raise_if_not(
-            train_dataset.ds_past.shift == 1,
-            "RNNModel requires a shifted training dataset with shift=1.",
-        )
+    @staticmethod
+    def _verify_train_dataset_type(train_dataset: ShiftedTorchTrainingDataset):
+        if not isinstance(train_dataset, ShiftedTorchTrainingDataset):
+            raise_log(
+                ValueError(
+                    "RNNModel requires a training dataset of type `GenericShiftDataset`. "
+                    f"Got {type(train_dataset)} instead."
+                ),
+                logger=logger,
+            )
+        if train_dataset.shift != 1:
+            raise_log(
+                ValueError(
+                    f"RNNModel requires a shifted training dataset with shift=1. Got shift={train_dataset.shift}."
+                ),
+                logger=logger,
+            )
 
     @property
-    def supports_multivariate(self) -> bool:
-        return True
-
-    @property
-    def min_train_series_length(self) -> int:
-        return self.training_length + 1
-
-    @property
-    def extreme_lags(
-        self,
-    ) -> Tuple[
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        int,
-        Optional[int],
-    ]:
+    def min_train_samples(self) -> int:
         return (
-            -self.input_chunk_length,
-            self.output_chunk_length - 1,
-            None,
-            None,
-            -self.input_chunk_length,
-            self.output_chunk_length - 1,
-            self.output_chunk_shift,
-            self.training_length - self.input_chunk_length,
+            super().min_train_samples + self.training_length - self.input_chunk_length
         )

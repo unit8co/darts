@@ -3,35 +3,35 @@ Mapper and InvertibleMapper
 ---------------------------
 """
 
-from typing import Any, Callable, Mapping, Union
+from collections.abc import Callable, Mapping
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
+from darts import TimeSeries
 from darts.dataprocessing.transformers.base_data_transformer import BaseDataTransformer
 from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
 from darts.logging import get_logger
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
-MapperFn = Union[
-    Callable[[np.number], np.number], Callable[[pd.Timestamp, np.number], np.number]
-]
+MapperFn = (
+    Callable[[np.number], np.number] | Callable[[pd.Timestamp, np.number], np.number]
+)
 
 
 class Mapper(BaseDataTransformer):
     def __init__(
         self,
-        fn: Union[
-            Callable[[np.number], np.number],
-            Callable[[pd.Timestamp, np.number], np.number],
-        ],
+        fn: Callable[[np.number], np.number]
+        | Callable[[pd.Timestamp, np.number], np.number],
         name: str = "Mapper",
         n_jobs: int = 1,
         verbose: bool = False,
+        columns: str | list[str] | None = None,
     ):
         """
         Data transformer to apply a custom function to a (sequence of) ``TimeSeries``
@@ -55,29 +55,28 @@ class Mapper(BaseDataTransformer):
             required amount of time.
         verbose
             Optionally, whether to print operations progress
+        columns
+            Optionally, a string or list of strings specifying the names of the components (columns) to transform.
+            If specified, only these components will be transformed, and the remaining components will be kept
+            untouched. For more information refer to the `BaseDataTransformer` documentation. In case the transformer
+            is applied on multiple TimeSeries, it is expected that all series have the same column order.
 
         Examples
         --------
         >>> import numpy as np
         >>> from darts import TimeSeries
-        >>> from darts.dataprocessing.transformers import InvertibleMapper
-        >>> series = TimeSeries.from_values(np.array([1e0, 1e1, 1e2, 1e3]))
-        >>> transformer = InvertibleMapper(np.log10, lambda x: 10**x)
+        >>> from darts.dataprocessing.transformers import Mapper
+        >>> series = TimeSeries.from_values(np.array([1, 10, 100]))
+        >>> transformer = Mapper(np.log10)
         >>> series_transformed = transformer.transform(series)
-        >>> print(series_transformed)
-        <TimeSeries (DataArray) (time: 4, component: 1, sample: 1)>
-        array([[[0.]],
-            [[1.]],
-            [[2.]],
-            [[3.]]])
-        Coordinates:
-        * time       (time) int64 0 1 2 3
-        * component  (component) <U1 '0'
-        Dimensions without coordinates: sample
+        >>> print(series_transformed.values())
+        [[0.]
+         [1.]
+         [2.]]
         """
         # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self._fn = fn
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
+        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose, columns=columns)
 
     @staticmethod
     def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
@@ -87,17 +86,14 @@ class Mapper(BaseDataTransformer):
 class InvertibleMapper(InvertibleDataTransformer):
     def __init__(
         self,
-        fn: Union[
-            Callable[[np.number], np.number],
-            Callable[[pd.Timestamp, np.number], np.number],
-        ],
-        inverse_fn: Union[
-            Callable[[np.number], np.number],
-            Callable[[pd.Timestamp, np.number], np.number],
-        ],
+        fn: Callable[[np.number], np.number]
+        | Callable[[pd.Timestamp, np.number], np.number],
+        inverse_fn: Callable[[np.number], np.number]
+        | Callable[[pd.Timestamp, np.number], np.number],
         name: str = "InvertibleMapper",
         n_jobs: int = 1,
         verbose: bool = False,
+        columns: str | list[str] | None = None,
     ):
         """
         Data transformer to apply a custom function and its inverse to a (sequence of) ``TimeSeries``
@@ -127,36 +123,25 @@ class InvertibleMapper(InvertibleDataTransformer):
         --------
         >>> import numpy as np
         >>> from darts import TimeSeries
-        >>> from darts.dataprocessing.transformers import Mapper
-        >>> series = TimeSeries.from_values(np.array([1e0, 1e1, 1e2, 1e3]))
-        >>> transformer = Mapper(np.log10)
+        >>> from darts.dataprocessing.transformers import InvertibleMapper
+        >>> series = TimeSeries.from_values(np.array([1, 10, 100]))
+        >>> transformer = InvertibleMapper(np.log10, lambda x: 10 ** x)
         >>> series_transformed = transformer.transform(series)
-        >>> print(series_transformed)
-        <TimeSeries (DataArray) (time: 4, component: 1, sample: 1)>
-        array([[[0.]],
-            [[1.]],
-            [[2.]],
-            [[3.]]])
-        Coordinates:
-        * time       (time) int64 0 1 2 3
-        * component  (component) <U1 '0'
-        Dimensions without coordinates: sample
-        >>> series_restaured = transformer.inverse_transform(series_transformed)
-        >>> print(series_restaured)
-        <TimeSeries (DataArray) (time: 4, component: 1, sample: 1)>
-        array([[[   1.]],
-            [[  10.]],
-            [[ 100.]],
-            [[1000.]]])
-        Coordinates:
-        * time       (time) int64 0 1 2 3
-        * component  (component) <U1 '0'
-        Dimensions without coordinates: sample
+        >>> print(series_transformed.values())
+        [[0.]
+         [1.]
+         [2.]]
+         [3.]]
+        >>> series_restored = transformer.inverse_transform(series_transformed)
+        >>> print(series_restored.values())
+        [[  1.]
+         [ 10.]
+         [100.]]
         """
 
         self._fn = fn
         self._inverse_fn = inverse_fn
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
+        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose, columns=columns)
 
     @staticmethod
     def ts_transform(
@@ -166,6 +151,8 @@ class InvertibleMapper(InvertibleDataTransformer):
 
     @staticmethod
     def ts_inverse_transform(
-        series: TimeSeries, params: Mapping[str, Mapping[str, MapperFn]]
+        series: TimeSeries,
+        params: Mapping[str, Mapping[str, MapperFn]],
+        insample: TimeSeries | None = None,
     ) -> TimeSeries:
         return series.map(params["fixed"]["_inverse_fn"])

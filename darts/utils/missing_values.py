@@ -3,10 +3,8 @@ Utils for filling missing values
 --------------------------------
 """
 
-from typing import List, Optional, Union
-
+from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
@@ -26,11 +24,11 @@ def missing_values_ratio(series: TimeSeries) -> float:
         The ratio of missing values
     """
 
-    return series.pd_dataframe().isnull().sum().mean() / len(series)
+    return series.to_dataframe().isnull().sum().mean() / len(series)
 
 
 def fill_missing_values(
-    series: TimeSeries, fill: Union[str, float] = "auto", **interpolate_kwargs
+    series: TimeSeries, fill: str | float = "auto", **interpolate_kwargs
 ) -> TimeSeries:
     """
     Fills missing values in the provided time series
@@ -45,7 +43,7 @@ def fill_missing_values(
     interpolate_kwargs
         Keyword arguments for `pandas.Dataframe.interpolate()`, only used when fit is set to 'auto'.
         See `the documentation
-        <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.interpolate.html>`_
+        <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.interpolate.html>`__
         for the list of supported parameters.
 
     Returns
@@ -70,8 +68,8 @@ def fill_missing_values(
 
 
 def extract_subseries(
-    series: TimeSeries, min_gap_size: Optional[int] = 1, mode: str = "all"
-) -> List[TimeSeries]:
+    series: TimeSeries, min_gap_size: int | None = 1, mode: str = "all"
+) -> list[TimeSeries]:
     """
     Partitions the series into a sequence of sub-series by using significant gaps of missing values
 
@@ -101,7 +99,7 @@ def extract_subseries(
     series = series.strip()
     freq = series.freq
 
-    if series.pd_dataframe().isna().sum().sum() == 0:
+    if series.to_dataframe().isna().sum().sum() == 0:
         return [series]
 
     # Get start/end times of sub-series without gaps of missing values
@@ -137,13 +135,15 @@ def _const_fill(series: TimeSeries, fill: float = 0) -> TimeSeries:
         A TimeSeries, `series` with all missing values set to `fill`.
     """
 
-    return TimeSeries.from_times_and_values(
+    return TimeSeries(
         series.time_index,
-        series.pd_dataframe().fillna(value=fill),
+        series.to_dataframe().fillna(value=fill),
         freq=series.freq,
-        columns=series.columns,
+        components=series.columns,
         static_covariates=series.static_covariates,
         hierarchy=series.hierarchy,
+        metadata=series.metadata,
+        copy=False,
     )
 
 
@@ -159,7 +159,7 @@ def _auto_fill(series: TimeSeries, **interpolate_kwargs) -> TimeSeries:
     interpolate_kwargs
         Keyword arguments for `pandas.Dataframe.interpolate()`.
         See `the documentation
-        <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.interpolate.html>`_
+        <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.interpolate.html>`__
         for the list of supported parameters.
     Returns
     -------
@@ -167,16 +167,20 @@ def _auto_fill(series: TimeSeries, **interpolate_kwargs) -> TimeSeries:
         A new TimeSeries with all missing values filled according to the rules above.
     """
 
-    series_temp = series.pd_dataframe()
+    series_temp = series.to_dataframe()
 
     # pandas interpolate wrapper, with chosen `method`
     if "limit_direction" not in interpolate_kwargs:
         interpolate_kwargs["limit_direction"] = "both"
     interpolate_kwargs["inplace"] = True
     series_temp.interpolate(**interpolate_kwargs)
-    return TimeSeries.from_dataframe(
-        series_temp,
+    return TimeSeries(
+        times=series_temp.index,
+        values=series_temp.values,
+        components=series_temp.columns,
         freq=series.freq,
         static_covariates=series.static_covariates,
         hierarchy=series.hierarchy,
+        metadata=series.metadata,
+        copy=False,
     )

@@ -3,54 +3,48 @@ ARIMA
 -----
 
 Models for ARIMA (Autoregressive integrated moving average) [1]_.
-The implementations is wrapped around `statsmodels <https://github.com/statsmodels/statsmodels>`_.
+The implementations is wrapped around `statsmodels <https://github.com/statsmodels/statsmodels>`__.
 
 References
 ----------
 .. [1] https://wikipedia.org/wiki/Autoregressive_integrated_moving_average
 """
 
-from typing import List, Literal, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Literal, TypeAlias
 
-try:
-    from typing import TypeAlias
-except ImportError:
-    from typing_extensions import TypeAlias
-
-import numpy as np
-from statsmodels import __version_tuple__ as statsmodels_version
+from sklearn.utils import check_random_state
 from statsmodels.tsa.arima.model import ARIMA as staARIMA
 
+from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
-from darts.timeseries import TimeSeries
+from darts.utils.utils import random_method
 
 logger = get_logger(__name__)
 
-# Check whether we are running statsmodels >= 0.13.5 or not:
-statsmodels_above_0135 = statsmodels_version > (0, 13, 5)
 
-
-IntOrIntSequence: TypeAlias = Union[int, Sequence[int]]
+IntOrIntSequence: TypeAlias = int | Sequence[int]
 
 
 class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
+    @random_method
     def __init__(
         self,
         p: IntOrIntSequence = 12,
         d: int = 1,
         q: IntOrIntSequence = 0,
-        seasonal_order: Tuple[int, IntOrIntSequence, IntOrIntSequence, int] = (
+        seasonal_order: tuple[int, IntOrIntSequence, IntOrIntSequence, int] = (
             0,
             0,
             0,
             0,
         ),
-        trend: Optional[Union[Literal["n", "c", "t", "ct"], List[int]]] = None,
-        random_state: Optional[int] = None,
-        add_encoders: Optional[dict] = None,
+        trend: Literal["n", "c", "t", "ct"] | list[int] | None = None,
+        random_state: int | None = None,
+        add_encoders: dict | None = None,
     ):
         """ARIMA
         ARIMA-type models extensible with exogenous variables (future covariates)
@@ -105,6 +99,8 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
                     'tz': 'CET'
                 }
             ..
+        random_state: int or None
+            Controls the randomness for reproducible forecasting.
 
         Examples
         --------
@@ -118,13 +114,13 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
         >>> model = ARIMA(p=12, d=1, q=2)
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[451.36489334],
-               [416.88972829],
-               [443.10520391],
-               [481.07892911],
-               [502.11286509],
-               [555.50153984]])
+        >>> print(pred.values())
+        [[451.36482652]
+         [416.8895219 ]
+         [443.10517554]
+         [481.07884246]
+         [502.11278494]
+         [555.5014505 ]]
 
         References
         ----------
@@ -135,22 +131,18 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
         self.seasonal_order = seasonal_order
         self.trend = trend
         self.model = None
-        if statsmodels_above_0135:
-            self._random_state = (
-                random_state
-                if random_state is None
-                else np.random.RandomState(random_state)
-            )
-        else:
-            self._random_state = None
-            np.random.seed(random_state if random_state is not None else 0)
 
     @property
     def supports_multivariate(self) -> bool:
         return False
 
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        super()._fit(series, future_covariates)
+    def _fit(
+        self,
+        series: TimeSeries,
+        future_covariates: TimeSeries | None = None,
+        verbose: bool | None = None,
+    ):
+        super()._fit(series, future_covariates, verbose=verbose)
 
         self._assert_univariate(series)
 
@@ -168,14 +160,17 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
         return self
 
+    @random_method
     def _predict(
         self,
         n: int,
-        series: Optional[TimeSeries] = None,
-        historic_future_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: TimeSeries | None = None,
+        historic_future_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
         verbose: bool = False,
+        random_state: int | None = None,
     ) -> TimeSeries:
         if num_samples > 1 and self.trend:
             logger.warning(
@@ -185,7 +180,13 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
             )
 
         super()._predict(
-            n, series, historic_future_covariates, future_covariates, num_samples
+            n=n,
+            series=series,
+            historic_future_covariates=historic_future_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            random_state=random_state,
+            verbose=verbose,
         )
 
         # updating statsmodels results object state with the new ts and covariates
@@ -207,11 +208,13 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 ),
             )
         else:
+            rng = check_random_state(random_state)
+
             forecast = self.model.simulate(
                 nsimulations=n,
                 repetitions=num_samples,
                 initial_state=self.model.states.predicted[-1, :],
-                random_state=self._random_state,
+                random_state=rng,
                 anchor="end",
                 exog=(
                     future_covariates.values(copy=False) if future_covariates else None
@@ -236,5 +239,5 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
         return True
 
     @property
-    def min_train_series_length(self) -> int:
-        return 30
+    def _target_window_lengths(self) -> tuple[int, int]:
+        return 30, 0

@@ -95,6 +95,8 @@ class TestBaselineModels:
             series.stack(series + 100)
 
         model = model_cls(**model_kwargs)
+        assert not model.supports_probabilistic_prediction
+        assert not model.supports_likelihood_parameter_prediction
 
         # calling predict before fit
         with pytest.raises(ValueError):

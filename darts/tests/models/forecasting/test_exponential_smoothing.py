@@ -4,20 +4,19 @@ import pytest
 from darts import TimeSeries
 from darts.models import ExponentialSmoothing
 from darts.utils import timeseries_generation as tg
-from darts.utils.utils import freqs
 
 
 class TestExponentialSmoothing:
-    series = tg.sine_timeseries(length=100, freq=freqs["h"])
+    series = tg.sine_timeseries(length=100, freq="h")
 
     @pytest.mark.parametrize(
         "freq_string,expected_seasonal_periods",
         [
             ("D", 7),
-            (freqs["h"], 24),
-            (freqs["ME"], 12),
+            ("h", 24),
+            ("ME", 12),
             ("W", 52),
-            (freqs["QE"], 4),
+            ("QE", 4),
             ("B", 5),
         ],
     )
@@ -38,7 +37,7 @@ class TestExponentialSmoothing:
 
     def test_multiple_fit(self):
         """Test whether a model that inferred a seasonality period before will do it again for a new series"""
-        series1 = tg.sine_timeseries(length=100, freq=freqs["ME"])
+        series1 = tg.sine_timeseries(length=100, freq="ME")
         series2 = tg.sine_timeseries(length=100, freq="D")
         model = ExponentialSmoothing()
         model.fit(series1)
@@ -91,3 +90,31 @@ class TestExponentialSmoothing:
         # forecasts should be slightly different
         assert pred.time_index.equals(pred_ls.time_index)
         assert all(np.not_equal(pred.values(), pred_ls.values()))
+
+    def test_random_errors(self):
+        """Test whether random_errors parameter is correctly passed to simulate()"""
+        series = tg.sine_timeseries(length=100, freq="h")
+        model = ExponentialSmoothing(random_state=42)
+        model.fit(series)
+        pred = model.predict(n=10, num_samples=10, random_state=42)
+
+        model_boot = ExponentialSmoothing(random_errors="bootstrap", random_state=42)
+        model_boot.fit(series)
+        pred_boot = model_boot.predict(n=10, num_samples=10, random_state=42)
+
+        # methods with different random_errors set should yield different forecasts
+        assert not np.allclose(pred.values(), pred_boot.values(), atol=1e-5)
+
+    def test_error(self):
+        """Test whether error parameter is correctly passed to simulate()"""
+        series = tg.sine_timeseries(length=100, freq="h")
+        model = ExponentialSmoothing(random_state=42)
+        model.fit(series)
+        pred = model.predict(n=10, num_samples=10, random_state=42)
+
+        model_boot = ExponentialSmoothing(error="mul", random_state=42)
+        model_boot.fit(series)
+        pred_boot = model_boot.predict(n=10, num_samples=10, random_state=42)
+
+        # methods with different error set should yield different forecasts
+        assert not np.allclose(pred.values(), pred_boot.values(), atol=1e-5)

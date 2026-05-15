@@ -1,9 +1,8 @@
+from collections.abc import Sequence
 from itertools import product
-from typing import Sequence
 
 import numpy as np
 import pytest
-import sklearn
 from pyod.models.knn import KNN
 from scipy.stats import cauchy, expon, gamma, laplace, norm, poisson
 
@@ -825,7 +824,7 @@ class TestAnomalyDetectionScorer:
             scorer.score_from_prediction(self.probabilistic, self.train)
         )
 
-    def test_WassersteinScorer(self):
+    def test_WassersteinScorer(self, mpl_safe_plotting):
         # Check parameters and inputs
         self.component_wise_parameter(WassersteinScorer)
         self.helper_window_parameter(WassersteinScorer)
@@ -1221,12 +1220,7 @@ class TestAnomalyDetectionScorer:
 
         assert np.abs(1.0 - auc_roc_cwtrue[0]) < delta
         assert np.abs(0.97666 - auc_roc_cwtrue[1]) < delta
-        # sklearn changed the centroid initialization in version 1.3.0
-        # so the results are slightly different for older versions
-        if sklearn.__version__ < "1.3.0":
-            assert np.abs(0.9851 - auc_roc_cwfalse) < delta
-        else:
-            assert np.abs(0.99007 - auc_roc_cwfalse) < delta
+        assert np.abs(0.99007 - auc_roc_cwfalse) < delta
 
     def test_PyODScorer(self):
         # Check parameters and inputs
@@ -1262,7 +1256,7 @@ class TestAnomalyDetectionScorer:
         with pytest.raises(ValueError):
             PyODScorer(model=KNN(), window=0)
 
-        # diff_fn paramter
+        # diff_fn parameter
         # must be None, 'diff' or 'abs_diff'
         with pytest.raises(ValueError):
             PyODScorer(model=KNN(), diff_fn="random")
@@ -1531,7 +1525,7 @@ class TestAnomalyDetectionScorer:
             np.array(deterministic_values).reshape(2, 2, -1)
         )
 
-        # compute the NLL values witn score_from_prediction for scorer with window=1 and 2
+        # compute the NLL values with score_from_prediction for scorer with window=1 and 2
         # t -> timestamp, c -> component and w -> window used in scorer
         value_t1_c1_w1 = NLLscorer_w1.score_from_prediction(
             series[0]["0"], distribution_series[0]["0"]
@@ -1570,7 +1564,7 @@ class TestAnomalyDetectionScorer:
         )
 
         # multivariate case
-        # compute the NLL values witn score_from_prediction for scorer with window=1 and window=2
+        # compute the NLL values with score_from_prediction for scorer with window=1 and window=2
         value_t1_2_c1_2_w1 = NLLscorer_w1.score_from_prediction(
             series, distribution_series
         )
@@ -1686,7 +1680,7 @@ class TestAnomalyDetectionScorer:
         assert score_T[-1] == score_F[-1]
 
     def test_fun_window_agg(self):
-        """Verify that the anomaly score aggregation works as intented"""
+        """Verify that the anomaly score aggregation works as intended"""
         # window = 2, alternating anomaly scores
         window = 2
         scorer = KMeansScorer(window=window)
@@ -1731,3 +1725,19 @@ class TestAnomalyDetectionScorer:
             np.array([[8, 10, 12, 14, 15, 16, 17, 18, 19, 20]]).T,
         )
         assert aggreg_scores.time_index.equals(anomaly_scores.time_index)
+
+    def test_immutability(self):
+        """Check that the scorer does not mutate the input."""
+        scorer = KMeansScorer(window=1, component_wise=False)
+
+        series = self.train
+        input_series_copy = series.copy()
+
+        scorer.fit(series)
+        scorer.score(series)
+
+        scorer.fit_from_prediction(series, series - 1.0)
+        scorer.score_from_prediction(series, series - 1.0)
+
+        # Check that the original series is not modified
+        assert series == input_series_copy

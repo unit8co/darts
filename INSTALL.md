@@ -1,26 +1,33 @@
 # Installation Guide
 
-Below, we detail how to install Darts using either `conda` or `pip`.
+⚠️ Note: If you migrate to darts version >=0.41.0 from versions <0.41.0, refer to the [migration guidelines below](#important-darts-pypi-package-changes-as-of-version-0410)
 
 ## From PyPI
-Install Darts with all models except the ones from optional dependencies (Prophet, LightGBM, CatBoost, see more on that [here](#enabling-optional-dependencies)): `pip install darts`.
 
-If this fails on your platform, please follow the official installation
-guide for [PyTorch](https://pytorch.org/get-started/locally/), then try installing Darts again.
+Darts offers a modular installation system with optional dependencies. Choose the installation that fits your needs:
 
-As some dependencies are relatively big or involve non-Python dependencies,
-we also maintain the `u8darts` package, which provides the following alternate lighter install options:
+* **Core only** (without neural networks, Prophet, LightGBM, CatBoost, XGBoost, StatsForecast): `pip install darts`
+* **Core + PyTorch** (for neural network models): `pip install "darts[torch]"`
+* **Core + Prophet, LightGBM, CatBoost, XGBoost, StatsForecast** (no neural networks): `pip install "darts[notorch]"`
+* **All available models** (except listed below): `pip install "darts[all]"`
 
-* Install Darts with all available models: `pip install "u8darts[all]"`
-* Install core only (without neural networks, Prophet, LightGBM and Catboost): `pip install u8darts`
-* Install core + Prophet + LightGBM + CatBoost: `pip install "u8darts[notorch]"`
-* Install core + neural networks (PyTorch): `pip install "u8darts[torch]"` (equivalent to `pip install darts`)
+
+If the PyTorch installation fails on your platform, please follow the official installation guide for [PyTorch](https://pytorch.org/get-started/locally/), then try installing Darts again.
+
+### Optional dependencies for specific models
+Some models have additional dependencies that are not included in the `all` installation option. To use them, you need to install the following dependencies separately from PyPI:
+
+| Model                 | Dependencies          |
+|-----------------------|-----------------------|
+| `NeuralForecastModel` | neuralforecast>=3.0.0 |
+| `TiRexModel`          | tirex-ts>=1.4.0       |
+
 
 ## From conda-forge
-Create a conda environment (e.g., for Python 3.10):
+Create a conda environment (e.g., for Python 3.11):
 (after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
 
-    conda create --name <env-name> python=3.10
+    conda create --name <env-name> python=3.11
 
 Activate the environment
 
@@ -28,33 +35,33 @@ Activate the environment
 
 As some models have relatively heavy dependencies, we provide four conda-forge packages:
 
-* Install Darts with all available models: `conda install -c conda-forge -c pytorch u8darts-all`
-* Install core only (without neural networks, Prophet, LightGBM and Catboost): `conda install -c conda-forge u8darts`
-* Install core + Prophet + LightGBM + CatBoost: `conda install -c conda-forge u8darts-notorch`
-* Install core + neural networks (PyTorch): `conda install -c conda-forge -c pytorch u8darts-torch`
+* **Core only** (without neural networks, Prophet, LightGBM, CatBoost, XGBoost, StatsForecast): `conda install -c conda-forge u8darts`
+* **Core + PyTorch** (for neural network models): `conda install -c conda-forge -c pytorch u8darts-torch`
+* **Core + Prophet, LightGBM, CatBoost, XGBoost, StatsForecast** (no neural networks): `conda install -c conda-forge u8darts-notorch`
+* **All available models** (except listed below): `conda install -c conda-forge -c pytorch u8darts-all`
+
+### Optional dependencies for specific models
+Some models have additional dependencies that are not included in the `all` installation option. To use them, you need to install the following dependencies separately from conda-forge:
+
+| Model                 | Dependencies          |
+|-----------------------|-----------------------|
+| `NeuralForecastModel` | neuralforecast>=3.0.0 |
+| `Prophet`             | prophet>=1.1.1        |
+
+Some models have dependencies not available on conda-forge. To use them, you need to install the following dependencies separately from PyPI:
+| Model                 | Dependencies          |
+|-----------------------|-----------------------|
+| `TiRexModel`          | tirex-ts>=1.4.0       |
 
 
 ## Other Information
-
-### Enabling Optional Dependencies
-As of version 0.25.0, the default `darts` package does not install Prophet, CatBoost, and LightGBM dependencies anymore, because their
-build processes were too often causing issues. We continue supporting the model wrappers `Prophet`, `CatBoostModel`, and `LightGBMModel` in Darts though. If you want to use any of them, you will need to manually install the corresponding packages (or install a Darts flavor as described above).
-
-#### Prophet
-Install the `prophet` package (version 1.1.1 or more recent) using the [Prophet install guide](https://facebook.github.io/prophet/docs/installation.html#python)
-
-#### CatBoostModel
-Install the `catboost` package (version 1.0.6 or more recent) using the [CatBoost install guide](https://catboost.ai/en/docs/concepts/python-installation)
-
-#### LightGBMModel
-Install the `lightgbm` package (version 3.2.0 or more recent) using the [LightGBM install guide](https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html)
 
 ### Enabling GPU support
 Darts relies on PyTorch for the neural network models.
 For GPU support, please follow the instructions to install CUDA in the [PyTorch installation guide](https://pytorch.org/get-started/locally/).
 
 
-### From Docker:
+### From Docker
 We also provide a Docker image with everything set up for you. For this setup to work you need to have a Docker service installed. You can get it at [Docker website](https://docs.docker.com/get-docker/).
 
 Pull the latest Darts image.
@@ -74,29 +81,27 @@ jupyter lab --ip 0.0.0.0 --no-browser --allow-root
 
 Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.
 
+## Important: Darts PyPI Package Changes As of Version 0.41.0
+As of Darts version 0.41.0, we have made changes to our PyPI packages:
 
-## Tests
+- `darts`: `darts` now replaces `u8darts` with all of its installation options (see section above).
+- `u8darts`: we will stop maintaining the `u8darts` package in favor of `darts`. Version 0.41.0 will be the last released version.
 
-The gradle setup works best when used in a python environment, but the only requirement is to have `pip` installed for Python 3+
+We made these changes to simplify the installation and maintenance of Darts.
 
-To run all tests at once just run
-```bash
-./gradlew test_all
+#### Migration from Darts versions <0.41.0 to >=0.41.0
+No code changes are required - only package installations changes.
+
+For `darts` users:
+
+```
+# the original `pip install darts` becomes:
+pip install "darts[torch]>=0.41.0"
 ```
 
-alternatively you can run
-```bash
-./gradlew unitTest_all # to run only unittests
-./gradlew coverageTest # to run coverage
-./gradlew lint         # to run linter
+For `u8darts` users:
+
 ```
-
-To run the tests for specific flavours of the library, replace `_all` with `_core`, `_prophet`, `_pmdarima` or `_torch`.
-
-## Documentation
-
-To build documentation locally just run
-```bash
-./gradlew buildDocs
+# the original `pip install u8darts[option]` becomes:
+pip install "darts[option]>=0.41.0"  # or appropriate extras (e.g. darts[all])
 ```
-After that docs will be available in `./docs/build/html` directory. You can just open `./docs/build/html/index.html` using your favourite browser.

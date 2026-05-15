@@ -173,9 +173,9 @@ class TestClassTrainTestSplit:
             vertical_split_type=MODEL_AWARE,
         )
 
-        assert (
-            len(train_set) == 7 and len(test_set) == 4
-        ), f"Wrong shapes: training set shape: {len(train_set)}; test set shape {len(test_set)}"
+        assert len(train_set) == 7 and len(test_set) == 4, (
+            f"Wrong shapes: training set shape: {len(train_set)}; test set shape {len(test_set)}"
+        )
 
     def test_multi_timeseries_variable_ts_length_sunny_day(self):
         data = [
@@ -194,15 +194,13 @@ class TestClassTrainTestSplit:
         train_lengths = [len(ts) for ts in train_set]
         test_lengths = [len(ts) for ts in test_set]
 
-        assert (
-            train_lengths == [7, 97, 997]
-            and test_lengths
-            == [
-                4,
-                4,
-                4,
-            ]
-        ), f"Wrong shapes: training set shape: {train_lengths}; test set shape {test_lengths}"
+        assert train_lengths == [7, 97, 997] and test_lengths == [
+            4,
+            4,
+            4,
+        ], (
+            f"Wrong shapes: training set shape: {train_lengths}; test set shape {test_lengths}"
+        )
 
     def test_multi_timeseries_variable_ts_length_one_ts_too_small(self):
         data = [

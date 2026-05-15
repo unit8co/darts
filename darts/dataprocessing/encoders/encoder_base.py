@@ -4,7 +4,8 @@ Encoder Base Classes
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -12,15 +13,10 @@ import pandas as pd
 from darts import TimeSeries
 from darts.dataprocessing.transformers import FittableDataTransformer
 from darts.logging import get_logger, raise_if, raise_log
+from darts.typing import TimeIndex
 from darts.utils.utils import generate_index
 
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
-
-SupportedIndex = Union[pd.DatetimeIndex, pd.RangeIndex]
-EncoderOutputType = Optional[Union[Sequence[TimeSeries], List[TimeSeries]]]
+EncoderOutputType = Sequence[TimeSeries] | list[TimeSeries] | None
 logger = get_logger(__name__)
 
 
@@ -47,9 +43,9 @@ class _EncoderMethod:
 class CovariatesIndexGenerator(ABC):
     def __init__(
         self,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[List[int]] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
     ):
         """:class:`CovariatesIndexGenerator` generates a time index for covariates at training and inference /
         prediction time with methods :func:`generate_train_idx()`, and :func:`generate_inference_idx()`.
@@ -57,31 +53,32 @@ class CovariatesIndexGenerator(ABC):
         scenarios described below. With user `covariates`, it simply copies and returns the `covariates` time index.
 
         It can be used:
-        A   in combination with :class:`LocalForecastingModel`, or in a model agnostic scenario:
-                All parameters can be ignored. This scenario is only supported by
-                :class:`FutureCovariatesIndexGenerator`.
-        B   in combination with :class:`RegressionModel`:
-                Set `input_chunk_length`, `output_chunk_length`, and `lags_covariates`.
-                `input_chunk_length` is the absolute value of the minimum target lag `abs(min(lags))` used with the
-                regression model.
-                Set `output_chunk_length`, and `lags_covariates` with the identical values used at forecasting model
-                creation. For the covariates lags, use `lags_past_covariates` for class:`PastCovariatesIndexGenerator`,
-                and `lags_future_covariates` for class:`PastCovariatesIndexGenerator`.
-        C   in combination with :class:`TorchForecastingModel`:
-                Set `input_chunk_length`, and `output_chunk_length` with the identical values used at forecasting model
-                creation.
+
+        - in combination with :class:`LocalForecastingModel`, or in a model agnostic scenario:
+          All parameters can be ignored. This scenario is only supported by
+          :class:`FutureCovariatesIndexGenerator`.
+        - in combination with :class:`SKLearnModel`:
+          Set `input_chunk_length`, `output_chunk_length`, and `lags_covariates`.
+          `input_chunk_length` is the absolute value of the minimum target lag `abs(min(lags))` used with the
+          `SKLearnModel`.
+          Set `output_chunk_length`, and `lags_covariates` with the identical values used at forecasting model
+          creation. For the covariates lags, use `lags_past_covariates` for class:`PastCovariatesIndexGenerator`,
+          and `lags_future_covariates` for class:`PastCovariatesIndexGenerator`.
+        - in combination with :class:`TorchForecastingModel`:
+          Set `input_chunk_length`, and `output_chunk_length` with the identical values used at forecasting model
+          creation.
 
         Parameters
         ----------
         input_chunk_length
             Optionally, the number of input target time steps per chunk. Only required in scenarios B, C.
             Corresponds to `input_chunk_length` for :class:`TorchForecastingModel`, or to the absolute minimum target
-            lag value `abs(min(lags))` for :class:`RegressionModel`.
+            lag value `abs(min(lags))` for :class:`SKLearnModel`.
         output_chunk_length
             Optionally, the number of output target time steps per chunk. Only required in scenarios B, and C.
-            Corresponds to `output_chunk_length` for both :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to `output_chunk_length` for both :class:`TorchForecastingModel`, and :class:`SKLearnModel`.
         lags_covariates
-            Optionally, a list of integers giving the covariates lags used for Darts' RegressionModels. Only required
+            Optionally, a list of integers giving the covariates lags used for Darts' SKLearnModels. Only required
             in scenario B. Corresponds to the lag values from `lags_past_covariates` for past covariates, and
             `lags_future_covariates` for future covariates.
         """
@@ -114,8 +111,8 @@ class CovariatesIndexGenerator(ABC):
 
     @abstractmethod
     def generate_train_idx(
-        self, target: TimeSeries, covariates: Optional[TimeSeries] = None
-    ) -> Tuple[SupportedIndex, pd.Timestamp]:
+        self, target: TimeSeries, covariates: TimeSeries | None = None
+    ) -> tuple[TimeIndex, pd.Timestamp]:
         """
         Generates/extracts time index (or integer index) for covariates at model training time.
 
@@ -133,8 +130,8 @@ class CovariatesIndexGenerator(ABC):
 
     @abstractmethod
     def generate_inference_idx(
-        self, n: int, target: TimeSeries, covariates: Optional[TimeSeries] = None
-    ) -> Tuple[SupportedIndex, pd.Timestamp]:
+        self, n: int, target: TimeSeries, covariates: TimeSeries | None = None
+    ) -> tuple[TimeIndex, pd.Timestamp]:
         """
         Generates/extracts time index (or integer index) for covariates at model inference / prediction time.
 
@@ -154,8 +151,8 @@ class CovariatesIndexGenerator(ABC):
         pass
 
     def generate_train_inference_idx(
-        self, n: int, target: TimeSeries, covariates: Optional[TimeSeries] = None
-    ) -> Tuple[SupportedIndex, pd.Timestamp]:
+        self, n: int, target: TimeSeries, covariates: TimeSeries | None = None
+    ) -> tuple[TimeIndex, pd.Timestamp]:
         """
         Generates/extracts time index (or integer index) for covariates for training and inference / prediction.
 
@@ -198,9 +195,9 @@ class CovariatesIndexGenerator(ABC):
 
     def _verify_scenario(
         self,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[List[int]] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
     ):
         # LocalForecastingModel, or model agnostic (only supported by future covariates)
         is_scenario_a = (
@@ -209,7 +206,7 @@ class CovariatesIndexGenerator(ABC):
             and output_chunk_length is None
             and lags_covariates is None
         )
-        # RegressionModel
+        # SKLearnModel
         is_scenario_b = (
             input_chunk_length is not None
             and output_chunk_length is not None
@@ -275,8 +272,8 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
     """Generates index for past covariates on train and inference datasets"""
 
     def generate_train_idx(
-        self, target: TimeSeries, covariates: Optional[TimeSeries] = None
-    ) -> Tuple[SupportedIndex, pd.Timestamp]:
+        self, target: TimeSeries, covariates: TimeSeries | None = None
+    ) -> tuple[TimeIndex, pd.Timestamp]:
         super().generate_train_idx(target, covariates)
 
         # the returned index depends on the following cases:
@@ -285,15 +282,15 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
         #     raised if user supplied insufficient covariates
         # case 1
         #     only input_chunk_length and output_chunk_length are given: the complete covariate index is within the
-        #     target index; always True for all models except RegressionModels.
+        #     target index; always True for all models except SKLearnModels.
         # case 2
         #     covariate lags were given (shift_start <= 0 and shift_end <= 0) and
         #     abs(shift_start - 1) <= input_chunk_length: the complete covariate index is within the target index;
-        #     can only be True for RegressionModels.
+        #     can only be True for SKLearnModels.
         # case 3
         #     covariate lags were given (shift_start <= 0 and shift_end <= 0) and
         #     abs(shift_start - 1) > input_chunk_length: we need to add indices before the beginning of the target
-        #     series; can only be True for RegressionModels.
+        #     series; can only be True for SKLearnModels.
 
         target_end = target.end_time()
         if covariates is not None:  # case 0
@@ -316,8 +313,8 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
         )
 
     def generate_inference_idx(
-        self, n: int, target: TimeSeries, covariates: Optional[TimeSeries] = None
-    ) -> Tuple[SupportedIndex, pd.Timestamp]:
+        self, n: int, target: TimeSeries, covariates: TimeSeries | None = None
+    ) -> tuple[TimeIndex, pd.Timestamp]:
         super().generate_inference_idx(n, target, covariates)
 
         # for prediction (`n` is given) with past covariates the returned index depends on the following cases:
@@ -327,12 +324,12 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
         # case 1
         #     only input_chunk_length and output_chunk_length are given: we need to generate a time index that starts
         #     `input_chunk_length - 1` before the end of `target` and ends `max(0, n - output_chunk_length)` after the
-        #     end of `target`; always True for all models except RegressionModels.
+        #     end of `target`; always True for all models except SKLearnModels.
         # case 2
         #     covariate lags were given (shift_start <= 0 and shift_end <= 0): we need to generate a time index that
         #     starts `-shift_start` before the end of `target` and has a length of
         #     `shift_steps + max(0, n - output_chunk_length)`, where `shift_steps` is the number of time steps between
-        #     `shift_start` and `shift_end`; can only be True for RegressionModels.
+        #     `shift_start` and `shift_end`; can only be True for SKLearnModels.
 
         target_end = target.end_time()
         if covariates is not None:  # case 0
@@ -374,8 +371,8 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
     """Generates index for future covariates on train and inference datasets."""
 
     def generate_train_idx(
-        self, target: TimeSeries, covariates: Optional[TimeSeries] = None
-    ) -> Tuple[SupportedIndex, pd.Timestamp]:
+        self, target: TimeSeries, covariates: TimeSeries | None = None
+    ) -> tuple[TimeIndex, pd.Timestamp]:
         super().generate_train_idx(target, covariates)
 
         # the returned index depends on the following cases:
@@ -387,17 +384,17 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
         #     simply return the target time index.
         # case 2
         #     only input_chunk_length and output_chunk_length are given: the complete covariate index is within the
-        #     target index; always True for all models except RegressionModels.
+        #     target index; always True for all models except SKLearnModels.
         # case 3
         #     covariate lags were given and (shift_start <= 0 or shift_end <= 0): historic part of future covariates.
         #     if shift_end < 0 there will only be the historic part of future covariates.
         #     If shift_start <= 0 and abs(shift_start - 1) > input_chunk_length: we need to add indices before the
-        #     beginning of the target series; can only be True for RegressionModels.
+        #     beginning of the target series; can only be True for SKLearnModels.
         # case 4
         #     covariate lags were given and (shift_start > 0 or shift_end > 0): future part of future covariates.
         #     if shift_start > 0 there will only be the future part of future covariates.
         #     If shift_end > 0 and shift_start > input_chunk_length: we need to add indices after the end of the
-        #     target series; can only be True for RegressionModels.
+        #     target series; can only be True for SKLearnModels.
 
         target_end = target.end_time()
 
@@ -424,8 +421,8 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
         )
 
     def generate_inference_idx(
-        self, n: int, target: TimeSeries, covariates: Optional[TimeSeries] = None
-    ) -> Tuple[SupportedIndex, pd.Timestamp]:
+        self, n: int, target: TimeSeries, covariates: TimeSeries | None = None
+    ) -> tuple[TimeIndex, pd.Timestamp]:
         super().generate_inference_idx(n, target, covariates)
 
         # for prediction (`n` is given) with future covariates the returned index depends on the following cases:
@@ -438,11 +435,11 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
         # case 2
         #     only input_chunk_length and output_chunk_length are given: we need to generate a time index that starts
         #     `input_chunk_length - 1` before the end of `target` and ends `max(n, output_chunk_length)` after the
-        #     end of `target`; always True for all models except RegressionModels.
+        #     end of `target`; always True for all models except SKLearnModels.
         # case 3
         #     covariate lags were given: we need to generate a time index that starts `-shift_start`
         #     steps before the end of `target` and has a length of `shift_steps + max(0, n - output_chunk_length)`,
-        #     where `shift_steps` is `shift_end - shift_start`; can only be True for RegressionModels.
+        #     where `shift_steps` is `shift_end - shift_start`; can only be True for SKLearnModels.
 
         target_end = target.end_time()
         if covariates is not None:  # case 0
@@ -486,7 +483,7 @@ class Encoder(ABC):
     def encode_train(
         self,
         target: TimeSeries,
-        covariates: Optional[TimeSeries] = None,
+        covariates: TimeSeries | None = None,
         merge_covariates: bool = True,
         **kwargs,
     ) -> TimeSeries:
@@ -508,7 +505,7 @@ class Encoder(ABC):
         self,
         n: int,
         target: TimeSeries,
-        covariates: Optional[TimeSeries] = None,
+        covariates: TimeSeries | None = None,
         merge_covariates: bool = True,
         **kwargs,
     ) -> TimeSeries:
@@ -533,7 +530,7 @@ class Encoder(ABC):
         self,
         n: int,
         target: TimeSeries,
-        covariates: Optional[TimeSeries] = None,
+        covariates: TimeSeries | None = None,
         merge_covariates: bool = True,
         **kwargs,
     ) -> TimeSeries:
@@ -554,7 +551,7 @@ class Encoder(ABC):
 
     @staticmethod
     def _merge_covariates(
-        encoded: TimeSeries, covariates: Optional[TimeSeries] = None
+        encoded: TimeSeries, covariates: TimeSeries | None = None
     ) -> TimeSeries:
         """If (actual) covariates are given, merge the encoded index with the covariates
 
@@ -569,8 +566,8 @@ class Encoder(ABC):
 
     @staticmethod
     def _drop_encoded_components(
-        covariates: Optional[TimeSeries], components: pd.Index
-    ) -> Optional[TimeSeries]:
+        covariates: TimeSeries | None, components: pd.Index
+    ) -> TimeSeries | None:
         """Avoid pitfalls: `encode_train()` or `encode_inference()` can be called multiple times or chained.
         Exclude any encoded components from `covariates` to generate and add the new encodings at a later time.
         """
@@ -635,7 +632,7 @@ class SingleEncoder(Encoder, ABC):
 
     @abstractmethod
     def _encode(
-        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
+        self, index: TimeIndex, target_end: pd.Timestamp, dtype: np.dtype
     ) -> TimeSeries:
         """Single Encoders must implement an _encode() method to encode the index.
 
@@ -653,7 +650,7 @@ class SingleEncoder(Encoder, ABC):
     def encode_train(
         self,
         target: TimeSeries,
-        covariates: Optional[TimeSeries] = None,
+        covariates: TimeSeries | None = None,
         merge_covariates: bool = True,
         **kwargs,
     ) -> TimeSeries:
@@ -698,7 +695,7 @@ class SingleEncoder(Encoder, ABC):
         self,
         n: int,
         target: TimeSeries,
-        covariates: Optional[TimeSeries] = None,
+        covariates: TimeSeries | None = None,
         merge_covariates: bool = True,
         **kwargs,
     ) -> TimeSeries:
@@ -754,7 +751,7 @@ class SingleEncoder(Encoder, ABC):
         self,
         n: int,
         target: TimeSeries,
-        covariates: Optional[TimeSeries] = None,
+        covariates: TimeSeries | None = None,
         merge_covariates: bool = True,
         **kwargs,
     ) -> TimeSeries:
@@ -801,7 +798,7 @@ class SingleEncoder(Encoder, ABC):
 
     @property
     @abstractmethod
-    def accept_transformer(self) -> List[bool]:
+    def accept_transformer(self) -> list[bool]:
         """Whether the `SingleEncoder` sub class accepts to be transformed."""
         pass
 
@@ -845,7 +842,7 @@ class SequentialEncoderTransformer:
     inference dataset covariates. User-supplied covariates are not transformed."""
 
     def __init__(
-        self, transformer: FittableDataTransformer, transform_mask: List[bool]
+        self, transformer: FittableDataTransformer, transform_mask: list[bool]
     ):
         """
         Parameters
@@ -860,7 +857,7 @@ class SequentialEncoderTransformer:
         self.transform_mask: np.ndarray = np.array(transform_mask)
         self._fit_called: bool = False
 
-    def transform(self, covariates: List[TimeSeries]) -> List[TimeSeries]:
+    def transform(self, covariates: list[TimeSeries]) -> list[TimeSeries]:
         """This method applies transformation to the non-transformed encoded covariates output of
         `SequentialEncoder._encode_sequence()` after being merged with user-defined covariates. The transformer is
         fitted when `transform()` is called for the first time. This ensures proper transformation of train, validation
@@ -877,10 +874,12 @@ class SequentialEncoderTransformer:
             self._update_mask(covariates)
             if any(self.transform_mask):
                 # fit the transformer on all encoded values by concatenating multi-series input encodings
+                vals = np.concatenate([cov.values(copy=False) for cov in covariates])
                 self.transformer.fit(
                     series=TimeSeries.from_values(
-                        np.concatenate([cov.values() for cov in covariates]),
+                        values=vals,
                         columns=covariates[0].components,
+                        copy=False,
                     ),
                     component_mask=self.transform_mask,
                 )
@@ -895,7 +894,7 @@ class SequentialEncoderTransformer:
             transformed = covariates
         return transformed
 
-    def _update_mask(self, covariates: List[TimeSeries]) -> None:
+    def _update_mask(self, covariates: list[TimeSeries]) -> None:
         """if user supplied additional covariates to model.fit() or model.predict(), `self.transform_mask` has to be
         updated as user-defined covariates should not be transformed. These covariates are always located in the
         first `n_diff = covariates[0].width - len(self.transform_mask)` components of each TimeSeries in in
@@ -914,17 +913,17 @@ class SequentialEncoderTransformer:
         return self._fit_called
 
 
-def _generate_train_idx(target, steps_ahead_start, steps_ahead_end) -> SupportedIndex:
+def _generate_train_idx(target, steps_ahead_start, steps_ahead_end) -> TimeIndex:
     """The returned index depends on the following cases:
 
     case 1
         (steps_ahead_start >= 0 and steps_ahead_end is None or <= 1)
-        the complete index is within the target index; always True for all models except RegressionModels.
+        the complete index is within the target index; always True for all models except SKLearnModels.
     case 2
-        steps_ahead_start < 0: add indices before the target start time; only possible for RegressionModels
+        steps_ahead_start < 0: add indices before the target start time; only possible for SKLearnModels
         where the minimum past lag is larger than input_chunk_length.
     case 3
-        steps_ahead_end > 0: add indices after the target end time; only possible for RegressionModels
+        steps_ahead_end > 0: add indices after the target end time; only possible for SKLearnModels
         where the maximum future lag is larger than output_chunk_length.
 
     Parameters

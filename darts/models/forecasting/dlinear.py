@@ -3,21 +3,16 @@ D-Linear
 --------
 """
 
-from typing import Optional, Tuple
-
 import torch
 import torch.nn as nn
 
 from darts.logging import raise_if
 from darts.models.forecasting.pl_forecasting_module import (
-    PLMixedCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-
-MixedCovariatesTrainTensorType = Tuple[
-    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
-]
+from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 
 
 class _MovingAvg(nn.Module):
@@ -61,7 +56,7 @@ class _SeriesDecomp(nn.Module):
         return res, moving_mean
 
 
-class _DLinearModule(PLMixedCovariatesModule):
+class _DLinearModule(PLForecastingModule):
     """
     DLinear module
     """
@@ -155,9 +150,7 @@ class _DLinearModule(PLMixedCovariatesModule):
             )
 
     @io_processor
-    def forward(
-        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
-    ):
+    def forward(self, x_in: PLModuleInput):
         """
         x_in
             comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
@@ -294,7 +287,7 @@ class DLinearModel(MixedCovariatesTorchModel):
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
         likelihood
-            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
+            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.torch.TorchLikelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
@@ -312,7 +305,9 @@ class DLinearModel(MixedCovariatesTorchModel):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
-            It is only applied to the features of the target series and not the covariates.
+            It is only applied to the features of the target series and not the covariates. If ``True``,
+            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
+            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -366,16 +361,14 @@ class DLinearModel(MixedCovariatesTorchModel):
                 }
             ..
         random_state
-            Control the randomness of the weights initialization. Check this
-            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
-            Default: ``None``.
+            Controls the randomness of the weights initialization and reproducible forecasting.
         pl_trainer_kwargs
             By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
             that performs the training, validation and prediction processes. These presets include automatic
             checkpointing, tensorboard logging, setting the torch device and more.
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
             supported kwargs. Default: ``None``.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
@@ -394,7 +387,7 @@ class DLinearModel(MixedCovariatesTorchModel):
             The model will stop training early if the validation loss `val_loss` does not improve beyond
             specifications. For more information on callbacks, visit:
             `PyTorch Lightning Callbacks
-            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
 
             .. highlight:: python
             .. code-block:: python
@@ -418,6 +411,18 @@ class DLinearModel(MixedCovariatesTorchModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         References
         ----------
@@ -446,13 +451,13 @@ class DLinearModel(MixedCovariatesTorchModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[667.20957388],
-               [666.76986848],
-               [666.67733306],
-               [666.06625381],
-               [665.8529289 ],
-               [665.75320573]])
+        >>> print(pred.values())
+        [[667.20957388]
+         [666.76986848]
+         [666.67733306]
+         [666.06625381]
+         [665.8529289 ]
+         [665.75320573]]
 
         .. note::
             This simple usage example produces poor forecasts. In order to obtain better performance, user should
@@ -469,34 +474,34 @@ class DLinearModel(MixedCovariatesTorchModel):
         self.const_init = const_init
         self._considers_static_covariates = use_static_covariates
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> torch.nn.Module:
-        # samples are made of
-        # (past_target, past_covariates, historic_future_covariates,
-        #  future_covariates, static_covariates, future_target)
-
+    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
+        # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
+        (past_target, past_covariates, _, future_covariates, static_covariates, _) = (
+            train_sample
+        )
         raise_if(
             self.shared_weights
-            and (train_sample[1] is not None or train_sample[2] is not None),
-            "Covariates have been provided, but the model has been built with shared_weights=True. "
-            "Please set shared_weights=False to use covariates.",
+            and (past_covariates is not None or future_covariates is not None),
+            "Covariates have been provided, but the model has been built with `shared_weights=True`. "
+            "Please set `shared_weights=False` to use covariates.",
         )
 
-        input_dim = train_sample[0].shape[1] + sum(
+        input_dim = past_target.shape[1] + sum(
             # add past covariates dim and historic future covariates dim, if present
-            train_sample[i].shape[1] if train_sample[i] is not None else 0
-            for i in (1, 2)
+            cov.shape[1] if cov is not None else 0
+            for cov in (past_covariates, future_covariates)
         )
-        future_cov_dim = train_sample[3].shape[1] if train_sample[3] is not None else 0
+        future_cov_dim = (
+            future_covariates.shape[1] if future_covariates is not None else 0
+        )
 
-        if train_sample[4] is None:
+        if static_covariates is None:
             static_cov_dim = 0
         else:
             # account for component-specific or shared static covariates representation
-            static_cov_dim = train_sample[4].shape[0] * train_sample[4].shape[1]
+            static_cov_dim = static_covariates.shape[0] * static_covariates.shape[1]
 
-        output_dim = train_sample[-1].shape[1]
+        output_dim = past_target.shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
         return _DLinearModule(
@@ -510,10 +515,6 @@ class DLinearModel(MixedCovariatesTorchModel):
             const_init=self.const_init,
             **self.pl_module_params,
         )
-
-    @property
-    def supports_multivariate(self) -> bool:
-        return True
 
     @property
     def supports_static_covariates(self) -> bool:

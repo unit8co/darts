@@ -3,7 +3,7 @@ Ensemble scikit-learn aggregator
 --------------------------------
 """
 
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 from sklearn.ensemble import BaseEnsemble
@@ -18,7 +18,7 @@ class EnsembleSklearnAggregator(FittableAggregator):
         """Ensemble scikit-learn aggregator
 
         Aggregator wrapped around the sklearn ensemble model `sklearn ensemble model
-        <https://scikit-learn.org/stable/modules/ensemble.html>`_.
+        <https://scikit-learn.org/stable/modules/ensemble.html>`__.
 
         Parameters
         ----------
@@ -50,9 +50,10 @@ class EnsembleSklearnAggregator(FittableAggregator):
     def _predict_core(self, series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
         # assume that parallelization occurs at sklearn model level
         return [
-            TimeSeries.from_times_and_values(
-                s.time_index,
-                self.model.predict(s.values(copy=False)),
+            TimeSeries(
+                times=s.time_index,
+                values=self.model.predict(s.values(copy=False)),
+                copy=False,
             )
             for s in series
         ]

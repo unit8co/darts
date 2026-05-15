@@ -10,27 +10,28 @@ to obtain forecasts.
 This implementation accepts an optional control signal (future covariates).
 """
 
-from typing import Optional
-
 import numpy as np
 from nfoursid.kalman import Kalman
 
+from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models.filtering.kalman_filter import KalmanFilter
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
-from darts.timeseries import TimeSeries
+from darts.utils.utils import random_method
 
 logger = get_logger(__name__)
 
 
 class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
+    @random_method
     def __init__(
         self,
         dim_x: int = 1,
-        kf: Optional[Kalman] = None,
-        add_encoders: Optional[dict] = None,
+        kf: Kalman | None = None,
+        add_encoders: dict | None = None,
+        random_state: int | None = None,
     ):
         """Kalman filter Forecaster
 
@@ -79,6 +80,8 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
                     'tz': 'CET'
                 }
             ..
+        random_state
+            Controls the randomness for reproducible forecasting.
 
         Examples
         --------
@@ -92,16 +95,16 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         >>> model = KalmanForecaster(dim_x=12)
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[474.40680728],
-               [440.51801726],
-               [461.94512461],
-               [494.42090089],
-               [528.6436328 ],
-               [590.30647185]])
+        >>> print(pred.values())
+        [[474.40680728]
+         [440.51801726]
+         [461.94512461]
+         [494.42090089]
+         [528.6436328 ]
+         [590.30647185]]
 
         .. note::
-            `Kalman example notebook <https://unit8co.github.io/darts/examples/10-Kalman-filter-examples.html>`_
+            `Kalman example notebook <https://unit8co.github.io/darts/examples/10-Kalman-filter-examples.html>`__
             presents techniques that can be used to improve the forecasts quality compared to this simple usage
             example.
         """
@@ -110,8 +113,13 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         self.kf = kf
         self.darts_kf = KalmanFilter(dim_x, kf)
 
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        super()._fit(series, future_covariates)
+    def _fit(
+        self,
+        series: TimeSeries,
+        future_covariates: TimeSeries | None = None,
+        verbose: bool | None = None,
+    ):
+        super()._fit(series, future_covariates, verbose=verbose)
         if self.kf is None:
             self.darts_kf.fit(series=series, covariates=future_covariates)
 
@@ -120,38 +128,56 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
     def predict(
         self,
         n: int,
-        series: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
         num_samples: int = 1,
-        verbose: bool = False,
+        predict_likelihood_parameters: bool = False,
+        verbose: bool | None = None,
         show_warnings: bool = True,
+        random_state: int | None = None,
         **kwargs,
     ) -> TimeSeries:
         # we override `predict()` to pass a non-None `series`, so that historic_future_covariates
         # will be passed to `_predict()`
         series = series if series is not None else self.training_series
-        return super().predict(n, series, future_covariates, num_samples, **kwargs)
+        return super().predict(
+            n,
+            series,
+            future_covariates,
+            num_samples,
+            verbose=verbose,
+            random_state=random_state,
+            **kwargs,
+        )
 
+    @random_method
     def _predict(
         self,
         n: int,
-        series: Optional[TimeSeries] = None,
-        historic_future_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: TimeSeries | None = None,
+        historic_future_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
         verbose: bool = False,
+        random_state: int | None = None,
     ) -> TimeSeries:
         super()._predict(
-            n, series, historic_future_covariates, future_covariates, num_samples
+            n=n,
+            series=series,
+            historic_future_covariates=historic_future_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            verbose=verbose,
         )
         time_index = self._generate_new_dates(n, input_series=series)
         placeholder_vals = np.zeros((n, self.training_series.width)) * np.nan
-        series_future = TimeSeries.from_times_and_values(
-            time_index,
-            placeholder_vals,
-            columns=self.training_series.columns,
-            static_covariates=self.training_series.static_covariates,
-            hierarchy=self.training_series.hierarchy,
+        series_future = TimeSeries(
+            times=time_index,
+            values=placeholder_vals,
+            components=self.training_series.columns,
+            copy=False,
+            **self.training_series._attrs,
         )
 
         series = series.append(series_future)

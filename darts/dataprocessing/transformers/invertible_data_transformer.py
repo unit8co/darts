@@ -4,7 +4,8 @@ Invertible Data Transformer Base Class
 """
 
 from abc import abstractmethod
-from typing import Any, List, Mapping, Optional, Sequence, Union
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 import numpy as np
 
@@ -14,6 +15,7 @@ from darts.dataprocessing.transformers.base_data_transformer import (
     component_masking,
 )
 from darts.logging import get_logger, raise_log
+from darts.typing import TimeSeriesLike
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 
 logger = get_logger(__name__)
@@ -25,8 +27,10 @@ class InvertibleDataTransformer(BaseDataTransformer):
         name: str = "InvertibleDataTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
-        parallel_params: Union[bool, Sequence[str]] = False,
+        parallel_params: bool | Sequence[str] = False,
         mask_components: bool = True,
+        columns: str | list[str] | None = None,
+        uses_insample: bool = False,
     ):
         """Abstract class for invertible transformers.
 
@@ -74,6 +78,17 @@ class InvertibleDataTransformer(BaseDataTransformer):
             'unmasked' in the returned `TimeSeries`. If `False`, then `component_mask` (if provided) will
             be passed as a keyword argument, but won't automatically be applied to the input timeseries.
             See `apply_component_mask` method of `BaseDataTransformer` for further details.
+        columns
+            Optionally, a string or list of strings specifying the names of the components (columns) to transform.
+            If specified, only these components will be transformed, and the remaining components will be kept
+            untouched. For more information refer to the `BaseDataTransformer` documentation. In case the transformer
+            is applied on multiple TimeSeries, it is expected that all series have the same column order.
+        uses_insample
+            Whether the transformer requires the in-sample (historic) series during inverse transformation.
+            If `True`, `inverse_transform` will use the ``insample`` argument to pass the transformed
+            historic series to `ts_inverse_transform`. This is needed when inverse transforming a partial
+            series (e.g. a forecast) requires information from earlier times (e.g. for
+            :class:`~darts.dataprocessing.transformers.diff.Diff`).
 
         Notes
         -----
@@ -107,63 +122,27 @@ class InvertibleDataTransformer(BaseDataTransformer):
         >>>             return (series - b) / a
         >>>
         >>> series = linear_timeseries(length=5)
-        >>> print(series)
-        <TimeSeries (DataArray) (time: 5, component: 1, sample: 1)>
-        array([[[0.  ]],
-
-            [[0.25]],
-
-            [[0.5 ]],
-
-            [[0.75]],
-
-            [[1.  ]]])
-        Coordinates:
-        * time       (time) datetime64[ns] 2000-01-01 2000-01-02 ... 2000-01-05
-        * component  (component) object 'linear'
-        Dimensions without coordinates: sample
-        Attributes:
-            static_covariates:  None
-            hierarchy:          None
+        >>> print(series.values())
+        [[0.  ]
+         [0.25]
+         [0.5 ]
+         [0.75]
+         [1.  ]]
         >>> transform = SimpleTransform(a=2)
         >>> series = transform.transform(series, b=3)
-        >>> print(series)
-        <TimeSeries (DataArray) (time: 5, component: 1, sample: 1)>
-        array([[[3. ]],
-
-            [[3.5]],
-
-            [[4. ]],
-
-            [[4.5]],
-
-            [[5. ]]])
-        Coordinates:
-        * time       (time) datetime64[ns] 2000-01-01 2000-01-02 ... 2000-01-05
-        * component  (component) object 'linear'
-        Dimensions without coordinates: sample
-        Attributes:
-            static_covariates:  None
-            hierarchy:          None
+        >>> print(series.values())
+        [[3. ]
+         [3.5]
+         [4. ]
+         [4.5]
+         [5. ]]
         >>> series = transform.inverse_transform(series, b=3)
-        >>> print(series)
-        <TimeSeries (DataArray) (time: 5, component: 1, sample: 1)>
-        array([[[0.  ]],
-
-            [[0.25]],
-
-            [[0.5 ]],
-
-            [[0.75]],
-
-            [[1.  ]]])
-        Coordinates:
-        * time       (time) datetime64[ns] 2000-01-01 2000-01-02 ... 2000-01-05
-        * component  (component) object 'linear'
-        Dimensions without coordinates: sample
-        Attributes:
-            static_covariates:  None
-            hierarchy:          None
+        >>> print(series.values())
+        [[0.  ]
+         [0.25]
+         [0.5 ]
+         [0.75]
+         [1.  ]]
         """
         super().__init__(
             name=name,
@@ -171,6 +150,8 @@ class InvertibleDataTransformer(BaseDataTransformer):
             verbose=verbose,
             parallel_params=parallel_params,
             mask_components=mask_components,
+            columns=columns,
+            uses_insample=uses_insample,
         )
 
     @classmethod
@@ -182,7 +163,9 @@ class InvertibleDataTransformer(BaseDataTransformer):
     @staticmethod
     @abstractmethod
     def ts_inverse_transform(
-        series: TimeSeries, params: Mapping[str, Any]
+        series: TimeSeries,
+        params: Mapping[str, Any],
+        insample: TimeSeries | None = None,
     ) -> TimeSeries:
         """The function that will be applied to each series when :func:`inverse_transform` is called.
 
@@ -192,15 +175,16 @@ class InvertibleDataTransformer(BaseDataTransformer):
         'undo' the transformation performed by `ts_transform`).
 
         The `params` dictionary *can* contain up to two keys:
-            1. `params['fixed']` stores the fixed parameters of the transformation (i.e. attributed
-            defined in the `__init__` method of the child-most class *before* `super().__init__` is called);
-            `params['fixed']` is a dictionary itself, whose keys are the names of the fixed parameter
-            attributes. For example, if `_my_fixed_param` is defined as an attribute in the child-most
-            class, then this fixed parameter value can be accessed through `params['fixed']['_my_fixed_param']`.
-            2. If the transform inherits from the :class:`.FittableDataTransformer` class, then `params['fitted']`
-            will store the fitted parameters of the transformation; the fitted parameters are simply the output(s)
-            returned by the `ts_fit` function, whatever those output(s) may be. See :class:`.FittableDataTransformer`
-            for further details about fitted parameters.
+
+        - `params['fixed']` stores the fixed parameters of the transformation (i.e. attributed
+          defined in the `__init__` method of the child-most class *before* `super().__init__` is called);
+          `params['fixed']` is a dictionary itself, whose keys are the names of the fixed parameter
+          attributes. For example, if `_my_fixed_param` is defined as an attribute in the child-most
+          class, then this fixed parameter value can be accessed through `params['fixed']['_my_fixed_param']`.
+        - If the transform inherits from the :class:`.FittableDataTransformer` class, then `params['fitted']`
+          will store the fitted parameters of the transformation; the fitted parameters are simply the output(s)
+          returned by the `ts_fit` function, whatever those output(s) may be. See :class:`.FittableDataTransformer`
+          for further details about fitted parameters.
 
         Any positional/keyword argument supplied to the `transform` method are passed as positional/keyword arguments
         to `ts_inverse_transform`; hence, `ts_inverse_transform` should also accept `*args` and/or `**kwargs` if
@@ -210,17 +194,18 @@ class InvertibleDataTransformer(BaseDataTransformer):
 
         The `BaseDataTransformer` class, from which `InvertibleDataTransformer` inherits, includes some helper methods
         which may prove useful when implementing a `ts_inverse_transform` function:
-            1. The `apply_component_mask` and `unapply_component_mask` methods, which apply and 'unapply'
-            `component_mask`s to a `TimeSeries` respectively; these methods are automatically called in `transform` if
-            the `mask_component` attribute of `InvertibleDataTransformer` is set to `True`, but you may want to manually
-            call them if you set `mask_components` to `False` and wish to manually specify how `component_mask`s are
-            applied to a `TimeSeries`.
-            2. The `stack_samples` method, which stacks all the samples in a `TimeSeries` along
-            the component axis, so that the `TimeSeries` goes from shape `(n_timesteps, n_components, n_samples)` to
-            shape `(n_timesteps, n_components * n_samples)`. This stacking is useful if a pointwise inverse transform
-            is being implemented (i.e. transforming the value at time `t` depends only on the value of the series at
-            that time `t`). Once transformed, the stacked `TimeSeries` can be 'unstacked' using the `unstack_samples`
-            method.
+
+        - The `apply_component_mask` and `unapply_component_mask` methods, which apply and 'unapply'
+          `component_mask`s to a `TimeSeries` respectively; these methods are automatically called in `transform` if
+          the `mask_component` attribute of `InvertibleDataTransformer` is set to `True`, but you may want to manually
+          call them if you set `mask_components` to `False` and wish to manually specify how `component_mask`s are
+          applied to a `TimeSeries`.
+        - The `stack_samples` method, which stacks all the samples in a `TimeSeries` along
+          the component axis, so that the `TimeSeries` goes from shape `(n_timesteps, n_components, n_samples)` to
+          shape `(n_timesteps, n_components * n_samples)`. This stacking is useful if a pointwise inverse transform
+          is being implemented (i.e. transforming the value at time `t` depends only on the value of the series at
+          that time `t`). Once transformed, the stacked `TimeSeries` can be 'unstacked' using the `unstack_samples`
+          method.
 
         This method is not implemented in the base class and must be implemented in the deriving classes.
 
@@ -235,6 +220,11 @@ class InvertibleDataTransformer(BaseDataTransformer):
             inherits from the `FittableDataTransformer` class, then the fitted parameters of the
             transformation (i.e. the values returned by `ts_fit`) are stored under the
             `'fitted'` key.
+        insample
+            Optionally, the transformed historic (insample) part of ``series``. This can be used when ``series`` is
+            only a tail (for example a forecast) and inverse transforming requires information from earlier times
+            (for example the :class:`~darts.dataprocessing.transformers.diff.Diff` transformer). Only used by
+            transformers that require information from earlier times.
         args
             Any additional keyword arguments provided to `inverse_transform`.
         kwargs
@@ -253,11 +243,13 @@ class InvertibleDataTransformer(BaseDataTransformer):
 
     def inverse_transform(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]],
+        series: TimeSeriesLike | Sequence[Sequence[TimeSeries]],
         *args,
-        component_mask: Optional[np.array] = None,
+        component_mask: np.ndarray | None = None,
+        series_idx: int | Sequence[int] | None = None,
+        insample: TimeSeriesLike | None = None,
         **kwargs,
-    ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
+    ) -> TimeSeriesLike | Sequence[Sequence[TimeSeries]]:
         """Inverse transforms a (sequence of) series by calling the user-implemented `ts_inverse_transform` method.
 
         In case a sequence or list of lists is passed as input data, this function takes care of parallelising the
@@ -281,15 +273,26 @@ class InvertibleDataTransformer(BaseDataTransformer):
             to fit the transformer.
         args
             Additional positional arguments for the :func:`ts_inverse_transform()` method
-        component_mask : Optional[np.ndarray] = None
+        component_mask
             Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies
             which components of the underlying `series` the inverse transform should consider.
+        series_idx
+            Optionally, the index(es) of each series corresponding to their positions within the series used to fit
+            the transformer (to retrieve the appropriate transformer parameters).
+        insample
+            Optionally, the transformed historic (insample) part of ``series``. This can be used when ``series`` is
+            only a tail (for example a forecast) and inverse transforming requires information from earlier times
+            (for example the :class:`~darts.dataprocessing.transformers.diff.Diff` transformer). Each ``insample``
+            series must start before the ``series`` start time and extend at least until one step before the start time
+            of the ``series``. If ``series`` is a ``Sequence[Sequence[TimeSeries]]``, then ``insample`` should be a
+            ``Sequence[TimeSeries]`` with the same length. Otherwise, it should have the same type as ``series``. Only
+            used by transformers that require information from earlier times.
         kwargs
             Additional keyword arguments for the :func:`ts_inverse_transform()` method
 
         Returns
         -------
-        Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]
+        TimeSeries | List[TimeSeries] | List[List[TimeSeries]]
             Inverse transformed data.
 
         Notes
@@ -318,29 +321,75 @@ class InvertibleDataTransformer(BaseDataTransformer):
 
         desc = f"Inverse ({self._name})"
 
+        if self._uses_insample and insample is not None:
+            insample = [insample] if isinstance(insample, TimeSeries) else insample
+            outer_len = 1 if isinstance(series, TimeSeries) else len(series)
+            if len(insample) != outer_len:
+                raise_log(
+                    ValueError(
+                        f"`insample` must have the same number of TimeSeries as `series` "
+                        f"(expected {outer_len}, got {len(insample)})."
+                    ),
+                    logger=logger,
+                )
+            use_insample = True
+        else:
+            insample = None
+            use_insample = False
+
         # Take note of original input for unmasking purposes:
         called_with_single_series = False
         called_with_sequence_series = False
+        series_specified = series_idx is not None
         if isinstance(series, TimeSeries):
             data = [series]
-            transformer_selector = [0]
+            if series_specified:
+                transformer_selector = self._process_series_idx(series_idx)
+            else:
+                transformer_selector = [0]
+            insample_list = insample if use_insample else [None]
             called_with_single_series = True
         elif isinstance(series[0], TimeSeries):  # Sequence[TimeSeries]
             data = series
-            transformer_selector = range(len(series))
+            if series_specified:
+                transformer_selector = self._process_series_idx(series_idx)
+            else:
+                transformer_selector = range(len(series))
+            insample_list = insample if use_insample else [None] * len(series)
             called_with_sequence_series = True
         else:  # Sequence[Sequence[TimeSeries]]
             data = []
             transformer_selector = []
-            for idx, series_list in enumerate(series):
+            insample_list = []
+            if series_specified:
+                iterator_ = zip(self._process_series_idx(series_idx), series)
+            else:
+                iterator_ = enumerate(series)
+            for idx, series_list in iterator_:
                 data.extend(series_list)
                 transformer_selector += [idx] * len(series_list)
+                insample_list += [insample[idx] if use_insample else None] * len(
+                    series_list
+                )
 
         input_iterator = _build_tqdm_iterator(
-            zip(data, self._get_params(transformer_selector=transformer_selector)),
+            zip(
+                data,
+                self._get_params(
+                    transformer_selector=transformer_selector,
+                    series_specified=series_specified,
+                ),
+                insample_list,
+            ),
             verbose=self._verbose,
             desc=desc,
             total=len(transformer_selector),
+        )
+
+        component_mask = BaseDataTransformer._generate_component_mask(
+            series=data[0],
+            component_mask=component_mask,
+            columns=self._columns,
         )
 
         # apply & unapply component masking to the transform method
@@ -366,3 +415,47 @@ class InvertibleDataTransformer(BaseDataTransformer):
                 transformed_data[cum_len[i] : cum_len[i + 1]]
                 for i in range(len(cum_len) - 1)
             ]
+
+    @staticmethod
+    def _maybe_prepend_insample(
+        series: TimeSeries,
+        insample: TimeSeries | None = None,
+    ) -> tuple[TimeSeries, int]:
+        """Prepend the historic part of the `insample` series to the `series` if it is not None."""
+        if insample is None:
+            return series, 0
+
+        # when ``insample`` is set, it is the transformed insample data of `series`
+        freq = series.freq
+        n_forecast_output = len(series)
+        forecast_start = series.start_time()
+        if insample.freq != series.freq:
+            raise_log(
+                ValueError(
+                    f"`insample` is of frequency {insample.freq}, but "
+                    f"transform was fitted to data of frequency {freq}."
+                ),
+                logger,
+            )
+        if insample.start_time() >= forecast_start:
+            raise_log(
+                ValueError(
+                    f"`insample` must start before the `series` start time."
+                    f"Expected `insample.start_time()` <= {forecast_start}, "
+                    f"got {insample.start_time()}."
+                ),
+                logger,
+            )
+        expected_end = forecast_start - freq
+        if insample.end_time() < expected_end:
+            raise_log(
+                ValueError(
+                    "The `insample` series must start before the series to inverse-transform "
+                    "and extend at least until one time step before the start of that series. "
+                    f"Expected `insample.end_time()` >= {expected_end}, "
+                    f"got {insample.end_time()}."
+                ),
+                logger,
+            )
+        series = insample[:expected_end].append(series)
+        return series, n_forecast_output

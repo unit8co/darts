@@ -1,8 +1,14 @@
-from typing import List, Optional, Sequence, Tuple, Union
+"""
+Explainability Utils
+--------------------
+"""
+
+from collections.abc import Sequence
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.typing import TimeSeriesLike
 from darts.utils.statistics import stationarity_tests
 from darts.utils.ts_utils import series2seq
 
@@ -12,14 +18,12 @@ logger = get_logger(__name__)
 def process_input(
     model: ForecastingModel,
     input_type: str,
-    series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    fallback_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    fallback_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    fallback_future_covariates: Optional[
-        Union[TimeSeries, Sequence[TimeSeries]]
-    ] = None,
+    series: TimeSeriesLike | None = None,
+    past_covariates: TimeSeriesLike | None = None,
+    future_covariates: TimeSeriesLike | None = None,
+    fallback_series: TimeSeriesLike | None = None,
+    fallback_past_covariates: TimeSeriesLike | None = None,
+    fallback_future_covariates: TimeSeriesLike | None = None,
     check_component_names: bool = False,
     requires_input: bool = True,
     requires_covariates_encoding: bool = False,
@@ -28,8 +32,8 @@ def process_input(
     """Helper function to process and check either of the background or foreground series input to
     `_ForecastingModelExplainer`.
 
-    If no input was provided (`series`, `past/future_covariates`), the fallback will be used for downstream tasks.
-    Will raise an error if both input and fallback are not available.
+    If no input was provided (`series`, `past_covariates`, `future_covariates`), the fallback will be used for
+    downstream tasks. Will raise an error if both input and fallback are not available.
 
     The fallback is dependent on the input type ("background" or "foreground"):
     - for background `input_type`: fallback are the series saved in fitted forecasting model
@@ -56,8 +60,8 @@ def process_input(
         Optionally, one or a sequence of future covariates `TimeSeries` to fall back to in case `future_covariates` was
         not provided.
     check_component_names
-        Whether to enforce that, in the case of multiple time series, all series of the same type (target or
-        *_covariates) must have the same component names.
+        Whether to enforce that, in the case of multiple time series, all series of the same type (target `series` or
+        `past_covariates`, `future_covariates`) must have the same component names.
     requires_input
         Whether the input is required. If `True`, raises an error if no input was provided.
     requires_covariates_encoding
@@ -180,12 +184,12 @@ def process_input(
 
 
 def process_horizons_and_targets(
-    horizons: Optional[Union[int, Sequence[int]]] = None,
-    fallback_horizon: Optional[int] = None,
-    target_components: Optional[Union[str, Sequence[str]]] = None,
-    fallback_target_components: Optional[Sequence[str]] = None,
+    horizons: int | Sequence[int] | None = None,
+    fallback_horizon: int | None = None,
+    target_components: str | Sequence[str] | None = None,
+    fallback_target_components: Sequence[str] | None = None,
     check_component_names: bool = False,
-) -> Tuple[Sequence[int], Sequence[str]]:
+) -> tuple[Sequence[int], Sequence[str]]:
     """Processes the input horizons and target component names.
 
     horizons
@@ -239,10 +243,10 @@ def process_horizons_and_targets(
 
 def get_component_names(
     series: Sequence[TimeSeries],
-    past_covariates: Optional[Sequence[TimeSeries]] = None,
-    future_covariates: Optional[Sequence[TimeSeries]] = None,
+    past_covariates: Sequence[TimeSeries] | None = None,
+    future_covariates: Sequence[TimeSeries] | None = None,
     idx: int = 0,
-) -> Tuple[List[str], Optional[List[str]], Optional[List[str]], Optional[List[str]]]:
+) -> tuple[list[str], list[str] | None, list[str] | None, list[str] | None]:
     """Extract and return the components of target series, static covariate, past and future covariates series.
 
     Parameters
@@ -285,11 +289,11 @@ def _check_valid_input(
     model,
     input_type: str,
     series: Sequence[TimeSeries],
-    past_covariates: Optional[Sequence[TimeSeries]],
-    future_covariates: Optional[Sequence[TimeSeries]],
-    target_components: Optional[List[str]],
-    past_covariates_components: Optional[List[str]],
-    future_covariates_components: Optional[List[str]],
+    past_covariates: Sequence[TimeSeries] | None,
+    future_covariates: Sequence[TimeSeries] | None,
+    target_components: list[str] | None,
+    past_covariates_components: list[str] | None,
+    future_covariates_components: list[str] | None,
     check_component_names: bool = False,
     requires_input: bool = False,
     test_stationarity: bool = False,
@@ -360,5 +364,5 @@ def _check_valid_input(
         )
 
 
-def _test_stationarity(series: Union[TimeSeries, Sequence[TimeSeries]]):
+def _test_stationarity(series: TimeSeriesLike):
     return all([(stationarity_tests(bs[c]) for c in bs.components) for bs in series])

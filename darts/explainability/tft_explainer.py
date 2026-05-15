@@ -1,6 +1,6 @@
 """
-TFT Explainer for Temporal Fusion Transformer (TFTModel)
-------------------------------------
+TFTModel Explainer
+------------------
 
 The `TFTExplainer` uses a trained :class:`TFTModel <darts.models.forecasting.tft_model.TFTModel>` and extracts the
 explainability information from the model.
@@ -19,15 +19,17 @@ The attention and feature importance values can be extracted using the :class:`T
 :func:`explain() <TFTExplainer.explain>`. An example of this is shown in the method description.
 
 We also show how to use the `TFTExplainer` in the example notebook of the `TFTModel` `here
-<https://unit8co.github.io/darts/examples/13-TFT-examples.html#Explainability>`_.
+<https://unit8co.github.io/darts/examples/13-TFT-examples.html#Explainability>`__.
 """
 
-from typing import Dict, List, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Literal
 
 import matplotlib.axes
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.figure import Figure
 from torch import Tensor
 
 from darts import TimeSeries
@@ -35,13 +37,9 @@ from darts.explainability import TFTExplainabilityResult
 from darts.explainability.explainability import _ForecastingModelExplainer
 from darts.logging import get_logger, raise_log
 from darts.models import TFTModel
+from darts.typing import TimeSeriesLike
+from darts.utils.ts_utils import SeriesType, get_series_seq_type
 from darts.utils.utils import generate_index
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
-
 
 logger = get_logger(__name__)
 
@@ -52,13 +50,9 @@ class TFTExplainer(_ForecastingModelExplainer):
     def __init__(
         self,
         model: TFTModel,
-        background_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        background_past_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        background_future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
+        background_series: TimeSeriesLike | None = None,
+        background_past_covariates: TimeSeriesLike | None = None,
+        background_future_covariates: TimeSeriesLike | None = None,
     ):
         """
         Explainer class for the `TFTModel`.
@@ -95,7 +89,7 @@ class TFTExplainer(_ForecastingModelExplainer):
         >>> model = TFTModel(
         >>>     input_chunk_length=12,
         >>>     output_chunk_length=6,
-        >>>     add_encoders={"cyclic": {"future": ["hour"]}}
+        >>>     add_encoders={"cyclic": {"future": ["month"]}}
         >>> )
         >>> model.fit(series)
         >>> # create the explainer and generate explanations
@@ -124,15 +118,11 @@ class TFTExplainer(_ForecastingModelExplainer):
 
     def explain(
         self,
-        foreground_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        foreground_past_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        foreground_future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        horizons: Optional[Sequence[int]] = None,
-        target_components: Optional[Sequence[str]] = None,
+        foreground_series: TimeSeriesLike | None = None,
+        foreground_past_covariates: TimeSeriesLike | None = None,
+        foreground_future_covariates: TimeSeriesLike | None = None,
+        horizons: Sequence[int] | None = None,
+        target_components: Sequence[str] | None = None,
     ) -> TFTExplainabilityResult:
         """Returns the :class:`TFTExplainabilityResult
         <darts.explainability.explainability_result.TFTExplainabilityResult>` result for all series in
@@ -197,6 +187,18 @@ class TFTExplainer(_ForecastingModelExplainer):
             foreground_past_covariates,
             foreground_future_covariates,
         )
+        if (
+            get_series_seq_type(foreground_series) is SeriesType.SEQ
+            and len(foreground_series) > self.model.batch_size
+        ):
+            raise_log(
+                ValueError(
+                    f"The number of back- or foreground series to explain ({len(foreground_series)}) "
+                    f"must be smaller than or equal to the model's batch size ({self.model.batch_size})."
+                ),
+                logger=logger,
+            )
+
         horizons, _ = self._process_horizons_and_targets(None, None)
         preds = self.model.predict(
             n=self.n,
@@ -220,10 +222,10 @@ class TFTExplainer(_ForecastingModelExplainer):
         icl = self.model.input_chunk_length
         for idx, (series, pred_series) in enumerate(zip(foreground_series, preds)):
             times = series.time_index[-icl:].union(pred_series.time_index)
-            attention = TimeSeries.from_times_and_values(
+            attention = TimeSeries(
                 values=np.take(attention_heads[idx], horizon_idx, axis=0).T,
                 times=times,
-                columns=[f"horizon {str(i)}" for i in horizons],
+                components=[f"horizon {str(i)}" for i in horizons],
             )
             results.append({
                 "attention": attention,
@@ -242,7 +244,8 @@ class TFTExplainer(_ForecastingModelExplainer):
         expl_result: TFTExplainabilityResult,
         fig_size=None,
         max_nr_series: int = 5,
-    ):
+        show_plot: bool = True,
+    ) -> Figure | list[Figure]:
         """Plots the variable selection / feature importances of the `TFTModel` based on the input.
         The figure includes three subplots:
 
@@ -259,6 +262,14 @@ class TFTExplainer(_ForecastingModelExplainer):
             The size of the figure to be plotted.
         max_nr_series
             The maximum number of plots to show in case `expl_result` was computed on multiple series.
+        show_plot
+            Whether to show the plot.
+
+        Returns
+        -------
+        Figure | list[Figure]
+            The matplotlib figures used for plotting. Returns a single Figure when explaining a single series,
+            and a list of Figures when explaining multiple series.
         """
         encoder_importance = expl_result.get_encoder_importance()
         decoder_importance = expl_result.get_decoder_importance()
@@ -268,6 +279,7 @@ class TFTExplainer(_ForecastingModelExplainer):
             decoder_importance = [decoder_importance]
             static_covariates_importance = [static_covariates_importance]
 
+        plotted_figures: list[Figure] = []
         uses_static_covariates = not static_covariates_importance[0].empty
         for idx, (enc_imp, dec_imp, stc_imp) in enumerate(
             zip(encoder_importance, decoder_importance, static_covariates_importance)
@@ -291,20 +303,26 @@ class TFTExplainer(_ForecastingModelExplainer):
                     ax=axes[2],
                 )
             fig.tight_layout()
-            plt.show()
+            if show_plot:
+                plt.show()
+            plotted_figures.append(fig)
 
             if idx + 1 == max_nr_series:
                 break
 
+        if len(plotted_figures) == 1:
+            return plotted_figures[0]
+        return plotted_figures
+
     def plot_attention(
         self,
         expl_result: TFTExplainabilityResult,
-        plot_type: Optional[Literal["all", "time", "heatmap"]] = "all",
+        plot_type: Literal["all", "time", "heatmap"] | None = "all",
         show_index_as: Literal["relative", "time"] = "relative",
-        ax: Optional[matplotlib.axes.Axes] = None,
+        ax: matplotlib.axes.Axes | None = None,
         max_nr_series: int = 5,
         show_plot: bool = True,
-    ) -> matplotlib.axes.Axes:
+    ) -> Figure | list[Figure]:
         """Plots the attention heads of the `TFTModel`.
 
         Parameters
@@ -330,6 +348,12 @@ class TFTExplainer(_ForecastingModelExplainer):
             The maximum number of plots to show in case `expl_result` was computed on multiple series.
         show_plot
             Whether to show the plot.
+
+        Returns
+        -------
+        Figure | list[Figure]
+            The matplotlib figures used for plotting. Returns a single Figure when explaining a single series,
+            and a list of Figures when explaining multiple series.
         """
         single_series = False
         attentions = expl_result.get_explanation(component="attention")
@@ -337,19 +361,23 @@ class TFTExplainer(_ForecastingModelExplainer):
             attentions = [attentions]
             single_series = True
 
+        plotted_figures: list[Figure] = []
         for idx, attention in enumerate(attentions):
             if ax is None or not single_series:
                 fig, ax = plt.subplots()
+            else:
+                fig = ax.get_figure()
+
             if show_index_as == "relative":
                 x_ticks = generate_index(
                     start=-self.model.input_chunk_length, end=self.n - 1
                 )
-                attention = TimeSeries.from_times_and_values(
+                attention = TimeSeries(
                     times=generate_index(
                         start=-self.model.input_chunk_length, end=self.n - 1
                     ),
                     values=attention.values(copy=False),
-                    columns=attention.components,
+                    components=attention.components,
                 )
                 x_label = "Index relative to first prediction point"
             elif show_index_as == "time":
@@ -405,9 +433,14 @@ class TFTExplainer(_ForecastingModelExplainer):
             if show_plot:
                 plt.show()
 
+            plotted_figures.append(fig)
+
             if idx + 1 == max_nr_series:
                 break
-        return ax
+
+        if len(plotted_figures) == 1:
+            return plotted_figures[0]
+        return plotted_figures
 
     @property
     def _encoder_importance(self) -> pd.DataFrame:
@@ -471,7 +504,7 @@ class TFTExplainer(_ForecastingModelExplainer):
     def _get_importance(
         self,
         weight: Tensor,
-        names: List[str],
+        names: list[str],
         n_decimals=3,
     ) -> pd.DataFrame:
         """Returns the encoder or decoder variable of the TFT model.
@@ -513,7 +546,7 @@ class TFTExplainer(_ForecastingModelExplainer):
         return importance.transpose().sort_values(0, ascending=True).transpose()
 
     @property
-    def _name_mapping(self) -> Dict[str, str]:
+    def _name_mapping(self) -> dict[str, str]:
         """Returns the feature name mapping of the TFT model.
 
         Returns
@@ -549,7 +582,7 @@ class TFTExplainer(_ForecastingModelExplainer):
     def _plot_cov_selection(
         importance: pd.DataFrame,
         title: str = "Variable importance",
-        ax: Optional[matplotlib.axes.Axes] = None,
+        ax: matplotlib.axes.Axes | None = None,
     ):
         """Plots the variable importance of the TFT model.
 

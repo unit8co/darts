@@ -3,18 +3,19 @@ Differencing Transformer
 ------------------------
 """
 
-from typing import Any, Mapping, Sequence, Union
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 import numpy as np
 
+from darts import TimeSeries
 from darts.dataprocessing.transformers.fittable_data_transformer import (
     FittableDataTransformer,
 )
 from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
-from darts.logging import get_logger, raise_if, raise_if_not
-from darts.timeseries import TimeSeries
+from darts.logging import get_logger, raise_log
 
 logger = get_logger(__name__)
 
@@ -22,11 +23,12 @@ logger = get_logger(__name__)
 class Diff(FittableDataTransformer, InvertibleDataTransformer):
     def __init__(
         self,
-        lags: Union[int, Sequence[int]] = 1,
+        lags: int | Sequence[int] = 1,
         dropna: bool = True,
         name: str = "Diff",
         n_jobs: int = 1,
         verbose: bool = False,
+        columns: str | list[str] | None = None,
     ):
         r"""Differencing data transformer.
 
@@ -63,8 +65,8 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
             `series.diff(n=1, periods=2).diff(n=1, periods=3)`.
         dropna
             Optionally, specifies if values which can't be differenced (i.e. at the start of the series) should be
-            dropped. Note that if `dropna = True`, then a `component_mask` cannot be specified, since the undifferenced
-            components will be of a different length to the differenced ones.
+            dropped. This applies to all time series columns, also the ones potentially ignored via the `columns`
+            parameter or any ``component_mask`` passed to downstream methods.
         n_jobs
             The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
             passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -73,6 +75,11 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
             required amount of time.
         verbose
             Whether to print operations progress
+        columns
+            Optionally, a string or list of strings specifying the names of the components (columns) to transform.
+            If specified, only these components will be transformed, and the remaining components will be kept
+            untouched. For more information refer to the `BaseDataTransformer` documentation. In case the transformer
+            is applied on multiple TimeSeries, it is expected that all series have the same column order.
 
         Examples
         --------
@@ -80,27 +87,20 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         >>> from darts.dataprocessing.transformers import Diff
         >>> series = AirPassengersDataset().load()
         >>> first_order_diff = Diff(lags=1, dropna=True).fit_transform(series)
-        >>> print(first_order_diff.head())
-        <TimeSeries (DataArray) (Month: 5, component: 1, sample: 1)>
-        array([[[ 6.]],
-            [[14.]],
-            [[-3.]],
-            [[-8.]],
-            [[14.]]])
-        Coordinates:
-        * Month      (Month) datetime64[ns] 1949-02-01 1949-03-01 ... 1949-06-01
-        * component  (component) object '#Passengers'
+        >>> print(first_order_diff.values()[:5])
+        [[ 6.]
+         [14.]
+         [-3.]
+         [-8.]
+         [14.]]
         >>> second_order_diff = Diff(lags=[1, 2], dropna=False).fit_transform(series)
-        >>> print(second_order_diff.head())
-        <TimeSeries (DataArray) (Month: 5, component: 1, sample: 1)>
-        array([[[ nan]],
-            [[ nan]],
-            [[ nan]],
-            [[ -9.]],
-            [[-22.]]])
-        Coordinates:
-        * Month      (Month) datetime64[ns] 1949-01-01 1949-02-01 ... 1949-05-01
-        * component  (component) object '#Passengers'
+        >>> print(second_order_diff.values()[:5])
+        [[ nan]
+         [ nan]
+         [ nan]
+         [ -9.]
+         [-22.]]
+
         References
         ----------
         .. [1] https://otexts.com/fpp2/stationarity.html
@@ -114,35 +114,45 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self._lags = lags
         self._dropna = dropna
-        # Don't automatically apply `component_mask` - need to throw error when `dropna = True`
-        # and `component_mask` is specified:
+        # Don't let the base transformer apply ``component_mask`` automatically — ``ts_transform``
+        # handles masking explicitly so it can preserve the non-differenced components when
+        # ``dropna=True`` is combined with `columns` or `component_mask`.
         super().__init__(
-            name=name, n_jobs=n_jobs, verbose=verbose, mask_components=False
+            name=name,
+            n_jobs=n_jobs,
+            verbose=verbose,
+            mask_components=False,
+            columns=columns,
+            uses_insample=True,
         )
 
     @staticmethod
     def ts_fit(series: TimeSeries, params: Mapping[str, Any], **kwargs) -> Any:
-        lags, dropna = params["fixed"]["_lags"], params["fixed"]["_dropna"]
+        lags, _ = params["fixed"]["_lags"], params["fixed"]["_dropna"]
         lags_sum = sum(lags)
-        raise_if(
-            series.n_timesteps <= lags_sum,
-            (
-                f"Series requires at least {lags_sum + 1} timesteps "
-                f"to difference with lags {lags}; series only has "
-                f"{series.n_timesteps} timesteps."
-            ),
-            logger,
-        )
-        component_mask = Diff._get_component_mask(kwargs, dropna)
-        vals = Diff.apply_component_mask(series, component_mask, return_ts=False)
-        # First `lags_sum` values of time series will be 'lost' due to differencing;
-        # need to remember these values to 'undifference':
-        start_vals = vals[:lags_sum, :, :]
-        diffed = start_vals
+        if series.n_timesteps <= lags_sum:
+            raise_log(
+                ValueError(
+                    f"Series requires at least {lags_sum + 1} timesteps "
+                    f"to difference with lags {lags}; series only has "
+                    f"{series.n_timesteps} timesteps."
+                ),
+                logger,
+            )
+        component_mask = kwargs.get("component_mask")
+
+        # store start values for later undifferencing (inverse transform)
+        # `start_vals` store all columns, also the ones that are not diffed
+        start_vals = series.all_values(copy=True)[:lags_sum]
+        # `diffed` focus on columns that are actually diffed; first `lags_sum` values of time series will be 'lost'
+        diffed = Diff.apply_component_mask(series, component_mask, return_ts=False)[
+            :lags_sum
+        ]
         cutoff = 0
+        component_mask_ = component_mask if component_mask is not None else slice(None)
         for lag in lags:
             # Store first `lag` values of current differencing step:
-            start_vals[cutoff:, :, :] = diffed
+            start_vals[cutoff:, component_mask_, :] = diffed
             diffed = diffed[lag:, :, :] - diffed[:-lag, :, :]
             cutoff += lag
         return start_vals, component_mask, series.start_time(), series.freq
@@ -152,7 +162,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         series: TimeSeries, params: Mapping[str, Any], **kwargs
     ) -> TimeSeries:
         lags, dropna = params["fixed"]["_lags"], params["fixed"]["_dropna"]
-        component_mask = Diff._get_component_mask(kwargs, dropna)
+        component_mask = kwargs.get("component_mask")
         diffed = Diff.apply_component_mask(series, component_mask, return_ts=True)
         for lag in lags:
             diffed = diffed.diff(n=1, periods=lag, dropna=dropna)
@@ -165,58 +175,77 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
     def ts_inverse_transform(
         series: TimeSeries,
         params: Mapping[str, Any],
+        insample: TimeSeries | None = None,
         **kwargs,
     ) -> TimeSeries:
         lags, dropna = params["fixed"]["_lags"], params["fixed"]["_dropna"]
         start_vals, fit_component_mask, start_time, freq = params["fitted"]
-        raise_if_not(
-            series.freq == freq,
-            (
-                f"Series is of frequency {series.freq}, but "
-                f"transform was fitted to data of frequency {freq}."
-            ),
-            logger,
+        if series.freq != freq:
+            raise_log(
+                ValueError(
+                    f"Series is of frequency {series.freq}, but "
+                    f"transform was fitted to data of frequency {freq}."
+                ),
+                logger,
+            )
+
+        # if given, add the historic part of `insample` to the `series`
+        series, n_forecast_output = InvertibleDataTransformer._maybe_prepend_insample(
+            series=series,
+            insample=insample,
         )
+
         # Start dates 'missing' from differenced series if dropna = True, so need to shift forward:
         expected_start = start_time + sum(lags) * series.freq if dropna else start_time
-        raise_if_not(
-            series.start_time() == expected_start,
-            (
-                f"Expected series to begin at time {expected_start}; "
-                f"instead, it begins at time {series.start_time()}."
-            ),
-            logger,
-        )
-        component_mask = Diff._get_component_mask(kwargs, dropna)
-        raise_if_not(
-            np.all(fit_component_mask == component_mask),
-            (
-                "Provided `component_mask` does not match "
-                "`component_mask` specified when `fit` was called."
-            ),
-            logger,
-        )
+        if series.start_time() != expected_start:
+            raise_log(
+                ValueError(
+                    f"Expected the {'`insample` series' if n_forecast_output else '`series`'} "
+                    f"to begin at time {expected_start}; instead, it begins at time {series.start_time()}."
+                ),
+                logger,
+            )
+        component_mask = kwargs.get("component_mask")
+        if np.any(fit_component_mask != component_mask):
+            raise_log(
+                ValueError(
+                    "Provided `component_mask` does not match "
+                    "`component_mask` specified when `fit` was called."
+                ),
+                logger,
+            )
         if dropna:
-            nan_shape = (sum(lags), series.n_components, series.n_samples)
-            nan_vals = np.full(nan_shape, fill_value=np.nan)
-            series = series.prepend_values(nan_vals)
-        vals = Diff.apply_component_mask(series, component_mask, return_ts=False)
-        raise_if_not(
-            vals.shape[1] == start_vals.shape[1],
-            (
-                f"Expected series to have {start_vals.shape[1]} components; "
-                f"instead, it has {vals.shape[1]}."
-            ),
-            logger,
-        )
-        raise_if_not(
-            vals.shape[2] == start_vals.shape[2],
-            (
-                f"Expected series to have {start_vals.shape[2]} samples; "
-                f"instead, it has {vals.shape[2]}."
-            ),
-            logger,
-        )
+            start_shape = (sum(lags), series.n_components, series.n_samples)
+            start_fill_vals = np.full(start_shape, fill_value=np.nan)
+
+            # fill start values with components that were not diffed
+            if component_mask is not None:
+                start_fill_vals[:, ~component_mask, :] = start_vals[
+                    :, ~component_mask, :
+                ]
+            series = series.prepend_values(start_fill_vals)
+
+        # from this point, only look at columns that were actually diffed
+        vals = Diff.apply_component_mask(series, component_mask, return_ts=False).copy()
+        if component_mask is not None:
+            start_vals = start_vals[:, component_mask, :]
+
+        if vals.shape[1] != start_vals.shape[1]:
+            raise_log(
+                ValueError(
+                    f"Expected series to have {start_vals.shape[1]} components; "
+                    f"instead, it has {vals.shape[1]}."
+                ),
+                logger,
+            )
+        if vals.shape[2] != start_vals.shape[2]:
+            raise_log(
+                ValueError(
+                    f"Expected series to have {start_vals.shape[2]} samples; "
+                    f"instead, it has {vals.shape[2]}."
+                ),
+                logger,
+            )
         cutoff = sum(lags)
         for lag in reversed(lags):
             cutoff -= lag
@@ -226,18 +255,13 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                 to_undiff[i::lag, :, :] = np.cumsum(to_undiff[i::lag, :, :], axis=0)
             vals[cutoff:, :, :] = to_undiff
         vals = Diff.unapply_component_mask(series, vals, component_mask)
-        return series.with_values(vals)
-
-    @staticmethod
-    def _get_component_mask(kwargs, dropna):
-        component_mask = kwargs.get("component_mask", None)
-        raise_if(
-            dropna and (component_mask is not None),
-            (
-                "Cannot specify `component_mask` with `dropna = True`, "
-                "since differenced and undifferenced components will be "
-                "of different lengths."
-            ),
-            logger,
+        result = TimeSeries(
+            times=series.time_index,
+            values=vals,
+            components=series.components,
+            copy=False,
+            **series._attrs,
         )
-        return component_mask
+        if n_forecast_output is not None:
+            result = result[-n_forecast_output:]
+        return result

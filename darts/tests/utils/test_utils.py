@@ -1,13 +1,31 @@
+import builtins
+import itertools
+from unittest.mock import patch
+
 import numpy as np
 import pandas as pd
 import pytest
 from pandas.tseries.offsets import CustomBusinessDay
 
 from darts import TimeSeries
+from darts.tests.conftest import IPYTHON_AVAILABLE
 from darts.utils import _with_sanity_checks
+from darts.utils.likelihood_models.base import (
+    likelihood_component_names,
+    quantile_interval_names,
+    quantile_names,
+)
 from darts.utils.missing_values import extract_subseries
 from darts.utils.ts_utils import retain_period_common_to_all
-from darts.utils.utils import freqs, generate_index, n_steps_between
+from darts.utils.utils import (
+    expand_arr,
+    generate_index,
+    infer_freq_intersection,
+    n_steps_between,
+    sample_from_quantiles,
+)
+
+_real_import = builtins.__import__
 
 
 class TestUtils:
@@ -126,7 +144,7 @@ class TestUtils:
                 "2000-01-01",  # saturday
                 "2000-01-03",  # first monday
                 "2000-01-03",  # first monday
-                None,  # first wednesday
+                None,  # first monday
                 "W-MON",
                 1,
             ),
@@ -173,11 +191,11 @@ class TestUtils:
             ("2000-01-01", "2000-02-01", None, None, "MS", 2),
             ("2000-01-01", "2000-03-01", None, None, "MS", 3),
             # month end
-            ("2000-01-01", "2000-01-02", None, None, freqs["ME"], 0),
-            ("2000-01-31", "2000-02-29", None, None, freqs["ME"], 2),
+            ("2000-01-01", "2000-01-02", None, None, "ME", 0),
+            ("2000-01-31", "2000-02-29", None, None, "ME", 2),
             # 2 * months
             ("2000-01-01", "2000-01-01", None, None, "2MS", 1),
-            ("2000-01-01", "2000-02-11", None, "2000-01-01", "2MS", 1),
+            ("2000-01-01", "2000-02-11", None, "2000-02-01", "2MS", 1),
             ("2000-01-01", "2000-03-01", None, None, "2MS", 2),
             ("2000-01-01", "2000-05-01", None, None, "2MS", 3),
             # quarter
@@ -185,7 +203,7 @@ class TestUtils:
             # year
             ("2000-01-01", "2001-04-01", None, "2001-01-01", "YS", 2),
             # 2*year
-            ("2001-01-01", "2010-04-01", None, "2009-01-01", "2YS", 5),
+            ("2001-01-01", "2010-04-01", None, "2010-01-01", "2YS", 5),
             (0, -1, None, None, 1, 0),  # empty int index
             (0, -1, None, None, -1, 2),  # decreasing int index
             (0, 0, None, None, 1, 1),  # increasing int index
@@ -293,8 +311,8 @@ class TestUtils:
             ("2000-01-01", "2000-02-01", "MS", 2),
             ("2000-01-01", "2000-03-01", "MS", 3),
             # month end
-            ("2000-01-01", None, freqs["ME"], 0),
-            ("2000-01-31", "2000-02-29", freqs["ME"], 2),
+            ("2000-01-01", None, "ME", 0),
+            ("2000-01-31", "2000-02-29", "ME", 2),
             # 2 * months
             ("2000-01-01", "2000-01-01", "2MS", 1),
             ("2000-01-01", "2000-03-01", "2MS", 2),
@@ -377,8 +395,8 @@ class TestUtils:
             ("2000-01-01", "2000-02-01", "MS", 2),
             ("2000-01-01", "2000-03-01", "MS", 3),
             # month end
-            (None, "2000-01-01", freqs["ME"], 0),
-            ("2000-01-31", "2000-02-29", freqs["ME"], 2),
+            (None, "2000-01-01", "ME", 0),
+            ("2000-01-31", "2000-02-29", "ME", 2),
             # 2 * months
             ("2000-01-01", "2000-01-01", "2MS", 1),
             ("2000-01-01", "2000-03-01", "2MS", 2),
@@ -417,6 +435,87 @@ class TestUtils:
 
         assert idx[0] == expected_start
         assert idx[-1] == expected_start + (n_steps - 1) * freq
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            ("2000-01-01", None),
+            (None, "2000-01-03"),
+            ("2000-01-01", "2000-01-03"),
+        ],
+    )
+    def test_generate_index_with_string(self, config):
+        """Test that index generation with strings as start or end gives same results as with pandas TimeStamps."""
+        start, end = config
+        length = 3 if (start is None or end is None) else None
+        idx = generate_index(start=start, end=end, length=length)
+
+        start_ts = pd.Timestamp(start) if start is not None else start
+        end_ts = pd.Timestamp(end) if end is not None else end
+        idx_expected = generate_index(start=start_ts, end=end_ts, length=length)
+        assert idx.equals(idx_expected)
+
+    @pytest.mark.parametrize(
+        "freq,other,expected",
+        [
+            (1, 1, 1),  # integer step
+            (1, 2, 2),
+            (3, 4, 12),
+            ("h", "h", "h"),  # same freq base (with fixed period)
+            ("h", "2h", "2h"),
+            ("3h", "4h", "12h"),
+            ("D", "D", "D"),  # same freq base (with fixed period)
+            ("D", "2D", "2D"),
+            ("3D", "4D", "12D"),
+            ("W-MON", "W-MON", "W-MON"),  # same freq base (no fixed period)
+            ("W-MON", "2W-MON", "2W-MON"),
+            ("3W-MON", "4W-MON", "12W-MON"),
+            ("2MS", "11MS", "22MS"),
+            (
+                "h",
+                "D",
+                "24h",
+            ),  # mixed bases but with fixed period (returns multiple of first freq)
+            ("D", "24h", "D"),
+            ("3h", "D", "24h"),
+            ("3h", "33min", "33h"),
+            ("33min", "3h", "1980min"),
+            ("D1h", "4h", "100h"),  # "D1h" gets converted to "25h" -> result in "100h"
+            ("4h", "D1h", "100h"),
+            (
+                "7D",
+                "W-MON",
+                "raises",
+            ),  # otherwise, raises with at least one non-fixed freq
+            ("W-MON", "W-TUE", "raises"),
+            ("h", "MS", "raises"),
+            ("B", "1h", "raises"),
+        ],
+    )
+    def test_freq_intersection(self, freq, other, expected):
+        if expected == "raises":
+            with pytest.raises(ValueError, match="Cannot find intersecting frequency"):
+                infer_freq_intersection(freq, other)
+            return
+
+        n_intersection = 4
+        assert infer_freq_intersection(freq, other) == expected
+        if isinstance(freq, int):
+            start = 0
+            end = start + (n_intersection - 1) * expected
+            index_freq = pd.RangeIndex(start=start, stop=end + 1, step=freq)
+            index_other = pd.RangeIndex(start=start, stop=end + 1, step=other)
+            assert index_freq.intersection(index_other).step == expected
+        else:
+            freq_expected = pd.tseries.frequencies.to_offset(expected)
+            # apply trick to resample a timestamp to the desired frequency
+            start = freq_expected.rollback(pd.Timestamp("2000-01-01"))
+            end = start + (n_intersection - 1) * freq_expected
+            index_freq = pd.date_range(start=start, end=end, freq=freq)
+            index_other = pd.date_range(start=start, end=end, freq=other)
+            if expected == "24h":
+                expected = "D"
+            assert index_freq.intersection(index_other).freq == expected
 
     @pytest.mark.parametrize(
         "config",
@@ -464,21 +563,21 @@ class TestUtils:
                 1,
             ),
             # month
-            ("2000-01-01", "2000-01-02", freqs["ME"], 0),
-            ("2000-01-01", "2000-01-01", freqs["ME"], 0),
-            ("2000-01-01", "2000-02-01", freqs["ME"], 1),
-            ("2000-01-01", "2000-03-01", freqs["ME"], 2),
+            ("2000-01-01", "2000-01-02", "ME", 0),
+            ("2000-01-01", "2000-01-01", "ME", 0),
+            ("2000-01-01", "2000-02-01", "ME", 1),
+            ("2000-01-01", "2000-03-01", "ME", 2),
             # 2 * months
-            ("2000-01-01", "2000-01-01", "2" + freqs["ME"], 0),
-            ("2000-01-01", "2000-02-11", "2" + freqs["ME"], 0),
-            ("2000-01-01", "2000-03-01", "2" + freqs["ME"], 1),
-            ("2000-01-01", "2000-05-01", "2" + freqs["ME"], 2),
+            ("2000-01-01", "2000-01-01", "2" + "ME", 0),
+            ("2000-01-01", "2000-02-11", "2" + "ME", 0),
+            ("2000-01-01", "2000-03-01", "2" + "ME", 1),
+            ("2000-01-01", "2000-05-01", "2" + "ME", 2),
             # quarter
-            ("2000-01-01", "2000-04-01", freqs["QE"], 1),
+            ("2000-01-01", "2000-04-01", "QE", 1),
             # year
-            ("2000-01-01", "2001-04-01", freqs["YE"], 1),
+            ("2000-01-01", "2001-04-01", "YE", 1),
             # 2*year
-            ("2000-01-01", "2010-04-01", "2" + freqs["YE"], 5),
+            ("2000-01-01", "2010-04-01", "2" + "YE", 5),
             # custom frequencies
             # business day
             (
@@ -539,3 +638,264 @@ class TestUtils:
         assert n_steps == expected_n_steps
         n_steps_reversed = n_steps_between(end=start, start=end, freq=freq)
         assert n_steps_reversed == -expected_n_steps
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (np.array([0, 1, 2]), (3, 1, 1)),
+            (np.array([[0], [1], [2]]), (3, 1, 1)),
+            (np.array([[[0]], [[1]], [[2]]]), (3, 1, 1)),
+            (np.array([[0, 1], [2, 3], [3, 4]]), (3, 2, 1)),
+            (np.array([[[0], [1]], [[1], [2]], [[3], [4]]]), (3, 2, 1)),
+            (
+                np.array([[[0, 1], [2, 3]], [[4, 5], [6, 7]], [[8, 9], [10, 11]]]),
+                (3, 2, 2),
+            ),
+        ],
+    )
+    def test_expand_arr(self, config):
+        """tests array expansion to 3D."""
+        arr, shape_expected = config
+
+        if len(arr.shape) == 1:
+            arr_expected = arr[:, None, None]
+        elif len(arr.shape) == 2:
+            arr_expected = arr[:, :, None]
+        else:
+            arr_expected = arr
+
+        arr = expand_arr(arr, ndim=3)
+        assert arr.shape == shape_expected
+        np.testing.assert_array_almost_equal(arr, arr_expected)
+
+    def test_likelihood_component_names(self):
+        names = likelihood_component_names(["a", "b"], ["1", "2", "3"])
+        assert names == ["a_1", "a_2", "a_3", "b_1", "b_2", "b_3"]
+
+        assert (
+            likelihood_component_names(pd.Index(["a", "b"]), ["1", "2", "3"]) == names
+        )
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (0.25, "a_q0.250"),
+            (0.2501, "a_q0.250"),
+            ([0.25], ["a_q0.250"]),
+            ([0.25, 0.75], ["a_q0.250", "a_q0.750"]),
+        ],
+    )
+    def test_quantile_names(self, config):
+        q, names_expected = config
+        names = quantile_names(q, "a")
+        assert names == names_expected
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            ((0.25, 0.5), "a_q0.250_q0.500"),
+            ((0.2501, 0.4999), "a_q0.250_q0.500"),
+            ([(0.25, 0.5)], ["a_q0.250_q0.500"]),
+            ([(0.25, 0.50), (0.6, 0.75)], ["a_q0.250_q0.500", "a_q0.600_q0.750"]),
+        ],
+    )
+    def test_quantile_interval_names(self, config):
+        q, names_expected = config
+        names = quantile_interval_names(q, "a")
+        assert names == names_expected
+
+    @pytest.mark.parametrize("ndim", [2, 3])
+    def test_generate_samples_shape(self, ndim):
+        """Checks that the output shape of generated samples from quantiles and quantile predictions
+        is as expected."""
+        n_time_steps = 10
+        n_columns = 5
+        n_quantiles = 20
+        num_samples = 50
+
+        q = np.linspace(0, 1, n_quantiles)
+        q_pred = np.random.rand(n_time_steps, n_columns, n_quantiles)
+        if ndim == 2:
+            q_pred = q_pred.reshape((n_time_steps, n_columns * n_quantiles))
+        y_pred = sample_from_quantiles(q_pred, q, num_samples)
+        assert y_pred.shape == (n_time_steps, n_columns, num_samples)
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [1, 2],  # n times
+            [2, 3],  # ndim
+            [1, 2],  # n components
+        ),
+    )
+    def test_generate_samples_output(self, config):
+        """Tests sample generation from quantiles and quantile predictions for:
+
+        - single/multiple time steps
+        - from 2 or 3 dimensions
+        - uni/multivariate
+        """
+        np.random.seed(42)
+        n_times, ndim, n_comps = config
+        num_samples = 100000
+
+        q = np.array([0.2, 0.5, 0.75])
+        q_pred = np.array([[[1.0, 2.0, 3.0]]])
+        if n_times == 2:
+            q_pred = np.concatenate([q_pred, np.array([[[5.0, 7.0, 9.0]]])], axis=0)
+        if n_comps == 2:
+            q_pred = np.concatenate([q_pred, q_pred + 1.0], axis=1)
+        if ndim == 2:
+            q_pred = q_pred.reshape((len(q_pred), -1))
+        y_pred = sample_from_quantiles(q_pred, q, num_samples)
+
+        q_pred = q_pred.reshape((q_pred.shape[0], n_comps, len(q)))
+        for i in range(n_comps):
+            # edges must be identical to min/max predicted quantiles
+            assert y_pred[:, i].min() == q_pred[:, i].min()
+            assert y_pred[:, i].max() == q_pred[:, i].max()
+
+            # check that sampled quantiles values equal to the predicted quantiles
+            assert np.quantile(y_pred[:, i], q[0], axis=1) == pytest.approx(
+                q_pred[:, i, 0], abs=0.02
+            )
+            assert np.quantile(y_pred[:, i], q[1], axis=1) == pytest.approx(
+                q_pred[:, i, 1], abs=0.02
+            )
+            assert np.quantile(y_pred[:, i], q[2], axis=1) == pytest.approx(
+                q_pred[:, i, 2], abs=0.02
+            )
+
+            # for each component and quantile, check that the expected ratio of sampled values is approximately
+            # equal to the quantile
+            assert (y_pred[:, i] == q_pred[:, i, 0:1]).mean(axis=1) == pytest.approx(
+                0.2, abs=0.02
+            )
+            assert (
+                (q_pred[:, i, 0:1] < y_pred[:, i]) & (y_pred[:, i] <= q_pred[:, i, 1:2])
+            ).mean(axis=1) == pytest.approx(0.3, abs=0.02)
+            assert (
+                (q_pred[:, i, 1:2] < y_pred[:, i]) & (y_pred[:, i] < q_pred[:, i, 2:3])
+            ).mean(axis=1) == pytest.approx(0.25, abs=0.02)
+            assert (y_pred[:, i] == q_pred[:, i, 2:3]).mean(axis=1) == pytest.approx(
+                0.25, abs=0.02
+            )
+
+            # between the quantiles, the values must be linearly interpolated
+            # check that number of unique values is approximately equal to the difference between two adjacent quantiles
+            mask1 = (q_pred[:, i, 0:1] < y_pred[:, i]) & (
+                y_pred[:, i] < q_pred[:, i, 1:2]
+            )
+            share_unique1 = len(np.unique(y_pred[:, i][mask1])) / num_samples
+            assert share_unique1 == pytest.approx(n_times * (q[1] - q[0]), abs=0.05)
+
+            mask2 = (q_pred[:, i, 1:2] < y_pred[:, i]) & (
+                y_pred[:, i] < q_pred[:, i, 2:3]
+            )
+            share_unique2 = len(np.unique(y_pred[:, i][mask2])) / num_samples
+            assert share_unique2 == pytest.approx(n_times * (q[2] - q[1]), abs=0.05)
+
+
+@pytest.mark.skipif(not IPYTHON_AVAILABLE, reason="requires IPython")
+class TestBuildTqdmIterator:
+    def test_verbose_false_returns_raw_iterable(self):
+        from darts.utils.utils import _build_tqdm_iterator
+
+        items = list(range(5))
+        result = _build_tqdm_iterator(items, verbose=False)
+        assert result is items
+
+    def test_verbose_true_returns_tqdm_wrapper(self):
+        from darts.utils.utils import _build_tqdm_iterator
+
+        items = list(range(5))
+        result = _build_tqdm_iterator(items, verbose=True)
+        assert list(result) == items
+        assert type(result).__name__ == "tqdm"
+
+    def test_kwargs_forwarded_to_tqdm(self):
+        from darts.utils.utils import _build_tqdm_iterator
+
+        items = range(10)
+        result = _build_tqdm_iterator(items, verbose=True, desc="test", total=10)
+        assert result.desc == "test"
+        assert result.total == 10
+
+    @patch("builtins.__import__")
+    def test_ipython_unavailable_verbose_false(self, mock_import):
+        def side_effect(name, *args, **kwargs):
+            if name == "IPython" or name.startswith("IPython."):
+                raise ModuleNotFoundError("mocked IPython missing")
+            return _real_import(name, *args, **kwargs)
+
+        mock_import.side_effect = side_effect
+
+        from darts.utils.utils import _build_tqdm_iterator
+
+        items = list(range(5))
+        result = _build_tqdm_iterator(items, verbose=False)
+        assert result is items
+
+    @patch("builtins.__import__")
+    def test_ipython_unavailable_verbose_true(self, mock_import):
+        def side_effect(name, *args, **kwargs):
+            if name == "IPython" or name.startswith("IPython."):
+                raise ModuleNotFoundError("mocked IPython missing")
+            return _real_import(name, *args, **kwargs)
+
+        mock_import.side_effect = side_effect
+
+        from darts.utils.utils import _build_tqdm_iterator
+
+        items = list(range(5))
+        result = _build_tqdm_iterator(items, verbose=True)
+        assert list(result) == items
+        assert type(result).__name__ == "tqdm"
+
+    @patch("IPython.get_ipython")
+    def test_notebook_shell_uses_tqdm_notebook(self, mock_get_ipython):
+        shell = type("FakeShell", (), {})()
+        shell.__class__.__name__ = "ZMQInteractiveShell"
+        mock_get_ipython.return_value = shell
+
+        from darts.utils.utils import _build_tqdm_iterator
+
+        items = list(range(5))
+        result = _build_tqdm_iterator(items, verbose=True)
+        assert list(result) == items
+        assert "notebook" in type(result).__module__
+
+    @patch("IPython.get_ipython")
+    def test_terminal_shell_uses_regular_tqdm(self, mock_get_ipython):
+        shell = type("FakeShell", (), {})()
+        shell.__class__.__name__ = "TerminalInteractiveShell"
+        mock_get_ipython.return_value = shell
+
+        from darts.utils.utils import _build_tqdm_iterator
+
+        items = list(range(5))
+        result = _build_tqdm_iterator(items, verbose=True)
+        assert list(result) == items
+        assert type(result).__name__ == "tqdm"
+
+    @patch("IPython.get_ipython")
+    def test_unknown_shell_uses_regular_tqdm(self, mock_get_ipython):
+        shell = type("FakeShell", (), {})()
+        shell.__class__.__name__ = "SomeOtherShell"
+        mock_get_ipython.return_value = shell
+
+        from darts.utils.utils import _build_tqdm_iterator
+
+        items = list(range(5))
+        result = _build_tqdm_iterator(items, verbose=True)
+        assert list(result) == items
+        assert type(result).__name__ == "tqdm"
+
+    @patch("IPython.get_ipython", side_effect=NameError("no IPython"))
+    def test_get_ipython_raises_name_error(self, mock_get_ipython):
+        from darts.utils.utils import _build_tqdm_iterator
+
+        items = list(range(5))
+        result = _build_tqdm_iterator(items, verbose=True)
+        assert list(result) == items
+        assert type(result).__name__ == "tqdm"

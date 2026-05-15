@@ -4,7 +4,7 @@ Examples
 
 Here you will find some example notebooks to get more familiar with the Darts' API.
 All the notebooks are also available in ``ipynb`` format
-`directly on github <https://github.com/unit8co/darts/tree/master/examples>`_.
+`directly on github <https://github.com/unit8co/darts/tree/master/examples>`__.
 
 
 Multiple Time Series, Pre-trained Models and Covariates
@@ -84,8 +84,27 @@ Regression models example notebook:
 .. toctree::
    :maxdepth: 1
 
-   examples/20-RegressionModel-examples.ipynb
+   examples/20-SKLearnModel-examples.ipynb
 
+Classification Models
+=====================
+
+Classification models example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/24-SKLearnClassifierModel-examples.ipynb
+
+Conformal Prediction
+====================
+
+Conformal prediction example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/23-Conformal-Prediction-examples.ipynb
 
 Fast Fourier Transform
 ======================
@@ -168,7 +187,7 @@ TFT model example notebook:
    examples/13-TFT-examples.ipynb
 
 TimeSeries Dense Encoder (TiDE) Model
-=======================================
+=====================================
 
 TiDE model example notebook:
 
@@ -178,7 +197,7 @@ TiDE model example notebook:
    examples/18-TiDE-examples.ipynb
 
 TimeSeries Mixer (TSMixer) Model
-=======================================
+================================
 
 TSMixer model example notebook:
 
@@ -187,8 +206,38 @@ TSMixer model example notebook:
 
    examples/21-TSMixer-examples.ipynb
 
+NeuralForecast Model Adapter
+============================
+
+NeuralForecastModel example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/26-NeuralForecast-examples.ipynb
+
+Chronos-2 Model
+===============
+
+Foundation model example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/25-FoundationModel-examples.ipynb
+
+Torch and Foundation Model Fine-Tuning
+======================================
+
+Torch and Foundation model fine-tuning example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.ipynb
+
 Ensemble Models
-=============================
+===============
 
 Ensemble models example notebook:
 
@@ -218,7 +267,7 @@ Gaussian process filter model example notebook:
    examples/11-GP-filter-examples.ipynb
 
 Anomaly Detection
-=======================================
+=================
 
 Anomaly detection example notebook:
 
@@ -228,7 +277,7 @@ Anomaly detection example notebook:
    examples/22-anomaly-detection-examples.ipynb
 
 Dynamic Time Warping (DTW)
-=============================
+==========================
 
 Dynamic time warping example notebook:
 

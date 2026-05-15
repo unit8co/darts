@@ -1,20 +1,18 @@
 """
-Gaussian Processes
-------------------
+Gaussian Process Filter
+-----------------------
 """
-
-from typing import Optional
 
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import Kernel
 
+from darts import TimeSeries
 from darts.models.filtering.filtering_model import FilteringModel
-from darts.timeseries import TimeSeries
 
 
 class GaussianProcessFilter(FilteringModel):
-    def __init__(self, kernel: Optional[Kernel] = None, **kwargs):
+    def __init__(self, kernel: Kernel | None = None, **kwargs):
         """
         This model uses the ``GaussianProcessRegressor`` of scikit-learn to fit a Gaussian Process to the
         supplied TimeSeries. This can then be used to obtain samples from the
@@ -73,4 +71,10 @@ class GaussianProcessFilter(FilteringModel):
 
         filtered_values = filtered_values.reshape(len(times), -1, num_samples)
 
-        return series.with_values(filtered_values)
+        return TimeSeries(
+            times=series.time_index,
+            values=filtered_values,
+            components=series.components,
+            copy=False,
+            **series._attrs,
+        )

@@ -1,6 +1,6 @@
 """
 Explainability Result
---------------------
+---------------------
 
 Contains the explainability results obtained from :func:`_ForecastingModelExplainer.explain()
 <darts.explainability.explainability._ForecastingModelExplainer.explain>`.
@@ -15,7 +15,7 @@ Contains the explainability results obtained from :func:`_ForecastingModelExplai
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import pandas as pd
 import shap
@@ -42,8 +42,8 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
     """Explainability result for general component objects.
     The explained components can describe anything.
 
-    Example
-    -------
+    Examples
+    --------
     >>> explainer = SomeComponentBasedExplainer(model)
     >>> explain_results = explainer.explain()
     >>> output = explain_results.get_explanation(component="some_component")
@@ -51,7 +51,7 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
 
     def __init__(
         self,
-        explained_components: Union[Dict[str, Any], List[Dict[str, Any]]],
+        explained_components: dict[str, Any] | list[dict[str, Any]],
     ):
         if isinstance(explained_components, list):
             comps_available = explained_components[0].keys()
@@ -67,7 +67,7 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
         self.explained_components = explained_components
         self.available_components = comps_available
 
-    def get_explanation(self, component) -> Union[Any, List[Any]]:
+    def get_explanation(self, component) -> Any | list[Any]:
         """
         Returns one or several explanations for a given component.
 
@@ -80,7 +80,7 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
 
     def _query_explainability_result(
         self,
-        attr: Union[Dict[str, Any], List[Dict[str, Any]]],
+        attr: dict[str, Any] | list[dict[str, Any]],
         component: str,
     ) -> Any:
         """
@@ -144,14 +144,14 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
       ``"target"``, ``"past_cov"`` or ``"future_cov"``.
     - ``{idx}`` is the lag index.
 
-    Example
-    -------
+    Examples
+    --------
 
     Say we have a model with 2 target components named ``"T_0"`` and ``"T_1"``,
     3 past covariates with default component names ``"0"``, ``"1"``, and ``"2"``,
     and one future covariate with default component name ``"0"``.
     Also, ``horizons = [1, 2]``.
-    The model is a regression model, with ``lags = 3``, ``lags_past_covariates=[-1, -3]``,
+    The model is a `SKLearnModel`, with ``lags = 3``, ``lags_past_covariates=[-1, -3]``,
     ``lags_future_covariates = [0]``.
 
     We provide `foreground_series`, `foreground_past_covariates`, `foreground_future_covariates` each of length 5.
@@ -169,19 +169,19 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
     Then the method returns a multivariate TimeSeries containing the *explanations* of
     the corresponding `_ForecastingModelExplainer`, with the following component names:
 
-         - T_0_target_lag-1
-         - T_0_target_lag-2
-         - T_0_target_lag-3
-         - T_1_target_lag-1
-         - T_1_target_lag-2
-         - T_1_target_lag-3
-         - 0_past_cov_lag-1
-         - 0_past_cov_lag-3
-         - 1_past_cov_lag-1
-         - 1_past_cov_lag-3
-         - 2_past_cov_lag-1
-         - 2_past_cov_lag-3
-         - 0_fut_cov_lag_0
+    - T_0_target_lag-1
+    - T_0_target_lag-2
+    - T_0_target_lag-3
+    - T_1_target_lag-1
+    - T_1_target_lag-2
+    - T_1_target_lag-3
+    - 0_past_cov_lag-1
+    - 0_past_cov_lag-3
+    - 1_past_cov_lag-1
+    - 1_past_cov_lag-3
+    - 2_past_cov_lag-1
+    - 2_past_cov_lag-3
+    - 0_fut_cov_lag_0
 
     This series has length 3, as the model can explain 5-3+1 forecasts
     (timestamp indexes 4, 5, and 6)
@@ -189,10 +189,8 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
 
     def __init__(
         self,
-        explained_forecasts: Union[
-            Dict[int, Dict[str, TimeSeries]],
-            List[Dict[int, Dict[str, TimeSeries]]],
-        ],
+        explained_forecasts: dict[int, dict[str, TimeSeries]]
+        | list[dict[int, dict[str, TimeSeries]]],
     ):
         self.explained_forecasts = explained_forecasts
         if isinstance(self.explained_forecasts, list):
@@ -230,8 +228,8 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
             )
 
     def get_explanation(
-        self, horizon: int, component: Optional[str] = None
-    ) -> Union[TimeSeries, List[TimeSeries]]:
+        self, horizon: int, component: str | None = None
+    ) -> TimeSeries | list[TimeSeries]:
         """
         Returns one or several `TimeSeries` representing the explanations
         for a given horizon and component.
@@ -250,9 +248,9 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
 
     def _query_explainability_result(
         self,
-        attr: Union[Dict[int, Dict[str, Any]], List[Dict[int, Dict[str, Any]]]],
+        attr: dict[int, dict[str, Any]] | list[dict[int, dict[str, Any]]],
         horizon: int,
-        component: Optional[str] = None,
+        component: str | None = None,
     ) -> Any:
         """
         Helper that extracts and returns the explainability result attribute for a specified horizon and component from
@@ -285,7 +283,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
             )
 
     def _validate_input_for_querying_explainability_result(
-        self, horizon: int, component: Optional[str] = None
+        self, horizon: int, component: str | None = None
     ) -> str:
         """
         Helper that validates the input parameters of a method that queries the `HorizonBasedExplainabilityResult`.
@@ -349,26 +347,20 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
 
     def __init__(
         self,
-        explained_forecasts: Union[
-            Dict[int, Dict[str, TimeSeries]],
-            List[Dict[int, Dict[str, TimeSeries]]],
-        ],
-        feature_values: Union[
-            Dict[int, Dict[str, TimeSeries]],
-            List[Dict[int, Dict[str, TimeSeries]]],
-        ],
-        shap_explanation_object: Union[
-            Dict[int, Dict[str, shap.Explanation]],
-            List[Dict[int, Dict[str, shap.Explanation]]],
-        ],
+        explained_forecasts: dict[int, dict[str, TimeSeries]]
+        | list[dict[int, dict[str, TimeSeries]]],
+        feature_values: dict[int, dict[str, TimeSeries]]
+        | list[dict[int, dict[str, TimeSeries]]],
+        shap_explanation_object: dict[int, dict[str, shap.Explanation]]
+        | list[dict[int, dict[str, shap.Explanation]]],
     ):
         super().__init__(explained_forecasts)
         self.feature_values = feature_values
         self.shap_explanation_object = shap_explanation_object
 
     def get_feature_values(
-        self, horizon: int, component: Optional[str] = None
-    ) -> Union[TimeSeries, List[TimeSeries]]:
+        self, horizon: int, component: str | None = None
+    ) -> TimeSeries | list[TimeSeries]:
         """
         Returns one or several `TimeSeries` representing the feature values
         for a given horizon and component.
@@ -386,8 +378,8 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
         )
 
     def get_shap_explanation_object(
-        self, horizon: int, component: Optional[str] = None
-    ) -> Union[shap.Explanation, List[shap.Explanation]]:
+        self, horizon: int, component: str | None = None
+    ) -> shap.Explanation | list[shap.Explanation]:
         """
         Returns the underlying `shap.Explanation` object for a given horizon and component.
 
@@ -433,10 +425,7 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
 
     def __init__(
         self,
-        explanations: Union[
-            Dict[str, Any],
-            List[Dict[str, Any]],
-        ],
+        explanations: dict[str, Any] | list[dict[str, Any]],
     ):
         super().__init__(explanations)
         self.feature_importances = [
@@ -445,7 +434,7 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
             "static_covariates_importance",
         ]
 
-    def get_attention(self) -> Union[TimeSeries, List[TimeSeries]]:
+    def get_attention(self) -> TimeSeries | list[TimeSeries]:
         """
         Returns the time-dependent attention on the encoder and decoder for each `horizon` in (1,
         `output_chunk_length`). The time index ranges from the prediction series' start time - input_chunk_length and
@@ -458,7 +447,7 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
 
     def get_feature_importances(
         self,
-    ) -> Dict[str, Union[pd.DataFrame, List[pd.DataFrame]]]:
+    ) -> dict[str, pd.DataFrame | list[pd.DataFrame]]:
         """
         Returns the feature importances for the encoder, decoder and static covariates as pd.DataFrames.
         If multiple series were used in :func:`TFTExplainer.explain()
@@ -466,7 +455,7 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
         """
         return {comp: self.get_explanation(comp) for comp in self.feature_importances}
 
-    def get_encoder_importance(self) -> Union[pd.DataFrame, List[pd.DataFrame]]:
+    def get_encoder_importance(self) -> pd.DataFrame | list[pd.DataFrame]:
         """
         Returns the time-dependent encoder importances as a pd.DataFrames.
         If multiple series were used in :func:`TFTExplainer.explain()
@@ -474,7 +463,7 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
         """
         return self.get_explanation("encoder_importance")
 
-    def get_decoder_importance(self) -> Union[pd.DataFrame, List[pd.DataFrame]]:
+    def get_decoder_importance(self) -> pd.DataFrame | list[pd.DataFrame]:
         """
         Returns the time-dependent decoder importances as a pd.DataFrames.
         If multiple series were used in :func:`TFTExplainer.explain()
@@ -484,7 +473,7 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
 
     def get_static_covariates_importance(
         self,
-    ) -> Union[pd.DataFrame, List[pd.DataFrame]]:
+    ) -> pd.DataFrame | list[pd.DataFrame]:
         """
         Returns the numeric and categorical static covariates importances as a pd.DataFrames.
         If multiple series were used in :func:`TFTExplainer.explain()

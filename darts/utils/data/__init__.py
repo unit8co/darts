@@ -1,137 +1,60 @@
 """
 TimeSeries Datasets
 -------------------
+
+Datasets and utilities for preparing time series data for training and inference with Darts models,
+including torch-based datasets and tabularization methods for SKLearn-like models.
 """
 
-try:
-    # Base classes for training datasets:
-    # Implementation (horizon-based)
-    from darts.utils.data.horizon_based_dataset import HorizonBasedDataset
+from typing import TYPE_CHECKING
 
-    # Base class and implementations for inference datasets:
-    from darts.utils.data.inference_dataset import (
-        DualCovariatesInferenceDataset,
-        FutureCovariatesInferenceDataset,
-        InferenceDataset,
-        MixedCovariatesInferenceDataset,
-        PastCovariatesInferenceDataset,
-        SplitCovariatesInferenceDataset,
+from darts.utils._lazy import setup_lazy_imports
+
+if TYPE_CHECKING:
+    from darts.utils.data.torch_datasets.inference_dataset import (
+        SequentialTorchInferenceDataset as SequentialTorchInferenceDataset,
+    )
+    from darts.utils.data.torch_datasets.inference_dataset import (
+        TorchInferenceDataset as TorchInferenceDataset,
+    )
+    from darts.utils.data.torch_datasets.training_dataset import (
+        HorizonBasedTorchTrainingDataset as HorizonBasedTorchTrainingDataset,
+    )
+    from darts.utils.data.torch_datasets.training_dataset import (
+        SequentialTorchTrainingDataset as SequentialTorchTrainingDataset,
+    )
+    from darts.utils.data.torch_datasets.training_dataset import (
+        ShiftedTorchTrainingDataset as ShiftedTorchTrainingDataset,
+    )
+    from darts.utils.data.torch_datasets.training_dataset import (
+        TorchTrainingDataset as TorchTrainingDataset,
     )
 
-    # Implementations (sequential)
-    from darts.utils.data.sequential_dataset import (
-        DualCovariatesSequentialDataset,
-        FutureCovariatesSequentialDataset,
-        MixedCovariatesSequentialDataset,
-        PastCovariatesSequentialDataset,
-        SplitCovariatesSequentialDataset,
-    )
+_LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
+    "SequentialTorchInferenceDataset": (
+        "darts.utils.data.torch_datasets.inference_dataset",
+        "(Py)Torch",
+    ),
+    "TorchInferenceDataset": (
+        "darts.utils.data.torch_datasets.inference_dataset",
+        "(Py)Torch",
+    ),
+    "HorizonBasedTorchTrainingDataset": (
+        "darts.utils.data.torch_datasets.training_dataset",
+        "(Py)Torch",
+    ),
+    "SequentialTorchTrainingDataset": (
+        "darts.utils.data.torch_datasets.training_dataset",
+        "(Py)Torch",
+    ),
+    "ShiftedTorchTrainingDataset": (
+        "darts.utils.data.torch_datasets.training_dataset",
+        "(Py)Torch",
+    ),
+    "TorchTrainingDataset": (
+        "darts.utils.data.torch_datasets.training_dataset",
+        "(Py)Torch",
+    ),
+}
 
-    # Implementations (shifted)
-    from darts.utils.data.shifted_dataset import (
-        DualCovariatesShiftedDataset,
-        FutureCovariatesShiftedDataset,
-        MixedCovariatesShiftedDataset,
-        PastCovariatesShiftedDataset,
-        SplitCovariatesShiftedDataset,
-    )
-    from darts.utils.data.training_dataset import (
-        DualCovariatesTrainingDataset,
-        FutureCovariatesTrainingDataset,
-        MixedCovariatesTrainingDataset,
-        PastCovariatesTrainingDataset,
-        SplitCovariatesTrainingDataset,
-        TrainingDataset,
-    )
-except ImportError:  # Torch is not available
-    from darts.models.utils import NotImportedModule
-
-    HorizonBasedDataset = NotImportedModule(module_name="(Py)Torch", warn=False)
-    DualCovariatesInferenceDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    FutureCovariatesInferenceDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    InferenceDataset = NotImportedModule(module_name="(Py)Torch", warn=False)
-    MixedCovariatesInferenceDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    PastCovariatesInferenceDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    SplitCovariatesInferenceDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    DualCovariatesSequentialDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    FutureCovariatesSequentialDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    MixedCovariatesSequentialDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    PastCovariatesSequentialDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    SplitCovariatesSequentialDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    DualCovariatesShiftedDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    FutureCovariatesShiftedDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    MixedCovariatesShiftedDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    PastCovariatesShiftedDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    SplitCovariatesShiftedDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    DualCovariatesTrainingDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    FutureCovariatesTrainingDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    MixedCovariatesTrainingDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    PastCovariatesTrainingDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    SplitCovariatesTrainingDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    TrainingDataset = NotImportedModule(module_name="(Py)Torch", warn=False)
-
-__all__ = [
-    "HorizonBasedDataset",
-    "DualCovariatesInferenceDataset",
-    "FutureCovariatesInferenceDataset",
-    "InferenceDataset",
-    "MixedCovariatesInferenceDataset",
-    "PastCovariatesInferenceDataset",
-    "SplitCovariatesInferenceDataset",
-    "DualCovariatesSequentialDataset",
-    "FutureCovariatesSequentialDataset",
-    "MixedCovariatesSequentialDataset",
-    "PastCovariatesSequentialDataset",
-    "SplitCovariatesSequentialDataset",
-    "DualCovariatesShiftedDataset",
-    "FutureCovariatesShiftedDataset",
-    "MixedCovariatesShiftedDataset",
-    "PastCovariatesShiftedDataset",
-    "SplitCovariatesShiftedDataset",
-    "DualCovariatesTrainingDataset",
-    "FutureCovariatesTrainingDataset",
-    "MixedCovariatesTrainingDataset",
-    "PastCovariatesTrainingDataset",
-    "SplitCovariatesTrainingDataset",
-    "TrainingDataset",
-]
+__all__, __getattr__, __dir__ = setup_lazy_imports(_LAZY_IMPORTS, __name__, globals())

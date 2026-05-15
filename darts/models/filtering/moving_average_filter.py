@@ -1,10 +1,10 @@
 """
-Moving Average
---------------
+Moving Average Filter
+---------------------
 """
 
+from darts import TimeSeries
 from darts.models.filtering.filtering_model import FilteringModel
-from darts.timeseries import TimeSeries
 
 
 class MovingAverageFilter(FilteringModel):

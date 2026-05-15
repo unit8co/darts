@@ -1,11 +1,14 @@
-from typing import Any, Mapping, Sequence, Union
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 import numpy as np
+import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers.fittable_data_transformer import (
     FittableDataTransformer,
 )
+from darts.typing import TimeSeriesLike
 from darts.utils.timeseries_generation import constant_timeseries
 
 
@@ -22,7 +25,8 @@ class TestLocalFittableDataTransformer:
             translation: float,
             stack_samples: bool = False,
             mask_components: bool = True,
-            parallel_params: Union[bool, Sequence[str]] = False,
+            parallel_params: bool | Sequence[str] = False,
+            columns: str | list[str] | None = None,
         ):
             """
             Applies the transform `transformed_series = scale * series + translation`.
@@ -53,6 +57,7 @@ class TestLocalFittableDataTransformer:
                 name="DataTransformerMock",
                 mask_components=mask_components,
                 parallel_params=parallel_params,
+                columns=columns,
             )
 
         @staticmethod
@@ -122,19 +127,57 @@ class TestLocalFittableDataTransformer:
 
             return series.with_values(vals)
 
-    def test_input_transformed_single_series(self):
+    @pytest.mark.parametrize("component_mask", [None, np.array([True])])
+    def test_input_transformed_single_series(self, component_mask):
         """
         Tests for correct transformation of single series.
         """
         test_input = constant_timeseries(value=1, length=10)
+        test_input_copy = test_input.copy()
 
         mock = self.DataTransformerMock(scale=2, translation=10)
 
-        transformed = mock.fit_transform(test_input)
+        transformed = mock.fit_transform(test_input, component_mask=component_mask)
 
         # 2 * 1 + 10 = 12
         expected = constant_timeseries(value=12, length=10)
         assert transformed == expected
+        assert test_input == test_input_copy
+
+    @pytest.mark.parametrize("col_names", ["A", None, ["A"], ["B"], ["A", "B"]])
+    def test_columns_subset(self, col_names):
+        """
+        Tests if the `columns` argument correctly applies the transform only to the specified columns.
+        """
+        ts_a = constant_timeseries(value=1, length=10, column_name="A")
+        ts_b = constant_timeseries(value=2, length=10, column_name="B")
+
+        test_input = ts_a.stack(ts_b)
+        test_input_copy = test_input.copy()
+
+        mock = self.DataTransformerMock(scale=2, translation=10, columns=col_names)
+
+        transformed = mock.fit_transform(test_input)
+
+        if col_names is None or "A" in col_names:
+            assert transformed["A"] == constant_timeseries(
+                value=12, length=10, column_name="A"
+            )
+        else:
+            assert transformed["A"] == constant_timeseries(
+                value=1, length=10, column_name="A"
+            )
+
+        if col_names is None or "B" in col_names:
+            assert transformed["B"] == constant_timeseries(
+                value=14, length=10, column_name="B"
+            )
+        else:
+            assert transformed["B"] == constant_timeseries(
+                value=2, length=10, column_name="B"
+            )
+
+        assert test_input == test_input_copy
 
     def test_input_transformed_multiple_series(self):
         """
@@ -175,8 +218,19 @@ class TestLocalFittableDataTransformer:
 
         # If only one timeseries provided, should apply parameters defined for
         # for the first to that series:
-        transformed_1 = mock.transform(test_input_1)
-        assert transformed_1 == constant_timeseries(value=12, length=10)
+        assert mock.transform(test_input_1) == constant_timeseries(value=12, length=10)
+        # 2 * 2 + 10 = 14
+        assert mock.transform(test_input_2) == constant_timeseries(value=14, length=11)
+
+        # If the index of another set of parameters is provided, the output changes accordingly:
+        # 3 * 1 + 10 = 13
+        assert mock.transform(test_input_1, series_idx=1) == constant_timeseries(
+            value=13, length=10
+        )
+        # 3 * 2 + 10 = 16
+        assert mock.transform(test_input_2, series_idx=1) == constant_timeseries(
+            value=16, length=11
+        )
 
         # Have different `scale`, `translation`, and `stack_samples` params for different jobs:
         mock = self.DataTransformerMock(
@@ -197,8 +251,26 @@ class TestLocalFittableDataTransformer:
 
         # If only one timeseries provided, should apply parameters defined for
         # for the first to that series:
-        transformed_1 = mock.transform(test_input_1)
-        assert transformed_1 == constant_timeseries(value=12, length=10)
+        assert mock.transform(test_input_1) == constant_timeseries(value=12, length=10)
+        # 2 * 2 + 10 = 14
+        assert mock.transform(test_input_2) == constant_timeseries(value=14, length=11)
+
+        # If the index of another set of parameters is provided, the output changes accordingly:
+        assert mock.transform(test_input_1, series_idx=0) == constant_timeseries(
+            value=12, length=10
+        )
+        # 3 * 1 + 11 = 14
+        assert mock.transform(test_input_1, series_idx=1) == constant_timeseries(
+            value=14, length=10
+        )
+        # 2 * 2 + 10 = 14
+        assert mock.transform(test_input_2, series_idx=0) == constant_timeseries(
+            value=14, length=11
+        )
+        # 3 * 2 + 11 = 17
+        assert mock.transform(test_input_2, series_idx=1) == constant_timeseries(
+            value=17, length=11
+        )
 
         # Train on three series with three different fixed param values,
         # but pass only one or two series as inputs to `transform`;
@@ -306,7 +378,7 @@ class TestGlobalFittableDataTransformer:
 
         @staticmethod
         def ts_fit(
-            series: Union[TimeSeries, Sequence[TimeSeries]],
+            series: TimeSeriesLike,
             params: Mapping[str, Any],
             **kwargs,
         ):

@@ -10,32 +10,31 @@ A collection of simple benchmark models working with univariate, multivariate, s
 """
 
 from abc import ABC, abstractmethod
-from typing import Callable, Optional, Sequence, Tuple, Union
+from collections.abc import Callable, Sequence
 
 import torch
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
-    PLMixedCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
     TorchForecastingModel,
 )
-from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
-from darts.utils.data.training_dataset import MixedCovariatesTrainingDataset
-
-MixedCovariatesTrainTensorType = Tuple[
-    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
-]
-
+from darts.typing import TimeSeriesLike
+from darts.utils.data import (
+    SequentialTorchTrainingDataset,
+    TorchTrainingDataset,
+)
+from darts.utils.data.torch_datasets.utils import TorchTrainingSample
 
 logger = get_logger(__name__)
 
 
-def _extract_targets(batch: Tuple[torch.Tensor], n_targets: int):
+def _extract_targets(batch: tuple[torch.Tensor], n_targets: int):
     """Extracts and returns the target components from an input batch
 
     Parameters
@@ -63,7 +62,7 @@ def _repeat_along_output_chunk(x: torch.Tensor, ocl: int) -> torch.Tensor:
     return x.view(-1, 1, x[0].shape[-1], 1).expand(-1, ocl, -1, -1)
 
 
-class _GlobalNaiveModule(PLMixedCovariatesModule, ABC):
+class _GlobalNaiveModule(PLForecastingModule, ABC):
     def __init__(self, *args, **kwargs):
         """Pytorch module for implementing naive models.
 
@@ -74,7 +73,7 @@ class _GlobalNaiveModule(PLMixedCovariatesModule, ABC):
 
     @io_processor
     def forward(
-        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
+        self, x_in: tuple[torch.Tensor, torch.Tensor | None, torch.Tensor | None]
     ) -> torch.Tensor:
         """Naive model forward pass.
 
@@ -115,7 +114,7 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         To add a new naive model:
         - subclass from `_GlobalNaiveModel` with implementation of private method `_create_model` that creates an
             object of:
-        - subclass from `_GlobalNaiveModule` with implemention of private method `_forward`
+        - subclass from `_GlobalNaiveModule` with implementation of private method `_forward`
 
         .. note::
             - Model checkpointing with `save_checkpoints=True`, and checkpoint loading with `load_from_checkpoint()`
@@ -153,9 +152,9 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
 
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         *args,
         **kwargs,
     ) -> TorchForecastingModel:
@@ -188,8 +187,8 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
     @staticmethod
     def load_from_checkpoint(
         model_name: str,
-        work_dir: str = None,
-        file_name: str = None,
+        work_dir: str | None = None,
+        file_name: str | None = None,
         best: bool = True,
         **kwargs,
     ) -> "TorchForecastingModel":
@@ -202,9 +201,9 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
 
     def load_weights_from_checkpoint(
         self,
-        model_name: str = None,
-        work_dir: str = None,
-        file_name: str = None,
+        model_name: str | None = None,
+        work_dir: str | None = None,
+        file_name: str | None = None,
         best: bool = True,
         strict: bool = True,
         load_encoders: bool = True,
@@ -218,29 +217,21 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
             logger=logger,
         )
 
-    @abstractmethod
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> _GlobalNaiveModule:
-        pass
-
-    def _verify_predict_sample(self, predict_sample: Tuple):
+    def _verify_predict_sample(self, predict_sample: tuple):
         # naive models do not have to be trained, predict sample does not
         # have to match the training sample
         pass
 
+    @property
     def supports_likelihood_parameter_prediction(self) -> bool:
         return False
 
+    @property
     def supports_probabilistic_prediction(self) -> bool:
         return False
 
     @property
     def supports_static_covariates(self) -> bool:
-        return True
-
-    @property
-    def supports_multivariate(self) -> bool:
         return True
 
     @property
@@ -250,19 +241,21 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
 
     def _build_train_dataset(
         self,
-        target: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        sample_weight: Optional[Sequence[TimeSeries]],
-        max_samples_per_ts: Optional[int],
-    ) -> MixedCovariatesTrainingDataset:
-        return MixedCovariatesSequentialDataset(
-            target_series=target,
+        series: Sequence[TimeSeries],
+        past_covariates: Sequence[TimeSeries] | None,
+        future_covariates: Sequence[TimeSeries] | None,
+        sample_weight: Sequence[TimeSeries] | None,
+        max_samples_per_ts: int | None,
+        stride: int = 1,
+    ) -> TorchTrainingDataset:
+        return SequentialTorchTrainingDataset(
+            series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=0,
             output_chunk_shift=self.output_chunk_shift,
+            stride=stride,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
             sample_weight=sample_weight,
@@ -302,7 +295,7 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        agg_fn: Union[str, Callable[[torch.Tensor, int], torch.Tensor]] = "mean",
+        agg_fn: str | Callable[[torch.Tensor, int], torch.Tensor] = "mean",
         **kwargs,
     ):
         """Global Naive Aggregate Model.
@@ -428,9 +421,9 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
         x = torch.ones((batch_size, 4, n_targets))
         try:
             agg = agg_fn(x, dim=1)
-            assert isinstance(
-                agg, torch.Tensor
-            ), "`agg_fn` output must be a torch Tensor."
+            assert isinstance(agg, torch.Tensor), (
+                "`agg_fn` output must be a torch Tensor."
+            )
             assert agg.shape == (
                 batch_size,
                 n_targets,
@@ -445,9 +438,7 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
             )
         self.agg_fn = agg_fn
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> _GlobalNaiveModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> _GlobalNaiveModule:
         return _GlobalNaiveAggregateModule(agg_fn=self.agg_fn, **self.pl_module_params)
 
 
@@ -545,9 +536,7 @@ class GlobalNaiveSeasonal(_NoCovariatesMixin, _GlobalNaiveModel):
             **kwargs,
         )
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> _GlobalNaiveModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> _GlobalNaiveModule:
         return _GlobalNaiveSeasonalModule(**self.pl_module_params)
 
 
@@ -658,7 +647,5 @@ class GlobalNaiveDrift(_NoCovariatesMixin, _GlobalNaiveModel):
             **kwargs,
         )
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> _GlobalNaiveModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> _GlobalNaiveModule:
         return _GlobalNaiveDrift(**self.pl_module_params)

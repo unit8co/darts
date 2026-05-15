@@ -5,487 +5,64 @@ Metrics
 Some metrics to compare time series.
 """
 
-import inspect
-from functools import wraps
-from inspect import signature
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from collections.abc import Callable, Sequence
 
 import numpy as np
+import pandas as pd
 
-from darts import TimeSeries
 from darts.dataprocessing import dtw
 from darts.logging import get_logger, raise_log
-from darts.utils import _build_tqdm_iterator, _parallel_apply, n_steps_between
-from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
+from darts.metrics.utils import (
+    METRIC_OUTPUT_TYPE,
+    SMPL_AX,
+    TIME_AX,
+    _compute_score,
+    _confusion_matrix,
+    _get_error_scale,
+    _get_quantile_intervals,
+    _get_tolerance_levels,
+    _get_values_or_raise,
+    _get_wrapped_metric,
+    _LabelReduction,
+    _safe_scaled_divide,
+    classification_support,
+    interval_support,
+    multi_ts_support,
+    multivariate_support,
+)
+from darts.typing import TimeSeriesLike
+
+_NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
+_NP_TRAPEZOID_FN = np.trapezoid if _NP_2_OR_ABOVE else np.trapz
 
 logger = get_logger(__name__)
-TIME_AX = 0
-COMP_AX = 1
-
-# Note: for new metrics added to this module to be able to leverage the two decorators, it is required both having
-# the `actual_series` and `pred_series` parameters, and not having other ``Sequence`` as args (since these decorators
-# don't "unpack" parameters different from `actual_series` and `pred_series`). In those cases, the new metric must take
-# care of dealing with Sequence[TimeSeries] and multivariate TimeSeries on its own (See mase() implementation).
-METRIC_OUTPUT_TYPE = Union[float, List[float], np.ndarray, List[np.ndarray]]
-METRIC_TYPE = Callable[
-    ...,
-    METRIC_OUTPUT_TYPE,
-]
-
-
-def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
-    """
-    This decorator further adapts the metrics that took as input two (or three for scaled metrics with `insample`)
-    univariate/multivariate ``TimeSeries`` instances, adding support for equally-sized sequences of ``TimeSeries``
-    instances. The decorator computes the pairwise metric for ``TimeSeries`` with the same indices, and returns a float
-    value that is computed as a function of all the pairwise metrics using a `series_reduction` subroutine passed as
-    argument to the metric function.
-
-    If a 'Sequence[TimeSeries]' is passed as input, this decorator provides also parallelisation of the metric
-    evaluation regarding different ``TimeSeries`` (if the `n_jobs` parameter is not set 1).
-    """
-
-    @wraps(func)
-    def wrapper_multi_ts_support(*args, **kwargs):
-        actual_series = (
-            kwargs["actual_series"] if "actual_series" in kwargs else args[0]
-        )
-        pred_series = (
-            kwargs["pred_series"]
-            if "pred_series" in kwargs
-            else args[0]
-            if "actual_series" in kwargs
-            else args[1]
-        )
-
-        params = signature(func).parameters
-        n_jobs = kwargs.pop("n_jobs", params["n_jobs"].default)
-        if not isinstance(n_jobs, int):
-            raise_log(ValueError("n_jobs must be an integer"), logger=logger)
-
-        verbose = kwargs.pop("verbose", params["verbose"].default)
-        if not isinstance(verbose, bool):
-            raise_log(ValueError("verbose must be a bool"), logger=logger)
-
-        # sanity check reduction functions
-        _ = _get_reduction(
-            kwargs=kwargs,
-            params=params,
-            red_name="time_reduction",
-            axis=TIME_AX,
-            sanity_check=True,
-        )
-        _ = _get_reduction(
-            kwargs=kwargs,
-            params=params,
-            red_name="component_reduction",
-            axis=COMP_AX,
-            sanity_check=True,
-        )
-        series_reduction = _get_reduction(
-            kwargs=kwargs,
-            params=params,
-            red_name="series_reduction",
-            axis=0,
-            sanity_check=True,
-        )
-
-        series_seq_type = get_series_seq_type(actual_series)
-        actual_series = series2seq(actual_series)
-        pred_series = series2seq(pred_series)
-
-        if len(actual_series) != len(pred_series):
-            raise_log(
-                ValueError(
-                    f"Mismatch between number of series in `actual_series` (n={len(actual_series)}) and "
-                    f"`pred_series` (n={len(pred_series)})."
-                ),
-                logger=logger,
-            )
-        num_series_in_args = int("actual_series" not in kwargs) + int(
-            "pred_series" not in kwargs
-        )
-        input_series = (actual_series, pred_series)
-
-        kwargs.pop("actual_series", 0)
-        kwargs.pop("pred_series", 0)
-
-        # handle `insample` parameter for scaled metrics
-        if "insample" in params:
-            insample = kwargs.get("insample")
-            if insample is None:
-                insample = args[
-                    2 - ("actual_series" in kwargs) - ("pred_series" in kwargs)
-                ]
-
-            insample = [insample] if not isinstance(insample, Sequence) else insample
-            if len(actual_series) != len(insample):
-                raise_log(
-                    ValueError(
-                        f"Mismatch between number of series in `actual_series` (n={len(actual_series)}) and "
-                        f"`insample` series (n={len(insample)})."
-                    ),
-                    logger=logger,
-                )
-            input_series += (insample,)
-            num_series_in_args += int("insample" not in kwargs)
-            kwargs.pop("insample", 0)
-
-        iterator = _build_tqdm_iterator(
-            iterable=zip(*input_series),
-            verbose=verbose,
-            total=len(actual_series),
-        )
-
-        # `vals` is a list of series metrics of length `len(actual_series)`. Each metric has shape
-        # `(n time steps, n components)`;
-        # - n times step is `1` if `time_reduction` is other than `None`
-        # - n components: is 1 if `component_reduction` is other than `None`
-        vals = _parallel_apply(
-            iterator=iterator,
-            fn=func,
-            n_jobs=n_jobs,
-            fn_args=args[num_series_in_args:],
-            fn_kwargs=kwargs,
-        )
-
-        # we flatten metrics along the time axis if n time steps == 1,
-        # and/or along component axis if n components == 1
-        vals = [
-            val[
-                slice(None) if val.shape[TIME_AX] != 1 else 0,
-                slice(None) if val.shape[COMP_AX] != 1 else 0,
-            ]
-            for val in vals
-        ]
-
-        # reduce metrics along series axis
-        if series_reduction is not None:
-            vals = kwargs["series_reduction"](vals, axis=0)
-        elif series_seq_type == SeriesType.SINGLE:
-            vals = vals[0]
-
-        # flatten along series axis if n series == 1
-        return vals
-
-    return wrapper_multi_ts_support
-
-
-def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
-    """
-    This decorator transforms a metric function that takes as input two univariate TimeSeries instances
-    into a function that takes two equally-sized multivariate TimeSeries instances, computes the pairwise univariate
-    metrics for components with the same indices, and returns a float value that is computed as a function of all the
-    univariate metrics using a `component_reduction` subroutine passed as argument to the metric function.
-    """
-
-    @wraps(func)
-    def wrapper_multivariate_support(*args, **kwargs) -> METRIC_OUTPUT_TYPE:
-        params = signature(func).parameters
-        # we can avoid checks about args and kwargs since the input is adjusted by the previous decorator
-        actual_series = args[0]
-        pred_series = args[1]
-        num_series_in_args = 2
-
-        if actual_series.width != pred_series.width:
-            raise_log(
-                ValueError(
-                    f"Mismatch between number of components in `actual_series` "
-                    f"(n={actual_series.width}) and `pred_series` (n={pred_series.width}."
-                ),
-                logger=logger,
-            )
-
-        # handle `insample` parameters for scaled metrics
-        input_series = (actual_series, pred_series)
-        if "insample" in params:
-            insample = args[2]
-            if actual_series.width != insample.width:
-                raise_log(
-                    ValueError(
-                        f"Mismatch between number of components in `actual_series` "
-                        f"(n={actual_series.width}) and `insample` (n={insample.width}."
-                    ),
-                    logger=logger,
-                )
-            input_series += (insample,)
-            num_series_in_args += 1
-
-        vals = func(*input_series, *args[num_series_in_args:], **kwargs)
-        if not 1 <= len(vals.shape) <= 2:
-            raise_log(
-                ValueError(
-                    "Metric output must have 1 dimension for aggregated metrics (e.g. `mae()`, ...), "
-                    "or 2 dimension for time dependent metrics (e.g. `ae()`, ...)"
-                ),
-                logger=logger,
-            )
-        elif len(vals.shape) == 1:
-            vals = np.expand_dims(vals, TIME_AX)
-
-        time_reduction = _get_reduction(
-            kwargs=kwargs,
-            params=params,
-            red_name="time_reduction",
-            axis=TIME_AX,
-            sanity_check=False,
-        )
-        if time_reduction is not None:
-            vals = np.expand_dims(time_reduction(vals, axis=TIME_AX), axis=TIME_AX)
-
-        component_reduction = _get_reduction(
-            kwargs=kwargs,
-            params=params,
-            red_name="component_reduction",
-            axis=COMP_AX,
-            sanity_check=False,
-        )
-        if component_reduction is not None:
-            vals = np.expand_dims(component_reduction(vals, axis=COMP_AX), axis=COMP_AX)
-        return vals
-
-    return wrapper_multivariate_support
-
-
-def _get_values(
-    vals: np.ndarray, stochastic_quantile: Optional[float] = 0.5
-) -> np.ndarray:
-    """
-    Returns a deterministic or probabilistic numpy array from the values of a time series.
-    For stochastic input values, return either all sample values with (stochastic_quantile=None) or the quantile sample
-    value with (stochastic_quantile {>=0,<=1})
-    """
-    if vals.shape[2] == 1:  # deterministic
-        out = vals[:, :, 0]
-    else:  # stochastic
-        if stochastic_quantile is None:
-            out = vals
-        else:
-            out = np.quantile(vals, stochastic_quantile, axis=2)
-    return out
-
-
-def _get_values_or_raise(
-    series_a: TimeSeries,
-    series_b: TimeSeries,
-    intersect: bool,
-    stochastic_quantile: Optional[float] = 0.5,
-    remove_nan_union: bool = False,
-    is_insample: bool = False,
-) -> Tuple[np.ndarray, np.ndarray]:
-    """Returns the processed numpy values of two time series. Processing can be customized with arguments
-    `intersect, stochastic_quantile, remove_nan_union`.
-
-    Parameters
-    ----------
-    series_a
-        A deterministic ``TimeSeries`` instance. If `is_insample=False`, it is the `actual_series`.
-        Otherwise, it is the `insample` series.
-    series_b
-        A deterministic or stochastic ``TimeSeries`` instance (the predictions `pred_series`).
-    intersect
-        A boolean for whether to only consider the time intersection between `series_a` and `series_b`
-    stochastic_quantile
-        Optionally, for stochastic predicted series, return either all sample values with (`stochastic_quantile=None`)
-        or any deterministic quantile sample values by setting `stochastic_quantile=quantile` {>=0,<=1}.
-    remove_nan_union
-        By setting `remove_non_union` to True, sets all values from `series_a` and `series_b` to `np.nan` at indices
-        where any of the two series contain a NaN value. Only effective when `is_insample=False`.
-    is_insample
-        Whether `series_a` corresponds to the `insample` series for scaled metrics.
-
-    Raises
-    ------
-    ValueError
-        If `is_insample=False` and the two time series do not have at least a partially overlapping time index.
-    """
-
-    if not series_a.width == series_b.width:
-        raise_log(
-            ValueError("The two time series must have the same number of components"),
-            logger=logger,
-        )
-
-    if not isinstance(intersect, bool):
-        raise_log(ValueError("The intersect parameter must be a bool"), logger=logger)
-
-    make_copy = False
-    if not is_insample:
-        # get the time intersection and values of the two series (corresponds to `actual_series` and `pred_series`
-        if series_a.has_same_time_as(series_b) or not intersect:
-            vals_a_common = series_a.all_values(copy=make_copy)
-            vals_b_common = series_b.all_values(copy=make_copy)
-        else:
-            vals_a_common = series_a.slice_intersect_values(series_b, copy=make_copy)
-            vals_b_common = series_b.slice_intersect_values(series_a, copy=make_copy)
-
-        if not len(vals_a_common) == len(vals_b_common):
-            raise_log(
-                ValueError(
-                    "The two time series must have at least a partially overlapping time index."
-                ),
-                logger=logger,
-            )
-
-        vals_b_det = _get_values(vals_b_common, stochastic_quantile=stochastic_quantile)
-    else:
-        # for `insample` series we extract only values up until before start of `pred_series`
-        # find how many steps `insample` overlaps into `series_b`
-        end = (
-            n_steps_between(
-                end=series_b.start_time(), start=series_a.end_time(), freq=series_a.freq
-            )
-            - 1
-        )
-        if end > 0 or abs(end) >= len(series_a):
-            raise_log(
-                ValueError(
-                    "The `insample` series must start before the `pred_series` and "
-                    "extend at least until one time step before the start of `pred_series`."
-                ),
-                logger=logger,
-            )
-        end = end or None
-        vals_a_common = series_a.all_values(copy=make_copy)[:end]
-        vals_b_det = None
-    vals_a_det = _get_values(vals_a_common, stochastic_quantile=stochastic_quantile)
-
-    if not remove_nan_union or is_insample:
-        return vals_a_det, vals_b_det
-
-    b_is_deterministic = bool(len(vals_b_det.shape) == 2)
-    if b_is_deterministic:
-        isnan_mask = np.logical_or(np.isnan(vals_a_det), np.isnan(vals_b_det))
-        isnan_mask_pred = isnan_mask
-    else:
-        isnan_mask = np.logical_or(
-            np.isnan(vals_a_det), np.isnan(vals_b_det).any(axis=2)
-        )
-        isnan_mask_pred = np.repeat(
-            np.expand_dims(isnan_mask, axis=-1), vals_b_det.shape[2], axis=2
-        )
-    return np.where(isnan_mask, np.nan, vals_a_det), np.where(
-        isnan_mask_pred, np.nan, vals_b_det
-    )
-
-
-def _get_wrapped_metric(
-    func: Callable[..., METRIC_OUTPUT_TYPE],
-) -> Callable[..., METRIC_OUTPUT_TYPE]:
-    """Returns the inner metric function `func` which bypasses the decorators `multi_ts_support` and
-    `multivariate_support`. It significantly decreases process time compared to calling `func` directly.
-    Only use this to compute a pre-defined metric within the scope of another metric.
-    """
-    return func.__wrapped__.__wrapped__
-
-
-def _get_reduction(
-    kwargs, params, red_name, axis, sanity_check: bool = True
-) -> Optional[Callable[..., np.ndarray]]:
-    """Returns the reduction function either from user kwargs or metric default.
-    Optionally performs sanity checks for presence of `axis` parameter, and correct output type and
-    reduced shape."""
-    if red_name not in params:
-        return None
-
-    red_fn = kwargs[red_name] if red_name in kwargs else params[red_name].default
-    if not sanity_check:
-        return red_fn
-
-    if red_fn is not None:
-        red_params = inspect.signature(red_fn).parameters
-        if "axis" not in red_params:
-            raise_log(
-                ValueError(
-                    f"Invalid `{red_name}` function: Must have a parameter called `axis`."
-                ),
-                logger=logger,
-            )
-        # verify `red_fn` reduces to array with correct shape
-        shape_in = (2, 1) if axis == 0 else (1, 2)
-        out = red_fn(np.zeros(shape_in), axis=axis)
-
-        if not isinstance(out, np.ndarray):
-            raise_log(
-                ValueError(
-                    f"Invalid `{red_name}` function output type: Expected type "
-                    f"`np.ndarray`, received type=`{type(out)}`."
-                ),
-                logger=logger,
-            )
-        shape_invalid = out.shape != (1,)
-        if shape_invalid:
-            raise_log(
-                ValueError(
-                    f"Invalid `{red_name}` function output shape: The function must reduce an input "
-                    f"`np.ndarray` of shape (t, c) to a `np.ndarray` of shape `(c,)`. "
-                    f"However, the function reduced a test array of shape `{shape_in}` to "
-                    f"`{out.shape}`."
-                ),
-                logger=logger,
-            )
-    return red_fn
-
-
-def _get_error_scale(
-    insample: TimeSeries,
-    pred_series: TimeSeries,
-    m: int,
-    metric: str,
-):
-    """Computes the error scale based on a naive seasonal forecasts on `insample` values with seasonality `m`."""
-    if not isinstance(m, int):
-        raise_log(
-            ValueError(f"Seasonality `m` must be of type `int`, recevied `m={m}`"),
-            logger=logger,
-        )
-
-    # `x_t` are the true `y` values before the start of `y_pred`
-    x_t, _ = _get_values_or_raise(
-        insample, pred_series, intersect=False, remove_nan_union=False, is_insample=True
-    )
-    diff = x_t[m:] - x_t[:-m]
-    if metric == "mae":
-        scale = np.nanmean(np.abs(diff), axis=TIME_AX)
-    elif metric == "mse":
-        scale = np.nanmean(np.power(diff, 2), axis=TIME_AX)
-    elif metric == "rmse":
-        scale = np.sqrt(np.nanmean(np.power(diff, 2), axis=TIME_AX))
-    else:
-        raise_log(
-            ValueError(
-                f"unknown `metric={metric}`. Must be one of ('mae', 'mse', 'rmse')."
-            ),
-            logger=logger,
-        )
-
-    if np.isclose(scale, 0.0).any():
-        raise_log(ValueError("cannot use MASE with periodical signals"), logger=logger)
-    return scale
 
 
 @multi_ts_support
 @multivariate_support
 def err(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Error (ERR).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column and time step :math:`t` as:
+    component/column, (optional) quantile, and time step :math:`t` as:
 
     .. math:: y_t - \\hat{y}_t
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -496,6 +73,8 @@ def err(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -507,42 +86,51 @@ def err(
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
+        `len(q) > 1`. For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - single uni/multivariate series and at least `time_reduction=None`.
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
     y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=False
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=False,
+        q=q,
     )
     return y_true - y_pred
 
@@ -550,24 +138,27 @@ def err(
 @multi_ts_support
 @multivariate_support
 def merr(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Error (MERR).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and (optional) quantile as:
 
     .. math:: \\frac{1}{T}\\sum_{t=1}^T{(y_t - \\hat{y}_t)}
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -578,39 +169,47 @@ def merr(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.nanmean(
@@ -618,6 +217,7 @@ def merr(
             actual_series,
             pred_series,
             intersect,
+            q=q,
         ),
         axis=TIME_AX,
     )
@@ -626,25 +226,28 @@ def merr(
 @multi_ts_support
 @multivariate_support
 def ae(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Absolute Error (AE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column and time step :math:`t` as:
+    component/column, (optional) quantile, and time step :math:`t` as:
 
     .. math:: |y_t - \\hat{y}_t|
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -655,6 +258,8 @@ def ae(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -666,47 +271,51 @@ def ae(
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
-    series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
+        `len(q) > 1`. For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - single uni/multivariate series and at least `time_reduction=None`.
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
     y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=False
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=False,
+        q=q,
     )
     return np.abs(y_true - y_pred)
 
@@ -714,24 +323,27 @@ def ae(
 @multi_ts_support
 @multivariate_support
 def mae(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Error (MAE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and (optional) quantile as:
 
     .. math:: \\frac{1}{T}\\sum_{t=1}^T{|y_t - \\hat{y}_t|}
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -742,44 +354,47 @@ def mae(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
-    series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.nanmean(
@@ -787,6 +402,7 @@ def mae(
             actual_series,
             pred_series,
             intersect,
+            q=q,
         ),
         axis=TIME_AX,
     )
@@ -795,24 +411,27 @@ def mae(
 @multi_ts_support
 @multivariate_support
 def ase(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    insample: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    insample: TimeSeriesLike,
     m: int = 1,
     intersect: bool = True,
     *,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Absolute Scaled Error (ASE) (see [1]_ for more information on scaled forecasting errors).
 
     It is the Absolute Error (AE) scaled by the Mean AE (MAE) of the naive m-seasonal forecast.
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column and time step :math:`t` as:
+    component/column, (optional) quantile, and time step :math:`t` as:
 
     .. math:: \\frac{AE(y_{t_p+1:t_p+T}, \\hat{y}_{t_p+1:t_p+T})}{E_m},
 
@@ -822,8 +441,9 @@ def ase(
 
     .. math:: E_m = MAE(y_{m:t_p}, y_{0:t_p - m}).
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -841,6 +461,15 @@ def ase(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is
+        constant or perfectly seasonal with period ``m``.
+
+        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
+          when the numerator is also zero (on par with naive baseline), and emits a warning.
+        * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -852,43 +481,48 @@ def ase(
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
     ValueError
-        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one
-        time step before the start of the corresponding forecast in `pred_series`.
+        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast
+        in  `pred_series`.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
+        `len(q) > 1`. For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - single uni/multivariate series and at least `time_reduction=None`.
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
 
     References
@@ -900,30 +534,34 @@ def ase(
         actual_series,
         pred_series,
         intersect,
+        q=q,
     )
-    return errors / error_scale
+    return _safe_scaled_divide(errors, error_scale, zero_division=zero_division)
 
 
 @multi_ts_support
 @multivariate_support
 def mase(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    insample: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    insample: TimeSeriesLike,
     m: int = 1,
     intersect: bool = True,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Scaled Error (MASE) (see [1]_ for more information on scaled forecasting errors).
 
     It is the Mean Absolute Error (MAE) scaled by the MAE of the naive m-seasonal forecast.
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and (optional) quantile as:
 
     .. math:: \\frac{MAE(y_{t_p+1:t_p+T}, \\hat{y}_{t_p+1:t_p+T})}{E_m},
 
@@ -933,8 +571,9 @@ def mase(
 
     .. math:: E_m = MAE(y_{m:t_p}, y_{0:t_p - m}).
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -952,45 +591,60 @@ def mase(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is
+        constant or perfectly seasonal with period ``m``.
+
+        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
+          when the numerator is also zero (on par with naive baseline), and emits a warning.
+        * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
     ValueError
-        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one
-        time step before the start of the corresponding forecast in `pred_series`.
+        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast
+        in  `pred_series`.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
 
     References
@@ -1004,6 +658,8 @@ def mase(
             insample,
             m=m,
             intersect=intersect,
+            q=q,
+            zero_division=zero_division,
         ),
         axis=TIME_AX,
     )
@@ -1012,25 +668,28 @@ def mase(
 @multi_ts_support
 @multivariate_support
 def se(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Squared Error (SE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column and time step :math:`t` as:
+    component/column, (optional) quantile, and time step :math:`t` as:
 
     .. math:: (y_t - \\hat{y}_t)^2.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1041,6 +700,8 @@ def se(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -1052,42 +713,51 @@ def se(
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
+        `len(q) > 1`. For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - single uni/multivariate series and at least `time_reduction=None`.
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
     y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=False
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=False,
+        q=q,
     )
     return (y_true - y_pred) ** 2
 
@@ -1095,24 +765,27 @@ def se(
 @multi_ts_support
 @multivariate_support
 def mse(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Squared Error (MSE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and (optional) quantile as:
 
     .. math:: \\frac{1}{T}\\sum_{t=1}^T{(y_t - \\hat{y}_t)^2}.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1123,39 +796,47 @@ def mse(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.nanmean(
@@ -1163,6 +844,7 @@ def mse(
             actual_series,
             pred_series,
             intersect,
+            q=q,
         ),
         axis=TIME_AX,
     )
@@ -1171,24 +853,27 @@ def mse(
 @multi_ts_support
 @multivariate_support
 def sse(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    insample: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    insample: TimeSeriesLike,
     m: int = 1,
     intersect: bool = True,
     *,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Squared Scaled Error (SSE) (see [1]_ for more information on scaled forecasting errors).
 
     It is the Squared Error (SE) scaled by the Mean SE (MSE) of the naive m-seasonal forecast.
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column and time step :math:`t` as:
+    component/column, (optional) quantile, and time step :math:`t` as:
 
     .. math:: \\frac{SE(y_{t_p+1:t_p+T}, \\hat{y}_{t_p+1:t_p+T})}{E_m},
 
@@ -1198,8 +883,9 @@ def sse(
 
     .. math:: E_m = MSE(y_{m:t_p}, y_{0:t_p - m}).
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1217,6 +903,15 @@ def sse(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is
+        constant or perfectly seasonal with period ``m``.
+
+        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
+          when the numerator is also zero (on par with naive baseline), and emits a warning.
+        * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -1228,43 +923,48 @@ def sse(
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
     ValueError
-        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one
-        time step before the start of the corresponding forecast in `pred_series`.
+        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast
+        in  `pred_series`.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
+        `len(q) > 1`. For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - single uni/multivariate series and at least `time_reduction=None`.
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
 
     References
@@ -1276,30 +976,34 @@ def sse(
         actual_series,
         pred_series,
         intersect,
+        q=q,
     )
-    return errors / error_scale
+    return _safe_scaled_divide(errors, error_scale, zero_division=zero_division)
 
 
 @multi_ts_support
 @multivariate_support
 def msse(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    insample: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    insample: TimeSeriesLike,
     m: int = 1,
     intersect: bool = True,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Squared Scaled Error (MSSE) (see [1]_ for more information on scaled forecasting errors).
 
     It is the Mean Squared Error (MSE) scaled by the MSE of the naive m-seasonal forecast.
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and (optional) quantile as:
 
     .. math:: \\frac{MSE(y_{t_p+1:t_p+T}, \\hat{y}_{t_p+1:t_p+T})}{E_m},
 
@@ -1309,8 +1013,9 @@ def msse(
 
     .. math:: E_m = MSE(y_{m:t_p}, y_{0:t_p - m}).
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1328,45 +1033,60 @@ def msse(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is
+        constant or perfectly seasonal with period ``m``.
+
+        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
+          when the numerator is also zero (on par with naive baseline), and emits a warning.
+        * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
     ValueError
-        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one
-        time step before the start of the corresponding forecast in `pred_series`.
+        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast
+        in  `pred_series`.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
 
     References
@@ -1380,6 +1100,8 @@ def msse(
             insample,
             m=m,
             intersect=intersect,
+            q=q,
+            zero_division=zero_division,
         ),
         axis=TIME_AX,
     )
@@ -1388,24 +1110,27 @@ def msse(
 @multi_ts_support
 @multivariate_support
 def rmse(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Root Mean Squared Error (RMSE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and (optional) quantile as:
 
     .. math:: \\sqrt{\\frac{1}{T}\\sum_{t=1}^T{(y_t - \\hat{y}_t)^2}}
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1416,39 +1141,47 @@ def rmse(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.sqrt(
@@ -1456,6 +1189,7 @@ def rmse(
             actual_series,
             pred_series,
             intersect,
+            q=q,
         )
     )
 
@@ -1463,23 +1197,26 @@ def rmse(
 @multi_ts_support
 @multivariate_support
 def rmsse(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    insample: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    insample: TimeSeriesLike,
     m: int = 1,
     intersect: bool = True,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Root Mean Squared Scaled Error (RMSSE) (see [1]_ for more information on scaled forecasting errors).
 
     It is the Root Mean Squared Error (RMSE) scaled by the RMSE of the naive m-seasonal forecast.
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and (optional) quantile as:
 
     .. math:: \\frac{RMSE(y_{t_p+1:t_p+T}, \\hat{y}_{t_p+1:t_p+T})}{E_m},
 
@@ -1489,8 +1226,9 @@ def rmsse(
 
     .. math:: E_m = RMSE(y_{m:t_p}, y_{0:t_p - m}).
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1508,45 +1246,60 @@ def rmsse(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when the error scale (denominator) is zero, i.e., when the ``insample`` series is
+        constant or perfectly seasonal with period ``m``.
+
+        * ``"warn"`` (default) – returns ``np.nan`` when the numerator is non-zero (undefined ratio) and ``1.0``
+          when the numerator is also zero (on par with naive baseline), and emits a warning.
+        * ``"raise"`` – raises a ``ValueError`` (legacy behavior).
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
     ValueError
-        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one
-        time step before the start of the corresponding forecast in `pred_series`.
+        If any of the `insample` series ends earlier than one time step before the start of the corresponding forecast
+        in  `pred_series`.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
 
     References
@@ -1558,34 +1311,38 @@ def rmsse(
         actual_series,
         pred_series,
         intersect,
+        q=q,
     )
-    return errors / error_scale
+    return _safe_scaled_divide(errors, error_scale, zero_division=zero_division)
 
 
 @multi_ts_support
 @multivariate_support
 def sle(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Squared Log Error (SLE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column and time step :math:`t` as:
+    component/column, (optional) quantile, and time step :math:`t` as:
 
     .. math:: \\left(\\log{(y_t + 1)} - \\log{(\\hat{y} + 1)}\\right)^2
 
     using the natural logarithm.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1596,6 +1353,8 @@ def sle(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -1607,42 +1366,51 @@ def sle(
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
+        `len(q) > 1`. For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - single uni/multivariate series and at least `time_reduction=None`.
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
     y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=False
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=False,
+        q=q,
     )
     y_true, y_pred = np.log(y_true + 1), np.log(y_pred + 1)
     return (y_true - y_pred) ** 2
@@ -1651,26 +1419,29 @@ def sle(
 @multi_ts_support
 @multivariate_support
 def rmsle(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Root Mean Squared Log Error (RMSLE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and (optional) quantile as:
 
     .. math:: \\sqrt{\\frac{1}{T}\\sum_{t=1}^T{\\left(\\log{(y_t + 1)} - \\log{(\\hat{y}_t + 1)}\\right)^2}}
 
     using the natural logarithm.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1681,39 +1452,47 @@ def rmsle(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.sqrt(
@@ -1722,6 +1501,7 @@ def rmsle(
                 actual_series,
                 pred_series,
                 intersect,
+                q=q,
             ),
             axis=TIME_AX,
         )
@@ -1731,15 +1511,17 @@ def rmsle(
 @multi_ts_support
 @multivariate_support
 def ape(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Absolute Percentage Error (APE).
 
@@ -1751,8 +1533,9 @@ def ape(
     Note that it will raise a `ValueError` if :math:`y_t = 0` for some :math:`t`. Consider using
     the Absolute Scaled Error (:func:`~darts.metrics.metrics.ase`) in these cases.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1763,6 +1546,8 @@ def ape(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -1774,16 +1559,19 @@ def ape(
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -1793,28 +1581,34 @@ def ape(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
+        `len(q) > 1`. For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - single uni/multivariate series and at least `time_reduction=None`.
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
     y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=False
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=False,
+        q=q,
     )
     if not (y_true != 0).all():
         raise_log(
@@ -1829,27 +1623,30 @@ def ape(
 @multi_ts_support
 @multivariate_support
 def mape(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Percentage Error (MAPE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
-    percentage value per component/column with:
+    percentage value per component/column and (optional) quantile with:
 
     .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T}{\\left| \\frac{y_t - \\hat{y}_t}{y_t} \\right|}
 
     Note that it will raise a `ValueError` if :math:`y_t = 0` for some :math:`t`. Consider using
     the Mean Absolute Scaled Error (:func:`~darts.metrics.metrics.mase`) in these cases.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1860,22 +1657,27 @@ def mape(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -1885,19 +1687,22 @@ def mape(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
@@ -1906,6 +1711,7 @@ def mape(
             actual_series,
             pred_series,
             intersect,
+            q=q,
         ),
         axis=TIME_AX,
     )
@@ -1913,30 +1719,28 @@ def mape(
 
 @multi_ts_support
 @multivariate_support
-def sape(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+def wmape(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
-    """symmetric Absolute Percentage Error (sAPE).
+    """Weighted Mean Absolute Percentage Error (WMAPE). (see [1]_ for more information).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
-    percentage value per component/column and time step :math:`t` with:
+    percentage value per component/column and (optional) quantile with:
 
-    .. math::
-        200 \\cdot \\frac{\\left| y_t - \\hat{y}_t \\right|}{\\left| y_t \\right| + \\left| \\hat{y}_t \\right|}
+    .. math:: 100 \\cdot \\frac{\\sum_{t=1}^T |y_t - \\hat{y}_t|}{\\sum_{t=1}^T |y_t|}
 
-    Note that it will raise a `ValueError` if :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0` for some
-    :math:`t`. Consider using the Absolute Scaled Error (:func:`~darts.metrics.metrics.ase`)  in these cases.
-
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1947,6 +1751,115 @@ def sape(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Raises
+    ------
+    ValueError
+        If `actual_series` contains some zeros.
+
+    Returns
+    -------
+    float
+        A single metric score (when `len(q) <= 1`) for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
+
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    References
+    ----------
+    .. [1] https://en.wikipedia.org/wiki/Mean_absolute_percentage_error#WMAPE
+    """
+
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=False,
+        q=q,
+    )
+
+    return (
+        100.0
+        * np.nansum(np.abs(y_true - y_pred), axis=TIME_AX)
+        / np.nansum(np.abs(y_true), axis=TIME_AX)
+    )
+
+
+@multi_ts_support
+@multivariate_support
+def sape(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """symmetric Absolute Percentage Error (sAPE).
+
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
+    percentage value per component/column, (optional) quantile and time step :math:`t` with:
+
+    .. math::
+        200 \\cdot \\frac{\\left| y_t - \\hat{y}_t \\right|}{\\left| y_t \\right| + \\left| \\hat{y}_t \\right|}
+
+    When :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0` for some :math:`t` (i.e., both actual and
+    prediction are zero), the error for that time step is defined as 0.
+
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -1958,85 +1871,91 @@ def sape(
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
-
-    Raises
-    ------
-    ValueError
-        If `actual_series` and `pred_series` contain some zeros at the same time index.
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
+        `len(q) > 1`. For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - single uni/multivariate series and at least `time_reduction=None`.
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
     y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=True,
+        q=q,
     )
-    if not np.logical_or(y_true != 0, y_pred != 0).all():
-        raise_log(
-            ValueError(
-                "`actual_series` must be strictly positive to compute the sMAPE."
-            ),
-            logger=logger,
-        )
-    return 200.0 * np.abs(y_true - y_pred) / (np.abs(y_true) + np.abs(y_pred))
+    numerator = 200 * np.abs(y_true - y_pred)
+    denominator = np.abs(y_true) + np.abs(y_pred)
+    return np.divide(
+        numerator,
+        denominator,
+        out=np.zeros_like(numerator, dtype=y_true.dtype),
+        where=denominator != 0,
+    )
 
 
 @multi_ts_support
 @multivariate_support
 def smape(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """symmetric Mean Absolute Percentage Error (sMAPE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
-    percentage value per component/column with:
+    percentage value per component/column and (optional) quantile with:
 
     .. math::
         200 \\cdot \\frac{1}{T}
         \\sum_{t=1}^{T}{\\frac{\\left| y_t - \\hat{y}_t \\right|}{\\left| y_t \\right| + \\left| \\hat{y}_t \\right|} }
 
-    Note that it will raise a `ValueError` if :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0`
-    for some :math:`t`. Consider using the Mean Absolute Scaled Error (:func:`~darts.metrics.metrics.mase`) in these
-    cases.
+    When :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0` for some :math:`t` (i.e., both actual and
+    prediction are zero), the error for that time step is 0.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -2047,44 +1966,47 @@ def smape(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
-
-    Raises
-    ------
-    ValueError
-        If the `actual_series` and the `pred_series` contain some zeros at the same time index.
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
@@ -2093,6 +2015,7 @@ def smape(
             actual_series,
             pred_series,
             intersect,
+            q=q,
         ),
         axis=TIME_AX,
     )
@@ -2101,25 +2024,28 @@ def smape(
 @multi_ts_support
 @multivariate_support
 def ope(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Overall Percentage Error (OPE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
-    percentage value per component/column with:
+    percentage value per component/column and (optional) quantile with:
 
     .. math:: 100 \\cdot \\left| \\frac{\\sum_{t=1}^{T}{y_t}
               - \\sum_{t=1}^{T}{\\hat{y}_t}}{\\sum_{t=1}^{T}{y_t}} \\right|.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -2130,22 +2056,27 @@ def ope(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -2155,24 +2086,31 @@ def ope(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
     y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=True,
+        q=q,
     )
     y_true_sum, y_pred_sum = (
         np.nansum(y_true, axis=TIME_AX),
@@ -2191,25 +2129,28 @@ def ope(
 @multi_ts_support
 @multivariate_support
 def arre(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Absolute Ranged Relative Error (ARRE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
-    percentage value per component/column and time step :math:`t` with:
+    percentage value per component/column, (optional) quantile and time step :math:`t` with:
 
     .. math:: 100 \\cdot \\left| \\frac{y_t - \\hat{y}_t} {\\max_t{y_t} - \\min_t{y_t}} \\right|
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -2220,6 +2161,8 @@ def arre(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -2231,16 +2174,19 @@ def arre(
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -2250,28 +2196,34 @@ def arre(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
+        `len(q) > 1`. For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - single uni/multivariate series and at least `time_reduction=None`.
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
     y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=True,
+        q=q,
     )
     y_max, y_min = np.nanmax(y_true, axis=TIME_AX), np.nanmin(y_true, axis=TIME_AX)
     if not (y_max > y_min).all():
@@ -2289,25 +2241,28 @@ def arre(
 @multi_ts_support
 @multivariate_support
 def marre(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Ranged Relative Error (MARRE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
-    percentage value per component/column with:
+    percentage value per component/column and (optional) quantile with:
 
     .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T} {\\left| \\frac{y_t - \\hat{y}_t} {\\max_t{y_t} -
               \\min_t{y_t}} \\right|}
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -2318,22 +2273,27 @@ def marre(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Raises
     ------
@@ -2343,17 +2303,17 @@ def marre(
     float
         A single metric score for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
         - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
         A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
 
-        - single multivariate series and at least `component_reduction=None`.
+        - a single multivariate series and at least `component_reduction=None`.
         - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.nanmean(
@@ -2361,6 +2321,7 @@ def marre(
             actual_series,
             pred_series,
             intersect,
+            q=q,
         ),
         axis=TIME_AX,
     )
@@ -2369,19 +2330,21 @@ def marre(
 @multi_ts_support
 @multivariate_support
 def r2_score(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Coefficient of Determination :math:`R^2` (see [1]_ for more details).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and (optional) quantile as:
 
     .. math:: 1 - \\frac{\\sum_{t=1}^T{(y_t - \\hat{y}_t)^2}}{\\sum_{t=1}^T{(y_t - \\bar{y})^2}},
 
@@ -2389,8 +2352,9 @@ def r2_score(
 
     This metric is not symmetric.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -2401,39 +2365,47 @@ def r2_score(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
 
     References
@@ -2441,7 +2413,11 @@ def r2_score(
     .. [1] https://en.wikipedia.org/wiki/Coefficient_of_determination
     """
     y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=True,
+        q=q,
     )
     ss_errors = np.nansum((y_true - y_pred) ** 2, axis=TIME_AX)
     y_hat = np.nanmean(y_true, axis=TIME_AX)
@@ -2452,27 +2428,30 @@ def r2_score(
 @multi_ts_support
 @multivariate_support
 def coefficient_of_variation(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Coefficient of Variation (percentage).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as a percentage value with:
+    component/column and (optional) quantile as a percentage value with:
 
     .. math:: 100 \\cdot \\text{RMSE}(y_t, \\hat{y}_t) / \\bar{y},
 
     where :math:`RMSE` is the Root Mean Squared Error (:func:`~darts.metrics.metrics.rmse`), and :math:`\\bar{y}` is
     the average of :math:`y` over all time steps.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -2483,44 +2462,56 @@ def coefficient_of_variation(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
     y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=True,
+        q=q,
     )
     # not calling rmse as y_true and y_pred are np.ndarray
     return (
@@ -2530,24 +2521,209 @@ def coefficient_of_variation(
     )
 
 
+@multi_ts_support
+@multivariate_support
+def _tolerance_coverages(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    min_tolerance: float = 0.0,
+    max_tolerance: float = 1.0,
+    step: float = 0.01,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Computes the tolerance coverages for different tolerance levels.
+
+    More info in metric `autc()`.
+    """
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=True,
+        q=q,
+    )
+
+    # range of actual values (max - min) for each component
+    y_range = np.nanmax(y_true, axis=TIME_AX) - np.nanmin(y_true, axis=TIME_AX)
+
+    # handle case where range is zero (constant series)
+    if np.any(y_range == 0):
+        raise ValueError(
+            "The range of actual values (max - min) must be strictly positive for all "
+            "components to compute the AUTC. Found zero range for at least one component."
+        )
+
+    tolerances = _get_tolerance_levels(
+        min_tolerance=min_tolerance,
+        max_tolerance=max_tolerance,
+        step=step,
+    )
+
+    # compute absolute errors normalized by half the range
+    abs_errors = np.abs(y_true - y_pred)
+    half_range = y_range / 2
+    normalized_errors = abs_errors / half_range
+
+    # get coverage for each tolerance level (fraction of points within tolerance)
+    # -> (n components, n quantiles, n coverages)
+    coverages = np.nanmean(
+        np.expand_dims(normalized_errors, -1) <= tolerances, axis=TIME_AX
+    )
+    # 'abuse' the first dimension which is normally the time dimension for the coverages
+    # -> (n coverages, n components, n quantiles)
+    return coverages.transpose((2, 0, 1))
+
+
+@multi_ts_support
+@multivariate_support
+def autc(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    min_tolerance: float = 0.0,
+    max_tolerance: float = 1.0,
+    step: float = 0.01,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Area Under Tolerance Curve (AUTC).
+
+    AUTC measures the overall alignment between actual and predicted series across a range of tolerance levels.
+    For each tolerance level, it computes the fraction of points where the prediction is within ±X% of the actual
+    value.
+    The AUTC is the normalized area under this curve, providing a single score in [0, 1] where higher is better.
+
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, tolerance levels
+    :math:`\\tau \\in [0, 1]`, and half-range :math:`H = (\\max(y) - \\min(y)) / 2`:
+
+    .. math::
+
+        \\text{Coverage}(\\tau) = \\frac{1}{T} \\sum_{t=1}^{T} \\mathbb{1}\\left[\\frac{|y_t - \\hat{y}_t|}{H}
+        \\leq \\tau\\right]
+
+        \\text{AUTC} = \\int_0^1 \\text{Coverage}(\\tau) \\, d\\tau
+
+    At tolerance :math:`\\tau`, a prediction is within tolerance if the error is within :math:`\\pm\\tau` of the
+    actual value (as a fraction of half the range). For example, at 10% tolerance, the prediction must be within
+    ±10% of the half-range, i.e., within ±5% of the full range.
+
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    min_tolerance
+        The minimum tolerance level as a fraction of the series half-range. Default is 0.0 (0%).
+    max_tolerance
+        The maximum tolerance level as a fraction of the series half-range. Default is 1.0 (100%).
+    step
+        The step size between tolerance levels. Default is 0.01 (1%).
+        For example, with defaults, tolerances are [0.0, 0.01, 0.02, ..., 1.0].
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Raises
+    ------
+    ValueError
+        If :math:`\\max_t{y_t} = \\min_t{y_t}` (constant series with zero range).
+
+    Returns
+    -------
+    float
+        A single metric score in [0, 1] (when `len(q) <= 1`) for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
+
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    See Also
+    --------
+    :func:`~darts.utils.statistics.plot_tolerance_curve` : Plot the tolerance curve for visual inspection.
+    """
+    coverages = _get_wrapped_metric(_tolerance_coverages)(
+        actual_series,
+        pred_series,
+        intersect,
+        q=q,
+    )
+    tolerances = _get_tolerance_levels(
+        min_tolerance=min_tolerance,
+        max_tolerance=max_tolerance,
+        step=step,
+    )
+    return _NP_TRAPEZOID_FN(coverages, tolerances, axis=0)
+
+
 # Dynamic Time Warping
 @multi_ts_support
 @multivariate_support
 def dtw_metric(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     metric: Callable[
         [
-            Union[TimeSeries, Sequence[TimeSeries]],
-            Union[TimeSeries, Sequence[TimeSeries]],
+            TimeSeriesLike,
+            TimeSeriesLike,
         ],
         METRIC_OUTPUT_TYPE,
     ] = mae,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
     **kwargs,
 ) -> METRIC_OUTPUT_TYPE:
     """
@@ -2572,33 +2748,39 @@ def dtw_metric(
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
@@ -2613,15 +2795,16 @@ def dtw_metric(
 @multi_ts_support
 @multivariate_support
 def qr(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    q: float = 0.5,
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] = 0.5,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Quantile Risk (QR)
 
@@ -2632,7 +2815,7 @@ def qr(
     sample values summed up along the time axis (QL computes the quantile and loss per time step).
 
     For the true series :math:`y` and predicted stochastic/probabilistic series (containing N samples) :math:`\\hat{y}`
-    of of shape :math:`T \\times N`, it is computed per column/component as:
+    of of shape :math:`T \\times N`, it is computed per column/component and quantile as:
 
     .. math:: 2 \\frac{QL(Z, \\hat{Z}_q)}{Z},
 
@@ -2646,44 +2829,50 @@ def qr(
         The (sequence of) actual series.
     pred_series
         The (sequence of) predicted series.
-    q
-        The quantile (float [0, 1]) of interest for the risk evaluation.
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     if not pred_series.is_stochastic:
@@ -2698,18 +2887,19 @@ def qr(
         actual_series,
         pred_series,
         intersect,
-        stochastic_quantile=None,
+        q=None,
         remove_nan_union=True,
     )
     z_true = np.nansum(z_true, axis=TIME_AX)
     z_hat = np.nansum(
         z_hat, axis=TIME_AX
     )  # aggregate all individual sample realizations
+    # quantile loss
+    q, _ = q
     z_hat_rho = np.quantile(
         z_hat, q=q, axis=1
-    )  # get the quantile from aggregated samples
+    ).T  # get the quantile from aggregated samples
 
-    # quantile loss
     errors = z_true - z_hat_rho
     losses = 2 * np.maximum((q - 1) * errors, q * errors)
     return losses / z_true
@@ -2718,30 +2908,32 @@ def qr(
 @multi_ts_support
 @multivariate_support
 def ql(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    q: float = 0.5,
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    time_reduction: Optional[Callable[..., np.ndarray]] = None,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] = 0.5,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Quantile Loss (QL).
 
     Also known as Pinball Loss. QL is a metric that quantifies the accuracy of a specific quantile :math:`q` from the
-    predicted value distribution of a stochastic/probabilistic `pred_series` containing N samples.
+    predicted deterministic quantiles or value distribution of a stochastic/probabilistic `pred_series` containing N
+    samples.
 
     QL computes the quantile of all sample values and the loss per time step.
 
     For the true series :math:`y` and predicted stochastic/probabilistic series (containing N samples) :math:`\\hat{y}`
-    of of shape :math:`T \\times N`, it is computed per column/component and time step :math:`t` as:
+    of of shape :math:`T \\times N`, it is computed per column/component, quantile and time step :math:`t` as:
 
     .. math:: 2 \\max((q - 1) (y_t - \\hat{y}_{t,q}), q (y_t - \\hat{y}_{t,q})),
 
-    where :math:`\\hat{y}_{t,q}` is the quantile :math:`q` of all predicted sample values at time :math:`t`.
+    where :math:`\\hat{y}_{t,q}` is quantile value :math:`q` (of all predicted quantiles or samples) at time :math:`t`.
     The factor `2` makes the loss more interpretable, as for `q=0.5` the loss is identical to the Absolute Error
     (:func:`~darts.metrics.metrics.ae`).
 
@@ -2751,11 +2943,11 @@ def ql(
         The (sequence of) actual series.
     pred_series
         The (sequence of) predicted series.
-    q
-        The quantile (float [0, 1]) of interest for the loss.
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -2767,55 +2959,52 @@ def ql(
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
         time axis. If `None`, will return a metric per time step.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
+        `len(q) > 1`. For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - single uni/multivariate series and at least `time_reduction=None`.
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
-    if not pred_series.is_stochastic:
-        raise_log(
-            ValueError(
-                "quantile/pinball loss (ql) should only be computed for "
-                "stochastic predicted TimeSeries."
-            ),
-            logger=logger,
-        )
-
     y_true, y_pred = _get_values_or_raise(
         actual_series,
         pred_series,
         intersect,
-        stochastic_quantile=q,
+        q=q,
         remove_nan_union=True,
     )
+    q, _ = q
     errors = y_true - y_pred
     losses = 2.0 * np.maximum((q - 1) * errors, q * errors)
     return losses
@@ -2824,30 +3013,32 @@ def ql(
 @multi_ts_support
 @multivariate_support
 def mql(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    q: float = 0.5,
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
     intersect: bool = True,
     *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] = 0.5,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
     verbose: bool = False,
+    name: str | None = None,
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Quantile Loss (MQL).
 
     Also known as Pinball Loss. QL is a metric that quantifies the accuracy of a specific quantile :math:`q` from the
-    predicted value distribution of a stochastic/probabilistic `pred_series` containing N samples.
+    predicted deterministic quantiles or value distribution of a stochastic/probabilistic `pred_series` containing N
+    samples.
 
     MQL first computes the quantile of all sample values and the loss per time step, and then takes the mean over the
     time axis.
 
     For the true series :math:`y` and predicted stochastic/probabilistic series (containing N samples) :math:`\\hat{y}`
-    of of shape :math:`T \\times N`, it is computed per column/component as:
+    of of shape :math:`T \\times N`, it is computed per column/component and quantile as:
 
     .. math:: 2 \\frac{1}{T}\\sum_{t=1}^T{\\max((q - 1) (y_t - \\hat{y}_{t,q}), q (y_t - \\hat{y}_{t,q}))},
 
-    where :math:`\\hat{y}_{t,q}` is the quantile :math:`q` of all predicted sample values at time :math:`t`.
+    where :math:`\\hat{y}_{t,q}` is quantile value :math:`q` (of all predicted quantiles or samples) at time :math:`t`.
     The factor `2` makes the loss more interpretable, as for `q=0.5` the loss is identical to the Mean Absolute Error
     (:func:`~darts.metrics.metrics.mae`).
 
@@ -2857,44 +3048,50 @@ def mql(
         The (sequence of) actual series.
     pred_series
         The (sequence of) predicted series.
-    q
-        The quantile (float [0, 1]) of interest for the loss.
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
         component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
         of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
         parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
-        series axis. If `None`, will return a metric per series.
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
 
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score (when `len(q) <= 1`) for:
 
-        - single univariate series.
-        - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
-        - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.nanmean(
@@ -2906,3 +3103,1606 @@ def mql(
         ),
         axis=TIME_AX,
     )
+
+
+@multi_ts_support
+@multivariate_support
+def crps(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Continuous Ranked Probability Score (CRPS).
+
+    CRPS is a proper scoring rule that generalises the Mean Absolute Error (MAE) to probabilistic forecasts.
+    It measures the compatibility of a predictive sample distribution with a scalar observation.
+
+    For the true series :math:`y` and predicted stochastic series (containing N samples) :math:`\\hat{y}`
+    of shape :math:`T \\times N`, it is computed per column/component and time step :math:`t` as:
+
+    .. math:: \\frac{1}{N}\\sum_{i=1}^{N}|\\hat{y}_{t,i} - y_t|
+              - \\frac{1}{2N^2}\\sum_{i=1}^{N}\\sum_{j=1}^{N}|\\hat{y}_{t,i} - \\hat{y}_{t,j}|,
+
+    where :math:`\\hat{y}_{t,i}` is the :math:`i`-th sample at time :math:`t`.
+
+    A CRPS of 0 indicates a perfect forecast. When all N samples are identical, CRPS reduces to the
+    Absolute Error (:func:`~darts.metrics.metrics.ae`).
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    time_reduction
+        Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        time axis. If `None`, will return a metric per time step.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    float
+        A single metric score for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n time steps, n components) without time- and
+        component reductions. For:
+
+        - the same input arguments that result in the `float` return case from above but with ``time_reduction=None``.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    Raises
+    ------
+    ValueError
+        If `pred_series` is not stochastic (i.e., does not contain multiple samples).
+    """
+    if not pred_series.is_stochastic:
+        raise_log(
+            ValueError(
+                "`pred_series` must be a stochastic (contain multiple predicted samples)."
+            ),
+            logger=logger,
+        )
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        q=None,
+        remove_nan_union=True,
+    )
+    # y_true: (T, C, 1), y_pred: (T, C, N)
+    n = y_pred.shape[SMPL_AX]
+    term1 = np.mean(np.abs(y_pred - y_true), axis=SMPL_AX)  # (T, C)
+
+    # term2: `sum of |x_i - x_j| over i,j` has complexity O(N^2);
+    # instead we can compute `2 * sum_k (2k - (n - 1)) * x_{(k)}` for sorted x and 0-based k;
+    # it gives identical result but more efficient with O(N log N) time and O(N) memory per (T, C) slice.
+    y_sorted = np.sort(y_pred, axis=SMPL_AX)
+    k = np.arange(n, dtype=y_pred.dtype)
+    coeff = 2.0 * k - (n - 1.0)
+    term2 = np.sum(coeff * y_sorted, axis=SMPL_AX) / (n**2)  # (T, C)
+    return (term1 - term2)[:, :, np.newaxis]  # (T, C, 1)
+
+
+@multi_ts_support
+@multivariate_support
+def mcrps(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Mean Continuous Ranked Probability Score (MCRPS).
+
+    MCRPS is a proper scoring rule that generalises the Mean Absolute Error (MAE) to probabilistic forecasts.
+    It measures the compatibility of a predictive sample distribution with scalar observations, averaged over
+    all time steps.
+
+    MCRPS first computes the CRPS per time step (:func:`~darts.metrics.metrics.crps`), and then takes the
+    mean over the time axis.
+
+    For the true series :math:`y` and predicted stochastic series (containing N samples) :math:`\\hat{y}`
+    of shape :math:`T \\times N`, it is computed per column/component as:
+
+    .. math:: \\frac{1}{T}\\sum_{t=1}^{T}\\left(
+              \\frac{1}{N}\\sum_{i=1}^{N}|\\hat{y}_{t,i} - y_t|
+              - \\frac{1}{2N^2}\\sum_{i=1}^{N}\\sum_{j=1}^{N}|\\hat{y}_{t,i} - \\hat{y}_{t,j}|
+              \\right),
+
+    where :math:`\\hat{y}_{t,i}` is the :math:`i`-th sample at time :math:`t`.
+
+    A MCRPS of 0 indicates a perfect forecast. When all N samples are identical, MCRPS reduces to the
+    Mean Absolute Error (:func:`~darts.metrics.metrics.mae`).
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    float
+        A single metric score for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components,) without component reduction.
+        For:
+
+        - the same input arguments that result in the `float` return case from above but with
+          `component_reduction=None`.
+        - a single multivariate series and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    Raises
+    ------
+    ValueError
+        If `pred_series` is not stochastic (i.e., does not contain multiple samples).
+    """
+    return np.nanmean(
+        _get_wrapped_metric(crps)(
+            actual_series,
+            pred_series,
+            intersect=intersect,
+        ),
+        axis=TIME_AX,
+    )
+
+
+@interval_support
+@multi_ts_support
+@multivariate_support
+def iw(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    q_interval: tuple[float, float] | Sequence[tuple[float, float]] | None = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Interval Width (IW).
+
+    IL gives the width / length of predicted quantile intervals.
+
+    For the true series :math:`y` and predicted stochastic or quantile series :math:`\\hat{y}` of length :math:`T`,
+    it is computed per component/column, quantile interval :math:`(q_l,q_h)`, and time step
+    :math:`t` as:
+
+    .. math:: U_t - L_t,
+
+    where :math:`U_t` are the predicted upper bound quantile values :math:`\\hat{y}_{q_h,t}` (of all predicted
+    quantiles or samples) at time :math:`t`, and :math:`L_t` are the predicted lower bound quantile values
+    :math:`\\hat{y}_{q_l,t}`.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    q_interval
+        The quantile interval(s) to compute the metric on. Must be a tuple (single interval) or sequence of tuples
+        (multiple intervals) with elements (low quantile, high quantile).
+    q
+        Quantiles `q` not supported by this metric; use `q_interval` instead.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    time_reduction
+        Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        time axis. If `None`, will return a metric per time step.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    float
+        A single metric score for (with `len(q_interval) <= 1`):
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time-
+        and component reductions, and shape (n time steps, n q intervals) without time- but with component reduction and
+        `len(q_interval) > 1`. For:
+
+        - the input from the `float` return case above but with `len(q_interval) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+    """
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=True,
+        q=q,
+    )
+    y_pred_lo, y_pred_hi = _get_quantile_intervals(y_pred, q=q, q_interval=q_interval)
+    return y_pred_hi - y_pred_lo
+
+
+@interval_support
+@multi_ts_support
+@multivariate_support
+def miw(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    q_interval: tuple[float, float] | Sequence[tuple[float, float]] | None = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Mean Interval Width (MIW).
+
+    MIW gives the time-aggregated width / length of predicted quantile intervals.
+
+    For the true series :math:`y` and predicted stochastic or quantile series :math:`\\hat{y}` of length :math:`T`,
+    it is computed per component/column, quantile interval :math:`(q_l,q_h)`, and time step
+    :math:`t` as:
+
+    .. math:: \\frac{1}{T}\\sum_{t=1}^T{U_t - L_t},
+
+    where :math:`U_t` are the predicted upper bound quantile values :math:`\\hat{y}_{q_h,t}` (of all predicted
+    quantiles or samples) at time :math:`t`, and :math:`L_t` are the predicted lower bound quantile values
+    :math:`\\hat{y}_{q_l,t}`.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    q_interval
+        The quantile interval(s) to compute the metric on. Must be a tuple (single interval) or sequence of tuples
+        (multiple intervals) with elements (low quantile, high quantile).
+    q
+        Quantiles `q` not supported by this metric; use `q_interval` instead.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    float
+        A single metric score for (with `len(q_interval) <= 1`):
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components * n q intervals,) without component reduction,
+        and shape (n q intervals,) with component reduction and `len(q_interval) > 1`.
+        For:
+
+        - the input from the `float` return case above but with `len(q_interval) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+    """
+    return np.nanmean(
+        _get_wrapped_metric(iw, n_wrappers=3)(
+            actual_series,
+            pred_series,
+            intersect,
+            q=q,
+            q_interval=q_interval,
+        ),
+        axis=TIME_AX,
+    )
+
+
+@interval_support
+@multi_ts_support
+@multivariate_support
+def iws(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    q_interval: tuple[float, float] | Sequence[tuple[float, float]] | None = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Interval Winkler Score (IWS) [1]_.
+
+    IWS gives the length / width of the quantile intervals plus a penalty if the observation is outside the interval.
+
+    For the true series :math:`y` and predicted stochastic or quantile series :math:`\\hat{y}` of length :math:`T`,
+    it is computed per component/column, quantile interval :math:`(q_l,q_h)`, and time step :math:`t` as:
+
+    .. math::
+        \\begin{equation}
+            \\begin{cases}
+                (U_t - L_t) + \\frac{1}{q_l} (L_t - y_t) & \\text{if } y_t < L_t \\\\
+                (U_t - L_t) & \\text{if } L_t \\leq y_t \\leq U_t \\\\
+                (U_t - L_t) + \\frac{1}{1 - q_h} (y_t - U_t) & \\text{if } y_t > U_t
+            \\end{cases}
+        \\end{equation}
+
+    where :math:`U_t` are the predicted upper bound quantile values :math:`\\hat{y}_{q_h,t}` (of all predicted
+    quantiles or samples) at time :math:`t`, and :math:`L_t` are the predicted lower bound quantile values
+    :math:`\\hat{y}_{q_l,t}`.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    q_interval
+        The quantile interval(s) to compute the metric on. Must be a tuple (single interval) or sequence of tuples
+        (multiple intervals) with elements (low quantile, high quantile).
+    q
+        Quantiles `q` not supported by this metric; use `q_interval` instead.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    time_reduction
+        Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        time axis. If `None`, will return a metric per time step.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    float
+        A single metric score for (with `len(q_interval) <= 1`):
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time-
+        and component reductions, and shape (n time steps, n q intervals) without time- but with component reduction and
+        `len(q_interval) > 1`. For:
+
+        - the input from the `float` return case above but with `len(q_interval) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    References
+    ----------
+    .. [1] https://otexts.com/fpp3/distaccuracy.html
+    """
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=True,
+        q=q,
+    )
+    y_pred_lo, y_pred_hi = _get_quantile_intervals(y_pred, q=q, q_interval=q_interval)
+    interval_width = y_pred_hi - y_pred_lo
+
+    # `c_alpha = 2 / alpha` corresponds to:
+    #   - `1 / (1 - q_hi)` for the high quantile
+    #   - `1 / q_lo` for the low quantile
+    c_alpha_hi = 1 / (1 - q_interval[:, 1])
+    c_alpha_lo = 1 / q_interval[:, 0]
+
+    score = np.where(
+        y_true < y_pred_lo,
+        interval_width + c_alpha_lo * (y_pred_lo - y_true),
+        np.where(
+            y_true > y_pred_hi,
+            interval_width + c_alpha_hi * (y_true - y_pred_hi),
+            interval_width,
+        ),
+    )
+    return score
+
+
+@interval_support
+@multi_ts_support
+@multivariate_support
+def miws(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    q_interval: tuple[float, float] | Sequence[tuple[float, float]] | None = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Mean Interval Winkler Score (IWS) [1]_.
+
+    MIWS gives the time-aggregated length / width of the quantile intervals plus a penalty if the observation is
+    outside the interval.
+
+    For the true series :math:`y` and predicted stochastic or quantile series :math:`\\hat{y}` of length :math:`T`,
+    it is computed per component/column, quantile interval :math:`(q_l,q_h)`, and time step :math:`t` as:
+
+    .. math:: \\frac{1}{T}\\sum_{t=1}^T{W_t(y_t, \\hat{y}_{t}, q_h, q_l)},
+
+    where :math:`W` is the Winkler Score :func:`~darts.metrics.metrics.iws`.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    q_interval
+        The quantile interval(s) to compute the metric on. Must be a tuple (single interval) or sequence of tuples
+        (multiple intervals) with elements (low quantile, high quantile).
+    q
+        Quantiles `q` not supported by this metric; use `q_interval` instead.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    float
+        A single metric score for (with `len(q_interval) <= 1`):
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components * n q intervals,) without component reduction,
+        and shape (n q intervals,) with component reduction and `len(q_interval) > 1`.
+        For:
+
+        - the input from the `float` return case above but with `len(q_interval) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    References
+    ----------
+    .. [1] https://otexts.com/fpp3/distaccuracy.html
+    """
+    return np.nanmean(
+        _get_wrapped_metric(iws, n_wrappers=3)(
+            actual_series,
+            pred_series,
+            intersect,
+            q=q,
+            q_interval=q_interval,
+        ),
+        axis=TIME_AX,
+    )
+
+
+@interval_support
+@multi_ts_support
+@multivariate_support
+def ic(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    q_interval: tuple[float, float] | Sequence[tuple[float, float]] | None = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Interval Coverage (IC).
+
+    IC gives a binary outcome with `1` if the observation is within the interval, and `0` otherwise.
+
+    For the true series :math:`y` and predicted stochastic or quantile series :math:`\\hat{y}` of length :math:`T`,
+    it is computed per component/column, quantile interval :math:`(q_l,q_h)`, and time step :math:`t` as:
+
+    .. math::
+        \\begin{equation}
+            \\begin{cases}
+                1 & \\text{if } L_t < y_t < U_t \\\\
+                0 & \\text{otherwise}
+            \\end{cases}
+        \\end{equation}
+
+    where :math:`U_t` are the predicted upper bound quantile values :math:`\\hat{y}_{q_h,t}` (of all predicted
+    quantiles or samples) at time :math:`t`, and :math:`L_t` are the predicted lower bound quantile values
+    :math:`\\hat{y}_{q_l,t}`.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    q_interval
+        The quantile interval(s) to compute the metric on. Must be a tuple (single interval) or sequence of tuples
+        (multiple intervals) with elements (low quantile, high quantile).
+    q
+        Quantiles `q` not supported by this metric; use `q_interval` instead.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    time_reduction
+        Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        time axis. If `None`, will return a metric per time step.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    float
+        A single metric score for (with `len(q_interval) <= 1`):
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time-
+        and component reductions, and shape (n time steps, n q intervals) without time- but with component reduction and
+        `len(q_interval) > 1`. For:
+
+        - the input from the `float` return case above but with `len(q_interval) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+    """
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=True,
+        q=q,
+    )
+    y_pred_lo, y_pred_hi = _get_quantile_intervals(y_pred, q=q, q_interval=q_interval)
+    return np.where((y_pred_lo <= y_true) & (y_true <= y_pred_hi), 1.0, 0.0)
+
+
+@interval_support
+@multi_ts_support
+@multivariate_support
+def mic(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    q_interval: tuple[float, float] | Sequence[tuple[float, float]] | None = None,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Mean Interval Coverage (MIC).
+
+    MIC gives the time-aggregated Interval Coverage :func:`~darts.metrics.metrics.ic` - the ratio of observations
+    being within the interval.
+
+    For the true series :math:`y` and predicted stochastic or quantile series :math:`\\hat{y}` of length :math:`T`,
+    it is computed per component/column, quantile interval :math:`(q_l,q_h)`, and time step :math:`t` as:
+
+    .. math:: \\frac{1}{T}\\sum_{t=1}^T{C(y_t, \\hat{y}_{t}, q_h, q_l)},
+
+    where :math:`C` is the Interval Coverage :func:`~darts.metrics.metrics.ic`.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    q_interval
+        The quantile interval(s) to compute the metric on. Must be a tuple (single interval) or sequence of tuples
+        (multiple intervals) with elements (low quantile, high quantile).
+    q
+        Quantiles `q` not supported by this metric; use `q_interval` instead.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    float
+        A single metric score for (with `len(q_interval) <= 1`):
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components * n q intervals,) without component reduction,
+        and shape (n q intervals,) with component reduction and `len(q_interval) > 1`.
+        For:
+
+        - the input from the `float` return case above but with `len(q_interval) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+    """
+    return np.nanmean(
+        _get_wrapped_metric(ic, n_wrappers=3)(
+            actual_series,
+            pred_series,
+            intersect,
+            q=q,
+            q_interval=q_interval,
+        ),
+        axis=TIME_AX,
+    )
+
+
+@interval_support
+@multi_ts_support
+@multivariate_support
+def incs_qr(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    q_interval: tuple[float, float] | Sequence[tuple[float, float]] | None = None,
+    symmetric: bool = True,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    time_reduction: Callable[..., np.ndarray] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Interval Non-Conformity Score for Quantile Regression (INCS_QR).
+
+    INCS_QR gives the absolute error to the closest predicted quantile interval bound when the observation is outside
+    the interval. Otherwise, it gives the negative absolute error to the closer bound.
+
+    For the true series :math:`y` and predicted stochastic or quantile series :math:`\\hat{y}` of length :math:`T`,
+    it is computed per component/column, quantile interval :math:`(q_l,q_h)`, and time step :math:`t` as:
+
+    .. math:: \\max(L_t - y_t, y_t - U_t)
+
+    where :math:`U_t` are the predicted upper bound quantile values :math:`\\hat{y}_{q_h,t}` (of all predicted
+    quantiles or samples) at time :math:`t`, and :math:`L_t` are the predicted lower bound quantile values
+    :math:`\\hat{y}_{q_l,t}`.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    q_interval
+        The quantile interval(s) to compute the metric on. Must be a tuple (single interval) or sequence of tuples
+        (multiple intervals) with elements (low quantile, high quantile).
+    symmetric
+        Whether to return symmetric non-conformity scores. If `False`, returns asymmetric scores (individual scores
+        for lower- and upper quantile interval bounds; returned in the component axis).
+    q
+        Quantiles `q` not supported by this metric; use `q_interval` instead.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    time_reduction
+        Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        time axis. If `None`, will return a metric per time step.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    float
+        A single metric score for (with `len(q_interval) <= 1`):
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time-
+        and component reductions, and shape (n time steps, n q intervals) without time- but with component reduction and
+        `len(q_interval) > 1`. For:
+
+        - the input from the `float` return case above but with `len(q_interval) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+    """
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=True,
+        q=q,
+    )
+    y_pred_lo, y_pred_hi = _get_quantile_intervals(y_pred, q=q, q_interval=q_interval)
+    if symmetric:
+        return np.maximum(y_pred_lo - y_true, y_true - y_pred_hi)
+    else:
+        return np.concatenate([y_pred_lo - y_true, y_true - y_pred_hi], axis=SMPL_AX)
+
+
+@interval_support
+@multi_ts_support
+@multivariate_support
+def mincs_qr(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    q_interval: tuple[float, float] | Sequence[tuple[float, float]] | None = None,
+    symmetric: bool = True,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Mean Interval Non-Conformity Score for Quantile Regression (MINCS_QR).
+
+    MINCS_QR gives the time-aggregated INCS_QR :func:`~darts.metrics.metrics.incs_qr`.
+
+    For the true series :math:`y` and predicted stochastic or quantile series :math:`\\hat{y}` of length :math:`T`,
+    it is computed per component/column, quantile interval :math:`(q_l,q_h)`, and time step :math:`t` as:
+
+    .. math:: \\frac{1}{T}\\sum_{t=1}^T{INCS_QR(y_t, \\hat{y}_{t}, q_h, q_l)},
+
+    where :math:`INCS_QR` is the Interval Non-Conformity Score for Quantile Regression
+    :func:`~darts.metrics.metrics.incs_qr`.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    q_interval
+        The quantile interval(s) to compute the metric on. Must be a tuple (single interval) or sequence of tuples
+        (multiple intervals) with elements (low quantile, high quantile).
+    symmetric
+        Whether to return symmetric non-conformity scores. If `False`, returns asymmetric scores (individual scores
+        for lower- and upper quantile interval bounds; returned in the component axis).
+    q
+        Quantiles `q` not supported by this metric; use `q_interval` instead.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    float
+        A single metric score for (with `len(q_interval) <= 1`):
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components * n q intervals,) without component reduction,
+        and shape (n q intervals,) with component reduction and `len(q_interval) > 1`.
+        For:
+
+        - the input from the `float` return case above but with `len(q_interval) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+    """
+    return np.nanmean(
+        _get_wrapped_metric(incs_qr, n_wrappers=3)(
+            actual_series,
+            pred_series,
+            intersect,
+            q=q,
+            q_interval=q_interval,
+            symmetric=symmetric,
+        ),
+        axis=TIME_AX,
+    )
+
+
+@classification_support
+@multi_ts_support
+@multivariate_support
+def accuracy(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Accuracy Score [1]_.
+
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as:
+
+    .. math:: \\frac{1}{T}\\sum_{t=1}^T\\mathbb{I}(y_t = \\hat{y}_t)
+
+    Where :math:`\\mathbb{I}` is the indicator function.
+
+    If :math:`\\hat{y}_t` are stochastic (contains several samples), it takes the label with the highest count from
+    each time step and component.
+    If :math:`\\hat{y}_t` represent the predict class label probabilities, it takes the label with the highest
+    probability from each time step and component.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    float
+        A single metric score for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components,) without component reduction.
+        For:
+
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    References
+    ----------
+    .. [1] https://en.wikipedia.org/wiki/Precision_and_recall
+    """
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=False,
+        is_classification=True,
+    )
+    return np.nanmean(np.array(y_true == y_pred, dtype=y_true.dtype), axis=TIME_AX)
+
+
+@classification_support
+@multi_ts_support
+@multivariate_support
+def precision(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    labels: int | list[int] | np.ndarray | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    label_reduction: str | None | _LabelReduction = _LabelReduction.MACRO,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Precision Score [1]_.
+
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as:
+
+    .. math:: \\frac{TP}{TP + FP}
+
+    Where :math:`TP` are the true positives, and :math:`FP` are the false positives.
+
+    If :math:`\\hat{y}_t` are stochastic (contains several samples), it takes the label with the highest count from
+    each time step and component.
+    If :math:`\\hat{y}_t` represent the predict class label probabilities, it takes the label with the highest
+    probability from each time step and component.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    labels
+        Optionally, the labels and their order to compute the metric on. If `None`, will use all unique values from the
+        actual and predicted series.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    label_reduction
+        The method to reduce the label-specific metrics. Can be one of:
+
+        - ``None``: no reduction, returns a metric per label.
+        - ``'micro'``: computes the metric globally by counting the total true positives, false negatives and false
+          positives.
+        - ``'macro'``: computes the metric for each label, and returns the unweighted mean.
+        - ``'weighted'``: computes the metric for each label, and returns the weighted mean by support (the number of
+          true instances for each label).
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    float
+        A single metric score (when `label_reduction != None`) for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components * n labels,) without component reduction,
+        and shape (n labels,) with component reduction. `n labels` is the number of labels when `label_reduction=None`,
+        and `1` otherwise.
+        For:
+
+        - the same input arguments that result in the `float` return case from above but with `label_reduction=None`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    References
+    ----------
+    .. [1] https://en.wikipedia.org/wiki/Precision_and_recall
+    """
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=False,
+        is_classification=True,
+    )
+
+    def _score_func(tn, fp, fn, tp) -> np.ndarray:
+        """Compute score from confusion matrix components."""
+        return tp / (tp + fp)
+
+    return _compute_score(
+        y_true,
+        y_pred,
+        score_func=_score_func,
+        label_reduction=label_reduction,
+        labels=labels,
+    )
+
+
+@classification_support
+@multi_ts_support
+@multivariate_support
+def recall(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    labels: int | list[int] | np.ndarray | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    label_reduction: str | None | _LabelReduction = _LabelReduction.MACRO,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Recall Score [1]_.
+
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as:
+
+    .. math:: \\frac{TP}{TP + FN}
+
+    Where :math:`TP` are the true positives, and :math:`FN` are the false negatives.
+
+    If :math:`\\hat{y}_t` are stochastic (contains several samples), it takes the label with the highest count from
+    each time step and component.
+    If :math:`\\hat{y}_t` represent the predict class label probabilities, it takes the label with the highest
+    probability from each time step and component.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    labels
+        Optionally, the labels and their order to compute the metric on. If `None`, will use all unique values from the
+        actual and predicted series.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    label_reduction
+        The method to reduce the label-specific metrics. Can be one of:
+
+        - ``None``: no reduction, returns a metric per label.
+        - ``'micro'``: computes the metric globally by counting the total true positives, false negatives and false
+          positives.
+        - ``'macro'``: computes the metric for each label, and returns the unweighted mean.
+        - ``'weighted'``: computes the metric for each label, and returns the weighted mean by support (the number of
+          true instances for each label).
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    float
+        A single metric score (when `label_reduction != None`) for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components * n labels,) without component reduction,
+        and shape (n labels,) with component reduction. `n labels` is the number of labels when `label_reduction=None`,
+        and `1` otherwise.
+        For:
+
+        - the same input arguments that result in the `float` return case from above but with `label_reduction=None`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    References
+    ----------
+    .. [1] https://en.wikipedia.org/wiki/Precision_and_recall
+    """
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=False,
+        is_classification=True,
+    )
+
+    def _score_func(tn, fp, fn, tp) -> np.ndarray:
+        """Compute score from confusion matrix components."""
+        return tp / (tp + fn)
+
+    return _compute_score(
+        y_true,
+        y_pred,
+        score_func=_score_func,
+        label_reduction=label_reduction,
+        labels=labels,
+    )
+
+
+@classification_support
+@multi_ts_support
+@multivariate_support
+def f1(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    labels: int | list[int] | np.ndarray | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    label_reduction: str | None | _LabelReduction = _LabelReduction.MACRO,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """F1 Score [1]_.
+
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as:
+
+    .. math:: \\frac{2TP}{2TP + FP + FN}
+
+    Where :math:`TP` are the true positives, :math:`FP` are the false positives, and :math:`FN` are the false
+    negatives.
+
+    If :math:`\\hat{y}_t` are stochastic (contains several samples), it takes the label with the highest count from
+    each time step and component.
+    If :math:`\\hat{y}_t` represent the predict class label probabilities, it takes the label with the highest
+    probability from each time step and component.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    labels
+        Optionally, the labels and their order to compute the metric on. If `None`, will use all unique values from the
+        actual and predicted series.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    label_reduction
+        The method to reduce the label-specific metrics. Can be one of:
+
+        - ``None``: no reduction, returns a metric per label.
+        - ``'micro'``: computes the metric globally by counting the total true positives, false negatives and false
+          positives.
+        - ``'macro'``: computes the metric for each label, and returns the unweighted mean.
+        - ``'weighted'``: computes the metric for each label, and returns the weighted mean by support (the number of
+          true instances for each label).
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    float
+        A single metric score (when `label_reduction != None`) for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components * n labels,) without component reduction,
+        and shape (n labels,) with component reduction. `n labels` is the number of labels when `label_reduction=None`,
+        and `1` otherwise.
+        For:
+
+        - the same input arguments that result in the `float` return case from above but with `label_reduction=None`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    References
+    ----------
+    .. [1] https://en.wikipedia.org/wiki/Precision_and_recall
+    """
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=False,
+        is_classification=True,
+    )
+
+    def _score_func(tn, fp, fn, tp) -> np.ndarray:
+        """Compute score from confusion matrix components."""
+        return 2 * tp / (2 * tp + fp + fn)
+
+    scores = _compute_score(
+        y_true,
+        y_pred,
+        score_func=_score_func,
+        label_reduction=label_reduction,
+        labels=labels,
+    )
+    return scores
+
+
+@classification_support
+@multi_ts_support
+@multivariate_support
+def confusion_matrix(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    *,
+    labels: int | list[int] | np.ndarray | None = None,
+    component_reduction: Callable[[np.ndarray], float] | None = np.nansum,
+    series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    name: str | None = None,
+) -> METRIC_OUTPUT_TYPE:
+    """Confusion Matrix (CM) [1]_.
+
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column and label as:
+
+    The confusion matrix :math:`C` is such that :math:`C_{i,j}` is equal to the number of observations
+    :math:`y` known to be in group :math:`i` and predicted :math:`\\hat{y}` to be in group :math:`j`.
+
+    If :math:`\\hat{y}_t` are stochastic (contains several samples), it takes the label with the highest count from
+    each time step and component.
+    If :math:`\\hat{y}_t` represent the predict class label probabilities, it takes the label with the highest
+    probability from each time step and component.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    labels
+        Optionally, the labels and their order to compute the metric on. If `None`, will use all unique values from the
+        actual and predicted series.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    name
+        Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Returns
+    -------
+    np.ndarray
+        The Confusion Matrix as a numpy array for a single series. The array has shape (n components, n labels,
+        n labels) without component reduction, and shape (n labels, n labels) with component reduction.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    References
+    ----------
+    .. [1] https://en.wikipedia.org/wiki/Confusion_matrix
+    """
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=False,
+        is_classification=True,
+    )
+    return _confusion_matrix(
+        y_true,
+        y_pred,
+        labels=labels,
+        compute_multilabel=False,
+    )[0]

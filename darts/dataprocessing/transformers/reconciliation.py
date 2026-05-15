@@ -9,23 +9,24 @@ A ``hierarchy`` is a dict that maps each component to their parent(s) in the hie
 It can be added to a ``TimeSeries`` using e.g., the :meth:`TimeSeries.with_hierarchy` method.
 """
 
-from typing import Any, Mapping, Optional
+from collections.abc import Mapping
+from typing import Any
 
 import numpy as np
 
+from darts import TimeSeries
 from darts.dataprocessing.transformers import (
     BaseDataTransformer,
     FittableDataTransformer,
 )
 from darts.logging import get_logger, raise_if_not
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
 def _get_summation_matrix(series: TimeSeries):
     """
-    Returns the matrix S for a series, as defined `here <https://otexts.com/fpp3/reconciliation.html>`_.
+    Returns the matrix S for a series, as defined `here <https://otexts.com/fpp3/reconciliation.html>`__.
 
     The dimension of the matrix is `(n, m)`, where `n` is the number of components and `m` the number
     of base components (components that are not the sum of any other components).
@@ -75,12 +76,18 @@ def _reconcile_from_S_and_G(
     """
     y_hat = series.all_values(copy=False)
     reconciled_values = S @ G @ y_hat  # (n, m) * (m, n) * (time, n, samples)
-    return series.with_values(reconciled_values)
+    return TimeSeries(
+        times=series.time_index,
+        values=reconciled_values,
+        components=series.components,
+        copy=False,
+        **series._attrs,
+    )
 
 
 class BottomUpReconciliator(BaseDataTransformer):
     """
-    Performs bottom up reconciliation, as defined `here <https://otexts.com/fpp3/reconciliation.html>`_.
+    Performs bottom up reconciliation, as defined `here <https://otexts.com/fpp3/reconciliation.html>`__.
     """
 
     @staticmethod
@@ -105,7 +112,7 @@ class BottomUpReconciliator(BaseDataTransformer):
 
 class TopDownReconciliator(FittableDataTransformer):
     """
-    Performs top down reconciliation, as defined `here <https://otexts.com/fpp3/reconciliation.html>`_.
+    Performs top down reconciliation, as defined `here <https://otexts.com/fpp3/reconciliation.html>`__.
 
     This estimator computes the proportions (of the base components w.r.t. the top component)
     based on the TimeSeries provided to the method :meth:`fit()`. If the historical series
@@ -185,7 +192,7 @@ class MinTReconciliator(FittableDataTransformer):
         References
         ----------
         .. [1] `Optimal forecast reconciliation for hierarchical and grouped time series through
-                trace minimization <https://robjhyndman.com/papers/MinT.pdf>`_
+                trace minimization <https://robjhyndman.com/papers/MinT.pdf>`__
         .. [2] https://otexts.com/fpp3/reconciliation.html#the-mint-optimal-reconciliation-approach
         """
         known_methods = ["ols", "wls", "wls_var", "wls_struct", "wls_val", "mint_cov"]
@@ -222,7 +229,7 @@ class MinTReconciliator(FittableDataTransformer):
         )
 
     @staticmethod
-    def get_matrices(series: Optional[TimeSeries], method: str):
+    def get_matrices(series: TimeSeries | None, method: str):
         """Returns the G matrix given a specified reconciliation method."""
         S = _get_summation_matrix(series)
         if method == "ols":
