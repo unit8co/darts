@@ -197,7 +197,7 @@ class _TransformerModule(PLForecastingModule):
 
         self.encoder = nn.Linear(input_size, d_model)
         self.positional_encoding = _PositionalEncoding(
-            d_model, dropout, self.input_chunk_length
+            d_model, dropout, max(self.input_chunk_length, self.output_chunk_length + 1)
         )
 
         if isinstance(norm_type, str):
