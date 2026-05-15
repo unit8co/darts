@@ -7,6 +7,7 @@ import math
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.components import glu_variants, layer_norm_variants
@@ -20,7 +21,11 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    PLModuleInput,
+    TorchTrainingBatch,
+    TorchTrainingSample,
+)
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -188,10 +193,11 @@ class _TransformerModule(PLForecastingModule):
         self.target_size = output_size
         self.nr_params = nr_params
         self.target_length = self.output_chunk_length
+        self.d_model = d_model
 
         self.encoder = nn.Linear(input_size, d_model)
         self.positional_encoding = _PositionalEncoding(
-            d_model, dropout, self.input_chunk_length
+            d_model, dropout, max(self.input_chunk_length, self.output_chunk_length + 1)
         )
 
         if isinstance(norm_type, str):
@@ -281,47 +287,148 @@ class _TransformerModule(PLForecastingModule):
             custom_decoder=custom_decoder,
         )
 
-        self.decoder = nn.Linear(
-            d_model, self.target_length * self.target_size * self.nr_params
-        )
-
-    def _create_transformer_inputs(self, data):
-        # '_TimeSeriesSequentialDataset' stores time series in the
-        # (batch_size, input_chunk_length, input_size) format. PyTorch's nn.Transformer
-        # module needs it the (input_chunk_length, batch_size, input_size) format.
-        # Therefore, the first two dimensions need to be swapped.
-        src = data.permute(1, 0, 2)
-        tgt = src[-1:, :, :]
-
-        return src, tgt
+        self.decoder = nn.Linear(d_model, self.target_size * self.nr_params)
 
     @io_processor
     def forward(self, x_in: PLModuleInput):
-        data, _, _ = x_in
-        # Here we create 'src' and 'tgt', the inputs for the encoder and decoder
-        # side of the Transformer architecture
-        src, tgt = self._create_transformer_inputs(data)
+        """
+        During training (teacher forcing) x_in = tuple(past_target + past_covariates, future_targets)
+        During inference x_in = tuple(past_target + past_covariates)
 
-        # "math.sqrt(self.input_size)" is a normalization factor
+        '_TimeSeriesSequentialDataset' stores time series in the
+        (batch_size, input_chunk_length, input_size) format. PyTorch's nn.Transformer
+        module needs it the (input_chunk_length, batch_size, input_size) format.
+        Therefore, the first two dimensions need to be swapped.
+        """
+
+        src = x_in[0].permute(1, 0, 2)
+        pad_size = (0, self.input_size - self.target_size)
+        start_token = src[-1:, :, :]
+
+        # encode src once; memory is reused by both the teacher-forcing and
+        # autoregressive paths, avoiding redundant encoder passes
+        memory = self._encode_src(src)
+
+        if len(x_in) == 2:  # teacher forcing
+            tgt = x_in[-1].permute(1, 0, 2)
+            tgt = F.pad(tgt, pad_size)
+            tgt = torch.cat([start_token, tgt], dim=0)
+            return self._decode(memory, tgt)[:, :-1, :, :]
+
+        # autoregressive: cache tgt embeddings and extend by one token per step
+        # so the linear projection and positional encoding are not recomputed for
+        # previously seen positions
+        tgt_emb = self._embed(start_token, pos=0)
+        predictions = []
+        for t in range(self.target_length):
+            pred = self._decode_from_emb(memory, tgt_emb)[:, -1, :, :]
+            predictions.append(pred)
+            next_token = F.pad(pred.mean(dim=2).unsqueeze(0), pad_size)
+            tgt_emb = torch.cat([tgt_emb, self._embed(next_token, pos=t + 1)], dim=0)
+        return torch.stack(predictions, dim=1)
+
+    def _encode_src(self, src: torch.Tensor) -> torch.Tensor:
         # see section 3.2.1 in 'Attention is All you Need' by Vaswani et al. (2017)
-        src = self.encoder(src) * math.sqrt(self.input_size)
+        src = self.encoder(src) * math.sqrt(self.d_model)
         src = self.positional_encoding(src)
+        return self.transformer.encoder(src)
 
-        tgt = self.encoder(tgt) * math.sqrt(self.input_size)
-        tgt = self.positional_encoding(tgt)
+    def _embed(self, x: torch.Tensor, pos: int) -> torch.Tensor:
+        """Project to d_model and add positional encoding starting at `pos`."""
+        x = self.encoder(x)
+        x = x + self.positional_encoding.pe[pos : pos + x.shape[0]]
+        return self.positional_encoding.dropout(x)
 
-        x = self.transformer(src=src, tgt=tgt)
+    def _decode(self, memory: torch.Tensor, tgt: torch.Tensor) -> torch.Tensor:
+        tgt_emb = self.encoder(tgt)
+        tgt_emb = self.positional_encoding(tgt_emb)
+        return self._decode_from_emb(memory, tgt_emb)
+
+    def _decode_from_emb(
+        self, memory: torch.Tensor, tgt_emb: torch.Tensor
+    ) -> torch.Tensor:
+        target_length = tgt_emb.shape[0]
+        tgt_mask = self.generate_square_subsequent_mask(
+            target_length, memory.device, memory.dtype
+        )
+        x = self.transformer.decoder(tgt=tgt_emb, memory=memory, tgt_mask=tgt_mask)
         out = self.decoder(x)
-
-        # Here we change the data format
-        # from (1, batch_size, output_chunk_length * output_size)
-        # to (batch_size, output_chunk_length, output_size, nr_params)
-        predictions = out[0, :, :]
+        predictions = out.permute(1, 0, 2)
         predictions = predictions.view(
-            -1, self.target_length, self.target_size, self.nr_params
+            -1, target_length, self.target_size, self.nr_params
+        )
+        return predictions
+
+    def generate_square_subsequent_mask(self, sz, device, dtype):
+        return torch.triu(
+            torch.full((sz, sz), float("-inf"), dtype=dtype, device=device),
+            diagonal=1,
         )
 
-        return predictions
+    def _train_val_step(
+        self,
+        batch: TorchTrainingBatch,
+        name: str,
+        criterion,
+        metrics,
+    ) -> torch.Tensor:
+        """performs a training or validation step"""
+        (
+            past_target,
+            past_covariates,
+            _,
+            _,
+            _,
+            sample_weight,
+            future_target,
+        ) = batch
+
+        if name == "train":
+            output = self._produce_train_output(
+                (past_target, past_covariates, future_target),
+            )
+        else:
+            output = self._produce_train_output(
+                (
+                    past_target,
+                    past_covariates,
+                ),
+            )
+        loss = self._compute_loss(output, future_target, criterion, sample_weight)
+        self.log(
+            f"{name}_loss",
+            loss,
+            batch_size=past_target.shape[0],
+            prog_bar=True,
+            sync_dist=True,
+        )
+        self._update_metrics(output, future_target, metrics)
+        return loss
+
+    def _produce_train_output(self, input_batch: tuple):
+        """
+        Feeds PastCovariatesTorchModel with input and output chunks of a PastCovariatesSequentialDataset for
+        training.
+
+        Parameters:
+        input_batch
+            ``(past_target, past_covariates, future_target)`` during training
+
+            ``(past_target, past_covariates, static_covariates)`` during validation (not teacher forced)
+        """
+
+        past_target, past_covariates = input_batch[:2]
+        # Currently all our PastCovariates models require past target and covariates concatenated
+        inpt = [
+            torch.cat([past_target, past_covariates], dim=2)
+            if past_covariates is not None
+            else past_target,
+        ]
+
+        # add future targets when training (teacher forcing)
+        if len(input_batch) == 3:
+            inpt.append(input_batch[-1])
+        return self(inpt)
 
 
 class TransformerModel(PastCovariatesTorchModel):
@@ -351,7 +458,7 @@ class TransformerModel(PastCovariatesTorchModel):
         The multi-head attention mechanism is highly parallelizable, which makes the transformer architecture
         very suitable to be trained with GPUs.
 
-        The transformer architecture implemented here is based on [1]_.
+        The transformer architecture implemented here is based on [1]_ and uses teacher forcing [4]_.
 
         This model supports past covariates (known for `input_chunk_length` points before prediction time).
 
@@ -552,17 +659,8 @@ class TransformerModel(PastCovariatesTorchModel):
                Systems, pages 6000-6010. https://arxiv.org/abs/1706.03762.
         .. [2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
         .. [3] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
-               Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
-
-        Notes
-        -----
-        Disclaimer: This current implementation is fully functional and can already produce some good predictions.
-        However, it is still limited in how it uses the Transformer architecture because the `tgt` input of
-        `torch.nn.Transformer` is not utilized to its full extent. Currently, we simply pass the last value of the
-        `src` input to `tgt`. To get closer to the way the Transformer is usually used in language models, we
-        should allow the model to consume its own output as part of the `tgt` argument, such that when predicting
-        sequences of values, the input to the `tgt` argument would grow as outputs of the transformer model would be
-        added to it. Of course, the training of the model would have to be adapted accordingly.
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
+        .. [4] Teacher Forcing PyTorch tutorial: https://github.com/pytorch/examples/tree/main/word_language_model
 
         Examples
         --------
