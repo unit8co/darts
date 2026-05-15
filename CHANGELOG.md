@@ -15,6 +15,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Clarified the `Capturing model uncertainty using Monte Carlo Dropout` section of the user guide to explain how `mc_dropout=True` interacts with the `likelihood`/`predict_likelihood_parameters` knobs, so readers know which combination produces both epistemic and aleatoric uncertainty. Closes [#2105](https://github.com/unit8co/darts/issues/2105).
+
 **Fixed**
 
 **Dependencies**

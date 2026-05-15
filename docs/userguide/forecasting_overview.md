@@ -282,6 +282,16 @@ pred.plot(label='forecast')
 
 Monte Carlo Dropout can be combined with other likelihood estimation in Darts, which can be interpreted as a way to capture both epistemic and aleatoric uncertainty.
 
+In that case, train the model with the desired `likelihood` (e.g. `QuantileRegression(...)`) so the model learns to predict the parameters of an aleatoric distribution, and at prediction time set:
+
+- `mc_dropout=True`,
+- `num_samples >> 1` (e.g. `500`),
+- `predict_likelihood_parameters=False`.
+
+Each Monte Carlo dropout pass yields one set of distribution parameters; Darts then draws one sample from that distribution per pass, so the resulting `num_samples` predictions reflect both epistemic uncertainty (different dropout masks) and aleatoric uncertainty (sampling from the predicted likelihood). You can then compute marginal quantiles, mean, std, etc. from those samples.
+
+> Note: `mc_dropout=True` and `predict_likelihood_parameters=True` should not be combined. `predict_likelihood_parameters=True` returns the *deterministic* parameters of the predicted distribution and bypasses the Monte Carlo sampling loop, so dropout has no observable effect on the output. See [issue #2105](https://github.com/unit8co/darts/issues/2105) for context.
+
 
 ### Probabilistic regression models
 Some regression models can also be configured to produce probabilistic forecasts too. At the time of writing, [LinearRegressionModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html), [LightGBMModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html) and [XGBModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html) support a `likelihood` argument. When set to `"poisson"` the model will fit a Poisson distribution, and when set to `"quantile"` the model will use the pinball loss to perform quantile regression (the quantiles themselves can be specified using the `quantiles` argument).
