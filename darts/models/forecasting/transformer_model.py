@@ -21,7 +21,11 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    PLModuleInput,
+    TorchTrainingBatch,
+    TorchTrainingSample,
+)
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -288,8 +292,8 @@ class _TransformerModule(PLForecastingModule):
     @io_processor
     def forward(self, x_in: PLModuleInput):
         """
-        During training (teacher forcing) x_in = tuple(past_target + past_covariates, static_covariates, future_targets)
-        During inference x_in = tuple(past_target + past_covariates, static_covariates)
+        During training (teacher forcing) x_in = tuple(past_target + past_covariates, future_targets)
+        During inference x_in = tuple(past_target + past_covariates)
 
         '_TimeSeriesSequentialDataset' stores time series in the
         (batch_size, input_chunk_length, input_size) format. PyTorch's nn.Transformer
@@ -297,25 +301,19 @@ class _TransformerModule(PLForecastingModule):
         Therefore, the first two dimensions need to be swapped.
         """
 
-        data, _, _ = x_in
-        # Here we create 'src' and 'tgt', the inputs for the encoder and decoder
-        # side of the Transformer architecture
-        src, tgt = self._create_transformer_inputs(data)
-
         src = x_in[0].permute(1, 0, 2)
         pad_size = (0, self.input_size - self.target_size)
 
-        # start token consists only of target series, past covariates are substituted with 0 padding
-        start_token = src[-1:, :, : self.target_size]
-        start_token_padded = F.pad(start_token, pad_size)
+        # start token
+        start_token = src[-1:, :, :]
 
-        if len(x_in) == 3:
+        if len(x_in) == 2:  # teacher forcing
             tgt = x_in[-1].permute(1, 0, 2)
             tgt = F.pad(tgt, pad_size)
-            tgt = torch.cat([start_token_padded, tgt], dim=0)
+            tgt = torch.cat([start_token, tgt], dim=0)
             return self._prediction_step(src, tgt)[:, :-1, :, :]
 
-        tgt = start_token_padded
+        tgt = start_token
 
         predictions = []
         for _ in range(self.target_length):
@@ -360,12 +358,69 @@ class _TransformerModule(PLForecastingModule):
             diagonal=1,
         )
 
-    def training_step(self, train_batch, batch_idx) -> torch.Tensor:
-        """performs the training step"""
-        train_batch = list(train_batch)
-        future_targets = train_batch[-1]
-        train_batch.append(future_targets)
-        return super().training_step(train_batch, batch_idx)
+    # def training_step(self, train_batch, batch_idx) -> torch.Tensor:
+    #     """performs the training step"""
+    #     train_batch = list(train_batch)
+    #     future_targets = train_batch[-1]
+    #     train_batch.append(future_targets)
+    #     return self._train_val_step(
+    #         batch=train_batch,
+    #         name="train",
+    #         criterion=self.train_criterion,
+    #         metrics=self.train_metrics,
+    #     )
+
+    # def validation_step(
+    #     self, val_batch: TorchTrainingBatch, batch_idx: int
+    # ) -> torch.Tensor:
+    #     val_batch = list(val_batch)
+    #     future_targets = val_batch[-1]
+    #     val_batch.append(future_targets)
+    #     return self._train_val_step(
+    #         batch=val_batch,
+    #         name="val",
+    #         criterion=self.val_criterion,
+    #         metrics=self.val_metrics,
+    #     )
+    def _train_val_step(
+        self,
+        batch: TorchTrainingBatch,
+        name: str,
+        criterion,
+        metrics,
+    ) -> torch.Tensor:
+        """performs a training or validation step"""
+        (
+            past_target,
+            past_covariates,
+            _,
+            _,
+            _,
+            sample_weight,
+            future_target,
+        ) = batch
+
+        if name == "train":
+            output = self._produce_train_output(
+                (past_target, past_covariates, future_target),
+            )
+        else:
+            output = self._produce_train_output(
+                (
+                    past_target,
+                    past_covariates,
+                ),
+            )
+        loss = self._compute_loss(output, future_target, criterion, sample_weight)
+        self.log(
+            f"{name}_loss",
+            loss,
+            batch_size=past_target.shape[0],
+            prog_bar=True,
+            sync_dist=True,
+        )
+        self._update_metrics(output, future_target, metrics)
+        return loss
 
     def _produce_train_output(self, input_batch: tuple):
         """
@@ -374,22 +429,21 @@ class _TransformerModule(PLForecastingModule):
 
         Parameters:
         input_batch
-            ``(past_target, past_covariates, static_covariates, future_target)`` during training
+            ``(past_target, past_covariates, future_target)`` during training
 
             ``(past_target, past_covariates, static_covariates)`` during validation (not teacher forced)
         """
 
-        past_target, past_covariates, static_covariates = input_batch[:3]
+        past_target, past_covariates = input_batch[:2]
         # Currently all our PastCovariates models require past target and covariates concatenated
         inpt = [
             torch.cat([past_target, past_covariates], dim=2)
             if past_covariates is not None
             else past_target,
-            static_covariates,
         ]
 
         # add future targets when training (teacher forcing)
-        if len(input_batch) == 4:
+        if len(input_batch) == 3:
             inpt.append(input_batch[-1])
         return self(inpt)
 
