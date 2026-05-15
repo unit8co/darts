@@ -22,7 +22,7 @@ Time-Series Mixer (TSMixer)
 # portions of the Software.
 # '
 
-from typing import Callable, Optional, Tuple, Union
+from collections.abc import Callable
 
 import torch
 from torch import nn
@@ -30,15 +30,12 @@ from torch import nn
 from darts.logging import get_logger, raise_log
 from darts.models.components import layer_norm_variants
 from darts.models.forecasting.pl_forecasting_module import (
-    PLMixedCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
+from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
-
-MixedCovariatesTrainTensorType = Tuple[
-    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
-]
 
 logger = get_logger(__name__)
 
@@ -77,7 +74,7 @@ class TimeBatchNorm2d(nn.BatchNorm2d):
         if x.ndim != 3:
             raise_log(
                 ValueError(
-                    f"Expected 3D input Tensor, but got {x.ndim}D Tensor" " instead."
+                    f"Expected 3D input Tensor, but got {x.ndim}D Tensor instead."
                 ),
                 logger=logger,
             )
@@ -100,7 +97,7 @@ class _FeatureMixing(nn.Module):
         norm_type: nn.Module,
     ) -> None:
         """A module for feature mixing with flexibility in normalization and activation based on the
-        `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`_.
+        `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`__.
 
         This module provides options for batch normalization before or after mixing
         features, uses dropout for regularization, and allows for different activation
@@ -173,7 +170,7 @@ class _TimeMixing(nn.Module):
         norm_type: nn.Module,
     ) -> None:
         """Applies a transformation over the time dimension of a sequence based on the
-        `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`_.
+        `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`__.
 
         This module applies a linear transformation followed by an activation function
         and dropout over the sequence length of the input feature torch.Tensor after converting
@@ -237,7 +234,7 @@ class _ConditionalMixerLayer(nn.Module):
         norm_type: nn.Module,
     ) -> None:
         """Conditional mix layer combining time and feature mixing with static context based on the
-        `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`_.
+        `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`__.
 
         This module combines time mixing and conditional feature mixing, where the latter
         is influenced by static features. This allows the module to learn representations
@@ -301,9 +298,7 @@ class _ConditionalMixerLayer(nn.Module):
             norm_type=norm_type,
         )
 
-    def forward(
-        self, x: torch.Tensor, x_static: Optional[torch.Tensor]
-    ) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, x_static: torch.Tensor | None) -> torch.Tensor:
         if self.feature_mixing_static is not None:
             x_static_mixed = self.feature_mixing_static(x_static)
             x = torch.cat([x, x_static_mixed], dim=-1)
@@ -312,7 +307,7 @@ class _ConditionalMixerLayer(nn.Module):
         return x
 
 
-class _TSMixerModule(PLMixedCovariatesModule):
+class _TSMixerModule(PLForecastingModule):
     def __init__(
         self,
         input_dim: int,
@@ -326,7 +321,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         num_blocks: int,
         activation: str,
         dropout: float,
-        norm_type: Union[str, nn.Module],
+        norm_type: str | nn.Module,
         normalize_before: bool,
         **kwargs,
     ) -> None:
@@ -458,10 +453,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         return mixer_layers
 
     @io_processor
-    def forward(
-        self,
-        x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]],
-    ) -> torch.Tensor:
+    def forward(self, x_in: PLModuleInput) -> torch.Tensor:
         # x_hist contains the historical time series data and the historical
         """TSMixer model forward pass.
 
@@ -534,7 +526,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
         num_blocks: int = 2,
         activation: str = "ReLU",
         dropout: float = 0.1,
-        norm_type: Union[str, nn.Module] = "LayerNorm",
+        norm_type: str | nn.Module = "LayerNorm",
         normalize_before: bool = False,
         use_static_covariates: bool = True,
         **kwargs,
@@ -542,7 +534,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
         """Time-Series Mixer (TSMixer): An All-MLP Architecture for Time Series.
 
         This is an implementation of the TSMixer architecture, as outlined in [1]_. A major part of the architecture
-        was adopted from `this PyTorch implementation <https://github.com/ditschuk/pytorch-tsmixer>`_. Additional
+        was adopted from `this PyTorch implementation <https://github.com/ditschuk/pytorch-tsmixer>`__. Additional
         changes were applied to increase model performance and efficiency.
 
         TSMixer forecasts time series data by integrating historical time series data, future known inputs, and static
@@ -581,8 +573,9 @@ class TSMixerModel(MixedCovariatesTorchModel):
         num_blocks
             The number of mixer blocks in the model. The number includes the first block and all subsequent blocks.
         activation
-            The name of the activation function to use in the mixer layers. Default: `"ReLU"`. Must be one of
-            `"ReLU", "RReLU", "PReLU", "ELU", "Softplus", "Tanh", "SELU", "LeakyReLU", "Sigmoid", "GELU"`.
+            The activation function to use in the mixer layers (default='ReLU').
+            Supported activations: ['ReLU', 'RReLU', 'PReLU', 'ELU', 'Softplus', 'Tanh', 'SELU', 'LeakyReLU', 'Sigmoid',
+            'GELU']
         dropout
             Fraction of neurons affected by dropout. This is compatible with Monte Carlo dropout at inference time
             for model uncertainty estimation (enabled with ``mc_dropout=True`` at prediction time).
@@ -604,7 +597,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
         likelihood
-            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
+            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.torch.TorchLikelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
@@ -621,8 +614,10 @@ class TSMixerModel(MixedCovariatesTorchModel):
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
-            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [3]_.
-            It is only applied to the features of the target series and not the covariates.
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
+            It is only applied to the features of the target series and not the covariates. If ``True``,
+            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
+            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -676,16 +671,14 @@ class TSMixerModel(MixedCovariatesTorchModel):
                 }
             ..
         random_state
-            Control the randomness of the weight's initialization. Check this
-            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
-            Default: ``None``.
+            Controls the randomness of the weights initialization and reproducible forecasting.
         pl_trainer_kwargs
             By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
             that performs the training, validation and prediction processes. These presets include automatic
             checkpointing, torch.Tensorboard logging, setting the torch device and more.
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
             supported kwargs. Default: ``None``.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
@@ -704,7 +697,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
             The model will stop training early if the validation loss `val_loss` does not improve beyond
             specifications. For more information on callbacks, visit:
             `PyTorch Lightning Callbacks
-            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
 
             .. highlight:: python
             .. code-block:: python
@@ -728,10 +721,24 @@ class TSMixerModel(MixedCovariatesTorchModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         References
         ----------
         .. [1] https://arxiv.org/abs/2303.06053
+        .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
 
         Examples
         --------
@@ -752,13 +759,13 @@ class TSMixerModel(MixedCovariatesTorchModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[3.92519848],
-            [4.05650312],
-            [4.21781987],
-            [4.29394973],
-            [4.4122863 ],
-            [4.42762751]])
+        >>> print(pred.values())
+        [[3.92519848]
+         [4.05650312]
+         [4.21781987]
+         [4.29394973]
+         [4.4122863 ]
+         [4.42762751]]
         """
         model_kwargs = {key: val for key, val in self.model_params.items()}
         super().__init__(**self._extract_torch_model_params(**model_kwargs))
@@ -776,7 +783,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
         self.hidden_size = hidden_size
         self._considers_static_covariates = use_static_covariates
 
-    def _create_model(self, train_sample: MixedCovariatesTrainTensorType) -> nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> nn.Module:
         """
         Parameters
         ----------
@@ -829,17 +836,5 @@ class TSMixerModel(MixedCovariatesTorchModel):
         )
 
     @property
-    def supports_multivariate(self) -> bool:
-        return True
-
-    @property
     def supports_static_covariates(self) -> bool:
-        return True
-
-    @property
-    def supports_future_covariates(self) -> bool:
-        return True
-
-    @property
-    def supports_past_covariates(self) -> bool:
         return True

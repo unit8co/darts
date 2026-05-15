@@ -38,9 +38,10 @@ and discuss it with some of the core team.
 1. Make sure your work is being tracked (and if possible discussed) by an existing issue on the backlog
 2. Fork the repository.
 3. Clone the forked repository locally.
-4. Create a clean Python env and install requirements with pip: `pip install -r requirements/dev-all.txt`
-5. Set up [automatic code formatting and linting](#code-formatting-and-linting)
-6. Create a new branch:
+4. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if you haven't already: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+5. Install all latest development dependencies: `uv sync --group dev-all --upgrade`
+6. Set up [automatic code formatting and linting](#code-formatting-and-linting): `uv run pre-commit install`
+7. Create a new branch:
     * Branch off from the **master** branch.
     * Prefix the branch with the type of update you are making:
         * `feature/`
@@ -48,10 +49,7 @@ and discuss it with some of the core team.
         * `refactor/`
         * …
     * Work on your update
-7. Check that your code passes all the tests and design new unit tests if needed: `./gradlew test_all`.
-8. Verify your tests coverage by running `./gradlew coverageTest`
-    * Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested
-    lines with `./coverage.sh xml`
+8. Check that your code passes all the tests and design new unit tests if needed: `uv run pytest`.
 9. If your contribution introduces a non-negligible change, add it to `CHANGELOG.md` under the "Unreleased" section.
    You can already refer to the pull request. In addition, for tracking contributions we are happy if you provide
    your full name (if you want to) and link to your Github handle. Example:
@@ -60,7 +58,20 @@ and discuss it with some of the core team.
      by [<Your Name>](https://github.com/<your-handle>).
    ```
 10. Create a pull request from your new branch into the **master** branch.
+11. `Codecov` will add a test coverage report in the pull request. Make sure your test cover all changed lines.
 
+### Build the Documentation Locally
+
+You can build the documentation locally using `make`:
+
+```bash
+# ensure pandoc is available. If not, install it: https://pandoc.org/installing.html
+pandoc --version
+# build the docs (uv sync already installed darts in editable mode)
+uv run make --directory=./docs build-all-docs
+```
+
+After that docs will be available in `./docs/build/html` directory. You can just open `./docs/build/html/index.html` using your favourite browser.
 
 ### Code Formatting and Linting
 
@@ -68,16 +79,8 @@ Darts uses [Black via Ruff](https://docs.astral.sh/ruff/formatter/) with default
 As part of the checks on pull requests, it is checked whether the code still adheres to the code style.
 To ensure you don't need to worry about formatting and linting when contributing, it is recommended to set up at least one of the following:
 - Integration in git (recommended):
-    1. Install the pre-commit hook using `pre-commit install`
+    1. Install the pre-commit hook using `uv run pre-commit install`
     2. This will install `ruff` linting hooks
     3. The formatters will automatically fix all files and in case of some non-trivial case `ruff` will highlight any remaining problems before committing
 - Integration in your editor:
     - For other integrations please look at the documentation for your editor
-
-### Development environment on Mac with Apple Silicon M1 processor (arm64 architecture)
-
-Please follow the procedure described in [INSTALL.md](https://github.com/unit8co/darts/blob/master/INSTALL.md#test-environment-appple-m1-processor)
-to set up a x_64 emulated environment. For the development environment, instead of installing Darts with
-`pip install darts`, instead go to the darts cloned repo location and install the packages with: `pip install -r requirements/dev-all.txt`.
-If necessary, follow the same steps to setup libomp for lightgbm.
-Finally, verify your overall environment setup by successfully running all unitTests with gradlew or pytest.

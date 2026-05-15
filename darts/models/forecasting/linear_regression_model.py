@@ -1,42 +1,44 @@
 """
-Linear Regression model
+Linear Regression Model
 -----------------------
 
 A forecasting model using a linear regression of some of the target series' lags, as well as optionally some
 covariate series lags in order to obtain a forecast.
 """
 
-from typing import List, Optional, Sequence, Union
-
-import numpy as np
 from scipy.optimize import linprog
 from sklearn.linear_model import LinearRegression, PoissonRegressor, QuantileRegressor
 
 from darts.logging import get_logger
-from darts.models.forecasting.regression_model import (
+from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
-    RegressionModel,
-    _LikelihoodMixin,
+    SKLearnModel,
+    _QuantileModelContainer,
 )
-from darts.timeseries import TimeSeries
+from darts.typing import TimeSeriesLike
+from darts.utils.likelihood_models.base import LikelihoodType
+from darts.utils.likelihood_models.sklearn import (
+    QuantileRegression,
+    _get_likelihood,
+)
 
 logger = get_logger(__name__)
 
 
-class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
+class LinearRegressionModel(SKLearnModel):
     def __init__(
         self,
-        lags: Optional[LAGS_TYPE] = None,
-        lags_past_covariates: Optional[LAGS_TYPE] = None,
-        lags_future_covariates: Optional[FUTURE_LAGS_TYPE] = None,
+        lags: LAGS_TYPE | None = None,
+        lags_past_covariates: LAGS_TYPE | None = None,
+        lags_future_covariates: FUTURE_LAGS_TYPE | None = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
-        add_encoders: Optional[dict] = None,
-        likelihood: Optional[str] = None,
-        quantiles: Optional[List[float]] = None,
-        random_state: Optional[int] = None,
-        multi_models: Optional[bool] = True,
+        add_encoders: dict | None = None,
+        likelihood: str | None = None,
+        quantiles: list[float] | None = None,
+        random_state: int | None = None,
+        multi_models: bool | None = True,
         use_static_covariates: bool = True,
         **kwargs,
     ):
@@ -115,21 +117,24 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             Can be set to `quantile` or `poisson`. If set, the model will be probabilistic, allowing sampling at
             prediction time. If set to `quantile`, the `sklearn.linear_model.QuantileRegressor` is used. Similarly, if
             set to `poisson`, the `sklearn.linear_model.PoissonRegressor` is used.
         quantiles
-            Fit the model to these quantiles if the `likelihood` is set to `quantile`.
+            Fit the model to these quantiles if the ``likelihood`` is set to ``"quantile"``.
+            Default is ``None`` and will use :class:`~darts.utils.likelihood_models.sklearn.QuantileRegression`'s
+            default quantiles.
         random_state
-            Control the randomness of the sampling. Used as seed for
-            `numpy.random.Generator
-            <https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator>`_. Ignored when
-            no `likelihood` is set.
-            Default: ``None``.
+            Controls the randomness for reproducible forecasting.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model is
-            trained to predict at step 'output_chunk_length' in the future. Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -162,34 +167,29 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1005.72085839],
-               [1005.6548696 ],
-               [1005.65403772],
-               [1005.6846175 ],
-               [1005.75753605],
-               [1005.81830675]])
+        >>> print(pred.values())
+        [[1005.72085839]
+         [1005.6548696 ]
+         [1005.65403772]
+         [1005.6846175 ]
+         [1005.75753605]
+         [1005.81830675]]
         """
         self.kwargs = kwargs
-        self._median_idx = None
-        self._model_container = None
-        self.quantiles = None
-        self._likelihood = likelihood
-        self._rng = None
 
-        # parse likelihood
-        available_likelihoods = ["quantile", "poisson"]  # to be extended
-        if likelihood is not None:
-            self._check_likelihood(likelihood, available_likelihoods)
-            self._rng = np.random.default_rng(seed=random_state)
+        self._likelihood = _get_likelihood(
+            likelihood=likelihood,
+            n_outputs=output_chunk_length if multi_models else 1,
+            quantiles=quantiles,
+            available_likelihoods=[LikelihoodType.Quantile, LikelihoodType.Poisson],
+        )
 
-            if likelihood == "poisson":
-                model = PoissonRegressor(**kwargs)
-            if likelihood == "quantile":
-                model = QuantileRegressor(**kwargs)
-                self.quantiles, self._median_idx = self._prepare_quantiles(quantiles)
-                self._model_container = self._get_model_container()
-        else:
+        if likelihood == LikelihoodType.Poisson.value:
+            model = PoissonRegressor(**kwargs)
+        elif likelihood == LikelihoodType.Quantile.value:
+            model = QuantileRegressor(**kwargs)
+            self._model_container = _QuantileModelContainer()
+        else:  # likelihood is None
             model = LinearRegression(**kwargs)
 
         super().__init__(
@@ -202,19 +202,22 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             model=model,
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
+            random_state=random_state,
         )
 
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        max_samples_per_ts: Optional[int] = None,
-        n_jobs_multioutput_wrapper: Optional[int] = None,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        max_samples_per_ts: int | None = None,
+        n_jobs_multioutput_wrapper: int | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
+        verbose: bool | None = None,
         **kwargs,
     ):
-        if self.likelihood == "quantile":
+        likelihood = self.likelihood
+        if isinstance(likelihood, QuantileRegression):
             # set solver for linear program
             if "solver" not in self.kwargs:
                 # set default fast solver
@@ -234,7 +237,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             # empty model container in case of multiple calls to fit, e.g. when backtesting
             self._model_container.clear()
 
-            for quantile in self.quantiles:
+            for quantile in likelihood.quantiles:
                 self.kwargs["quantile"] = quantile
                 # assign the Quantile regressor to self.model to leverage existing logic
                 self.model = QuantileRegressor(**self.kwargs)
@@ -245,12 +248,13 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
                     max_samples_per_ts=max_samples_per_ts,
                     n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
                     sample_weight=sample_weight,
+                    verbose=verbose,
                     **kwargs,
                 )
-
+                # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
                 self._model_container[quantile] = self.model
 
-            # replace the last trained QuantileRegressor with the dictionnary of Regressors.
+            # replace the last trained QuantileRegressor with the dictionary of Regressors.
             self.model = self._model_container
 
             return self
@@ -263,27 +267,8 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
                 max_samples_per_ts=max_samples_per_ts,
                 n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
                 sample_weight=sample_weight,
+                verbose=verbose,
                 **kwargs,
             )
 
             return self
-
-    def _predict_and_sample(
-        self,
-        x: np.ndarray,
-        num_samples: int,
-        predict_likelihood_parameters: bool,
-        **kwargs,
-    ) -> np.ndarray:
-        if self.likelihood is not None:
-            return self._predict_and_sample_likelihood(
-                x, num_samples, self.likelihood, predict_likelihood_parameters, **kwargs
-            )
-        else:
-            return super()._predict_and_sample(
-                x, num_samples, predict_likelihood_parameters, **kwargs
-            )
-
-    @property
-    def supports_probabilistic_prediction(self) -> bool:
-        return self.likelihood is not None

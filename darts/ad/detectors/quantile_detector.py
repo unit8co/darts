@@ -7,14 +7,14 @@ This is similar to a threshold-based detector, where the thresholds are
 computed as quantiles of historical data when the detector is fitted.
 """
 
-from typing import Optional, Sequence, Union
+from collections.abc import Sequence
 
 import numpy as np
 
+from darts import TimeSeries
 from darts.ad.detectors.detectors import FittableDetector, _BoundedDetectorMixin
 from darts.ad.detectors.threshold_detector import ThresholdDetector
 from darts.logging import get_logger, raise_log
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
@@ -22,8 +22,8 @@ logger = get_logger(__name__)
 class QuantileDetector(FittableDetector, _BoundedDetectorMixin):
     def __init__(
         self,
-        low_quantile: Union[Sequence[float], float, None] = None,
-        high_quantile: Union[Sequence[float], float, None] = None,
+        low_quantile: Sequence[float] | float | None = None,
+        high_quantile: Sequence[float] | float | None = None,
     ) -> None:
         """Quantile Detector
 
@@ -69,7 +69,7 @@ class QuantileDetector(FittableDetector, _BoundedDetectorMixin):
         self.low_quantile = low_quantile
         self.high_quantile = high_quantile
         # We'll use an inner Threshold detector once the quantiles are fitted
-        self.detector: Optional[ThresholdDetector] = None
+        self.detector: ThresholdDetector | None = None
 
     def _fit_core(self, series: Sequence[TimeSeries]) -> None:
         # if len(low) > 1 and len(high) > 1, then check it matches input width:

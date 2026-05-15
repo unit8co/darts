@@ -1,8 +1,4 @@
-from typing import Tuple, Union
-
 import numpy as np
-import xarray as xr
-from matplotlib import pyplot as plt
 
 
 def plot(
@@ -41,6 +37,7 @@ def plot(
     args_series2
         Some keyword arguments to pass to `plot()` method for series2
     """
+    from matplotlib import pyplot as plt
 
     if new_plot:
         fig = plt.figure()
@@ -102,7 +99,7 @@ def plot_alignment(
     new_plot: bool = False,
     series1_y_offset: float = 0,
     series2_y_offset: float = 0,
-    components: Union[Tuple[Union[str, int], Union[str, int]]] = (0, 0),
+    components: tuple[str | int, str | int] = (0, 0),
     args_line: dict = {},
     args_series1: dict = {},
     args_series2: dict = {},
@@ -128,6 +125,7 @@ def plot_alignment(
     args_series2
         Some keyword arguments to pass to `plot()` method for series2
     """
+    import xarray as xr
 
     series1 = self.series1
     series2 = self.series2

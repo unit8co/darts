@@ -1,26 +1,25 @@
 """
 Wasserstein Scorer
------
+------------------
 
 Wasserstein Scorer (distance function defined between probability distributions) [1]_.
 The implementations is wrapped around `scipy.stats
-<https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wasserstein_distance.html>`_.
+<https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wasserstein_distance.html>`__.
 
 References
 ----------
 .. [1] https://en.wikipedia.org/wiki/Wasserstein_metric
 """
 
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 from scipy.stats import wasserstein_distance
 
-from darts import metrics
+from darts import TimeSeries, metrics
 from darts.ad.scorers.scorers import WindowedAnomalyScorer
 from darts.logging import get_logger
-from darts.metrics.metrics import METRIC_TYPE
-from darts.timeseries import TimeSeries
+from darts.metrics.utils import METRIC_TYPE
 
 logger = get_logger(__name__)
 
@@ -53,14 +52,15 @@ class WassersteinScorer(WindowedAnomalyScorer):
         **Training with** `fit()`:
 
         The input can be a series (univariate or multivariate) or multiple series. The series will be partitioned
-        into equal size subsequences. The subsequence will be of size `W` * `D`, with:
+        into equal size subsequences. Each subsequence has size `W * D` (features), where:
 
-        - `W` being the size of the window given as a parameter `window`
-        - `D` being the dimension of the series (`D` = 1 if univariate or if `component_wise` is set to `True`)
+        - `W` is the size of the window given as a parameter `window`
+        - `D` is the dimension of the series (`D` = 1 if univariate or if `component_wise` is set to `True`)
 
-        For a series of length `N`, (`N` - `W` + 1)/W subsequences will be generated. If a list of series is given
-        of length L, each series will be partitioned into subsequences, and the results will be concatenated into
-        an array of length L * number of subsequences of each series.
+        For a series of length `N`, `(N - W + 1)` subsequences will be generated. The final array `X` passed to the
+        underlying scorer has shape `(N - W + 1, W * D)`; or in other terms (number of samples, number of features).
+        If a list of series is given of length L, each series `i` is partitioned, and all `X_i` are concatenated along
+        the sample axis.
 
         The arrays will be kept in memory, representing the training data distribution.
         In practice, the series or list of series can for instance represent residuals than can be

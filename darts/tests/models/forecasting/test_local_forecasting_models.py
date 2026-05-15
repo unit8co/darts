@@ -1,25 +1,28 @@
 import copy
 import itertools
+import math
 import os
 import pathlib
-from typing import Callable
-from unittest.mock import Mock, patch
+from collections.abc import Callable
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
 import pytest
 
+from darts.tests.conftest import PROPHET_AVAILABLE, SF_AVAILABLE
+
+if SF_AVAILABLE:
+    from statsforecast.models import AutoARIMA as SFAutoARIMA
+
+from darts import TimeSeries
 from darts.datasets import AirPassengersDataset, IceCreamHeaterDataset
 from darts.logging import get_logger
 from darts.metrics import mape
 from darts.models import (
     ARIMA,
-    BATS,
     FFT,
-    TBATS,
     VARIMA,
-    AutoARIMA,
-    Croston,
     ExponentialSmoothing,
     FourTheta,
     KalmanForecaster,
@@ -28,23 +31,36 @@ from darts.models import (
     NaiveMean,
     NaiveMovingAverage,
     NaiveSeasonal,
-    NotImportedModule,
-    Prophet,
-    RandomForest,
-    RegressionModel,
-    StatsForecastAutoARIMA,
-    StatsForecastAutoCES,
-    StatsForecastAutoETS,
-    StatsForecastAutoTheta,
+    RandomForestModel,
+    SKLearnModel,
     Theta,
 )
+
+if PROPHET_AVAILABLE:
+    from darts.models import Prophet
+if SF_AVAILABLE:
+    from darts.models import (
+        TBATS,
+        AutoARIMA,
+        AutoCES,
+        AutoETS,
+        AutoMFLES,
+        AutoTBATS,
+        AutoTheta,
+        Croston,
+        StatsForecastModel,
+    )
 from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
     TransferableFutureCovariatesLocalForecastingModel,
 )
-from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
-from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode, generate_index
+from darts.utils.utils import (
+    ModelMode,
+    SeasonalityMode,
+    TrendMode,
+    generate_index,
+)
 
 logger = get_logger(__name__)
 
@@ -53,12 +69,6 @@ models = [
     (ExponentialSmoothing(), 5.4),
     (ARIMA(12, 2, 1), 5.2),
     (ARIMA(1, 1, 1), 24),
-    (StatsForecastAutoARIMA(season_length=12), 4.6),
-    (StatsForecastAutoTheta(season_length=12), 5.5),
-    (StatsForecastAutoCES(season_length=12, model="Z"), 7.3),
-    (StatsForecastAutoETS(season_length=12, model="AAZ"), 7.3),
-    (Croston(version="classic"), 23),
-    (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 23),
     (Theta(), 11),
     (Theta(1), 17),
     (Theta(-1), 12),
@@ -70,10 +80,7 @@ models = [
     (FFT(trend="poly"), 13),
     (KalmanForecaster(dim_x=3), 20),
     (LinearRegressionModel(lags=12), 13),
-    (RandomForest(lags=12, n_estimators=5, max_depth=3), 14),
-    (AutoARIMA(), 12),
-    (TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.5),
-    (BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 11),
+    (RandomForestModel(lags=12, n_estimators=5, max_depth=3), 14),
 ]
 
 # forecasting models with exogenous variables support
@@ -89,22 +96,43 @@ multivariate_models = [
 
 dual_models = [
     ARIMA(),
-    StatsForecastAutoARIMA(season_length=12),
-    StatsForecastAutoETS(season_length=12),
-    AutoARIMA(),
 ]
 
 # test only a few models for encoder support reduce time
 encoder_support_models = [
     VARIMA(1, 0, 0),
     ARIMA(),
-    AutoARIMA(),
     KalmanForecaster(dim_x=30),
 ]
-if not isinstance(Prophet, NotImportedModule):
+
+if PROPHET_AVAILABLE:
     models.append((Prophet(), 9.0))
     dual_models.append(Prophet())
     encoder_support_models.append(Prophet())
+
+if SF_AVAILABLE:
+    models.extend([
+        (AutoARIMA(season_length=12), 4.6),
+        (StatsForecastModel(SFAutoARIMA(season_length=12)), 4.6),
+        (AutoTheta(season_length=12), 5.5),
+        (AutoCES(season_length=12, model="Z"), 7.3),
+        (AutoETS(season_length=12, model="AAZ"), 7.3),
+        (AutoMFLES(season_length=12, test_size=12), 9.8),
+        (AutoTBATS(season_length=12), 10.0),
+        (Croston(version="classic"), 23),
+        (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 23),
+        (
+            TBATS(
+                season_length=12, use_trend=True, use_arma_errors=True, use_boxcox=True
+            ),
+            10,
+        ),
+    ])
+    dual_models.extend([
+        AutoARIMA(season_length=12),
+        AutoMFLES(season_length=12, test_size=12),
+        AutoETS(season_length=12),
+    ])
 
 
 class TestLocalForecastingModels:
@@ -114,6 +142,7 @@ class TestLocalForecastingModels:
     # dummy timeseries for runnability tests
     np.random.seed(1)
     ts_gaussian = tg.gaussian_timeseries(length=100, mean=50)
+    ts_gaussian_copy = ts_gaussian.copy()
     # for testing covariate slicing
     ts_gaussian_long = tg.gaussian_timeseries(
         length=len(ts_gaussian) + 2 * forecasting_horizon,
@@ -137,13 +166,16 @@ class TestLocalForecastingModels:
     def test_save_model_parameters(self):
         # model creation parameters were saved before. check if re-created model has same params as original
         for model, _ in models:
-            assert model._model_params == model.untrained_model()._model_params
+            # take string values since StatsForecastModel has `model` as input which does not have `__eq__`
+            model_orig_params = {k: str(v) for k, v in model._model_params.items()}
+            model_fresh_params = {
+                k: str(v) for k, v in model.untrained_model()._model_params.items()
+            }
+            assert model_fresh_params == model_orig_params
 
-    @pytest.mark.parametrize("model", [ARIMA(1, 1, 1), LinearRegressionModel(lags=12)])
+    @pytest.mark.parametrize("model", [ARIMA(1, 1, 1)])
     def test_save_load_model(self, tmpdir_module, model):
         # check if save and load methods work and if loaded model creates same forecasts as original model
-        cwd = os.getcwd()
-        os.chdir(tmpdir_module)
         model_path_str = type(model).__name__
         model_path_pathlike = pathlib.Path(model_path_str + "_pathlike")
         model_path_binary = model_path_str + "_binary"
@@ -186,8 +218,6 @@ class TestLocalForecastingModels:
         for loaded_model in loaded_models:
             assert model_prediction == loaded_model.predict(self.forecasting_horizon)
 
-        os.chdir(cwd)
-
     def test_save_load_model_invalid_path(self):
         # check if save and load methods raise an error when given an invalid path
         model = ARIMA(1, 1, 1)
@@ -207,10 +237,15 @@ class TestLocalForecastingModels:
     @pytest.mark.parametrize("config", models)
     def test_models_runnability(self, config):
         model, _ = config
-        if not isinstance(model, RegressionModel):
+        if not isinstance(model, SKLearnModel):
             assert isinstance(model, LocalForecastingModel)
-        prediction = model.fit(self.ts_gaussian).predict(self.forecasting_horizon)
+        prediction = model.fit(self.ts_gaussian, verbose=False).predict(
+            self.forecasting_horizon,
+            verbose=False,
+        )
         assert len(prediction) == self.forecasting_horizon
+        # check that the input series was not mutated
+        assert self.ts_gaussian == self.ts_gaussian_copy
 
     @pytest.mark.parametrize("config", models)
     def test_models_performance(self, config):
@@ -337,10 +372,15 @@ class TestLocalForecastingModels:
         model = model_object.__class__(**model_params)
 
         # Test models with user supplied covariates
+        fc_copy = fc.copy() if fc is not None else None
         model.fit(series, future_covariates=fc)
 
         prediction = model.predict(n, future_covariates=fc)
         assert len(prediction) == n
+
+        if fc_copy is not None:
+            # check that the input covariates were not mutated
+            assert fc == fc_copy
 
         if isinstance(model, TransferableFutureCovariatesLocalForecastingModel):
             prediction = model.predict(n, series=series, future_covariates=fc)
@@ -353,10 +393,6 @@ class TestLocalForecastingModels:
         varima = VARIMA(trend="t")
         with pytest.raises(ValueError):
             varima.fit(series=ts)
-
-        autoarima = AutoARIMA(trend="t")
-        with pytest.raises(ValueError):
-            autoarima.fit(series=ts)
 
     def test_forecast_time_index(self):
         # the forecast time index should follow that of the train series
@@ -488,17 +524,43 @@ class TestLocalForecastingModels:
         [  # tuple of (model class, retrain-able, multivariate, retrain parameter, model type, uni/multivariate args)
             (
                 ExponentialSmoothing,
+                {"seasonal_periods": 12},
                 False,
                 False,
                 "hello",
                 "LocalForecastingModel",
                 None,
             ),
-            (ExponentialSmoothing, False, False, True, "LocalForecastingModel", None),
-            (ExponentialSmoothing, False, False, -2, "LocalForecastingModel", None),
-            (ExponentialSmoothing, False, False, 2, "LocalForecastingModel", None),
             (
                 ExponentialSmoothing,
+                {"seasonal_periods": 12},
+                False,
+                False,
+                True,
+                "LocalForecastingModel",
+                None,
+            ),
+            (
+                ExponentialSmoothing,
+                {"seasonal_periods": 12},
+                False,
+                False,
+                -2,
+                "LocalForecastingModel",
+                None,
+            ),
+            (
+                ExponentialSmoothing,
+                {"seasonal_periods": 12},
+                False,
+                False,
+                2,
+                "LocalForecastingModel",
+                None,
+            ),
+            (
+                ExponentialSmoothing,
+                {"seasonal_periods": 12},
                 False,
                 False,
                 "patch_retrain_func",
@@ -507,6 +569,7 @@ class TestLocalForecastingModels:
             ),
             (
                 LinearRegressionModel,
+                {},
                 True,
                 False,
                 True,
@@ -515,6 +578,7 @@ class TestLocalForecastingModels:
             ),
             (
                 LinearRegressionModel,
+                {},
                 True,
                 False,
                 2,
@@ -523,6 +587,7 @@ class TestLocalForecastingModels:
             ),
             (
                 LinearRegressionModel,
+                {},
                 True,
                 False,
                 "patch_retrain_func",
@@ -531,6 +596,7 @@ class TestLocalForecastingModels:
             ),
             (
                 LinearRegressionModel,
+                {},
                 True,
                 True,
                 True,
@@ -539,6 +605,7 @@ class TestLocalForecastingModels:
             ),
             (
                 LinearRegressionModel,
+                {},
                 True,
                 True,
                 2,
@@ -547,6 +614,7 @@ class TestLocalForecastingModels:
             ),
             (
                 LinearRegressionModel,
+                {},
                 True,
                 True,
                 "patch_retrain_func",
@@ -559,64 +627,78 @@ class TestLocalForecastingModels:
         """
         Test backtest method with different retrain arguments
         """
-        model_cls, retrainable, multivariate, retrain, model_type, variate_args = params
+        (
+            model_cls,
+            model_kwargs,
+            retrainable,
+            multivariate,
+            retrain,
+            model_type,
+            variate_args,
+        ) = params
         if variate_args is not None:
             if variate_args == "lr_univ_args":
-                model_args = {"lags": [-1, -2, -3]}
+                model_kwargs = {"lags": [-1, -2, -3], **model_kwargs}
             else:  # "lr_multiv_args"
-                model_args = {
+                model_kwargs = {
                     "lags": [-1, -2, -3],
                     "lags_past_covariates": [-1, -2, -3],
+                    **model_kwargs,
                 }
-        else:
-            model_args = dict()
-        model = model_cls(**model_args)
 
+        # Create a custom model that tracks fit and predict arguments
+        class TrackingModel(model_cls):
+            fit_calls = []
+            pred_calls = []
+
+            def fit(self, *args, **kwargs):
+                self.fit_calls.append(kwargs)
+                return super().fit(*args, **kwargs)
+
+            def predict(self, *args, **kwargs):
+                self.pred_calls.append(kwargs)
+                return super().predict(*args, **kwargs)
+
+        model = TrackingModel(**model_kwargs)
+        n_fc_expected = 3
+        series = self.ts_pass_train[: model.min_train_series_length + n_fc_expected]
+
+        retrain_patched = False
         if str(retrain) == "patch_retrain_func":
             retrain = patch_retrain_func
-
-        series = self.ts_pass_train
+            retrain.call_count = 0
+            # first call is from sanity check, afterwards it's called at each forecast iteration
+            retrain.side_effect = [True] + [
+                bool((idx + 1) % 2) for idx in range(n_fc_expected)
+            ]
+            retrain_patched = True
 
         if (
-            not isinstance(retrain, (int, bool, Callable))
+            not isinstance(retrain, int | bool | Callable)
             or (isinstance(retrain, int) and retrain < 0)
             or (isinstance(retrain, (Callable)) and (not retrainable))
             or ((retrain != 1) and (not retrainable))
         ):
             with pytest.raises(ValueError):
                 _ = model.historical_forecasts(series, retrain=retrain)
+            return
 
-        else:
-            if isinstance(retrain, Mock):
-                # resets patch_retrain_func call_count to 0
-                retrain.call_count = 0
-                retrain.side_effect = [True, False] * (len(series) // 2)
+        # run backtest
+        _ = model.historical_forecasts(
+            series,
+            past_covariates=series if multivariate else None,
+            retrain=retrain,
+        )
 
-            fit_method_to_patch = (
-                f"darts.models.forecasting.forecasting_model.{model_type}._fit_wrapper"
-            )
-            predict_method_to_patch = f"darts.models.forecasting.forecasting_model.{model_type}._predict_wrapper"
+        expected_fit_calls = (
+            n_fc_expected if retrain is True else math.ceil(n_fc_expected / 2)
+        )
+        assert len(model.fit_calls) == expected_fit_calls
+        assert len(model.pred_calls) == n_fc_expected
 
-            with patch(fit_method_to_patch) as patch_fit_method:
-                with patch(
-                    predict_method_to_patch, side_effect=series
-                ) as patch_predict_method:
-                    # Set _fit_called attribute to True, otherwise retrain function is never called
-                    model._fit_called = True
-
-                    # run backtest
-                    _ = model.historical_forecasts(
-                        series,
-                        past_covariates=series if multivariate else None,
-                        retrain=retrain,
-                    )
-
-                    assert patch_predict_method.call_count > 1
-                    assert patch_fit_method.call_count > 1
-
-                    if isinstance(retrain, Mock):
-                        # check that patch_retrain_func has been called at each iteration
-                        assert retrain.call_count > 1
+        if retrain_patched:
+            # check that patch_retrain_func has been called at each iteration (+1 for initial sanity check)
+            assert retrain.call_count == n_fc_expected + 1
 
     @pytest.mark.parametrize(
         "config",
@@ -630,10 +712,12 @@ class TestLocalForecastingModels:
                 "KalmanForecaster(add_encoders={'cyclic': {'past': ['month']}})",
             ),
             (
-                TBATS(
-                    use_trend=True, use_arma_errors=True, use_box_cox=True
-                ),  # params in wrong order
-                "TBATS(use_box_cox=True, use_trend=True)",
+                Theta(
+                    theta=12,
+                    seasonality_period=3,
+                    season_mode=SeasonalityMode.ADDITIVE,
+                ),
+                "Theta(theta=12, seasonality_period=3, season_mode=SeasonalityMode.ADDITIVE)",
             ),
         ],
     )
@@ -647,7 +731,7 @@ class TestLocalForecastingModels:
             (
                 ExponentialSmoothing(),
                 "ExponentialSmoothing(trend=ModelMode.ADDITIVE, damped=False, seasonal=SeasonalityMode.ADDITIVE, "
-                + "seasonal_periods=None, random_state=0, kwargs=None)",
+                + "seasonal_periods=None, error=add, random_errors=None, random_state=None, kwargs=None)",
             ),  # no params changed
             (
                 ARIMA(1, 1, 1),

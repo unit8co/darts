@@ -6,7 +6,6 @@ import pytest
 
 from darts import TimeSeries
 from darts.datasets import (
-    _DEFAULT_PATH,
     AirPassengersDataset,
     AusBeerDataset,
     AustralianTourismDataset,
@@ -41,6 +40,7 @@ from darts.datasets.dataset_loaders import (
     DatasetLoaderMetadata,
     DatasetLoadingException,
 )
+from darts.datasets.datasets import _DEFAULT_PATH
 
 _DEFAULT_PATH_TEST = _DEFAULT_PATH + "/tests"
 
@@ -176,7 +176,7 @@ class TestDatasetLoader:
 
     def test_multi_series_dataset(self):
         # processing _to_multi_series takes a long time. Test function with 5 cols.
-        ts = ele_multi_series_dataset.load().pd_dataframe()
+        ts = ele_multi_series_dataset.load().to_dataframe()
 
         ms = ElectricityDataset()._to_multi_series(ts)
         assert len(ms) == 5

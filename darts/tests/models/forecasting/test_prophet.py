@@ -4,16 +4,23 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from darts.tests.conftest import PROPHET_AVAILABLE
+
+if not PROPHET_AVAILABLE:
+    pytest.skip(
+        f"Prophet not available. {__name__} tests will be skipped.",
+        allow_module_level=True,
+    )
+
 from darts import TimeSeries
 from darts.logging import get_logger
-from darts.models import NotImportedModule, Prophet
+from darts.models import Prophet
 from darts.utils import timeseries_generation as tg
-from darts.utils.utils import freqs, generate_index
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
 
-@pytest.mark.skipif(isinstance(Prophet, NotImportedModule), reason="requires prophet")
 class TestProphet:
     def test_add_seasonality_calls(self):
         # test if adding seasonality at model creation and with method model.add_seasonality() are equal
@@ -73,24 +80,24 @@ class TestProphet:
         perform_full_test = False
 
         test_cases_all = {
-            freqs["YE"]: 12,
+            "YE": 12,
             "W": 7,
-            freqs["BME"]: 12,
+            "BME": 12,
             "C": 5,
             "D": 7,
             "MS": 12,
             "B": 5,
-            freqs["h"]: 24,
-            freqs["bh"]: 8,
-            freqs["QE"]: 4,
-            freqs["min"]: 60,
-            freqs["s"]: 60,
-            "30" + freqs["s"]: 60,
-            "24" + freqs["min"]: 60,
+            "h": 24,
+            "bh": 8,
+            "QE": 4,
+            "min": 60,
+            "s": 60,
+            "30" + "s": 60,
+            "24" + "min": 60,
         }
 
         test_cases_fast = {
-            key: test_cases_all[key] for key in ["MS", "D", freqs["h"]]
+            key: test_cases_all[key] for key in ["MS", "D", "h"]
         }  # monthly, daily, hourly
 
         self.helper_test_freq_coversion(test_cases_all)
@@ -175,8 +182,7 @@ class TestProphet:
 
         assert (
             abs(
-                Prophet._freq_to_days(freq="30" + freqs["s"])
-                - 30 * Prophet._freq_to_days(freq=freqs["s"])
+                Prophet._freq_to_days(freq="30s") - 30 * Prophet._freq_to_days(freq="s")
             )
             < 10e-9
         )
@@ -239,7 +245,7 @@ class TestProphet:
                 pred_raw_df[["ds", "yhat"]], time_col="ds"
             )
             compare_preds += [
-                pred_darts_stochastic.quantile_timeseries(0.5),
+                pred_darts_stochastic.quantile(0.5),
                 pred_raw,
             ]
 
@@ -298,3 +304,61 @@ class TestProphet:
                 ts,
                 future_covariates=invalid_future_covariates.drop_columns("is_sunday"),
             )
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            # Test Scenario 1: Both covariates have specific configurations
+            {
+                "cov1": {"prior_scale": 10.0, "mode": "additive"},
+                "cov2": {"standardize": True, "mode": "multiplicative"},
+            },
+            # Test Scenario 2: Only 'cov1' is configured; 'cov2' should use Prophet's defaults.
+            {"cov1": {"prior_scale": 5.0}},
+        ],
+    )
+    def test_add_regressor_configs_valid(self, config):
+        """Tests the add_regressor_configs parameter."""
+        series, future_covariates = self.helper_generate_input_series()
+
+        model = Prophet(add_regressor_configs=config)
+        model.fit(series[:-6], future_covariates=future_covariates)
+
+        # check that prophet model has the correct regressor configs
+        assert model._add_regressor_configs == config
+        prophet_config = model.model.extra_regressors
+        for cov, kwargs_expected in config.items():
+            assert cov in prophet_config
+            kwargs_model = prophet_config[cov]
+            for kw, val in kwargs_expected.items():
+                assert kwargs_model.get(kw) == val
+
+        pred_full = model.predict(6)
+        assert len(pred_full) == 6
+
+    def test_add_regressor_configs_invalid(self):
+        """Add regressor contains invalid component names."""
+        series, future_covariates = self.helper_generate_input_series()
+
+        invalid_config = {"invalid_comp": {"prior_scale": 5.0}}
+        model = Prophet(add_regressor_configs=invalid_config)
+        with pytest.raises(ValueError) as exc:
+            model.fit(series[:-6], future_covariates=future_covariates)
+        assert str(exc.value).endswith(
+            f"are not present in the `future_covariates`: `{set(invalid_config)}`."
+        )
+
+    def helper_generate_input_series(self):
+        # Create a simple timeseries
+        times = pd.date_range(start="2020-01-01", periods=30, freq="MS")
+        series = TimeSeries.from_times_and_values(times, range(30))
+
+        # Create two future covariates to test partial and full configs
+        covariate1 = TimeSeries.from_times_and_values(
+            times, range(10, 40), columns=["cov1"]
+        )
+        covariate2 = TimeSeries.from_times_and_values(
+            times, range(40, 70), columns=["cov2"]
+        )
+        future_covariates = covariate1.stack(covariate2)
+        return series, future_covariates

@@ -1,11 +1,12 @@
 """
-Time Series Statistics
-----------------------
+TimeSeries Statistics
+---------------------
 """
 
 import math
-from typing import List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
 
+import matplotlib.axes
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import argrelmax
@@ -23,14 +24,22 @@ from statsmodels.tsa.stattools import (
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.metrics.metrics import _tolerance_coverages
+from darts.metrics.utils import _get_tolerance_levels
+from darts.typing import TimeSeriesLike
+from darts.utils.likelihood_models.sklearn import QuantileRegression
 from darts.utils.missing_values import fill_missing_values
+from darts.utils.ts_utils import get_single_series
 from darts.utils.utils import ModelMode, SeasonalityMode
+
+_NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
+_NP_TRAPEZOID_FN = np.trapezoid if _NP_2_OR_ABOVE else np.trapz
 
 logger = get_logger(__name__)
 
 
 def check_seasonality(
-    ts: TimeSeries, m: Optional[int] = None, max_lag: int = 24, alpha: float = 0.05
+    ts: TimeSeries, m: int | None = None, max_lag: int = 24, alpha: float = 0.05
 ):
     """
     Checks whether the TimeSeries `ts` is seasonal with period `m` or not.
@@ -130,11 +139,11 @@ def _bartlett_formula(r: np.ndarray, m: int, length: int) -> float:
 
 def extract_trend_and_seasonality(
     ts: TimeSeries,
-    freq: Union[int, Sequence[int]] = None,
-    model: Union[SeasonalityMode, ModelMode] = ModelMode.MULTIPLICATIVE,
+    freq: int | Sequence[int] | None = None,
+    model: SeasonalityMode | ModelMode = ModelMode.MULTIPLICATIVE,
     method: str = "naive",
     **kwargs,
-) -> Tuple[TimeSeries, TimeSeries]:
+) -> tuple[TimeSeries, TimeSeries]:
     """
     Extracts trend and seasonality from a TimeSeries instance using `statsmodels.tsa`.
 
@@ -189,7 +198,7 @@ def extract_trend_and_seasonality(
 
     if method == "naive":
         decomp = seasonal_decompose(
-            ts.pd_series(), period=freq, model=model.value, extrapolate_trend="freq"
+            ts.to_series(), period=freq, model=model.value, extrapolate_trend="freq"
         )
 
     elif method == "STL":
@@ -200,7 +209,7 @@ def extract_trend_and_seasonality(
         )
 
         decomp = STL(
-            endog=ts.pd_series(),
+            endog=ts.to_series(),
             period=freq,
             **kwargs,
         ).fit()
@@ -213,7 +222,7 @@ def extract_trend_and_seasonality(
         )
 
         decomp = MSTL(
-            endog=ts.pd_series(),
+            endog=ts.to_series(),
             periods=freq,
             **kwargs,
         ).fit()
@@ -221,24 +230,40 @@ def extract_trend_and_seasonality(
     else:
         raise_log(ValueError(f"Unknown value for method: {method}"), logger)
 
-    season = TimeSeries.from_times_and_values(
-        ts.time_index,
-        decomp.seasonal,
-        static_covariates=ts.static_covariates,
-        hierarchy=ts.hierarchy,
-    )
-    trend = TimeSeries.from_times_and_values(
-        ts.time_index,
-        decomp.trend,
-        static_covariates=ts.static_covariates,
-        hierarchy=ts.hierarchy,
-    )
+    # keep components, ... only if the number of components matches
+    season_shape = decomp.seasonal.shape
+    if len(season_shape) == 1:
+        season_shape = (season_shape[0], 1)
+    if season_shape[1] == ts.n_components:
+        components = ts.components
+        static_covariates = ts.static_covariates
+        hierarchy = ts.hierarchy
+    else:
+        components = None
+        static_covariates = None
+        hierarchy = None
 
+    season = TimeSeries(
+        times=ts.time_index,
+        values=decomp.seasonal,
+        components=components,
+        static_covariates=static_covariates,
+        hierarchy=hierarchy,
+        metadata=ts.metadata,
+        copy=False,
+    )
+    trend = TimeSeries(
+        times=ts.time_index,
+        values=decomp.trend,
+        components=ts.components,
+        copy=False,
+        **ts._attrs,
+    )
     return trend, season
 
 
 def remove_from_series(
-    ts: TimeSeries, other: TimeSeries, model: Union[SeasonalityMode, ModelMode]
+    ts: TimeSeries, other: TimeSeries, model: SeasonalityMode | ModelMode
 ) -> TimeSeries:
     """
     Removes the TimeSeries `other` from the TimeSeries `ts` as specified by `model`.
@@ -284,7 +309,7 @@ def remove_from_series(
 
 def remove_seasonality(
     ts: TimeSeries,
-    freq: int = None,
+    freq: int | None = None,
     model: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE,
     method: str = "naive",
     **kwargs,
@@ -317,7 +342,7 @@ def remove_seasonality(
         A new TimeSeries instance that corresponds to the seasonality-adjusted 'ts'.
 
     References
-    -------
+    ----------
     .. [1] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html
     .. [2] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html
     """
@@ -367,6 +392,11 @@ def remove_trend(
     -------
     TimeSeries
         A new TimeSeries instance that corresponds to the trend-adjusted 'ts'.
+
+    References
+    ----------
+    .. [1] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html
+    .. [2] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html
     """
 
     ts._assert_univariate()
@@ -421,7 +451,7 @@ def stationarity_tests(
 
 
 def stationarity_test_kpss(
-    ts: TimeSeries, regression: str = "c", nlags: Union[str, int] = "auto"
+    ts: TimeSeries, regression: str = "c", nlags: str | int = "auto"
 ) -> set:
     """
     Provides Kwiatkowski-Phillips-Schmidt-Shin test for stationarity for a time series,
@@ -464,9 +494,9 @@ def stationarity_test_kpss(
 
 def stationarity_test_adf(
     ts: TimeSeries,
-    maxlag: Union[None, int] = None,
+    maxlag: None | int = None,
     regression: str = "c",
-    autolag: Union[None, str] = "AIC",
+    autolag: None | str = "AIC",
 ) -> set:
     """
     Provides Augmented Dickey-Fuller unit root test for a time series,
@@ -593,12 +623,12 @@ def granger_causality_tests(
 
 def plot_acf(
     ts: TimeSeries,
-    m: Optional[int] = None,
+    m: int | None = None,
     max_lag: int = 24,
     alpha: float = 0.05,
     bartlett_confint: bool = True,
-    fig_size: Tuple[int, int] = (10, 5),
-    axis: Optional[plt.axis] = None,
+    fig_size: tuple[int, int] = (10, 5),
+    axis: matplotlib.axes.Axes | None = None,
     default_formatting: bool = True,
 ) -> None:
     """
@@ -691,12 +721,12 @@ def plot_acf(
 
 def plot_pacf(
     ts: TimeSeries,
-    m: Optional[int] = None,
+    m: int | None = None,
     max_lag: int = 24,
     method: str = "ywadjusted",
     alpha: float = 0.05,
-    fig_size: Tuple[int, int] = (10, 5),
-    axis: Optional[plt.axis] = None,
+    fig_size: tuple[int, int] = (10, 5),
+    axis: matplotlib.axes.Axes | None = None,
     default_formatting: bool = True,
 ) -> None:
     """
@@ -713,18 +743,15 @@ def plot_pacf(
         The maximal lag order to consider.
     method
         The method to be used for the PACF calculation.
-        - | "yw" or "ywadjusted" : Yule-Walker with sample-size adjustment in
-          | denominator for acovf. Default.
+
+        - "yw" or "ywadjusted" : Yule-Walker with sample-size adjustment in denominator for acovf. Default.
         - "ywm" or "ywmle" : Yule-Walker without adjustment.
         - "ols" : regression of time series on lags of it and on constant.
-        - "ols-inefficient" : regression of time series on lags using a single
-          common sample to estimate all pacf coefficients.
-        - "ols-adjusted" : regression of time series on lags with a bias
-          adjustment.
-        - "ld" or "ldadjusted" : Levinson-Durbin recursion with bias
-          correction.
-        - "ldb" or "ldbiased" : Levinson-Durbin recursion without bias
-          correction.
+        - "ols-inefficient" : regression of time series on lags using a single common sample to estimate all pacf
+          coefficients.
+        - "ols-adjusted" : regression of time series on lags with a bias adjustment.
+        - "ld" or "ldadjusted" : Levinson-Durbin recursion with bias correction.
+        - "ldb" or "ldbiased" : Levinson-Durbin recursion without bias correction.
     alpha
         The confidence interval to display.
     fig_size
@@ -793,12 +820,12 @@ def plot_pacf(
 def plot_ccf(
     ts: TimeSeries,
     ts_other: TimeSeries,
-    m: Optional[int] = None,
+    m: int | None = None,
     max_lag: int = 24,
     alpha: float = 0.05,
     bartlett_confint: bool = True,
-    fig_size: Tuple[int, int] = (10, 5),
-    axis: Optional[plt.axis] = None,
+    fig_size: tuple[int, int] = (10, 5),
+    axis: matplotlib.axes.Axes | None = None,
     default_formatting: bool = True,
 ) -> None:
     """
@@ -911,12 +938,12 @@ def plot_ccf(
 
 
 def plot_hist(
-    data: Union[TimeSeries, List[float], np.ndarray],
-    bins: Optional[Union[int, np.ndarray, List[float]]] = None,
+    data: TimeSeries | list[float] | np.ndarray,
+    bins: int | np.ndarray | list[float] | None = None,
     density: bool = False,
-    title: Optional[str] = None,
-    fig_size: Optional[Tuple[int, int]] = None,
-    ax: Optional[plt.axis] = None,
+    title: str | None = None,
+    fig_size: tuple[int, int] | None = None,
+    ax: matplotlib.axes.Axes | None = None,
 ) -> None:
     """This function plots the histogram of values in a TimeSeries instance or an array-like.
 
@@ -1071,3 +1098,130 @@ def plot_residuals_analysis(
     ax3.set_ylabel("ACF value")
     ax3.set_xlabel("lag")
     ax3.set_title("ACF")
+
+
+def plot_tolerance_curve(
+    actual_series: TimeSeriesLike,
+    pred_series: TimeSeriesLike,
+    intersect: bool = True,
+    min_tolerance: float = 0.0,
+    max_tolerance: float = 1.0,
+    step: float = 0.01,
+    q: float | list[float] | None = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    fig_size: tuple[int, int] | None = None,
+    axis: matplotlib.axes.Axes | None = None,
+) -> None:
+    """
+    Plots the Tolerance Curve for evaluating forecast alignment.
+
+    The tolerance curve shows, for each tolerance level (as a percentage of the actual series range),
+    what fraction of prediction points fall within that tolerance.
+
+    For multivariate series, one curve is plotted per component.
+
+    The Area Under Tolerance Curve (AUTC) can be computed using :func:`~darts.metrics.metrics.autc`.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    min_tolerance
+        The minimum tolerance level as a fraction of the series half-range. Default is 0.0 (0%).
+    max_tolerance
+        The maximum tolerance level as a fraction of the series half-range. Default is 1.0 (100%).
+    step
+        The step size between tolerance levels. Default is 0.01 (1%).
+        For example, with defaults, tolerances are [0.0, 0.01, 0.02, ..., 1.0].
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+    fig_size
+        The size of the figure to be displayed.
+    axis
+        Optionally, an axis object to plot on.
+
+    See Also
+    --------
+    :func:`~darts.metrics.metrics.autc` : Compute the Area Under Tolerance Curve as a single score.
+    """
+    # get coverage for different tolerance levels
+    coverages = _tolerance_coverages(
+        actual_series=actual_series,
+        pred_series=pred_series,
+        intersect=intersect,
+        min_tolerance=min_tolerance,
+        max_tolerance=max_tolerance,
+        step=step,
+        q=q,
+        component_reduction=None,
+        series_reduction=np.nanmean,
+        n_jobs=n_jobs,
+        verbose=verbose,
+    )
+
+    tolerances = _get_tolerance_levels(
+        min_tolerance=min_tolerance,
+        max_tolerance=max_tolerance,
+        step=step,
+    )
+
+    # -> (n coverages, n components * n quantiles)
+    if len(coverages.shape) == 1:
+        coverages = coverages.reshape(-1, 1)
+
+    series_ = get_single_series(actual_series)
+    if q is None or isinstance(q, float):
+        coverage_labels = series_.components.tolist()
+    else:
+        coverage_labels = QuantileRegression(n_outputs=1, quantiles=q).component_names(
+            series_
+        )
+
+    if axis is None:
+        _, axis = plt.subplots(figsize=fig_size)
+
+    tolerances_perc = tolerances * 100.0
+    for i, comp_name in enumerate(coverage_labels):
+        coverages_comp = coverages[:, i]
+        coverages_perc = coverages_comp * 100.0
+
+        auc = _NP_TRAPEZOID_FN(coverages_comp, tolerances)
+        label = f"{comp_name} (AUTC = {auc:.3f})"
+        axis.step(
+            tolerances_perc,
+            coverages_perc,
+            where="post",
+            linewidth=2,
+            label=label,
+        )
+        if len(coverage_labels) == 1:
+            axis.fill_between(
+                tolerances_perc,
+                coverages_perc,
+                alpha=0.25,
+                color=axis.get_lines()[-1].get_color(),
+                step="post",
+            )
+
+    # add reference line for perfect predictions
+    axis.axhline(y=100, color="gray", linestyle="--", alpha=0.5, linewidth=1)
+
+    axis.set_xlim(0, 100)
+    axis.set_ylim(0, 105)
+    axis.set_xlabel("Tolerance (% of range)")
+    axis.set_ylabel("Coverage (%)")
+    axis.set_title("Tolerance Curve")
+    axis.grid(True, alpha=0.3)
+    axis.legend()

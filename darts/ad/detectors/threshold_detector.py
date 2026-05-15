@@ -7,13 +7,13 @@ This detector compares time series values with user-given thresholds, and
 identifies time points as anomalous when values are beyond the thresholds.
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import numpy as np
 
+from darts import TimeSeries
 from darts.ad.detectors.detectors import Detector, _BoundedDetectorMixin
 from darts.logging import get_logger, raise_log
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
@@ -21,8 +21,8 @@ logger = get_logger(__name__)
 class ThresholdDetector(Detector, _BoundedDetectorMixin):
     def __init__(
         self,
-        low_threshold: Union[int, float, Sequence[float], None] = None,
-        high_threshold: Union[int, float, Sequence[float], None] = None,
+        low_threshold: int | float | Sequence[float] | None = None,
+        high_threshold: int | float | Sequence[float] | None = None,
     ) -> None:
         """Threshold Detector
 
@@ -79,8 +79,8 @@ class ThresholdDetector(Detector, _BoundedDetectorMixin):
 
         def _detect_fn(x, lo, hi):
             # x of shape (time,) for 1 component
-            return (x < (np.NINF if lo is None else lo)) | (
-                x > (np.Inf if hi is None else hi)
+            return (x < (-np.inf if lo is None else lo)) | (
+                x > (np.inf if hi is None else hi)
             )
 
         detected = np.zeros_like(np_series, dtype=int)
@@ -91,7 +91,13 @@ class ThresholdDetector(Detector, _BoundedDetectorMixin):
                 low_threshold[component_idx],
                 high_threshold[component_idx],
             )
-        return series.with_values(np.expand_dims(detected, -1).astype(series.dtype))
+        return TimeSeries(
+            times=series.time_index,
+            values=np.expand_dims(detected, -1).astype(series.dtype),
+            components=series.components,
+            copy=False,
+            **series._attrs,
+        )
 
     @property
     def low_threshold(self):

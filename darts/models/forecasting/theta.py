@@ -4,14 +4,13 @@ Theta Method
 """
 
 import math
-from typing import List, Optional
 
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
 
+from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
-from darts.timeseries import TimeSeries
 from darts.utils.statistics import (
     check_seasonality,
     extract_trend_and_seasonality,
@@ -29,7 +28,7 @@ class Theta(LocalForecastingModel):
     def __init__(
         self,
         theta: int = 2,
-        seasonality_period: Optional[int] = None,
+        seasonality_period: int | None = None,
         season_mode: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE,
     ):
         """
@@ -68,13 +67,13 @@ class Theta(LocalForecastingModel):
         >>> model = Theta(theta=2)
         >>> model.fit(series)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[442.7256909 ],
-               [433.74381763],
-               [494.54534585],
-               [480.36937856],
-               [481.06675142],
-               [545.80068173]])
+        >>> print(pred.values())
+        [[442.7256909 ]
+         [433.74381763]
+         [494.54534585]
+         [480.36937856]
+         [481.06675142]
+         [545.80068173]]
         """
 
         super().__init__()
@@ -99,8 +98,8 @@ class Theta(LocalForecastingModel):
         if self.theta == 0:
             raise_log(ValueError("The parameter theta cannot be equal to 0."), logger)
 
-    def fit(self, series: TimeSeries):
-        super().fit(series)
+    def fit(self, series: TimeSeries, verbose: bool | None = False):
+        super().fit(series, verbose=verbose)
         self._assert_univariate(series)
         ts = self.training_series
 
@@ -156,10 +155,11 @@ class Theta(LocalForecastingModel):
         self,
         n: int,
         num_samples: int = 1,
-        verbose: bool = False,
+        verbose: bool | None = None,
         show_warnings: bool = True,
+        random_state: int | None = None,
     ) -> "TimeSeries":
-        super().predict(n, num_samples)
+        super().predict(n, num_samples, verbose=verbose)
 
         # Forecast of the SES part.
         forecast = self.model.forecast(n)
@@ -175,7 +175,7 @@ class Theta(LocalForecastingModel):
         # Re-apply the seasonal trend of the TimeSeries
         if self.is_seasonal:
             replicated_seasonality = np.tile(
-                self.seasonality.pd_series()[-self.season_period :],
+                self.seasonality.to_series()[-self.season_period :],
                 math.ceil(n / self.season_period),
             )[:n]
             if self.season_mode is SeasonalityMode.MULTIPLICATIVE:
@@ -190,22 +190,22 @@ class Theta(LocalForecastingModel):
         return False
 
     @property
-    def min_train_series_length(self) -> int:
+    def _target_window_lengths(self) -> tuple[int, int]:
         if (
             self.season_mode != SeasonalityMode.NONE
             and self.seasonality_period
             and self.seasonality_period > 1
         ):
-            return 2 * self.seasonality_period
+            return 2 * self.seasonality_period, 0
         else:
-            return 3
+            return 3, 0
 
 
 class FourTheta(LocalForecastingModel):
     def __init__(
         self,
         theta: int = 2,
-        seasonality_period: Optional[int] = None,
+        seasonality_period: int | None = None,
         season_mode: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE,
         model_mode: ModelMode = ModelMode.ADDITIVE,
         trend_mode: TrendMode = TrendMode.LINEAR,
@@ -214,7 +214,7 @@ class FourTheta(LocalForecastingModel):
         """
         An implementation of the 4Theta method with configurable `theta` parameter.
 
-        See M4 competition `solution <https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R>`_.
+        See M4 competition `solution <https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R>`__.
 
         The training time series is de-seasonalized according to `seasonality_period`,
         or an inferred seasonality period.
@@ -263,13 +263,13 @@ class FourTheta(LocalForecastingModel):
         >>> model = FourTheta(theta=2)
         >>> model.fit(series)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[443.3949283 ],
-               [434.39769555],
-               [495.28886231],
-               [481.08962991],
-               [481.78610361],
-               [546.61463773]])
+        >>> print(pred.values())
+        [[443.3949283 ]
+         [434.39769555]
+         [495.28886231]
+         [481.08962991]
+         [481.78610361]
+         [546.61463773]]
         """
 
         super().__init__()
@@ -307,13 +307,13 @@ class FourTheta(LocalForecastingModel):
             logger,
         )
 
-    def fit(self, series):
-        super().fit(series)
+    def fit(self, series, verbose: bool | None = False):
+        super().fit(series, verbose=verbose)
 
         self.length = len(series)
         # normalization of data
         if self.normalization:
-            self.mean = series.pd_dataframe(copy=False).mean().mean()
+            self.mean = series.to_dataframe(copy=False).mean().mean()
             raise_if_not(
                 not np.isclose(self.mean, 0),
                 "The mean value of the provided series is too close to zero to perform normalization",
@@ -405,8 +405,9 @@ class FourTheta(LocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: int | None = None,
     ) -> "TimeSeries":
-        super().predict(n, num_samples)
+        super().predict(n, num_samples, verbose=verbose)
 
         # Forecast of the SES part.
         forecast = self.model.forecast(n)
@@ -424,7 +425,7 @@ class FourTheta(LocalForecastingModel):
         # Re-apply the seasonal trend of the TimeSeries
         if self.is_seasonal:
             replicated_seasonality = np.tile(
-                self.seasonality.pd_series()[-self.season_period :],
+                self.seasonality.to_series()[-self.season_period :],
                 math.ceil(n / self.season_period),
             )[:n]
             if self.season_mode is SeasonalityMode.MULTIPLICATIVE:
@@ -440,8 +441,8 @@ class FourTheta(LocalForecastingModel):
     @staticmethod
     def select_best_model(
         ts: TimeSeries,
-        thetas: Optional[List[int]] = None,
-        m: Optional[int] = None,
+        thetas: list[int] | None = None,
+        m: int | None = None,
         normalization: bool = True,
         n_jobs: int = 1,
     ) -> "FourTheta":
@@ -511,12 +512,12 @@ class FourTheta(LocalForecastingModel):
         return False
 
     @property
-    def min_train_series_length(self) -> int:
+    def _target_window_lengths(self) -> tuple[int, int]:
         if (
             self.season_mode != SeasonalityMode.NONE
             and self.seasonality_period
             and self.seasonality_period > 1
         ):
-            return 2 * self.seasonality_period
+            return 2 * self.seasonality_period, 0
         else:
-            return 3
+            return 3, 0

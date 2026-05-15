@@ -5,20 +5,19 @@ Kalman Filter
 
 from abc import ABC
 from copy import deepcopy
-from typing import Optional
 
 import numpy as np
 import pandas as pd
 from nfoursid.kalman import Kalman
 from nfoursid.nfoursid import NFourSID
 
+from darts import TimeSeries
 from darts.logging import raise_if, raise_if_not
 from darts.models.filtering.filtering_model import FilteringModel
-from darts.timeseries import TimeSeries
 
 
 class KalmanFilter(FilteringModel, ABC):
-    def __init__(self, dim_x: int = 1, kf: Optional[Kalman] = None):
+    def __init__(self, dim_x: int = 1, kf: Kalman | None = None):
         """
         This model implements a Kalman filter over a time series.
 
@@ -75,21 +74,21 @@ class KalmanFilter(FilteringModel, ABC):
     def fit(
         self,
         series: TimeSeries,
-        covariates: Optional[TimeSeries] = None,
-        num_block_rows: Optional[int] = None,
+        covariates: TimeSeries | None = None,
+        num_block_rows: int | None = None,
     ) -> "KalmanFilter":
         """
         Initializes the Kalman filter using the N4SID algorithm.
 
         Parameters
         ----------
-        series : TimeSeries
+        series
             The series of outputs (observations) used to infer the underlying state space model.
             This must be a deterministic series (containing one sample).
-        covariates : Optional[TimeSeries]
+        covariates
             An optional series of inputs (control signal) that will also be used to infer the underlying state space
             model. This must be a deterministic series (containing one sample).
-        num_block_rows : Optional[int]
+        num_block_rows
             The number of block rows to use in the block Hankel matrices used in the N4SID algorithm.
             See the documentation of nfoursid.nfoursid.NFourSID for more information.
             If not provided, the dimensionality of the state space model will be used, with a maximum of 10.
@@ -109,12 +108,12 @@ class KalmanFilter(FilteringModel, ABC):
 
         # TODO: Handle multiple timeseries. Needs reimplementation of NFourSID?
         self.dim_y = series.width
-        outputs = series.pd_dataframe(copy=False)
+        outputs = series.to_dataframe(copy=False)
         outputs.columns = [f"y_{i}" for i in outputs.columns]
 
         if covariates is not None:
             self.dim_u = covariates.width
-            inputs = covariates.pd_dataframe(copy=False)
+            inputs = covariates.to_dataframe(copy=False)
             inputs.columns = [f"u_{i}" for i in inputs.columns]
             input_columns = list(inputs.columns)
             measurements = pd.concat([outputs, inputs], axis=1)
@@ -142,7 +141,7 @@ class KalmanFilter(FilteringModel, ABC):
     def filter(
         self,
         series: TimeSeries,
-        covariates: Optional[TimeSeries] = None,
+        covariates: TimeSeries | None = None,
         num_samples: int = 1,
     ) -> TimeSeries:
         """
@@ -150,13 +149,13 @@ class KalmanFilter(FilteringModel, ABC):
 
         Parameters
         ----------
-        series : TimeSeries
+        series
             The series of outputs (observations) used to infer the underlying outputs according to the specified Kalman
             process. This must be a deterministic series (containing one sample).
-        covariates : Optional[TimeSeries]
+        covariates
             An optional series of inputs (control signal), necessary if the Kalman filter was initialized with
             covariates. This must be a deterministic series (containing one sample).
-        num_samples : int, default: 1
+        num_samples
             The number of samples to generate from the inferred distribution of the output z. If this is set to 1, the
             output is a `TimeSeries` containing a single sample using the mean of the distribution.
 
@@ -240,4 +239,10 @@ class KalmanFilter(FilteringModel, ABC):
                     mean_vec, cov_matrix, size=num_samples
                 ).T
 
-        return series.with_values(sampled_outputs)
+        return TimeSeries(
+            times=series.time_index,
+            values=sampled_outputs,
+            components=series.components,
+            copy=False,
+            **series._attrs,
+        )

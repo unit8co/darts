@@ -5,46 +5,42 @@ Facebook Prophet
 
 import logging
 import re
-from typing import Callable, List, Optional, Sequence, Union
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import numpy as np
 import pandas as pd
 import prophet
 
+from darts import TimeSeries
 from darts.logging import execute_and_suppress_output, get_logger, raise_if, raise_log
 from darts.models.forecasting.forecasting_model import (
     FutureCovariatesLocalForecastingModel,
 )
-from darts.timeseries import TimeSeries
+from darts.typing import TimeIndex
+from darts.utils.utils import random_method
 
 logger = get_logger(__name__)
 logger.level = logging.WARNING  # set to warning to suppress prophet logs
 
 
 class Prophet(FutureCovariatesLocalForecastingModel):
+    @random_method
     def __init__(
         self,
-        add_seasonalities: Optional[Union[dict, List[dict]]] = None,
-        country_holidays: Optional[str] = None,
+        add_seasonalities: dict | list[dict] | None = None,
+        add_regressor_configs: dict[str, dict[str, Any]] | None = None,
+        country_holidays: str | None = None,
+        cap: float | Callable[[TimeIndex], Sequence[float]] | None = None,
+        floor: float | Callable[[TimeIndex], Sequence[float]] | None = None,
+        add_encoders: dict | None = None,
+        random_state: int | None = None,
         suppress_stdout_stderror: bool = True,
-        add_encoders: Optional[dict] = None,
-        cap: Optional[
-            Union[
-                float,
-                Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]],
-            ]
-        ] = None,
-        floor: Optional[
-            Union[
-                float,
-                Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]],
-            ]
-        ] = None,
         **prophet_kwargs,
     ):
         """Facebook Prophet
 
-        This class provides a basic wrapper around `Facebook Prophet <https://github.com/facebook/prophet>`_.
+        This class provides a basic wrapper around `Facebook Prophet <https://github.com/facebook/prophet>`__.
         It supports adding country holidays as well as custom seasonalities and adds support for stochastic
         forecasting and future covariates.
 
@@ -58,11 +54,11 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             .. code-block:: python
 
                 dict({
-                'name': str  # (name of the seasonality component),
-                'seasonal_periods': Union[int, float]  # (nr of steps composing a season),
-                'fourier_order': int  # (number of Fourier components to use),
-                'prior_scale': Optional[float]  # (a prior scale for this component),
-                'mode': Optional[str]  # ('additive' or 'multiplicative')
+                    'name': str  # (name of the seasonality component),
+                    'seasonal_periods': int | float  # (nr of steps composing a season),
+                    'fourier_order': int  # (number of Fourier components to use),
+                    'prior_scale': float | None  # (a prior scale for this component),
+                    'mode': str | None  # ('additive' or 'multiplicative')
                 })
             ..
 
@@ -75,17 +71,46 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             `add_seasonality()` method.
             Alternatively, you can add seasonalities after model creation and before fitting with
             :meth:`add_seasonality() <Prophet.add_seasonality()>`.
+        add_regressor_configs
+            Optionally, a dictionary of configuration dictionaries for custom regressors / components of
+            `future_covariates`. Each key is a regressor name, and the value is a dictionary of parameters for
+            Prophet's `add_regressor()` method. Supported parameters are `prior_scale`, `standardize`, and `mode`.
+            For example:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_regressor_configs={
+                    'temperature': {'prior_scale': 5.0, 'standardize': True, 'mode': 'additive'},
+                    'humidity': {'prior_scale': 2.0, 'standardize': 'auto', 'mode': 'multiplicative'},
+                    'pressure': {'prior_scale': 15.0}  # uses defaults for other params
+                }
+            ..
         country_holidays
             An optional country code, for which holidays can be taken into account by Prophet.
+            See `holidays package <https://holidays.readthedocs.io/en/latest/#available-countries>`__ for available
+            country codes.
 
-            See: https://github.com/dr-prodigy/python-holidays
+        cap
+            Parameter specifying the maximum carrying capacity when predicting with logistic growth.
+            Mandatory when `growth = 'logistic'`, otherwise ignored.
+            See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
+            on logistic forecasts.
+            Can be either
 
-            In addition to those countries, Prophet includes holidays for these
-            countries: Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN),
-            Thailand (TH), Philippines (PH), Turkey (TU), Pakistan (PK), Bangladesh (BD),
-            Egypt (EG), China (CN), and Russia (RU).
-        suppress_stdout_stderror
-            Optionally suppress the log output produced by Prophet during training.
+            - a number, for constant carrying capacities
+            - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
+              where each number indicates the carrying capacity at this index.
+        floor
+            Parameter specifying the minimum carrying capacity when predicting logistic growth.
+            Optional when `growth = 'logistic'` (defaults to 0), otherwise ignored.
+            See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
+            on logistic forecasts.
+            Can be either
+
+            - a number, for constant carrying capacities
+            - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
+              where each number indicates the carrying capacity at this index.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -110,30 +135,14 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                     'tz': 'CET'
                 }
             ..
-        cap
-            Parameter specifiying the maximum carrying capacity when predicting with logistic growth.
-            Mandatory when `growth = 'logistic'`, otherwise ignored.
-            See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
-            on logistic forecasts.
-            Can be either
-
-            - a number, for constant carrying capacities
-            - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
-            where each number indicates the carrying capacity at this index.
-        floor
-            Parameter specifiying the minimum carrying capacity when predicting logistic growth.
-            Optional when `growth = 'logistic'` (defaults to 0), otherwise ignored.
-            See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
-            on logistic forecasts.
-            Can be either
-
-            - a number, for constant carrying capacities
-            - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
-            where each number indicates the carrying capacity at this index.
+        random_state
+            Controls the randomness for reproducible forecasting.
+        suppress_stdout_stderror
+            Optionally suppress the log output produced by Prophet during training.
         prophet_kwargs
             Some optional keyword arguments for Prophet.
             For information about the parameters see:
-            `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`_.
+            `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`__.
 
         Examples
         --------
@@ -153,18 +162,19 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         >>> )
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[472.26891239],
-               [467.56955721],
-               [494.47230467],
-               [493.10568429],
-               [497.54686113],
-               [539.11716811]])
+        >>> print(pred.values())
+        [[472.26891239]
+         [467.56955721]
+         [494.47230467]
+         [493.10568429]
+         [497.54686113]
+         [539.11716811]]
         """
 
         super().__init__(add_encoders=add_encoders)
 
         self._auto_seasonalities = self._extract_auto_seasonality(prophet_kwargs)
+        self._add_regressor_configs = add_regressor_configs or {}
 
         self._add_seasonalities = dict()
         add_seasonality_calls = (
@@ -203,8 +213,13 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 # Use 0 as default value
                 self._floor = 0
 
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        super()._fit(series, future_covariates)
+    def _fit(
+        self,
+        series: TimeSeries,
+        future_covariates: TimeSeries | None = None,
+        verbose: bool | None = None,
+    ):
+        super()._fit(series, future_covariates, verbose=verbose)
         self._assert_univariate(series)
         series = self.training_series
 
@@ -233,15 +248,32 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         # add covariates as additional regressors
         if future_covariates is not None:
+            if self._add_regressor_configs:
+                # check that all configured regressors are actually present in the future_covariates
+                comps_config = set(self._add_regressor_configs)
+                comps_actual = set(future_covariates.components)
+                comps_invalid = comps_config - comps_actual
+                if comps_invalid:
+                    raise_log(
+                        ValueError(
+                            f"The following components have been configured in `add_regressor_configs` "
+                            f"but are not present in the `future_covariates`: `{comps_invalid}`."
+                        ),
+                        logger=logger,
+                    )
+
             fit_df = fit_df.merge(
-                future_covariates.pd_dataframe(),
+                future_covariates.to_dataframe(),
                 left_on="ds",
                 right_index=True,
                 how="left",
             )
             for covariate in future_covariates.columns:
                 if covariate not in conditional_seasonality_covariates:
-                    self.model.add_regressor(covariate)
+                    # Get the config dict for the current regressor, or an empty dict if not found
+                    config = self._add_regressor_configs.get(covariate, {})
+                    # Unpack the config dictionary into keyword arguments
+                    self.model.add_regressor(covariate, **config)
 
         # add built-in country holidays
         if self.country_holidays is not None:
@@ -256,16 +288,25 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         return self
 
+    @random_method
     def _predict(
         self,
         n: int,
-        future_covariates: Optional[TimeSeries] = None,
+        future_covariates: TimeSeries | None = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
         verbose: bool = False,
+        random_state: int | None = None,
+        **kwargs,
     ) -> TimeSeries:
         _ = self._check_seasonality_conditions(future_covariates=future_covariates)
 
-        super()._predict(n, future_covariates, num_samples)
+        super()._predict(
+            n=n,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            verbose=verbose,
+        )
 
         predict_df = self._generate_predict_df(n=n, future_covariates=future_covariates)
 
@@ -295,7 +336,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         return df
 
     def _generate_predict_df(
-        self, n: int, future_covariates: Optional[TimeSeries] = None
+        self, n: int, future_covariates: TimeSeries | None = None
     ) -> pd.DataFrame:
         """Returns a pandas DataFrame in the format required for Prophet.predict() with `n` dates after the end of
         the fitted TimeSeries"""
@@ -305,7 +346,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             predict_df = self._add_capacities_to_df(predict_df)
         if future_covariates is not None:
             predict_df = predict_df.merge(
-                future_covariates.pd_dataframe(),
+                future_covariates.to_dataframe(),
                 left_on="ds",
                 right_index=True,
                 how="left",
@@ -313,8 +354,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         return predict_df
 
     def _check_seasonality_conditions(
-        self, future_covariates: Optional[TimeSeries] = None
-    ) -> List[str]:
+        self, future_covariates: TimeSeries | None = None
+    ) -> list[str]:
         """
         Checks if the conditions for custom conditional seasonalities are met. Each custom seasonality that has a
         `condition_name` other than None is checked. If the `condition_name` is not a column in the `future_covariates`
@@ -356,7 +397,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                     continue
                 if (
                     not future_covariates[condition_name]
-                    .pd_series()
+                    .to_series()
                     .isin([True, False])
                     .all()
                 ):
@@ -419,14 +460,17 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         return forecast["yhat"]
 
     def predict_raw(
-        self, n: int, future_covariates: Optional[TimeSeries] = None
+        self,
+        n: int,
+        future_covariates: TimeSeries | None = None,
+        verbose: bool | None = None,
     ) -> pd.DataFrame:
         """Returns the output of the base Facebook Prophet model in form of a pandas DataFrame. Note however,
         that the output of this method is not supported for further processing with the Darts API.
 
         Methods of the base Prophet model can be accessed with self.model.method() (i.e. self.model.plot_components())
         """
-        super().predict(n, future_covariates, num_samples=1)
+        super().predict(n, future_covariates, num_samples=1, verbose=verbose)
 
         predict_df = self._generate_predict_df(n=n, future_covariates=future_covariates)
 
@@ -435,11 +479,11 @@ class Prophet(FutureCovariatesLocalForecastingModel):
     def add_seasonality(
         self,
         name: str,
-        seasonal_periods: Union[int, float],
+        seasonal_periods: int | float,
         fourier_order: int,
-        prior_scale: Optional[float] = None,
-        mode: Optional[str] = None,
-        condition_name: Optional[str] = None,
+        prior_scale: float | None = None,
+        mode: str | None = None,
+        condition_name: str | None = None,
     ) -> None:
         """Adds a custom seasonality to the model that repeats after every n `seasonal_periods` timesteps.
         An example for `seasonal_periods`: If you have hourly data (frequency='H') and your seasonal cycle repeats
@@ -486,9 +530,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         }
         self._store_add_seasonality_call(seasonality_call=function_call)
 
-    def _store_add_seasonality_call(
-        self, seasonality_call: Optional[dict] = None
-    ) -> None:
+    def _store_add_seasonality_call(self, seasonality_call: dict | None = None) -> None:
         """Checks the validity of an add_seasonality() call and stores valid calls.
         As the actual model is only created at fitting time, and seasonalities are added pre-fit,
         the add_seasonality calls must be stored and checked on Darts' side.
@@ -529,7 +571,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         ]
         raise_if(
             len(missing_kws) > 0,
-            f'Seasonality `{add_seasonality_call["name"]}` has missing mandatory keywords or empty arguments: '
+            f"Seasonality `{add_seasonality_call['name']}` has missing mandatory keywords or empty arguments: "
             f"{missing_kws}.",
             logger,
         )
@@ -547,7 +589,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         ]
         raise_if(
             len(invalid_kws) > 0,
-            f'Seasonality `{add_seasonality_call["name"]}` has invalid keywords: {invalid_kws}. Only the '
+            f"Seasonality `{add_seasonality_call['name']}` has invalid keywords: {invalid_kws}. Only the "
             f"following arguments are supported: {list(seasonality_default)}",
             logger,
         )
@@ -560,8 +602,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         ]
         raise_if(
             len(invalid_types) > 0,
-            f'Seasonality `{add_seasonality_call["name"]}` has invalid value dtypes: {invalid_types} must be '
-            f'of type {[seasonality_properties[kw]["dtype"] for kw in invalid_types]}.',
+            f"Seasonality `{add_seasonality_call['name']}` has invalid value dtypes: {invalid_types} must be "
+            f"of type {[seasonality_properties[kw]['dtype'] for kw in invalid_types]}.",
             logger,
         )
 
@@ -584,7 +626,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         Parameters
         ----------
         freq
-            frequency string of the underlying TimeSeries's time index (pd.DateTimeIndex.freq_str)
+            frequency string of the underlying TimeSeries's time index (pd.DatetimeIndex.freqstr).
         """
 
         # this regex extracts all digits from `freq`: exp: '30S' -> 30
@@ -597,37 +639,36 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         seconds_per_day = 86400
         days = 0
-        if freq in ["A", "BA", "Y", "BY", "RE"] or freq.startswith((
-            "A",
-            "BA",
+        if freq.startswith((
             "Y",
             "BY",
             "RE",
         )):  # year
             days = 365.25
-        elif freq in ["Q", "BQ", "REQ"] or freq.startswith((
+        elif freq.startswith((
             "Q",
             "BQ",
             "REQ",
         )):  # quarter
             days = 3 * 30.4375
-        elif freq in [
+        elif freq.startswith((
             "M",
             "BM",
             "CBM",
-            "SM",
-            "LWOM",
             "WOM",
-        ] or freq.startswith(("M", "BME", "BS", "CBM", "SM", "LWOM", "WOM")):  # month
+            "LWOM",
+        )):  # month
             days = 30.4375
-        elif freq == "W" or freq.startswith("W-"):  # week
+        elif freq.startswith("SM"):  # semi-month
+            days = 30.4375 / 2
+        elif freq.startswith("W"):  # week
             days = 7.0
         elif freq in ["B", "C"]:  # business day
             days = 1 * 7 / 5
         elif freq in ["D"]:  # day
             days = 1.0
         else:
-            # all freqs higher than "D" are lower case in pandas >= 2.2.0
+            # all freqs higher than "D" are lower case
             freq_lower = freq.lower()
             if freq_lower in ["h", "bh", "cbh"]:  # hour
                 days = 1 / 24

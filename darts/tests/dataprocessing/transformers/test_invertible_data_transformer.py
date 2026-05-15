@@ -1,6 +1,8 @@
-from typing import Any, Mapping, Sequence, Union
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 import numpy as np
+import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers.invertible_data_transformer import (
@@ -17,7 +19,8 @@ class TestInvertibleDataTransformer:
             translation: float,
             stack_samples: bool = False,
             mask_components: bool = True,
-            parallel_params: Union[bool, Sequence[str]] = False,
+            parallel_params: bool | Sequence[str] = False,
+            columns: str | list[str] | None = None,
         ):
             """
             Applies the (invertible) transform `transformed_series = scale * series + translation`.
@@ -47,6 +50,7 @@ class TestInvertibleDataTransformer:
                 name="DataTransformerMock",
                 mask_components=mask_components,
                 parallel_params=parallel_params,
+                columns=columns,
             )
 
         @staticmethod
@@ -101,7 +105,10 @@ class TestInvertibleDataTransformer:
 
         @staticmethod
         def ts_inverse_transform(
-            series: TimeSeries, params: Mapping[str, Any], **kwargs
+            series: TimeSeries,
+            params: Mapping[str, Any],
+            insample: TimeSeries | None = None,
+            **kwargs,
         ) -> TimeSeries:
             """
             Implements the inverse transform `(series - translation) / scale`.
@@ -149,22 +156,66 @@ class TestInvertibleDataTransformer:
 
             return series.with_values(vals)
 
-    def test_input_transformed_single_series(self):
+    @pytest.mark.parametrize("component_mask", [None, np.array([True])])
+    def test_input_transformed_single_series(self, component_mask):
         """
         Tests for correct (inverse) transformation of single series.
         """
         test_input = constant_timeseries(value=1, length=10)
+        test_input_copy = test_input.copy()
 
         mock = self.DataTransformerMock(scale=2, translation=10)
 
-        transformed = mock.transform(test_input)
-
+        transformed = mock.transform(test_input, component_mask=component_mask)
         # 2 * 1 + 10 = 12
         expected = constant_timeseries(value=12, length=10)
         assert transformed == expected
+        assert test_input == test_input_copy
 
         # Should get input back:
+        transformed_copy = transformed.copy()
+        assert (
+            mock.inverse_transform(transformed, component_mask=component_mask)
+            == test_input
+        )
+        assert transformed == transformed_copy
+
+    @pytest.mark.parametrize("col_names", ["A", None, ["A"], ["B"], ["A", "B"]])
+    def test_columns_subset(self, col_names):
+        """
+        Tests if the `columns` argument correctly applies the transform
+        and it's inverse only to the specified columns.
+        """
+        ts_a = constant_timeseries(value=1, length=10, column_name="A")
+        ts_b = constant_timeseries(value=2, length=10, column_name="B")
+
+        test_input = ts_a.stack(ts_b)
+        test_input_copy = test_input.copy()
+
+        mock = self.DataTransformerMock(scale=2, translation=10, columns=col_names)
+
+        transformed = mock.transform(test_input)
+
+        if col_names is None or "A" in col_names:
+            assert transformed["A"] == constant_timeseries(
+                value=12, length=10, column_name="A"
+            )
+        else:
+            assert transformed["A"] == constant_timeseries(
+                value=1, length=10, column_name="A"
+            )
+
+        if col_names is None or "B" in col_names:
+            assert transformed["B"] == constant_timeseries(
+                value=14, length=10, column_name="B"
+            )
+        else:
+            assert transformed["B"] == constant_timeseries(
+                value=2, length=10, column_name="B"
+            )
+
         assert mock.inverse_transform(transformed) == test_input
+        assert test_input == test_input_copy
 
     def test_input_transformed_multiple_series(self):
         """

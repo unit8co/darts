@@ -1,5 +1,6 @@
 """
-Filtering Model Base Class
+Base Filter
+-----------
 
 Filtering models all have a `filter(series)` function, which
 returns a `TimeSeries` that is a filtered version of `series`.
@@ -7,8 +8,8 @@ returns a `TimeSeries` that is a filtered version of `series`.
 
 from abc import ABC, abstractmethod
 
+from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 

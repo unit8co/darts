@@ -7,7 +7,6 @@ import pytest
 from darts import TimeSeries
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import Mapper, WindowTransformer
-from darts.utils.utils import freqs
 
 
 def helper_generate_ts_hierarchy(length: int):
@@ -540,8 +539,8 @@ class TestTimeSeriesWindowTransform:
     )
     def test_ts_windowtransf_hierarchy(self, transforms):
         """Checking that supported transforms behave as expected:
-        - implicitely applied to all components
-        - passing explicitely all components
+        - implicitly applied to all components
+        - passing explicitly all components
         """
         ts = helper_generate_ts_hierarchy(10)
 
@@ -618,7 +617,7 @@ class TestTimeSeriesWindowTransform:
 class TestWindowTransformer:
     times = pd.date_range("20130101", "20130110")
     target = TimeSeries.from_times_and_values(times, np.array(range(1, 11)))
-    times_hourly = pd.date_range(start="20130101", freq="1" + freqs["h"], periods=10)
+    times_hourly = pd.date_range(start="20130101", freq="1h", periods=10)
     target_hourly = TimeSeries.from_times_and_values(
         times_hourly, np.array(range(1, 11))
     )
@@ -650,6 +649,7 @@ class TestWindowTransformer:
             keep_non_transformed=True,
             forecasting_safe=True,
         )
+        input_series_copy = [s.copy() for s in self.sequence_det]
         transformed_ts_list = transformer.transform(self.sequence_det)
 
         assert len(transformed_ts_list) == 2
@@ -657,6 +657,7 @@ class TestWindowTransformer:
         assert transformed_ts_list[0].n_timesteps == self.series_multi_det.n_timesteps
         assert transformed_ts_list[1].n_components == 5
         assert transformed_ts_list[1].n_timesteps == self.series_multi_det.n_timesteps
+        assert self.sequence_det == input_series_copy
 
     def test_window_transformer_offset_parameter(self):
         """

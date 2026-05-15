@@ -14,19 +14,20 @@ We assume that you already know about covariates in Darts. If you're new to the 
 2. Input data usage section gives an in-depth guide of how input data is used when training and predicting with TFMs:
     - [Simple training](#training)
     - [Training with validation set](#training-with-a-validation-dataset)
-    - [Forecast / Prediction](#forecastprediction)
+    - [Forecast and prediction](#forecasting)
 
-3. Advanced functionnalities section provides some example of TFMs advanced features:
+3. Advanced functionalities section provides some example of TFMs advanced features:
     - [Model saving and loading](#saving-and-loading-model-states)
-      - [Checkpoint saving / loading](#automatic-checkpointing)
-      - [Manual saving / loading](#manual-saving--loading)
-      - [Train & save on GPU, load on CPU](#trainingsaving-on-gpu-and-loading-on-cpu)
-      - [Load pre-trained model for fine-tuning](#re-training-or-fine-tuning-a-pre-trained-model)
-    - [Callbacks](#callbacks)
+      - [Checkpoint saving and loading](#automatic-checkpointing)
+      - [Manual model saving and loading](#manual-saving-and-loading)
+      - [GPU training and CPU loading](#training-and-saving-on-gpu-loading-on-cpu)
+      - [Re-training or fine-tuning a pre-trained model](#retraining-or-finetuning-a-pretrained-model)
+      - [ONNX export for inference](#exporting-model-to-onnx-format-for-inference)
+    - [Using callbacks](#callbacks)
       - [Early Stopping](#example-with-early-stopping)
       - [Custom Callback](#example-of-custom-callback-to-store-losses)
 
-4. [Performance optimisation section](#performance-recommendations) lists tricks to speed up the computation during training.
+4. [Performance optimization section](#performance-recommendations) lists tricks to speed up the computation during training.
 
 ## Introduction
 In Darts, **Torch Forecasting Models (TFMs)** are broadly speaking "machine learning based" models, which denote PyTorch-based (deep learning) models.
@@ -42,9 +43,9 @@ model = SomeTorchForecastingModel(input_chunk_length=7,
                                   **model_kwargs)
 ```
 
-All TFMs can be trained on single or multiple `target` series and, depending on their covariate support (covered in [this subsection](#torch-forecasting-model-covariates-support)), `past_covariates` and / or `future_covariates`. When using covariates you have to supply one dedicated past and / or future covariates series for each target series.
+All TFMs can be trained on single or multiple `target` series and, depending on their covariate support (covered in [this subsection on covariates support](#torch-forecasting-model-covariates-support)), `past_covariates` and / or `future_covariates`. When using covariates you have to supply one dedicated past and / or future covariates series for each target series.
 
-Optionally, you can use a validation set with dedicated covariates during training. If the covariates have the required time spans, you can use the same for training, validation and prediction. (covered in [this subsection](#required-target-time-spans-for-training-validation-and-prediction))
+Optionally, you can use a validation set with dedicated covariates during training. If the covariates have the required time spans, you can use the same for training, validation and prediction. (covered in [this subsection on time span requirements](#required-target-time-spans-for-training-validation-and-prediction))
 
 ```python
 # fit the model on a single target series with optional past and / or future covariates
@@ -171,7 +172,7 @@ model.fit(series=ice_cream_sales,
 
 **Figure 2: Overview of a single sequence from our ice-cream sales example**; Mon1 - Sun1 stand for the first 7 days from our training dataset (week 1 of the year). Mon2 is the Monday of week 2.
 
-When calling `fit()`, the models will build an appropriate `darts.utils.data.TrainingDataset`, which specifies how to slice the data to obtain training samples. If you want to control this slicing yourself, you can instantiate your own `TrainingDataset` and call `model.fit_from_dataset()` instead of `fit()`. By default, most models (though not all) will build *sequential* datasets, which basically means that all sub-slices of length `input_chunk_length + output_chunk_length` in the provided series will be used for training.
+When calling `fit()`, the models will build an appropriate `darts.utils.data.TorchTrainingDataset`, which specifies how to slice the data to obtain training samples. If you want to control this slicing yourself, you can instantiate your own `TorchTrainingDataset` and call `model.fit_from_dataset()` instead of `fit()`. By default, most models (though not all) will build *sequential* datasets, which basically means that all sub-slices of length `input_chunk_length + output_chunk_length` in the provided series will be used for training.
 
 So during training, the torch models will go through the training data in sequences (see Figure 3). Using information from the **input chunk** and **output chunk**, the model predicts the future target on the output chunk. The training loss is evaluated between the predicted future target and the actual target value on the output chunk. The model trains itself by minimizing the loss over all sequences.
 
@@ -212,13 +213,13 @@ model.fit(series=ice_cream_sales_train,
 ```
 
 If you split your data, you have to define a `training_cutoff` (a date or fraction at which to split the dataset) so that both the train and validation datasets satisfy the minimum length requirements
-from [this subsection](#required-target-time-spans-for-training-validation-and-prediction)
+from [this subsection on time span requirements](#required-target-time-spans-for-training-validation-and-prediction)
 
 Instead of splitting by time, you can also use another subset of time series as validation set.
 
 The model trains itself the same way as before but additionally evaluates the loss on the validation dataset. If you want to keep track of the best performing model on the validation set, you have to enable checkpoint saving as shown next.
 
-## Forecast/Prediction
+## Forecasting
 
 After having trained the model, we want to predict the future ice-cream sales for any number of days after our 365 days training data.
 
@@ -244,12 +245,12 @@ prediction = model.predict(n=n,
 
 ![figure7](./images/covariates/prediction_once.png)
 
-**Figure 5: Forecast with a single sequence for `n <= output_chunk_length`**
+**Figure 5: Forecast with a single sequence for n <= output_chunk_length**
 
 
 ![figure8](./images/covariates/prediction_multi.png)
 
-**Figure 6: Auto-regressive forecast for `n > output_chunk_length`**
+**Figure 6: Auto-regressive forecast for n > output_chunk_length**
 
 
 ## Advanced Functionnalities
@@ -278,7 +279,7 @@ model.fit(...)
 best_model = model.load_from_checkpoint(model_name='my_model', best=True)
 ```
 
-#### Manual saving / loading
+#### Manual saving and loading
 
 You can also manually save the model at its current state and load it:
 
@@ -287,7 +288,7 @@ model.save("/your/path/to/save/model.pt")
 loaded_model = model.load("/your/path/to/save/model.pt")
 ```
 
-#### Training/Saving on GPU and loading on CPU
+#### Training and saving on GPU, loading on CPU
 
 You can load a model to CPU that was trained and saved on GPU (see detailed [documentation](https://unit8co.github.io/darts/userguide/gpu_and_tpu_usage.html)):
 
@@ -322,7 +323,7 @@ loaded_model.to_cpu()
 ```
 
 
-#### Re-training or fine-tuning a pre-trained model
+#### Retraining or finetuning a pretrained model
 
 To re-train or fine-tune a model using a different optimizer and/or learning rate scheduler, you can load the weights from the automatic checkpoints into a new model:
 
@@ -348,6 +349,72 @@ model_finetune = SomeTorchForecastingModel(...,  # use identical parameters & va
 
 # load the weights from a manual save
 model_finetune.load_weights("/your/path/to/save/model.pt")
+```
+
+Additionally, all `TorchForecastingModel` (including `FoundationModel`) support fine-tuning through the `enable_finetuning` parameter. This allows you to freeze or unfreeze specific model parameters for transfer learning:
+
+```python
+# full fine-tuning: all parameters are trainable
+model = SomeTorchForecastingModel(..., enable_finetuning=True)
+
+# partial fine-tuning: freeze specific layers
+model = SomeTorchForecastingModel(..., enable_finetuning={"freeze": ["layer.pattern.*"]})
+
+# partial fine-tuning: only unfreeze specific layers
+model = SomeTorchForecastingModel(..., enable_finetuning={"unfreeze": ["layer.pattern.*"]})
+
+# optionally, load pre-trained weights (not required for foundation models)
+model.load_weights("/your/path/to/save/model.pt")
+
+# fine-tune
+model.fit(...)
+```
+
+For a comprehensive walkthrough of fine-tuning Torch Forecasting Models and Foundation Models, check out the [Fine-Tuning example notebook](https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html).
+
+#### Exporting model to ONNX format for inference
+
+It is also possible to export the model weights to the ONNX format to run inference in a lightweight environment. The example below works for any `TorchForecastingModel` except `RNNModel` and for optional usage of past, future and / or static covariates. Note that all series and covariates must extend far enough into the past (`input_chunk_length)` and future (`output_chunk_length`) relative to the end of the target `series`. It will not be possible to forecast a horizon `n > output_chunk_length` without implementing the auto-regression logic.
+
+```python
+model = SomeTorchForecastingModel(...)
+model.fit(...)
+
+# make sure to have `onnx` and `onnxruntime` installed
+onnx_filename = "example_onnx.onnx"
+model.to_onnx(onnx_filename, export_params=True)
+```
+
+Now, to load the model and predict steps after the end of the series:
+
+```python
+from typing import Optional
+import onnx
+import onnxruntime as ort
+import numpy as np
+from darts import TimeSeries
+from darts.utils.onnx_utils.py import prepare_onnx_inputs
+
+onnx_model = onnx.load(onnx_filename)
+onnx.checker.check_model(onnx_model)
+ort_session = ort.InferenceSession(onnx_filename)
+
+# use helper function to extract the features from the series
+past_feats, future_feats, static_feats = prepare_onnx_inputs(
+    model=model,
+    series=series,
+    past_covariates=ts_past,
+    future_covariates=ts_future,
+)
+
+# extract only the features expected by the model
+ort_inputs = {}
+for name, arr in zip(['x_past', 'x_future', 'x_static'], [past_feats, future_feats, static_feats]):
+    if name in [inp.name for inp in list(ort_session.get_inputs())]:
+        ort_inputs[name] = arr
+
+# output has shape (batch, output_chunk_length, n components, 1 or n likelihood params)
+ort_out = ort_session.run(None, ort_inputs)
 ```
 
 ### Callbacks
@@ -499,7 +566,7 @@ Darts offers the possibility to train models on any `Sequence[TimeSeries]`,
 which means that for big datasets, you can write your own `Sequence` implementation, and read the time series lazily from disk. This will typically incur a high I/O cost, though. So when training on multiple series, first try to build a simple `List[TimeSeries]` upfront, and see if it holds in the computer memory.
 
 ### Do not use *all* possible sub-series for training
-By default, when calling `fit()`, the models in Darts will build a `TrainingDataset` instance that is
+By default, when calling `fit()`, the models in Darts will build a `TorchTrainingDataset` instance that is
 suitable for the model that you are using (e.g., `PastCovariatesTorchModel`, `FutureCovariatesTorchModel`, etc.).
 By default, these training datasets will often contain *all* possible consecutive (input, output) subseries present
 in each `TimeSeries`. If your `TimeSeries` are long, this can result in a large amount of training samples, which directly (linearly)
@@ -507,7 +574,7 @@ impacts the time required to train the model for one epoch. You have two options
 
 * Specify some `max_samples_per_ts` argument to the `fit()` function. This will use only the most recent `max_samples_per_ts` samples
 per `TimeSeries` for training.
-* If this option does not do what you want, you can implement your own `TrainingDataset` instance, and define
+* If this option does not do what you want, you can implement your own `TorchTrainingDataset` instance, and define
 how to slice your `TimeSeries` for training yourself. We suggest to have a look at [this submodule](https://github.com/unit8co/darts/tree/master/darts/utils/data)
 to see examples of how to do it.
 

@@ -1,3 +1,4 @@
+import copy
 import itertools
 import platform
 
@@ -5,20 +6,35 @@ import numpy as np
 import pytest
 
 from darts import TimeSeries
+from darts.datasets import IceCreamHeaterDataset
 from darts.logging import get_logger
 from darts.metrics import mae
 from darts.models import (
     ARIMA,
-    BATS,
     TBATS,
+    VARIMA,
+    AutoARIMA,
     CatBoostModel,
+    ConformalNaiveModel,
+    EnsembleModel,
     ExponentialSmoothing,
+    KalmanForecaster,
     LightGBMModel,
     LinearRegressionModel,
-    NotImportedModule,
+    NaiveEnsembleModel,
+    Prophet,
+    RegressionEnsembleModel,
     XGBModel,
 )
-from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.conftest import (
+    CB_AVAILABLE,
+    LGBM_AVAILABLE,
+    PROPHET_AVAILABLE,
+    SF_AVAILABLE,
+    TORCH_AVAILABLE,
+    XGB_AVAILABLE,
+    tfm_kwargs,
+)
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -38,7 +54,7 @@ if TORCH_AVAILABLE:
         TSMixerModel,
     )
     from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
-    from darts.utils.likelihood_models import (
+    from darts.utils.likelihood_models.torch import (
         BernoulliLikelihood,
         BetaLikelihood,
         CauchyLikelihood,
@@ -58,41 +74,50 @@ if TORCH_AVAILABLE:
         WeibullLikelihood,
     )
 
-lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
-cb_available = not isinstance(CatBoostModel, NotImportedModule)
+np.random.seed(0)
+constant_ts = tg.constant_timeseries(length=200, value=0.5)
+constant_noisy_ts = constant_ts + tg.gaussian_timeseries(length=200, std=0.1)
+constant_noisy_ts_short = constant_noisy_ts[:31]
+
+# conformal models require a fitted base model
+# in tests below, the model is re-trained for new input series.
+# using a fake trained model should allow the same API with conformal models
+conformal_forecaster = LinearRegressionModel(lags=10, output_chunk_length=5)
+conformal_forecaster.fit(constant_noisy_ts_short)
 
 # model_cls, model_kwargs, err_univariate, err_multivariate
 models_cls_kwargs_errs = [
-    (ExponentialSmoothing, {}, 0.3, None),
+    (ExponentialSmoothing, {"random_state": 3}, 0.3, None),
     (ARIMA, {"p": 1, "d": 0, "q": 1, "random_state": 42}, 0.03, None),
+    (
+        ConformalNaiveModel,
+        {
+            "model": conformal_forecaster,
+            "cal_length": 1,
+            "random_state": 42,
+            "quantiles": [0.1, 0.5, 0.9],
+        },
+        0.04,
+        0.04,
+    ),
 ]
 
-models_cls_kwargs_errs += [
-    (
-        BATS,
-        {
-            "use_trend": False,
-            "use_damped_trend": False,
-            "use_box_cox": True,
-            "use_arma_errors": False,
-            "random_state": 42,
-        },
-        0.04,
-        None,
-    ),
-    (
-        TBATS,
-        {
-            "use_trend": False,
-            "use_damped_trend": False,
-            "use_box_cox": True,
-            "use_arma_errors": False,
-            "random_state": 42,
-        },
-        0.04,
-        0.04,
-    ),
-]
+xgb_test_params = {
+    "n_estimators": 1,
+    "max_depth": 1,
+    "max_leaves": 1,
+}
+lgbm_test_params = {
+    "n_estimators": 1,
+    "max_depth": 1,
+    "num_leaves": 2,
+    "verbosity": -1,
+}
+cb_test_params = {
+    "iterations": 1,
+    "depth": 1,
+    "verbose": -1,
+}
 
 if TORCH_AVAILABLE:
     models_cls_kwargs_errs += [
@@ -120,7 +145,7 @@ if TORCH_AVAILABLE:
                 **tfm_kwargs,
             },
             0.06,
-            0.05,
+            0.06,
         ),
         (
             BlockRNNModel,
@@ -208,41 +233,308 @@ if TORCH_AVAILABLE:
         ),
     ]
 
+extra_configs = [
+    (ExponentialSmoothing, {"random_state": 42}, 0.3, None),
+    (VARIMA, {"random_state": 42}, 0.03, None),
+    (KalmanForecaster, {"random_state": 42}, 0.03, None),
+    (
+        LinearRegressionModel,
+        {
+            "lags": 12,
+            "likelihood": "quantile",
+            "quantiles": [0.1, 0.5, 0.9],
+            "random_state": 42,
+        },
+        0.04,
+        0.04,
+    ),
+    (
+        NaiveEnsembleModel,
+        {
+            "forecasting_models": [
+                LinearRegressionModel(
+                    lags=2,
+                    likelihood="quantile",
+                    quantiles=[0.1, 0.5, 0.9],
+                    random_state=42,
+                ),
+                LinearRegressionModel(
+                    lags=4,
+                    likelihood="quantile",
+                    quantiles=[0.1, 0.5, 0.9],
+                    random_state=42,
+                ),
+            ],
+        },
+        0.04,
+        0.04,
+    ),
+    (
+        RegressionEnsembleModel,
+        {
+            "forecasting_models": [
+                LinearRegressionModel(
+                    lags=2,
+                    likelihood="quantile",
+                    random_state=42,
+                    quantiles=[0.1, 0.5, 0.9],
+                ),
+                LinearRegressionModel(
+                    lags=4,
+                    likelihood="quantile",
+                    random_state=42,
+                    quantiles=[0.1, 0.5, 0.9],
+                ),
+            ],
+            "regression_model": LinearRegressionModel(
+                lags=None,
+                lags_past_covariates=None,
+                lags_future_covariates=[0],
+                likelihood="quantile",
+                quantiles=[0.1, 0.5, 0.9],
+                random_state=42,
+            ),
+            "regression_train_n_points": 3,
+        },
+        0.04,
+        0.04,
+    ),
+]
+
+if SF_AVAILABLE:
+    models_cls_kwargs_errs += [
+        (
+            TBATS,
+            {
+                "season_length": 12,
+                "use_trend": False,
+                "use_damped_trend": False,
+                "use_boxcox": True,
+                "use_arma_errors": False,
+                "random_state": 42,
+            },
+            0.04,
+            0.04,
+        ),
+    ]
+    extra_configs += [
+        (
+            AutoARIMA,
+            {
+                "random_state": 42,
+                "season_length": 12,
+            },
+            0.04,
+            0.04,
+        ),
+    ]
+if XGB_AVAILABLE:
+    extra_configs += [
+        (
+            XGBModel,
+            {
+                "lags": 12,
+                "likelihood": "quantile",
+                "quantiles": [0.1, 0.5, 0.9],
+                "random_state": 42,
+                **xgb_test_params,
+            },
+            0.03,
+            None,
+        ),
+    ]
+if LGBM_AVAILABLE:
+    extra_configs += [
+        (
+            LightGBMModel,
+            {
+                "lags": 12,
+                "likelihood": "quantile",
+                "quantiles": [0.1, 0.5, 0.9],
+                "random_state": 42,
+                **lgbm_test_params,
+            },
+            0.03,
+            None,
+        ),
+    ]
+if CB_AVAILABLE:
+    extra_configs += [
+        (
+            CatBoostModel,
+            {
+                "lags": 12,
+                "likelihood": "quantile",
+                "quantiles": [0.1, 0.5, 0.9],
+                "random_state": 42,
+                **cb_test_params,
+            },
+            0.03,
+            None,
+        ),
+    ]
+if PROPHET_AVAILABLE:
+    extra_configs += [(Prophet, {"random_state": 42}, 0.03, None)]
+
 
 @pytest.mark.slow
 class TestProbabilisticModels:
     np.random.seed(0)
 
-    constant_ts = tg.constant_timeseries(length=200, value=0.5)
-    constant_noisy_ts = constant_ts + tg.gaussian_timeseries(length=200, std=0.1)
+    constant_ts = constant_ts
+    constant_noisy_ts = constant_noisy_ts
     constant_multivar_ts = constant_ts.stack(constant_ts)
     constant_noisy_multivar_ts = constant_noisy_ts.stack(constant_noisy_ts)
     num_samples = 5
 
-    constant_noisy_ts_short = constant_noisy_ts[:30]
+    constant_noisy_ts_short = constant_noisy_ts_short
+    constant_noisy_multivar_ts_short = constant_noisy_multivar_ts[:30]
+
+    ts_ice_heater = IceCreamHeaterDataset().load()
+    ts_ice_heater_short = ts_ice_heater[:31]
 
     @pytest.mark.slow
-    @pytest.mark.parametrize("config", models_cls_kwargs_errs)
+    @pytest.mark.parametrize("config", models_cls_kwargs_errs + extra_configs)
     def test_fit_predict_determinism(self, config):
         model_cls, model_kwargs, _, _ = config
         if TORCH_AVAILABLE and issubclass(model_cls, TorchForecastingModel):
             fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
         else:
             fit_kwargs = {}
-        # whether the first predictions of two models initiated with the same random state are the same
-        model = model_cls(**model_kwargs)
-        model.fit(self.constant_noisy_ts_short, **fit_kwargs)
-        pred1 = model.predict(n=10, num_samples=2).values()
+        if issubclass(model_cls, VARIMA):
+            series = self.ts_ice_heater_short
+        else:
+            series = self.constant_noisy_ts_short
 
-        model = model_cls(**model_kwargs)
-        model.fit(self.constant_noisy_ts_short, **fit_kwargs)
-        pred2 = model.predict(n=10, num_samples=2).values()
+        series_copy = series.copy()
+        # test that two consecutive predictions without random state at `predict()` are different
+        model = self.instantiate_model(model_cls, model_kwargs)
+        model.fit(series, **fit_kwargs)
+        pred1 = model.predict(n=10, num_samples=2).all_values()
+        pred2 = model.predict(n=10, num_samples=2).all_values()
+        assert (pred2 != pred1).any()
 
-        assert (pred1 == pred2).all()
+        # check that fit predict did not mutate input series
+        assert series == series_copy
 
-        # test whether the next prediction of the same model is different
-        pred3 = model.predict(n=10, num_samples=2).values()
-        assert (pred2 != pred3).any()
+        # test that first prediction without same random state at model creation is identical to the previous model
+        model = self.instantiate_model(model_cls, model_kwargs)
+        model.fit(series, **fit_kwargs)
+        pred3 = model.predict(n=10, num_samples=2).all_values()
+        assert (pred1 == pred3).all()
+
+        # test whether two consecutive predictions with a random_state specified are the same
+        pred4 = model.predict(n=10, num_samples=2, random_state=38).all_values()
+        pred5 = model.predict(n=10, num_samples=2, random_state=38).all_values()
+        assert (pred5 == pred4).all()
+
+        # predicting again without random state resumes original randomness
+        pred6 = model.predict(n=10, num_samples=2).all_values()
+        assert (pred6 == pred2).all()
+
+        pred7 = model.predict(n=10, num_samples=2, random_state=32).all_values()
+        assert (pred7 != pred5).any()
+
+    @pytest.mark.slow
+    @pytest.mark.parametrize("config", models_cls_kwargs_errs + extra_configs)
+    def test_historical_forecast(self, config):
+        model_cls, model_kwargs, _, _ = config
+        if TORCH_AVAILABLE and issubclass(model_cls, TorchForecastingModel):
+            fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
+        else:
+            fit_kwargs = {}
+        if issubclass(model_cls, VARIMA):
+            series = self.ts_ice_heater_short
+        else:
+            series = self.constant_noisy_ts_short
+
+        kwargs_hist_forecast = {
+            "series": series,
+            "num_samples": 2,
+            "start": -1,
+            "forecast_horizon": 10,
+            "overlap_end": True,
+            "fit_kwargs": fit_kwargs,
+            "retrain": True,
+            "enable_optimization": False,
+        }
+
+        # test that two consecutive historical forecasts with `retrain=True` and without random state at `predict()`
+        # are equal due to the `random_state` set at model creation
+        model = self.instantiate_model(model_cls, model_kwargs)
+        pred1 = model.historical_forecasts(**kwargs_hist_forecast).all_values()
+        pred2 = model.historical_forecasts(**kwargs_hist_forecast).all_values()
+        if issubclass(model_cls, ConformalNaiveModel):
+            # Conformal models are the exception since they are not retrained at each historical forecast
+            assert (pred2 != pred1).any()
+        else:
+            # check all equal
+            assert (pred2 == pred1).all()
+
+        # test whether two consecutive historical forecasts with a random_state specified are the same
+        pred3 = model.historical_forecasts(
+            **kwargs_hist_forecast, random_state=38
+        ).all_values()
+        pred4 = model.historical_forecasts(
+            **kwargs_hist_forecast, random_state=38
+        ).all_values()
+        assert (pred3 == pred4).all()
+
+        # test that another historical forecast with a different random_state specified is different
+        pred5 = model.historical_forecasts(
+            **kwargs_hist_forecast, random_state=32
+        ).all_values()
+        assert (pred4 != pred5).any()
+
+        # same test with `retrain=False` and optimized historical forecasts
+        if model.supports_optimized_historical_forecasts:
+            model = self.instantiate_model(model_cls, model_kwargs)
+            model.fit(series, **fit_kwargs)
+
+            # test that two consecutive historical forecasts with `retrain=False` and without random state at
+            # `predict()` are different
+            kwargs_hist_forecast["retrain"] = False
+            kwargs_hist_forecast["enable_optimization"] = True
+            pred1 = model.historical_forecasts(**kwargs_hist_forecast).all_values()
+            pred2 = model.historical_forecasts(**kwargs_hist_forecast).all_values()
+            assert (pred2 != pred1).any()
+
+            # test whether two consecutive historical forecasts with a random_state specified are the same
+            pred3 = model.historical_forecasts(
+                **kwargs_hist_forecast, random_state=38
+            ).all_values()
+            pred4 = model.historical_forecasts(
+                **kwargs_hist_forecast, random_state=38
+            ).all_values()
+            assert (pred3 == pred4).all()
+
+            # test that another historical forecast with a different random_state specified is different
+            pred5 = model.historical_forecasts(
+                **kwargs_hist_forecast, random_state=32
+            ).all_values()
+            assert (pred4 != pred5).any()
+
+    @pytest.mark.parametrize("config", models_cls_kwargs_errs + extra_configs)
+    def test_fit_predict_randomized(self, config):
+        model_cls, model_kwargs, _, _ = config
+        model_kwargs = {k: v for k, v in model_kwargs.items() if k != "random_state"}
+        if issubclass(model_cls, VARIMA):
+            series = self.ts_ice_heater_short
+        else:
+            series = self.constant_noisy_ts_short
+        if TORCH_AVAILABLE and issubclass(model_cls, TorchForecastingModel):
+            fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
+        else:
+            fit_kwargs = {}
+
+        model = self.instantiate_model(model_cls, model_kwargs)
+        model.fit(series, **fit_kwargs)
+        pred1 = model.predict(n=10, num_samples=2).all_values()
+
+        model.fit(series, **fit_kwargs)
+        pred2 = model.predict(n=10, num_samples=2).all_values()
+
+        assert (pred1 != pred2).any()
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_probabilistic_forecast_accuracy_univariate(self, config):
@@ -268,8 +560,7 @@ class TestProbabilisticModels:
 
     def helper_test_probabilistic_forecast_accuracy(self, model, err, ts, noisy_ts):
         model.fit(noisy_ts[:100])
-        pred = model.predict(n=100, num_samples=100)
-
+        pred = model.predict(n=50, num_samples=100)
         # test accuracy of the median prediction compared to the noiseless ts
         mae_err_median = mae(ts[100:], pred)
         assert mae_err_median < err
@@ -278,7 +569,7 @@ class TestProbabilisticModels:
         tested_quantiles = [0.7, 0.8, 0.9, 0.99]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
-            new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
+            new_mae = mae(ts[100:], pred.quantile(q=quantile))
             assert mae_err < new_mae + 0.1
             mae_err = new_mae
 
@@ -286,23 +577,31 @@ class TestProbabilisticModels:
         tested_quantiles = [0.3, 0.2, 0.1, 0.01]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
-            new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
+            new_mae = mae(ts[100:], pred.quantile(q=quantile))
             assert mae_err < new_mae + 0.1
             mae_err = new_mae
+
+    def instantiate_model(self, model_cls, kwargs):
+        if issubclass(model_cls, EnsembleModel):
+            return model_cls(**copy.deepcopy(kwargs))
+        return model_cls(**kwargs)
 
     @pytest.mark.slow
     @pytest.mark.parametrize(
         "config",
         itertools.product(
-            [(LinearRegressionModel, False), (XGBModel, False)]
-            + ([(LightGBMModel, False)] if lgbm_available else [])
-            + ([(CatBoostModel, True)] if cb_available else []),
-            [1, 3],
+            [(LinearRegressionModel, False, {})]
+            + ([(XGBModel, False, xgb_test_params)] if XGB_AVAILABLE else [])
+            + ([(LightGBMModel, False, lgbm_test_params)] if LGBM_AVAILABLE else [])
+            + ([(CatBoostModel, True, cb_test_params)] if CB_AVAILABLE else []),
+            [1, 3],  # n components
             [
                 "quantile",
                 "poisson",
                 "gaussian",
-            ],
+            ],  # likelihood
+            [True, False],  # multi models
+            [1, 2],  # horizon
         ),
     )
     def test_predict_likelihood_parameters_regression_models(self, config):
@@ -312,7 +611,13 @@ class TestProbabilisticModels:
 
         Note: values are not tested as it would be too time consuming
         """
-        (model_cls, supports_gaussian), n_comp, likelihood = config
+        (
+            (model_cls, supports_gaussian, model_kwargs),
+            n_comp,
+            likelihood,
+            multi_models,
+            horizon,
+        ) = config
 
         seed = 142857
         n_times, n_samples = 100, 1
@@ -340,10 +645,17 @@ class TestProbabilisticModels:
         else:
             assert False, f"unknown likelihood {likelihood}"
 
-        model = model_cls(lags=3, random_state=seed, **lkl["kwargs"])
+        model = model_cls(
+            lags=3,
+            output_chunk_length=2,
+            random_state=seed,
+            **lkl["kwargs"],
+            multi_models=multi_models,
+            **model_kwargs,
+        )
         model.fit(lkl["ts"])
         pred_lkl_params = model.predict(
-            n=1, num_samples=1, predict_likelihood_parameters=True
+            n=horizon, num_samples=1, predict_likelihood_parameters=True
         )
         if n_comp == 1:
             assert lkl["expected"].shape == pred_lkl_params.values()[0].shape, (
@@ -352,7 +664,7 @@ class TestProbabilisticModels:
             )
         else:
             assert (
-                1,
+                horizon,
                 len(lkl["expected"]) * n_comp,
                 1,
             ) == pred_lkl_params.all_values().shape, (
@@ -488,7 +800,7 @@ class TestProbabilisticModels:
                     n_samples,
                 ))
 
-                # Dirichlet must be handled sligthly differently since its multivariate
+                # Dirichlet must be handled slightly differently since its multivariate
                 if isinstance(lkl, DirichletLikelihood):
                     values = torch.swapaxes(values, 1, 3)
                     values = torch.squeeze(values, 3)
@@ -529,12 +841,12 @@ class TestProbabilisticModels:
                     QuantileRegression([0.05, 0.5, 0.95]),
                     [-1.67, 0, 1.67],
                     [
-                        "dummy_0_q0.05",
-                        "dummy_0_q0.50",
-                        "dummy_0_q0.95",
-                        "dummy_1_q0.05",
-                        "dummy_1_q0.50",
-                        "dummy_1_q0.95",
+                        "dummy_0_q0.050",
+                        "dummy_0_q0.500",
+                        "dummy_0_q0.950",
+                        "dummy_1_q0.050",
+                        "dummy_1_q0.500",
+                        "dummy_1_q0.950",
                     ],
                 ),
             ],

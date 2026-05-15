@@ -1,123 +1,247 @@
 """
 Metrics
--------
+=======
 
-For deterministic forecasts (point predictions with `num_samples == 1`):
-    - Aggregated over time:
-        Absolute metrics:
-            - :func:`MERR <darts.metrics.metrics.merr>`: Mean Error
-            - :func:`MAE <darts.metrics.metrics.mae>`: Mean Absolute Error
-            - :func:`MSE <darts.metrics.metrics.mse>`: Mean Squared Error
-            - :func:`RMSE <darts.metrics.metrics.rmse>`: Root Mean Squared Error
-            - :func:`RMSLE <darts.metrics.metrics.rmsle>`: Root Mean Squared Log Error
+Regression Metrics
+------------------
 
-        Relative metrics:
-            - :func:`MASE <darts.metrics.metrics.mase>`: Mean Absolute Scaled Error
-            - :func:`MSSE <darts.metrics.metrics.msse>`: Mean Squared Scaled Error
-            - :func:`RMSSE <darts.metrics.metrics.rmsse>`: Root Mean Squared Scaled Error
-            - :func:`MAPE <darts.metrics.metrics.mape>`: Mean Absolute Percentage Error
-            - :func:`sMAPE <darts.metrics.metrics.smape>`: symmetric Mean Absolute Percentage Error
-            - :func:`OPE <darts.metrics.metrics.ope>`: Overall Percentage Error
-            - :func:`MARRE <darts.metrics.metrics.marre>`: Mean Absolute Ranged Relative Error
+For deterministic forecasts (point predictions with `num_samples == 1`), probabilistic forecasts (`num_samples > 1`),
+and quantile forecasts. For probabilistic and quantile forecasts, use parameter `q` to define the quantile(s) to
+compute the deterministic metrics on:
 
-        Other metrics:
-            - :func:`R2 <darts.metrics.metrics.r2_score>`: Coefficient of Determination
-            - :func:`CV <darts.metrics.metrics.coefficient_of_variation>`: Coefficient of Variation
+- Aggregated over time:
+    Absolute metrics:
+        - :func:`MERR <darts.metrics.metrics.merr>`: Mean Error
+        - :func:`MAE <darts.metrics.metrics.mae>`: Mean Absolute Error
+        - :func:`MSE <darts.metrics.metrics.mse>`: Mean Squared Error
+        - :func:`RMSE <darts.metrics.metrics.rmse>`: Root Mean Squared Error
+        - :func:`RMSLE <darts.metrics.metrics.rmsle>`: Root Mean Squared Log Error
 
-    - Per time step:
-        Absolute metrics:
-            - :func:`ERR <darts.metrics.metrics.err>`: Error
-            - :func:`AE <darts.metrics.metrics.ae>`: Absolute Error
-            - :func:`SE <darts.metrics.metrics.se>`: Squared Error
-            - :func:`SLE <darts.metrics.metrics.sle>`: Squared Log Error
+    Relative metrics:
+        - :func:`MASE <darts.metrics.metrics.mase>`: Mean Absolute Scaled Error
+        - :func:`MSSE <darts.metrics.metrics.msse>`: Mean Squared Scaled Error
+        - :func:`RMSSE <darts.metrics.metrics.rmsse>`: Root Mean Squared Scaled Error
+        - :func:`MAPE <darts.metrics.metrics.mape>`: Mean Absolute Percentage Error
+        - :func:`wMAPE <darts.metrics.metrics.wmape>`: weighted Mean Absolute Percentage Error
+        - :func:`sMAPE <darts.metrics.metrics.smape>`: symmetric Mean Absolute Percentage Error
+        - :func:`OPE <darts.metrics.metrics.ope>`: Overall Percentage Error
+        - :func:`MARRE <darts.metrics.metrics.marre>`: Mean Absolute Ranged Relative Error
 
-        Relative metrics:
-            - :func:`ASE <darts.metrics.metrics.ase>`: Absolute Scaled Error
-            - :func:`SSE <darts.metrics.metrics.sse>`: Squared Scaled Error
-            - :func:`APE <darts.metrics.metrics.ape>`: Absolute Percentage Error
-            - :func:`sAPE <darts.metrics.metrics.sape>`: symmetric Absolute Percentage Error
-            - :func:`ARRE <darts.metrics.metrics.arre>`: Absolute Ranged Relative Error
+    Other metrics:
+        - :func:`R2 <darts.metrics.metrics.r2_score>`: Coefficient of Determination
+        - :func:`CV <darts.metrics.metrics.coefficient_of_variation>`: Coefficient of Variation
+        - :func:`AUTC <darts.metrics.metrics.autc>`: Area Under Tolerance Curve
 
-For probabilistic forecasts (storchastic predictions with `num_samples >> 1`):
-    - Aggregated over time:
+- Per time step:
+    Absolute metrics:
+        - :func:`ERR <darts.metrics.metrics.err>`: Error
+        - :func:`AE <darts.metrics.metrics.ae>`: Absolute Error
+        - :func:`SE <darts.metrics.metrics.se>`: Squared Error
+        - :func:`SLE <darts.metrics.metrics.sle>`: Squared Log Error
+
+    Relative metrics:
+        - :func:`ASE <darts.metrics.metrics.ase>`: Absolute Scaled Error
+        - :func:`SSE <darts.metrics.metrics.sse>`: Squared Scaled Error
+        - :func:`APE <darts.metrics.metrics.ape>`: Absolute Percentage Error
+        - :func:`sAPE <darts.metrics.metrics.sape>`: symmetric Absolute Percentage Error
+        - :func:`ARRE <darts.metrics.metrics.arre>`: Absolute Ranged Relative Error
+
+For probabilistic forecasts (storchastic predictions with `num_samples >> 1`) and quantile forecasts:
+
+- Aggregated over time:
+    Probabilistic metrics:
+        - :func:`MCRPS <darts.metrics.metrics.mcrps>`: Mean Continuous Ranked Probability Score
+
+    Quantile metrics:
         - :func:`MQL <darts.metrics.metrics.mql>`: Mean Quantile Loss
         - :func:`QR <darts.metrics.metrics.qr>`: Quantile Risk
-    - Per time step:
+
+    Quantile interval metrics:
+        - :func:`MIW <darts.metrics.metrics.miw>`: Mean Interval Width
+        - :func:`MWS <darts.metrics.metrics.miws>`: Mean Interval Winkler Score
+        - :func:`MIC <darts.metrics.metrics.mic>`: Mean Interval Coverage
+        - :func:`MINCS_QR <darts.metrics.metrics.mincs_qr>`: Mean Interval Non-Conformity Score for Quantile Regression
+
+- Per time step:
+    Probabilistic metrics:
+        - :func:`CRPS <darts.metrics.metrics.crps>`: Continuous Ranked Probability Score
+
+    Quantile metrics:
         - :func:`QL <darts.metrics.metrics.ql>`: Quantile Loss
 
+    Quantile interval metrics:
+        - :func:`IW <darts.metrics.metrics.iw>`: Interval Width
+        - :func:`WS <darts.metrics.metrics.iws>`: Interval Winkler Score
+        - :func:`IC <darts.metrics.metrics.ic>`: Interval Coverage
+        - :func:`INCS_QR <darts.metrics.metrics.incs_qr>`: Interval Non-Conformity Score for Quantile Regression
+
+Classification Metrics
+----------------------
+
+For deterministic forecasts (point predictions with `num_samples == 1`), probabilistic forecasts (`num_samples > 1`),
+and class label probability forecasts. Most metrics allow to extract the scores for specific labels with parameter
+`labels`.
+
+- Aggregated over time:
+    - :func:`Accuracy <darts.metrics.metrics.accuracy>`: Accuracy Score
+    - :func:`Precision <darts.metrics.metrics.precision>`: Precision Score
+    - :func:`Recall <darts.metrics.metrics.recall>`: Recall Score
+    - :func:`F1 <darts.metrics.metrics.f1>`: F1 Score
+    - :func:`CM <darts.metrics.metrics.confusion_matrix>`: Confusion Matrix
+
+Dynamic Time Warping Metrics
+----------------------------
+
 For Dynamic Time Warping (DTW) (aggregated over time):
-    - :func:`DTW <darts.metrics.metrics.dtw_metric>`: Dynamic Time Warping Metric
+
+- :func:`DTW <darts.metrics.metrics.dtw_metric>`: Dynamic Time Warping Metric
+
+
+
 """
 
-from darts.metrics.metrics import (
-    ae,
-    ape,
-    arre,
-    ase,
-    coefficient_of_variation,
-    dtw_metric,
-    err,
-    mae,
-    mape,
-    marre,
-    mase,
-    merr,
-    mql,
-    mse,
-    msse,
-    ope,
-    ql,
-    qr,
-    r2_score,
-    rmse,
-    rmsle,
-    rmsse,
-    sape,
-    se,
-    sle,
-    smape,
-    sse,
-)
+import importlib
+from typing import TYPE_CHECKING
 
-TIME_DEPENDENT_METRICS = {
-    ae,
-    ape,
-    arre,
-    ase,
-    err,
-    ql,
-    sape,
-    se,
-    sle,
-    sse,
+from darts.utils._lazy import setup_lazy_imports
+
+if TYPE_CHECKING:
+    from darts.metrics.metrics import accuracy as accuracy
+    from darts.metrics.metrics import ae as ae
+    from darts.metrics.metrics import ape as ape
+    from darts.metrics.metrics import arre as arre
+    from darts.metrics.metrics import ase as ase
+    from darts.metrics.metrics import autc as autc
+    from darts.metrics.metrics import (
+        coefficient_of_variation as coefficient_of_variation,
+    )
+    from darts.metrics.metrics import confusion_matrix as confusion_matrix
+    from darts.metrics.metrics import crps as crps
+    from darts.metrics.metrics import dtw_metric as dtw_metric
+    from darts.metrics.metrics import err as err
+    from darts.metrics.metrics import f1 as f1
+    from darts.metrics.metrics import ic as ic
+    from darts.metrics.metrics import incs_qr as incs_qr
+    from darts.metrics.metrics import iw as iw
+    from darts.metrics.metrics import iws as iws
+    from darts.metrics.metrics import mae as mae
+    from darts.metrics.metrics import mape as mape
+    from darts.metrics.metrics import marre as marre
+    from darts.metrics.metrics import mase as mase
+    from darts.metrics.metrics import mcrps as mcrps
+    from darts.metrics.metrics import merr as merr
+    from darts.metrics.metrics import mic as mic
+    from darts.metrics.metrics import mincs_qr as mincs_qr
+    from darts.metrics.metrics import miw as miw
+    from darts.metrics.metrics import miws as miws
+    from darts.metrics.metrics import mql as mql
+    from darts.metrics.metrics import mse as mse
+    from darts.metrics.metrics import msse as msse
+    from darts.metrics.metrics import ope as ope
+    from darts.metrics.metrics import precision as precision
+    from darts.metrics.metrics import ql as ql
+    from darts.metrics.metrics import qr as qr
+    from darts.metrics.metrics import r2_score as r2_score
+    from darts.metrics.metrics import recall as recall
+    from darts.metrics.metrics import rmse as rmse
+    from darts.metrics.metrics import rmsle as rmsle
+    from darts.metrics.metrics import rmsse as rmsse
+    from darts.metrics.metrics import sape as sape
+    from darts.metrics.metrics import se as se
+    from darts.metrics.metrics import sle as sle
+    from darts.metrics.metrics import smape as smape
+    from darts.metrics.metrics import sse as sse
+    from darts.metrics.metrics import wmape as wmape
+
+_LAZY_IMPORTS: dict[str, str] = {
+    "accuracy": "darts.metrics.metrics",
+    "ae": "darts.metrics.metrics",
+    "crps": "darts.metrics.metrics",
+    "ape": "darts.metrics.metrics",
+    "arre": "darts.metrics.metrics",
+    "ase": "darts.metrics.metrics",
+    "autc": "darts.metrics.metrics",
+    "coefficient_of_variation": "darts.metrics.metrics",
+    "confusion_matrix": "darts.metrics.metrics",
+    "dtw_metric": "darts.metrics.metrics",
+    "err": "darts.metrics.metrics",
+    "f1": "darts.metrics.metrics",
+    "ic": "darts.metrics.metrics",
+    "incs_qr": "darts.metrics.metrics",
+    "iw": "darts.metrics.metrics",
+    "iws": "darts.metrics.metrics",
+    "mae": "darts.metrics.metrics",
+    "mape": "darts.metrics.metrics",
+    "mcrps": "darts.metrics.metrics",
+    "marre": "darts.metrics.metrics",
+    "mase": "darts.metrics.metrics",
+    "merr": "darts.metrics.metrics",
+    "mic": "darts.metrics.metrics",
+    "mincs_qr": "darts.metrics.metrics",
+    "miw": "darts.metrics.metrics",
+    "miws": "darts.metrics.metrics",
+    "mql": "darts.metrics.metrics",
+    "mse": "darts.metrics.metrics",
+    "msse": "darts.metrics.metrics",
+    "ope": "darts.metrics.metrics",
+    "precision": "darts.metrics.metrics",
+    "ql": "darts.metrics.metrics",
+    "qr": "darts.metrics.metrics",
+    "r2_score": "darts.metrics.metrics",
+    "recall": "darts.metrics.metrics",
+    "rmse": "darts.metrics.metrics",
+    "rmsle": "darts.metrics.metrics",
+    "rmsse": "darts.metrics.metrics",
+    "sape": "darts.metrics.metrics",
+    "se": "darts.metrics.metrics",
+    "sle": "darts.metrics.metrics",
+    "smape": "darts.metrics.metrics",
+    "sse": "darts.metrics.metrics",
+    "wmape": "darts.metrics.metrics",
 }
 
-__all__ = [
+_TIME_DEPENDENT_METRIC_NAMES = {
     "ae",
     "ape",
     "arre",
     "ase",
-    "coefficient_of_variation",
-    "dtw_metric",
+    "crps",
     "err",
-    "mae",
-    "mape",
-    "marre",
-    "mase",
-    "merr",
-    "mql",
-    "mse",
-    "msse",
-    "ope",
     "ql",
-    "qr",
-    "r2_score",
-    "rmse",
-    "rmsle",
-    "rmsse",
     "sape",
     "se",
     "sle",
-    "smape",
     "sse",
-]
+    "iw",
+    "iws",
+    "ic",
+    "incs_qr",
+}
+_CLASSIFICATION_METRIC_NAMES = {
+    "accuracy",
+    "precision",
+    "recall",
+    "f1",
+    "confusion_matrix",
+}
+
+
+def _build_time_dependent_metrics():
+    module = importlib.import_module("darts.metrics.metrics")
+    return {getattr(module, n) for n in _TIME_DEPENDENT_METRIC_NAMES}
+
+
+def _build_classification_metrics():
+    module = importlib.import_module("darts.metrics.metrics")
+    return {getattr(module, n) for n in _CLASSIFICATION_METRIC_NAMES}
+
+
+__all__, __getattr__, __dir__ = setup_lazy_imports(
+    _LAZY_IMPORTS,
+    __name__,
+    globals(),
+    extra_attrs={
+        "TIME_DEPENDENT_METRICS": _build_time_dependent_metrics,
+        "CLASSIFICATION_METRICS": _build_classification_metrics,
+    },
+)

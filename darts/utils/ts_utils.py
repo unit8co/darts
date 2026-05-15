@@ -1,19 +1,15 @@
 """
-Additional util functions
--------------------------
+Additional TimeSeries related util functions
+--------------------------------------------
 """
 
+from collections.abc import Sequence
 from enum import Enum
 from functools import total_ordering
-from typing import List, Optional, Sequence, Union
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
-
-try:
-    from IPython import get_ipython
-except ModuleNotFoundError:
-    get_ipython = None
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -60,12 +56,10 @@ class SeriesType(Enum):
 
 
 def series2seq(
-    ts: Optional[
-        Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
-    ],
+    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None,
     seq_type_out: SeriesType = SeriesType.SEQ,
     nested: bool = False,
-) -> Optional[Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]]:
+) -> TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None:
     """If possible, converts `ts` into the desired sequence type `seq_type_out`. Otherwise, returns the
     original `ts`.
 
@@ -146,8 +140,8 @@ def series2seq(
 
 
 def seq2series(
-    ts: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
-) -> Optional[TimeSeries]:
+    ts: TimeSeriesLike | None,
+) -> TimeSeries | None:
     """If `ts` is a Sequence with only a single series, return the single series as TimeSeries.
 
     Parameters
@@ -164,10 +158,8 @@ def seq2series(
 
 
 def get_single_series(
-    ts: Optional[
-        Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
-    ],
-) -> Optional[TimeSeries]:
+    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None,
+) -> TimeSeries | None:
     """Returns a single (first) TimeSeries or `None` from `ts`. Returns `ts` if  `ts` is a TimeSeries, `ts[0]` if
     `ts` is a `Sequence[TimeSeries]`, and `ts[0][0]` if `ts` is a `Sequence[Sequence[TimeSeries]]`.
     Otherwise, returns `None`.
@@ -194,7 +186,7 @@ def get_single_series(
 
 
 def get_series_seq_type(
-    ts: Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]],
+    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]],
 ) -> SeriesType:
     """Returns the sequence type of `ts`.
 
@@ -241,7 +233,7 @@ def get_series_seq_type(
 
 
 # TODO: we do not check the time index here
-def retain_period_common_to_all(series: List[TimeSeries]) -> List[TimeSeries]:
+def retain_period_common_to_all(series: list[TimeSeries]) -> list[TimeSeries]:
     """
     Trims all series in the provided list, if necessary, so that the returned time series have
     a common span (corresponding to largest time sub-interval common to all series).

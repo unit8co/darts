@@ -1,6 +1,6 @@
 """
 Interquartile Range (IQR) Detector
------------------
+----------------------------------
 
 Flags anomalies that are beyond the IQR (between the third and the first quartile)
 of historical data by some factor of it's difference (typically 1.5).
@@ -8,20 +8,20 @@ This is similar to a threshold-based detector, but the thresholds are
 computed as distances from the IQR of historical data when the detector is fitted.
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import numpy as np
 
+from darts import TimeSeries
 from darts.ad.detectors.quantile_detector import QuantileDetector
 from darts.ad.detectors.threshold_detector import ThresholdDetector
 from darts.logging import get_logger, raise_log
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
 class IQRDetector(QuantileDetector):
-    def __init__(self, scale: Union[Sequence[float], float] = 1.5) -> None:
+    def __init__(self, scale: Sequence[float] | float = 1.5) -> None:
         """IQR Detector
 
         Flags values that lie outside of the interquartile range (IQR)

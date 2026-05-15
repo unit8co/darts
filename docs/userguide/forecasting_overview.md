@@ -47,16 +47,16 @@ All forecasting models support saving the model on the filesystem, by calling th
 
 **Example:**
 ```python
-from darts.models import RegressionModel
+from darts.models import SKLearnModel
 
-model = RegressionModel(lags=4)
+model = SKLearnModel(lags=4)
 
 model.save("my_model.pkl")
-model_loaded = RegressionModel.load("my_model.pkl")
+model_loaded = SKLearnModel.load("my_model.pkl")
 ```
 
 The parameter `path` specifies a path or file handle under which to save the model at its current state. If no `path` is specified, the model is automatically
-saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pkl"``. E.g., ``"RegressionModel_2020-01-01_12:00:00.pkl"``.
+saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pkl"``. E.g., ``"SKLearnModel_2020-01-01_12:00:00.pkl"``.
 Optionally there is also pickle specific keyword arguments `protocol`, `fix_imports` and `buffer_callback`.
 More info: [pickle.dump()](https://docs.python.org/3/library/pickle.html?highlight=dump#pickle.dump)
 
@@ -86,6 +86,10 @@ during fit and predict stage can have multiple dimensions. The model will then i
 
 Here is an example, using a `KalmanForecaster` to forecast a single multivariate series made of 2 components:
 ```python
+# use darts plotting style
+from darts import set_option
+set_option("plotting.use_darts_style", True)
+
 import darts.utils.timeseries_generation as tg
 from darts.models import KalmanForecaster
 import matplotlib.pyplot as plt
@@ -118,16 +122,16 @@ In turn, the advantage of having `predict()` providing forecasts for potentially
 
 These models are shown with a "✅" under the `Multiple-series training` column on the [model list](https://github.com/unit8co/darts#forecasting-models).
 
-You can also find out programatically, whether a model supports multiple series.
+You can also find out programmatically, whether a model supports multiple series.
 ```python
-from darts.models import RegressionModel
+from darts.models import SKLearnModel
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 
 # when True, multiple time series are supported
-supports_multi_ts = issubclass(RegressionModel, GlobalForecastingModel)
+supports_multi_ts = issubclass(SKLearnModel, GlobalForecastingModel)
 ```
 
-[This article](https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844) provides more explanations about training models on multiple series.
+[This article on multi-series forecasting](https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844) provides more explanations about training models on multiple series.
 
 ## Support for Covariates
 
@@ -149,7 +153,7 @@ Models supporting past (resp. future) covariates are indicated with a "✅" unde
 
 To know more about covariates, please refer to the [covariates section of the user guide](https://unit8co.github.io/darts/userguide/covariates.html).
 
-In addition, you can have a look at [this article](https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993) for some examples of how to use past and future covariates.
+In addition, you can have a look at [this article on covariates](https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993) for some examples of how to use past and future covariates.
 
 ## Probabilistic forecasts
 
@@ -179,7 +183,7 @@ pred.plot(label='forecast')
 
 ### Probabilistic neural networks
 All neural networks (torch-based models) in Darts have a rich support to estimate different kinds of probability distributions.
-When creating the model, it is possible to provide one of the *likelihood models* available in [darts.utils.likelihood_models](https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html), which determine the distribution that will be estimated by the model.
+When creating the model, it is possible to provide one of the *likelihood models* available in [darts.utils.likelihood_models.torch](https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html), which determine the distribution that will be estimated by the model.
 In such cases, the model will output the parameters of the distribution, and it will be trained by minimising the negative log-likelihood of the training samples.
 Most of the likelihood models also support prior values for the distribution's parameters, in which case the training loss is regularized by a Kullback-Leibler divergence term pushing the resulting distribution in the direction of the distribution specified by the prior parameters.
 The strength of this regularization term can also be specified when creating the likelihood model object.
@@ -191,7 +195,7 @@ from darts.datasets import AirPassengersDataset
 from darts import TimeSeries
 from darts.models import TCNModel
 from darts.dataprocessing.transformers import Scaler
-from darts.utils.likelihood_models import LaplaceLikelihood
+from darts.utils.likelihood_models.torch import LaplaceLikelihood
 
 series = AirPassengersDataset().load()
 train, val = series[:-36], series[-36:]
@@ -214,7 +218,7 @@ pred.plot(label='forecast')
 ![TCN Laplace regression](./images/probabilistic/example_tcn_laplace.png)
 
 
-It is also possible to perform quantile regression (using arbitrary quantiles) with neural networks, by using [darts.utils.likelihood_models.QuantileRegression](https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression), in which case the network will be trained with the pinball loss. This produces an empirical non-parametric distribution, and it can often be a good option in practice, when one is not sure of the "real" distribution, or when fitting parametric likelihoods give poor results.
+It is also possible to perform quantile regression (using arbitrary quantiles) with neural networks, by using [darts.utils.likelihood_models.torch.QuantileRegression](https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.QuantileRegression), in which case the network will be trained with the pinball loss. This produces an empirical non-parametric distribution, and it can often be a good option in practice, when one is not sure of the "real" distribution, or when fitting parametric likelihoods give poor results.
 For example, the code snippet below is almost exactly the same as the preceding snippet; the only difference is that it now uses a `QuantileRegression` likelihood, which means that the neural network will be trained with a pinball loss, and its number of outputs will be dynamically configured to match the number of quantiles.
 
 ```python
@@ -222,7 +226,7 @@ from darts.datasets import AirPassengersDataset
 from darts import TimeSeries
 from darts.models import TCNModel
 from darts.dataprocessing.transformers import Scaler
-from darts.utils.likelihood_models import QuantileRegression
+from darts.utils.likelihood_models.torch import QuantileRegression
 
 series = AirPassengersDataset().load()
 train, val = series[:-36], series[-36:]
@@ -254,7 +258,7 @@ from darts.datasets import AirPassengersDataset
 from darts import TimeSeries
 from darts.models import TCNModel
 from darts.dataprocessing.transformers import Scaler
-from darts.utils.likelihood_models import QuantileRegression
+from darts.utils.likelihood_models.torch import QuantileRegression
 
 series = AirPassengersDataset().load()
 train, val = series[:-36], series[-36:]

@@ -1,38 +1,40 @@
 """
 VARIMA
------
+------
 
 Models for VARIMA (Vector Autoregressive moving average) [1]_.
-The implementations is wrapped around `statsmodels <https://github.com/statsmodels/statsmodels>`_.
+The implementations is wrapped around `statsmodels <https://github.com/statsmodels/statsmodels>`__.
 
 References
 ----------
 .. [1] https://en.wikipedia.org/wiki/Vector_autoregression
 """
 
-from typing import Optional
-
 import numpy as np
 import pandas as pd
+from sklearn.utils import check_random_state
 from statsmodels.tsa.api import VARMAX as staVARMA
 
+from darts import TimeSeries
 from darts.logging import get_logger, raise_if
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
-from darts.timeseries import TimeSeries
+from darts.utils.utils import random_method
 
 logger = get_logger(__name__)
 
 
 class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
+    @random_method
     def __init__(
         self,
         p: int = 1,
         d: int = 0,
         q: int = 0,
-        trend: Optional[str] = None,
-        add_encoders: Optional[dict] = None,
+        trend: str | None = None,
+        add_encoders: dict | None = None,
+        random_state: int | None = None,
     ):
         """VARIMA
 
@@ -76,6 +78,8 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
                     'tz': 'CET'
                 }
             ..
+        random_state: int or None
+            Controls the randomness for reproducible forecasting.
 
         Examples
         --------
@@ -91,13 +95,13 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
         >>> # the two targets are predicted together
-        >>> pred.values()
-        array([[48.11846185, 47.94272629],
-               [49.85314633, 47.97713346],
-               [51.16145791, 47.99804203],
-               [52.14674087, 48.00872598],
-               [52.88729152, 48.01166578],
-               [53.44242919, 48.00874069]])
+        >>> print(pred.values())
+        [[48.11846185, 47.94272629]
+         [49.85314633, 47.97713346]
+         [51.16145791, 47.99804203]
+         [52.14674087, 48.00872598]
+         [52.88729152, 48.01166578]
+         [53.44242919, 48.00874069]]
         """
         super().__init__(add_encoders=add_encoders)
         self.p = p
@@ -112,13 +116,19 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         """Differentiate the series self.d times"""
         for _ in range(self.d):
             series = TimeSeries.from_dataframe(
-                df=series.pd_dataframe(copy=False).diff().dropna(),
+                df=series.to_dataframe(copy=False).diff().dropna(),
                 static_covariates=series.static_covariates,
                 hierarchy=series.hierarchy,
+                metadata=series.metadata,
             )
         return series
 
-    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+    def fit(
+        self,
+        series: TimeSeries,
+        future_covariates: TimeSeries | None = None,
+        verbose: bool | None = False,
+    ):
         # for VARIMA we need to process target `series` before calling
         # TransferableFutureCovariatesLocalForecastingModel's fit() method
         self._last_values = (
@@ -127,14 +137,17 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
         series = self._differentiate_series(series)
 
-        super().fit(series, future_covariates)
+        super().fit(series, future_covariates, verbose=verbose)
 
         return self
 
     def _fit(
-        self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None
-    ) -> None:
-        super()._fit(series, future_covariates)
+        self,
+        series: TimeSeries,
+        future_covariates: TimeSeries | None = None,
+        verbose: bool | None = None,
+    ):
+        super()._fit(series, future_covariates, verbose=verbose)
 
         self._assert_multivariate(series)
 
@@ -150,14 +163,17 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
         self.model = m.fit(disp=0)
 
+    @random_method
     def _predict(
         self,
         n: int,
-        series: Optional[TimeSeries] = None,
-        historic_future_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: TimeSeries | None = None,
+        historic_future_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
         verbose: bool = False,
+        random_state: int | None = None,
     ) -> TimeSeries:
         if num_samples > 1 and self.trend:
             logger.warning(
@@ -169,7 +185,12 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         self._last_num_samples = num_samples
 
         super()._predict(
-            n, series, historic_future_covariates, future_covariates, num_samples
+            n=n,
+            series=series,
+            historic_future_covariates=historic_future_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            verbose=verbose,
         )
 
         if series is not None:
@@ -207,10 +228,13 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 ),
             )
         else:
+            rng = check_random_state(random_state)
+
             forecast = self.model.simulate(
                 nsimulations=n,
                 repetitions=num_samples,
                 initial_state=self.model.states.predicted[-1, :],
+                random_state=rng,
                 exog=(
                     future_covariates.values(copy=False) if future_covariates else None
                 ),
@@ -249,8 +273,8 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         return True
 
     @property
-    def min_train_series_length(self) -> int:
-        return 30
+    def _target_window_lengths(self) -> tuple[int, int]:
+        return 30, 0
 
     @property
     def supports_probabilistic_prediction(self) -> bool:

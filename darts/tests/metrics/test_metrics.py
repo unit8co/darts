@@ -1,14 +1,22 @@
 import copy
 import inspect
 import itertools
+import logging
 
 import numpy as np
 import pandas as pd
 import pytest
 import sklearn.metrics
 
-from darts import TimeSeries
-from darts.metrics import metrics
+from darts import TimeSeries, concatenate
+from darts.metrics import metrics, utils
+from darts.utils.likelihood_models.base import (
+    likelihood_component_names,
+    quantile_names,
+)
+
+_NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
+_NP_TRAPEZOID_FN = np.trapezoid if _NP_2_OR_ABOVE else np.trapz
 
 
 def sklearn_mape(*args, **kwargs):
@@ -19,6 +27,12 @@ def metric_residuals(y_true, y_pred, **kwargs):
     y_true = y_true[:, 0]
     y_pred = y_pred[:, 0]
     return np.mean(y_true - y_pred)
+
+
+def metric_wmape(y_true, y_pred, **kwargs):
+    y_true = y_true[:, 0]
+    y_pred = y_pred[:, 0]
+    return 100.0 * np.sum(np.abs(y_true - y_pred)) / np.sum(np.abs(y_true))
 
 
 def metric_smape(y_true, y_pred, **kwargs):
@@ -42,7 +56,7 @@ def metric_cov(y_true, y_pred, **kwargs):
     y_pred = y_pred[:, 0]
     return (
         100.0
-        * sklearn.metrics.mean_squared_error(y_true, y_pred, squared=False)
+        * sklearn.metrics.root_mean_squared_error(y_true, y_pred)
         / np.mean(y_true)
     )
 
@@ -63,6 +77,99 @@ def metric_rmsle(y_true, y_pred, **kwargs):
     return np.sqrt(
         1 / len(y_true) * np.sum((np.log(y_true + 1) - np.log(y_pred + 1)) ** 2)
     )
+
+
+def metric_iw(y_true, y_pred, q_interval=None, **kwargs):
+    # this tests assumes `y_pred` are stochastic values
+    if isinstance(q_interval, tuple):
+        q_interval = [q_interval]
+    q_interval = np.array(q_interval)
+    q_lo = q_interval[:, 0]
+    q_hi = q_interval[:, 1]
+    y_pred_lo = np.quantile(y_pred, q_lo, axis=2).transpose(1, 2, 0)
+    y_pred_hi = np.quantile(y_pred, q_hi, axis=2).transpose(1, 2, 0)
+    res = y_pred_hi - y_pred_lo
+    return res.reshape(len(y_pred), -1)
+
+
+def metric_iws(y_true, y_pred, q_interval=None, **kwargs):
+    # this tests assumes `y_pred` are stochastic values
+    if isinstance(q_interval, tuple):
+        q_interval = [q_interval]
+    q_interval = np.array(q_interval)
+    q_lo = q_interval[:, 0]
+    q_hi = q_interval[:, 1]
+    y_pred_lo = np.quantile(y_pred, q_lo, axis=2).transpose(1, 2, 0)
+    y_pred_hi = np.quantile(y_pred, q_hi, axis=2).transpose(1, 2, 0)
+    interval_width = y_pred_hi - y_pred_lo
+    res = np.where(
+        y_true < y_pred_lo,
+        interval_width + 1 / q_lo * (y_pred_lo - y_true),
+        interval_width,
+    )
+    res = np.where(
+        y_true > y_pred_hi, interval_width + 1 / (1 - q_hi) * (y_true - y_pred_hi), res
+    )
+    return res.reshape(len(y_pred), -1)
+
+
+def metric_ic(y_true, y_pred, q_interval=None, **kwargs):
+    # this tests assumes `y_pred` are stochastic values
+    if isinstance(q_interval, tuple):
+        q_interval = [q_interval]
+    q_interval = np.array(q_interval)
+    q_lo = q_interval[:, 0]
+    q_hi = q_interval[:, 1]
+    y_pred_lo = np.quantile(y_pred, q_lo, axis=2).transpose(1, 2, 0)
+    y_pred_hi = np.quantile(y_pred, q_hi, axis=2).transpose(1, 2, 0)
+    res = np.where((y_pred_lo <= y_true) & (y_true <= y_pred_hi), 1, 0)
+    return res.reshape(len(y_pred), -1)
+
+
+def metric_incs_qr(y_true, y_pred, q_interval=None, **kwargs):
+    # this tests assumes `y_pred` are stochastic values
+    if isinstance(q_interval, tuple):
+        q_interval = [q_interval]
+    q_interval = np.array(q_interval)
+    q_lo = q_interval[:, 0]
+    q_hi = q_interval[:, 1]
+    y_pred_lo = np.quantile(y_pred, q_lo, axis=2).transpose(1, 2, 0)
+    y_pred_hi = np.quantile(y_pred, q_hi, axis=2).transpose(1, 2, 0)
+    res = np.maximum(y_pred_lo - y_true, y_true - y_pred_hi)
+    return res.reshape(len(y_pred), -1)
+
+
+def metric_macc(y_true, y_pred):
+    return sklearn.metrics.accuracy_score(y_true.flatten(), y_pred.flatten())
+
+
+def metric_recall(y_true, y_pred):
+    return sklearn.metrics.recall_score(
+        y_true.flatten(), y_pred.flatten(), average="macro"
+    )
+
+
+def metric_precision(y_true, y_pred):
+    return sklearn.metrics.precision_score(
+        y_true.flatten(), y_pred.flatten(), average="macro"
+    )
+
+
+def metric_f1(y_true, y_pred):
+    return sklearn.metrics.f1_score(y_true.flatten(), y_pred.flatten(), average="macro")
+
+
+def metric_autc(y_true, y_pred, n_tolerances=101, **kwargs):
+    """Reference implementation for AUTC metric."""
+    y_true = y_true[:, 0]  # univariate
+    y_pred = y_pred[:, 0]
+    y_range = np.max(y_true) - np.min(y_true)
+    abs_errors = np.abs(y_true - y_pred)
+    half_range = y_range / 2
+    normalized_errors = abs_errors / half_range
+    tolerances = np.linspace(0, 1, n_tolerances)
+    coverages = np.array([np.mean(normalized_errors <= tol) for tol in tolerances])
+    return _NP_TRAPEZOID_FN(coverages, tolerances)
 
 
 class TestMetrics:
@@ -117,24 +224,34 @@ class TestMetrics:
         "metric",
         [
             metrics.ape,
-            metrics.sape,
             metrics.mape,
-            metrics.smape,
         ],
     )
     def test_ape_zero(self, metric):
         with pytest.raises(ValueError):
             metric(self.series1, self.series1)
 
-        with pytest.raises(ValueError):
-            metric(self.series1, self.series1)
-
     def test_ope_zero(self):
         with pytest.raises(ValueError):
             metrics.ope(
-                self.series1 - self.series1.pd_series().mean(),
-                self.series1 - self.series1.pd_series().mean(),
+                self.series1 - self.series1.to_series().mean(),
+                self.series1 - self.series1.to_series().mean(),
             )
+
+    @pytest.mark.parametrize(
+        "metric",
+        [
+            metrics.sape,
+            metrics.smape,
+        ],
+    )
+    def test_sape_zero_denom(self, metric):
+        assert np.allclose(metric(self.series0, self.series0), 0.0), (
+            "Expected SAPE to be 0.0 when both series are identical"
+        )
+        assert np.allclose(metric(self.series1, self.series1), 0.0), (
+            "Expected SAPE to be 0.0 when both series are identical"
+        )
 
     @pytest.mark.parametrize(
         "config",
@@ -150,6 +267,7 @@ class TestMetrics:
             (metrics.sape, False, {"time_reduction": np.mean}),
             (metrics.arre, False, {"time_reduction": np.mean}),
             (metrics.ql, True, {"time_reduction": np.mean}),
+            (metrics.crps, True, {"time_reduction": np.mean}),
             # time aggregates
             (metrics.merr, False, {}),
             (metrics.mae, False, {}),
@@ -160,14 +278,21 @@ class TestMetrics:
             (metrics.msse, False, {}),
             (metrics.rmsse, False, {}),
             (metrics.mape, False, {}),
+            (metrics.wmape, False, {}),
             (metrics.smape, False, {}),
             (metrics.ope, False, {}),
             (metrics.marre, False, {}),
+            (metrics.autc, False, {}),
             (metrics.r2_score, False, {}),
             (metrics.coefficient_of_variation, False, {}),
             (metrics.qr, True, {}),
             (metrics.mql, True, {}),
+            (metrics.mcrps, True, {}),
             (metrics.dtw_metric, False, {}),
+            (metrics.accuracy, False, {}),
+            (metrics.precision, False, {}),
+            (metrics.recall, False, {}),
+            (metrics.f1, False, {}),
         ],
     )
     def test_output_type_time_aggregated(self, config):
@@ -457,6 +582,7 @@ class TestMetrics:
             (metrics.sape, False),
             (metrics.arre, False),
             (metrics.ql, True),
+            (metrics.crps, True),
         ],
     )
     def test_output_type_time_dependent(self, config):
@@ -742,16 +868,19 @@ class TestMetrics:
                 (metrics.sape, False),
                 (metrics.arre, False),
                 (metrics.ql, True),
+                (metrics.crps, True),
                 # time aggregates
                 (metrics.merr, False),
                 (metrics.mae, False),
                 (metrics.mse, False),
                 (metrics.rmse, False),
+                (metrics.autc, False),
                 (metrics.rmsle, False),
                 (metrics.mase, False),
                 (metrics.msse, False),
                 (metrics.rmsse, False),
                 (metrics.mape, False),
+                (metrics.wmape, False),
                 (metrics.smape, False),
                 (metrics.ope, False),
                 (metrics.marre, False),
@@ -759,7 +888,12 @@ class TestMetrics:
                 (metrics.coefficient_of_variation, False),
                 (metrics.qr, True),
                 (metrics.mql, True),
+                (metrics.mcrps, True),
                 (metrics.dtw_metric, False),
+                (metrics.accuracy, False),
+                (metrics.precision, False),
+                (metrics.recall, False),
+                (metrics.f1, False),
             ],
             ["time", "component", "series"],
         ),
@@ -844,16 +978,19 @@ class TestMetrics:
             (metrics.sape, 0, False, {"time_reduction": np.mean}),
             (metrics.arre, 0, False, {"time_reduction": np.mean}),
             (metrics.ql, 0, True, {"time_reduction": np.mean}),
+            (metrics.crps, 0, True, {"time_reduction": np.mean}),
             # time aggregates
             (metrics.merr, 0, False, {}),
             (metrics.mae, 0, False, {}),
             (metrics.mse, 0, False, {}),
             (metrics.rmse, 0, False, {}),
+            (metrics.autc, 1, False, {}),
             (metrics.rmsle, 0, False, {}),
             (metrics.mase, 0, False, {}),
             (metrics.msse, 0, False, {}),
             (metrics.rmsse, 0, False, {}),
             (metrics.mape, 0, False, {}),
+            (metrics.wmape, 0, False, {}),
             (metrics.smape, 0, False, {}),
             (metrics.ope, 0, False, {}),
             (metrics.marre, 0, False, {}),
@@ -861,7 +998,12 @@ class TestMetrics:
             (metrics.coefficient_of_variation, 0, False, {}),
             (metrics.qr, 0, True, {}),
             (metrics.mql, 0, True, {}),
+            (metrics.mcrps, 0, True, {}),
             (metrics.dtw_metric, 0, False, {}),
+            (metrics.accuracy, 1, False, {}),
+            (metrics.precision, 1, False, {}),
+            (metrics.recall, 1, False, {}),
+            (metrics.f1, 1, False, {}),
         ],
     )
     def test_same(self, config):
@@ -963,6 +1105,15 @@ class TestMetrics:
         self.helper_test_nan(metric, **kwargs)
         self.helper_test_non_aggregate(metric, is_aggregate)
 
+        with pytest.raises(ValueError) as exc:
+            _ = metric(
+                TimeSeries.from_values(np.ones((3, 1, 1))),
+                TimeSeries.from_values(np.ones((3, 1, 1))),
+            )
+        assert str(exc.value).startswith(
+            "The difference between the max and min values must "
+        )
+
     @pytest.mark.parametrize(
         "metric",
         [
@@ -973,9 +1124,23 @@ class TestMetrics:
             metrics.rmsse,
         ],
     )
-    def test_season(self, metric):
-        with pytest.raises(ValueError):
+    def test_season(self, metric, caplog):
+        # default "warn" mode: emits a warning for perfectly seasonal or constant insample
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
             metric(self.series3, self.series3 * 1.3, self.series_train, 8)
+        assert "error scale (denominator) is zero" in caplog.text
+
+        # legacy "raise" mode still raises ValueError
+        with pytest.raises(ValueError):
+            metric(
+                self.series3,
+                self.series3 * 1.3,
+                self.series_train,
+                8,
+                zero_division="raise",
+            )
+        caplog.clear()
 
     @pytest.mark.parametrize(
         "config",
@@ -1034,10 +1199,10 @@ class TestMetrics:
         "config",
         [
             (metrics.ase, False, {"time_reduction": np.nanmean}),
-            # (metrics.sse, False, {"time_reduction": np.nanmean}),
-            # (metrics.mase, True, {}),
-            # (metrics.msse, True, {}),
-            # (metrics.rmsse, True, {}),
+            (metrics.sse, False, {"time_reduction": np.nanmean}),
+            (metrics.mase, True, {}),
+            (metrics.msse, True, {}),
+            (metrics.rmsse, True, {}),
         ],
     )
     def test_scaled_errors(self, config):
@@ -1110,6 +1275,9 @@ class TestMetrics:
         assert str(err.value).startswith(
             "The `insample` series must start before the `pred_series`"
         )
+        # wrong number of components
+        with pytest.raises(ValueError):
+            metric(self.series1, self.series2, insample.stack(insample))
         # multi-ts, second series is not a TimeSeries
         with pytest.raises(ValueError):
             metric([self.series1] * 2, self.series2, [insample] * 2)
@@ -1119,6 +1287,192 @@ class TestMetrics:
         # multi-ts one array has different length
         with pytest.raises(ValueError):
             metric([self.series1] * 2, [self.series2] * 2, [insample] * 3)
+
+    @pytest.mark.parametrize("is_univariate", [False, True])
+    @pytest.mark.parametrize("is_deterministic", [False, True])
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (metrics.ase, False, {"time_reduction": np.nanmean}),
+            (metrics.sse, False, {"time_reduction": np.nanmean}),
+            (metrics.mase, True, {}),
+            (metrics.msse, True, {}),
+            (metrics.rmsse, True, {}),
+        ],
+    )
+    def test_scaled_errors_zero_division(
+        self, is_univariate, is_deterministic, config, caplog
+    ):
+        """Test that scaled metrics handle zero error scale gracefully."""
+        metric, is_aggregate, kwargs = config
+
+        series1, series2 = self.series1, self.series2
+        if not is_univariate:
+            series1 = series1.stack(series1 + 1.0)
+            series2 = series2.stack(series2 + 1.0)
+        if not is_deterministic:
+            vals = series2.all_values()
+            vals = np.concatenate([vals - 1.0, vals, vals + 1.0], axis=2)
+            series2 = series2.with_values(vals)
+
+        # --- constant insample (zero scale for m=1) ---
+        constant_train = TimeSeries.from_times_and_values(
+            self.series_train.time_index,
+            np.full((len(self.series_train), 1 if is_univariate else 2), 5.0),
+        )
+
+        # default zero_division="warn": Case 1 (non-zero / zero) → nan + warning
+        # expected result shape
+        result_shape = tuple() if is_univariate else (2,)
+        with caplog.at_level(logging.WARNING):
+            result = metric(
+                series1,
+                series2,
+                constant_train,
+                m=1,
+                component_reduction=None,
+                **kwargs,
+            )
+        assert "error scale (denominator) is zero" in caplog.text
+        assert result.shape == result_shape
+        assert np.all(np.isnan(result))
+        caplog.clear()
+
+        # zero_division="raise": raises ValueError (legacy behavior)
+        with pytest.raises(
+            ValueError, match="Cannot use scaled metric with periodical signals."
+        ):
+            metric(
+                series1,
+                series2,
+                constant_train,
+                m=1,
+                zero_division="raise",
+                component_reduction=None,
+                **kwargs,
+            )
+
+        # --- perfectly seasonal insample with m=2 ---
+        seasonal_vals = np.tile([1.0, 2.0], 16)[: len(self.series_train)]
+        seasonal_train = TimeSeries.from_times_and_values(
+            self.series_train.time_index,
+            seasonal_vals.reshape(-1, 1),
+        )
+        if not is_univariate:
+            seasonal_train = seasonal_train.stack(seasonal_train + 1.0)
+
+        # Case 1 with seasonal: non-zero / zero → nan
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            result = metric(
+                series1,
+                series2,
+                seasonal_train,
+                m=2,
+                component_reduction=None,
+                **kwargs,
+            )
+        assert "error scale (denominator) is zero" in caplog.text
+        assert result.shape == result_shape
+        assert np.all(np.isnan(result))
+
+        # --- Case 2: perfect prediction with constant insample (0/0) ---
+        # use series1 as both actual and pred so error numerator is 0
+        # default "warn" mode: 0/0 → 1.0 (on par with naive)
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            result = metric(
+                series1,
+                series1,
+                constant_train,
+                m=1,
+                component_reduction=None,
+                **kwargs,
+            )
+        assert "error scale (denominator) is zero" in caplog.text
+        assert result.shape == result_shape
+        assert np.all(result == 1.0)
+
+        # --- non-zero scale still works normally (no warning) ---
+        series_train = self.series_train
+        if not is_univariate:
+            series_train = series_train.stack(series_train + 1.0)
+
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            result_normal = metric(
+                series1,
+                series2,
+                series_train,
+                m=1,
+                component_reduction=None,
+                **kwargs,
+            )
+        assert "error scale (denominator) is zero" not in caplog.text
+        assert result.shape == result_shape
+        assert not np.any(np.isnan(result_normal))
+
+        # --- invalid string zero_division raises ---
+        with pytest.raises(ValueError, match="`zero_division` must be"):
+            metric(
+                series1,
+                series2,
+                constant_train,
+                m=1,
+                zero_division="invalid",
+                component_reduction=None,
+                **kwargs,
+            )
+
+        if not is_univariate:
+            # --- Some perfect prediction others with zero error scale ---
+            # check zero division correctly handles component dimension
+            comps = series1.columns.tolist()
+            preds = concatenate(
+                [
+                    series1[comps[0]],
+                    series1[comps[1]] + 1.0,
+                ],
+                axis=1,
+            )
+            result = metric(
+                series1,
+                preds,
+                constant_train,
+                m=1,
+                component_reduction=None,
+                **kwargs,
+            )
+            np.testing.assert_array_equal(result, [1.0, np.nan])
+
+        if not is_deterministic:
+            # --- Probabilistic forecast with multi-quantiles: Some zero error scale, others without ---
+            # check zero division correctly handles quantile dimension
+            if not is_univariate:
+                insample = concatenate(
+                    [
+                        series_train[series_train.columns[0]],
+                        constant_train[constant_train.columns[1]],
+                    ],
+                    axis=1,
+                )
+            else:
+                insample = series_train
+
+            result = metric(
+                series1,
+                series2,
+                insample,
+                m=1,
+                component_reduction=None,
+                q=[0.0, 1.0],
+                **kwargs,
+            )
+            # 2 quantiles per component
+            assert result.shape == ((2,) if is_univariate else (4,))
+            assert not np.any(np.isnan(result[:2]))
+            assert np.all(np.isnan(result[2:]))
+        caplog.clear()
 
     def test_ope(self):
         self.helper_test_multivariate_duplication_equality(metrics.ope)
@@ -1156,6 +1510,22 @@ class TestMetrics:
         )
         np.testing.assert_array_almost_equal(metrics.qr(s1, s12_stochastic, q=0.0), 0.0)
         np.testing.assert_array_almost_equal(metrics.qr(s2, s12_stochastic, q=1.0), 0.0)
+
+        # preds must be probabilistic
+        q_names = likelihood_component_names(
+            self.series1.components,
+            quantile_names([0.5]),
+        )
+        with pytest.raises(ValueError) as exc:
+            metrics.qr(
+                self.series1,
+                self.series1.with_columns_renamed(self.series1.components, q_names),
+                q=0.5,
+            )
+        assert (
+            str(exc.value)
+            == "quantile risk (qr) should only be computed for stochastic predicted TimeSeries."
+        )
 
     @pytest.mark.parametrize(
         "config",
@@ -1196,6 +1566,54 @@ class TestMetrics:
         )
         np.testing.assert_array_almost_equal(
             metric(s2, s12_stochastic, q=0.0, **kwargs), 0.0
+        )
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (metrics.crps, False, {"time_reduction": np.nanmean}),
+            (metrics.mcrps, True, {}),
+        ],
+    )
+    def test_crps(self, config):
+        metric, is_aggregate, kwargs = config
+
+        # deterministic not supported
+        with pytest.raises(ValueError):
+            metric(self.series1, self.series1, **kwargs)
+
+        # general univariate, multivariate and multi-ts tests
+        self.helper_test_multivariate_duplication_equality(
+            metric, is_stochastic=True, **kwargs
+        )
+        self.helper_test_multiple_ts_duplication_equality(
+            metric, is_stochastic=True, **kwargs
+        )
+        self.helper_test_nan(metric, is_stochastic=True, **kwargs)
+
+        # perfect predictions (all samples equal to actual) -> CRPS = 0
+        np.testing.assert_array_almost_equal(
+            metric(self.series1, self.series11_stochastic, **kwargs), 0.0
+        )
+
+        # manual numerical check: y_true = 0, samples = [-1, 0, 1]
+        # term1 = mean(|x_i - 0|) = (1 + 0 + 1) / 3 = 2/3
+        # pairwise |x_i - x_j| sum = 2*(1+2+1) = 8  (upper tri * 2 + diag)
+        # term2 = 0.5 * 8 / 9 = 4/9
+        # crps = 2/3 - 4/9 = 2/9
+        y_true = TimeSeries.from_values(np.zeros((5, 1, 1)))
+        samples = np.array([-1.0, 0.0, 1.0])
+        y_pred = TimeSeries.from_values(np.tile(samples, (5, 1, 1)).reshape(5, 1, 3))
+        expected_crps = 2.0 / 9.0
+        np.testing.assert_almost_equal(
+            metric(y_true, y_pred, **kwargs), expected_crps, decimal=10
+        )
+
+        # CRPS should be <= MAE: a spread-out distribution centered on truth is better than a point prediction
+        # Use series1 as truth; stochastic series centered on truth has lower CRPS than a biased one
+        np.testing.assert_array_less(
+            metric(self.series1, self.series11_stochastic, **kwargs),
+            metric(self.series1, self.series22_stochastic, **kwargs) + 1e-10,
         )
 
     def test_metrics_arguments(self):
@@ -1241,7 +1659,7 @@ class TestMetrics:
 
         # should fail if kwargs are passed as args, because of the "*"
         with pytest.raises(TypeError):
-            metrics.r2_score(series00, series11, False, np.mean)
+            metrics.r2_score(series00, series11, False, 0.5, np.mean)
 
     def test_multiple_ts_rmse(self):
         # simple test
@@ -1271,13 +1689,19 @@ class TestMetrics:
             (metrics.mae, "max", {}),
             (metrics.mse, "max", {}),
             (metrics.rmse, "max", {}),
+            (metrics.autc, "min", {}),
             (metrics.rmsle, "max", {}),
             (metrics.mape, "max", {}),
+            (metrics.wmape, "max", {}),
             (metrics.smape, "max", {}),
             (metrics.ope, "max", {}),
             (metrics.marre, "max", {}),
             (metrics.r2_score, "min", {}),
             (metrics.coefficient_of_variation, "max", {}),
+            (metrics.accuracy, "max", {}),
+            (metrics.precision, "max", {}),
+            (metrics.recall, "max", {}),
+            (metrics.f1, "max", {}),
         ],
     )
     def test_multiple_ts(self, config):
@@ -1358,14 +1782,20 @@ class TestMetrics:
             (metrics.merr, metric_residuals, {}, {}),
             (metrics.mae, sklearn.metrics.mean_absolute_error, {}, {}),
             (metrics.mse, sklearn.metrics.mean_squared_error, {}, {}),
-            (metrics.rmse, sklearn.metrics.mean_squared_error, {"squared": False}, {}),
+            (metrics.rmse, sklearn.metrics.root_mean_squared_error, {}, {}),
             (metrics.rmsle, metric_rmsle, {}, {}),
             (metrics.mape, sklearn_mape, {}, {}),
+            (metrics.wmape, metric_wmape, {}, {}),
             (metrics.smape, metric_smape, {}, {}),
             (metrics.ope, metric_ope, {}, {}),
             (metrics.marre, metric_marre, {}, {}),
+            (metrics.autc, metric_autc, {}, {}),
             (metrics.r2_score, sklearn.metrics.r2_score, {}, {}),
             (metrics.coefficient_of_variation, metric_cov, {}, {}),
+            (metrics.accuracy, metric_macc, {}, {}),
+            (metrics.precision, metric_precision, {}, {}),
+            (metrics.recall, metric_recall, {}, {}),
+            (metrics.f1, metric_f1, {}, {}),
         ],
     )
     def test_metrics_deterministic(self, config):
@@ -1513,7 +1943,7 @@ class TestMetrics:
             # univariate
             non_nan_metric = metric(s1[:9] + 1, s2[:9], **kwargs)
             nan_s1 = s1.copy()
-            nan_s1._xa.values[-1, :, :] = np.nan
+            nan_s1._values[-1, :, :] = np.nan
             nan_metric = metric(nan_s1 + 1, s2, **kwargs)
             assert non_nan_metric == nan_metric
 
@@ -1525,7 +1955,7 @@ class TestMetrics:
             )
             nan_s11 = s11.copy()
             for s in nan_s11:
-                s._xa.values[-1, :, :] = np.nan
+                s._values[-1, :, :] = np.nan
             nan_metric = metric([s + 1 for s in nan_s11], s22, **kwargs)
             np.testing.assert_array_equal(non_nan_metric, nan_metric)
 
@@ -1539,3 +1969,597 @@ class TestMetrics:
 
         if val_exp is not None:
             assert (res == -1.0).all()
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [
+                # time dependent but with time reduction
+                metrics.err,
+                metrics.ae,
+                metrics.se,
+                metrics.sle,
+                metrics.ase,
+                metrics.sse,
+                metrics.ape,
+                metrics.sape,
+                metrics.arre,
+                metrics.ql,
+                metrics.autc,
+                # time aggregates
+                metrics.merr,
+                metrics.mae,
+                metrics.mse,
+                metrics.rmse,
+                metrics.rmsle,
+                metrics.mase,
+                metrics.msse,
+                metrics.rmsse,
+                metrics.mape,
+                metrics.wmape,
+                metrics.smape,
+                metrics.ope,
+                metrics.marre,
+                metrics.r2_score,
+                metrics.coefficient_of_variation,
+                metrics.mql,
+            ],
+            [True, False],  # univariate series
+            [True, False],  # single series
+        ),
+    )
+    def test_metric_quantiles(self, config):
+        """Test output types and shapes for time aggregated metrics with quantiles:
+        for single and multiple univariate or multivariate series, in combination
+        with different component and series reduction functions."""
+        np.random.seed(42)
+        metric, is_univar, is_single = config
+        params = inspect.signature(metric).parameters
+
+        n_comp = 1 if is_univar else 2
+
+        qs_all = [0.1, 0.5, 0.8]
+        components = [str(i) for i in range(n_comp)]
+
+        series_vals = np.random.random((10, n_comp, 1))
+
+        pred_prob_vals = np.random.random((10, n_comp, 100))
+
+        pred_vals_qs = []
+        for i in range(n_comp):
+            pred_vals_qs.append(
+                np.quantile(pred_prob_vals[:, [i]], qs_all, axis=2).transpose(1, 0, 2)
+            )
+        pred_vals_qs = np.concatenate(pred_vals_qs, axis=1)
+        pred_components = likelihood_component_names(
+            components=components, parameter_names=quantile_names(q=qs_all)
+        )
+
+        series = TimeSeries.from_values(series_vals, columns=components)
+        series_q_exp = concatenate(
+            [series[comp] for comp in components for _ in qs_all], axis=1
+        )
+        pred_prob = TimeSeries.from_values(pred_prob_vals, columns=components)
+        pred_qs = TimeSeries.from_values(pred_vals_qs, columns=pred_components)
+        insample = series.shift(-len(series))
+        insample_q_exp = concatenate(
+            [insample[comp] for comp in components for _ in qs_all], axis=1
+        )
+        shape_time = (len(pred_qs),) if "time_reduction" in params else tuple()
+
+        if not is_single:
+            series = [series] * 2
+            series_q_exp = [series_q_exp] * 2
+            pred_prob = [pred_prob] * 2
+            pred_qs = [pred_qs] * 2
+            insample = [insample] * 2
+            insample_q_exp = [insample_q_exp] * 2
+
+        kwargs = {"actual_series": series}
+        if "insample" in params:
+            kwargs["insample"] = insample
+
+        def check_res(
+            pred_prob_, pred_qs_, shape_exp, series_reduction=None, **test_kwargs
+        ):
+            res_prob = metric(
+                pred_series=pred_prob_,
+                series_reduction=series_reduction,
+                **kwargs,
+                **test_kwargs,
+            )
+            res_qs = metric(
+                pred_series=pred_qs_,
+                series_reduction=series_reduction,
+                **kwargs,
+                **test_kwargs,
+            )
+            if is_single or series_reduction is not None:
+                res_prob = [res_prob]
+                res_qs = [res_qs]
+            if series_reduction is None and not is_single:
+                assert len(res_prob) == len(res_qs) == len(pred_prob_)
+
+            for res_p, res_q in zip(res_prob, res_qs):
+                assert res_p.shape == res_q.shape == shape_exp
+                np.testing.assert_array_almost_equal(res_p, res_q)
+
+        check_res(pred_prob, pred_qs, shape_time, q=0.1)
+        # one quantile as list
+        check_res(pred_prob, pred_qs, shape_time, q=[0.1])
+        # multiple quantiles
+        check_res(pred_prob, pred_qs, shape_time + (2,), q=[0.1, 0.8])
+        # all quantiles
+        check_res(pred_prob, pred_qs, shape_time + (3,), q=[0.1, 0.5, 0.8])
+        qs = [0.1, 0.8]
+        # component and series reduction
+        check_res(
+            pred_prob,
+            pred_qs,
+            shape_time + (len(qs),),
+            q=qs,
+            component_reduction=np.mean,
+            series_reduction=np.mean,
+        )
+        # no component reduction
+        check_res(
+            pred_prob,
+            pred_qs,
+            shape_time + (len(qs) * n_comp,),
+            q=qs,
+            component_reduction=None,
+            series_reduction=np.mean,
+        )
+        # no series reduction
+        check_res(
+            pred_prob,
+            pred_qs,
+            shape_time + (len(qs),),
+            q=qs,
+            component_reduction=np.mean,
+            series_reduction=None,
+        )
+        # no series and component reduction
+        check_res(
+            pred_prob,
+            pred_qs,
+            shape_time + (len(qs) * n_comp,),
+            q=qs,
+            component_reduction=None,
+            series_reduction=None,
+        )
+
+        # check that we get identical results as when computing each quantile component against the actual
+        # target component directly
+        kwargs_direct = copy.deepcopy(kwargs)
+        q_direct = {}
+        if metric.__name__ not in ["ql", "mql"]:
+            kwargs_direct["actual_series"] = series_q_exp
+            if "insample" in params:
+                kwargs_direct["insample"] = insample_q_exp
+        else:
+            q_direct["q"] = qs_all
+            kwargs_direct["actual_series"] = series
+
+        res_direct = metric(
+            pred_series=pred_qs, component_reduction=None, **kwargs_direct, **q_direct
+        )
+        res_qs = metric(
+            pred_series=pred_qs,
+            component_reduction=None,
+            q=qs_all,
+            **kwargs,
+        )
+        np.testing.assert_array_almost_equal(res_direct, res_qs)
+
+    def test_invalid_quantiles(self):
+        np.random.seed(42)
+        series_a = TimeSeries.from_values(np.random.random((10, 2, 1)))
+        series_b = TimeSeries.from_values(np.random.random((10, 2, 10)))
+
+        # unsorted quantiles
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.mae(series_a, series_b, q=[0.2, 0.1])
+        assert "a sequence of increasing order" in str(exc.value)
+
+        # non-unique values metrics
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.mae(series_a, series_b, q=[0.2, 0.2])
+        assert "with unique values only" in str(exc.value)
+
+        # q > 1
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.mae(series_a, series_b, q=[0.2, 1.01])
+        assert "must be in the range `(>=0,<=1)`" in str(exc.value)
+
+        # q < 0
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.mae(series_a, series_b, q=[-0.01, 0.2])
+        assert "must be in the range `(>=0,<=1)`" in str(exc.value)
+
+        # but sorted, unique, and valid quantiles work
+        _ = metrics.mae(series_a, series_b, q=[0.0, 0.5, 1.0])
+
+    def test_quantile_as_tuple(self):
+        """Test that `q` as tuple (list of quantiles, quantile component names) gives same results as `q`
+        as quantile values list."""
+        np.random.seed(42)
+        q = [0.25, 0.75]
+
+        series_a = TimeSeries.from_values(np.random.random((10, 2, 1)))
+        q_names = pd.Index(
+            likelihood_component_names(series_a.components, quantile_names(q))
+        )
+        series_b = TimeSeries.from_values(np.random.random((10, 4, 1)), columns=q_names)
+
+        np.testing.assert_array_almost_equal(
+            metrics.mae(series_a, series_b, q=(q, q_names)),
+            metrics.mae(series_a, series_b, q=q),
+        )
+
+    def test_custom_metric_wrong_output_shape(self):
+        """Test that custom metrics must have correct output dim."""
+
+        @metrics.multi_ts_support
+        @metrics.multivariate_support
+        def custom_metric(
+            actual_series,
+            pred_series,
+            intersect=True,
+            *,
+            q=None,
+            time_reduction=None,
+            component_reduction=np.nanmean,
+            series_reduction=None,
+            n_jobs=1,
+            verbose=False,
+            name="custom_name",
+            out_ndim=1,
+        ):
+            return np.ones(tuple(1 for _ in range(out_ndim)))
+
+        for ndim in [1, 4]:
+            with pytest.raises(ValueError) as exc:
+                custom_metric(self.series1, self.series2, out_ndim=ndim)
+            assert str(exc.value).startswith(
+                "Metric output must have 2 dimensions (n components, n quantiles or n labels) for aggregated metrics"
+            )
+        for ndim in [2, 3]:
+            _ = custom_metric(self.series1, self.series2, out_ndim=ndim)
+
+    def test_wrong_error_scale(self):
+        with pytest.raises(ValueError) as exc:
+            _ = metrics._get_error_scale(
+                self.series1.shift(-len(self.series1)),
+                self.series1,
+                m=1,
+                metric="wrong_metric",
+            )
+        assert str(exc.value).startswith("unknown `metric=wrong_metric`")
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            # only time dependent quantile interval metrics
+            (metrics.iw, metric_iw),
+            (metrics.iws, metric_iws),
+            (metrics.ic, metric_ic),
+            (metrics.incs_qr, metric_incs_qr),
+        ],
+    )
+    def test_metric_quantile_interval_accuracy(self, config):
+        """Test output types and shapes for time dependent metrics with quantile intervals:
+        for single and multiple univariate or multivariate series, in combination
+        with different component and series reduction functions."""
+        np.random.seed(42)
+        metric, metric_ref = config
+        n_comp = 2
+        components = [str(i) for i in range(n_comp)]
+        series_vals = np.random.random((10, n_comp, 1))
+        pred_prob_vals = np.random.random((10, n_comp, 100))
+        series = TimeSeries.from_values(series_vals, columns=components)
+        pred_prob = TimeSeries.from_values(pred_prob_vals, columns=components)
+
+        def check_ref(**test_kwargs):
+            res_prob = metric(
+                actual_series=series,
+                pred_series=pred_prob,
+                series_reduction=None,
+                component_reduction=None,
+                time_reduction=None,
+                **test_kwargs,
+            )
+            res_ref = metric_ref(
+                y_true=series.all_values(),
+                y_pred=pred_prob.all_values(),
+                **test_kwargs,
+            )
+            np.testing.assert_array_almost_equal(res_prob, res_ref)
+
+        # one interval as tuple
+        check_ref(q_interval=(0.1, 0.5))
+        # one interval in list
+        check_ref(q_interval=[(0.1, 0.5)])
+        # multiple intervals
+        check_ref(q_interval=[(0.1, 0.5), (0.5, 0.8)])
+
+    @pytest.mark.parametrize(
+        "config",
+        list(
+            itertools.product(
+                [
+                    # time dependent but with time reduction
+                    metrics.iw,
+                    metrics.miw,
+                    metrics.iws,
+                    metrics.miws,
+                    metrics.ic,
+                    metrics.mic,
+                    metrics.incs_qr,
+                    metrics.mincs_qr,
+                ],
+                [True, False],  # univariate series
+                [True, False],  # single series
+            )
+        ),
+    )
+    def test_metric_quantile_interval(self, config):
+        """Test output types and shapes for time aggregated metrics with quantile intervals:
+        for single and multiple univariate or multivariate series, in combination
+        with different component and series reduction functions."""
+        np.random.seed(42)
+        metric, is_univar, is_single = config
+        params = inspect.signature(metric).parameters
+
+        n_comp = 1 if is_univar else 2
+
+        qs_all = [0.1, 0.5, 0.8]
+        components = [str(i) for i in range(n_comp)]
+
+        series_vals = np.random.random((10, n_comp, 1))
+        pred_prob_vals = np.random.random((10, n_comp, 100))
+
+        pred_vals_qs = []
+        for i in range(n_comp):
+            pred_vals_qs.append(
+                np.quantile(pred_prob_vals[:, [i]], qs_all, axis=2).transpose(1, 0, 2)
+            )
+        pred_vals_qs = np.concatenate(pred_vals_qs, axis=1)
+        pred_components = likelihood_component_names(
+            components=components, parameter_names=quantile_names(q=qs_all)
+        )
+
+        series = TimeSeries.from_values(series_vals, columns=components)
+        pred_prob = TimeSeries.from_values(pred_prob_vals, columns=components)
+        pred_qs = TimeSeries.from_values(pred_vals_qs, columns=pred_components)
+        shape_time = (len(pred_qs),) if "time_reduction" in params else tuple()
+
+        if not is_single:
+            series = [series] * 2
+            pred_prob = [pred_prob] * 2
+            pred_qs = [pred_qs] * 2
+
+        kwargs = {"actual_series": series}
+
+        def check_res(
+            pred_prob_, pred_qs_, shape_exp, series_reduction=None, **test_kwargs
+        ):
+            res_prob = metric(
+                actual_series=series,
+                pred_series=pred_prob_,
+                series_reduction=series_reduction,
+                **test_kwargs,
+            )
+            res_qs = metric(
+                actual_series=series,
+                pred_series=pred_qs_,
+                series_reduction=series_reduction,
+                **test_kwargs,
+            )
+            if is_single or series_reduction is not None:
+                res_prob = [res_prob]
+                res_qs = [res_qs]
+            if series_reduction is None and not is_single:
+                assert len(res_prob) == len(res_qs) == len(pred_prob_)
+
+            for res_p, res_q in zip(res_prob, res_qs):
+                assert res_p.shape == res_q.shape == shape_exp
+                np.testing.assert_array_almost_equal(res_p, res_q)
+            return res_qs
+
+        # one interval as tuple
+        res = check_res(pred_prob, pred_qs, shape_time, q_interval=(0.1, 0.5))
+        # one interval in list
+        res2 = check_res(pred_prob, pred_qs, shape_time, q_interval=[(0.1, 0.5)])
+        np.testing.assert_array_almost_equal(res, res2)
+        # multiple intervals
+        check_res(
+            pred_prob, pred_qs, shape_time + (2,), q_interval=[(0.1, 0.5), (0.5, 0.8)]
+        )
+        # all intervals
+        check_res(
+            pred_prob,
+            pred_qs,
+            shape_time + (3,),
+            q_interval=[(0.1, 0.5), (0.5, 0.8), (0.1, 0.8)],
+        )
+        q_intervals = [(0.1, 0.5), (0.5, 0.8)]
+        # component and series reduction
+        check_res(
+            pred_prob,
+            pred_qs,
+            shape_time + (len(q_intervals),),
+            q_interval=q_intervals,
+            component_reduction=np.mean,
+            series_reduction=np.mean,
+        )
+        # no component reduction
+        check_res(
+            pred_prob,
+            pred_qs,
+            shape_time + (len(q_intervals) * n_comp,),
+            q_interval=q_intervals,
+            component_reduction=None,
+            series_reduction=np.mean,
+        )
+        # no series reduction
+        check_res(
+            pred_prob,
+            pred_qs,
+            shape_time + (len(q_intervals),),
+            q_interval=q_intervals,
+            component_reduction=np.mean,
+            series_reduction=None,
+        )
+        # no series and component reduction
+        check_res(
+            pred_prob,
+            pred_qs,
+            shape_time + (len(q_intervals) * n_comp,),
+            q_interval=q_intervals,
+            component_reduction=None,
+            series_reduction=None,
+        )
+
+        # check that we get identical results as when computing intervals separately (on the time aggregated case)
+        if "time_reduction" in params:
+            kwargs["time_reduction"] = np.mean
+        res_lo = metric(
+            pred_series=pred_qs,
+            component_reduction=None,
+            q_interval=(0.1, 0.5),
+            **kwargs,
+        )
+        res_hi = metric(
+            pred_series=pred_qs,
+            component_reduction=None,
+            q_interval=(0.5, 0.8),
+            **kwargs,
+        )
+        res_multi = metric(
+            pred_series=pred_qs,
+            component_reduction=None,
+            q_interval=[(0.1, 0.5), (0.5, 0.8)],
+            **kwargs,
+        )
+        if is_single:
+            res_lo = [res_lo]
+            res_hi = [res_hi]
+            res_multi = [res_multi]
+        res_lo_hi = []
+        for res_lo_, res_hi_ in zip(res_lo, res_hi):
+            if res_lo_.ndim == 0:
+                res_lo_ = np.expand_dims(res_lo_, -1)
+                res_hi_ = np.expand_dims(res_hi_, -1)
+                res_lo_hi_ = np.concatenate([res_lo_, res_hi_])
+            else:
+                res_lo_hi_ = np.concatenate(
+                    [(res_lo_[i], res_hi_[i]) for i in range(n_comp)],
+                )
+            res_lo_hi.append(res_lo_hi_)
+        np.testing.assert_array_almost_equal(res_lo_hi, res_multi)
+
+    def test_invalid_quantile_intervals(self):
+        np.random.seed(42)
+        series_a = TimeSeries.from_values(np.random.random((10, 2, 1)))
+        series_b = TimeSeries.from_values(np.random.random((10, 2, 10)))
+
+        # q not supported
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.iw(series_a, series_b, q=[0.2])
+        assert str(exc.value).startswith(
+            "`q` is not supported for quantile interval metrics"
+        )
+
+        # no quantile interval
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.iw(series_a, series_b, q_interval=None)
+        assert str(exc.value).startswith(
+            "Quantile interval metrics require setting `q_interval`."
+        )
+
+        # invalid interval type
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.iw(series_a, series_b, q_interval=0.6)
+        assert (
+            str(exc.value)
+            == "`q_interval` must be a tuple (float, float) or a sequence of tuples (float, float)."
+        )
+
+        # invalid tuple length
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.iw(series_a, series_b, q_interval=(0.1, 0.2, 0.3))
+        assert (
+            str(exc.value)
+            == "`q_interval` must be a tuple (float, float) or a sequence of tuples (float, float)."
+        )
+
+        # one tuple has invalid length invalid tuple length (raises a numpy error)
+        with pytest.raises(ValueError):
+            _ = metrics.iw(series_a, series_b, q_interval=[(0.1, 0.2), (0.2, 0.3, 0.4)])
+
+        # interval upper bound too high
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.iw(series_a, series_b, q_interval=(0.1, 1.1))
+        assert str(exc.value).startswith(
+            "All `q` values must be in the range `(>=0,<=1)`."
+        )
+
+        # interval lower bound too low
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.iw(series_a, series_b, q_interval=(-0.01, 0.1))
+        assert str(exc.value).startswith(
+            "All `q` values must be in the range `(>=0,<=1)`."
+        )
+
+        # lower interval equal to higher interval
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.iw(series_a, series_b, q_interval=(0.2, 0.2))
+        assert str(exc.value).startswith(
+            "all intervals in `q_interval` must be tuples of (lower q, upper q)"
+        )
+
+        # lower interval higher than higher interval
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.iw(series_a, series_b, q_interval=(0.3, 0.2))
+        assert str(exc.value).startswith(
+            "all intervals in `q_interval` must be tuples of (lower q, upper q)"
+        )
+
+    def test_regression_handler_invalid_q(self):
+        y = TimeSeries.from_values(np.array([1.0]))
+        with pytest.raises(ValueError) as exc:
+            utils._regression_handling(
+                y, y, params={}, kwargs={"q": (np.array([0.5]), None, None)}
+            )
+        assert str(exc.value).startswith(
+            "`q` must be of tuple of `(np.ndarray, pd.Index | None)`"
+        )
+
+    def test_wrapped_metrics(self):
+        with pytest.raises(NotImplementedError) as exc:
+            utils._get_wrapped_metric(None, n_wrappers=4)
+        assert str(exc.value) == "Only 2-3 wrappers are currently supported"
+
+    @pytest.mark.parametrize(
+        "kwargs,match",
+        [
+            ({"min_tolerance": -0.1}, "min_tolerance must be >= 0"),
+            ({"max_tolerance": 1.5}, "max_tolerance must be <= 1"),
+            (
+                {"min_tolerance": 0.8, "max_tolerance": 0.5},
+                "min_tolerance must be >= 0",
+            ),
+            ({"step": 0}, "step must be positive"),
+            ({"step": -0.1}, "step must be positive"),
+            ({"step": 2.0}, "step must be positive"),
+        ],
+    )
+    def test_autc_invalid_params(self, kwargs, match):
+        with pytest.raises(ValueError, match=match):
+            metrics.autc(self.series1, self.series2, **kwargs)
+
+    def test_autc_constant_series(self):
+        series1_const = self.series1.with_values(np.ones(self.series1.shape))
+        with pytest.raises(ValueError, match="range of actual values"):
+            metrics.autc(series1_const, self.series2)

@@ -1,25 +1,19 @@
 """
 Time-series Dense Encoder (TiDE)
-------
+--------------------------------
 """
-
-from typing import Optional, Tuple
 
 import torch
 import torch.nn as nn
 
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
-    PLMixedCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
+from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
-
-MixedCovariatesTrainTensorType = Tuple[
-    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
-]
-
 
 logger = get_logger(__name__)
 
@@ -64,7 +58,7 @@ class _ResidualBlock(nn.Module):
         return x
 
 
-class _TideModule(PLMixedCovariatesModule):
+class _TideModule(PLForecastingModule):
     def __init__(
         self,
         input_dim: int,
@@ -81,8 +75,8 @@ class _TideModule(PLMixedCovariatesModule):
         temporal_width_future: int,
         use_layer_norm: bool,
         dropout: float,
-        temporal_hidden_size_past: Optional[int] = None,
-        temporal_hidden_size_future: Optional[int] = None,
+        temporal_hidden_size_past: int | None = None,
+        temporal_hidden_size_future: int | None = None,
         **kwargs,
     ):
         """Pytorch module implementing the TiDE architecture.
@@ -266,9 +260,7 @@ class _TideModule(PLMixedCovariatesModule):
         )
 
     @io_processor
-    def forward(
-        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
-    ) -> torch.Tensor:
+    def forward(self, x_in: PLModuleInput) -> torch.Tensor:
         """TiDE model forward pass.
         Parameters
         ----------
@@ -383,8 +375,8 @@ class TiDEModel(MixedCovariatesTorchModel):
         hidden_size: int = 128,
         temporal_width_past: int = 4,
         temporal_width_future: int = 4,
-        temporal_hidden_size_past: int = None,
-        temporal_hidden_size_future: int = None,
+        temporal_hidden_size_past: int | None = None,
+        temporal_hidden_size_future: int | None = None,
         temporal_decoder_hidden: int = 32,
         use_layer_norm: bool = False,
         dropout: float = 0.1,
@@ -455,6 +447,10 @@ class TiDEModel(MixedCovariatesTorchModel):
             The dropout probability to be used in fully connected layers. This is compatible with Monte Carlo dropout
             at inference time for model uncertainty estimation (enabled with ``mc_dropout=True`` at
             prediction time).
+        use_static_covariates
+            Whether the model should use static covariate information in case the input `series` passed to ``fit()``
+            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -464,7 +460,7 @@ class TiDEModel(MixedCovariatesTorchModel):
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
         likelihood
-            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
+            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.torch.TorchLikelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
@@ -482,7 +478,9 @@ class TiDEModel(MixedCovariatesTorchModel):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
-            It is only applied to the features of the target series and not the covariates.
+            It is only applied to the features of the target series and not the covariates. If ``True``,
+            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
+            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -536,16 +534,14 @@ class TiDEModel(MixedCovariatesTorchModel):
                 }
             ..
         random_state
-            Control the randomness of the weights initialization. Check this
-            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
-            Default: ``None``.
+            Controls the randomness of the weights initialization and reproducible forecasting.
         pl_trainer_kwargs
             By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
             that performs the training, validation and prediction processes. These presets include automatic
             checkpointing, tensorboard logging, setting the torch device and more.
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
             supported kwargs. Default: ``None``.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
@@ -564,7 +560,7 @@ class TiDEModel(MixedCovariatesTorchModel):
             The model will stop training early if the validation loss `val_loss` does not improve beyond
             specifications. For more information on callbacks, visit:
             `PyTorch Lightning Callbacks
-            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
 
             .. highlight:: python
             .. code-block:: python
@@ -588,6 +584,18 @@ class TiDEModel(MixedCovariatesTorchModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         References
         ----------
@@ -614,16 +622,16 @@ class TiDEModel(MixedCovariatesTorchModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1008.1667634 ],
-               [ 997.08337201],
-               [1017.72035839],
-               [1005.10790392],
-               [ 998.90537286],
-               [1005.91534452]])
+        >>> print(pred.values())
+        [[1008.1667634 ]
+         [ 997.08337201]
+         [1017.72035839]
+         [1005.10790392]
+         [ 998.90537286]
+         [1005.91534452]]
 
         .. note::
-            `TiDE example notebook <https://unit8co.github.io/darts/examples/18-TiDE-examples.html>`_ presents
+            `TiDE example notebook <https://unit8co.github.io/darts/examples/18-TiDE-examples.html>`__ presents
             techniques that can be used to improve the forecasts quality compared to this simple usage example.
         """
         if temporal_width_past < 0 or temporal_width_future < 0:
@@ -653,9 +661,7 @@ class TiDEModel(MixedCovariatesTorchModel):
         self.use_layer_norm = use_layer_norm
         self.dropout = dropout
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> torch.nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
         (
             past_target,
             past_covariates,
@@ -721,14 +727,6 @@ class TiDEModel(MixedCovariatesTorchModel):
             **self.pl_module_params,
         )
 
-    @property
-    def supports_static_covariates(self) -> bool:
-        return True
-
-    @property
-    def supports_multivariate(self) -> bool:
-        return True
-
     def _check_ckpt_parameters(self, tfm_save):
         # new parameters were added that will break loading weights
         new_params = ["temporal_hidden_size_past", "temporal_hidden_size_future"]
@@ -736,3 +734,7 @@ class TiDEModel(MixedCovariatesTorchModel):
             if param not in tfm_save.model_params:
                 tfm_save.model_params[param] = None
         super()._check_ckpt_parameters(tfm_save)
+
+    @property
+    def supports_static_covariates(self) -> bool:
+        return True

@@ -20,14 +20,14 @@ import numpy as np
 import optuna
 import torch
 from optuna.integration import PyTorchLightningPruningCallback
-from pytorch_lightning.callbacks import EarlyStopping
+from pytorch_lightning.callbacks import Callback, EarlyStopping
 from sklearn.preprocessing import MaxAbsScaler
 
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
 from darts.metrics import smape
 from darts.models import TCNModel
-from darts.utils.likelihood_models import GaussianLikelihood
+from darts.utils.likelihood_models.torch import GaussianLikelihood
 
 # load data
 series = AirPassengersDataset().load().astype(np.float32)
@@ -41,11 +41,18 @@ scaler = Scaler(MaxAbsScaler())
 train = scaler.fit_transform(train)
 val = scaler.transform(val)
 
+
+#  workaround found in https://github.com/Lightning-AI/pytorch-lightning/issues/17485
+# to avoid import of both lightning and pytorch_lightning
+class PatchedPruningCallback(optuna.integration.PyTorchLightningPruningCallback, Callback):
+    pass
+
+
 # define objective function
 def objective(trial):
     # select input and output chunk lengths
     in_len = trial.suggest_int("in_len", 12, 36)
-    out_len = trial.suggest_int("out_len", 1, in_len-1)
+    out_len = trial.suggest_int("out_len", 1, in_len - 1)
 
     # Other hyperparameters
     kernel_size = trial.suggest_int("kernel_size", 2, 5)
@@ -57,7 +64,7 @@ def objective(trial):
     include_year = trial.suggest_categorical("year", [False, True])
 
     # throughout training we'll monitor the validation loss for both pruning and early stopping
-    pruner = PyTorchLightningPruningCallback(trial, monitor="val_loss")
+    pruner = PatchedPruningCallback(trial, monitor="val_loss")
     early_stopper = EarlyStopping("val_loss", min_delta=0.001, patience=3, verbose=True)
     callbacks = [pruner, early_stopper]
 
@@ -103,16 +110,14 @@ def objective(trial):
         save_checkpoints=True,
     )
 
-
     # when validating during training, we can use a slightly longer validation
     # set which also contains the first input_chunk_length time steps
-    model_val_set = scaler.transform(series[-(VAL_LEN + in_len) :])
+    model_val_set = scaler.transform(series[-(VAL_LEN + in_len):])
 
     # train the model
     model.fit(
         series=train,
         val_series=model_val_set,
-        num_loader_workers=num_workers,
     )
 
     # reload best model over course of training

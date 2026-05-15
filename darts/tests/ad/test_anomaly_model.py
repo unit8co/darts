@@ -1,5 +1,5 @@
+from collections.abc import Sequence
 from itertools import product
-from typing import Dict, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -28,7 +28,7 @@ from darts.ad import (
 from darts.ad import DifferenceScorer as Difference
 from darts.ad import NormScorer as Norm
 from darts.ad.utils import eval_metric_from_scores, show_anomalies_from_scores
-from darts.models import MovingAverageFilter, NaiveSeasonal, RegressionModel
+from darts.models import MovingAverageFilter, NaiveSeasonal, SKLearnModel
 
 filtering_am = [
     (
@@ -46,14 +46,14 @@ filtering_am = [
 ]
 
 forecasting_am = [
-    (ForecastingAnomalyModel, {"model": RegressionModel(lags=10), "scorer": Norm()}),
+    (ForecastingAnomalyModel, {"model": SKLearnModel(lags=10), "scorer": Norm()}),
     (
         ForecastingAnomalyModel,
-        {"model": RegressionModel(lags=10), "scorer": [Norm(), KMeansScorer()]},
+        {"model": SKLearnModel(lags=10), "scorer": [Norm(), KMeansScorer()]},
     ),
     (
         ForecastingAnomalyModel,
-        {"model": RegressionModel(lags=10), "scorer": KMeansScorer()},
+        {"model": SKLearnModel(lags=10), "scorer": KMeansScorer()},
     ),
 ]
 
@@ -118,7 +118,7 @@ class TestAnomalyDetectionModel:
                 GammaNLLScorer(),
             ],
             [
-                (ForecastingAnomalyModel, {"model": RegressionModel(lags=10)}),
+                (ForecastingAnomalyModel, {"model": SKLearnModel(lags=10)}),
                 (FilteringAnomalyModel, {"model": MovingAverageFilter(window=20)}),
             ],
         ),
@@ -137,7 +137,7 @@ class TestAnomalyDetectionModel:
                 WassersteinScorer(window_agg=False),
             ],
             [
-                (ForecastingAnomalyModel, {"model": RegressionModel(lags=10)}),
+                (ForecastingAnomalyModel, {"model": SKLearnModel(lags=10)}),
                 (FilteringAnomalyModel, {"model": MovingAverageFilter(window=20)}),
             ],
         ),
@@ -156,7 +156,7 @@ class TestAnomalyDetectionModel:
         "anomaly_model,fit_model",
         [
             (
-                ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=Norm()),
+                ForecastingAnomalyModel(model=SKLearnModel(lags=10), scorer=Norm()),
                 True,
             ),
             (
@@ -173,13 +173,13 @@ class TestAnomalyDetectionModel:
 
         # if return_model_prediction set to true, output must be tuple
         assert isinstance(
-            anomaly_model.score(self.test, return_model_prediction=True), Tuple
+            anomaly_model.score(self.test, return_model_prediction=True), tuple
         )
 
         # if return_model_prediction set to false output must be
-        # Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
+        # TimeSeriesLike | Sequence[Sequence[TimeSeries]]
         assert not isinstance(
-            anomaly_model.score(self.test, return_model_prediction=False), Tuple
+            anomaly_model.score(self.test, return_model_prediction=False), tuple
         )
 
     @pytest.mark.parametrize("anomaly_model_config", filtering_am)
@@ -253,7 +253,7 @@ class TestAnomalyDetectionModel:
             )
 
     def test_pretrain_forecasting_model(self):
-        fitted_model = RegressionModel(lags=10).fit(self.train)
+        fitted_model = SKLearnModel(lags=10).fit(self.train)
         # Fittable scorer must be fitted before calling .score(), even if forecasting model is fitted
         with pytest.raises(ValueError):
             ForecastingAnomalyModel(model=fitted_model, scorer=KMeansScorer()).score(
@@ -280,7 +280,7 @@ class TestAnomalyDetectionModel:
         # max window size is len(series.drop_before(series.get_timestamp_at_point(start))) + 1
         with pytest.raises(ValueError):
             ForecastingAnomalyModel(
-                model=RegressionModel(lags=10),
+                model=SKLearnModel(lags=10),
                 scorer=KMeansScorer(window=50, window_agg=False),
             ).fit(series=self.train, start=0.9)
 
@@ -325,7 +325,7 @@ class TestAnomalyDetectionModel:
     def test_window_size(self):
         # max window size is len(series.drop_before(series.get_timestamp_at_point(start))) + 1 for score()
         anomaly_model = ForecastingAnomalyModel(
-            model=RegressionModel(lags=10),
+            model=SKLearnModel(lags=10),
             scorer=KMeansScorer(window=30, window_agg=False),
         )
         anomaly_model.fit(self.train, allow_model_training=True)
@@ -344,7 +344,7 @@ class TestAnomalyDetectionModel:
         "anomaly_model,fit_kwargs",
         [
             (
-                ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=Norm()),
+                ForecastingAnomalyModel(model=SKLearnModel(lags=10), scorer=Norm()),
                 {"series": train, "allow_model_training": True},
             ),
             (
@@ -355,7 +355,7 @@ class TestAnomalyDetectionModel:
             ),
             (
                 ForecastingAnomalyModel(
-                    model=RegressionModel(lags=10),
+                    model=SKLearnModel(lags=10),
                     scorer=[Norm(), WassersteinScorer(window_agg=False)],
                 ),
                 {"series": train, "allow_model_training": True},
@@ -475,7 +475,7 @@ class TestAnomalyDetectionModel:
         # Check if return type is float when input is a series
         assert isinstance(
             anomaly_model.eval_metric(self.anomalies, self.test),
-            Dict,
+            dict,
         )
 
         # Check if return type is Sequence when input is a Sequence of series
@@ -502,24 +502,22 @@ class TestAnomalyDetectionModel:
             ForecastingAnomalyModel(model=MovingAverageFilter(window=10), scorer=Norm())
         with pytest.raises(ValueError):
             ForecastingAnomalyModel(
-                model=[RegressionModel(lags=10), RegressionModel(lags=5)],
+                model=[SKLearnModel(lags=10), SKLearnModel(lags=5)],
                 scorer=Norm(),
             )
 
         # scorer input
         # scorer input must be of type AnomalyScorer
         with pytest.raises(ValueError):
-            ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=1)
+            ForecastingAnomalyModel(model=SKLearnModel(lags=10), scorer=1)
         with pytest.raises(ValueError):
-            ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer="str")
-        with pytest.raises(ValueError):
-            ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=RegressionModel(lags=10)
-            )
+            ForecastingAnomalyModel(model=SKLearnModel(lags=10), scorer="str")
         with pytest.raises(ValueError):
             ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=[Norm(), "str"]
+                model=SKLearnModel(lags=10), scorer=SKLearnModel(lags=10)
             )
+        with pytest.raises(ValueError):
+            ForecastingAnomalyModel(model=SKLearnModel(lags=10), scorer=[Norm(), "str"])
 
     def test_FilteringAnomalyModelInput(self):
         # model input
@@ -529,7 +527,7 @@ class TestAnomalyDetectionModel:
         with pytest.raises(ValueError):
             FilteringAnomalyModel(model=1, scorer=Norm())
         with pytest.raises(ValueError):
-            FilteringAnomalyModel(model=RegressionModel(lags=10), scorer=Norm())
+            FilteringAnomalyModel(model=SKLearnModel(lags=10), scorer=Norm())
         with pytest.raises(ValueError):
             FilteringAnomalyModel(
                 model=[MovingAverageFilter(window=10), MovingAverageFilter(window=10)],
@@ -574,7 +572,7 @@ class TestAnomalyDetectionModel:
         )
 
         anomaly_model = ForecastingAnomalyModel(
-            model=RegressionModel(lags=5),
+            model=SKLearnModel(lags=5),
             scorer=[
                 Norm(),
                 Difference(),
@@ -821,7 +819,7 @@ class TestAnomalyDetectionModel:
         )
 
         anomaly_model = ForecastingAnomalyModel(
-            model=RegressionModel(lags=2, lags_future_covariates=[0]),
+            model=SKLearnModel(lags=2, lags_future_covariates=[0]),
             scorer=[
                 Norm(),
                 Difference(),
@@ -1196,7 +1194,7 @@ class TestAnomalyDetectionModel:
 
         # first case: scorers that return univariate scores
         anomaly_model = ForecastingAnomalyModel(
-            model=RegressionModel(lags=10),
+            model=SKLearnModel(lags=10),
             scorer=[
                 Norm(component_wise=False),
                 WassersteinScorer(window_agg=False),
@@ -1280,7 +1278,7 @@ class TestAnomalyDetectionModel:
 
         # second case: scorers that return scorers that have the same width as the input
         anomaly_model = ForecastingAnomalyModel(
-            model=RegressionModel(lags=10),
+            model=SKLearnModel(lags=10),
             scorer=[
                 Norm(component_wise=True),
                 Difference(),
@@ -1367,10 +1365,10 @@ class TestAnomalyDetectionModel:
         )
         np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=1)
 
-    def test_visualization(self):
+    def test_visualization(self, mpl_safe_plotting):
         # test function show_anomalies() and show_anomalies_from_scores()
         forecasting_anomaly_model = ForecastingAnomalyModel(
-            model=RegressionModel(lags=10), scorer=Norm()
+            model=SKLearnModel(lags=10), scorer=Norm()
         )
         forecasting_anomaly_model.fit(self.train, allow_model_training=True)
 
@@ -1480,3 +1478,16 @@ class TestAnomalyDetectionModel:
                     pred_scores=[self.test, self.test],
                     names_of_scorers=["scorer1", "scorer2", "scorer3"],
                 )
+
+    def test_immutabilty(self):
+        """Check that the model does not mutate the input."""
+        model = ForecastingAnomalyModel(model=SKLearnModel(lags=10), scorer=Norm())
+
+        series = self.train
+        input_series_copy = series.copy()
+
+        model.fit(series, allow_model_training=True)
+        model.score(series)
+
+        # Check that the original series is not modified
+        assert series == input_series_copy

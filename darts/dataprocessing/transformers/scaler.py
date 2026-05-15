@@ -3,12 +3,14 @@ Scaler
 ------
 """
 
+from collections.abc import Mapping
 from copy import deepcopy
-from typing import Any, Mapping, Sequence, Union
+from typing import Any
 
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
+from darts import TimeSeries
 from darts.dataprocessing.transformers.fittable_data_transformer import (
     FittableDataTransformer,
 )
@@ -16,7 +18,7 @@ from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
 from darts.logging import get_logger, raise_log
-from darts.timeseries import TimeSeries
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -29,6 +31,7 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
         global_fit: bool = False,
         n_jobs: int = 1,
         verbose: bool = False,
+        columns: str | list[str] | None = None,
     ):
         """Generic wrapper class for using scalers on time series.
 
@@ -72,6 +75,11 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
             required amount of time.
         verbose
             Optionally, whether to print operations progress
+        columns
+            Optionally, a string or list of strings specifying the names of the components (columns) to transform.
+            If specified, only these components will be transformed, and the remaining components will be kept
+            untouched. For more information refer to the `BaseDataTransformer` documentation. In case the transformer
+            is applied on multiple TimeSeries, it is expected that all series have the same column order.
 
         Notes
         -----
@@ -80,17 +88,17 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
 
         Examples
         --------
-        >>> from darts.datasets import AirPassengersDataset
         >>> from sklearn.preprocessing import MinMaxScaler
+        >>> from darts import TimeSeries
         >>> from darts.dataprocessing.transformers import Scaler
-        >>> series = AirPassengersDataset().load()
+        >>> series = TimeSeries.from_values([-2, 0, 2])
         >>> scaler = MinMaxScaler(feature_range=(-1, 1))
         >>> transformer = Scaler(scaler)
         >>> series_transformed = transformer.fit_transform(series)
-        >>> print(min(series_transformed.values()))
-        [-1.]
-        >>> print(max(series_transformed.values()))
-        [2.]
+        >>> print(series_transformed.values())
+        [[-1.]
+         [ 0.]
+         [ 1.]]
         """
 
         if scaler is None:
@@ -110,7 +118,11 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
         # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self.transformer = scaler
         super().__init__(
-            name=name, n_jobs=n_jobs, verbose=verbose, global_fit=global_fit
+            name=name,
+            n_jobs=n_jobs,
+            verbose=verbose,
+            global_fit=global_fit,
+            columns=columns,
         )
 
     @staticmethod
@@ -123,22 +135,37 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
 
         transformed_vals = Scaler.unstack_samples(tr_out, series=series)
 
-        return series.with_values(transformed_vals)
+        return TimeSeries(
+            times=series.time_index,
+            values=transformed_vals,
+            components=series.components,
+            copy=False,
+            **series._attrs,
+        )
 
     @staticmethod
     def ts_inverse_transform(
-        series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
+        series: TimeSeries,
+        params: Mapping[str, Any],
+        insample: TimeSeries | None = None,
+        **kwargs,
     ) -> TimeSeries:
         transformer = params["fitted"]
 
         tr_out = transformer.inverse_transform(Scaler.stack_samples(series))
         inv_transformed_vals = Scaler.unstack_samples(tr_out, series=series)
 
-        return series.with_values(inv_transformed_vals)
+        return TimeSeries(
+            times=series.time_index,
+            values=inv_transformed_vals,
+            components=series.components,
+            copy=False,
+            **series._attrs,
+        )
 
     @staticmethod
     def ts_fit(
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeriesLike,
         params: Mapping[str, Any],
         *args,
         **kwargs,

@@ -1,20 +1,19 @@
 """
-Anomaly models base classes
+Base Anomaly Model
+------------------
 """
 
 import sys
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Literal
 
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
 
+from darts import TimeSeries
 from darts.ad.scorers.scorers import AnomalyScorer
 from darts.ad.utils import (
     _assert_same_length,
@@ -23,7 +22,7 @@ from darts.ad.utils import (
     show_anomalies_from_scores,
 )
 from darts.logging import get_logger, raise_log
-from darts.timeseries import TimeSeries
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -44,7 +43,7 @@ class AnomalyModel(ABC):
 
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeriesLike,
         allow_model_training: bool,
         **kwargs,
     ) -> Self:
@@ -63,10 +62,10 @@ class AnomalyModel(ABC):
     @abstractmethod
     def score(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeriesLike,
         return_model_prediction: bool = False,
         **kwargs,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    ) -> TimeSeriesLike:
         """Compute anomaly score(s) for the given series.
 
         Predicts the given target time series with the forecasting model, and applies the scorer(s)
@@ -125,16 +124,16 @@ class AnomalyModel(ABC):
 
     def eval_metric(
         self,
-        anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        anomalies: TimeSeriesLike,
+        series: TimeSeriesLike,
         metric: Literal["AUC_ROC", "AUC_PR"] = "AUC_ROC",
         **kwargs,
-    ) -> Union[
-        Dict[str, float],
-        Dict[str, Sequence[float]],
-        Sequence[Dict[str, float]],
-        Sequence[Dict[str, Sequence[float]]],
-    ]:
+    ) -> (
+        dict[str, float]
+        | dict[str, Sequence[float]]
+        | Sequence[dict[str, float]]
+        | Sequence[dict[str, Sequence[float]]]
+    ):
         """Compute the accuracy of the anomaly scores computed by the model.
 
         Predicts the `series` with the underlying forecasting/filtering model, and applies the scorer(s) on the
@@ -245,11 +244,12 @@ class AnomalyModel(ABC):
     def show_anomalies(
         self,
         series: TimeSeries,
-        anomalies: TimeSeries = None,
-        predict_kwargs: Optional[Dict] = None,
-        names_of_scorers: Union[str, Sequence[str]] = None,
-        title: str = None,
-        metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,
+        anomalies: TimeSeries | None = None,
+        predict_kwargs: dict | None = None,
+        names_of_scorers: str | Sequence[str] | None = None,
+        title: str | None = None,
+        metric: Literal["AUC_ROC", "AUC_PR"] | None = None,
+        component_wise: bool = False,
         **score_kwargs,
     ):
         """Plot the results of the anomaly model.
@@ -286,6 +286,8 @@ class AnomalyModel(ABC):
             Default: "AUC_ROC".
         score_kwargs
             parameters for the `score()` method.
+        component_wise
+            If True, will separately plot each component in case of multivariate anomaly detection.
         """
         series = _check_input(series, name="series", num_series_expected=1)[0]
         predict_kwargs = predict_kwargs if predict_kwargs is not None else {}
@@ -313,11 +315,12 @@ class AnomalyModel(ABC):
             names_of_scorers=names_of_scorers,
             title=title,
             metric=metric,
+            component_wise=component_wise,
         )
 
     @property
     def scorers_are_univariate(self):
-        """Whether any of the Scorers is trainable."""
+        """Whether any of the Scorers is univariate."""
         return any(s.is_univariate for s in self.scorers)
 
     @property
@@ -344,9 +347,7 @@ class AnomalyModel(ABC):
                 scorer.fit_from_prediction(list_series, list_pred)
 
     @staticmethod
-    def _process_input_series(
-        series: Union[TimeSeries, Sequence[TimeSeries]], **kwargs
-    ):
+    def _process_input_series(series: TimeSeriesLike, **kwargs):
         """Checks input series and coverts series and covariates in `kwargs` to sequences."""
         series = _check_input(series, name="series")
         for cov_name in ["past_covariates", "future_covariates"]:
