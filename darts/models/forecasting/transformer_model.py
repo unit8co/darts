@@ -8,7 +8,6 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn import Transformer
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.components import glu_variants, layer_norm_variants
@@ -330,7 +329,6 @@ class _TransformerModule(PLForecastingModule):
 
     def _prediction_step(self, src: torch.Tensor, tgt: torch.Tensor):
         target_length = tgt.shape[0]
-        device, tensor_type = src.device, src.dtype
         # "math.sqrt(self.input_size)" is a normalization factor
         # see section 3.2.1 in 'Attention is All you Need' by Vaswani et al. (2017)
         src = self.encoder(src) * math.sqrt(self.d_model)
@@ -339,9 +337,9 @@ class _TransformerModule(PLForecastingModule):
         src = self.positional_encoding(src)
         tgt = self.positional_encoding(tgt)
 
-        tgt_mask = Transformer.generate_square_subsequent_mask(
-            target_length, device
-        ).to(dtype=tensor_type)
+        tgt_mask = self.generate_square_subsequent_mask(
+            target_length, src.device, src.dtype
+        )
 
         x = self.transformer(src=src, tgt=tgt, tgt_mask=tgt_mask)
         out = self.decoder(x)
@@ -355,6 +353,12 @@ class _TransformerModule(PLForecastingModule):
         )
 
         return predictions
+
+    def generate_square_subsequent_mask(self, sz, device, dtype):
+        return torch.triu(
+            torch.full((sz, sz), float("-inf"), dtype=dtype, device=device),
+            diagonal=1,
+        )
 
     def training_step(self, train_batch, batch_idx) -> torch.Tensor:
         """performs the training step"""
