@@ -335,12 +335,12 @@ class _TransformerModule(PLForecastingModule):
 
     def _embed(self, x: torch.Tensor, pos: int) -> torch.Tensor:
         """Project to d_model and add positional encoding starting at `pos`."""
-        x = self.encoder(x) * math.sqrt(self.d_model)
+        x = self.encoder(x)
         x = x + self.positional_encoding.pe[pos : pos + x.shape[0]]
         return self.positional_encoding.dropout(x)
 
     def _decode(self, memory: torch.Tensor, tgt: torch.Tensor) -> torch.Tensor:
-        tgt_emb = self.encoder(tgt) * math.sqrt(self.d_model)
+        tgt_emb = self.encoder(tgt)
         tgt_emb = self.positional_encoding(tgt_emb)
         return self._decode_from_emb(memory, tgt_emb)
 
@@ -365,30 +365,6 @@ class _TransformerModule(PLForecastingModule):
             diagonal=1,
         )
 
-    # def training_step(self, train_batch, batch_idx) -> torch.Tensor:
-    #     """performs the training step"""
-    #     train_batch = list(train_batch)
-    #     future_targets = train_batch[-1]
-    #     train_batch.append(future_targets)
-    #     return self._train_val_step(
-    #         batch=train_batch,
-    #         name="train",
-    #         criterion=self.train_criterion,
-    #         metrics=self.train_metrics,
-    #     )
-
-    # def validation_step(
-    #     self, val_batch: TorchTrainingBatch, batch_idx: int
-    # ) -> torch.Tensor:
-    #     val_batch = list(val_batch)
-    #     future_targets = val_batch[-1]
-    #     val_batch.append(future_targets)
-    #     return self._train_val_step(
-    #         batch=val_batch,
-    #         name="val",
-    #         criterion=self.val_criterion,
-    #         metrics=self.val_metrics,
-    #     )
     def _train_val_step(
         self,
         batch: TorchTrainingBatch,
