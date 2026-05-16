@@ -713,7 +713,7 @@ class CallableIndexEncoder(SingleEncoder):
             `generate_inference_idx()`. Used to generate the index for encoders.
         attribute
             A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
-            and returns a np.ndarray of shape `(len(index),)`.
+            and returns a `np.ndarray` of shape `(len(index),)` or `(len(index), n)`.
             An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
             ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.RangeIndex:
             ``attribute = lambda index: (index - 1950) / 50``
@@ -728,24 +728,46 @@ class CallableIndexEncoder(SingleEncoder):
         super().__init__(index_generator)
 
         self.attribute = attribute
+        self._n_components = self._detect_n_components(attribute)
+
+    @staticmethod
+    def _detect_n_components(attribute: Callable) -> int:
+        """Test the callable with sample `pd.DatetimeIndex` and `pd.RangeIndex` to determine
+        the number of output components.
+        """
+        for idx in [
+            pd.date_range("2000-01-01", periods=2, freq="D"),
+            pd.RangeIndex(2),
+        ]:
+            try:
+                encoded = np.array(attribute(idx))
+                return 1 if encoded.ndim == 1 else encoded.shape[1]
+            except Exception:
+                continue
+        return 1
 
     def _encode(
         self, index: TimeIndex, target_end: pd.Timestamp, dtype: np.dtype
     ) -> TimeSeries:
-        """Apply the user-defined callable to encode the index"""
+        """Apply the user-defined callable to encode the index."""
         super()._encode(index, target_end, dtype)
 
+        values = np.array(self.attribute(index)).astype(np.dtype(dtype))
+        components = [
+            self.base_component_name + ("custom" if i == 0 else f"custom_{i}")
+            for i in range(self._n_components)
+        ]
         return TimeSeries(
             times=index,
-            values=self.attribute(index).astype(np.dtype(dtype)),
-            components=[self.base_component_name + "custom"],
+            values=values,
+            components=components,
             copy=False,
         )
 
     @property
     def accept_transformer(self) -> list[bool]:
         """`CallableIndexEncoder` accepts transformations."""
-        return [True]
+        return [True] * self._n_components
 
     @property
     def requires_fit(self) -> bool:
@@ -757,7 +779,7 @@ class CallableIndexEncoder(SingleEncoder):
 
     @property
     def encoding_n_components(self) -> int:
-        return 1
+        return self._n_components
 
 
 class PastCallableIndexEncoder(CallableIndexEncoder):
@@ -778,7 +800,7 @@ class PastCallableIndexEncoder(CallableIndexEncoder):
         ----------
         attribute
             A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
-            and returns a np.ndarray of shape `(len(index),)`.
+            and returns a `np.ndarray` of shape `(len(index),)` or `(len(index), n)`.
             An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
             ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.RangeIndex:
             ``attribute = lambda index: (index - 1950) / 50``
@@ -825,7 +847,7 @@ class FutureCallableIndexEncoder(CallableIndexEncoder):
         ----------
         attribute
             A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
-            and returns a np.ndarray of shape `(len(index),)`.
+            and returns a `np.ndarray` of shape `(len(index),)` or `(len(index), n)`.
             An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
             ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.RangeIndex:
             ``attribute = lambda index: (index - 1950) / 50``
