@@ -4764,6 +4764,12 @@ class TimeSeries:
 
         If ``axis=1``, the static covariates and the hierarchy are discarded from the series.
 
+        .. note::
+            With ``axis=0`` the returned timestamp is the first entry of the
+            original ``time_index`` and **does not** correspond to the
+            timestamp of the actual minimum value. Use :func:`idxmin` to get
+            the timestamp at which each component attains its minimum.
+
         Parameters
         ----------
         axis
@@ -4793,6 +4799,12 @@ class TimeSeries:
 
         If ``axis=1``, the static covariates and the hierarchy are discarded from the series.
 
+        .. note::
+            With ``axis=0`` the returned timestamp is the first entry of the
+            original ``time_index`` and **does not** correspond to the
+            timestamp of the actual maximum value. Use :func:`idxmax` to get
+            the timestamp at which each component attains its maximum.
+
         Parameters
         ----------
         axis
@@ -4811,6 +4823,86 @@ class TimeSeries:
             components=components,
             **(self._attrs if axis != 1 else dict()),
         )
+
+    def idxmin(self) -> pd.Series:
+        """Return the time index value of the minimum of each component.
+
+        For a stochastic series the median over samples is taken before
+        finding the minimum, so the returned index is well-defined regardless
+        of ``n_samples``.
+
+        Useful as a companion to :func:`min` because ``min(axis=0)`` returns a
+        single-row series whose timestamp is the *first* time index entry of
+        the original series, not the entry of the actual minimum (see
+        `issue #2696 <https://github.com/unit8co/darts/issues/2696>`_).
+
+        Returns
+        -------
+        pandas.Series
+            A series indexed by component name. Each value is the timestamp
+            (or integer index, if the series uses an ``RangeIndex``) at which
+            that component attains its minimum.
+
+        Examples
+        --------
+        >>> import pandas as pd
+        >>> from darts import TimeSeries
+        >>> df = pd.DataFrame({"a": [1, 0, 0], "b": [0, 0, 1]})
+        >>> series = TimeSeries.from_dataframe(df)
+        >>> series.idxmin()
+        a    1
+        b    0
+        dtype: int64
+        """
+        # Reduce samples first so the result is independent of stochasticity;
+        # using the median (rather than mean) keeps the returned index value
+        # an actual observed value when n_samples == 1.
+        deterministic = (
+            self._values
+            if self.is_deterministic
+            else np.median(self._values, axis=2, keepdims=True)
+        )
+        # argmin along time axis → shape (n_components,)
+        idxs = deterministic[:, :, 0].argmin(axis=0)
+        return pd.Series(self._time_index[idxs], index=self.components)
+
+    def idxmax(self) -> pd.Series:
+        """Return the time index value of the maximum of each component.
+
+        For a stochastic series the median over samples is taken before
+        finding the maximum, so the returned index is well-defined regardless
+        of ``n_samples``.
+
+        Useful as a companion to :func:`max` because ``max(axis=0)`` returns a
+        single-row series whose timestamp is the *first* time index entry of
+        the original series, not the entry of the actual maximum (see
+        `issue #2696 <https://github.com/unit8co/darts/issues/2696>`_).
+
+        Returns
+        -------
+        pandas.Series
+            A series indexed by component name. Each value is the timestamp
+            (or integer index, if the series uses an ``RangeIndex``) at which
+            that component attains its maximum.
+
+        Examples
+        --------
+        >>> import pandas as pd
+        >>> from darts import TimeSeries
+        >>> df = pd.DataFrame({"a": [1, 0, 0], "b": [0, 0, 1]})
+        >>> series = TimeSeries.from_dataframe(df)
+        >>> series.idxmax()
+        a    0
+        b    2
+        dtype: int64
+        """
+        deterministic = (
+            self._values
+            if self.is_deterministic
+            else np.median(self._values, axis=2, keepdims=True)
+        )
+        idxs = deterministic[:, :, 0].argmax(axis=0)
+        return pd.Series(self._time_index[idxs], index=self.components)
 
     def quantile(self, q: float | Sequence[float] = 0.5, **kwargs) -> Self:
         """Return a deterministic series with the desired quantile(s) `q` of each component computed over the samples
