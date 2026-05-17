@@ -1,155 +1,156 @@
 """
-Shap Explainer for SKLearnModels
---------------------------------
+SHAP Explainer for SKLearn and Torch Models
+-------------------------------------------
 
-A `shap explainer <https://github.com/slundberg/shap>`__ specifically for time series
-forecasting models.
+A `SHAP <https://github.com/slundberg/shap>`__ explainer for Darts ``SKLearnModel`` and ``TorchForecastingModel``
+instances.
 
-This class is (currently) limited to Darts' `SKLearnModel` instances of forecasting models. It uses shap values to
-provide "explanations" of each input features. The input features are the different past lags (of the target and/or
-past covariates), as well as potential future lags of future covariates used as inputs by the forecasting model to
-produce its forecasts. Furthermore, in the case of multivariate series, the features contain each dimension of
-each of the (lagged) series.
+For detailed examples and tutorials, see:
+
+* `Explainability of Forecasting Models
+  <https://unit8co.github.io/darts/examples/28-Explainability-examples.html>`__.
+
+:class:`ShapExplainer` computes SHAP values, which measure each input feature's contribution to a prediction
+relative to a baseline (average prediction).
+
+Depending on the model and training data, features can include:
+
+- lags of the target series (input chunk for torch models),
+- lags of past covariates  (input chunk for torch models),
+- lags of future covariates (input and output chunk for torch models),
+- static covariates (global or component-specific).
 
 .. note::
-   This explainer is subject to the usual features independence assumption used to compute shap values.
-   This means that it does not capture potential indirect influence that some lags
-   may have on the target by influencing other lags.
+    Input features except static covariates are named according to the convention:
+    ``"{name}_{type_of_cov}_lag{idx}"``, where:
 
-- :func:`explain() <ShapExplainer.explain>` generates the explanations for a given foreground series (or
-  background series, if foreground is not provided).
-- :func:`summary_plot() <ShapExplainer.summary_plot>` displays a shap plot summary for each horizon and each
-  component dimension of the target series.
-- :func:`force_plot_from_ts() <ShapExplainer.force_plot_from_ts>` displays a shap force_plot for one target
-  and one horizon, for a given target series. It displays shap values of each lag/covariate with an additive force
-  layout.
+    - ``{name}`` is the component name from the original foreground series (target, past covariates, or future
+      covariates).
+    - ``{type_of_cov}`` is the covariates type. It can take 3 different values:
+      ``"target"``, ``"pastcov"``,  ``"futcov"``.
+    - ``{idx}`` is the lag index.
+
+    Static covariates are named according to the convention: ``"{name}_statcov_target_{comp}"``, where:
+
+    - ``{name}`` is the variable name of the static covariate.
+    - ``{comp}`` is the component name of the target series if static covariates are component-specific, or
+      ``"global_components"`` if they are global.
+
+.. note::
+   SHAP uses a feature-independence assumption. Indirect effects between features are not captured.
+
+:class:`ShapExplainer` provides the following methods for explaining multiple forecasts in batches:
+
+- :func:`explain() <ShapExplainer.explain>` computes SHAP values per forecast horizon and target component.
+- :func:`summary_plot() <ShapExplainer.summary_plot>` shows SHAP value distributions by feature.
+- :func:`force_plot() <ShapExplainer.force_plot>` shows additive SHAP contributions for one target component and
+  horizon.
+
+:class:`ShapExplainer` also provides :func:`explain_single() <ShapExplainer.explain_single>` for explaining
+a single forecast (equivalent to calling ``model.predict(n=output_chunk_length)``).
+
+.. note::
+    All above methods can use optional foreground data to explain forecasts, with background data as reference.
+    If foreground data is not provided, background data is used for both.
 """
 
+from __future__ import annotations
+
 from collections.abc import Sequence
-from enum import Enum
-from typing import NewType
+from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
-import pandas as pd
 import shap
-from sklearn.multioutput import MultiOutputRegressor
 
 from darts import TimeSeries
 from darts.explainability.explainability import _ForecastingModelExplainer
-from darts.explainability.explainability_result import ShapExplainabilityResult
-from darts.logging import get_logger, raise_if, raise_log
+from darts.explainability.explainability_result import (
+    ShapExplainabilityResult,
+    ShapSingleExplainabilityResult,
+)
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
-from darts.utils.data.tabularization import create_lagged_prediction_data
+from darts.utils.utils import generate_index
+
+if TYPE_CHECKING:
+    from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 
 logger = get_logger(__name__)
 
-MIN_BACKGROUND_SAMPLE = 10
-
-
-class _ShapMethod(Enum):
-    TREE = 0
-    GRADIENT = 1
-    DEEP = 2
-    KERNEL = 3
-    SAMPLING = 4
-    PARTITION = 5
-    LINEAR = 6
-    PERMUTATION = 7
-    ADDITIVE = 8
-
-
-ShapMethod = NewType("ShapMethod", _ShapMethod)
-
 
 class ShapExplainer(_ForecastingModelExplainer):
-    model: SKLearnModel
-
     def __init__(
         self,
-        model: SKLearnModel,
+        model: SKLearnModel | TorchForecastingModel,
         background_series: TimeSeriesLike | None = None,
         background_past_covariates: TimeSeriesLike | None = None,
         background_future_covariates: TimeSeriesLike | None = None,
         background_num_samples: int | None = None,
         shap_method: str | None = None,
+        batch_size: int | None = None,
         **kwargs,
     ):
-        """ShapExplainer
+        """SHAP Explainer for SKLearn and Torch Models.
 
-        **Definitions**
+        **Definitions**:
 
-        - A background series is a `TimeSeries` used to train the shap explainer.
-        - A foreground series is a `TimeSeries` that can be explained by a shap explainer after it has been fitted.
+        - A background series is a ``TimeSeries`` used to train the SHAP explainer.
+        - A foreground series is a ``TimeSeries`` that can be explained by a SHAP explainer after it has been fitted.
 
-        Currently, `ShapExplainer` only works with `SKLearnModel` forecasting models.
-        The number of explained horizons (t+1, t+2, ...) can be at most equal to `output_chunk_length` of `model`.
+        The number of explained horizons `(t+1, t+2, ...)` cannot be greater than ``output_chunk_length`` of ``model``.
 
         Parameters
         ----------
         model
-            A `SKLearnModel` to be explained. It must be fitted first.
+            A ``SKLearnModel`` to be explained. It must be fitted first.
         background_series
-            One or several series to *train* the `ShapExplainer` along with any foreground series.
+            One or several series to *train* the ``ShapExplainer`` as reference for explanations.
             Consider using a reduced well-chosen background to reduce computation time.
-            Optional if `model` was fit on a single target series. By default, it is the `series` used at fitting time.
-            Mandatory if `model` was fit on multiple (list of) target series.
+            Optional if ``model`` was fit on a single target series. By default, it is the ``series``
+            used at fitting time.
+            Mandatory if ``model`` was fit on multiple (list of) target series.
         background_past_covariates
             A past covariates series or list of series that the model needs once fitted.
         background_future_covariates
             A future covariates series or list of series that the model needs once fitted.
         background_num_samples
             Optionally, whether to sample a subset of the original background. Randomly picks
-            `background_num_samples` training samples of the constructed training dataset
-            (using ``shap.utils.sample()``).
-            Generally used for faster computation, especially when `shap_method` is
+            samples of the constructed training dataset.
+            Generally used for faster computation, especially when ``shap_method`` is
             ``"kernel"`` or ``"permutation"``.
         shap_method
-            Optionally, the shap method to apply. By default, an attempt is made
-            to select the most appropriate method based on a pre-defined set of known models.
-            internal mapping. Supported values : ``"permutation", "partition", "tree", "kernel", "sampling", "linear",
-            "deep", "gradient", "additive"``.
+            Optionally, the SHAP method to apply. By default, an attempt is made
+            to select the most appropriate method based on a pre-defined set of known models
+            internal mapping. Supported values: ``"tree"``, ``"kernel"``, ``"partition"``,
+            ``"linear"``, ``"permutation"``, and ``"additive"``.
+        batch_size
+            TODO: add description
         **kwargs
-            Optionally, additional keyword arguments passed to `shap_method`.
+            Optionally, additional keyword arguments passed to ``shap_method``.
+
         Examples
         --------
+
+        For ``SKLearnModel``:
         >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.explainability.shap_explainer import ShapExplainer
+        >>> from darts.explainability import ShapExplainer
         >>> from darts.models import LinearRegressionModel
-        >>> series = AirPassengersDataset().load()
-        >>> model = LinearRegressionModel(lags=12)
-        >>> model.fit(series[:-36])
-        >>> shap_explain = ShapExplainer(model)
-        >>> results = shap_explain.explain()
-        >>> shap_explain.summary_plot()
-        >>> shap_explain.force_plot_from_ts()
+        >>> series = AirPassengersDataset().load().astype("float32")
+        >>> model = LinearRegressionModel(lags=12).fit(series[:-36])
+        >>> explainer = ShapExplainer(model)
+        >>> results = explainer.explain()
+        >>> explainer.summary_plot()
+        >>> explainer.force_plot()
+
+        For ``TorchForecastingModel`` (extending the previous example):
+        >>> from darts.models import TiDEModel
+        >>> model = TiDEModel(12, 12).fit(series[:36])
+        >>> explainer = TorchExplainer(model)
+        >>> results = explainer.explain()
+        >>> explainer.summary_plot()
+        >>> explainer.force_plot()
         """
-
-        # TODO
-        # - Optional De-trend  if the timeseries is not stationary.
-        # There would be
-        # 1) a stationarity test and
-        # 2) a de-trend methodology for the target. It can be for
-        # example target - moving_average(input_chunk_length).
-
-        if not issubclass(type(model), SKLearnModel):
-            raise_log(
-                ValueError(
-                    "Invalid `model` type. Currently, only models of type `SKLearnModel` are supported."
-                ),
-                logger,
-            )
-
-        if not model.multi_models:
-            raise_log(
-                ValueError(
-                    "Invalid `multi_models` value `False`. Currently, "
-                    "ShapExplainer only supports SKLearnModels "
-                    "with `multi_models=True`."
-                ),
-                logger,
-            )
-
         super().__init__(
             model=model,
             background_series=background_series,
@@ -161,36 +162,41 @@ class ShapExplainer(_ForecastingModelExplainer):
             test_stationarity=True,
         )
 
-        if model.supports_probabilistic_prediction:
-            logger.warning(
-                "The model is probabilistic, but num_samples=1 will be used for explainability."
+        if isinstance(self.model, SKLearnModel):
+            from darts.explainability.shap.sklearn_explainer import SKLearnShapExplainer
+
+            explainer_cls = SKLearnShapExplainer
+        else:
+            # lazily import torch dependencies
+            from darts.explainability.shap.torch_explainer import TorchShapExplainer
+            from darts.models.forecasting.torch_forecasting_model import (
+                TorchForecastingModel,
             )
 
-        if shap_method is not None:
-            shap_method = shap_method.upper()
-            if shap_method in _ShapMethod.__members__:
-                self.shap_method = _ShapMethod[shap_method]
+            if isinstance(self.model, TorchForecastingModel):
+                explainer_cls = TorchShapExplainer
             else:
                 raise_log(
                     ValueError(
-                        "Invalid `shap_method`. Please choose one value among the following: ['partition', 'tree', "
-                        "'kernel', 'sampling', 'linear', 'deep', 'gradient', 'additive']."
-                    )
+                        f"Invalid `model` type: `{type(model)}`. Only models of type "
+                        f"`SKLearnModel` or `TorchForecastingModel` are supported."
+                    ),
+                    logger,
                 )
-        else:
-            self.shap_method = None
 
-        self.explainers = _RegressionShapExplainers(
+        self.explainer = explainer_cls(
             model=self.model,
             n=self.n,
             target_components=self.target_components,
             past_covariates_components=self.past_covariates_components,
             future_covariates_components=self.future_covariates_components,
+            static_covariates_components=self.static_covariates_components,
             background_series=self.background_series,
             background_past_covariates=self.background_past_covariates,
             background_future_covariates=self.background_future_covariates,
-            shap_method=self.shap_method,
             background_num_samples=background_num_samples,
+            shap_method=shap_method,
+            batch_size=batch_size,
             **kwargs,
         )
 
@@ -199,70 +205,75 @@ class ShapExplainer(_ForecastingModelExplainer):
         foreground_series: TimeSeriesLike | None = None,
         foreground_past_covariates: TimeSeriesLike | None = None,
         foreground_future_covariates: TimeSeriesLike | None = None,
-        horizons: Sequence[int] | None = None,
+        horizons: int | Sequence[int] | None = None,
         target_components: Sequence[str] | None = None,
+        **kwargs,
     ) -> ShapExplainabilityResult:
         """
-        Explains a foreground time series and returns a :class:`ShapExplainabilityResult
-        <darts.explainability.explainability_result.ShapExplainabilityResult>`.
-        The results can be retrieved with method :func:`get_explanation()
-        <darts.explainability.explainability_result.ShapExplainabilityResult.get_explanation>`.
-        The result is a multivariate `TimeSeries` instance containing the 'explanation'
-        for the (horizon, target_component) forecast at any timestamp forecastable corresponding to
-        the foreground `TimeSeries` input.
+        Explains foreground time series forecasts and returns a :class:`ShapExplainabilityResult
+        <darts.explainability.explainability_result.ShapExplainabilityResult>` of SHAP values.
 
-        The component name convention of this multivariate `TimeSeries` is:
-        ``"{name}_{type_of_cov}_lag_{idx}"``, where:
+        The results can then be retrieved with method :func:`get_explanation()
+        <darts.explainability.explainability_result.ShapExplainabilityResult.get_explanation>`,
+        which returns a multivariate ``TimeSeries`` instance containing the SHAP values for the
+        ``(horizon, target_component)`` forecasts at all timestamps forecastable in the foreground series.
 
-        - ``{name}`` is the component name from the original foreground series (target, past, or future).
-        - ``{type_of_cov}`` is the covariates type. It can take 3 different values:
-          ``"target"``, ``"past_cov"`` or ``"future_cov"``.
-        - ``{idx}`` is the lag index.
+        The components of the ``TimeSeries`` correspond to the input features used by the model to produce
+        the forecasts. See above for the naming convention.
 
         Parameters
         ----------
         foreground_series
-            Optionally, one or a sequence of target `TimeSeries` to be explained. Can be multivariate.
-            If not provided, the background `TimeSeries` will be explained instead.
+            Optionally, one or a sequence of target ``TimeSeries`` to be explained. Can be multivariate.
+            If not provided, the background ``TimeSeries`` will be explained instead.
         foreground_past_covariates
-            Optionally, one or a sequence of past covariates `TimeSeries` if required by the forecasting model.
+            Optionally, one or a sequence of past covariates ``TimeSeries`` if required by the forecasting model.
         foreground_future_covariates
-            Optionally, one or a sequence of future covariates `TimeSeries` if required by the forecasting model.
+            Optionally, one or a sequence of future covariates ``TimeSeries`` if required by the forecasting model.
         horizons
             Optionally, an integer or sequence of integers representing the future time steps to be explained.
-            `1` corresponds to the first timestamp being forecasted.
-            All values must be `<=output_chunk_length` of the explained forecasting model.
+            ``1`` corresponds to the first timestamp being forecasted.
+            All values must be no greater than ``output_chunk_length`` of the explained forecasting model.
         target_components
             Optionally, a string or sequence of strings with the target components to explain.
+        **kwargs
+            Other keyword arguments to be passed to the SHAP explainer.
 
         Returns
         -------
         ShapExplainabilityResult
-            The forecast explanations
+            The forecast explanations of the specified horizons and target components.
 
         Examples
         --------
-        Say we have a model with 2 target components named ``"T_0"`` and ``"T_1"``,
-        3 past covariates with default component names ``"0"``, ``"1"``, and ``"2"``,
-        and one future covariate with default component name ``"0"``.
-        Also, ``horizons = [1, 2]``.
-        The model is a `SKLearnModel`, with ``lags = 3``, ``lags_past_covariates=[-1, -3]``,
-        ``lags_future_covariates = [0]``.
+        Say we have a ``SKLearnModel`` instance with:
 
-        We provide `foreground_series`, `foreground_past_covariates`, `foreground_future_covariates` each of length 5.
+          - 2 target components named ``"T_0"`` and ``"T_1"``,
+          - 3 past covariates with default component names ``"P_0"``, ``"P_1"``, and ``"P_2"``,
+          - 1 future covariate with default component name ``"F_0"``,
+          - ``output_chunk_length=2``,
+          - ``lags = 3``, ``lags_past_covariates=[-1, -3]``, and ``lags_future_covariates = [0]``.
 
-        >>> explain_results = explainer.explain(
+        We provide ``foreground_series``, ``foreground_past_covariates``, ``foreground_future_covariates`` (extending
+        far enough into the future) each of length 5.
+
+        >>> results = explainer.explain(
         >>>     foreground_series=foreground_series,
         >>>     foreground_past_covariates=foreground_past_covariates,
-        >>>     foreground_future_covariates=foreground_future_covariates,
-        >>>     horizons=[1, 2],
-        >>>     target_names=["T_0", "T_1"])
-        >>> output = explain_results.get_explanation(horizon=1, component="T_1")
-        >>> feature_values = explain_results.get_feature_values(horizon=1, component="T_1")
-        >>> shap_objects = explain_results.get_shap_explanation_objects(horizon=1, component="T_1")
+        >>>     foreground_future_covariates=foreground_future_covariates)
 
-        Then the method returns a multivariate TimeSeries containing the *explanations* of
-        the `ShapExplainer`, with the following component names:
+        Calling the method returns a ``ShapExplainabilityResult`` object containing the SHAP values, feature values,
+        and raw ``shap.Explanation`` objects for each horizon and target component. They can be accessed with:
+
+        >>> # Get SHAP values for forecasting "T_1" at horizon 1 as a `TimeSeries`
+        >>> output = results.get_explanation(horizon=1, component="T_1")
+        >>> # Get feature values used for forecasting as a `TimeSeries`
+        >>> feature_values = results.get_feature_values(horizon=1, component="T_1")
+        >>> # Get the raw `shap.Explanation` object for further processing
+        >>> shap_objects = results.get_shap_explanation_object(horizon=1, component="T_1")
+
+        For SHAP and feature values, the components of the returned ``TimeSeries`` correspond to different lags of the
+        target and covariates (see convention above). In our example, the component names would be:
 
              - T_0_target_lag-1
              - T_0_target_lag-2
@@ -270,17 +281,17 @@ class ShapExplainer(_ForecastingModelExplainer):
              - T_1_target_lag-1
              - T_1_target_lag-2
              - T_1_target_lag-3
-             - 0_past_cov_lag-1
-             - 0_past_cov_lag-3
-             - 1_past_cov_lag-1
-             - 1_past_cov_lag-3
-             - 2_past_cov_lag-1
-             - 2_past_cov_lag-3
-             - 0_fut_cov_lag_0
+             - P_0_pastcov_lag-1
+             - P_0_pastcov_lag-3
+             - P_1_pastcov_lag-1
+             - P_1_pastcov_lag-3
+             - P_2_pastcov_lag-1
+             - P_2_pastcov_lag-3
+             - F_0_futcov_lag0
 
-        This series has length 3, as the model can explain 5-3+1 forecasts
-        (timestamp indexes 4, 5, and 6)
+        Each series has length 3, as the model can explain 5-3+1 forecasts (timestamp indices 4, 5, and 6).
         """
+        input_type = "foreground" if foreground_series is not None else "background"
         super().explain(
             foreground_series, foreground_past_covariates, foreground_future_covariates
         )
@@ -288,6 +299,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             foreground_series,
             foreground_past_covariates,
             foreground_future_covariates,
+            _,
             _,
             _,
             _,
@@ -315,15 +327,16 @@ class ShapExplainer(_ForecastingModelExplainer):
             if foreground_future_covariates:
                 foreground_future_cov_ts = foreground_future_covariates[idx]
 
-            foreground_X = self.explainers._create_regression_model_shap_X(
-                foreground_ts,
-                foreground_past_cov_ts,
-                foreground_future_cov_ts,
-                train=False,
+            foreground_X, _, prediction_times = self.explainer.create_shap_array(
+                series=foreground_ts,
+                past_covariates=foreground_past_cov_ts,
+                future_covariates=foreground_future_cov_ts,
+                n_samples=None,
+                input_type=input_type,
             )
 
-            shap_ = self.explainers.shap_explanations(
-                foreground_X, horizons, target_names
+            shap_ = self.explainer.shap_explanations(
+                foreground_X, horizons, target_names, **kwargs
             )
 
             shap_values_dict = {}
@@ -334,14 +347,19 @@ class ShapExplainer(_ForecastingModelExplainer):
                 feature_values_dict_single_h = {}
                 shap_explanation_object_dict_single_h = {}
                 for t in target_names:
+                    prediction_times_single_h = (
+                        prediction_times
+                        if prediction_times is not None
+                        else shap_[h][t].time_index
+                    )
                     shap_values_dict_single_h[t] = TimeSeries(
-                        times=shap_[h][t].time_index,
+                        times=prediction_times_single_h,
                         values=shap_[h][t].values,
                         components=shap_[h][t].feature_names,
                         copy=False,
                     )
                     feature_values_dict_single_h[t] = TimeSeries(
-                        times=shap_[h][t].time_index,
+                        times=prediction_times_single_h,
                         values=shap_[h][t].data,
                         components=shap_[h][t].feature_names,
                         copy=False,
@@ -364,119 +382,337 @@ class ShapExplainer(_ForecastingModelExplainer):
             shap_values_list, feature_values_list, shap_explanation_object_list
         )
 
+    def explain_single(
+        self,
+        foreground_series: TimeSeries | None = None,
+        foreground_past_covariates: TimeSeries | None = None,
+        foreground_future_covariates: TimeSeries | None = None,
+        target_components: Sequence[str] | None = None,
+        **kwargs,
+    ) -> ShapSingleExplainabilityResult:
+        """
+        Explains a foreground time series forecast starting from one last forecastable timestamp and returns a
+        :class:`ShapSingleExplainabilityResult
+        <darts.explainability.explainability_result.ShapSingleExplainabilityResult>` of SHAP values.
+
+        The results can then be retrieved with method :func:`get_explanation()
+        <darts.explainability.explainability_result.ShapSingleExplainabilityResult.get_explanation>`,
+        which returns a multivariate ``TimeSeries`` instance containing the SHAP values for ``target_component``
+        starting from the last forecastable timestamp.
+
+        The components of the ``TimeSeries`` correspond to the input features used by the model to produce
+        the forecast. See above for the naming convention.
+
+        Parameters
+        ----------
+        foreground_series
+            Optionally, one or a sequence of target ``TimeSeries`` to be explained. Can be multivariate.
+            If not provided, the background ``TimeSeries`` will be explained instead.
+        foreground_past_covariates
+            Optionally, one or a sequence of past covariates ``TimeSeries`` if required by the forecasting model.
+        foreground_future_covariates
+            Optionally, one or a sequence of future covariates ``TimeSeries`` if required by the forecasting model.
+        target_components
+            Optionally, a string or sequence of strings with the target components to explain.
+        **kwargs
+            Other keyword arguments to be passed to the SHAP explainer.
+
+        Returns
+        -------
+        ShapSingleExplainabilityResult
+            The forecast explanations of the specified target components for the single forecasted timestamp.
+
+        Examples
+        --------
+        Say we have a ``SKLearnModel`` instance with:
+
+          - 2 target components named ``"T_0"`` and ``"T_1"``,
+          - 3 past covariates with default component names ``"P_0"``, ``"P_1"``, and ``"P_2"``,
+          - 1 future covariate with default component name ``"F_0"``,
+          - ``output_chunk_length=2``,
+          - ``lags = 3``, ``lags_past_covariates=[-1, -3]``, and ``lags_future_covariates = [0]``.
+
+        We provide ``foreground_series``, ``foreground_past_covariates``, ``foreground_future_covariates`` (extending
+        far enough into the future) each of length 5.
+
+        >>> results = explainer.explain_single(
+        >>>     foreground_series=foreground_series,
+        >>>     foreground_past_covariates=foreground_past_covariates,
+        >>>     foreground_future_covariates=foreground_future_covariates)
+
+        Calling the method returns a ``ShapSingleExplainabilityResult`` object containing the SHAP values,
+        feature values, and raw ``shap.Explanation`` objects for each target component at the single forecasted
+        timestamp (timestamp index 6 in our example, as it is the last forecastable).
+
+        >>> # Get SHAP values for forecasting "T_1" as a `TimeSeries`
+        >>> output = results.get_explanation(component="T_1")
+        >>> # Get feature values used for forecasting as a `TimeSeries`
+        >>> feature_values = results.get_feature_values(component="T_1")
+        >>> # Get the raw `shap.Explanation` object for further processing
+        >>> shap_objects = results.get_shap_explanation_object(component="T_1")
+
+        For SHAP and feature values, the components of the returned ``TimeSeries`` correspond to different lags of the
+        target and covariates (see convention above). In our example, the component names would be:
+
+             - T_0_target_lag-1
+             - T_0_target_lag-2
+             - T_0_target_lag-3
+             - T_1_target_lag-1
+             - T_1_target_lag-2
+             - T_1_target_lag-3
+             - P_0_pastcov_lag-1
+             - P_0_pastcov_lag-2
+             - P_0_pastcov_lag-3
+             - P_1_pastcov_lag-1
+             - P_1_pastcov_lag-2
+             - P_1_pastcov_lag-3
+             - P_2_pastcov_lag-1
+             - P_2_pastcov_lag-2
+             - P_2_pastcov_lag-3
+             - F_0_futcov_lag0
+             - F_0_futcov_lag1
+
+        The SHAP value ``TimeSeries`` has length ``output_chunk_length=2``, as the model predicts that many timestamps
+        in the future. The feature value ``TimeSeries`` has length 1, as it corresponds to the single forecasted
+        timestamp explained.
+
+        .. note::
+            The single forecast explained by this method should be equivalent to the one obtained by calling
+            ``model.predict(n=output_chunk_length)`` when foreground data is provided. However, the "equivalent"
+            forecast is temporally backshifted by ``output_chunk_length`` when the model uses future covariates
+            AND both foreground and background data are not provided. In this case, the explainer would use training
+            data as reference, whose future covariates were trimmed to match the target series during training.
+            As a result, the forecast explained would be backshifted to the last timestamp when future covariates are
+            known.
+        """
+        input_type = "foreground" if foreground_series is not None else "background"
+        (
+            foreground_series_,
+            foreground_past_covariates_,
+            foreground_future_covariates_,
+            _,
+            _,
+            _,
+            _,
+            _,
+        ) = self._process_foreground(
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
+        )
+        _, target_names = self._process_horizons_and_targets(None, target_components)
+
+        foreground_X, schemas, prediction_times = self.explainer.create_shap_array(
+            series=foreground_series_,
+            past_covariates=foreground_past_covariates_,
+            future_covariates=foreground_future_covariates_,
+            n_samples=None,
+            input_type=input_type,
+        )
+
+        # explain only the last forecasted timestamp
+        foreground_X = foreground_X[-1:]
+
+        # TODO: maybe unify the logic for SKLearn and Torch `create_shap_array()` so we don't need to distinguish here
+        freq = (
+            schemas[0]["time_freq"]
+            if schemas is not None
+            else foreground_series_[0].freq
+        )
+        prediction_time = (
+            prediction_times[-1]
+            if prediction_times is not None
+            else foreground_X.index[-1] + self.model.output_chunk_shift * freq
+        )
+
+        shap_ = self.explainer.shap_explanations_single(
+            foreground_X, target_names, **kwargs
+        )
+
+        shap_values_dict = {}
+        feature_values_dict = {}
+        shap_explanation_object_dict = {}
+        for t in target_names:
+            shap_values_dict[t] = TimeSeries(
+                times=generate_index(
+                    start=prediction_time,
+                    freq=freq,
+                    length=shap_[t].values.shape[0],
+                ),
+                values=shap_[t].values,
+                components=shap_[t].feature_names,
+            )
+            feature_values_dict[t] = TimeSeries(
+                times=generate_index(
+                    start=prediction_time,
+                    freq=freq,
+                    length=1,
+                ),
+                values=shap_[t].data[:1],
+                components=shap_[t].feature_names,
+            )
+            shap_explanation_object_dict[t] = shap_[t]
+
+        return ShapSingleExplainabilityResult(
+            shap_values_dict,
+            feature_values_dict,
+            shap_explanation_object_dict,
+        )
+
     def summary_plot(
         self,
+        foreground_series: TimeSeriesLike | None = None,
+        foreground_past_covariates: TimeSeriesLike | None = None,
+        foreground_future_covariates: TimeSeriesLike | None = None,
         horizons: int | Sequence[int] | None = None,
         target_components: str | Sequence[str] | None = None,
         num_samples: int | None = None,
         plot_type: str | None = "dot",
+        plot_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ) -> dict[int, dict[str, shap.Explanation]]:
         """
-        Display a shap plot summary for each horizon and each component dimension of the target.
-        This method reuses the initial background data as foreground (potentially sampled) to give a general importance
-        plot for each feature.
-        If no target names and/or no horizons are provided, all summary plots are produced.
+        Display a SHAP "Summary Plot" for each horizon and each component dimension of the target.
+
+        On each summary plot, SHAP values of each input feature are plotted with dots (``plot_type="dot"``,
+        each dot corresponds to a forecasted timestamp), a bar (``plot_type="bar"``), or a violin
+        (``plot_type="violin"``). The input features are sorted by importance, defined as the mean absolute SHAP value.
 
         Parameters
         ----------
+        foreground_series
+            Optionally, one or a sequence of target ``TimeSeries`` to be explained. Can be multivariate.
+            Default: ``None``, which means that the background series will be used as foreground.
+        foreground_past_covariates
+            Optionally, one or a sequence of past covariates ``TimeSeries`` if required by the forecasting model.
+        foreground_future_covariates
+            Optionally, one or a sequence of future covariates ``TimeSeries`` if required by the forecasting model.
         horizons
             Optionally, an integer or sequence of integers representing which points/steps in the future to explain,
-            starting from the first prediction step at 1. `horizons` must `<=output_chunk_length` of the forecasting
-            model.
+            starting from the first prediction step at 1. Each horizon must be no greater than ``output_chunk_length``
+            of the explained forecasting model. Default: ``None``, which means that all horizons will be plotted.
         target_components
             Optionally, a string or sequence of strings with the target components to explain.
+            Default: ``None``, which means that all target components will be plotted.
         num_samples
-            Optionally, an integer for sampling the foreground series (based on the background),
-            for the sake of performance.
+            Optionally, an integer for sampling the foreground series for the sake of performance.
         plot_type
-            Optionally, specify which of the shap library plot type to use. Can be one of ``'dot', 'bar', 'violin'``.
+            Optionally, specify which of the SHAP library plot type to use. Can be one of ``"dot"``, ``"bar"``,
+            ``"violin"``.
+        plot_kwargs
+            Optionally, a dictionary of keyword arguments to be passed to ``shap.summary_plot()``.
+        **kwargs
+            Other keyword arguments to be passed to the SHAP explainer.
 
         Returns
         -------
         dict[int, dict[str, shap.Explanation]]
-            A nested dictionary {horizon : {component : shap.Explanation}} containing the raw Explanations for all
-            the horizons and components.
+            A nested dictionary ``{horizon : {component : shap.Explanation}}`` containing the raw Explanation objects
+            for all the horizons and components.
         """
-
+        input_type = "foreground" if foreground_series is not None else "background"
+        (
+            foreground_series_,
+            foreground_past_covariates_,
+            foreground_future_covariates_,
+            _,
+            _,
+            _,
+            _,
+            _,
+        ) = self._process_foreground(
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
+        )
         horizons, target_components = self._process_horizons_and_targets(
             horizons, target_components
         )
 
-        if num_samples:
-            foreground_X_sampled = shap.utils.sample(
-                self.explainers.background_X, num_samples
-            )
-        else:
-            foreground_X_sampled = self.explainers.background_X
+        foreground_X, _, _ = self.explainer.create_shap_array(
+            series=foreground_series_,
+            past_covariates=foreground_past_covariates_,
+            future_covariates=foreground_future_covariates_,
+            n_samples=num_samples,
+            input_type=input_type,
+        )
 
-        shaps_ = self.explainers.shap_explanations(
-            foreground_X_sampled, horizons, target_components
+        shaps_ = self.explainer.shap_explanations(
+            foreground_X, horizons, target_components, **kwargs
         )
 
         for t in target_components:
             for h in horizons:
                 plt.title(
-                    "Target: `{}` - Horizon: {}".format(
-                        t, "t+" + str(h + self.model.output_chunk_shift)
-                    )
+                    f"Target: `{t}` - Horizon: t+{h + self.model.output_chunk_shift}"
                 )
                 shap.summary_plot(
                     shaps_[h][t],
-                    foreground_X_sampled,
+                    foreground_X,
                     plot_type=plot_type,
-                    **kwargs,
+                    **(plot_kwargs or {}),
                 )
         return shaps_
 
-    def force_plot_from_ts(
+    def force_plot(
         self,
         foreground_series: TimeSeries | None = None,
         foreground_past_covariates: TimeSeries | None = None,
         foreground_future_covariates: TimeSeries | None = None,
         horizon: int | None = 1,
         target_component: str | None = None,
+        plot_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ):
         """
-        Display a shap force_plot for one target and one horizon, for a given foreground_series.
-        It displays shap values of each lag/covariate with an additive force layout.
+        Display a SHAP "Force Plot" for one target and one horizon.
 
-        Once the plot is displayed, select "original sample ordering"
-        to observe the time series chronologically.
+        It shows SHAP values of all input features with an additive force layout for each forecastable timestamp
+        in the foreground series. At each timestamp, SHAP values of all features and the base value would sum up
+        to the model prediction.
+
+        .. note::
+            Once the plot is displayed, select **"original sample ordering"** to observe the forecasted timestamps
+            chronologically.
 
         Parameters
         ----------
         foreground_series
-            Optionally, the target series to explain. Can be multivariate. If `None`, will use the `background_series`.
+            Optionally, the target series to explain. Can be multivariate. Default: ``None``, which means that the
+            background series will be used as foreground.
         foreground_past_covariates
-            Optionally, a past covariate series if required by the forecasting model. If `None`, will use the
-            `background_past_covariates`.
+            Optionally, a past covariate series if required by the forecasting model.
         foreground_future_covariates
-            Optionally, a future covariate series if required by the forecasting model. If `None`, will use the
-            `background_future_covariates`.
+            Optionally, a future covariate series if required by the forecasting model.
         horizon
             Optionally, an integer for the point/step in the future to explain, starting from the first prediction
-            step at 1. `horizons` must not be larger than `output_chunk_length`.
+            step at 1. Must not be larger than ``output_chunk_length`` of the model.
         target_component
             Optionally, the target component to plot. If the target series is multivariate, the target component
             must be specified.
+        plot_kwargs
+            Optionally, a dictionary of keyword arguments to be passed to ``shap.force_plot()``.
         **kwargs
-            Optionally, additional keyword arguments passed to `shap.force_plot()`.
+            Other keyword arguments to be passed to the SHAP explainer.
         """
-
-        raise_if(
-            target_component is None and len(self.target_components) > 1,
-            "The component parameter is required when the model has more than one component.",
-        )
+        input_type = "foreground" if foreground_series is not None else "background"
+        if target_component is None and len(self.target_components_likelihood) > 1:
+            raise_log(
+                ValueError(
+                    f"The `target_component` parameter is required when the model has more than one component. "
+                    f"Please select a component from {self.target_components_likelihood}."
+                ),
+                logger,
+            )
 
         if target_component is None:
-            target_component = self.target_components[0]
+            target_component = self.target_components_likelihood[0]
 
         (
-            foreground_series,
-            foreground_past_covariates,
-            foreground_future_covariates,
+            foreground_series_,
+            foreground_past_covariates_,
+            foreground_future_covariates_,
+            _,
             _,
             _,
             _,
@@ -492,303 +728,21 @@ class ShapExplainer(_ForecastingModelExplainer):
         )
         horizon, target_component = horizons[0], target_components[0]
 
-        foreground_X = self.explainers._create_regression_model_shap_X(
-            foreground_series, foreground_past_covariates, foreground_future_covariates
+        foreground_X, _, _ = self.explainer.create_shap_array(
+            series=foreground_series_,
+            past_covariates=foreground_past_covariates_,
+            future_covariates=foreground_future_covariates_,
+            n_samples=None,
+            input_type=input_type,
         )
 
-        shap_ = self.explainers.shap_explanations(
-            foreground_X, [horizon], [target_component]
+        shap_ = self.explainer.shap_explanations(
+            foreground_X, [horizon], [target_component], **kwargs
         )
 
         return shap.force_plot(
             base_value=shap_[horizon][target_component],
             features=foreground_X,
             out_names=target_component,
-            **kwargs,
+            **(plot_kwargs or {}),
         )
-
-
-class _RegressionShapExplainers:
-    """
-    Helper Class to wrap the different cases encountered with shap different explainers, multivariates,
-    horizon etc.
-    Aim to provide shap values for any type of SKLearnModel. Manage the MultioutputRegressor cases.
-    For darts SKLearnModel only.
-    """
-
-    default_sklearn_shap_explainers = {
-        # Gradient boosting models
-        "LGBMRegressor": _ShapMethod.TREE,
-        "CatBoostRegressor": _ShapMethod.TREE,
-        "XGBRegressor": _ShapMethod.TREE,
-        "GradientBoostingRegressor": _ShapMethod.TREE,
-        "HistGradientBoostingRegressor": _ShapMethod.TREE,
-        # Tree models
-        "DecisionTreeRegressor": _ShapMethod.TREE,
-        "ExtraTreeRegressor": _ShapMethod.TREE,
-        "ExtraTreesRegressor": _ShapMethod.TREE,
-        "RandomForestRegressor": _ShapMethod.TREE,
-        # Ensemble model
-        "AdaBoostRegressor": _ShapMethod.PERMUTATION,
-        "BaggingRegressor": _ShapMethod.PERMUTATION,
-        "RidgeCV": _ShapMethod.PERMUTATION,
-        "Ridge": _ShapMethod.PERMUTATION,
-        # Linear models
-        "LinearRegression": _ShapMethod.LINEAR,
-        "ARDRegression": _ShapMethod.LINEAR,
-        "MultiTaskElasticNet": _ShapMethod.LINEAR,
-        "MultiTaskElasticNetCV": _ShapMethod.LINEAR,
-        "MultiTaskLasso": _ShapMethod.LINEAR,
-        "MultiTaskLassoCV": _ShapMethod.LINEAR,
-        "PassiveAggressiveRegressor": _ShapMethod.LINEAR,
-        "PoissonRegressor": _ShapMethod.LINEAR,
-        "QuantileRegressor": _ShapMethod.LINEAR,
-        "RANSACRegressor": _ShapMethod.LINEAR,
-        "GammaRegressor": _ShapMethod.LINEAR,
-        "HuberRegressor": _ShapMethod.LINEAR,
-        "BayesianRidge": _ShapMethod.LINEAR,
-        "SGDRegressor": _ShapMethod.LINEAR,
-        "TheilSenRegressor": _ShapMethod.LINEAR,
-        "TweedieRegressor": _ShapMethod.LINEAR,
-        # Gaussian process
-        "GaussianProcessRegressor": _ShapMethod.PERMUTATION,
-        # neighbors
-        "KNeighborsRegressor": _ShapMethod.PERMUTATION,
-        "RadiusNeighborsRegressor": _ShapMethod.PERMUTATION,
-        # Neural network
-        "MLPRegressor": _ShapMethod.PERMUTATION,
-    }
-
-    def __init__(
-        self,
-        model: SKLearnModel,
-        n: int,
-        target_components: Sequence[str],
-        past_covariates_components: Sequence[str],
-        future_covariates_components: Sequence[str],
-        background_series: Sequence[TimeSeries],
-        background_past_covariates: Sequence[TimeSeries],
-        background_future_covariates: Sequence[TimeSeries],
-        shap_method: _ShapMethod,
-        background_num_samples: int | None = None,
-        **kwargs,
-    ):
-        self.model = model
-        self.target_dim = self.model.input_dim["target"]
-        self.is_multioutputregressor = isinstance(
-            self.model.model, MultiOutputRegressor
-        )
-
-        self.target_components = target_components
-        self.past_covariates_components = past_covariates_components
-        self.future_covariates_components = future_covariates_components
-
-        self.n = n
-        self.shap_method = shap_method
-        self.background_series = background_series
-        self.background_past_covariates = background_past_covariates
-        self.background_future_covariates = background_future_covariates
-
-        self.single_output = False
-        if self.n == 1 and self.target_dim == 1:
-            self.single_output = True
-
-        self.background_X = self._create_regression_model_shap_X(
-            self.background_series,
-            self.background_past_covariates,
-            self.background_future_covariates,
-            background_num_samples,
-            train=True,
-        )
-
-        if self.is_multioutputregressor:
-            self.explainers = {}
-            for i in range(self.n):
-                self.explainers[i] = {}
-                for j in range(self.target_dim):
-                    self.explainers[i][j] = self._build_explainer_sklearn(
-                        self.model.get_estimator(horizon=i, target_dim=j),
-                        self.background_X,
-                        self.shap_method,
-                        **kwargs,
-                    )
-        else:
-            self.explainers = self._build_explainer_sklearn(
-                self.model.model, self.background_X, self.shap_method, **kwargs
-            )
-
-    def shap_explanations(
-        self,
-        foreground_X: pd.DataFrame,
-        horizons: Sequence[int] | None = None,
-        target_components: Sequence[str] | None = None,
-    ) -> dict[int, dict[str, shap.Explanation]]:
-        """
-        Return a dictionary of dictionaries of shap.Explanation instances:
-        - the first dimension corresponds to the n forecasts ahead we want to explain (Horizon).
-        - the second dimension corresponds to each component of the target time series.
-        Parameters
-        ----------
-        foreground_X
-            the Dataframe of lags features specific of darts SKLearnModel.
-        horizons
-            Optionally, a list of integers representing which points/steps in the future we want to explain,
-            starting from the first prediction step at 1. Currently, only forecasting models are supported which
-            provide an `output_chunk_length` parameter. `horizons` must not be larger than `output_chunk_length`.
-        target_components
-            Optionally, a list of strings with the target components we want to explain.
-
-        """
-
-        # create a unified dictionary between multiOutputRegressor estimators and
-        # native multiOutput estimators
-        shap_explanations = {}
-        if self.is_multioutputregressor:
-            for h in horizons:
-                tmp_n = {}
-                for t_idx, t in enumerate(self.target_components):
-                    if t not in target_components:
-                        continue
-                    explainer = self.explainers[h - 1][t_idx](foreground_X)
-                    explainer.base_values = explainer.base_values.ravel()
-                    explainer.time_index = foreground_X.index
-                    tmp_n[t] = explainer
-                shap_explanations[h] = tmp_n
-        else:
-            # the native multioutput forces us to recompute all horizons and targets
-            shap_explanation_tmp = self.explainers(foreground_X)
-            for h in horizons:
-                tmp_n = {}
-                for t_idx, t in enumerate(self.target_components):
-                    if t not in target_components:
-                        continue
-                    if not self.single_output:
-                        tmp_t = shap.Explanation(
-                            shap_explanation_tmp.values[
-                                :, :, self.target_dim * (h - 1) + t_idx
-                            ]
-                        )
-                        tmp_t.data = shap_explanation_tmp.data
-                        tmp_t.base_values = shap_explanation_tmp.base_values[
-                            :, self.target_dim * (h - 1) + t_idx
-                        ].ravel()
-                    else:
-                        tmp_t = shap_explanation_tmp
-                        tmp_t.base_values = shap_explanation_tmp.base_values.ravel()
-
-                    tmp_t.feature_names = shap_explanation_tmp.feature_names
-                    tmp_t.time_index = foreground_X.index
-                    tmp_n[t] = tmp_t
-                shap_explanations[h] = tmp_n
-
-        return shap_explanations
-
-    def _build_explainer_sklearn(
-        self,
-        model_sklearn,
-        background_X: pd.DataFrame,
-        shap_method: ShapMethod | None = None,
-        **kwargs,
-    ):
-        model_name = type(model_sklearn).__name__
-
-        # no shap methods - we need to take the default one
-        if shap_method is None:
-            if model_name in self.default_sklearn_shap_explainers:
-                shap_method = self.default_sklearn_shap_explainers[model_name]
-            else:
-                shap_method = _ShapMethod.KERNEL
-
-        # we define properly the explainer given a shap method
-        if shap_method == _ShapMethod.TREE:
-            if kwargs.get("feature_perturbation") == "interventional":
-                explainer = shap.TreeExplainer(model_sklearn, background_X, **kwargs)
-            else:
-                explainer = shap.TreeExplainer(model_sklearn, **kwargs)
-        elif shap_method == _ShapMethod.PERMUTATION:
-            explainer = shap.PermutationExplainer(
-                model_sklearn.predict, background_X, **kwargs
-            )
-        elif shap_method == _ShapMethod.PARTITION:
-            explainer = shap.PermutationExplainer(
-                model_sklearn.predict, background_X, **kwargs
-            )
-        elif shap_method == _ShapMethod.KERNEL:
-            explainer = shap.KernelExplainer(
-                model_sklearn.predict, background_X, keep_index=True, **kwargs
-            )
-        elif shap_method == _ShapMethod.LINEAR:
-            explainer = shap.LinearExplainer(model_sklearn, background_X, **kwargs)
-        elif shap_method == _ShapMethod.DEEP:
-            explainer = shap.LinearExplainer(model_sklearn, background_X, **kwargs)
-        elif shap_method == _ShapMethod.ADDITIVE:
-            explainer = shap.AdditiveExplainer(model_sklearn, background_X, **kwargs)
-        else:
-            raise ValueError(
-                "shap_method must be one of the following: "
-                + ", ".join([e.value for e in _ShapMethod])
-            )
-
-        logger.info("The shap method used is of type: " + str(type(explainer)))
-
-        return explainer
-
-    def _create_regression_model_shap_X(
-        self,
-        target_series: TimeSeriesLike | None,
-        past_covariates: TimeSeriesLike | None,
-        future_covariates: TimeSeriesLike | None,
-        n_samples: int | None = None,
-        train: bool = False,
-    ) -> pd.DataFrame:
-        """
-        Creates the shap format input for regression models.
-        The output is a pandas DataFrame representing all lags of different covariates, and with adequate
-        column names in order to map feature / shap values.
-        It uses create_lagged_data also used in SKLearnModel to build the tabular dataset.
-
-        """
-
-        lags_list = self.model._get_lags("target")
-        lags_past_covariates_list = self.model._get_lags("past")
-        lags_future_covariates_list = self.model._get_lags("future")
-
-        X, indexes = create_lagged_prediction_data(
-            target_series=target_series if lags_list else None,
-            past_covariates=past_covariates if lags_past_covariates_list else None,
-            future_covariates=(
-                future_covariates if lags_future_covariates_list else None
-            ),
-            lags=lags_list,
-            lags_past_covariates=lags_past_covariates_list if past_covariates else None,
-            lags_future_covariates=(
-                lags_future_covariates_list if future_covariates else None
-            ),
-            uses_static_covariates=self.model.uses_static_covariates,
-            last_static_covariates_shape=self.model._static_covariates_shape,
-        )
-        # Remove sample axis:
-        X = X[:, :, 0]
-
-        if train:
-            X = pd.DataFrame(X)
-            if len(X) <= MIN_BACKGROUND_SAMPLE:
-                raise_log(
-                    ValueError(
-                        "The number of samples in the background dataset is too small to compute shap values."
-                    )
-                )
-        else:
-            X = pd.DataFrame(X, index=indexes[0])
-
-        if n_samples:
-            X = shap.utils.sample(X, n_samples)
-
-        # rename output columns to the matching lagged features names
-        X = X.rename(
-            columns={
-                name: self.model.lagged_feature_names[idx]
-                for idx, name in enumerate(X.columns.to_list())
-            }
-        )
-        return X

@@ -15,11 +15,21 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Improvements to `ShapExplainer` : [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+  - 🚀🚀 `ShapExplainer` can now also explain any `TorchForecastingModel` including regular torch models (`TiDEModel`, ...) as well as foundation models (`Chronos2`, ...). It supports global and local explanations and can output SHAP values for further analysis.
+  - Added method `explain_single()` to explain a single model forecast in detail, in addition to the existing batched method `explain()`. This is useful for local explanations of individual predictions with reduced computational cost.
+  - Added a new [Explainability of Forecasting Models Notebook](https://unit8co.github.io/darts/examples/28-Explainability-examples.html) for detailed usage of `ShapExplainer`.
+
 **Fixed**
+
+- Fixed several bugs in `ShapExplainer` including mismatched SHAP method enum values, feature naming conventions, inconsistent instance count in `explain()`. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+- Fixed a bug in explainability utils where stationarity tests were not properly conducted due to usage of `all()`. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 
 **Dependencies**
 
 ### For developers of the library:
+
+- Added `ShapSingleExplainabilityResult` class as the return type of `explain_single()` method in `ShapExplainer` and `TorchExplainer` and to store the SHAP results of a single instance explanation. This is in contrast to the existing `ShapExplainabilityResult` which stores results for batched explanations. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 
 ## [0.44.1](https://github.com/unit8co/darts/tree/0.44.1) (2026-05-05)
 

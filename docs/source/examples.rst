@@ -246,6 +246,17 @@ Ensemble models example notebook:
 
    examples/19-EnsembleModel-examples.ipynb
 
+Explainability
+==============
+
+Explainability example notebook showcasing the use of Darts' explainability module
+for both PyTorch and SKLearn models:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/28-Explainability-examples.ipynb
+
 Kalman Filter Model
 ===================
 

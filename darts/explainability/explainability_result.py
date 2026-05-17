@@ -6,12 +6,19 @@ Contains the explainability results obtained from :func:`_ForecastingModelExplai
 <darts.explainability.explainability._ForecastingModelExplainer.explain>`.
 
 - :class:`ShapExplainabilityResult <ShapExplainabilityResult>` for :class:`ShapExplainer
-  <darts.explainability.shap_explainer.ShapExplainer>`
+  <darts.explainability.shap_explainer.ShapExplainer>` or :class:`TorchExplainer
+  <darts.explainability.torch_explainer.TorchExplainer>`. Contains general forecasting model explainability result
+  based on SHAP values.
+- :class:`ShapSingleExplainabilityResult <ShapSingleExplainabilityResult>` for :class:`ShapExplainer
+  <darts.explainability.shap_explainer.ShapExplainer>` or :class:`TorchExplainer
+  <darts.explainability.torch_explainer.TorchExplainer>`. Contains the explainability result for
+  a single model forecast.
 - :class:`TFTExplainabilityResult <TFTExplainabilityResult>` for :class:`TFTExplainer
-  <darts.explainability.tft_explainer.TFTExplainer>`
-- :class:`ComponentBasedExplainabilityResult <ComponentBasedExplainabilityResult>` for component based explainability
-  results
-- :class:`HorizonBasedExplainabilityResult <HorizonBasedExplainabilityResult>` for horizon based explainability results
+  <darts.explainability.tft_explainer.TFTExplainer>`.
+- :class:`ComponentBasedExplainabilityResult <ComponentBasedExplainabilityResult>` for generic component-based
+  explainability result.
+- :class:`HorizonBasedExplainabilityResult <HorizonBasedExplainabilityResult>` for generic horizon-based
+  explainability results.
 """
 
 from abc import ABC, abstractmethod
@@ -21,7 +28,7 @@ import pandas as pd
 import shap
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 
 logger = get_logger(__name__)
 
@@ -35,12 +42,13 @@ class _ExplainabilityResult(ABC):
     @abstractmethod
     def get_explanation(self, *args, **kwargs):
         """Returns one or multiple explanations based on some input parameters."""
-        pass
 
 
 class ComponentBasedExplainabilityResult(_ExplainabilityResult):
-    """Explainability result for general component objects.
-    The explained components can describe anything.
+    """
+    Stores the explainability results of a :class:`_ForecastingModelExplainer
+    <darts.explainability.explainability._ForecastingModelExplainer>` with convenient access to component-based
+    results.
 
     Examples
     --------
@@ -65,23 +73,24 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
         else:
             comps_available = explained_components.keys()
         self.explained_components = explained_components
-        self.available_components = comps_available
+        self.available_components = list(comps_available)
 
-    def get_explanation(self, component) -> Any | list[Any]:
+    def get_explanation(self, component: str | None = None) -> Any | list[Any]:
         """
         Returns one or several explanations for a given component.
 
         Parameters
         ----------
         component
-            The component for which to return the explanation.
+            Optionally, the target series component for which to return the explanation. Must be supplied for
+            multivariate forecasting models.
         """
         return self._query_explainability_result(self.explained_components, component)
 
     def _query_explainability_result(
         self,
         attr: dict[str, Any] | list[dict[str, Any]],
-        component: str,
+        component: str | None,
     ) -> Any:
         """
         Helper that extracts and returns the explainability result attribute for a given component.
@@ -99,92 +108,104 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
         else:
             return attr[component]
 
-    def _validate_input_for_querying_explainability_result(self, component) -> str:
+    def _validate_input_for_querying_explainability_result(
+        self, component: str | None
+    ) -> str:
         """
         Helper that validates the input parameters of a method that queries the `ComponentBasedExplainabilityResult`.
 
         Parameters
         ----------
         component
-            The component for which to return the explanation. Does not
-            need to be specified for univariate series.
+            The component for which to return the explanation.
         """
         # validate component argument
-        raise_if(
-            component is None and len(self.explained_components) > 1,
-            f"The component parameter is required when the `{self.__class__.__name__}` has more than one component.",
-            logger,
-        )
+        if component is None and len(self.available_components) > 1:
+            raise_log(
+                ValueError(
+                    "The component parameter is required when the model has more than one component."
+                ),
+                logger,
+            )
 
-        if component is None:
-            component = self.available_components[0]
+        component_out = self.available_components[0] if component is None else component
 
-        raise_if_not(
-            component in self.available_components,
-            f"Component {component} is not available. Available components are: {self.available_components}",
-            logger,
-        )
-        return component
+        if component_out not in self.available_components:
+            raise_log(
+                ValueError(
+                    f'Component "{component_out}" is not available. '
+                    f"Available components are: {self.available_components}"
+                ),
+                logger,
+            )
+        return component_out
 
 
 class HorizonBasedExplainabilityResult(_ExplainabilityResult):
     """
     Stores the explainability results of a :class:`_ForecastingModelExplainer
-    <darts.explainability.explainability._ForecastingModelExplainer>` with convenient access to the horizon
-    based results.
+    <darts.explainability.explainability._ForecastingModelExplainer>` with convenient access to horizon-based
+    results.
 
-    The result is a multivariate `TimeSeries` instance containing the 'explanation' for the (horizon, target_component)
-    forecast at any timestamp forecastable corresponding to the foreground `TimeSeries` input.
+    The result is a multivariate ``TimeSeries`` instance containing the "explanation" for the
+    ``(horizon, target_component)`` forecast at any timestamp forecastable in the foreground series.
 
-    The component name convention of this multivariate `TimeSeries` is:
-    ``"{name}_{type_of_cov}_lag_{idx}"``, where:
 
-    - ``{name}`` is the component name from the original foreground series (target, past, or future).
+    The components of the ``TimeSeries`` correspond to the input features used by the model to produce
+    the forecasts. They are named according to the convention:
+    ``"{name}_{type_of_cov}_lag{idx}"``, where:
+
+    - ``{name}`` is the component name from the original foreground series (target, past covariates, or future
+      covariates).
     - ``{type_of_cov}`` is the covariates type. It can take 3 different values:
-      ``"target"``, ``"past_cov"`` or ``"future_cov"``.
+      ``"target"``, ``"pastcov"``,  ``"futcov"``.
     - ``{idx}`` is the lag index.
+
+    Static covariates are named according to the convention: ``"{name}_statcov_target_{comp}"``, where:
+
+    - ``{name}`` is the variable name of the static covariate.
+    - ``{comp}`` is the component name of the target series if static covariates are component-specific, or
+      ``"global_components"`` if they are global.
 
     Examples
     --------
+    Say we have a ``SKLearnModel`` instance with:
 
-    Say we have a model with 2 target components named ``"T_0"`` and ``"T_1"``,
-    3 past covariates with default component names ``"0"``, ``"1"``, and ``"2"``,
-    and one future covariate with default component name ``"0"``.
-    Also, ``horizons = [1, 2]``.
-    The model is a `SKLearnModel`, with ``lags = 3``, ``lags_past_covariates=[-1, -3]``,
-    ``lags_future_covariates = [0]``.
+        - 2 target components named ``"T_0"`` and ``"T_1"``,
+        - 3 past covariates with default component names ``"P_0"``, ``"P_1"``, and ``"P_2"``,
+        - 1 future covariate with default component name ``"F_0"``,
+        - ``output_chunk_length=2``,
+        - ``lags = 3``, ``lags_past_covariates=[-1, -3]``, and ``lags_future_covariates = [0]``.
 
-    We provide `foreground_series`, `foreground_past_covariates`, `foreground_future_covariates` each of length 5.
+    We provide ``foreground_series``, ``foreground_past_covariates``, ``foreground_future_covariates`` (extending
+    far enough into the future) each of length 5.
 
     >>> explainer = SomeHorizonBasedExplainer(model)
     >>> explain_results = explainer.explain(
     >>>     foreground_series=foreground_series,
     >>>     foreground_past_covariates=foreground_past_covariates,
-    >>>     foreground_future_covariates=foreground_future_covariates,
-    >>>     horizons=[1, 2],
-    >>>     target_names=["T_0", "T_1"]
+    >>>     foreground_future_covariates=foreground_future_covariates
     >>> )
     >>> output = explain_results.get_explanation(horizon=1, target="T_1")
 
-    Then the method returns a multivariate TimeSeries containing the *explanations* of
+    Calling the ``get_explanation()`` method returns a multivariate TimeSeries containing the *explanations* of
     the corresponding `_ForecastingModelExplainer`, with the following component names:
 
-    - T_0_target_lag-1
-    - T_0_target_lag-2
-    - T_0_target_lag-3
-    - T_1_target_lag-1
-    - T_1_target_lag-2
-    - T_1_target_lag-3
-    - 0_past_cov_lag-1
-    - 0_past_cov_lag-3
-    - 1_past_cov_lag-1
-    - 1_past_cov_lag-3
-    - 2_past_cov_lag-1
-    - 2_past_cov_lag-3
-    - 0_fut_cov_lag_0
+        - T_0_target_lag-1
+        - T_0_target_lag-2
+        - T_0_target_lag-3
+        - T_1_target_lag-1
+        - T_1_target_lag-2
+        - T_1_target_lag-3
+        - P_0_pastcov_lag-1
+        - P_0_pastcov_lag-3
+        - P_1_pastcov_lag-1
+        - P_1_pastcov_lag-3
+        - P_2_pastcov_lag-1
+        - P_2_pastcov_lag-3
+        - F_0_futcov_lag0
 
-    This series has length 3, as the model can explain 5-3+1 forecasts
-    (timestamp indexes 4, 5, and 6)
+    This series has length 3, as the model can explain 5-3+1 forecasts (timestamp indices 4, 5, and 6)
     """
 
     def __init__(
@@ -194,16 +215,20 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
     ):
         self.explained_forecasts = explained_forecasts
         if isinstance(self.explained_forecasts, list):
-            raise_if_not(
-                isinstance(self.explained_forecasts[0], dict),
-                "The explained_forecasts list must consist of dicts.",
-                logger,
-            )
-            raise_if_not(
-                all(isinstance(key, int) for key in self.explained_forecasts[0].keys()),
-                "The explained_forecasts dict list must have all integer keys.",
-                logger,
-            )
+            if not isinstance(self.explained_forecasts[0], dict):
+                raise_log(
+                    ValueError("The explained_forecasts list must consist of dicts."),
+                    logger,
+                )
+            if not all(
+                isinstance(key, int) for key in self.explained_forecasts[0].keys()
+            ):
+                raise_log(
+                    ValueError(
+                        "The explained_forecasts dict list must have all integer keys."
+                    ),
+                    logger,
+                )
             self.available_horizons = list(self.explained_forecasts[0].keys())
             h_0 = self.available_horizons[0]
             self.available_components = list(self.explained_forecasts[0][h_0].keys())
@@ -231,7 +256,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
         self, horizon: int, component: str | None = None
     ) -> TimeSeries | list[TimeSeries]:
         """
-        Returns one or several `TimeSeries` representing the explanations
+        Returns one or several ``TimeSeries`` representing the explanations
         for a given horizon and component.
 
         Parameters
@@ -239,8 +264,8 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
         horizon
             The horizon for which to return the explanation.
         component
-            The component for which to return the explanation. Does not
-            need to be specified for univariate series.
+            Optionally, the target series component for which to return the explanation. Must be supplied for
+            multivariate forecasting models.
         """
         return self._query_explainability_result(
             self.explained_forecasts, horizon, component
@@ -263,8 +288,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
         horizon
             The horizon for which to return the content of the attribute.
         component
-            The component for which to return the content of the attribute. Does not
-            need to be specified for univariate series.
+            The component for which to return the content of the attribute.
         """
         component = self._validate_input_for_querying_explainability_result(
             horizon, component
@@ -293,54 +317,59 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
         horizon
             The horizon for which to return the explanation.
         component
-            The component for which to return the explanation. Does not
-            need to be specified for univariate series.
+            The component for which to return the explanation.
         """
         # validate component argument
-        raise_if(
-            component is None and len(self.available_components) > 1,
-            "The component parameter is required when the model has more than one component.",
-            logger,
-        )
+        if component is None and len(self.available_components) > 1:
+            raise_log(
+                ValueError(
+                    "The component parameter is required when the model has more than one component."
+                ),
+                logger,
+            )
 
-        if component is None:
-            component = self.available_components[0]
+        component_out = self.available_components[0] if component is None else component
 
-        raise_if_not(
-            component in self.available_components,
-            f"Component {component} is not available. Available components are: {self.available_components}",
-            logger,
-        )
+        if component_out not in self.available_components:
+            raise_log(
+                ValueError(
+                    f'Component "{component_out}" is not available. '
+                    f"Available components are: {self.available_components}"
+                ),
+                logger,
+            )
 
-        raise_if_not(
-            horizon in self.available_horizons,
-            f"Horizon {horizon} is not available. Available horizons are: {self.available_horizons}",
-            logger,
-        )
-        return component
+        if horizon not in self.available_horizons:
+            raise_log(
+                ValueError(
+                    f"Horizon {horizon} is not available. Available horizons are: {self.available_horizons}"
+                ),
+                logger,
+            )
+        return component_out
 
 
 class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
     """
-    Stores the explainability results of a :class:`ShapExplainer <darts.explainability.shap_explainer.ShapExplainer>`
-    with convenient access to the results. It extends the :class:`HorizonBasedExplainabilityResult
-    <HorizonBasedExplainabilityResult>` and carries additional information specific to the Shap explainers.
-    In particular, in addition to the `explained_forecasts` (which in the case of the `ShapExplainer` are the
-    shap values), it also provides access to the corresponding `feature_values` and the underlying `shap.Explanation`
-    object.
+    Stores the explainability results of :class:`ShapExplainer
+    <darts.explainability.shap_explainer.ShapExplainer>` or :class:`TorchExplainer
+    <darts.explainability.torch_explainer.TorchExplainer>` with convenient access to the results.
 
-    - :func:`get_explanation() <ShapExplainabilityResult.get_explanation>`: explained forecast for a given horizon
-      (and target component)
-    - :func:`get_feature_values() <ShapExplainabilityResult.get_feature_values>`: feature values for a given horizon
-      (and target component).
-    - :func:`get_shap_explanation_object() <ShapExplainabilityResult.get_shap_explanation_object>`: `shap.Explanation`
-      object for a given horizon (and target component).
+    It extends the :class:`HorizonBasedExplainabilityResult
+    <HorizonBasedExplainabilityResult>` and carries additional information specific to the SHAP explainers.
+
+    - :func:`get_explanation() <get_explanation>`: SHAP values for a given horizon and component in
+      multivariate ``TimeSeries`` format.
+    - :func:`get_feature_values() <get_feature_values>`: input feature values for a given horizon and
+      component in multivariate ``TimeSeries`` format.
+    - :func:`get_shap_explanation_object() <get_shap_explanation_object>`: ``shap.Explanation`` object for a given
+      horizon and component.
 
     Examples
     --------
     >>> explainer = ShapExplainer(model)  # requires `background` if model was trained on multiple series
     >>> explain_results = explainer.explain()
-    >>> exlained_fc = explain_results.get_explanation(horizon=1)
+    >>> explained_fc = explain_results.get_explanation(horizon=1)  # requires `component` if target is multivariate
     >>> feature_values = explain_results.get_feature_values(horizon=1)
     >>> shap_objects = explain_results.get_shap_explanation_objects(horizon=1)
     """
@@ -362,7 +391,7 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
         self, horizon: int, component: str | None = None
     ) -> TimeSeries | list[TimeSeries]:
         """
-        Returns one or several `TimeSeries` representing the feature values
+        Returns one or several ``TimeSeries`` representing the feature values
         for a given horizon and component.
 
         Parameters
@@ -370,8 +399,7 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
         horizon
             The horizon for which to return the feature values.
         component
-            The component for which to return the feature values. Does not
-            need to be specified for univariate series.
+            The component for which to return the feature values. Must be supplied for multivariate forecasting models.
         """
         return self._query_explainability_result(
             self.feature_values, horizon, component
@@ -381,18 +409,102 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
         self, horizon: int, component: str | None = None
     ) -> shap.Explanation | list[shap.Explanation]:
         """
-        Returns the underlying `shap.Explanation` object for a given horizon and component.
+        Returns the underlying ``shap.Explanation`` object for a given horizon and component.
 
         Parameters
         ----------
         horizon
-            The horizon for which to return the `shap.Explanation` object.
+            The horizon for which to return the ``shap.Explanation`` object.
         component
-            The component for which to return the `shap.Explanation` object. Does not
-            need to be specified for univariate series.
+            The component for which to return the ``shap.Explanation`` object. Must be supplied for multivariate
+            forecasting models.
         """
         return self._query_explainability_result(
             self.shap_explanation_object, horizon, component
+        )
+
+
+class ShapSingleExplainabilityResult(ComponentBasedExplainabilityResult):
+    def __init__(
+        self,
+        explained_components: dict[str, TimeSeries],
+        feature_values: dict[str, TimeSeries],
+        shap_explanation_object: dict[str, shap.Explanation],
+    ):
+        """
+        Stores the explainability results of :class:`ShapExplainer
+        <darts.explainability.shap_explainer.ShapExplainer>` or :class:`TorchExplainer
+        <darts.explainability.torch_explainer.TorchExplainer>` for a single model forecast with convenient access to
+        the results.
+
+        It extends the :class:`ComponentBasedExplainabilityResult <ComponentBasedExplainabilityResult>` and
+        carries additional information specific to the SHAP explainers.
+
+        - :func:`get_explanation() <get_explanation>`: SHAP values for a given component in multivariate ``TimeSeries``
+          format.
+        - :func:`get_feature_values() <get_feature_values>`: input feature values for a given component in
+          single-timestamp multivariate ``TimeSeries`` format.
+        - :func:`get_shap_explanation_object() <get_shap_explanation_object>`: ``shap.Explanation`` object for a given
+          component.
+
+        Examples
+        --------
+        >>> explainer = ShapExplainer(model)  # requires `background` if model was trained on multiple series
+        >>> explain_results = explainer.explain_single()
+        >>> explained_fc = explain_results.get_explanation() # requires `component` if target is multivariate
+        >>> feature_values = explain_results.get_feature_values()
+        >>> shap_objects = explain_results.get_shap_explanation_objects()
+        """
+        super().__init__(explained_components)
+        self.feature_values = feature_values
+        self.shap_explanation_object = shap_explanation_object
+
+    def get_explanation(self, component: str | None = None) -> TimeSeries:
+        """
+        Returns the ``TimeSeries`` representing the explanation for a given component.
+
+        The components of the ``TimeSeries`` correspond to the input features used by the model to produce the
+        forecasts. The time index contains the forecasted timestamps in the future. Therefore, the values of
+        ``TimeSeries`` are the SHAP values of the features for the forecast at each forecasted timestamp.
+
+        Parameters
+        ----------
+        component
+            Optionally, the target series component for which to return the explanation. Must be supplied for
+            multivariate forecasting models.
+        """
+        return self._query_explainability_result(self.explained_components, component)
+
+    def get_feature_values(self, component: str | None = None) -> TimeSeries:
+        """
+        Returns the ``TimeSeries`` representing the feature values for a given component.
+
+        The components of the ``TimeSeries`` correspond to the input features used by the model to produce the
+        forecasts. The time index contains only one timestamp, which is the first forecasted timestamp in the future.
+        The values of the ``TimeSeries`` are the feature values used by the model to produce the forecast starting
+        at that timestamp.
+
+        Parameters
+        ----------
+        component
+            The component for which to return the feature values. Must be supplied for multivariate forecasting models.
+        """
+        return self._query_explainability_result(self.feature_values, component)
+
+    def get_shap_explanation_object(
+        self, component: str | None = None
+    ) -> shap.Explanation:
+        """
+        Returns the underlying ``shap.Explanation`` object for a given component.
+
+        Parameters
+        ----------
+        component
+            The component for which to return the ``shap.Explanation`` object. Must be supplied for multivariate
+            forecasting models.
+        """
+        return self._query_explainability_result(
+            self.shap_explanation_object, component
         )
 
 
