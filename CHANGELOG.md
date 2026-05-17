@@ -27,6 +27,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added `project_after_n_blocks` hyperparameter to `TSMixerModel`, allowing some or all of the backbone to operate in the lookback rather than forecasted time space [#2555](https://github.com/unit8co/darts/pull/2555) by [Eric Schibli](https://github.com/eschibli)
+
 **Fixed**
 
 - Fixed a `ValueError` in `backtest()` when using `overlap_end=True` with `predict_likelihood_parameters=True` and a quantile metric. The final forecast window could extend beyond the series end, producing an empty intersection that caused a reshape failure in the metric computation. [#3111](https://github.com/unit8co/darts/pull/3111) by [Dennis Bader](https://github.com/dennisbader)
