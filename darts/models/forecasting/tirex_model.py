@@ -183,7 +183,6 @@ class TiRexModel(FoundationModel):
         .. note::
             TiRex is distributed under the `NXAI Community License <https://github.com/NX-AI/tirex/blob/main/LICENSE>`_.
             You must explicitly acknowledge this license by passing ``accept_license=True`` when constructing the model.
-
         .. note::
             Partial fine-tuning is supported via
             ``enable_finetuning={"unfreeze": ["tirex.output_patch_embedding*", ...]}``. Fine-tuning requires
@@ -239,8 +238,8 @@ class TiRexModel(FoundationModel):
             Darts' :class:`TorchForecastingModel`.
 
         loss_fn
-            PyTorch loss function used for fine-tuning a deterministic Chronos-2 model. Ignored for probabilistic
-            Chronos-2 when ``likelihood`` is specified. Default: ``nn.MSELoss()``.
+            PyTorch loss function used for fine-tuning a deterministic TimesFM 2.5 model. Ignored for probabilistic
+            models when ``likelihood`` is specified. Default: ``nn.MSELoss()``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
             at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
@@ -378,6 +377,8 @@ class TiRexModel(FoundationModel):
 
         Examples
         --------
+        Point forecasting:
+
         >>> from darts.models import TiRexModel
         >>> from darts.datasets import AirPassengersDataset
         >>> series = AirPassengersDataset().load().astype("float32")
@@ -389,13 +390,15 @@ class TiRexModel(FoundationModel):
         ... )
         >>> model.fit(series)
         >>> pred = model.predict(n=6)
-        >>> print(pred.all_values())
-        [[[440.2505 ]]
-        [[444.44373]]
-        [[447.36362]]
-        [[451.50375]]
-        [[458.05853]]
-        [[461.98694]]]
+        >>> pred
+                    #Passengers
+        Month
+        1961-01-01   440.25050
+        1961-02-01   444.44373
+        1961-03-01   447.36362
+        1961-04-01   451.50375
+        1961-05-01   458.05853
+        1961-06-01   461.98694
 
         Probabilistic forecasting:
 
@@ -409,6 +412,15 @@ class TiRexModel(FoundationModel):
         ... )
         >>> model.fit(series)
         >>> pred = model.predict(n=6, predict_likelihood_parameters=True)
+        >>> pred
+                    #Passengers_q0.100  #Passengers_q0.500  #Passengers_q0.900
+        Month
+        1961-01-01          395.053131          507.465973          602.820312
+        1961-02-01          402.696472          517.345459          612.596741
+        1961-03-01          394.399231          519.231140          625.937439
+        1961-04-01          381.966797          506.727661          619.151367
+        1961-05-01          388.510803          504.759125          635.277893
+        1961-06-01          375.241638          496.883820          635.320679
         """
         if not accept_license:
             raise_log(
