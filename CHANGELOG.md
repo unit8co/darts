@@ -15,11 +15,10 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- Improvements to Explainability:
-  - 🚀🚀 Added SHAP-based explainer `TorchExplainer` for torch forecasting models. This allows for explaining the predictions of any `TorchForecastingModel` with SHAP permutation explainer and others, in a consistent API with existing `ShapExplainer`. It supports global and local explanations and can output SHAP values for further analysis. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
-    - Check out the new [Explainability of Forecasting Models Notebook](https://unit8co.github.io/darts/examples/28-Explainability-examples.html) for usage of `ShapExplainer` and `TorchExplainer`.
-  - 🔴 Renamed `ShapExplainer` to `ShapExplainer` to better reflect its scope of explaining sklearn-based models. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
-  - Added `explain_single()` method to `ShapExplainer` and `TorchExplainer` to allow explaining a single forecast instance, in addition to the existing batched method `explain()`. This is useful for local explanations of individual predictions with reduced computational cost. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+- Improvements to `ShapExplainer` : [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+  - 🚀🚀 `ShapExplainer` can now also explain any `TorchForecastingModel` including regular torch models (`TiDEModel`, ...) as well as foundation models (`Chronos2`, ...). It supports global and local explanations and can output SHAP values for further analysis.
+  - Added method `explain_single()` to explain a single model forecast in detail, in addition to the existing batched method `explain()`. This is useful for local explanations of individual predictions with reduced computational cost.
+  - Added a new [Explainability of Forecasting Models Notebook](https://unit8co.github.io/darts/examples/28-Explainability-examples.html) for detailed usage of `ShapExplainer`.
 
 **Fixed**
 
