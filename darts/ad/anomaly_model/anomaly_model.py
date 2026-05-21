@@ -59,6 +59,7 @@ class AnomalyModel(ABC):
         )
         return self
 
+    # TODO(oswald): Discuss how we want to handle those nested lists.
     @abstractmethod
     def score(
         self,
