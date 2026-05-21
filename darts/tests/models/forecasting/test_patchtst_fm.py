@@ -15,7 +15,7 @@ if not TORCH_AVAILABLE:
 
 from darts import TimeSeries, concatenate
 from darts.datasets import ElectricityConsumptionZurichDataset
-from darts.models import TimesFM2p5Model
+from darts.models import PatchTSTFMModel
 from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
 from darts.utils.timeseries_generation import (
     gaussian_timeseries,
@@ -23,22 +23,9 @@ from darts.utils.timeseries_generation import (
     sine_timeseries,
 )
 
-# quantiles used during TimesFM 2.5 pre-training
-all_quantiles = [
-    0.1,
-    0.2,
-    0.3,
-    0.4,
-    0.5,
-    0.6,
-    0.7,
-    0.8,
-    0.9,
-]
-
 
 def load_validation_inputs():
-    """Load validation inputs for TimesFM2p5Model fidelity tests. The data imports
+    """Load validation inputs for PatchTSTFMModel fidelity tests. The data imports
     here are adapted from the `20-SKLearnModel-examples` notebook.
     """
     # convert to float32 due to MPS not supporting float64
@@ -53,20 +40,13 @@ def load_validation_inputs():
     return ts_energy_train, ts_energy_val
 
 
-class TestTimesFM2p5Model:
+class TestPatchTSTFMModel:
     # set random seed
     np.random.seed(42)
 
     # ---- Fidelity Tests ---- #
     # load validation inputs once for fidelity tests
     ts_energy_train, ts_energy_val = load_validation_inputs()
-    # maximum context (input_chunk_length + output_chunk_length + output_chunk_shift)
-    context_limit = 16384
-    # maximum prediction length w/o triggering auto-regression where the results
-    # would diverge from the original implementation due to different sampling methods
-    max_prediction_length = 128
-    # maximum prediction length with longer projection head
-    max_prediction_length_longer_head = 1024
 
     # ---- Dummy Tests ---- #
     # univariate time series
@@ -91,205 +71,181 @@ class TestTimesFM2p5Model:
         axis=1,
     )
 
+    # ---- Tiny Model ---- #
+    dummy_local_dir = (
+        Path(__file__).parent / "artefacts" / "patchtstfm" / "tiny_patchtst_fm"
+    ).absolute()
+    # tiny model: context_length=128, d_patch=16, num_quantile=9
+    # max input = context_length - output_chunk_length
+    dummy_context_length = 128
+
     @pytest.mark.slow
     @pytest.mark.parametrize("probabilistic", [True, False])
     def test_fidelity(self, probabilistic: bool):
-        """Test TimesFM2p5Model predictions against original implementation.
-        The test passes if the predictions match up to a certain numerical tolerance.
-        Original predictions were generated with the following code:
+        """Test PatchTSTFMModel predictions against reference output.
+        The reference was generated using the official granite-tsfm package.
+
+        ```bash
+        pip install granite-tsfm==0.3.6
+        ```
+
+        Reference generation code:
 
         ```python
         import numpy as np
         import pandas as pd
-        import timesfm
-        import torch
 
         from darts.datasets import ElectricityConsumptionZurichDataset
 
-        # adapted from `20-SKLearnModel-examples` notebook
+        from tsfm_public import PatchTSTFMForPrediction, TimeSeriesForecastingPipeline
+
+        timestamp_column = "Timestamp"
+        target_columns = ["Value_NE5", "Value_NE7"]
+        prediction_length = 1024
+        context_length = 4096
+
         ts_energy = ElectricityConsumptionZurichDataset().load().astype(np.float32)
 
         # extract households energy consumption
-        ts_energy = ts_energy[["Value_NE5", "Value_NE7"]]
-
-        # create train and validation splits
         validation_cutoff = pd.Timestamp("2022-01-01")
+        ts_energy = ts_energy[target_columns]
         ts_energy_train, ts_energy_val = ts_energy.split_after(validation_cutoff)
+        ts_energy_train_df = ts_energy_train[-context_length:].to_dataframe(time_as_index=False)
 
-        # set torch precision
-        torch.set_float32_matmul_precision("high")
-
-        # load TimesFM 2.5 model
-        model = timesfm.TimesFM_2p5_200M_torch.from_pretrained("google/timesfm-2.5-200m-pytorch")
-
-        # compile the model with forecast configuration
-        model.compile(
-            timesfm.ForecastConfig(
-                max_context=1024,
-                max_horizon=256,
-                normalize_inputs=False,
-                use_continuous_quantile_head=False,
-                force_flip_invariance=False,
-                infer_is_positive=False,
-                fix_quantile_crossing=False,
-            )
+        # load the PatchTSTFM pipeline
+        model = PatchTSTFMForPrediction.from_pretrained("ibm-granite/granite-timeseries-patchtst-fm-r1")
+        pipeline = TimeSeriesForecastingPipeline(
+            model=model,
+            id_columns=[],
+            timestamp_column=timestamp_column,
+            target_columns=target_columns,
+            max_context_length=context_length,
+            context_length=context_length,
+            prediction_length=prediction_length,
+            device="cpu",
+            quantile_levels=[0.1, 0.5, 0.9],
         )
-        point_forecast, quantile_forecast = model.forecast(
-            horizon=128, # use output_patch_len here to prevent auto-regressive forecasting
-            inputs=[
-                series
-                for series in ts_energy_train.values().T
-            ], # Two energy consumption series
-        )
+
+        # make predictions
+        forecast = pipeline(ts_energy_train_df)
 
         # convert to numpy array with shape (time, variables, quantiles)
-        quantile_forecast = quantile_forecast.transpose(1, 0, 2)
-        # exclude the mean forecast (first quantile)
-        quantile_forecast = quantile_forecast[:, :, 1:]
+        forecast_cols = []
+        for col in target_columns:
+            forecast_col = forecast.loc[:, forecast.columns.str.startswith(f"{col}_prediction_q")].iloc[0]
+            forecast_col = np.vstack(forecast_col.tolist()).T[:, np.newaxis, :]
+            forecast_cols.append(forecast_col)
+        forecast = np.concatenate(forecast_cols, axis=1)
 
         # save quantiles to a npz file
-        np.savez_compressed("timesfm2p5.npz", pred=quantile_forecast)
+        np.savez_compressed("patchtstfm.npz", pred=forecast)
         ```
-
-        Code accessed from https://github.com/google-research/timesfm/commit/6bd8044275f8b76cdc9554f2fecccac5f31a156c
-        on 26th December 2025.
-
         """
+        input_chunk_length = 4096
+        output_chunk_length = 1024
+        quantiles = [0.1, 0.5, 0.9]
+
         # load model
-        model = TimesFM2p5Model(
-            input_chunk_length=1024,  # maximum context length
-            output_chunk_length=self.max_prediction_length,  # maximum prediction length w/o AR
+        model = PatchTSTFMModel(
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
             likelihood=(
-                QuantileRegression(quantiles=all_quantiles) if probabilistic else None
+                QuantileRegression(quantiles=quantiles) if probabilistic else None
             ),
             **tfm_kwargs,
         )
         # fit model w/o fine-tuning
         model.fit(series=self.ts_energy_train)
 
-        # predict on the validation inputs
+        # predict on the validation inputs w/ covariates
         pred = model.predict(
-            n=self.max_prediction_length,
+            n=output_chunk_length,
             predict_likelihood_parameters=probabilistic,
         )
         assert isinstance(pred, TimeSeries)
         # reshape to (time, variables, quantiles)
         pred_np = pred.values().reshape(
-            self.max_prediction_length, self.ts_energy_train.n_components, -1
+            output_chunk_length, self.ts_energy_train.n_components, -1
         )
 
         # load the original predictions
         path = (
             Path(__file__).parent
             / "artefacts"
-            / "timesfm2p5"
-            / "timesfm2p5_prediction"
-            / "timesfm2p5.npz"
+            / "patchtstfm"
+            / "patchtstfm_prediction"
+            / "patchtstfm.npz"
         )
         original = np.load(path)["pred"]
 
         if not probabilistic:
-            original = original[:, :, [4]]  # median quantile
+            original = original[:, :, [1]]  # median quantile
 
         # compare predictions to original
         np.testing.assert_allclose(pred_np, original, rtol=1e-5, atol=1e-5)
 
     @pytest.mark.slow
-    def test_longer_projection_head(self):
-        # load model
-        model = TimesFM2p5Model(
-            input_chunk_length=1024,  # maximum context length
-            output_chunk_length=self.max_prediction_length_longer_head,  # maximum prediction length w/o AR
-            use_longer_projection_head=True,  # use longer projection head for longer predictions
-            **tfm_kwargs,
-        )
-        # fit model w/o fine-tuning
-        model.fit(series=self.ts_energy_train)
-
-        # predict on the validation inputs
-        pred = model.predict(
-            n=self.max_prediction_length_longer_head,
-        )
-        assert isinstance(pred, TimeSeries)
-        assert pred.n_components == self.ts_energy_train.n_components
-        assert pred.n_timesteps == self.max_prediction_length_longer_head
-
-    @pytest.mark.slow
-    @pytest.mark.parametrize("use_longer_projection_head", [True, False])
-    def test_creation(self, use_longer_projection_head: bool):
-        # initialize model kwargs with TFM-specific parameters
-        model_kwargs = {}
-        model_kwargs.update(tfm_kwargs)
-
-        # `use_longer_projection_head` should default to `False` if not specified,
-        if use_longer_projection_head:
-            model_kwargs["use_longer_projection_head"] = True
-            max_prediction_length = self.max_prediction_length_longer_head
-        else:
-            max_prediction_length = self.max_prediction_length
-
+    def test_creation(self):
         # can use shorter input/output chunk length than max
-        model = TimesFM2p5Model(
+        model = PatchTSTFMModel(
             input_chunk_length=11,
             output_chunk_length=13,
-            **model_kwargs,
+            local_dir=self.dummy_local_dir,
+            **tfm_kwargs,
         )
         model.fit(series=self.series)
         pred = model.predict(n=10, series=self.series)
         assert isinstance(pred, TimeSeries)
         assert len(pred) == 10
 
-        # cannot create longer input chunk length than max
+        # (icl + ocl + ocs) must be <= context length
         with pytest.raises(ValueError, match=r"`input_chunk_length` \d+ plus"):
-            TimesFM2p5Model(
-                input_chunk_length=self.context_limit,
-                output_chunk_length=11,
-                **model_kwargs,
+            PatchTSTFMModel(
+                input_chunk_length=self.dummy_context_length,
+                output_chunk_length=1,
+                local_dir=self.dummy_local_dir,
+                **tfm_kwargs,
             )
 
-        # cannot create longer output chunk length than max
-        with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
-            TimesFM2p5Model(
-                input_chunk_length=19,
-                output_chunk_length=max_prediction_length + 1,
-                **model_kwargs,
-            )
-
-        # cannot create longer output chunk length + output chunk shift than max
-        with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
-            TimesFM2p5Model(
-                input_chunk_length=23,
-                output_chunk_length=max_prediction_length - 1,
-                output_chunk_shift=3,
-                **model_kwargs,
+        # (icl + ocl + ocs) must be <= context length
+        with pytest.raises(ValueError, match=r"`input_chunk_length` \d+ plus"):
+            PatchTSTFMModel(
+                input_chunk_length=self.dummy_context_length - 1,
+                output_chunk_length=1,
+                output_chunk_shift=1,
+                local_dir=self.dummy_local_dir,
+                **tfm_kwargs,
             )
 
         # cannot use likelihood others than QuantileRegression
         with pytest.raises(ValueError, match="Only QuantileRegression likelihood is"):
-            TimesFM2p5Model(
+            PatchTSTFMModel(
                 input_chunk_length=29,
                 output_chunk_length=12,
                 likelihood=GaussianLikelihood(),
-                **model_kwargs,
+                local_dir=self.dummy_local_dir,
+                **tfm_kwargs,
             )
 
         # cannot use quantiles other than those used in pre-training
         with pytest.raises(
-            ValueError, match="must be a subset of TimesFM 2.5 quantiles"
+            ValueError, match="must be a subset of PatchTST-FM quantiles"
         ):
-            TimesFM2p5Model(
+            PatchTSTFMModel(
                 input_chunk_length=7,
                 output_chunk_length=6,
-                likelihood=QuantileRegression(quantiles=[0.23, 0.5, 0.77]),
-                **model_kwargs,
+                likelihood=QuantileRegression(quantiles=[0.231, 0.5, 0.769]),
+                local_dir=self.dummy_local_dir,
+                **tfm_kwargs,
             )
 
     @pytest.mark.slow
     def test_default(self):
         # default model is deterministic
-        model = TimesFM2p5Model(
+        model = PatchTSTFMModel(
             input_chunk_length=3,
             output_chunk_length=4,
+            local_dir=self.dummy_local_dir,
             **tfm_kwargs,
         )
 
@@ -315,10 +271,11 @@ class TestTimesFM2p5Model:
     @pytest.mark.slow
     def test_probabilistic(self):
         # probabilistic model
-        model = TimesFM2p5Model(
+        model = PatchTSTFMModel(
             input_chunk_length=5,
             output_chunk_length=6,
             likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
+            local_dir=self.dummy_local_dir,
             **tfm_kwargs,
         )
 
@@ -352,12 +309,13 @@ class TestTimesFM2p5Model:
     @pytest.mark.parametrize("probabilistic", [True, False])
     def test_multivariate(self, probabilistic: bool):
         # create model
-        model = TimesFM2p5Model(
+        model = PatchTSTFMModel(
             input_chunk_length=3,
             output_chunk_length=8,
             likelihood=(
                 QuantileRegression(quantiles=[0.1, 0.5, 0.9]) if probabilistic else None
             ),
+            local_dir=self.dummy_local_dir,
             **tfm_kwargs,
         )
         model.fit(series=self.series_multi)
@@ -370,9 +328,10 @@ class TestTimesFM2p5Model:
             assert pred.n_components == 3
 
     def test_covariates(self):
-        model = TimesFM2p5Model(
+        model = PatchTSTFMModel(
             input_chunk_length=21,
             output_chunk_length=23,
+            local_dir=self.dummy_local_dir,
             **tfm_kwargs,
         )
 
@@ -397,9 +356,10 @@ class TestTimesFM2p5Model:
     @pytest.mark.slow
     def test_multiple_series(self):
         # create model
-        model = TimesFM2p5Model(
+        model = PatchTSTFMModel(
             input_chunk_length=2,
             output_chunk_length=3,
+            local_dir=self.dummy_local_dir,
             **tfm_kwargs,
         )
         model.fit(series=[self.series_multi, self.series_multi_2])

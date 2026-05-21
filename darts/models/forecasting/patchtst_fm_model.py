@@ -1,8 +1,8 @@
 """
-TimesFM 2.5
+PatchTST-FM
 -----------
 
-TimesFM 2.5 can be used the same way as other foundation models (e.g. Chronos2), with the exception
+PatchTST-FM can be used the same way as other foundation models (e.g. Chronos2), with the exception
 that it does not support any type of covariates.
 
 For detailed examples and tutorials, see:
@@ -14,23 +14,20 @@ For detailed examples and tutorials, see:
 """
 
 import os
-from dataclasses import dataclass, field
 from typing import Any
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
-from torch import nn
 
 from darts.logging import get_logger, raise_log
 from darts.models.components.huggingface_connector import HuggingFaceConnector
-from darts.models.components.timesfm2p5_submodels import (
+from darts.models.components.patchtst_fm_submodels import (
+    _LearnedPositionalEmbedding,
+    _make_attn_mask,
     _ResidualBlock,
-    _ResidualBlockConfig,
-    _revin,
-    _StackedTransformersConfig,
-    _Transformer,
-    _TransformerConfig,
-    _update_running_stats,
+    _RevIN,
+    _TransformerBlock,
 )
 from darts.models.forecasting.foundation_model import FoundationModel
 from darts.models.forecasting.pl_forecasting_module import (
@@ -38,119 +35,173 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
-from darts.utils.likelihood_models import QuantileRegression
+from darts.utils.likelihood_models.torch import QuantileRegression
 
 logger = get_logger(__name__)
 
 
-@dataclass(frozen=True)
-class _TimesFM2p5_200M_Definition:
-    """Framework-agnostic config of TimesFM 2.5."""
+class _PatchTSTFMBackbone(nn.Module):
+    """The PatchTST-FM backbone: patch embedding, transformer encoder, quantile head.
 
-    context_limit = 16384
-    input_patch_len: int = 32
-    output_patch_len: int = 128
-    output_quantile_len: int = 1024
-    quantiles: list[float] = field(
-        default_factory=lambda: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    )
-    tokenizer: _ResidualBlockConfig = _ResidualBlockConfig(
-        input_dims=64,
-        hidden_dims=1280,
-        output_dims=1280,
-        use_bias=True,
-        activation="swish",
-    )
-    stacked_transformers: _StackedTransformersConfig = _StackedTransformersConfig(
-        num_layers=20,
-        transformer=_TransformerConfig(
-            model_dims=1280,
-            hidden_dims=1280,
-            num_heads=16,
-            attention_norm="rms",
-            feedforward_norm="rms",
-            qk_norm="rms",
-            use_bias=False,
-            use_rotary_position_embeddings=True,
-            ff_activation="swish",
-            fuse_qkv=True,
-        ),
-    )
-    output_projection_point: _ResidualBlockConfig = _ResidualBlockConfig(
-        input_dims=1280,
-        hidden_dims=1280,
-        output_dims=1280,
-        use_bias=False,
-        activation="swish",
-    )
-    output_projection_quantiles: _ResidualBlockConfig = _ResidualBlockConfig(
-        input_dims=1280,
-        hidden_dims=1280,
-        output_dims=10240,
-        use_bias=False,
-        activation="swish",
-    )
-
-
-class _TimesFM2p5Module(PLForecastingModule):
-    config = _TimesFM2p5_200M_Definition()
+    Faithful port of ``PatchTSTFMModel`` from ``ibm-granite/granite-tsfm``
+    (branch ``patchtst-fm``).  Parameter names match the original so that
+    safetensors weights can be loaded directly.
+    """
 
     def __init__(
         self,
-        use_longer_projection_head: bool = False,
+        context_length: int = 8192,
+        d_patch: int = 16,
+        d_model: int = 1024,
+        n_head: int = 16,
+        n_layer: int = 20,
+        num_quantile: int = 99,
         **kwargs,
     ):
-        """PyTorch module implementing the TimesFM 2.5 model, ported from
-        `google-research/timesfm <https://github.com/google-research/timesfm/>`_ and
-        adapted for Darts :class:`PLForecastingModule` interface.
+        super().__init__()
+        self.context_length = context_length
+        self.d_patch = d_patch
+        self.n_patch = context_length // d_patch
+        self.d_model = d_model
+        self.n_head = n_head
+        self.n_layer = n_layer
+        self.num_quantile = num_quantile
+
+        self.pos_embed = _LearnedPositionalEmbedding(
+            d_model=d_model, max_len=self.n_patch, kind="add"
+        )
+        self.blocks = nn.ModuleList([
+            _TransformerBlock(
+                d_model, n_head, mlp_ratio=4.0, norm_first=True, dropout=0.1
+            )
+            for _ in range(n_layer)
+        ])
+        self.in_layer = _ResidualBlock(d_patch * 2, d_model, d_model)
+        self.out_layer = _ResidualBlock(d_model, d_patch * (num_quantile + 1), d_model)
+        self.norm_fn = _RevIN(dim=-1, std_min=1e-5, use_sinh=True)
+
+    def forward(
+        self,
+        inputs: torch.Tensor,
+        pred_mask: torch.Tensor,
+        miss_mask: torch.Tensor,
+        pad_mask: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Run the backbone forward pass (matches ``PatchTSTFMModel.forward``).
+
+        Returns
+        -------
+        quantile_predictions
+            Raw (normalised-space) quantile predictions, shape
+            ``(B, context_length, num_quantile)``.
+        loss_mask
+            Float mask for loss computation, shape ``(B, context_length)``.
+        normed_target
+            Instance-normalised target, shape ``(B, context_length)``.
+        """
+        x = inputs
+        pad_mask = pad_mask.bool()
+        pred_mask = pred_mask.bool()
+        miss_mask = miss_mask.bool()
+
+        B, T = x.shape
+        ts_mask = pred_mask | pad_mask | miss_mask
+
+        x_target = self.norm_fn.fit_transform(x, mask=ts_mask)
+        x_input = torch.where(ts_mask, torch.zeros_like(x_target), x_target)
+
+        x_patch = x_input.reshape(B, self.n_patch, self.d_patch)
+        mask_patch = ts_mask.reshape(B, self.n_patch, self.d_patch)
+        pad_patch_mask = (
+            pad_mask.reshape(B, self.n_patch, self.d_patch).float().mean(dim=-1).gt(0.9)
+        )
+
+        q_pred = self.decode(
+            x=x_patch, mask=mask_patch.float(), t_pad_mask=pad_patch_mask
+        )
+
+        # q_pred: (B, num_quantile, n_patch, d_patch) -> (B, context_length, num_quantile)
+        q_pred = q_pred.permute(0, 2, 3, 1)
+        B, N, D, Q = q_pred.shape
+        q_pred = q_pred.reshape(B, N * D, Q)
+        return q_pred
+
+    def decode(
+        self,
+        x: torch.Tensor,
+        mask: torch.Tensor,
+        t_pad_mask: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Decode patches through transformer and quantile head."""
+        B, N, D = x.shape
+        x = self.in_layer(torch.cat([x, 1 - mask], dim=-1))
+        pad_attn_mask = _make_attn_mask(t_pad_mask, t_pad_mask).unsqueeze(1)
+
+        x = self.pos_embed(x)
+        for block in self.blocks:
+            x = block(x, pad_attn_mask)
+        x = self.out_layer(x)
+
+        q_raw = x.reshape(B, N, self.num_quantile + 1, self.d_patch).permute(0, 2, 1, 3)
+        q = q_raw[:, 0, :, :].unsqueeze(1) + torch.cumsum(
+            F.softplus(q_raw[:, 1:, :, :]) / self.num_quantile, dim=1
+        )
+        return q
+
+
+class _PatchTSTFMModule(PLForecastingModule):
+    def __init__(
+        self,
+        context_length: int = 8192,
+        d_patch: int = 16,
+        d_model: int = 1024,
+        n_head: int = 16,
+        n_layer: int = 20,
+        num_quantile: int = 99,
+        quantile_levels: list[float] | None = None,
+        **kwargs,
+    ):
+        """PyTorch module implementing PatchTST-FM, ported from
+        `ibm-granite/granite-tsfm <https://github.com/ibm-granite/granite-tsfm>`_
+        and adapted for Darts :class:`PLForecastingModule` interface.
 
         Parameters
         ----------
-        use_longer_projection_head
-            Whether to use a longer projection head, which allows for longer prediction horizons.
+        context_length
+            Maximum context length of the model (input + forecast).
+        d_patch
+            Patch size for splitting the time series.
+        d_model
+            Dimension of the transformer model.
+        n_head
+            Number of attention heads.
+        n_layer
+            Number of transformer encoder layers.
+        num_quantile
+            Number of quantiles produced by the model.
+        quantile_levels
+            List of quantile levels produced by the model.
         **kwargs
-            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
-            base class.
+            All parameters required for :class:`PLForecastingModule` base class.
         """
-        # for fine-tuning, model should be trained on pre-trained quantiles
         enable_finetuning = kwargs.pop("enable_finetuning", False)
         super().__init__(**kwargs)
 
-        # default model parameters (config.json is ignored)
-        self.input_patch_len = self.config.input_patch_len  # 32
-        self.num_layers = self.config.stacked_transformers.num_layers  # 20
-        # see below `user_quantile_indices` for explanation of +1
-        self.num_quantiles_plus_one = len(self.config.quantiles) + 1  # 10
+        self.context_length = context_length
+        self.d_patch = d_patch
+        self.d_model = d_model
+        self.num_quantile = num_quantile
+        self.quantile_levels = quantile_levels or [
+            i / (num_quantile + 1) for i in range(1, num_quantile + 1)
+        ]
 
-        # TimesFM 2.5 has two separate output projection heads:
-        # - the "point" head projects to the original output patch length of 128.
-        # - the "quantiles" head projects to the longer output quantile length of 1024.
-        self.use_longer_projection_head = use_longer_projection_head
-        if self.use_longer_projection_head:
-            self.output_patch_len = self.config.output_quantile_len  # 1024
-        else:
-            self.output_patch_len = self.config.output_patch_len  # 128
-
-        # padding length for input target series to make its length a multiple of
-        # input_patch_len (32).
-        self.pad_len = -self.input_chunk_length % self.input_patch_len
-
-        # define model submodules
-        self.tokenizer = _ResidualBlock(self.config.tokenizer)
-        self.stacked_xf = nn.ModuleList([
-            _Transformer(self.config.stacked_transformers.transformer)
-            for _ in range(self.num_layers)
-        ])
-        self.output_projection_point = _ResidualBlock(
-            self.config.output_projection_point
-        )
-        self.output_projection_quantiles = _ResidualBlock(
-            self.config.output_projection_quantiles
-        )
-
-        self.future_slice = slice(
-            self.output_chunk_shift,
-            self.output_chunk_shift + (self.output_chunk_length or 0),
+        self.backbone = _PatchTSTFMBackbone(
+            context_length=context_length,
+            d_patch=d_patch,
+            d_model=d_model,
+            n_head=n_head,
+            n_layer=n_layer,
+            num_quantile=num_quantile,
         )
 
         # gather indices of user-specified quantiles (used at prediction time)
@@ -159,185 +210,139 @@ class _TimesFM2p5Module(PLForecastingModule):
             if isinstance(self.likelihood, QuantileRegression)
             else [0.5]
         )
-        # The original quantile outputs contain mean + quantiles (0.1 to 0.9),
-        # but the mean is not being used even in deterministic setting.
-        # Instead, the median (0.5 quantile) is used as the deterministic output.
         self.user_quantile_indices = [
-            self.config.quantiles.index(q) + 1 for q in user_quantiles
+            self.quantile_levels.index(q) for q in user_quantiles
         ]
 
-        # during fine-tuning, train on ALL pre-trained quantiles to preserve the
-        # full distribution; prediction uses only user-specified quantiles
-        # (indices offset by +1 because index 0 is the unused mean output)
+        # during fine-tuning, train on ALL pre-trained quantiles
         if enable_finetuning:
-            self._finetuning_likelihood = QuantileRegression(self.config.quantiles)
-            self._finetuning_quantile_indices = list(
-                range(1, self.num_quantiles_plus_one)
-            )
+            self._finetuning_likelihood = QuantileRegression(self.quantile_levels)
+            self._finetuning_quantile_indices = list(range(num_quantile))
         else:
             self._finetuning_likelihood = None
             self._finetuning_quantile_indices = None
 
-    def _forward(
-        self,
-        inputs: torch.Tensor,
-        masks: torch.Tensor,
-    ) -> torch.Tensor:
-        """Original forward pass of the TimesFM 2.5 model.
-
-        Parameters
-        ----------
-        inputs
-            Input tensor of shape (batch_size, num_input_patches, input_patch_len).
-        masks
-            Mask tensor of shape (batch_size, num_input_patches, input_patch_len),
-            where True indicates a missing value.
-
-        Returns
-        -------
-        torch.Tensor
-            Quantile predictions of shape `(batch_size, output_patch_len * num_quantiles_plus_one)`.
-            The last dimension contains the (unused) mean followed by nine quantile predictions (0.1 to 0.9).
-        """
-        # See comments in `forward()` for explanation of dimension notations.
-        # `inputs`, `masks`: (B * C, Q, I)
-        # `tokenizer_inputs`: (B * C, Q, I * 2)
-        tokenizer_inputs = torch.cat([inputs, masks.to(inputs.dtype)], dim=-1)
-
-        # tokenization
-        # `output_embeddings`: (B * C, Q, D)
-        output_embeddings = self.tokenizer(tokenizer_inputs)
-
-        # stacked transformer layers
-        for _, layer in enumerate(self.stacked_xf):
-            # -> (B * C, Q, D)
-            output_embeddings = layer(output_embeddings, masks[..., -1])
-
-        # use only the last patch embeddings
-        # `last_embeddings`: (B * C, D)
-        last_embeddings = output_embeddings[:, -1, :]
-
-        # output projections
-        # `output_ts`: (B * C, O * W)
-        if self.use_longer_projection_head:
-            output_ts = self.output_projection_quantiles(last_embeddings)
-        else:
-            output_ts = self.output_projection_point(last_embeddings)
-
-        return output_ts
-
     @io_processor
     def forward(self, x_in: PLModuleInput, *args, **kwargs) -> Any:
-        """TimesFM 2.5 model forward pass.
+        """PatchTST-FM model forward pass adapted for Darts interface.
 
         Parameters
         ----------
         x_in
-            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
-            is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
+            Comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk
+            and `x_future` is the output/future chunk. Input dimensions are
+            `(n_samples, n_time_steps, n_variables)`.
 
         Returns
         -------
         torch.Tensor
-            the output tensor in the shape of `(n_samples, n_time_steps, n_targets, n_quantiles)` for
+            Output tensor of shape `(n_samples, n_time_steps, n_targets, n_quantiles)` for
             probabilistic forecasts, or `(n_samples, n_time_steps, n_targets, 1)` for
-            deterministic forecasts (median only).
+            deterministic forecasts.
         """
         # B: batch size
         # L: input chunk length
         # T: output chunk length
-        # I = 32: input patch length
-        # O = 128 or 1024: output patch length
-        # P: minimum left-pad length such that (P+L) is divisible by I
-        # Z = P + L: padded input chunk length
-        # Q = Z / I: patches for the input chunk
-        # W = 10: quantiles + 1 (mean + 9 quantiles)
+        # CONT = 8192: context length
+        # W = 99: quantiles
         # C: target components
-        # D: hidden dimensions
         # N: likelihood quantiles (user-specified)
 
         # `x_past`: (B, L, C)
         x_past, _, _ = x_in
+        batch_size, past_length, n_variables = x_past.shape
+        output_chunk_length = self.output_chunk_length or 0
+        output_chunk_shift = self.output_chunk_shift
+        forecast_length = output_chunk_shift + output_chunk_length
 
-        # TimesFM 2.5 is a univariate model and its inputs does not have a variable dimension,
+        # PatchTST-FM is a univariate model and its inputs does not have a variable dimension,
         # so here we reshape `x_past` to (B * C, L)
-        x_past = x_past.permute(0, 2, 1).reshape(-1, self.input_chunk_length)
+        context = x_past.permute(0, 2, 1).reshape(-1, past_length)
+        effective_batch = context.shape[0]
 
-        # We assume there are no missing values in x_past, so strip_leading_nans() and
-        # linear_interpolation() are not needed here.
+        # compute the mean for padding: (B * C, 1)
+        context_mean = context.nanmean(dim=1, keepdim=True)
+        nan_mask = torch.isnan(context)
+        context = torch.where(nan_mask, context_mean.expand_as(context), context)
 
-        # left-pad x_past with NaNs to make its length a multiple of input_patch_len (32)
-        # `x_past` -> (B * C, Z)
-        if self.pad_len > 0:
-            x_past = F.pad(x_past, (self.pad_len, 0), value=float("nan"))
-
-        # create mask for x_past
-        # `x_mask`: (B * C, Z)
-        mask = torch.isnan(x_past)
-
-        # divide x_past and mask into patches of size input_patch_len (32)
-        # -> (B * C, Q, I)
-        patched_x_past = x_past.unfold(1, self.input_patch_len, self.input_patch_len)
-        patched_mask = mask.unfold(1, self.input_patch_len, self.input_patch_len)
-        # determine batch size and number of input patches after patching
-        batch_comp_size, num_input_patches, _ = patched_x_past.shape
-
-        # running stats of mean (mu) and stddev (sigma) for each input patch
-        # `n`, `mu`, `sigma`: (B * C,)
-        n = torch.zeros(batch_comp_size, device=patched_x_past.device)
-        mu = torch.zeros(batch_comp_size, device=patched_x_past.device)
-        sigma = torch.zeros(batch_comp_size, device=patched_x_past.device)
-        patch_mu = []
-        patch_sigma = []
-        for i in range(num_input_patches):
-            (n, mu, sigma), _ = _update_running_stats(
-                n, mu, sigma, patched_x_past[:, i], patched_mask[:, i]
-            )
-            patch_mu.append(mu)
-            patch_sigma.append(sigma)
-        # `context_mu`, `context_sigma`: (B * C, Q)
-        context_mu = torch.stack(patch_mu, dim=1)
-        context_sigma = torch.stack(patch_sigma, dim=1)
-
-        # normalize inputs and apply mask
-        # `normed_inputs`: (B * C, Q, I)
-        normed_inputs = _revin(patched_x_past, context_mu, context_sigma, reverse=False)
-        normed_inputs = torch.where(patched_mask, 0.0, normed_inputs)
-
-        # forward pass
-        # `normed_outputs`: (B * C, O * W)
-        normed_outputs = self._forward(normed_inputs, patched_mask)
-
-        # inverse normalization
-        # `renormed_outputs`: (B * C, O * W)
-        renormed_outputs = _revin(normed_outputs, mu, sigma, reverse=True)
-
-        # -> (B, C, O, W)
-        renormed_outputs = torch.reshape(
-            renormed_outputs,
-            (-1, self.n_targets, self.output_patch_len, self.num_quantiles_plus_one),
+        # Build the full context window
+        left_pad = self.context_length - (past_length + forecast_length)
+        # pad context to the left with mean values: (B * C, CONT - L - T)
+        pad_values = context_mean.expand(effective_batch, left_pad)
+        # `full_input`: (B * C, CONT)
+        full_input = torch.cat(
+            [
+                pad_values,
+                context,
+                context_mean.expand(effective_batch, forecast_length),
+            ],
+            dim=1,
         )
-        # -> (B, O, C, W)
-        renormed_outputs = renormed_outputs.permute(0, 2, 1, 3)
+        # `pad_mask`: (B * C, CONT)
+        pad_mask = torch.cat(
+            [
+                torch.ones(effective_batch, left_pad, device=context.device),
+                torch.zeros(
+                    effective_batch,
+                    past_length + forecast_length,
+                    device=context.device,
+                ),
+            ],
+            dim=1,
+        )
+        # `pred_mask`: (B * C, CONT)
+        pred_mask = torch.cat(
+            [
+                torch.zeros(
+                    effective_batch, left_pad + past_length, device=context.device
+                ),
+                torch.ones(effective_batch, forecast_length, device=context.device),
+            ],
+            dim=1,
+        )
+        # `miss_mask`: (B * C, CONT)
+        miss_mask = torch.cat(
+            [
+                torch.zeros(effective_batch, left_pad, device=context.device),
+                nan_mask.float(),
+                torch.zeros(effective_batch, forecast_length, device=context.device),
+            ],
+            dim=1,
+        )
 
-        # truncate to output_chunk_length
+        # forward pass through backbone
+        # `q_pred`: (B * C, CONT, W)  -- raw normalised-space quantile predictions
+        q_pred = self.backbone(full_input, pred_mask, miss_mask, pad_mask)
+
+        # inverse normalization: (B * C, CONT, W) -> (B * C, W, CONT)
+        q_out = q_pred.permute(0, 2, 1)
+        q_out = self.backbone.norm_fn.inverse_transform(q_out)
+
+        # extract forecast region
+        # `q_forecast`: (B * C, W, T)
+        forecast_start = left_pad + past_length + output_chunk_shift
+        forecast_end = forecast_start + forecast_length
+        q_forecast = q_out[:, :, forecast_start:forecast_end]
+
+        # -> (B, C, W, T)
+        q_forecast = q_forecast.reshape(
+            batch_size, n_variables, self.num_quantile, output_chunk_length
+        )
         # -> (B, T, C, W)
-        renormed_outputs = renormed_outputs[:, self.future_slice, :, :]
+        q_forecast = q_forecast.permute(0, 3, 1, 2)
 
-        # during training (fine-tuning), output all pre-trained quantiles for loss;
+        # during training, output all pre-trained quantiles for loss
         # during prediction, output only user-specified quantiles
+        # -> (B, T, C, N)
         if self.training:
-            renormed_outputs = renormed_outputs[
-                :, :, :, self._finetuning_quantile_indices
-            ]
+            q_forecast = q_forecast[:, :, :, self._finetuning_quantile_indices]
         else:
-            renormed_outputs = renormed_outputs[:, :, :, self.user_quantile_indices]
+            q_forecast = q_forecast[:, :, :, self.user_quantile_indices]
 
-        return renormed_outputs
+        return q_forecast
 
     def _compute_loss(self, output, target, criterion, sample_weight):
         if self.training:
-            # compute loss on pre-trained quantiles
             return self._finetuning_likelihood.compute_loss(
                 output, target, sample_weight
             )
@@ -345,38 +350,39 @@ class _TimesFM2p5Module(PLForecastingModule):
             return super()._compute_loss(output, target, criterion, sample_weight)
 
 
-class TimesFM2p5Model(FoundationModel):
+class PatchTSTFMModel(FoundationModel):
     def __init__(
         self,
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        use_longer_projection_head: bool = False,
         likelihood: QuantileRegression | None = None,
-        hub_model_name: str = "google/timesfm-2.5-200m-pytorch",
-        hub_model_revision: str | None = "1d952420fba87f3c6dee4f240de0f1a0fbc790e3",
+        hub_model_name: str = "ibm-granite/granite-timeseries-patchtst-fm-r1",
+        hub_model_revision: str | None = None,
         local_dir: str | os.PathLike | None = None,
         **kwargs,
     ):
-        """TimesFM 2.5 Model for zero-shot forecasting.
+        """PatchTST-FM Model for zero-shot forecasting.
 
-        This is an implementation of Google's TimesFM 2.5 model, ported from
-        `google-research/timesfm <https://github.com/google-research/timesfm>`_ with adaptations to use the Darts API.
-        It is an updated version of the original TimesFM model [1]_, [2]_, with a larger context length (16,384 vs 512)
-        and better predictive accuracy.
+        This is an implementation of IBM's PatchTST-FM model [1]_, ported from
+        `ibm-granite/granite-tsfm <https://github.com/ibm-granite/granite-tsfm>`_
+        with adaptations to use the Darts API. PatchTST-FM is a ~260M-parameter, pretrained time series foundation
+        model for probabilistic forecasting. It uses a patch-based transformer encoder architecture with a quantile
+        head producing 99 quantiles (0.01 to 0.99).
 
         This model supports either univariate or multivariate time series, but does not support covariates.
         For multivariate time series, the model is applied independently to each component.
 
         Using this model will automatically download and cache the pre-trained model from HuggingFace Hub
-        (`google/timesfm-2.5-200m-pytorch <https://huggingface.co/google/timesfm-2.5-200m-pytorch/tree/main>`_).
+        (`ibm-granite/granite-timeseries-patchtst-fm-r1
+        <https://huggingface.co/ibm-granite/granite-timeseries-patchtst-fm-r1>`_).
         Alternatively, you can specify a local directory containing the model config and weights using the ``local_dir``
         parameter.
 
         By default, this model is deterministic and outputs only the median (0.5 quantile). To enable probabilistic
         forecasts, pass a :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the
-        ``likelihood`` parameter. The quantiles used must be a subset of those used during TimesFM 2.5 pre-training, see
-        below for details. It is recommended to call :func:`predict()` with ``predict_likelihood_parameters=True``
+        ``likelihood`` parameter. The quantiles used must be a subset of those used during PatchTST-FM pre-training,
+        see below for details. It is recommended to call :func:`predict()` with ``predict_likelihood_parameters=True``
         or ``num_samples >> 1`` to get meaningful results.
 
         .. tip::
@@ -384,27 +390,16 @@ class TimesFM2p5Model(FoundationModel):
             Read more in the parameter description below and in the `Fine-Tuning Examples
             <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__.
         .. note::
-            TimesFM 2.5 is licensed under the `Apache-2.0 License <https://github.com/google-research/timesfm/blob/master/LICENSE>`_,
-            Copyright 2025 Google LLC. By using this model, you agree to the terms and conditions of the license.
-        .. note::
-            TimesFM 2.5 does not support covariates natively. The source implementation uses `Xreg` to fit a ridge
-            regression between covariates and the target series (or forecast residuals) as a pre/post-processing step.
-            You can implement a similar approach externally in Darts.
-            See `Issue #2976 <https://github.com/unit8co/darts/issues/2976#issuecomment-3691415141>`_ for details.
-        .. note::
-            Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from
-            those obtained using the original implementation when prediction horizon `n` is larger than 128.
-        .. note::
-            Due to differences in auto-regressive forecasting implementation, zero-shot forecasts would also differ when
-            ``use_longer_projection_head`` is `True`.
+            PatchTST-FM weights from ``ibm-granite/granite-timeseries-patchtst-fm-r1`` are licensed under
+            the `Apache-2.0 License <https://github.com/ibm-granite/granite-tsfm/blob/main/LICENSE>`_,
+            copyright IBM. By using this model, you agree to the terms and conditions of the license.
 
         Parameters
         ----------
         input_chunk_length
             Number of time steps in the past to take as a model input (per chunk). Applies to the target
             series, and past and/or future covariates (if the model supports it).
-            For TimesFM 2.5, `input_chunk_length + output_chunk_length + output_chunk_shift` must be less than or equal
-            to 16,384.
+            For PatchTST-FM, `input_chunk_length + output_chunk_length + output_chunk_shift` must be `<=8192`.
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
@@ -413,30 +408,29 @@ class TimesFM2p5Model(FoundationModel):
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
-            For TimesFM 2.5, `output_chunk_length + output_chunk_shift` must be less than or equal to 128.
+            For PatchTST-FM, `input_chunk_length + output_chunk_length + output_chunk_shift` must be `<=8192`.
         output_chunk_shift
             Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
             input chunk end). This will create a gap between the input and output. If the model supports
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
             cannot generate autoregressive predictions (`n > output_chunk_length`).
-        use_longer_projection_head
-            Whether to use the longer output projection head, which allows for a longer horizon without auto-regression,
-            i.e., `output_chunk_length + output_chunk_shift <= 1024`. Default: ``False``.
+            For PatchTST-FM, `input_chunk_length + output_chunk_length + output_chunk_shift` must be `<=8192`.
         likelihood
             The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of
             :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. If using ``QuantileRegression``,
-            the quantiles must be a subset of those used during TimesFM 2.5 pre-training:
-            [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].
+            the quantiles must be a subset of those used during PatchTST-FM pre-training:
+            [0.01, 0.02, ..., 0.99].
             Default: ``None``, which will make the model deterministic (median quantile only).
             When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to
             preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood`` parameter
             only affects prediction output.
         hub_model_name
-            The model ID on HuggingFace Hub. Default: ``"google/timesfm-2.5-200m-pytorch"``.
+            The model ID on HuggingFace Hub.
+            Default: ``"ibm-granite/granite-timeseries-patchtst-fm-r1"`` (Apache-2.0).
         hub_model_revision
             The model version to use. This can be a branch name, tag name, or commit hash. Default is
-            ``1d952420fba87f3c6dee4f240de0f1a0fbc790e3``, which will use the October 2, 2025 release of TimesFM 2.5.
+            ``None``, which will use the default branch from ``hub_model_name``.
         local_dir
             Optional local directory to load the pre-downloaded model. If specified and the directory is empty, the
             model will be downloaded from HuggingFace Hub and saved to this directory. Default is ``None``, which will
@@ -581,19 +575,18 @@ class TimesFM2p5Model(FoundationModel):
 
         References
         ----------
-        .. [1] A. Das, W. Kong, R. Sen, Y. Zhou. "A decoder-only foundation model for time-series forecasting", 2025.
-                arXiv https://arxiv.org/abs/2310.10688.
-        .. [2] "A decoder-only foundation model for time-series forecasting", 2024. Google Research.
-                https://research.google/blog/a-decoder-only-foundation-model-for-time-series-forecasting/
+        .. [1] Y. Wen, W. M. Gifford, C. Reddy, L. M. Nguyen, J. Kalagnanam, and A. A. Julius,
+               "Revisiting the Generic Transformer: Deconstructing a Strong Baseline for Time Series
+               Foundation Models," arXiv:2602.06909, 2026.
 
         Examples
         --------
         Point forecasting:
 
-        >>> from darts.models import TimesFM2p5Model
+        >>> from darts.models import PatchTSTFMModel
         >>> from darts.datasets import AirPassengersDataset
         >>> series = AirPassengersDataset().load().astype("float32")
-        >>> model = TimesFM2p5Model(
+        >>> model = PatchTSTFMModel(
         ...     input_chunk_length=12,
         ...     output_chunk_length=6,
         ... )
@@ -602,17 +595,17 @@ class TimesFM2p5Model(FoundationModel):
         >>> pred
                     #Passengers
         Month
-        1961-01-01   413.913574
-        1961-02-01   421.871552
-        1961-03-01   432.572906
-        1961-04-01   454.879333
-        1961-05-01   468.185883
-        1961-06-01   465.574554
+        1961-01-01   507.465973
+        1961-02-01   517.345459
+        1961-03-01   519.231140
+        1961-04-01   506.727661
+        1961-05-01   504.759125
+        1961-06-01   496.883820
 
         Probabilistic forecasting:
 
         >>> from darts.utils.likelihood_models import QuantileRegression
-        >>> model = TimesFM2p5Model(
+        >>> model = PatchTSTFMModel(
         ...     input_chunk_length=12,
         ...     output_chunk_length=6,
         ...     likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
@@ -622,12 +615,12 @@ class TimesFM2p5Model(FoundationModel):
         >>> pred
                     #Passengers_q0.100  #Passengers_q0.500  #Passengers_q0.900
         Month
-        1961-01-01          368.495789          413.913574          479.579163
-        1961-02-01          375.655243          421.871552          482.435364
-        1961-03-01          380.316833          432.572906          505.683807
-        1961-04-01          392.675629          454.879333          521.257202
-        1961-05-01          405.622437          468.185883          541.932739
-        1961-06-01          394.438660          465.574554          539.628723
+        1961-01-01          395.053131          507.465973          602.820312
+        1961-02-01          402.696472          517.345459          612.596741
+        1961-03-01          394.399231          519.231140          625.937439
+        1961-04-01          381.966797          506.727661          619.151367
+        1961-05-01          388.510803          504.759125          635.277893
+        1961-06-01          375.241638          496.883820          635.320679
         """
         hf_connector = HuggingFaceConnector(
             model_name=hub_model_name,
@@ -635,12 +628,10 @@ class TimesFM2p5Model(FoundationModel):
             local_dir=local_dir,
         )
 
-        # As per the original implementation, the model config is ignored and default
-        # parameters are used instead.
-        config = _TimesFM2p5_200M_Definition()
+        config = hf_connector.load_config()
 
-        # validate `input_chunk_length` against model's maximum context_length
-        context_length = config.context_limit
+        # validate input_chunk_length + output_chunk_length + output_chunk_shift <= context_length
+        context_length = config["context_length"]
         if (
             input_chunk_length + output_chunk_length + output_chunk_shift
             > context_length
@@ -654,29 +645,7 @@ class TimesFM2p5Model(FoundationModel):
                 logger,
             )
 
-        # validate `output_chunk_length` and `output_chunk_shift` against model's output limits
-        self.use_longer_projection_head = use_longer_projection_head
-        prediction_length = (
-            config.output_quantile_len
-            if self.use_longer_projection_head
-            else config.output_patch_len
-        )
-        if output_chunk_length + output_chunk_shift > prediction_length:
-            extra_hint = (
-                f"Set `use_longer_projection_head=True` to increase it to {config.output_quantile_len}"
-                if not self.use_longer_projection_head
-                else ""
-            )
-            raise_log(
-                ValueError(
-                    f"`output_chunk_length` {output_chunk_length} plus `output_chunk_shift` {output_chunk_shift} "
-                    f"cannot be greater than model's maximum prediction length {prediction_length}. "
-                    + extra_hint
-                ),
-                logger,
-            )
-
-        quantiles = config.quantiles
+        quantile_levels = config["quantile_levels"]
         # by default (`likelihood=None`), model is deterministic
         # otherwise, only QuantileRegression likelihood is supported and quantiles must be
         # a subset of the pre-trained quantiles
@@ -684,17 +653,17 @@ class TimesFM2p5Model(FoundationModel):
             if not isinstance(likelihood, QuantileRegression):
                 raise_log(
                     ValueError(
-                        f"Only QuantileRegression likelihood is supported for TimesFM 2.5 in Darts. "
+                        f"Only QuantileRegression likelihood is supported for PatchTST-FM in Darts. "
                         f"Got {type(likelihood)}."
                     ),
                     logger,
                 )
             user_quantiles: list[float] = likelihood.quantiles
-            if not set(user_quantiles).issubset(quantiles):
+            if not set(user_quantiles).issubset(quantile_levels):
                 raise_log(
                     ValueError(
                         f"The quantiles for QuantileRegression likelihood {user_quantiles} "
-                        f"must be a subset of TimesFM 2.5 quantiles {quantiles}."
+                        f"must be a subset of PatchTST-FM quantiles {quantile_levels}."
                     ),
                     logger,
                 )
@@ -705,11 +674,8 @@ class TimesFM2p5Model(FoundationModel):
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}
         return self.hf_connector.load_model(
-            module_class=_TimesFM2p5Module,
+            module_class=_PatchTSTFMModule,
             pl_module_params=pl_module_params,
-            additional_params={
-                "use_longer_projection_head": self.use_longer_projection_head,
-            },
         )
 
     @property
