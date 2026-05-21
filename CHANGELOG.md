@@ -18,6 +18,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improvements to `ShapExplainer` : [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
   - 🚀🚀 `ShapExplainer` can now also explain any `TorchForecastingModel` including regular torch models (`TiDEModel`, ...) as well as foundation models (`Chronos2`, ...). It supports global and local explanations and can output SHAP values for further analysis.
   - Added method `explain_single()` to explain a single model forecast in detail, in addition to the existing batched method `explain()`. This is useful for local explanations of individual predictions with reduced computational cost.
+  - Method `summary_plot()` can now also be computed on any optional foreground series using parameters `foreground_series`, `foreground_past_covariates`, `foreground_future_covariates`.
+  - 🔴 Renamed method `force_plot_from_ts()` to `force_plot()` to simplify.
   - Added a new [Explainability of Forecasting Models Notebook](https://unit8co.github.io/darts/examples/28-Explainability-examples.html) for detailed usage of `ShapExplainer`.
 
 **Fixed**

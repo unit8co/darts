@@ -6,13 +6,10 @@ Contains the explainability results obtained from :func:`_ForecastingModelExplai
 <darts.explainability.explainability._ForecastingModelExplainer.explain>`.
 
 - :class:`ShapExplainabilityResult <ShapExplainabilityResult>` for :class:`ShapExplainer
-  <darts.explainability.shap_explainer.ShapExplainer>` or :class:`TorchExplainer
-  <darts.explainability.torch_explainer.TorchExplainer>`. Contains general forecasting model explainability result
+  <darts.explainability.shap_explainer.ShapExplainer>`. Contains general forecasting model explainability result
   based on SHAP values.
 - :class:`ShapSingleExplainabilityResult <ShapSingleExplainabilityResult>` for :class:`ShapExplainer
-  <darts.explainability.shap_explainer.ShapExplainer>` or :class:`TorchExplainer
-  <darts.explainability.torch_explainer.TorchExplainer>`. Contains the explainability result for
-  a single model forecast.
+  <darts.explainability.shap_explainer.ShapExplainer>`. Contains the explainability result for a single model forecast.
 - :class:`TFTExplainabilityResult <TFTExplainabilityResult>` for :class:`TFTExplainer
   <darts.explainability.tft_explainer.TFTExplainer>`.
 - :class:`ComponentBasedExplainabilityResult <ComponentBasedExplainabilityResult>` for generic component-based
@@ -50,11 +47,16 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
     <darts.explainability.explainability._ForecastingModelExplainer>` with convenient access to component-based
     results.
 
+    Parameters
+    ----------
+    explained_components
+        The component-based explainability results.
+
     Examples
     --------
     >>> explainer = SomeComponentBasedExplainer(model)
-    >>> explain_results = explainer.explain()
-    >>> output = explain_results.get_explanation(component="some_component")
+    >>> result = explainer.explain()
+    >>> explanation = result.get_explanation(component="some_component")
     """
 
     def __init__(
@@ -100,7 +102,8 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
         attr
             An explainability result attribute from which to extract the component.
         component
-            The component for which to return the content of the attribute.
+            Optionally, the target series component for which to return the explanation. Must be supplied for
+            multivariate forecasting models.
         """
         component = self._validate_input_for_querying_explainability_result(component)
         if isinstance(attr, list):
@@ -117,7 +120,8 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
         Parameters
         ----------
         component
-            The component for which to return the explanation.
+            Optionally, the target series component for which to return the explanation. Must be supplied for
+            multivariate forecasting models.
         """
         # validate component argument
         if component is None and len(self.available_components) > 1:
@@ -150,16 +154,14 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
     The result is a multivariate ``TimeSeries`` instance containing the "explanation" for the
     ``(horizon, target_component)`` forecast at any timestamp forecastable in the foreground series.
 
-
-    The components of the ``TimeSeries`` correspond to the input features used by the model to produce
-    the forecasts. They are named according to the convention:
-    ``"{name}_{type_of_cov}_lag{idx}"``, where:
+    The components of the ``TimeSeries`` correspond to the input features used by the model to produce the
+    forecasts. They are named according to the convention: ``"{name}_{type_of_cov}_lag{idx}"``, where:
 
     - ``{name}`` is the component name from the original foreground series (target, past covariates, or future
       covariates).
     - ``{type_of_cov}`` is the covariates type. It can take 3 different values:
       ``"target"``, ``"pastcov"``,  ``"futcov"``.
-    - ``{idx}`` is the lag index.
+    - ``{idx}`` is the lag index, where ``0`` represents the position of the first predicted step.
 
     Static covariates are named according to the convention: ``"{name}_statcov_target_{comp}"``, where:
 
@@ -171,41 +173,47 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
     --------
     Say we have a ``SKLearnModel`` instance with:
 
-        - 2 target components named ``"T_0"`` and ``"T_1"``,
-        - 3 past covariates with default component names ``"P_0"``, ``"P_1"``, and ``"P_2"``,
-        - 1 future covariate with default component name ``"F_0"``,
-        - ``output_chunk_length=2``,
-        - ``lags = 3``, ``lags_past_covariates=[-1, -3]``, and ``lags_future_covariates = [0]``.
+        - 1 target component named ``"Y"``,
+        - 1 future covariate named ``"month"``,
+        - ``lags = 2``, and ``lags_future_covariates = [-1, 0]``.
 
-    We provide ``foreground_series``, ``foreground_past_covariates``, ``foreground_future_covariates`` (extending
-    far enough into the future) each of length 5.
+    Let's explain the background series that the model was trained on:
 
-    >>> explainer = SomeHorizonBasedExplainer(model)
-    >>> explain_results = explainer.explain(
-    >>>     foreground_series=foreground_series,
-    >>>     foreground_past_covariates=foreground_past_covariates,
-    >>>     foreground_future_covariates=foreground_future_covariates
-    >>> )
-    >>> output = explain_results.get_explanation(horizon=1, target="T_1")
+    >>> from darts.datasets import AusBeerDataset
+    >>> from darts.explainability import ShapExplainer
+    >>> from darts.models import LinearRegressionModel
+    >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries as dta
+    >>>
+    >>> # load a target series and create future covariates holding the calendar month values
+    >>> series = AusBeerDataset().load()
+    >>> fc = dta(series, attribute="month", add_length=12)
+    >>>
+    >>> # create and fit a model
+    >>> model = LinearRegressionModel(lags=2, lags_future_covariates=[-1, 0])
+    >>> model.fit(series, future_covariates=fc)
+    >>>
+    >>> # create an explainer; requires background series if the model was trained on multiple series
+    >>> explainer = ShapExplainer(model)
+    >>> # explain the background series (or foreground if passed to `explain()`)
+    >>> result = explainer.explain()
+    >>> result.get_explanation(horizon=1)
+                Y_target_lag-2  Y_target_lag-1  month_futcov_lag-1  month_futcov_lag0
+    1956-07-01      -56.332566     -106.927156          -24.253184          33.064478
+    1956-10-01      -88.545937      -99.569541           13.642416          84.727725
+    1957-01-01      -82.194005      -57.000488           51.538016         -70.262016
+    1957-04-01      -45.443539      -81.175506          -62.148784         -18.598769
+    1957-07-01      -66.314174      -99.043998          -24.253184          33.064478
+    ...                    ...             ...                 ...                ...
+    2007-10-01      -11.415330      -11.803715           13.642416          84.727725
+    2008-01-01       -6.424526       29.714250           51.538016         -70.262016
+    2008-04-01       29.418521        1.860425          -62.148784         -18.598769
+    2008-07-01        5.371920      -13.905891          -24.253184          33.064478
+    2008-10-01       -8.239364       -3.395013           13.642416          84.727725
 
-    Calling the ``get_explanation()`` method returns a multivariate TimeSeries containing the *explanations* of
-    the corresponding `_ForecastingModelExplainer`, with the following component names:
+    shape: (210, 4, 1), freq: QS-OCT, size: 6.56 KB
 
-        - T_0_target_lag-1
-        - T_0_target_lag-2
-        - T_0_target_lag-3
-        - T_1_target_lag-1
-        - T_1_target_lag-2
-        - T_1_target_lag-3
-        - P_0_pastcov_lag-1
-        - P_0_pastcov_lag-3
-        - P_1_pastcov_lag-1
-        - P_1_pastcov_lag-3
-        - P_2_pastcov_lag-1
-        - P_2_pastcov_lag-3
-        - F_0_futcov_lag0
-
-    This series has length 3, as the model can explain 5-3+1 forecasts (timestamp indices 4, 5, and 6)
+    The explanation has length 210, containing the feature SHAP values for all possible forecast start points
+    over the background series.
     """
 
     def __init__(
@@ -217,7 +225,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
         if isinstance(self.explained_forecasts, list):
             if not isinstance(self.explained_forecasts[0], dict):
                 raise_log(
-                    ValueError("The explained_forecasts list must consist of dicts."),
+                    ValueError("The `explained_forecasts` list must consist of dicts."),
                     logger,
                 )
             if not all(
@@ -225,7 +233,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
             ):
                 raise_log(
                     ValueError(
-                        "The explained_forecasts dict list must have all integer keys."
+                        "The `explained_forecasts` dict list must have all integer keys."
                     ),
                     logger,
                 )
@@ -240,14 +248,14 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
             else:
                 raise_log(
                     ValueError(
-                        "The explained_forecasts dictionary must have all integer keys."
+                        "The `explained_forecasts` dictionary must have all integer keys."
                     ),
                     logger,
                 )
         else:
             raise_log(
                 ValueError(
-                    "The explained_forecasts must be a dictionary or a list of dictionaries."
+                    "The `explained_forecasts` must be a dictionary or a list of dictionaries."
                 ),
                 logger,
             )
@@ -288,7 +296,8 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
         horizon
             The horizon for which to return the content of the attribute.
         component
-            The component for which to return the content of the attribute.
+            Optionally, the target series component for which to return the explanation. Must be supplied for
+            multivariate forecasting models.
         """
         component = self._validate_input_for_querying_explainability_result(
             horizon, component
@@ -317,7 +326,8 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
         horizon
             The horizon for which to return the explanation.
         component
-            The component for which to return the explanation.
+            Optionally, the target series component for which to return the explanation. Must be supplied for
+            multivariate forecasting models.
         """
         # validate component argument
         if component is None and len(self.available_components) > 1:
@@ -351,27 +361,46 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
 
 class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
     """
-    Stores the explainability results of :class:`ShapExplainer
-    <darts.explainability.shap_explainer.ShapExplainer>` or :class:`TorchExplainer
-    <darts.explainability.torch_explainer.TorchExplainer>` with convenient access to the results.
+    Stores the explainability results of a :class:`ShapExplainer <darts.explainability.shap_explainer.ShapExplainer>`
+    with convenient access to the results.
 
     It extends the :class:`HorizonBasedExplainabilityResult
     <HorizonBasedExplainabilityResult>` and carries additional information specific to the SHAP explainers.
 
     - :func:`get_explanation() <get_explanation>`: SHAP values for a given horizon and component in
       multivariate ``TimeSeries`` format.
-    - :func:`get_feature_values() <get_feature_values>`: input feature values for a given horizon and
-      component in multivariate ``TimeSeries`` format.
+    - :func:`get_feature_values() <get_feature_values>`: input feature values for a given horizon and component in
+      multivariate ``TimeSeries`` format.
     - :func:`get_shap_explanation_object() <get_shap_explanation_object>`: ``shap.Explanation`` object for a given
       horizon and component.
 
     Examples
     --------
-    >>> explainer = ShapExplainer(model)  # requires `background` if model was trained on multiple series
-    >>> explain_results = explainer.explain()
-    >>> explained_fc = explain_results.get_explanation(horizon=1)  # requires `component` if target is multivariate
-    >>> feature_values = explain_results.get_feature_values(horizon=1)
-    >>> shap_objects = explain_results.get_shap_explanation_objects(horizon=1)
+    >>> from darts.datasets import AusBeerDataset
+    >>> from darts.explainability import ShapExplainer
+    >>> from darts.models import LinearRegressionModel
+    >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries as dta
+    >>>
+    >>> # load a target series and create future covariates holding the calendar month values
+    >>> series = AusBeerDataset().load()
+    >>> fc = dta(series, attribute="month", add_length=12)
+    >>>
+    >>> # create and fit a model
+    >>> model = LinearRegressionModel(lags=2, lags_future_covariates=[-1, 0])
+    >>> model.fit(series, future_covariates=fc)
+    >>>
+    >>> # create an explainer; requires background series if the model was trained on multiple series
+    >>> explainer = ShapExplainer(model)
+    >>> # explain the background series (or foreground if passed to `explain()`)
+    >>> result = explainer.explain()
+    >>>
+    >>> # get explanations for a specific horizon (and optional component for multivariate models)
+    >>> # the feature SHAP values for all possible forecast start points
+    >>> explanation = result.get_explanation(horizon=1)
+    >>> # the feature values used as model inputs for all possible forecast start points
+    >>> feature_values = result.get_feature_values(horizon=1)
+    >>> # the raw shap objects for further processing
+    >>> shap_object = result.get_shap_explanation_object(horizon=1)
     """
 
     def __init__(
@@ -399,7 +428,8 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
         horizon
             The horizon for which to return the feature values.
         component
-            The component for which to return the feature values. Must be supplied for multivariate forecasting models.
+            Optionally, the target series component for which to return the feature values. Must be supplied for
+            multivariate forecasting models.
         """
         return self._query_explainability_result(
             self.feature_values, horizon, component
@@ -416,8 +446,8 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
         horizon
             The horizon for which to return the ``shap.Explanation`` object.
         component
-            The component for which to return the ``shap.Explanation`` object. Must be supplied for multivariate
-            forecasting models.
+            Optionally, the target series component for which to return the ``shap.Explanation object``. Must be
+            supplied for multivariate forecasting models.
         """
         return self._query_explainability_result(
             self.shap_explanation_object, horizon, component
@@ -425,36 +455,54 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
 
 
 class ShapSingleExplainabilityResult(ComponentBasedExplainabilityResult):
+    """
+    Stores the explainability results of a :class:`ShapExplainer <darts.explainability.shap_explainer.ShapExplainer>`
+    for a single model forecast with convenient access to the results.
+
+    It extends the :class:`ComponentBasedExplainabilityResult <ComponentBasedExplainabilityResult>` and
+    carries additional information specific to the SHAP explainers.
+
+    - :func:`get_explanation() <get_explanation>`: SHAP values for a given component in multivariate ``TimeSeries``
+      format.
+    - :func:`get_feature_values() <get_feature_values>`: input feature values for a given component in
+      single-timestamp multivariate ``TimeSeries`` format.
+    - :func:`get_shap_explanation_object() <get_shap_explanation_object>`: ``shap.Explanation`` object for a given
+      component.
+
+    Examples
+    --------
+    >>> from darts.datasets import AusBeerDataset
+    >>> from darts.explainability import ShapExplainer
+    >>> from darts.models import LinearRegressionModel
+    >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries as dta
+    >>>
+    >>> # load a target series and create future covariates holding the calendar month values
+    >>> series = AusBeerDataset().load()
+    >>> fc = dta(series, attribute="month", add_length=12)
+    >>>
+    >>> # create and fit a model
+    >>> model = LinearRegressionModel(lags=2, lags_future_covariates=[-1, 0])
+    >>> model.fit(series, future_covariates=fc)
+    >>>
+    >>> # create an explainer; requires background series if the model was trained on multiple series
+    >>> explainer = ShapExplainer(model)
+    >>> # explain the background forecast (or foreground forecast if passed to `explain_single()`)
+    >>> result = explainer.explain_single()
+    >>> # get explanations for that forecast (and optional component for multivariate models)
+    >>> # the feature SHAP values for that forecast
+    >>> explanation = result.get_explanation()
+    >>> # the feature values used as model inputs for that forecast
+    >>> feature_values = result.get_feature_values()
+    >>> # the raw shap objects for further processing
+    >>> shap_object = result.get_shap_explanation_object()
+    """
+
     def __init__(
         self,
         explained_components: dict[str, TimeSeries],
         feature_values: dict[str, TimeSeries],
         shap_explanation_object: dict[str, shap.Explanation],
     ):
-        """
-        Stores the explainability results of :class:`ShapExplainer
-        <darts.explainability.shap_explainer.ShapExplainer>` or :class:`TorchExplainer
-        <darts.explainability.torch_explainer.TorchExplainer>` for a single model forecast with convenient access to
-        the results.
-
-        It extends the :class:`ComponentBasedExplainabilityResult <ComponentBasedExplainabilityResult>` and
-        carries additional information specific to the SHAP explainers.
-
-        - :func:`get_explanation() <get_explanation>`: SHAP values for a given component in multivariate ``TimeSeries``
-          format.
-        - :func:`get_feature_values() <get_feature_values>`: input feature values for a given component in
-          single-timestamp multivariate ``TimeSeries`` format.
-        - :func:`get_shap_explanation_object() <get_shap_explanation_object>`: ``shap.Explanation`` object for a given
-          component.
-
-        Examples
-        --------
-        >>> explainer = ShapExplainer(model)  # requires `background` if model was trained on multiple series
-        >>> explain_results = explainer.explain_single()
-        >>> explained_fc = explain_results.get_explanation() # requires `component` if target is multivariate
-        >>> feature_values = explain_results.get_feature_values()
-        >>> shap_objects = explain_results.get_shap_explanation_objects()
-        """
         super().__init__(explained_components)
         self.feature_values = feature_values
         self.shap_explanation_object = shap_explanation_object
@@ -526,13 +574,34 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
 
     Examples
     --------
-    >>> explainer = TFTExplainer(model)  # requires `background` if model was trained on multiple series
-    >>> explain_results = explainer.explain()
-    >>> attention = explain_results.get_attention()
-    >>> importances = explain_results.get_feature_importances()
-    >>> encoder_importance = explain_results.get_encoder_importance()
-    >>> decoder_importance = explain_results.get_decoder_importance()
-    >>> static_covariates_importance = explain_results.get_static_covariates_importance()
+    >>> from darts.datasets import AusBeerDataset
+    >>> from darts.explainability import TFTExplainer
+    >>> from darts.models import TFTModel
+    >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries as dta
+    >>>
+    >>> # load a target series and create future covariates holding the calendar month values
+    >>> series = AusBeerDataset().load().astype("float32")
+    >>> fc = dta(series, attribute="month", add_length=12, dtype=series.dtype)
+    >>>
+    >>> # create and fit a model
+    >>> model = TFTModel(
+    >>>     input_chunk_length=12,
+    >>>     output_chunk_length=12,
+    >>>     use_reversible_instance_norm=True
+    >>> )
+    >>> model.fit(series, future_covariates=fc)
+    >>>
+    >>> # create an explainer
+    >>> explainer = TFTExplainer(model)
+    >>> # explain a single forecast:
+    >>> # - by default, if foreground is not provided, it is the forecast of the background
+    >>> # - otherwise, it is the forecast of the foreground
+    >>> result = explainer.explain()
+    >>> attention = result.get_attention()
+    >>> feature_importances = result.get_feature_importances()
+    >>> encoder_importance = result.get_encoder_importance()
+    >>> decoder_importance = result.get_decoder_importance()
+    >>> static_cov_importance = result.get_static_covariates_importance()
     """
 
     def __init__(

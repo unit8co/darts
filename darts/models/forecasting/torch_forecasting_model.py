@@ -5,7 +5,7 @@ Base Torch Forecasting Model
 This file contains several abstract classes:
 
     * TorchForecastingModel is the super-class of all torch (deep learning) darts forecasting models.
-   * PastCovariatesTorchModel(TorchForecastingModel) for torch models consuming only past-observed covariates.
+    * PastCovariatesTorchModel(TorchForecastingModel) for torch models consuming only past-observed covariates.
     * FutureCovariatesTorchModel(TorchForecastingModel) for torch models consuming only future values of
       future covariates.
     * DualCovariatesTorchModel(TorchForecastingModel) for torch models consuming past and future values of some single
