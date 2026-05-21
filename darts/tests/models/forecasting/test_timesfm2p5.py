@@ -195,12 +195,16 @@ class TestTimesFM2p5Model:
         np.testing.assert_allclose(pred_np, original, rtol=1e-5, atol=1e-5)
 
     @pytest.mark.slow
-    def test_longer_projection_head(self):
+    @pytest.mark.parametrize("probabilistic", [True, False])
+    def test_longer_projection_head(self, probabilistic: bool):
         # load model
         model = TimesFM2p5Model(
             input_chunk_length=1024,  # maximum context length
             output_chunk_length=self.max_prediction_length_longer_head,  # maximum prediction length w/o AR
             use_longer_projection_head=True,  # use longer projection head for longer predictions
+            likelihood=(
+                QuantileRegression(quantiles=all_quantiles) if probabilistic else None
+            ),
             **tfm_kwargs,
         )
         # fit model w/o fine-tuning
@@ -209,10 +213,19 @@ class TestTimesFM2p5Model:
         # predict on the validation inputs
         pred = model.predict(
             n=self.max_prediction_length_longer_head,
+            predict_likelihood_parameters=probabilistic,
         )
         assert isinstance(pred, TimeSeries)
-        assert pred.n_components == self.ts_energy_train.n_components
         assert pred.n_timesteps == self.max_prediction_length_longer_head
+
+        if probabilistic:
+            # check that we get the correct number of quantiles
+            assert pred.n_components == (
+                self.ts_energy_train.n_components * len(all_quantiles)
+            )
+        else:
+            # check that we get the correct number of variables
+            assert pred.n_components == self.ts_energy_train.n_components
 
     @pytest.mark.slow
     @pytest.mark.parametrize("use_longer_projection_head", [True, False])
