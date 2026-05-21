@@ -399,7 +399,7 @@ class PatchTSTFMModel(FoundationModel):
         input_chunk_length
             Number of time steps in the past to take as a model input (per chunk). Applies to the target
             series, and past and/or future covariates (if the model supports it).
-            For PatchTST-FM, `input_chunk_length` must be `<=8192`.
+            For PatchTST-FM, `input_chunk_length + output_chunk_length + output_chunk_shift` must be `<=8192`.
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
@@ -408,12 +408,14 @@ class PatchTSTFMModel(FoundationModel):
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
+            For PatchTST-FM, `input_chunk_length + output_chunk_length + output_chunk_shift` must be `<=8192`.
         output_chunk_shift
             Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
             input chunk end). This will create a gap between the input and output. If the model supports
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
             cannot generate autoregressive predictions (`n > output_chunk_length`).
+            For PatchTST-FM, `input_chunk_length + output_chunk_length + output_chunk_shift` must be `<=8192`.
         likelihood
             The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of
             :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. If using ``QuantileRegression``,
