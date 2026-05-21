@@ -6,6 +6,7 @@ Additional TimeSeries related util functions
 from collections.abc import Sequence
 from enum import Enum
 from functools import total_ordering
+from typing import Literal, overload
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
@@ -53,6 +54,70 @@ class SeriesType(Enum):
 
     def __str__(self):
         return _SEQ_TYPE_NAMES[self.value]
+
+
+@overload
+def series2seq(
+    ts: None,
+    seq_type_out: SeriesType = ...,
+    nested: bool = ...,
+) -> None: ...
+
+
+@overload
+def series2seq(
+    ts: TimeSeries,
+    seq_type_out: Literal[SeriesType.SINGLE],
+    nested: bool = ...,
+) -> TimeSeries: ...
+
+
+@overload
+def series2seq(
+    ts: TimeSeries,
+    seq_type_out: Literal[SeriesType.SEQ] = ...,
+    nested: bool = ...,
+) -> list[TimeSeries]: ...
+
+
+@overload
+def series2seq(
+    ts: TimeSeries,
+    seq_type_out: Literal[SeriesType.SEQ_SEQ],
+    nested: bool = ...,
+) -> list[list[TimeSeries]]: ...
+
+
+@overload
+def series2seq(
+    ts: Sequence[TimeSeries],
+    seq_type_out: Literal[SeriesType.SINGLE],
+    nested: bool = ...,
+) -> TimeSeriesLike: ...
+
+
+@overload
+def series2seq(
+    ts: Sequence[TimeSeries],
+    seq_type_out: Literal[SeriesType.SEQ] = ...,
+    nested: bool = ...,
+) -> Sequence[TimeSeries]: ...
+
+
+@overload
+def series2seq(
+    ts: Sequence[TimeSeries],
+    seq_type_out: Literal[SeriesType.SEQ_SEQ],
+    nested: bool = ...,
+) -> Sequence[Sequence[TimeSeries]]: ...
+
+
+@overload
+def series2seq(
+    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None,
+    seq_type_out: SeriesType = ...,
+    nested: bool = ...,
+) -> TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None: ...
 
 
 def series2seq(
@@ -185,8 +250,32 @@ def get_single_series(
         return ts[0][0]
 
 
+@overload
+def get_series_seq_type(ts: None) -> Literal[SeriesType.NONE]: ...
+
+
+@overload
+def get_series_seq_type(ts: TimeSeries) -> Literal[SeriesType.SINGLE]: ...
+
+
+@overload
+def get_series_seq_type(ts: Sequence[TimeSeries]) -> Literal[SeriesType.SEQ]: ...
+
+
+@overload
 def get_series_seq_type(
-    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]],
+    ts: Sequence[Sequence[TimeSeries]],
+) -> Literal[SeriesType.SEQ_SEQ]: ...
+
+
+@overload
+def get_series_seq_type(
+    ts: TimeSeriesLike,
+) -> Literal[SeriesType.SINGLE, SeriesType.SEQ]: ...
+
+
+def get_series_seq_type(
+    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None,
 ) -> SeriesType:
     """Returns the sequence type of `ts`.
 
