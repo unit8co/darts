@@ -610,7 +610,10 @@ class TimesFM2p5Model(FoundationModel):
             Copyright 2025 Google LLC. By using this model, you agree to the terms and conditions of the license.
         .. warning::
             Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from
-            those obtained using the original implementation when prediction horizon `n` is larger than 128.
+            those obtained using the original implementation when prediction horizon ``n`` is larger than 128.
+        .. warning::
+            Due to differences in auto-regressive forecasting implementation, zero-shot forecasts also differ when
+            ``use_longer_projection_head`` is `True`.
         """
         hf_connector = HuggingFaceConnector(
             model_name=hub_model_name,
@@ -653,7 +656,7 @@ class TimesFM2p5Model(FoundationModel):
             raise_log(
                 ValueError(
                     f"`output_chunk_length` {output_chunk_length} plus `output_chunk_shift` {output_chunk_shift} "
-                    f"cannot be greater than model's maximum prediction length {prediction_length}"
+                    f"cannot be greater than model's maximum prediction length {prediction_length}. "
                     + extra_hint
                 ),
                 logger,
