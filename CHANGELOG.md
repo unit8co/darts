@@ -16,6 +16,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 
 - 🚀🚀 Added new forecasting model `PatchTSTFMModel` : IBM's pre-trained ~260M-parameter foundational model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series forecasting without training and can output deterministic or probabilistic forecasts. [#3120](https://github.com/unit8co/darts/pull/3120) by [Dennis Bader](https://github.com/dennisbader).
+- Added `use_longer_projection_head` to `TimesFM2p5Model` to enable longer non-autoregressive prediction horizons (up to 1024 steps for `output_chunk_length + output_chunk_shift`). [#3121](https://github.com/unit8co/darts/pull/3121) by [Zhihao Dai](https://github.com/daidahao).
 
 **Fixed**
 

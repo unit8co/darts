@@ -50,6 +50,7 @@ class _TimesFM2p5_200M_Definition:
     context_limit = 16384
     input_patch_len: int = 32
     output_patch_len: int = 128
+    output_quantile_len: int = 1024
     quantiles: list[float] = field(
         default_factory=lambda: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     )
@@ -96,6 +97,7 @@ class _TimesFM2p5Module(PLForecastingModule):
 
     def __init__(
         self,
+        use_longer_projection_head: bool = False,
         **kwargs,
     ):
         """PyTorch module implementing the TimesFM 2.5 model, ported from
@@ -104,6 +106,8 @@ class _TimesFM2p5Module(PLForecastingModule):
 
         Parameters
         ----------
+        use_longer_projection_head
+            Whether to use a longer projection head, which allows for longer prediction horizons.
         **kwargs
             all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
             base class.
@@ -114,10 +118,18 @@ class _TimesFM2p5Module(PLForecastingModule):
 
         # default model parameters (config.json is ignored)
         self.input_patch_len = self.config.input_patch_len  # 32
-        self.output_patch_len = self.config.output_patch_len  # 128
         self.num_layers = self.config.stacked_transformers.num_layers  # 20
         # see below `user_quantile_indices` for explanation of +1
         self.num_quantiles_plus_one = len(self.config.quantiles) + 1  # 10
+
+        # TimesFM 2.5 has two separate output projection heads:
+        # - the "point" head projects to the original output patch length of 128.
+        # - the "quantiles" head projects to the longer output quantile length of 1024.
+        self.use_longer_projection_head = use_longer_projection_head
+        if self.use_longer_projection_head:
+            self.output_patch_len = self.config.output_quantile_len  # 1024
+        else:
+            self.output_patch_len = self.config.output_patch_len  # 128
 
         # padding length for input target series to make its length a multiple of
         # input_patch_len (32).
@@ -207,8 +219,10 @@ class _TimesFM2p5Module(PLForecastingModule):
 
         # output projections
         # `output_ts`: (B * C, O * W)
-        output_ts = self.output_projection_point(last_embeddings)
-        # output_quantile_spread = self.output_projection_quantiles(last_embeddings)
+        if self.use_longer_projection_head:
+            output_ts = self.output_projection_quantiles(last_embeddings)
+        else:
+            output_ts = self.output_projection_point(last_embeddings)
 
         return output_ts
 
@@ -233,7 +247,7 @@ class _TimesFM2p5Module(PLForecastingModule):
         # L: input chunk length
         # T: output chunk length
         # I = 32: input patch length
-        # O = 128: output patch length
+        # O = 128 or 1024: output patch length
         # P: minimum left-pad length such that (P+L) is divisible by I
         # Z = P + L: padded input chunk length
         # Q = Z / I: patches for the input chunk
@@ -337,6 +351,7 @@ class TimesFM2p5Model(FoundationModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
+        use_longer_projection_head: bool = False,
         likelihood: QuantileRegression | None = None,
         hub_model_name: str = "google/timesfm-2.5-200m-pytorch",
         hub_model_revision: str | None = "1d952420fba87f3c6dee4f240de0f1a0fbc790e3",
@@ -379,6 +394,9 @@ class TimesFM2p5Model(FoundationModel):
         .. note::
             Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from
             those obtained using the original implementation when prediction horizon `n` is larger than 128.
+        .. note::
+            Due to differences in auto-regressive forecasting implementation, zero-shot forecasts would also differ when
+            ``use_longer_projection_head`` is `True`.
 
         Parameters
         ----------
@@ -402,6 +420,9 @@ class TimesFM2p5Model(FoundationModel):
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
             cannot generate autoregressive predictions (`n > output_chunk_length`).
+        use_longer_projection_head
+            Whether to use the longer output projection head, which allows for a longer horizon without auto-regression,
+            i.e., `output_chunk_length + output_chunk_shift <= 1024`. Default: ``False``.
         likelihood
             The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of
             :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. If using ``QuantileRegression``,
@@ -634,12 +655,23 @@ class TimesFM2p5Model(FoundationModel):
             )
 
         # validate `output_chunk_length` and `output_chunk_shift` against model's output limits
-        prediction_length = config.output_patch_len
+        self.use_longer_projection_head = use_longer_projection_head
+        prediction_length = (
+            config.output_quantile_len
+            if self.use_longer_projection_head
+            else config.output_patch_len
+        )
         if output_chunk_length + output_chunk_shift > prediction_length:
+            extra_hint = (
+                f"Set `use_longer_projection_head=True` to increase it to {config.output_quantile_len}"
+                if not self.use_longer_projection_head
+                else ""
+            )
             raise_log(
                 ValueError(
                     f"`output_chunk_length` {output_chunk_length} plus `output_chunk_shift` {output_chunk_shift} "
-                    f"cannot be greater than model's maximum prediction length {prediction_length}"
+                    f"cannot be greater than model's maximum prediction length {prediction_length}. "
+                    + extra_hint
                 ),
                 logger,
             )
@@ -675,6 +707,9 @@ class TimesFM2p5Model(FoundationModel):
         return self.hf_connector.load_model(
             module_class=_TimesFM2p5Module,
             pl_module_params=pl_module_params,
+            additional_params={
+                "use_longer_projection_head": self.use_longer_projection_head,
+            },
         )
 
     @property
