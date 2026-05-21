@@ -15,6 +15,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added `use_longer_projection_head` to `TimesFM2p5Model` to enable longer non-autoregressive prediction horizons (up to 1024 steps for `output_chunk_length + output_chunk_shift`). [#]() by [Zhihao Dai](https://github.com/daidahao).
+
 **Fixed**
 
 **Dependencies**
