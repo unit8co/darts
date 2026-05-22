@@ -22,6 +22,7 @@ import shap
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -78,6 +79,10 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
         """
         return self._query_explainability_result(self.explained_components, component)
 
+    # TODO(oswald): TSS migration — wrap the multi-series list branch as
+    # `TimeSeriesSequence(..., kind="series")` once TSS lands. Single-series
+    # branch returns a bare value and stays unchanged. No Pattern B refactor
+    # needed — dispatch is on stored shape (set at __init__), not on input shape.
     def _query_explainability_result(
         self,
         attr: dict[str, Any] | list[dict[str, Any]],
@@ -229,7 +234,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
 
     def get_explanation(
         self, horizon: int, component: str | None = None
-    ) -> TimeSeries | list[TimeSeries]:
+    ) -> TimeSeriesLike:
         """
         Returns one or several `TimeSeries` representing the explanations
         for a given horizon and component.
@@ -246,6 +251,10 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
             self.explained_forecasts, horizon, component
         )
 
+    # TODO(oswald): TSS migration — wrap the multi-series list branch as
+    # `TimeSeriesSequence(..., kind="series")` once TSS lands. Single-series
+    # branch returns a bare value and stays unchanged. No Pattern B refactor
+    # needed — dispatch is on stored shape (set at __init__), not on input shape.
     def _query_explainability_result(
         self,
         attr: dict[int, dict[str, Any]] | list[dict[int, dict[str, Any]]],
@@ -360,7 +369,7 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
 
     def get_feature_values(
         self, horizon: int, component: str | None = None
-    ) -> TimeSeries | list[TimeSeries]:
+    ) -> TimeSeriesLike:
         """
         Returns one or several `TimeSeries` representing the feature values
         for a given horizon and component.
