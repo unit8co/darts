@@ -32,7 +32,7 @@ from darts.logging import get_logger, raise_log
 from darts.metrics.utils import METRIC_TYPE
 from darts.typing import TimeSeriesLike
 from darts.utils.data.tabularization import create_lagged_data
-from darts.utils.ts_utils import series2seq
+from darts.utils.ts_utils import get_series_seq_type, series2seq
 from darts.utils.utils import _build_tqdm_iterator, _parallel_apply
 
 logger = get_logger(__name__)
@@ -87,7 +87,7 @@ class AnomalyScorer(ABC):
         TimeSeriesLike
             (Sequence of) anomaly score time series
         """
-        called_with_single_series = isinstance(series, TimeSeries)
+        sequence_type_in = get_series_seq_type(series)
         series, pred_series = series2seq(series), series2seq(pred_series)
         name, pred_name = "series", "pred_series"
         _assert_same_length(series, pred_series, name, pred_name)
@@ -120,7 +120,7 @@ class AnomalyScorer(ABC):
                     treat_na="dropna",
                 )
             pred_scores.append(scores)
-        return pred_scores[0] if called_with_single_series else pred_scores
+        return series2seq(pred_scores, seq_type_out=sequence_type_in)
 
     def eval_metric_from_prediction(
         self,
@@ -483,14 +483,15 @@ class FittableAnomalyScorer(AnomalyScorer):
         """
         self._check_fit_called()
 
-        called_with_single_series = isinstance(series, TimeSeries)
+        sequence_type_in = get_series_seq_type(series)
+
         series = _check_input(
             series, name="series", extra_checks=self._check_window_size
         )
         series = [self._extract_deterministic_series(s, "series") for s in series]
 
         pred_scores = self._score_core(series)
-        return pred_scores[0] if called_with_single_series else pred_scores
+        return series2seq(pred_scores, seq_type_out=sequence_type_in)
 
     def score_from_prediction(
         self,
@@ -522,13 +523,13 @@ class FittableAnomalyScorer(AnomalyScorer):
         """
         self._check_fit_called()
 
-        called_with_single_series = isinstance(series, TimeSeries)
+        sequence_type_in = get_series_seq_type(series)
         series = _check_input(series, "series")
         pred_series = _check_input(pred_series, "pred_series")
 
         diff = self._diff_series(series, pred_series)
         pred_scores = self.score(diff)
-        return pred_scores[0] if called_with_single_series else pred_scores
+        return series2seq(pred_scores, seq_type_out=sequence_type_in)
 
     def eval_metric(
         self,
