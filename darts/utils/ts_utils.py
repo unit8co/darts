@@ -212,6 +212,12 @@ def get_single_series(
 
 @overload
 def get_series_seq_type(
+    ts: TimeSeries,
+) -> Literal[SeriesType.SINGLE]: ...
+
+
+@overload
+def get_series_seq_type(
     ts: TimeSeriesLike,
 ) -> Literal[SeriesType.SINGLE, SeriesType.SEQ]: ...
 
