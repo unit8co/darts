@@ -1,3 +1,4 @@
+import itertools
 import os
 from pathlib import Path
 
@@ -680,21 +681,35 @@ class TestShapExplainer:
             atol=1e-8,
         )
 
-    @pytest.mark.parametrize("shap_method", SHAP_METHODS)
+    @pytest.mark.parametrize(
+        "shap_method,single_output",
+        itertools.product(SHAP_METHODS, [True, False]),
+    )
     def test_explain_shap_methods(
         self,
         shap_method: str,
+        single_output: bool,
     ):
+        series = self.multivariate_series
+        if single_output:
+            ocl = 1
+            series = series[series.columns.tolist()[:1]]
+            valid_horizon = 1
+            valid_feature = "T_0"
+        else:
+            ocl = 3
+            valid_horizon = 3
+            valid_feature = "T_1"
+
         model_kwargs = {"add_encoders": ADD_ENCODERS}
         model = DLinearModel(
             input_chunk_length=8,
-            output_chunk_length=3,
+            output_chunk_length=ocl,
             **(model_kwargs or {}),
             **kwargs,
         )
 
         # prepare training data
-        series = self.multivariate_series
         past_covariates = self.past_covariates
         future_covariates = self.future_covariates
 
@@ -735,7 +750,6 @@ class TestShapExplainer:
             foreground_future_covariates=future_covariates,
         )
 
-        valid_horizon = 1 if isinstance(model, RNNModel) else 2
         components = {
             f"{name}_target_lag-{lag + 1}"
             for name in foreground_series.columns
@@ -779,10 +793,11 @@ class TestShapExplainer:
                 ]
             })
 
-        with pytest.raises(ValueError, match="component parameter is required"):
-            results.get_explanation(horizon=4, component=None)
-        with pytest.raises(ValueError, match="component parameter is required"):
-            results.get_explanation(horizon=2, component=None)
+        if not single_output:
+            with pytest.raises(ValueError, match="component parameter is required"):
+                results.get_explanation(horizon=1, component=None)
+        else:
+            results.get_explanation(horizon=1, component=None)
         with pytest.raises(ValueError, match='Component "T_11" is not available'):
             results.get_explanation(horizon=valid_horizon, component="T_11")
         with pytest.raises(ValueError, match="Horizon 4 is not available."):
@@ -819,10 +834,11 @@ class TestShapExplainer:
         np.testing.assert_allclose(base_values, base_values[0], rtol=1e-3, atol=1e-5)
 
         # invalid component or horizon raises error for feature values as well
-        with pytest.raises(ValueError, match="component parameter is required"):
-            results.get_feature_values(horizon=4, component=None)
-        with pytest.raises(ValueError, match="component parameter is required"):
-            results.get_feature_values(horizon=2, component=None)
+        if not single_output:
+            with pytest.raises(ValueError, match="component parameter is required"):
+                results.get_feature_values(horizon=1, component=None)
+        else:
+            results.get_feature_values(horizon=1, component=None)
         with pytest.raises(ValueError, match='Component "T_11" is not available'):
             results.get_feature_values(horizon=valid_horizon, component="T_11")
         with pytest.raises(ValueError, match="Horizon 4 is not available."):
@@ -831,7 +847,7 @@ class TestShapExplainer:
         # check feature values are returned for valid horizon and component
         feature_values = results.get_feature_values(
             horizon=valid_horizon,
-            component="T_1",
+            component=valid_feature,
         )
         assert isinstance(feature_values, TimeSeries)
         assert feature_values.n_timesteps == explanation.n_timesteps
@@ -839,10 +855,11 @@ class TestShapExplainer:
         assert np.isfinite(feature_values.values()).all()
 
         # invalid component or horizon raises error for shap explanation object as well
-        with pytest.raises(ValueError, match="component parameter is required"):
-            results.get_shap_explanation_object(horizon=4, component=None)
-        with pytest.raises(ValueError, match="component parameter is required"):
-            results.get_shap_explanation_object(horizon=2, component=None)
+        if not single_output:
+            with pytest.raises(ValueError, match="component parameter is required"):
+                results.get_shap_explanation_object(horizon=1, component=None)
+        else:
+            results.get_shap_explanation_object(horizon=1, component=None)
         with pytest.raises(ValueError, match='Component "T_11" is not available'):
             results.get_shap_explanation_object(horizon=valid_horizon, component="T_11")
         with pytest.raises(ValueError, match="Horizon 4 is not available."):
@@ -851,9 +868,11 @@ class TestShapExplainer:
         # check shap explanation object is returned for valid horizon and component
         shap_explanation_object = results.get_shap_explanation_object(
             horizon=valid_horizon,
-            component="T_1",
+            component=valid_feature,
         )
-        explanation = results.get_explanation(horizon=valid_horizon, component="T_1")
+        explanation = results.get_explanation(
+            horizon=valid_horizon, component=valid_feature
+        )
         assert isinstance(explanation, TimeSeries)
         assert isinstance(shap_explanation_object, shap.Explanation)
         np.testing.assert_array_equal(
@@ -865,7 +884,7 @@ class TestShapExplainer:
             feature_values.values(),
         )
         shap_values_sum = explanation.values().sum(axis=1)
-        base_values = pred["T_1"].values().ravel() - shap_values_sum
+        base_values = pred[valid_feature].values().ravel() - shap_values_sum
         np.testing.assert_allclose(
             shap_explanation_object.base_values,
             base_values,

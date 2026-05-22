@@ -123,6 +123,7 @@ class BaseShapExplainer(ABC):
         self.output_chunk_length = model.output_chunk_length or 1
         self.output_chunk_shift = model.output_chunk_shift
         self.batch_size: int = batch_size or getattr(model, "batch_size", 0)
+        self.n_output_features = self.output_chunk_length * self.n_targets_likelihood
         self.single_output = self.n == 1 and self.n_targets_likelihood == 1
 
         self.background_series = background_series
@@ -197,10 +198,25 @@ class BaseShapExplainer(ABC):
                 explanations[h] = tmp_n
             return explanations
 
+        # E: number of forecast examples (given by all possible forecast start points)
+        # F: number of input features
+        # C: number of target components (including likelihood parameters)
+        # OCL: model's output chunk length
+
         # the native multioutput forces us to recompute all horizons and targets
         explanation: shap.Explanation = self.explainer(foreground_X, **kwargs)
+        values: np.ndarray = explanation.values
         base_values: np.ndarray = explanation.base_values
-        if base_values.ndim == 1:
+
+        # bring arrays into expected shapes:
+        # `values` -> (E, F, C * OCL)
+        # `base_values` -> (E, C * OCL)
+        if self.single_output:
+            if values.shape == foreground_X.shape:
+                values = values[:, :, np.newaxis]
+            if base_values.shape == foreground_X.shape[:1]:
+                base_values = base_values[:, np.newaxis]
+        if base_values.shape == (self.n_output_features,):
             # for unknown reasons, some SHAP explainers (`shap.SamplingExplainer`) returns 1D base values, which
             # need to be reshaped and repeated to match the expected shape for accessibility
             base_values = base_values[np.newaxis, :]
@@ -208,26 +224,23 @@ class BaseShapExplainer(ABC):
                 base_values, repeats=explanation.values.shape[0], axis=0
             )
 
+        assert values.shape == foreground_X.shape + (self.n_output_features,)
+        assert base_values.shape == foreground_X.shape[:1] + (self.n_output_features,)
+
         for h in horizons:
             tmp_n = {}
             for t_idx, t in enumerate(self.target_components_likelihood):
                 if t not in target_components:
                     continue
 
-                if not self.single_output:
-                    tmp_t = shap.Explanation(
-                        values=explanation.values[
-                            :, :, self.n_targets_likelihood * (h - 1) + t_idx
-                        ],
-                        data=explanation.data,
-                        base_values=base_values[
-                            :, self.n_targets_likelihood * (h - 1) + t_idx
-                        ].ravel(),
-                        feature_names=self.feature_names,
-                    )
-                else:
-                    tmp_t = explanation
-                    tmp_t.base_values = base_values.ravel()
+                tmp_t = shap.Explanation(
+                    values=values[:, :, self.n_targets_likelihood * (h - 1) + t_idx],
+                    data=explanation.data,
+                    base_values=base_values[
+                        :, self.n_targets_likelihood * (h - 1) + t_idx
+                    ].ravel(),
+                    feature_names=self.feature_names,
+                )
 
                 # TODO: for torch we should infer the index somehow
                 if hasattr(foreground_X, "index"):
@@ -295,10 +308,25 @@ class BaseShapExplainer(ABC):
                 )
             return explanations
 
+        # E: number of forecast examples (given by all possible forecast start points)
+        # F: number of input features
+        # C: number of target components (including likelihood parameters)
+        # OCL: model's output chunk length
+
         # the native multioutput forces us to recompute all horizons and targets
         explanation: shap.Explanation = self.explainer(foreground_X, **kwargs)
+        values: np.ndarray = explanation.values
         base_values: np.ndarray = explanation.base_values
-        if base_values.ndim == 1:
+
+        # bring arrays into expected shapes:
+        # `values` -> (E, F, C * OCL)
+        # `base_values` -> (E, C * OCL)
+        if self.single_output:
+            if values.shape == foreground_X.shape:
+                values = values[:, :, np.newaxis]
+            if base_values.shape == foreground_X.shape[:1]:
+                base_values = base_values[:, np.newaxis]
+        if base_values.shape == (self.n_output_features,):
             # for unknown reasons, some SHAP explainers (`shap.SamplingExplainer`) returns 1D base values, which
             # need to be reshaped and repeated to match the expected shape for accessibility
             base_values = base_values[np.newaxis, :]
@@ -306,37 +334,20 @@ class BaseShapExplainer(ABC):
                 base_values, repeats=explanation.values.shape[0], axis=0
             )
 
+        assert values.shape == foreground_X.shape + (self.n_output_features,)
+        assert base_values.shape == foreground_X.shape[:1] + (self.n_output_features,)
+
         for t_idx, t in enumerate(self.target_components_likelihood):
             if t not in target_components:
                 continue
 
-            if not self.single_output:
-                tmp_t = shap.Explanation(
-                    values=explanation.values[
-                        0, :, t_idx :: self.n_targets_likelihood
-                    ].T,
-                    data=np.repeat(explanation.data, repeats=self.n, axis=0),
-                    base_values=base_values[
-                        :, t_idx :: self.n_targets_likelihood
-                    ].ravel(),
-                    feature_names=self.feature_names,
-                )
-            else:
-                tmp_t = shap.Explanation(
-                    values=explanation.values.reshape(1, -1),
-                    data=explanation.data,
-                    base_values=base_values.ravel(),
-                    feature_names=self.feature_names,
-                )
+            tmp_t = shap.Explanation(
+                values=values[0, :, t_idx :: self.n_targets_likelihood].T,
+                data=np.repeat(explanation.data, repeats=self.n, axis=0),
+                base_values=base_values[:, t_idx :: self.n_targets_likelihood].ravel(),
+                feature_names=self.feature_names,
+            )
             explanations[t] = tmp_t
-
-            # # TODO: for torch, we might need:
-            # #  tmp_t = shap.Explanation(
-            # #      values=explanation.values[0, :, t_idx :: self.n_targets_likelihood].T,
-            # #      data=np.repeat(explanation.data, repeats=self.n, axis=0),
-            # #      base_values=base_values[0, t_idx :: self.n_targets_likelihood].ravel(),
-            # #      feature_names=self.feature_names,
-            # #  )
         return explanations
 
     @abstractmethod
