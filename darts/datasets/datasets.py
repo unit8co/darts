@@ -562,6 +562,7 @@ class ElectricityDataset(DatasetLoaderCSV):
             )
         )
 
+    # TODO(oswald): TSS migration — return TimeSeriesSequence instead of list[TimeSeries] once TSS lands.
     def _to_multi_series(self, series: pd.DataFrame) -> list[TimeSeries]:
         """
         Load the electricity dataset as a list of univariate series, one for each household.
@@ -661,6 +662,7 @@ class UberTLCDataset(DatasetLoaderCSV):
             )
         )
 
+    # TODO(oswald): TSS migration — return TimeSeriesSequence instead of list[TimeSeries] once TSS lands.
     def _to_multi_series(self, series: pd.DataFrame) -> list[TimeSeries]:
         """
         load the Uber TLC dataset as a list of univariate timeseries, one for each locationID.
@@ -732,6 +734,7 @@ class ILINetDataset(DatasetLoaderCSV):
             )
         )
 
+    # TODO(oswald): TSS migration — return TimeSeriesSequence instead of list[TimeSeries] once TSS lands.
     def _to_multi_series(self, series: pd.DataFrame) -> list[TimeSeries]:
         """
         Load the ILINetDataset dataset as a list of univariate timeseries.
@@ -769,6 +772,7 @@ class ExchangeRateDataset(DatasetLoaderCSV):
             )
         )
 
+    # TODO(oswald): TSS migration — return TimeSeriesSequence instead of list[TimeSeries] once TSS lands.
     def _to_multi_series(self, series: pd.DataFrame) -> list[TimeSeries]:
         """
         Load the ExchangeRateDataset dataset as a list of univariate timeseries, one for each country.
@@ -808,6 +812,7 @@ class TrafficDataset(DatasetLoaderCSV):
             )
         )
 
+    # TODO(oswald): TSS migration — return TimeSeriesSequence instead of list[TimeSeries] once TSS lands.
     def _to_multi_series(self, series: pd.DataFrame) -> list[TimeSeries]:
         """
         Load the TrafficDataset dataset as a list of univariate timeseries, one for each ID.
@@ -848,6 +853,7 @@ class WeatherDataset(DatasetLoaderCSV):
             )
         )
 
+    # TODO(oswald): TSS migration — return TimeSeriesSequence instead of list[TimeSeries] once TSS lands.
     def _to_multi_series(self, series: pd.DataFrame) -> list[TimeSeries]:
         """
         Load the WeatherDataset dataset as a list of univariate timeseries, one for weather indicator.
