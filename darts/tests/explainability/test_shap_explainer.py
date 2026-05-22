@@ -937,7 +937,7 @@ class TestShapExplainer:
         )
 
         # check that the appropriate lags are extracted
-        assert all(shap_explain.explainer.background_X == expected_df)
+        assert all(shap_explain.explainer.background_arr == expected_df)
         assert model.lagged_feature_names == list(expected_df.columns)
 
         # check that explain() can be called
@@ -1238,7 +1238,7 @@ class TestShapExplainer:
             shap_method="linear",
         )
         assert isinstance(linear_explainer.explainer.explainer, shap.explainers.Linear)
-        assert len(linear_explainer.explainer.background_X) == 1
+        assert len(linear_explainer.explainer.background_arr) == 1
 
         kernel_model = SKLearnModel(
             lags=1,
@@ -1252,4 +1252,4 @@ class TestShapExplainer:
             background_num_samples=1,
         )
         assert isinstance(kernel_explainer.explainer.explainer, shap.explainers.Kernel)
-        assert len(kernel_explainer.explainer.background_X) == 1
+        assert len(kernel_explainer.explainer.background_arr) == 1

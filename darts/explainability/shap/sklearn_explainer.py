@@ -1,5 +1,4 @@
-from typing import Any
-
+import numpy as np
 import pandas as pd
 import shap
 from sklearn.multioutput import MultiOutputRegressor
@@ -7,7 +6,7 @@ from sklearn.multioutput import MultiOutputRegressor
 from darts.explainability.shap.base_explainer import BaseShapExplainer, SHAPMethod
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
-from darts.typing import TimeIndex, TimeSeriesLike
+from darts.typing import TimeSeriesLike
 from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.multioutput import MultiOutputMixin
 
@@ -65,13 +64,16 @@ class SKLearnShapExplainer(BaseShapExplainer):
     def _build_explainer(
         self,
         model: SKLearnModel,
-        background_X: Any,
+        background_arr: np.ndarray,
         shap_method: SHAPMethod,
         **kwargs,
     ) -> shap.Explainer | dict[int, dict[int, shap.Explainer]]:
         if not isinstance(self.model.model, MultiOutputRegressor):
             return self._build_explainer_sklearn(
-                model.model, self.background_X, self.shap_method, **kwargs
+                model_sklearn=model.model,
+                background_arr=background_arr,
+                shap_method=shap_method,
+                **kwargs,
             )
 
         explainers = {}
@@ -79,9 +81,9 @@ class SKLearnShapExplainer(BaseShapExplainer):
             explainers[i] = {}
             for j in range(self.n_targets_likelihood):
                 explainers[i][j] = self._build_explainer_sklearn(
-                    model.get_estimator(horizon=i, target_dim=j),
-                    self.background_X,
-                    self.shap_method,
+                    model_sklearn=model.get_estimator(horizon=i, target_dim=j),
+                    background_arr=background_arr,
+                    shap_method=shap_method,
                     **kwargs,
                 )
         return explainers
@@ -89,32 +91,32 @@ class SKLearnShapExplainer(BaseShapExplainer):
     def _build_explainer_sklearn(
         self,
         model_sklearn,
-        background_X: pd.DataFrame,
+        background_arr: np.ndarray,
         shap_method: SHAPMethod,
         **kwargs,
     ) -> shap.Explainer:
         # we define properly the explainer given a shap method
         if shap_method == SHAPMethod.TREE:
             if kwargs.get("feature_perturbation") == "interventional":
-                explainer = shap.TreeExplainer(model_sklearn, background_X, **kwargs)
+                explainer = shap.TreeExplainer(model_sklearn, background_arr, **kwargs)
             else:
                 explainer = shap.TreeExplainer(model_sklearn, **kwargs)
         elif shap_method == SHAPMethod.PERMUTATION:
             explainer = shap.PermutationExplainer(
-                model_sklearn.predict, background_X, **kwargs
+                model_sklearn.predict, background_arr, **kwargs
             )
         elif shap_method == SHAPMethod.PARTITION:
             explainer = shap.PartitionExplainer(
-                model_sklearn.predict, background_X, **kwargs
+                model_sklearn.predict, background_arr, **kwargs
             )
         elif shap_method == SHAPMethod.KERNEL:
             explainer = shap.KernelExplainer(
-                model_sklearn.predict, background_X, keep_index=True, **kwargs
+                model_sklearn.predict, background_arr, keep_index=True, **kwargs
             )
         elif shap_method == SHAPMethod.LINEAR:
-            explainer = shap.LinearExplainer(model_sklearn, background_X, **kwargs)
+            explainer = shap.LinearExplainer(model_sklearn, background_arr, **kwargs)
         elif shap_method == SHAPMethod.ADDITIVE:
-            explainer = shap.AdditiveExplainer(model_sklearn, background_X, **kwargs)
+            explainer = shap.AdditiveExplainer(model_sklearn, background_arr, **kwargs)
         else:
             raise_log(ValueError(f"Unknown SHAP method {shap_method}"), logger=logger)
 
@@ -128,7 +130,7 @@ class SKLearnShapExplainer(BaseShapExplainer):
         future_covariates: TimeSeriesLike | None,
         n_samples: int | None = None,
         input_type: str = "background",
-    ) -> tuple[pd.DataFrame, list[dict[str, Any]] | None, TimeIndex | None]:
+    ) -> tuple[np.ndarray, pd.Index]:
         lags_list = self.model._get_lags("target")
         lags_past_covariates_list = self.model._get_lags("past")
         lags_future_covariates_list = self.model._get_lags("future")
@@ -161,16 +163,10 @@ class SKLearnShapExplainer(BaseShapExplainer):
         for index_i in indexes[1:]:
             index_complete = index_complete.append(index_i)
 
-        X = pd.DataFrame(
-            X,
-            columns=self.feature_names,
-            index=index_complete,
-        )
-
         if n_samples:
             X = shap.utils.sample(X, n_samples)
 
-        return X, None, None
+        return X, index_complete
 
     def _build_feature_names(self) -> list[str]:
         return self.model.lagged_feature_names

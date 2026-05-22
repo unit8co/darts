@@ -354,7 +354,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             if foreground_future_covariates:
                 foreground_future_cov_ts = foreground_future_covariates[idx]
 
-            foreground_X, _, prediction_times = self.explainer.create_shap_array(
+            foreground_arr, foreground_times = self.explainer.create_shap_array(
                 series=foreground_ts,
                 past_covariates=foreground_past_cov_ts,
                 future_covariates=foreground_future_cov_ts,
@@ -363,7 +363,11 @@ class ShapExplainer(_ForecastingModelExplainer):
             )
 
             shap_ = self.explainer.shap_explanations(
-                foreground_X, horizons, target_names, **kwargs
+                foreground_arr=foreground_arr,
+                foreground_times=foreground_times,
+                horizons=horizons,
+                target_components=target_names,
+                **kwargs,
             )
 
             shap_values_dict = {}
@@ -374,19 +378,14 @@ class ShapExplainer(_ForecastingModelExplainer):
                 feature_values_dict_single_h = {}
                 shap_explanation_object_dict_single_h = {}
                 for t in target_names:
-                    prediction_times_single_h = (
-                        prediction_times
-                        if prediction_times is not None
-                        else shap_[h][t].time_index
-                    )
                     shap_values_dict_single_h[t] = TimeSeries(
-                        times=prediction_times_single_h,
+                        times=shap_[h][t].time_index,
                         values=shap_[h][t].values,
                         components=shap_[h][t].feature_names,
                         copy=False,
                     )
                     feature_values_dict_single_h[t] = TimeSeries(
-                        times=prediction_times_single_h,
+                        times=shap_[h][t].time_index,
                         values=shap_[h][t].data,
                         components=shap_[h][t].feature_names,
                         copy=False,
@@ -406,7 +405,9 @@ class ShapExplainer(_ForecastingModelExplainer):
             shap_explanation_object_list = shap_explanation_object_list[0]
 
         return ShapExplainabilityResult(
-            shap_values_list, feature_values_list, shap_explanation_object_list
+            explained_forecasts=shap_values_list,
+            feature_values=feature_values_list,
+            shap_explanation_object=shap_explanation_object_list,
         )
 
     def explain_single(
@@ -522,7 +523,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         )
         _, target_names = self._process_horizons_and_targets(None, target_components)
 
-        foreground_X, schemas, prediction_times = self.explainer.create_shap_array(
+        foreground_arr, foreground_times = self.explainer.create_shap_array(
             series=foreground_series_,
             past_covariates=foreground_past_covariates_,
             future_covariates=foreground_future_covariates_,
@@ -531,22 +532,15 @@ class ShapExplainer(_ForecastingModelExplainer):
         )
 
         # explain only the last forecasted timestamp
-        foreground_X = foreground_X[-1:]
-
-        # TODO: maybe unify the logic for SKLearn and Torch `create_shap_array()` so we don't need to distinguish here
-        freq = (
-            schemas[0]["time_freq"]
-            if schemas is not None
-            else foreground_series_[0].freq
-        )
-        prediction_time = (
-            prediction_times[-1]
-            if prediction_times is not None
-            else foreground_X.index[-1] + self.model.output_chunk_shift * freq
-        )
+        foreground_arr = foreground_arr[-1:]
+        foreground_times = foreground_times[-1:]
+        freq = foreground_series_[0].freq
 
         shap_ = self.explainer.shap_explanations_single(
-            foreground_X, target_names, **kwargs
+            foreground_arr=foreground_arr,
+            foreground_times=foreground_times,
+            target_components=target_names,
+            **kwargs,
         )
 
         shap_values_dict = {}
@@ -555,7 +549,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         for t in target_names:
             shap_values_dict[t] = TimeSeries(
                 times=generate_index(
-                    start=prediction_time,
+                    start=shap_[t].time_index[0],
                     freq=freq,
                     length=shap_[t].values.shape[0],
                 ),
@@ -564,7 +558,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             )
             feature_values_dict[t] = TimeSeries(
                 times=generate_index(
-                    start=prediction_time,
+                    start=shap_[t].time_index[0],
                     freq=freq,
                     length=1,
                 ),
@@ -574,9 +568,9 @@ class ShapExplainer(_ForecastingModelExplainer):
             shap_explanation_object_dict[t] = shap_[t]
 
         return ShapSingleExplainabilityResult(
-            shap_values_dict,
-            feature_values_dict,
-            shap_explanation_object_dict,
+            explained_components=shap_values_dict,
+            feature_values=feature_values_dict,
+            shap_explanation_object=shap_explanation_object_dict,
         )
 
     def summary_plot(
@@ -649,7 +643,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             horizons, target_components
         )
 
-        foreground_X, _, _ = self.explainer.create_shap_array(
+        foreground_arr, foreground_times = self.explainer.create_shap_array(
             series=foreground_series_,
             past_covariates=foreground_past_covariates_,
             future_covariates=foreground_future_covariates_,
@@ -658,7 +652,11 @@ class ShapExplainer(_ForecastingModelExplainer):
         )
 
         shaps_ = self.explainer.shap_explanations(
-            foreground_X, horizons, target_components, **kwargs
+            foreground_arr=foreground_arr,
+            foreground_times=foreground_times,
+            horizons=horizons,
+            target_components=target_components,
+            **kwargs,
         )
 
         for t in target_components:
@@ -667,8 +665,8 @@ class ShapExplainer(_ForecastingModelExplainer):
                     f"Target: `{t}` - Horizon: t+{h + self.model.output_chunk_shift}"
                 )
                 shap.summary_plot(
-                    shaps_[h][t],
-                    foreground_X,
+                    shap_values=shaps_[h][t],
+                    features=foreground_arr,
                     plot_type=plot_type,
                     **(plot_kwargs or {}),
                 )
@@ -748,7 +746,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         )
         horizon, target_component = horizons[0], target_components[0]
 
-        foreground_X, _, _ = self.explainer.create_shap_array(
+        foreground_arr, foreground_times = self.explainer.create_shap_array(
             series=foreground_series_,
             past_covariates=foreground_past_covariates_,
             future_covariates=foreground_future_covariates_,
@@ -757,12 +755,16 @@ class ShapExplainer(_ForecastingModelExplainer):
         )
 
         shap_ = self.explainer.shap_explanations(
-            foreground_X, [horizon], [target_component], **kwargs
+            foreground_arr=foreground_arr,
+            foreground_times=foreground_times,
+            horizons=[horizon],
+            target_components=[target_component],
+            **kwargs,
         )
 
         return shap.force_plot(
             base_value=shap_[horizon][target_component],
-            features=foreground_X,
+            features=foreground_arr,
             out_names=target_component,
             **(plot_kwargs or {}),
         )

@@ -10,7 +10,7 @@ import shap
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
-from darts.typing import TimeIndex, TimeSeriesLike
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -27,6 +27,12 @@ class SHAPMethod(Enum):
     LINEAR = 6
     PERMUTATION = 7
     ADDITIVE = 8
+
+
+class DartsShapExplanation(shap.Explanation):
+    def __init__(self, *args, time_index: pd.Index, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.time_index = time_index
 
 
 class BaseShapExplainer(ABC):
@@ -131,7 +137,7 @@ class BaseShapExplainer(ABC):
         self.background_future_covariates = background_future_covariates
         self.feature_names = self._build_feature_names()
 
-        self.background_X, _, _ = self.create_shap_array(
+        self.background_arr, _ = self.create_shap_array(
             series=self.background_series,
             past_covariates=self.background_past_covariates,
             future_covariates=self.background_future_covariates,
@@ -141,18 +147,19 @@ class BaseShapExplainer(ABC):
 
         self.explainer = self._build_explainer(
             model=self.model,
-            background_X=self.background_X,
+            background_arr=self.background_arr,
             shap_method=self.shap_method,
             **kwargs,
         )
 
     def shap_explanations(
         self,
-        foreground_X: pd.DataFrame,
+        foreground_arr: np.ndarray,
+        foreground_times: pd.Index,
         horizons: Sequence[int],
         target_components: Sequence[str],
         **kwargs,
-    ) -> dict[int, dict[str, shap.Explanation]]:
+    ) -> dict[int, dict[str, DartsShapExplanation]]:
         """
         Computes SHAP explanations for the given foreground data, horizons, and target components.
         It returns a nested dictionary of SHAP Explanation objects for each horizon and target component:
@@ -162,7 +169,7 @@ class BaseShapExplainer(ABC):
 
         Parameters
         ----------
-        foreground_X
+        foreground_arr
             A numpy array of shape `(num_samples, num_features)` containing the input features for SHAP explanations.
         horizons
             A sequence of integers representing which points/steps in the future to explain, starting from the first
@@ -177,13 +184,13 @@ class BaseShapExplainer(ABC):
 
         Returns
         -------
-        dict[int, dict[str, shap.Explanation]]
-            A nested dictionary ``{horizon : {target_component : shap.Explanation}}`` containing the SHAP Explanation
-            objects for each horizon and target component, where the SHAP values are extracted and reshaped for
-            easier accessibility.
+        dict[int, dict[str, DartsShapExplanation]]
+            A nested dictionary ``{horizon : {target_component : DartsShapExplanation}}`` containing the SHAP
+            Explanation objects for each horizon and target component, where the SHAP values are extracted and
+            reshaped for easier accessibility.
         """
-        # create a nested dictionary {horizon : {target_component : shap.Explanation}}
-        # for better accessibility of the explanations
+        # create a nested dictionary {horizon : {target_component : shap.Explanation}} for better accessibility of
+        # the explanations; note: this is only invoked by ``SKLearnModel``
         explanations = {}
         if isinstance(self.explainer, dict):
             for h in horizons:
@@ -191,41 +198,45 @@ class BaseShapExplainer(ABC):
                 for t_idx, t in enumerate(self.target_components_likelihood):
                     if t not in target_components:
                         continue
-                    explanation = self.explainer[h - 1][t_idx](foreground_X, **kwargs)
-                    explanation.base_values = explanation.base_values.ravel()
-                    explanation.time_index = foreground_X.index
+                    explanation = self.explainer[h - 1][t_idx](foreground_arr, **kwargs)
+                    explanation = DartsShapExplanation(
+                        values=explanation.values,
+                        data=explanation.data,
+                        base_values=explanation.base_values.ravel(),
+                        feature_names=self.feature_names,
+                        time_index=foreground_times,
+                    )
                     tmp_n[t] = explanation
                 explanations[h] = tmp_n
             return explanations
 
-        # E: number of forecast examples (given by all possible forecast start points)
-        # F: number of input features
-        # C: number of target components (including likelihood parameters)
-        # OCL: model's output chunk length
-
-        # the native multioutput forces us to recompute all horizons and targets
-        explanation: shap.Explanation = self.explainer(foreground_X, **kwargs)
-        values: np.ndarray = explanation.values
-        base_values: np.ndarray = explanation.base_values
+        # the native multioutput forces us to recompute all horizons and targets; can be either
+        # ``TorchForecastingModel`` or ``SKLearnModel`` with multioutput
+        explanation: shap.Explanation = self.explainer(foreground_arr, **kwargs)
 
         # bring arrays into expected shapes:
-        # `values` -> (E, F, C * OCL)
-        # `base_values` -> (E, C * OCL)
+        # `values`: (E, F, C * OCL)
+        # `base_values`: (E, C * OCL)
+        # E: number of forecast examples
+        # F: number of model input features
+        # C: number of target components (including likelihood parameters)
+        # OCL: output chunk length
+        values = explanation.values
+        base_values = explanation.base_values
+
         if self.single_output:
-            if values.shape == foreground_X.shape:
+            if values.shape == foreground_arr.shape:
                 values = values[:, :, np.newaxis]
-            if base_values.shape == foreground_X.shape[:1]:
+            if base_values.shape == foreground_arr.shape[:1]:
                 base_values = base_values[:, np.newaxis]
         if base_values.shape == (self.n_output_features,):
-            # for unknown reasons, some SHAP explainers (`shap.SamplingExplainer`) returns 1D base values, which
-            # need to be reshaped and repeated to match the expected shape for accessibility
-            base_values = base_values[np.newaxis, :]
+            # some SHAP explainers (e.g. shap.SamplingExplainer) return 1D base values
             base_values = np.repeat(
-                base_values, repeats=explanation.values.shape[0], axis=0
+                base_values[np.newaxis, :], repeats=values.shape[0], axis=0
             )
 
-        assert values.shape == foreground_X.shape + (self.n_output_features,)
-        assert base_values.shape == foreground_X.shape[:1] + (self.n_output_features,)
+        assert values.shape == foreground_arr.shape + (self.n_output_features,)
+        assert base_values.shape == foreground_arr.shape[:1] + (self.n_output_features,)
 
         for h in horizons:
             tmp_n = {}
@@ -233,19 +244,15 @@ class BaseShapExplainer(ABC):
                 if t not in target_components:
                     continue
 
-                tmp_t = shap.Explanation(
+                tmp_t = DartsShapExplanation(
                     values=values[:, :, self.n_targets_likelihood * (h - 1) + t_idx],
                     data=explanation.data,
                     base_values=base_values[
                         :, self.n_targets_likelihood * (h - 1) + t_idx
                     ].ravel(),
                     feature_names=self.feature_names,
+                    time_index=foreground_times,
                 )
-
-                # TODO: for torch we should infer the index somehow
-                if hasattr(foreground_X, "index"):
-                    tmp_t.time_index = foreground_X.index
-
                 tmp_n[t] = tmp_t
             explanations[h] = tmp_n
 
@@ -253,10 +260,11 @@ class BaseShapExplainer(ABC):
 
     def shap_explanations_single(
         self,
-        foreground_X: pd.DataFrame,
+        foreground_arr: np.ndarray,
+        foreground_times: pd.Index,
         target_components: Sequence[str],
         **kwargs,
-    ) -> dict[str, shap.Explanation]:
+    ) -> dict[str, DartsShapExplanation]:
         """
         Similar to :func:`shap_explanations()`, but computes SHAP explanations for only one forecasted timestamp, which
         corresponds to the last forecastable timestamp in the foreground series. The output is a dictionary of SHAP
@@ -265,7 +273,7 @@ class BaseShapExplainer(ABC):
 
         Parameters
         ----------
-        foreground_X
+        foreground_arr
             A numpy array of shape `(1, num_features)` containing the input features for SHAP explanations for the
             single forecasted timestamp. Must have only one sample corresponding to the single forecasted timestamp.
         target_components
@@ -277,78 +285,38 @@ class BaseShapExplainer(ABC):
 
         Returns
         -------
-        dict[str, shap.Explanation]
-            A dictionary ``{target_component : shap.Explanation}`` containing the SHAP Explanation objects for each
+        dict[str, DartsShapExplanation]
+            A dictionary ``{target_component : DartsShapExplanation}`` containing the SHAP Explanation objects for each
             target component, where the SHAP values are extracted and reshaped for easier accessibility.
         """
-        # create a nested dictionary {target_component : shap.Explanation}
-        # for better accessibility of the explanations
-        explanations = {}
-        if isinstance(self.explainer, dict):
-            for t_idx, t in enumerate(self.target_components):
-                if t not in target_components:
-                    continue
-                values_list, data_list, base_values_list = [], [], []
-                feature_names = None
-                for h in range(1, self.n + 1):
-                    explanation = self.explainer[h - 1][t_idx](foreground_X, **kwargs)
-                    values_list.append(explanation.values.ravel())
-                    data_list.append(explanation.data.ravel())
-                    base_values_list.append(explanation.base_values.ravel())
-                    if feature_names is None:
-                        feature_names = explanation.feature_names
-                values = np.array(values_list)
-                data = np.array(data_list)
-                base_values = np.array(base_values_list).ravel()
-                explanations[t] = shap.Explanation(
-                    values=values,
-                    data=data,
-                    base_values=base_values,
-                    feature_names=feature_names,
-                )
-            return explanations
+        horizons = list(range(1, self.n + 1))
+        explanations = self.shap_explanations(
+            foreground_arr,
+            foreground_times,
+            horizons,
+            target_components,
+            **kwargs,
+        )
 
-        # E: number of forecast examples (given by all possible forecast start points)
-        # F: number of input features
-        # C: number of target components (including likelihood parameters)
-        # OCL: model's output chunk length
-
-        # the native multioutput forces us to recompute all horizons and targets
-        explanation: shap.Explanation = self.explainer(foreground_X, **kwargs)
-        values: np.ndarray = explanation.values
-        base_values: np.ndarray = explanation.base_values
-
-        # bring arrays into expected shapes:
-        # `values` -> (E, F, C * OCL)
-        # `base_values` -> (E, C * OCL)
-        if self.single_output:
-            if values.shape == foreground_X.shape:
-                values = values[:, :, np.newaxis]
-            if base_values.shape == foreground_X.shape[:1]:
-                base_values = base_values[:, np.newaxis]
-        if base_values.shape == (self.n_output_features,):
-            # for unknown reasons, some SHAP explainers (`shap.SamplingExplainer`) returns 1D base values, which
-            # need to be reshaped and repeated to match the expected shape for accessibility
-            base_values = base_values[np.newaxis, :]
-            base_values = np.repeat(
-                base_values, repeats=explanation.values.shape[0], axis=0
-            )
-
-        assert values.shape == foreground_X.shape + (self.n_output_features,)
-        assert base_values.shape == foreground_X.shape[:1] + (self.n_output_features,)
-
-        for t_idx, t in enumerate(self.target_components_likelihood):
-            if t not in target_components:
+        result = {}
+        for t in target_components:
+            if t not in explanations[horizons[0]]:
                 continue
-
-            tmp_t = shap.Explanation(
-                values=values[0, :, t_idx :: self.n_targets_likelihood].T,
-                data=np.repeat(explanation.data, repeats=self.n, axis=0),
-                base_values=base_values[:, t_idx :: self.n_targets_likelihood].ravel(),
-                feature_names=self.feature_names,
+            horizon_expls = [explanations[h][t] for h in horizons]
+            result[t] = DartsShapExplanation(
+                values=np.concatenate(
+                    [np.atleast_2d(e.values) for e in horizon_expls], axis=0
+                ),
+                data=np.concatenate(
+                    [np.atleast_2d(e.data) for e in horizon_expls], axis=0
+                ),
+                base_values=np.concatenate([
+                    np.atleast_1d(e.base_values) for e in horizon_expls
+                ]),
+                feature_names=horizon_expls[0].feature_names,
+                time_index=horizon_expls[0].time_index,
             )
-            explanations[t] = tmp_t
-        return explanations
+        return result
 
     @abstractmethod
     def _build_feature_names(self) -> list[str]:
@@ -361,7 +329,7 @@ class BaseShapExplainer(ABC):
     @abstractmethod
     def _build_explainer(
         model: ForecastingModel,
-        background_X: Any,
+        background_arr: np.ndarray,
         shap_method: SHAPMethod,
         **kwargs,
     ) -> Any:
@@ -373,7 +341,7 @@ class BaseShapExplainer(ABC):
         func
             The function wrapper that takes a numpy array of input features and outputs model predictions, to be passed
             to the SHAP explainer.
-        background_X
+        background_arr
             The background dataset in the form of a numpy array, to be passed to the SHAP explainer.
         shap_method
             The SHAP method to use for explanations. Must be one of the methods available in the SHAP library,
@@ -390,9 +358,7 @@ class BaseShapExplainer(ABC):
         future_covariates: TimeSeriesLike | None,
         n_samples: int | None = None,
         input_type: str = "background",
-    ) -> tuple[
-        np.ndarray | pd.DataFrame, list[dict[str, Any]] | None, TimeIndex | None
-    ]:
+    ) -> tuple[np.ndarray, pd.Index]:
         """
         Creates the SHAP array for the given input series and covariates, by following the logic of the model's
         prediction / inference dataset and prediction step. It returns the SHAP array, the schemas of the

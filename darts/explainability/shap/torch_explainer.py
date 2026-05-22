@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -12,7 +11,7 @@ from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.models.forecasting.rnn_model import CustomRNNModule
 from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
-from darts.typing import TimeIndex, TimeSeriesLike
+from darts.typing import TimeSeriesLike
 from darts.utils.data.torch_datasets.utils import TorchInferenceDatasetOutput
 from darts.utils.historical_forecasts.optimized_historical_forecasts_torch import (
     _create_dataset_bounds,
@@ -39,7 +38,7 @@ class TorchShapExplainer(BaseShapExplainer):
         future_covariates: TimeSeriesLike | None,
         n_samples: int | None = None,
         input_type: str = "background",
-    ) -> tuple[np.ndarray, list[dict[str, Any]], TimeIndex]:
+    ) -> tuple[np.ndarray, pd.Index]:
         # convert to sequence of TimeSeries if not already
         series_: Sequence[TimeSeries] = series2seq(series)
         past_covariates_: Sequence[TimeSeries] | None = series2seq(past_covariates)
@@ -109,7 +108,6 @@ class TorchShapExplainer(BaseShapExplainer):
         input_past = self._batch_collate_np(batch, INPUT_PAST_INDICES)
         input_future = self._batch_collate_np(batch, INPUT_FUTURE_INDICES)
         input_static = self._batch_collate_np(batch, INPUT_STATIC_INDICES)
-        schemas = [c[-2] for c in batch]
         prediction_times = pd.Index([c[-1] for c in batch])
 
         shap_array = np.concatenate(
@@ -121,7 +119,7 @@ class TorchShapExplainer(BaseShapExplainer):
             axis=-1,
         )
 
-        return shap_array, schemas, prediction_times
+        return shap_array, prediction_times
 
     @staticmethod
     def _batch_collate_np(batch: list[tuple], indices: list[int]) -> np.ndarray | None:
@@ -179,7 +177,7 @@ class TorchShapExplainer(BaseShapExplainer):
     def _build_explainer(
         self,
         model: TorchForecastingModel,
-        background_X: tuple[np.ndarray, list[dict[str, Any]], pd.Index],
+        background_arr: np.ndarray,
         shap_method: SHAPMethod,
         **kwargs,
     ) -> shap.Explainer:
@@ -191,7 +189,7 @@ class TorchShapExplainer(BaseShapExplainer):
         func
             The function wrapper that takes a numpy array of input features and outputs model predictions, to be passed
             to the SHAP explainer.
-        background_X
+        background_arr
             The background dataset in the form of a numpy array, to be passed to the SHAP explainer.
         shap_method
             The SHAP method to use for explanations. Must be one of the methods available in the SHAP library,
@@ -212,7 +210,7 @@ class TorchShapExplainer(BaseShapExplainer):
         else:
             raise_log(ValueError(f"Unknown SHAP method {shap_method}"))
 
-        return explainer_cls(self._func_wrapper, background_X, **kwargs)
+        return explainer_cls(self._func_wrapper, background_arr, **kwargs)
 
     @torch.inference_mode()
     def _func_wrapper(self, x_np: np.ndarray) -> np.ndarray:
