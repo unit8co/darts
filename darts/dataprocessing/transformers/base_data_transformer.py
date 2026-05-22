@@ -299,7 +299,7 @@ class BaseDataTransformer(ABC):
         component_mask: np.ndarray | None = None,
         series_idx: int | Sequence[int] | None = None,
         **kwargs,
-    ) -> TimeSeries | list[TimeSeries]:
+    ) -> TimeSeries | Sequence[TimeSeries]:
         """Transforms a (sequence of) of series by calling the user-implemeneted `ts_transform` method.
 
         In case a ``Sequence[TimeSeries]`` is passed as input data, this function takes care of
@@ -401,9 +401,8 @@ class BaseDataTransformer(ABC):
         transformed_data = _parallel_apply(
             input_iterator, self._ts_transform, self._n_jobs, args, kwargs
         )
-        return (
-            transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
-        )
+
+        return series2seq(transformed_data, seq_type_out=get_series_seq_type(series))
 
     def _get_params(
         self,
@@ -498,6 +497,8 @@ class BaseDataTransformer(ABC):
             )
         return component_mask
 
+    # TODO(oswald): Not sure if we should include this in the refactor
+    # TODO(oswald): I also think the typing here is too loose if input is type TS. perhaps it should be TimeSeriesLike
     @staticmethod
     def apply_component_mask(
         series: TimeSeries,
@@ -562,6 +563,7 @@ class BaseDataTransformer(ABC):
             out.append(out_)
         return out[0] if called_with_single_series else out
 
+    # TODO(oswald): Not sure if we should include this in the refactor
     @staticmethod
     def unapply_component_mask(
         series: TimeSeriesLike,
