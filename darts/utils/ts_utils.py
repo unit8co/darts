@@ -66,10 +66,34 @@ def series2seq(
 
 @overload
 def series2seq(
+    ts: TimeSeriesLike | None,
+    seq_type_out: Literal[SeriesType.SEQ] = ...,
+    nested: bool = ...,
+) -> Sequence[TimeSeries] | None: ...
+
+
+@overload
+def series2seq(
     ts: TimeSeriesLike,
     seq_type_out: Literal[SeriesType.SINGLE, SeriesType.SEQ],
     nested: bool = ...,
 ) -> TimeSeriesLike: ...
+
+
+@overload
+def series2seq(
+    ts: TimeSeries | list[TimeSeries] | list[list[TimeSeries]],
+    seq_type_out: Literal[SeriesType.SINGLE, SeriesType.SEQ],
+    nested: bool = ...,
+) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]]: ...
+
+
+@overload
+def series2seq(
+    ts: TimeSeriesLike | None,
+    seq_type_out: Literal[SeriesType.SINGLE, SeriesType.SEQ, SeriesType.NONE],
+    nested: bool = ...,
+) -> TimeSeriesLike | None: ...
 
 
 @overload
@@ -220,6 +244,13 @@ def get_series_seq_type(
 def get_series_seq_type(
     ts: TimeSeriesLike,
 ) -> Literal[SeriesType.SINGLE, SeriesType.SEQ]: ...
+
+
+# Optional Pattern B entry: matches `series: TimeSeriesLike | None` inputs.
+@overload
+def get_series_seq_type(
+    ts: TimeSeriesLike | None,
+) -> Literal[SeriesType.SINGLE, SeriesType.SEQ, SeriesType.NONE]: ...
 
 
 @overload
