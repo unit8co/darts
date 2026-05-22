@@ -58,47 +58,7 @@ class SeriesType(Enum):
 
 @overload
 def series2seq(
-    ts: None,
-    seq_type_out: SeriesType = ...,
-    nested: bool = ...,
-) -> None: ...
-
-
-@overload
-def series2seq(
-    ts: TimeSeries,
-    seq_type_out: Literal[SeriesType.SINGLE],
-    nested: bool = ...,
-) -> TimeSeries: ...
-
-
-@overload
-def series2seq(
-    ts: TimeSeries,
-    seq_type_out: Literal[SeriesType.SEQ] = ...,
-    nested: bool = ...,
-) -> list[TimeSeries]: ...
-
-
-@overload
-def series2seq(
-    ts: TimeSeries,
-    seq_type_out: Literal[SeriesType.SEQ_SEQ],
-    nested: bool = ...,
-) -> list[list[TimeSeries]]: ...
-
-
-@overload
-def series2seq(
-    ts: Sequence[TimeSeries],
-    seq_type_out: Literal[SeriesType.SINGLE],
-    nested: bool = ...,
-) -> TimeSeriesLike: ...
-
-
-@overload
-def series2seq(
-    ts: Sequence[TimeSeries],
+    ts: TimeSeriesLike,
     seq_type_out: Literal[SeriesType.SEQ] = ...,
     nested: bool = ...,
 ) -> Sequence[TimeSeries]: ...
@@ -106,10 +66,10 @@ def series2seq(
 
 @overload
 def series2seq(
-    ts: Sequence[TimeSeries],
-    seq_type_out: Literal[SeriesType.SEQ_SEQ],
+    ts: TimeSeriesLike,
+    seq_type_out: Literal[SeriesType.SINGLE, SeriesType.SEQ],
     nested: bool = ...,
-) -> Sequence[Sequence[TimeSeries]]: ...
+) -> TimeSeriesLike: ...
 
 
 @overload
@@ -251,27 +211,15 @@ def get_single_series(
 
 
 @overload
-def get_series_seq_type(ts: None) -> Literal[SeriesType.NONE]: ...
-
-
-@overload
-def get_series_seq_type(ts: TimeSeries) -> Literal[SeriesType.SINGLE]: ...
-
-
-@overload
-def get_series_seq_type(ts: Sequence[TimeSeries]) -> Literal[SeriesType.SEQ]: ...
-
-
-@overload
-def get_series_seq_type(
-    ts: Sequence[Sequence[TimeSeries]],
-) -> Literal[SeriesType.SEQ_SEQ]: ...
-
-
-@overload
 def get_series_seq_type(
     ts: TimeSeriesLike,
 ) -> Literal[SeriesType.SINGLE, SeriesType.SEQ]: ...
+
+
+@overload
+def get_series_seq_type(
+    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None,
+) -> SeriesType: ...
 
 
 def get_series_seq_type(
