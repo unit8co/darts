@@ -967,7 +967,19 @@ class TestEncoder:
         def index_year_and_shifted(index):
             return np.stack([index.year, index.year - 1], axis=1)
 
+        def invalid_callable(index):
+            return index.year[0]
+
         # ===> test callable index encoder with multi component ouput <===
+        # test invalid callable at encoder creation
+        with pytest.raises(ValueError):
+            _ = PastCallableIndexEncoder(
+                attribute=invalid_callable,
+                input_chunk_length=input_chunk_length,
+                output_chunk_length=output_chunk_length,
+            )
+
+        # test valid multi component callable
         encoder_params = {
             "custom": {
                 "past": [index_year_and_shifted],

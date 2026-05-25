@@ -735,16 +735,31 @@ class CallableIndexEncoder(SingleEncoder):
         """Test the callable with sample `pd.DatetimeIndex` and `pd.RangeIndex` to determine
         the number of output components.
         """
-        for idx in [
+        n_components = 1
+        detected = False
+
+        for idx in (
             pd.date_range("2000-01-01", periods=2, freq="D"),
             pd.RangeIndex(2),
-        ]:
+        ):
             try:
-                encoded = np.array(attribute(idx))
-                return 1 if encoded.ndim == 1 else encoded.shape[1]
+                encoded = np.asarray(attribute(idx))
+                n_components = 1 if encoded.ndim == 1 else encoded.shape[1]
+                detected = True
+                break
             except Exception:
                 continue
-        return 1
+
+        raise_if_not(
+            detected,
+            "Encountered invalid encoder argument for encoder `callable`. "
+            "Attribute must be a callable that accepts a `pd.DatetimeIndex` "
+            "or `pd.RangeIndex` and returns an array-like of shape "
+            "`(len(index),)` or `(len(index), n)`.",
+            logger,
+        )
+
+        return n_components
 
     def _encode(
         self, index: TimeIndex, target_end: pd.Timestamp, dtype: np.dtype
