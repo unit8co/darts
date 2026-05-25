@@ -714,8 +714,10 @@ class CallableIndexEncoder(SingleEncoder):
         attribute
             A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
             and returns a `np.ndarray` of shape `(len(index),)` or `(len(index), n)`.
-            An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
-            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.RangeIndex:
+            Examples for a correct `attribute` for `index` of type `pd.DatetimeIndex`:
+            ``attribute = lambda index: (index.year - 1950) / 50``
+            ``attribute = lambda index: np.stack([index.year, index.year - 1], axis=1)``
+            And for `pd.RangeIndex`:
             ``attribute = lambda index: (index - 1950) / 50``
         """
         raise_if_not(
