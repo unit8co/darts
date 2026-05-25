@@ -957,6 +957,60 @@ class TestEncoder:
         # check that the input series is not modified
         assert ts == ts_copy
 
+    def test_callable_encoder_multi_component_output(self):
+        """Test `CallableIndexEncoder` with a callable returning multiple components."""
+        ts = tg.linear_timeseries(length=24, freq="YE")
+
+        input_chunk_length = 12
+        output_chunk_length = 6
+
+        def index_year_and_shifted(index):
+            return np.stack([index.year, index.year - 1], axis=1)
+
+        # ===> test callable index encoder with multi component ouput <===
+        encoder_params = {
+            "custom": {
+                "past": [index_year_and_shifted],
+                "future": [index_year_and_shifted],
+            }
+        }
+        encs = SequentialEncoder(
+            add_encoders=encoder_params,
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            takes_past_covariates=True,
+            takes_future_covariates=True,
+        )
+
+        # train set
+        pc, fc = encs.encode_train(ts)
+        # past covariates
+        np.testing.assert_array_equal(
+            ts[:-output_chunk_length].time_index.year.values,
+            pc.values()[:, 0],
+        )
+        np.testing.assert_array_equal(
+            ts[:-output_chunk_length].time_index.year.values - 1,
+            pc.values()[:, 1],
+        )
+        # future covariates
+        np.testing.assert_array_equal(ts.time_index.year.values, fc.values()[:, 0])
+        np.testing.assert_array_equal(
+            ts.time_index.year.values - 1,
+            fc.values()[:, 1],
+        )
+        # verify number and names of components
+        assert pc.n_components == 2
+        assert list(pc.components) == [
+            "darts_enc_pc_cus_custom",
+            "darts_enc_pc_cus_custom_1",
+        ]
+        assert fc.n_components == 2
+        assert list(fc.components) == [
+            "darts_enc_fc_cus_custom",
+            "darts_enc_fc_cus_custom_1",
+        ]
+
     def test_transformer_single_series(self):
         def test_routine_cyclic(past_covs):
             for curve in ["sin", "cos"]:
