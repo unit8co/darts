@@ -616,6 +616,7 @@ def _autolog(
 
         # Resolve `metric` arg (keyword is the common case; fall back to sig-bind)
         metric = kwargs.get("metric")
+        metric_kwargs = kwargs.get("metric_kwargs") or {}
         if metric is None:
             try:
                 sig = inspect.signature(original)
@@ -627,10 +628,20 @@ def _autolog(
 
         # Derive metric name(s)
         if callable(metric):
-            names = [getattr(metric, "__name__", "metric")]
-        elif isinstance(metric, list | tuple):
             names = [
-                getattr(m, "__name__", f"metric_{i}") for i, m in enumerate(metric)
+                getattr(metric, "__name__", "metric") + _kwargs_suffix(metric_kwargs)
+            ]
+        elif isinstance(metric, (list | tuple)):
+            kw_list = (
+                list(metric_kwargs)
+                if isinstance(metric_kwargs, (list | tuple))
+                else [metric_kwargs]
+            )
+            if len(kw_list) < len(metric):
+                kw_list = kw_list + [{}] * (len(metric) - len(kw_list))
+            names = [
+                getattr(m, "__name__", f"metric_{i}") + _kwargs_suffix(kw)
+                for i, (m, kw) in enumerate(zip(metric, kw_list))
             ]
         else:
             names = ["mape"]  # darts default
@@ -652,12 +663,12 @@ def _autolog(
 
         result_arr = np.asarray(result) if not isinstance(result, list) else None
 
-        if isinstance(metric, (list, tuple)) and isinstance(result, list):
+        if isinstance(metric, (list | tuple)) and isinstance(result, list):
             # multiple metrics → result is list[scalar_or_array], one per metric
             for name, r in zip(names, result):
                 _log(f"backtest_{name}", r)
         elif (
-            isinstance(metric, list| tuple)
+            isinstance(metric, list | tuple)
             and result_arr is not None
             and result_arr.ndim == 1
             and len(result_arr) == len(names)
@@ -869,6 +880,12 @@ def _extract_covariate_metadata(
             info["count"] = len(names)
 
     return info
+
+
+def _kwargs_suffix(kw: dict | None) -> str:
+    if not kw:
+        return ""
+    return "".join(f"_{k}{v}" for k, v in sorted(kw.items()))
 
 
 def _sanitize_mlflow_key(name: str) -> str:
