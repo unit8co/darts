@@ -850,35 +850,55 @@ def _safe_scaled_divide(
     errors: np.ndarray,
     scale: np.ndarray,
     zero_division: str = "warn",
+    zero_fill: float = 1.0,
+    strict_zero: bool = False,
+    error_msg: str = "Cannot use scaled metric with periodical signals.",
+    warning_msg: str = (
+        "The error scale (denominator) is zero for some components. "
+        "Those entries are set to NaN (when numerator is non-zero) or "
+        "1.0 (when numerator is also zero, i.e. on par with naive)."
+    ),
 ) -> np.ndarray:
     """Divides ``errors`` by ``scale``, handling zero-scale entries gracefully.
 
     When ``zero_division`` is ``"warn"`` (default), the behavior depends on
-    whether the *numerator* is also zero:
+    whether the *numerator* is also considered zero:
 
-    * **Case 1** – scale ≈ 0, errors ≠ 0 (non-zero / zero): the scaled error
-      is undefined, so the result is ``np.nan``.
-    * **Case 2** – scale ≈ 0, errors ≈ 0 (zero / zero): the model is on par
-      with the naive baseline, so the result is ``1.0``.
+    * **Case 1** – zero scale, non-zero errors (non-zero / zero): the result is
+      undefined, so the entry is set to ``np.nan``.
+    * **Case 2** – zero scale, zero errors (zero / zero): the entry is set to
+      ``zero_fill``.
 
-    .. note::
-       Returning ``1.0`` for the 0/0 case assumes "model matches naive baseline"
-       since we cannot distinguish whether the model trivially *is* the seasonal
-       naive or made a non-trivial prediction that happens to match. For practical
-       purposes ``1.0`` is the right default.
+    The fill is applied element-wise, so a single zero-scale component (e.g. a
+    constant ``actual_series`` for a range-based metric) does not contaminate
+    the finite entries of the other components.
 
     Parameters
     ----------
     errors
-        Numerator array of shape ``(t, c)`` or ``(c,)``.
+        Numerator array. Broadcasts against ``scale``.
     scale
-        Denominator array of shape ``(c,)``.
+        Denominator array. Broadcasts against ``errors``.
     zero_division
         Controls behavior when ``scale`` is (near) zero.
 
         * ``"warn"`` (default) – applies the defaults described above
-          (``np.nan`` for case 1, ``1.0`` for case 2) and emits a ``UserWarning``.
+          (``np.nan`` for case 1, ``zero_fill`` for case 2) and emits a
+          warning.
         * ``"raise"`` – raises a ``ValueError`` (the legacy behavior).
+    zero_fill
+        The value for the ``0 / 0`` case under ``"warn"``. Use ``1.0`` for
+        scaled-error metrics ("on par with the naive baseline") and ``0.0`` for
+        percentage metrics ("a perfect forecast").
+    strict_zero
+        If ``True``, only exact zeros trigger zero-division handling. If
+        ``False`` (default), values close to zero according to ``np.isclose``
+        are also handled as zero. Percentage metrics use exact zeros to avoid
+        treating valid small denominators as zero.
+    error_msg
+        The message of the ``ValueError`` raised when ``zero_division="raise"``.
+    warning_msg
+        The warning logged when zero-division handling is applied.
 
     Returns
     -------
@@ -892,30 +912,28 @@ def _safe_scaled_divide(
             ),
         )
 
-    zero_mask = np.isclose(scale, 0.0)
+    zero_mask = scale == 0.0 if strict_zero else np.isclose(scale, 0.0)
     if not zero_mask.any():
         return errors / scale
 
-    # --- legacy behavior: raise on zero scale ---
     if zero_division == "raise":
-        raise_log(
-            ValueError("Cannot use scaled metric with periodical signals."),
-        )
+        raise_log(ValueError(error_msg))
 
-    # Determine the fill value for zero-scale entries in a single pass.
-    # For numeric zero_division: use that value everywhere.
-    # For "warn": Case 1 (non-zero / zero) → nan, Case 2 (0 / 0) → 1.0.
-    fill = np.where(np.isclose(errors, 0.0), 1.0, np.nan)
-
-    # Single-pass: where scale ≈ 0 use fill, otherwise normal division
+    numerator_zero = errors == 0.0 if strict_zero else np.isclose(errors, 0.0)
+    fill = np.where(numerator_zero, zero_fill, np.nan)
     result = np.where(zero_mask, fill, errors / np.where(zero_mask, 1.0, scale))
 
-    logger.warning(
-        "The error scale (denominator) is zero for some components. "
-        "Those entries are set to NaN (when numerator is non-zero) or "
-        "1.0 (when numerator is also zero, i.e. on par with naive)."
-    )
+    logger.warning(warning_msg)
     return result
+
+
+_PERCENTAGE_ZERO_DIVISION_ERROR = (
+    "Cannot compute metric: the denominator is zero for some entries."
+)
+_PERCENTAGE_ZERO_DIVISION_WARNING = (
+    "The metric denominator is zero for some entries. Those entries are set to "
+    "NaN when the numerator is non-zero and 0.0 when the numerator is also zero."
+)
 
 
 def _unique_labels(y_true: np.ndarray, y_pred: np.ndarray) -> list[np.ndarray]:

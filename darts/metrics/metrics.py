@@ -13,6 +13,8 @@ import pandas as pd
 from darts.dataprocessing import dtw
 from darts.logging import raise_log
 from darts.metrics.utils import (
+    _PERCENTAGE_ZERO_DIVISION_ERROR,
+    _PERCENTAGE_ZERO_DIVISION_WARNING,
     METRIC_OUTPUT_TYPE,
     SMPL_AX,
     TIME_AX,
@@ -1514,6 +1516,7 @@ def ape(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
     time_reduction: Callable[..., np.ndarray] | None = None,
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
@@ -1528,8 +1531,9 @@ def ape(
 
     .. math:: 100 \\cdot \\left| \\frac{y_t - \\hat{y}_t}{y_t} \\right|
 
-    Note that it will raise a `ValueError` if :math:`y_t = 0` for some :math:`t`. Consider using
-    the Absolute Scaled Error (:func:`~darts.metrics.metrics.ase`) in these cases.
+    When :math:`y_t = 0` for some :math:`t` the term is undefined; the behavior is then controlled by
+    the ``zero_division`` parameter. Consider using the Absolute Scaled Error
+    (:func:`~darts.metrics.metrics.ase`) in these cases.
 
     If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
     specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
@@ -1546,6 +1550,13 @@ def ape(
         will consider the values only over their common time interval (intersection in time).
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when the denominator :math:`y_t` is zero (i.e. ``actual_series`` is zero
+        at some time step).
+
+        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator
+          also zero) and ``np.nan`` otherwise, and emits a warning.
+        * ``"raise"`` – raises a ``ValueError``.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -1574,7 +1585,7 @@ def ape(
     Raises
     ------
     ValueError
-        If `actual_series` contains some zeros.
+        If `zero_division="raise"` and `actual_series` contains a zero.
 
     Returns
     -------
@@ -1608,13 +1619,17 @@ def ape(
         remove_nan_union=False,
         q=q,
     )
-    if not (y_true != 0).all():
-        raise_log(
-            ValueError(
-                "`actual_series` must be strictly positive to compute the MAPE."
-            ),
+    return 100.0 * np.abs(
+        _safe_scaled_divide(
+            y_true - y_pred,
+            y_true,
+            zero_division=zero_division,
+            zero_fill=0.0,
+            strict_zero=True,
+            error_msg=_PERCENTAGE_ZERO_DIVISION_ERROR,
+            warning_msg=_PERCENTAGE_ZERO_DIVISION_WARNING,
         )
-    return 100.0 * np.abs((y_true - y_pred) / y_true)
+    )
 
 
 @multi_ts_support
@@ -1625,6 +1640,7 @@ def mape(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
@@ -1638,8 +1654,9 @@ def mape(
 
     .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T}{\\left| \\frac{y_t - \\hat{y}_t}{y_t} \\right|}
 
-    Note that it will raise a `ValueError` if :math:`y_t = 0` for some :math:`t`. Consider using
-    the Mean Absolute Scaled Error (:func:`~darts.metrics.metrics.mase`) in these cases.
+    When :math:`y_t = 0` for some :math:`t` the term is undefined; the behavior is then controlled by
+    the ``zero_division`` parameter. Consider using the Mean Absolute Scaled Error
+    (:func:`~darts.metrics.metrics.mase`) in these cases.
 
     If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
     specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
@@ -1656,6 +1673,13 @@ def mape(
         will consider the values only over their common time interval (intersection in time).
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when the denominator :math:`y_t` is zero (i.e. ``actual_series`` is zero
+        at some time step).
+
+        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator
+          also zero) and ``np.nan`` otherwise, and emits a warning.
+        * ``"raise"`` – raises a ``ValueError``.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -1679,7 +1703,7 @@ def mape(
     Raises
     ------
     ValueError
-        If `actual_series` contains some zeros.
+        If `zero_division="raise"` and `actual_series` contains a zero.
 
     Returns
     -------
@@ -1709,6 +1733,7 @@ def mape(
             pred_series,
             intersect,
             q=q,
+            zero_division=zero_division,
         ),
         axis=TIME_AX,
     )
@@ -1722,6 +1747,7 @@ def wmape(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
@@ -1750,6 +1776,13 @@ def wmape(
         will consider the values only over their common time interval (intersection in time).
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when the denominator :math:`\\sum_{t=1}^T |y_t|` is zero (i.e. ``actual_series`` is
+        all zeros for a given component).
+
+        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator
+          also zero) and ``np.nan`` otherwise, and emits a warning.
+        * ``"raise"`` – raises a ``ValueError``.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -1773,7 +1806,7 @@ def wmape(
     Raises
     ------
     ValueError
-        If `actual_series` contains some zeros.
+        If `zero_division="raise"` and the denominator :math:`\\sum_{t=1}^T |y_t|` is zero for some component.
 
     Returns
     -------
@@ -1808,11 +1841,18 @@ def wmape(
         remove_nan_union=False,
         q=q,
     )
+    valid = np.any(~np.isnan(y_true) & ~np.isnan(y_pred), axis=TIME_AX)
+    errors = np.nansum(np.abs(y_true - y_pred), axis=TIME_AX)
+    scale = np.nansum(np.abs(y_true), axis=TIME_AX)
 
-    return (
-        100.0
-        * np.nansum(np.abs(y_true - y_pred), axis=TIME_AX)
-        / np.nansum(np.abs(y_true), axis=TIME_AX)
+    return 100.0 * _safe_scaled_divide(
+        np.where(valid, errors, np.nan),
+        np.where(valid, scale, np.nan),
+        zero_division=zero_division,
+        zero_fill=0.0,
+        strict_zero=True,
+        error_msg=_PERCENTAGE_ZERO_DIVISION_ERROR,
+        warning_msg=_PERCENTAGE_ZERO_DIVISION_WARNING,
     )
 
 
@@ -1824,6 +1864,7 @@ def sape(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
     time_reduction: Callable[..., np.ndarray] | None = None,
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
@@ -1840,7 +1881,7 @@ def sape(
         200 \\cdot \\frac{\\left| y_t - \\hat{y}_t \\right|}{\\left| y_t \\right| + \\left| \\hat{y}_t \\right|}
 
     When :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0` for some :math:`t` (i.e., both actual and
-    prediction are zero), the error for that time step is defined as 0.
+    prediction are zero), the behavior is controlled by the ``zero_division`` parameter.
 
     If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
     specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
@@ -1857,6 +1898,11 @@ def sape(
         will consider the values only over their common time interval (intersection in time).
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when both ``actual_series`` and ``pred_series`` are zero at the same time step.
+
+        * ``"warn"`` (default) – returns ``0.0`` and emits a warning.
+        * ``"raise"`` – raises a ``ValueError``.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -1881,6 +1927,11 @@ def sape(
         Optionally, whether to print operations progress.
     name
         Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Raises
+    ------
+    ValueError
+        If `zero_division="raise"` and both series contain a zero at the same time step.
 
     Returns
     -------
@@ -1914,13 +1965,17 @@ def sape(
         remove_nan_union=True,
         q=q,
     )
-    numerator = 200 * np.abs(y_true - y_pred)
     denominator = np.abs(y_true) + np.abs(y_pred)
-    return np.divide(
-        numerator,
-        denominator,
-        out=np.zeros_like(numerator, dtype=y_true.dtype),
-        where=denominator != 0,
+    return 200.0 * np.abs(
+        _safe_scaled_divide(
+            y_true - y_pred,
+            denominator,
+            zero_division=zero_division,
+            zero_fill=0.0,
+            strict_zero=True,
+            error_msg=_PERCENTAGE_ZERO_DIVISION_ERROR,
+            warning_msg=_PERCENTAGE_ZERO_DIVISION_WARNING,
+        )
     )
 
 
@@ -1932,6 +1987,7 @@ def smape(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
@@ -1948,7 +2004,7 @@ def smape(
         \\sum_{t=1}^{T}{\\frac{\\left| y_t - \\hat{y}_t \\right|}{\\left| y_t \\right| + \\left| \\hat{y}_t \\right|} }
 
     When :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0` for some :math:`t` (i.e., both actual and
-    prediction are zero), the error for that time step is 0.
+    prediction are zero), the behavior is controlled by the ``zero_division`` parameter.
 
     If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
     specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
@@ -1965,6 +2021,11 @@ def smape(
         will consider the values only over their common time interval (intersection in time).
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when both ``actual_series`` and ``pred_series`` are zero at the same time step.
+
+        * ``"warn"`` (default) – uses ``0.0`` for that time step and emits a warning.
+        * ``"raise"`` – raises a ``ValueError``.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -1984,6 +2045,11 @@ def smape(
         Optionally, whether to print operations progress.
     name
         Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Raises
+    ------
+    ValueError
+        If `zero_division="raise"` and both series contain a zero at the same time step.
 
     Returns
     -------
@@ -2013,6 +2079,7 @@ def smape(
             pred_series,
             intersect,
             q=q,
+            zero_division=zero_division,
         ),
         axis=TIME_AX,
     )
@@ -2026,6 +2093,7 @@ def ope(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
@@ -2055,6 +2123,15 @@ def ope(
         will consider the values only over their common time interval (intersection in time).
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when the denominator :math:`\\sum_{t=1}^{T}{y_t}` is zero.
+
+        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator
+          also zero) and ``np.nan`` otherwise, and emits a warning.
+        * ``"raise"`` – raises a ``ValueError``.
+
+        Note: a negative sum is a valid denominator (e.g. financial return series). Only an exact
+        zero sum triggers the zero-division handling.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -2078,7 +2155,7 @@ def ope(
     Raises
     ------
     ValueError
-        If :math:`\\sum_{t=1}^{T}{y_t} = 0`.
+        If `zero_division="raise"` and :math:`\\sum_{t=1}^{T}{y_t} = 0` for some component.
 
     Returns
     -------
@@ -2113,13 +2190,21 @@ def ope(
         np.nansum(y_true, axis=TIME_AX),
         np.nansum(y_pred, axis=TIME_AX),
     )
-    if not (y_true_sum > 0).all():
-        raise_log(
-            ValueError(
-                "The series of actual value cannot sum to zero when computing OPE."
-            ),
+    valid = np.any(~np.isnan(y_true) & ~np.isnan(y_pred), axis=TIME_AX)
+    return (
+        np.abs(
+            _safe_scaled_divide(
+                np.where(valid, y_true_sum - y_pred_sum, np.nan),
+                np.where(valid, y_true_sum, np.nan),
+                zero_division=zero_division,
+                zero_fill=0.0,
+                strict_zero=True,
+                error_msg=_PERCENTAGE_ZERO_DIVISION_ERROR,
+                warning_msg=_PERCENTAGE_ZERO_DIVISION_WARNING,
+            )
         )
-    return np.abs((y_true_sum - y_pred_sum) / y_true_sum) * 100.0
+        * 100.0
+    )
 
 
 @multi_ts_support
@@ -2130,6 +2215,7 @@ def arre(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
     time_reduction: Callable[..., np.ndarray] | None = None,
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
@@ -2159,6 +2245,13 @@ def arre(
         will consider the values only over their common time interval (intersection in time).
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when the denominator :math:`\\max_t{y_t} - \\min_t{y_t}` is zero (i.e.
+        ``actual_series`` is constant for a given component).
+
+        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator
+          also zero) and ``np.nan`` otherwise, and emits a warning.
+        * ``"raise"`` – raises a ``ValueError``.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -2187,7 +2280,7 @@ def arre(
     Raises
     ------
     ValueError
-        If :math:`\\max_t{y_t} = \\min_t{y_t}`.
+        If `zero_division="raise"` and :math:`\\max_t{y_t} = \\min_t{y_t}` for some component.
 
     Returns
     -------
@@ -2222,15 +2315,18 @@ def arre(
         q=q,
     )
     y_max, y_min = np.nanmax(y_true, axis=TIME_AX), np.nanmin(y_true, axis=TIME_AX)
-    if not (y_max > y_min).all():
-        raise_log(
-            ValueError(
-                "The difference between the max and min values must "
-                "be strictly positive to compute the MARRE."
-            ),
-        )
     true_range = y_max - y_min
-    return 100.0 * np.abs((y_true - y_pred) / true_range)
+    return 100.0 * np.abs(
+        _safe_scaled_divide(
+            y_true - y_pred,
+            true_range,
+            zero_division=zero_division,
+            zero_fill=0.0,
+            strict_zero=True,
+            error_msg=_PERCENTAGE_ZERO_DIVISION_ERROR,
+            warning_msg=_PERCENTAGE_ZERO_DIVISION_WARNING,
+        )
+    )
 
 
 @multi_ts_support
@@ -2241,6 +2337,7 @@ def marre(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
@@ -2270,6 +2367,13 @@ def marre(
         will consider the values only over their common time interval (intersection in time).
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when the denominator :math:`\\max_t{y_t} - \\min_t{y_t}` is zero (i.e.
+        ``actual_series`` is constant for a given component).
+
+        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator
+          also zero) and ``np.nan`` otherwise, and emits a warning.
+        * ``"raise"`` – raises a ``ValueError``.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -2293,8 +2397,10 @@ def marre(
     Raises
     ------
     ValueError
-        If :math:`\\max_t{y_t} = \\min_t{y_t}`.
+        If `zero_division="raise"` and :math:`\\max_t{y_t} = \\min_t{y_t}` for some component.
 
+    Returns
+    -------
     float
         A single metric score for:
 
@@ -2317,6 +2423,7 @@ def marre(
             pred_series,
             intersect,
             q=q,
+            zero_division=zero_division,
         ),
         axis=TIME_AX,
     )
@@ -2428,6 +2535,7 @@ def coefficient_of_variation(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
@@ -2459,6 +2567,12 @@ def coefficient_of_variation(
         will consider the values only over their common time interval (intersection in time).
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when the denominator :math:`\\bar{y}` (the mean of ``actual_series``) is zero.
+
+        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator
+          also zero) and ``np.nan`` otherwise, and emits a warning.
+        * ``"raise"`` – raises a ``ValueError``.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -2478,6 +2592,11 @@ def coefficient_of_variation(
         Optionally, whether to print operations progress.
     name
         Optionally, the metric name to display. If `None`, will use the metric function name.
+
+    Raises
+    ------
+    ValueError
+        If `zero_division="raise"` and :math:`\\bar{y} = 0` for some component.
 
     Returns
     -------
@@ -2509,10 +2628,14 @@ def coefficient_of_variation(
         q=q,
     )
     # not calling rmse as y_true and y_pred are np.ndarray
-    return (
-        100
-        * np.sqrt(np.nanmean((y_true - y_pred) ** 2, axis=TIME_AX))
-        / np.nanmean(y_true, axis=TIME_AX)
+    return 100 * _safe_scaled_divide(
+        np.sqrt(np.nanmean((y_true - y_pred) ** 2, axis=TIME_AX)),
+        np.nanmean(y_true, axis=TIME_AX),
+        zero_division=zero_division,
+        zero_fill=0.0,
+        strict_zero=True,
+        error_msg=_PERCENTAGE_ZERO_DIVISION_ERROR,
+        warning_msg=_PERCENTAGE_ZERO_DIVISION_WARNING,
     )
 
 

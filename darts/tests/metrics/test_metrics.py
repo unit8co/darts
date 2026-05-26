@@ -227,15 +227,62 @@ class TestMetrics:
             metrics.mape,
         ],
     )
-    def test_ape_zero(self, metric):
-        with pytest.raises(ValueError):
-            metric(self.series1, self.series1)
+    def test_ape_zero(self, metric, caplog):
+        # A zero in `actual_series` is now handled via `zero_division` (default
+        # "warn") instead of always raising.
+        zero_actual = TimeSeries.from_values(np.zeros((10, 1)))
+        some_pred = TimeSeries.from_values(np.ones((10, 1)))
+
+        # x/0 (zero actual, non-zero error) -> NaN + warning
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            result = metric(zero_actual, some_pred, component_reduction=None)
+        assert "denominator" in caplog.text
+        assert np.all(np.isnan(np.atleast_1d(result)))
+
+        # 0/0 (perfect forecast on a zero actual) -> 0.0 (best score)
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            result = metric(zero_actual, zero_actual, component_reduction=None)
+        assert "denominator" in caplog.text
+        assert np.all(np.atleast_1d(result) == 0.0)
+
+        # "raise" preserves the legacy raising behavior
+        with pytest.raises(ValueError, match="denominator"):
+            metric(self.series1, self.series1, zero_division="raise")
+
+        # invalid value rejected
+        with pytest.raises(ValueError, match="`zero_division` must be"):
+            metric(self.series1, self.series1, zero_division="invalid")
+
+        # strictly-positive actual: no warning, finite result
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            out = metric(self.series2, self.series2 + 1.0, component_reduction=None)
+        assert "denominator" not in caplog.text
+        assert not np.any(np.isnan(np.atleast_1d(out)))
+
+    def test_ape_elementwise_mixed_zero(self, caplog):
+        """`ape`'s denominator is the per-timestep actual, so zeros are handled
+        element-wise: an exact prediction at a zero actual -> 0.0, a wrong one
+        -> NaN, while the non-zero timesteps are unaffected."""
+        actual = TimeSeries.from_values(np.array([0.0, 4.0, 0.0, 8.0]).reshape(-1, 1))
+        pred = TimeSeries.from_values(np.array([0.0, 4.0, 1.0, 8.0]).reshape(-1, 1))
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            result = metrics.ape(
+                actual, pred, time_reduction=None, component_reduction=None
+            )
+        assert "denominator" in caplog.text
+        np.testing.assert_array_equal(result.ravel(), [0.0, 0.0, np.nan, 0.0])
 
     def test_ope_zero(self):
+        # Legacy raising behavior is now opt-in via `zero_division="raise"`.
         with pytest.raises(ValueError):
             metrics.ope(
                 self.series1 - self.series1.to_series().mean(),
                 self.series1 - self.series1.to_series().mean(),
+                zero_division="raise",
             )
 
     @pytest.mark.parametrize(
@@ -245,13 +292,23 @@ class TestMetrics:
             metrics.smape,
         ],
     )
-    def test_sape_zero_denom(self, metric):
-        assert np.allclose(metric(self.series0, self.series0), 0.0), (
-            "Expected SAPE to be 0.0 when both series are identical"
-        )
-        assert np.allclose(metric(self.series1, self.series1), 0.0), (
-            "Expected SAPE to be 0.0 when both series are identical"
-        )
+    def test_sape_zero_denom(self, metric, caplog):
+        with caplog.at_level(logging.WARNING):
+            result = metric(self.series1, self.series1)
+        assert "denominator" in caplog.text
+        assert np.allclose(result, 0.0)
+
+        with pytest.raises(ValueError, match="denominator"):
+            metric(self.series1, self.series1, zero_division="raise")
+
+        with pytest.raises(ValueError, match="`zero_division` must be"):
+            metric(self.series0, self.series0, zero_division="invalid")
+
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            result = metric(self.series0, self.series0)
+        assert "denominator" not in caplog.text
+        assert np.allclose(result, 0.0)
 
     @pytest.mark.parametrize(
         "config",
@@ -1105,14 +1162,14 @@ class TestMetrics:
         self.helper_test_nan(metric, **kwargs)
         self.helper_test_non_aggregate(metric, is_aggregate)
 
+        # Legacy raising behavior is now opt-in via `zero_division="raise"`.
         with pytest.raises(ValueError) as exc:
             _ = metric(
                 TimeSeries.from_values(np.ones((3, 1, 1))),
                 TimeSeries.from_values(np.ones((3, 1, 1))),
+                zero_division="raise",
             )
-        assert str(exc.value).startswith(
-            "The difference between the max and min values must "
-        )
+        assert "denominator" in str(exc.value)
 
     @pytest.mark.parametrize(
         "metric",
@@ -1184,8 +1241,8 @@ class TestMetrics:
     @pytest.mark.parametrize(
         "config",
         [
-            (metrics.ape, False, {"time_reduction": np.nanmean}),
-            (metrics.mape, True, {}),
+            (metrics.sape, False, {"time_reduction": np.nanmean}),
+            (metrics.smape, True, {}),
         ],
     )
     def test_sape(self, config):
@@ -1474,10 +1531,156 @@ class TestMetrics:
             assert np.all(np.isnan(result[2:]))
         caplog.clear()
 
+    @pytest.mark.parametrize(
+        "metric",
+        [
+            metrics.wmape,
+            metrics.ope,
+            metrics.arre,
+            metrics.marre,
+            metrics.coefficient_of_variation,
+        ],
+    )
+    def test_pct_metrics_zero_division(self, metric, caplog):
+        """Percentage / range-based metrics handle exact zero denominators
+        under the default ``zero_division="warn"`` and raise under
+        ``zero_division="raise"``.
+
+        A constant all-zero ``actual_series`` triggers every denominator
+        these metrics use (sum of absolutes, sum, mean, max-min)."""
+        zero_actual = TimeSeries.from_values(np.zeros((10, 1)))
+        some_pred = TimeSeries.from_values(np.ones((10, 1)))
+
+        # --- default "warn": NaN + warning ---
+        with caplog.at_level(logging.WARNING):
+            result = metric(zero_actual, some_pred, component_reduction=None)
+        assert "denominator" in caplog.text
+        assert np.all(np.isnan(np.atleast_1d(result)))
+        caplog.clear()
+
+        # --- perfect forecast on a zero denominator: 0/0 -> 0.0 ---
+        with caplog.at_level(logging.WARNING):
+            perfect = metric(zero_actual, zero_actual, component_reduction=None)
+        assert "denominator" in caplog.text
+        assert np.all(np.atleast_1d(perfect) == 0.0)
+        caplog.clear()
+
+        # --- "raise": ValueError ---
+        with pytest.raises(ValueError, match="denominator"):
+            metric(zero_actual, some_pred, zero_division="raise")
+
+        # --- invalid value rejected ---
+        with pytest.raises(ValueError, match="`zero_division` must be"):
+            metric(zero_actual, some_pred, zero_division="invalid")
+
+        # --- non-zero denominator: no warning, finite result ---
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            result_normal = metric(self.series1, self.series2, component_reduction=None)
+        assert "denominator" not in caplog.text
+        assert not np.any(np.isnan(np.atleast_1d(result_normal)))
+
+    @pytest.mark.parametrize(
+        "metric",
+        [
+            metrics.ape,
+            metrics.mape,
+            metrics.sape,
+            metrics.smape,
+            metrics.wmape,
+            metrics.ope,
+            metrics.coefficient_of_variation,
+        ],
+    )
+    def test_pct_metrics_small_non_zero_denominator(self, metric, caplog):
+        actual = TimeSeries.from_values(np.full((10, 1), 1e-9))
+        pred = TimeSeries.from_values(np.full((10, 1), -1e-9))
+
+        with caplog.at_level(logging.WARNING):
+            result = metric(actual, pred)
+
+        assert "denominator" not in caplog.text
+        assert np.allclose(result, 200.0)
+
+    @pytest.mark.parametrize("metric", [metrics.arre, metrics.marre])
+    def test_range_metrics_small_non_zero_denominator(self, metric, caplog):
+        actual = TimeSeries.from_values(np.array([1e-9, 2e-9]))
+        pred = actual - 1e-9
+
+        with caplog.at_level(logging.WARNING):
+            result = metric(actual, pred)
+
+        assert "denominator" not in caplog.text
+        assert np.allclose(result, 100.0)
+
+    @pytest.mark.parametrize("metric", [metrics.wmape, metrics.ope])
+    def test_pct_aggregate_all_nan(self, metric, caplog):
+        all_nan = TimeSeries.from_values(np.full((10, 1), np.nan))
+
+        with caplog.at_level(logging.WARNING):
+            result = metric(all_nan, all_nan, component_reduction=None)
+
+        assert "denominator" not in caplog.text
+        assert np.all(np.isnan(np.atleast_1d(result)))
+
+    def test_arre_constant_actual_elementwise(self, caplog):
+        """A constant ``actual_series`` makes the range (denominator) zero. The
+        unified helper fills element-wise: an exact prediction -> 0.0 (perfect
+        forecast), the others -> NaN, instead of NaN-ing the whole component."""
+        constant_actual = TimeSeries.from_values(np.full((4, 1), 5.0))
+        pred = TimeSeries.from_values(np.array([5.0, 9.0, 5.0, 2.0]).reshape(-1, 1))
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            result = metrics.arre(
+                constant_actual, pred, time_reduction=None, component_reduction=None
+            )
+        assert "denominator" in caplog.text
+        np.testing.assert_array_equal(result.ravel(), [0.0, np.nan, 0.0, np.nan])
+
+    @pytest.mark.parametrize(
+        "metric",
+        [
+            metrics.wmape,
+            metrics.ope,
+            metrics.arre,
+            metrics.marre,
+            metrics.coefficient_of_variation,
+        ],
+    )
+    def test_pct_metrics_zero_division_multivariate(self, metric, caplog):
+        """A single zero-denominator component must not contaminate the finite
+        components: the fill is element-wise (mirrors the scaled-metric test).
+        The component axis is the last axis for every return shape."""
+        normal = np.arange(1.0, 11.0)  # non-zero, non-constant -> finite denominator
+        zeros = np.zeros(10)  # zero denominator for every percentage/range metric
+        actual = TimeSeries.from_values(np.stack([normal, zeros], axis=1))
+
+        # exact prediction on the zero-denominator component -> 0.0 (perfect)
+        pred_exact = TimeSeries.from_values(np.stack([normal + 1.0, zeros], axis=1))
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            res = np.asarray(metric(actual, pred_exact, component_reduction=None))
+        assert "denominator" in caplog.text
+        assert res.shape[-1] == 2
+        assert np.all(np.isfinite(res[..., 0]))
+        assert np.all(res[..., 1] == 0.0)
+
+        # wrong prediction on the zero-denominator component -> NaN
+        pred_wrong = TimeSeries.from_values(
+            np.stack([normal + 1.0, np.ones(10)], axis=1)
+        )
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            res = np.asarray(metric(actual, pred_wrong, component_reduction=None))
+        assert res.shape[-1] == 2
+        assert np.all(np.isfinite(res[..., 0]))
+        assert np.all(np.isnan(res[..., 1]))
+
     def test_ope(self):
         self.helper_test_multivariate_duplication_equality(metrics.ope)
         self.helper_test_multiple_ts_duplication_equality(metrics.ope)
         self.helper_test_nan(metrics.ope)
+        self.helper_test_negative(metrics.ope)
 
     def test_rho_risk(self):
         # deterministic not supported
@@ -1958,6 +2161,14 @@ class TestMetrics:
                 s._values[-1, :, :] = np.nan
             nan_metric = metric([s + 1 for s in nan_s11], s22, **kwargs)
             np.testing.assert_array_equal(non_nan_metric, nan_metric)
+
+    def helper_test_negative(self, metric, **kwargs):
+        actual = -self.series2
+        pred = actual + 0.1
+        expected = 100.0 * abs(
+            (actual.values().sum() - pred.values().sum()) / actual.values().sum()
+        )
+        np.testing.assert_allclose(metric(actual, pred, **kwargs), expected)
 
     def helper_test_non_aggregate(self, metric, is_aggregate, val_exp=None):
         if is_aggregate:
