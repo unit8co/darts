@@ -80,7 +80,12 @@ from darts.utils.historical_forecasts.optimized_historical_forecasts_torch impor
 from darts.utils.likelihood_models.torch import TorchLikelihood
 from darts.utils.timeseries_generation import _build_forecast_series_from_schema
 from darts.utils.torch import random_method
-from darts.utils.ts_utils import get_single_series, seq2series, series2seq
+from darts.utils.ts_utils import (
+    get_series_seq_type,
+    get_single_series,
+    seq2series,
+    series2seq,
+)
 from darts.utils.utils import _build_tqdm_iterator, _parallel_apply
 
 DEFAULT_DARTS_FOLDER = "darts_logs"
@@ -1759,7 +1764,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 )
             series = self.training_series
 
-        called_with_single_series = isinstance(series, TimeSeries)
+        sequence_type_in = get_series_seq_type(series)
 
         # guarantee that all inputs are either list of TimeSeries or None
         series = series2seq(series)
@@ -1822,7 +1827,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             random_state=random_state,
         )
 
-        return predictions[0] if called_with_single_series else predictions
+        return series2seq(predictions, seq_type_out=sequence_type_in)
 
     @random_method
     def predict_from_dataset(
