@@ -79,10 +79,6 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
         """
         return self._query_explainability_result(self.explained_components, component)
 
-    # TODO(oswald): TSS migration — wrap the multi-series list branch as
-    # `TimeSeriesSequence(..., kind="series")` once TSS lands. Single-series
-    # branch returns a bare value and stays unchanged. No Pattern B refactor
-    # needed — dispatch is on stored shape (set at __init__), not on input shape.
     def _query_explainability_result(
         self,
         attr: dict[str, Any] | list[dict[str, Any]],
@@ -232,6 +228,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
                 logger,
             )
 
+    # TODO(oswald): TSS migration — wrap `list[TimeSeries]` return as TimeSeriesSequence once TSS lands.
     def get_explanation(
         self, horizon: int, component: str | None = None
     ) -> TimeSeriesLike:
@@ -251,10 +248,6 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
             self.explained_forecasts, horizon, component
         )
 
-    # TODO(oswald): TSS migration — wrap the multi-series list branch as
-    # `TimeSeriesSequence(..., kind="series")` once TSS lands. Single-series
-    # branch returns a bare value and stays unchanged. No Pattern B refactor
-    # needed — dispatch is on stored shape (set at __init__), not on input shape.
     def _query_explainability_result(
         self,
         attr: dict[int, dict[str, Any]] | list[dict[int, dict[str, Any]]],
@@ -367,6 +360,7 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
         self.feature_values = feature_values
         self.shap_explanation_object = shap_explanation_object
 
+    # TODO(oswald): TSS migration — wrap `list[TimeSeries]` return as TimeSeriesSequence once TSS lands.
     def get_feature_values(
         self, horizon: int, component: str | None = None
     ) -> TimeSeriesLike:
@@ -443,6 +437,7 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
             "static_covariates_importance",
         ]
 
+    # TODO(oswald): TSS migration — wrap `list[TimeSeries]` return as TimeSeriesSequence once TSS lands.
     def get_attention(self) -> TimeSeries | list[TimeSeries]:
         """
         Returns the time-dependent attention on the encoder and decoder for each `horizon` in (1,
