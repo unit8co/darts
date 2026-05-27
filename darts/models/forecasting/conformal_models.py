@@ -851,6 +851,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             random_state=random_state,
         )
 
+    # TODO(oswald): TSS migration — touchpoint for nested `list[list[TS]]` (lpo=False) preservation
     def residuals(
         self,
         series: TimeSeriesLike,
@@ -1077,6 +1078,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         )
 
     @random_method
+    # TODO(oswald): TSS migration — touchpoint for nested `list[list[TS]]` (lpo=False) preservation
     def _calibrate_forecasts(
         self,
         series: Sequence[TimeSeries],

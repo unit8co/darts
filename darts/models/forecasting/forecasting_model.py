@@ -668,6 +668,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return False
 
     @_with_sanity_checks("_historical_forecasts_sanity_checks")
+    # TODO(oswald): TSS migration — touchpoint for nested `list[list[TS]]` (lpo=False) preservation
     def historical_forecasts(
         self,
         series: TimeSeriesLike,
@@ -2001,6 +2002,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         return model_class(**best_param_combination), best_param_combination, min_error
 
+    # TODO(oswald): TSS migration — touchpoint for nested `list[list[TS]]` (lpo=False) preservation;
     def residuals(
         self,
         series: TimeSeriesLike,
