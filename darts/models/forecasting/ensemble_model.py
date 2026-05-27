@@ -26,7 +26,7 @@ from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
 )
 from darts.typing import TimeSeriesLike
-from darts.utils.ts_utils import series2seq
+from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
 from darts.utils.utils import TORCH_AVAILABLE
 
 if TORCH_AVAILABLE:
@@ -376,7 +376,9 @@ class EnsembleModel(GlobalForecastingModel):
         random_state: int | None = None,
         verbose: bool | None = None,
     ) -> TimeSeriesLike:
-        is_single_series = isinstance(series, TimeSeries) or series is None
+        sequence_type_in = (
+            SeriesType.SINGLE if series is None else get_series_seq_type(series)
+        )
         # maximize covariate usage
         predictions = [
             model._predict_wrapper(
@@ -397,6 +399,8 @@ class EnsembleModel(GlobalForecastingModel):
             )
             for model in self.forecasting_models
         ]
+        # Normalizing predictions to SeriesType.SEQ so we can always use self._stack_ts_multiseq
+        predictions = [series2seq(pred) for pred in predictions]
 
         # reduce the probabilistics series
         if self.train_samples_reduction is not None and self.train_num_samples > 1:
@@ -404,11 +408,8 @@ class EnsembleModel(GlobalForecastingModel):
                 self._predictions_reduction(prediction) for prediction in predictions
             ]
 
-        return (
-            self._stack_ts_seq(predictions)
-            if is_single_series
-            else self._stack_ts_multiseq(predictions)
-        )
+        result = self._stack_ts_multiseq(predictions)
+        return series2seq(result, seq_type_out=sequence_type_in)
 
     def predict(
         self,
@@ -519,7 +520,7 @@ class EnsembleModel(GlobalForecastingModel):
 
     def _predictions_reduction(self, predictions: TimeSeriesLike) -> TimeSeriesLike:
         """Reduce the sample dimension of the forecasting models predictions"""
-        is_single_series = isinstance(predictions, TimeSeries)
+        sequence_type_in = get_series_seq_type(predictions)
         predictions = series2seq(predictions)
         if self.train_samples_reduction == "median":
             predictions = [pred.median(axis=2) for pred in predictions]
@@ -529,7 +530,7 @@ class EnsembleModel(GlobalForecastingModel):
             predictions = [
                 pred.quantile(self.train_samples_reduction) for pred in predictions
             ]
-        return predictions[0] if is_single_series else predictions
+        return series2seq(predictions, seq_type_out=sequence_type_in)
 
     def _clean(self) -> Self:
         """Cleans the model and sub-models."""
