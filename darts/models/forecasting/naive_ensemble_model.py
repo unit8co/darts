@@ -3,8 +3,6 @@ Naive Ensemble Model
 --------------------
 """
 
-from collections.abc import Sequence
-
 import numpy as np
 
 from darts import TimeSeries
@@ -12,6 +10,7 @@ from darts.logging import get_logger
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.typing import TimeSeriesLike
+from darts.utils.ts_utils import get_series_seq_type, series2seq
 
 logger = get_logger(__name__)
 
@@ -117,21 +116,18 @@ class NaiveEnsembleModel(EnsembleModel):
         """Average the `forecasting_models` predictions, component-wise"""
         # at this point, if `predict_likelihood_parameters=True`, it's guaranteed
         # that all models use the same likelihood
-        if isinstance(predictions, Sequence):
-            return [
-                (
-                    self._target_average(p, ts)
-                    if not predict_likelihood_parameters
-                    else self._params_average(p, ts)
-                )
-                for p, ts in zip(predictions, series)
-            ]
-        else:
-            return (
-                self._target_average(predictions, series)
-                if not predict_likelihood_parameters
-                else self._params_average(predictions, series)
-            )
+        sequence_type_in = get_series_seq_type(predictions)
+        predictions = series2seq(predictions)
+        series = series2seq(series)
+
+        avg = (
+            self._params_average
+            if predict_likelihood_parameters
+            else self._target_average
+        )
+        result = [avg(p, ts) for p, ts in zip(predictions, series)]
+
+        return series2seq(result, seq_type_out=sequence_type_in)
 
     def _target_average(self, prediction: TimeSeries, series: TimeSeries) -> TimeSeries:
         """Average across the components, keep n_samples, rename components"""
