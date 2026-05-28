@@ -393,6 +393,11 @@ class PatchTSTFMModel(FoundationModel):
             PatchTST-FM weights from ``ibm-granite/granite-timeseries-patchtst-fm-r1`` are licensed under
             the `Apache-2.0 License <https://github.com/ibm-granite/granite-tsfm/blob/main/LICENSE>`_,
             copyright IBM. By using this model, you agree to the terms and conditions of the license.
+        .. note::
+            You may use non-commercial, research version of PatchTST-FM from
+            `ibm-research/patchtst-fm-r1 <https://huggingface.co/ibm-research/patchtst-fm-r1>`_ licensed under
+            the `Creative Commons Attribution Non Commercial Share Alike 4.0 <https://spdx.org/licenses/CC-BY-NC-SA-4.0>`_.
+            Note that this version may not be used for commercial purposes.
 
         Parameters
         ----------
