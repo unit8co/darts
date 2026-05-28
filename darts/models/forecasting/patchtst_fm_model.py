@@ -358,7 +358,7 @@ class PatchTSTFMModel(FoundationModel):
         output_chunk_shift: int = 0,
         likelihood: QuantileRegression | None = None,
         hub_model_name: str = "ibm-granite/granite-timeseries-patchtst-fm-r1",
-        hub_model_revision: str | None = None,
+        hub_model_revision: str | None = "151f9c6d576281b95c2ff784d0863bd3f12c80f1",
         local_dir: str | os.PathLike | None = None,
         **kwargs,
     ):
@@ -430,7 +430,7 @@ class PatchTSTFMModel(FoundationModel):
             Default: ``"ibm-granite/granite-timeseries-patchtst-fm-r1"`` (Apache-2.0).
         hub_model_revision
             The model version to use. This can be a branch name, tag name, or commit hash. Default is
-            ``None``, which will use the default branch from ``hub_model_name``.
+            ``151f9c6d576281b95c2ff784d0863bd3f12c80f1``, which will use the March 25, 2026 release of PatchTST-FM.
         local_dir
             Optional local directory to load the pre-downloaded model. If specified and the directory is empty, the
             model will be downloaded from HuggingFace Hub and saved to this directory. Default is ``None``, which will
