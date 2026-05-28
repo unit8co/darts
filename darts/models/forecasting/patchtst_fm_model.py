@@ -3,7 +3,7 @@ PatchTST-FM
 -----------
 
 PatchTST-FM can be used the same way as other foundation models (e.g. Chronos2), with the exception
-that it does not support any type of covariates.
+that it does not support covariates.
 
 For detailed examples and tutorials, see:
 
@@ -255,7 +255,7 @@ class _PatchTSTFMModule(PLForecastingModule):
         output_chunk_shift = self.output_chunk_shift
         forecast_length = output_chunk_shift + output_chunk_length
 
-        # PatchTST-FM is a univariate model and its inputs does not have a variable dimension,
+        # PatchTST-FM is a univariate model and its inputs do not have a variable dimension,
         # so here we reshape `x_past` to (B * C, L)
         context = x_past.permute(0, 2, 1).reshape(-1, past_length)
         effective_batch = context.shape[0]
@@ -469,7 +469,7 @@ class PatchTSTFMModel(FoundationModel):
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
-            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            of the name is formatted with the local date and time, while PID is the process ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
@@ -530,7 +530,7 @@ class PatchTSTFMModel(FoundationModel):
 
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
-            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUs.
 
             For more info, see here:
             https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and

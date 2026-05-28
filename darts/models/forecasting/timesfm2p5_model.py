@@ -3,7 +3,7 @@ TimesFM 2.5
 -----------
 
 TimesFM 2.5 can be used the same way as other foundation models (e.g. Chronos2), with the exception
-that it does not support any type of covariates.
+that it does not support covariates.
 
 For detailed examples and tutorials, see:
 
@@ -233,13 +233,13 @@ class _TimesFM2p5Module(PLForecastingModule):
         Parameters
         ----------
         x_in
-            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
+            comes as a tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
             is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
 
         Returns
         -------
         torch.Tensor
-            the output tensor in the shape of `(n_samples, n_time_steps, n_targets, n_quantiles)` for
+            the output tensor in the shape `(n_samples, n_time_steps, n_targets, n_quantiles)` for
             probabilistic forecasts, or `(n_samples, n_time_steps, n_targets, 1)` for
             deterministic forecasts (median only).
         """
@@ -259,7 +259,7 @@ class _TimesFM2p5Module(PLForecastingModule):
         # `x_past`: (B, L, C)
         x_past, _, _ = x_in
 
-        # TimesFM 2.5 is a univariate model and its inputs does not have a variable dimension,
+        # TimesFM 2.5 is a univariate model and its inputs do not have a variable dimension,
         # so here we reshape `x_past` to (B * C, L)
         x_past = x_past.permute(0, 2, 1).reshape(-1, self.input_chunk_length)
 
@@ -470,7 +470,7 @@ class TimesFM2p5Model(FoundationModel):
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
-            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            of the name is formatted with the local date and time, while PID is the process ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
@@ -531,7 +531,7 @@ class TimesFM2p5Model(FoundationModel):
 
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
-            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUs.
 
             For more info, see here:
             https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
