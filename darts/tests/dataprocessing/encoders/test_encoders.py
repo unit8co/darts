@@ -895,6 +895,16 @@ class TestEncoder:
             and (fc2.univariate_values() == np.arange(3, 10)).all()
         )
 
+        encoder_params = {"position": {"past": ["invalid"]}}
+        with pytest.raises(ValueError, match='Attribute must be `"relative"`.'):
+            _ = SequentialEncoder(
+                add_encoders=encoder_params,
+                input_chunk_length=input_chunk_length,
+                output_chunk_length=output_chunk_length,
+                takes_past_covariates=True,
+                takes_future_covariates=True,
+            )
+
     def test_callable_encoder(self):
         """Test `CallableIndexEncoder`"""
         ts = tg.linear_timeseries(length=24, freq="YE")
@@ -956,6 +966,16 @@ class TestEncoder:
 
         # check that the input series is not modified
         assert ts == ts_copy
+
+        encoder_params = {"custom": {"past": ["invalid"]}}
+        with pytest.raises(ValueError, match="Attribute must be a callable"):
+            _ = SequentialEncoder(
+                add_encoders=encoder_params,
+                input_chunk_length=input_chunk_length,
+                output_chunk_length=output_chunk_length,
+                takes_past_covariates=True,
+                takes_future_covariates=True,
+            )
 
     def test_callable_encoder_multi_component_output(self):
         """Test `CallableIndexEncoder` with a callable returning multiple components."""
@@ -1262,6 +1282,20 @@ class TestEncoder:
                     assert abs(cov[cov_name].values(copy=False).max() - 2.5) < 10e-9
                 else:
                     assert abs(cov[cov_name].values(copy=False).max() - 1.0) < 10e-9
+
+    def test_transformer_invalid(self):
+        encoder_params = {
+            "datetime_attribute": {"past": ["month"]},
+            "transformer": "invalid",
+        }
+        with pytest.raises(ValueError, match="Transformer must be an instance of"):
+            _ = SequentialEncoder(
+                add_encoders=encoder_params,
+                input_chunk_length=11,
+                output_chunk_length=6,
+                takes_past_covariates=True,
+                takes_future_covariates=True,
+            )
 
     def helper_test_cyclic_encoder(
         self,

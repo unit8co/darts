@@ -774,7 +774,7 @@ class CallableIndexEncoder(SingleEncoder):
         values = np.array(self.attribute(index), dtype=dtype)
         components = [
             self.base_component_name + ("custom" if i == 0 else f"custom_{i}")
-            for i in range(self._n_components)
+            for i in range(self.encoding_n_components)
         ]
         return TimeSeries(
             times=index,
@@ -786,7 +786,7 @@ class CallableIndexEncoder(SingleEncoder):
     @property
     def accept_transformer(self) -> list[bool]:
         """`CallableIndexEncoder` accepts transformations."""
-        return [True] * self._n_components
+        return [True] * self.encoding_n_components
 
     @property
     def requires_fit(self) -> bool:
