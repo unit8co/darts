@@ -74,7 +74,6 @@ class Pipeline:
                 ValueError(
                     "transformers should be objects deriving from BaseDataTransformer."
                 ),
-                logger,
             )
 
         if transformers is None or len(transformers) == 0:
@@ -222,7 +221,6 @@ class Pipeline:
                 ValueError(
                     "Not all transformers in the pipeline can perform inverse_transform"
                 ),
-                logger,
             )
 
         # only inverse-transform insample as long as it is required
@@ -299,7 +297,7 @@ class Pipeline:
             Subset of pipeline determined by key.
         """
         if not (isinstance(key, int) or isinstance(key, slice)):
-            raise_log(ValueError("key must be either an int or a slice."), logger)
+            raise_log(ValueError("key must be either an int or a slice."))
 
         if isinstance(key, int):
             transformers = [self._transformers[key]]

@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 import time
 import warnings
 from typing import NoReturn
@@ -50,25 +51,27 @@ def raise_deprecation_warning(
     logger.warning("DeprecationWarning: " + message)
 
 
-def raise_log(
-    exception: Exception, logger: logging.Logger = get_logger("main_logger")
-) -> NoReturn:
+def raise_log(exception: Exception) -> NoReturn:
     """
     Can be used to replace "raise" when throwing an exception to ensure the logging
     of the exception. After logging it, the exception is raised.
+
+    The logger is automatically resolved from the calling module's ``__name__``.
 
     Parameters
     ----------
     exception
         The exception instance to be raised.
-    logger
-        The logger instance to log the exception type and message.
 
     Raises
     ------
     Exception
         The provided exception
     """
+
+    frame = sys._getframe(1)
+    module_name = frame.f_globals.get("__name__", "darts")
+    logger = logging.getLogger(module_name)
 
     exception_type = str(type(exception)).split("'")[1]
     message = str(exception)

@@ -103,7 +103,6 @@ def interval_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                 ValueError(
                     f"`{_PARAM_Q_INTERVAL}` must be a tuple (float, float) or a sequence of tuples (float, float)."
                 ),
-                logger=logger,
             )
         if not np.all(q_interval[:, 1] - q_interval[:, 0] > 0):
             raise_log(
@@ -111,7 +110,6 @@ def interval_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                     f"all intervals in `{_PARAM_Q_INTERVAL}` must be tuples of (lower q, upper q) with "
                     f"`lower q > upper q`. Received `{_PARAM_Q_INTERVAL}={q_interval}`"
                 ),
-                logger=logger,
             )
         kwargs[_PARAM_Q_INTERVAL] = q_interval
         kwargs[_PARAM_Q] = np.sort(np.unique(q_interval))
@@ -148,7 +146,6 @@ def classification_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                             f"Invalid `{_PARAM_LABEL_REDUCTION}` value: `{label_reduction}`. "
                             f"Must be one of `{list(_LabelReduction._value2member_map_)}`."
                         ),
-                        logger=logger,
                     )
                 kwargs[_PARAM_LABEL_REDUCTION] = _LabelReduction(label_reduction)
 
@@ -221,7 +218,6 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                     f"Mismatch between number of series in `actual_series` (n={len(actual_series)}) and "
                     f"`pred_series` (n={len(pred_series)})."
                 ),
-                logger=logger,
             )
         num_series_in_args = int("actual_series" not in kwargs) + int(
             "pred_series" not in kwargs
@@ -246,7 +242,6 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                         f"Mismatch between number of series in `actual_series` (n={len(actual_series)}) and "
                         f"`insample` series (n={len(insample)})."
                     ),
-                    logger=logger,
                 )
             input_series += (insample,)
             num_series_in_args += int("insample" not in kwargs)
@@ -273,14 +268,12 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                             f"`{_PARAM_Q}` must be of type `float`, or a sequence of increasing order with unique "
                             f"values only. Received `{_PARAM_Q}={q}`."
                         ),
-                        logger=logger,
                     )
                 if not np.all(q >= 0.0) & np.all(q <= 1.0):
                     raise_log(
                         ValueError(
                             f"All `{_PARAM_Q}` values must be in the range `(>=0,<=1)`. Received `{_PARAM_Q}={q}`."
                         ),
-                        logger=logger,
                     )
                 kwargs[_PARAM_Q] = (q, q_comp_names)
 
@@ -360,7 +353,6 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                         f"Mismatch between number of components in `actual_series` "
                         f"(n={actual_series.width}) and `insample` (n={insample.width}."
                     ),
-                    logger=logger,
                 )
             input_series += (insample,)
             num_series_in_args += 1
@@ -380,7 +372,6 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                         "or 3 dimensions (n times, n components, n quantiles or n labels)  "
                         "for time dependent metrics (e.g. `ae()`, ...)"
                     ),
-                    logger=logger,
                 )
 
         if n_dims == 2:
@@ -432,7 +423,6 @@ def _regression_handling(actual_series, pred_series, params, kwargs):
                     f"Mismatch between number of components in `actual_series` "
                     f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
                 ),
-                logger=logger,
             )
         # compute median for stochastic predictions
         if pred_series.is_stochastic:
@@ -446,7 +436,6 @@ def _regression_handling(actual_series, pred_series, params, kwargs):
                     "where the (quantile values, optional quantile component names). "
                     f"Received `{_PARAM_Q}={q}`."
                 ),
-                logger=logger,
             )
         q, q_comp_names = q
         if not pred_series.is_stochastic:
@@ -467,7 +456,6 @@ def _regression_handling(actual_series, pred_series, params, kwargs):
                         f"quantiles as columns / components. Either pass a probabilistic `pred_series` or "
                         f"a series containing the expected quantile components: {q_comp_names.tolist()} "
                     ),
-                    logger=logger,
                 )
 
     if _PARAM_Q in params:
@@ -498,7 +486,6 @@ def _classification_handling(actual_series, pred_series):
                     f"Original components: {actual_series.components}, predicted components: "
                     f"{pred_series.components}."
                 ),
-                logger=logger,
             )
 
 
@@ -642,7 +629,6 @@ def _get_values_or_raise(
                     "The `insample` series must start before the `pred_series` and "
                     "extend at least until one time step before the start of `pred_series`."
                 ),
-                logger=logger,
             )
         end = end or None
         vals_actual_common = actual_series.all_values(copy=make_copy)[:end]
@@ -775,7 +761,6 @@ def _get_wrapped_metric(
     if not 2 <= n_wrappers <= 3:
         raise_log(
             NotImplementedError("Only 2-3 wrappers are currently supported"),
-            logger=logger,
         )
     if n_wrappers == 2:
         return func.__wrapped__.__wrapped__
@@ -803,7 +788,6 @@ def _get_reduction(
                 ValueError(
                     f"Invalid `{red_name}` function: Must have a parameter called `axis`."
                 ),
-                logger=logger,
             )
         # verify `red_fn` reduces to array with correct shape
         shape_in = (2, 1) if axis == 0 else (1, 2)
@@ -815,7 +799,6 @@ def _get_reduction(
                     f"Invalid `{red_name}` function output type: Expected type "
                     f"`np.ndarray`, received type=`{type(out)}`."
                 ),
-                logger=logger,
             )
         shape_invalid = out.shape != (1,)
         if shape_invalid:
@@ -826,7 +809,6 @@ def _get_reduction(
                     f"However, the function reduced a test array of shape `{shape_in}` to "
                     f"`{out.shape}`."
                 ),
-                logger=logger,
             )
     return red_fn
 
@@ -841,7 +823,6 @@ def _get_error_scale(
     if not isinstance(m, int):
         raise_log(
             ValueError(f"Seasonality `m` must be of type `int`, received `m={m}`"),
-            logger=logger,
         )
 
     # `x_t` are the true `y` values before the start of `y_pred`
@@ -860,7 +841,6 @@ def _get_error_scale(
             ValueError(
                 f"unknown `metric={metric}`. Must be one of ('mae', 'mse', 'rmse')."
             ),
-            logger=logger,
         )
 
     return scale
@@ -910,7 +890,6 @@ def _safe_scaled_divide(
             ValueError(
                 f"`zero_division` must be 'warn' or 'raise'. Received {zero_division}."
             ),
-            logger=logger,
         )
 
     zero_mask = np.isclose(scale, 0.0)
@@ -921,7 +900,6 @@ def _safe_scaled_divide(
     if zero_division == "raise":
         raise_log(
             ValueError("Cannot use scaled metric with periodical signals."),
-            logger=logger,
         )
 
     # Determine the fill value for zero-scale entries in a single pass.
@@ -1121,14 +1099,12 @@ def _get_tolerance_levels(
             ValueError(
                 "min_tolerance must be >= 0, max_tolerance must be <= 1, and min_tolerance < max_tolerance."
             ),
-            logger=logger,
         )
     if step <= 0 or step > (max_tolerance - min_tolerance):
         raise_log(
             ValueError(
                 "step must be positive and not larger than (max_tolerance - min_tolerance)."
             ),
-            logger=logger,
         )
     num_steps = int(round((max_tolerance - min_tolerance) / step)) + 1
     return np.linspace(min_tolerance, max_tolerance, num_steps)

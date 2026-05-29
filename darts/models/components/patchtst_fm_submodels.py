@@ -17,9 +17,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from darts.logging import get_logger, raise_log
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
 
 
 class _RevIN(nn.Module):
@@ -109,7 +107,6 @@ class _LearnedPositionalEmbedding(nn.Module):
         if kind not in ["add", "mul"]:
             raise_log(
                 ValueError(f"Invalid `kind`: {kind}"),
-                logger=logger,
             )
         self.kind = kind
 
@@ -273,7 +270,6 @@ class _TransformerBlock(nn.Module):
         else:
             raise_log(
                 ValueError(f"Unsupported `mlp_type`: {mlp_type}"),
-                logger=logger,
             )
         self.dropout = nn.Dropout(dropout)
 

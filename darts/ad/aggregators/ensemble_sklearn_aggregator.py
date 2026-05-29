@@ -10,9 +10,7 @@ from sklearn.ensemble import BaseEnsemble
 
 from darts import TimeSeries
 from darts.ad.aggregators.aggregators import FittableAggregator
-from darts.logging import get_logger, raise_log
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
 
 
 class EnsembleSklearnAggregator(FittableAggregator):
@@ -33,7 +31,6 @@ class EnsembleSklearnAggregator(FittableAggregator):
                     "Scorer is expecting a model of type BaseEnsemble (from sklearn ensemble), "
                     "found type {type(model)}."
                 ),
-                logger,
             )
 
         self.model = model

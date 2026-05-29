@@ -196,7 +196,6 @@ class TFTExplainer(_ForecastingModelExplainer):
                     f"The number of back- or foreground series to explain ({len(foreground_series)}) "
                     f"must be smaller than or equal to the model's batch size ({self.model.batch_size})."
                 ),
-                logger=logger,
             )
 
         horizons, _ = self._process_horizons_and_targets(None, None)
@@ -411,7 +410,6 @@ class TFTExplainer(_ForecastingModelExplainer):
             else:
                 raise raise_log(
                     ValueError("`plot_type` must be either 'all', 'time' or 'heatmap'"),
-                    logger=logger,
                 )
 
             # draw the prediction start point

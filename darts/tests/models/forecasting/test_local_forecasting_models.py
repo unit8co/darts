@@ -17,7 +17,6 @@ if SF_AVAILABLE:
 
 from darts import TimeSeries
 from darts.datasets import AirPassengersDataset, IceCreamHeaterDataset
-from darts.logging import get_logger
 from darts.metrics import mape
 from darts.models import (
     ARIMA,
@@ -61,8 +60,6 @@ from darts.utils.utils import (
     TrendMode,
     generate_index,
 )
-
-logger = get_logger(__name__)
 
 # (forecasting models, maximum error) tuples
 models = [

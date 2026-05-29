@@ -8,9 +8,6 @@ from typing import Any
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import BaseDataTransformer
-from darts.logging import get_logger
-
-logger = get_logger(__name__)
 
 
 class WindowTransformer(BaseDataTransformer):

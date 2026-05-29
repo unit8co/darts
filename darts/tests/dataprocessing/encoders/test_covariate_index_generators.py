@@ -8,11 +8,8 @@ from darts.dataprocessing.encoders.encoder_base import (
     FutureCovariatesIndexGenerator,
     PastCovariatesIndexGenerator,
 )
-from darts.logging import get_logger
 from darts.utils import timeseries_generation as tg
 from darts.utils.utils import generate_index
-
-logger = get_logger(__name__)
 
 
 class TestCovariatesIndexGenerator:

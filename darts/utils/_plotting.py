@@ -44,7 +44,6 @@ def _prepare_plot_params(
                 ValueError(
                     'central_quantile must be either "mean", or a float between 0 and 1.'
                 ),
-                logger,
             )
 
     if high_quantile is not None and low_quantile is not None:
@@ -53,14 +52,12 @@ def _prepare_plot_params(
                 ValueError(
                     "confidence interval low and high quantiles must be between 0 and 1."
                 ),
-                logger,
             )
         if low_quantile >= high_quantile:
             raise_log(
                 ValueError(
                     f"low_quantile ({low_quantile}) must be less than high_quantile ({high_quantile})."
                 ),
-                logger,
             )
 
     # component slicing
@@ -86,7 +83,6 @@ def _prepare_plot_params(
                     f"({series.n_components}) or as the number of plotted components ({n_components_to_plot}). "
                     f"Received length `{len(label)}`."
                 ),
-                logger,
             )
 
     resolved_labels = []
@@ -107,7 +103,6 @@ def _prepare_plot_params(
             ValueError(
                 "`color` and `c` must not be used simultaneously, use one or the other."
             ),
-            logger,
         )
     color = color if color is not None else c
 
@@ -124,7 +119,6 @@ def _prepare_plot_params(
                     f"({series.n_components}) or as the number of plotted components ({n_components_to_plot}). "
                     f"Received length `{len(color)}`."
                 ),
-                logger,
             )
 
     # alpha preprocessing
@@ -424,7 +418,6 @@ def plotly(
             ImportError(
                 "Plotly is not installed. Please install it with: `pip install plotly`"
             ),
-            logger,
         )
 
     def _get_active_colorway(fig):
@@ -500,7 +493,6 @@ def plotly(
             ValueError(
                 "`color` and `c` must be a string, a sequence of strings, or None."
             ),
-            logger,
         )
 
     # downsampling

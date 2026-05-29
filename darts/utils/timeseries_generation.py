@@ -10,7 +10,7 @@ import holidays
 import numpy as np
 import pandas as pd
 
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.timeseries import (
     DIMS,
     HIERARCHY_TAG,
@@ -21,8 +21,6 @@ from darts.timeseries import (
 )
 from darts.typing import TimeIndex, TimeZone
 from darts.utils.utils import generate_index
-
-logger = get_logger(__name__)
 
 ONE_INDEXED_FREQS = {
     "day",
@@ -282,7 +280,6 @@ def gaussian_timeseries(
                     "If a vector of means is provided, "
                     "it requires the same length as the TimeSeries."
                 ),
-                logger,
             )
     if isinstance(std, np.ndarray):
         if std.shape != (length, length):
@@ -291,7 +288,6 @@ def gaussian_timeseries(
                     "If a matrix of standard deviations is provided, "
                     "its shape has to match the length of the TimeSeries."
                 ),
-                logger,
             )
 
     index = generate_index(
@@ -419,7 +415,7 @@ def autoregressive_timeseries(
         start_values = np.ones(len(coef), dtype=dtype)
     else:
         if len(start_values) != len(coef):
-            raise_log(ValueError("start_values must have same length as coef."), logger)
+            raise_log(ValueError("start_values must have same length as coef."))
 
     index = generate_index(
         start=start, end=end, freq=freq, length=length, name=TIMES_NAME
@@ -449,7 +445,7 @@ def _extend_time_index_until(
         return time_index
 
     if bool(add_length) and bool(until):
-        raise_log(ValueError("set only one of `add_length` and `until`."), logger)
+        raise_log(ValueError("set only one of `add_length` and `until`."))
 
     datetime_index = isinstance(time_index, pd.DatetimeIndex)
 
@@ -473,7 +469,6 @@ def _extend_time_index_until(
             ValueError(
                 f"`until={end}` must lie further ahead in the future than the end of time index {time_index[-1]}"
             ),
-            logger=logger,
         )
     return new_time_index
 
@@ -623,11 +618,10 @@ def datetime_attribute_timeseries(
                 "See all available attributes in "
                 "https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex"
             ),
-            logger,
         )
 
     if one_hot and cyclic:
-        raise_log(ValueError("set only one of one_hot or cyclic to true"), logger)
+        raise_log(ValueError("set only one of one_hot or cyclic to true"))
 
     num_values_dict = {
         "month": 12,
@@ -692,7 +686,6 @@ def datetime_attribute_timeseries(
                     f"Given datetime attribute `{attribute}` not supported with one-hot or cyclical encoding. "
                     f"Supported datetime attribute: {list(num_values_dict.keys())}."
                 ),
-                logger,
             )
 
     if one_hot:
@@ -723,7 +716,6 @@ def datetime_attribute_timeseries(
                     "For the given case with `one_hot=True`,`with_columns` must be a list of strings of length "
                     f"{values_df.columns}."
                 ),
-                logger=logger,
             )
 
         values_df.columns = with_columns
@@ -745,7 +737,6 @@ def datetime_attribute_timeseries(
                         "`with_columns` must be a list of two strings when `cyclic=True`. "
                         "The first string for the sine component name, the second for the cosine component name."
                     ),
-                    logger=logger,
                 )
             values_df = pd.DataFrame({
                 with_columns[0]: np.sin(freq * values),
@@ -759,7 +750,6 @@ def datetime_attribute_timeseries(
                     ValueError(
                         "`with_columns` must be a string specifying the output component name."
                     ),
-                    logger=logger,
                 )
             values_df = pd.DataFrame({with_columns: values})
     return TimeSeries(
@@ -881,7 +871,6 @@ def _build_forecast_series_from_schema(
                     "Must pass `likelihood_component_names_fn` with "
                     "`predict_likelihood_parameters=True`"
                 ),
-                logger=logger,
             )
         columns = likelihood_component_names_fn(components=schema["columns"])
         static_covariates = None
@@ -941,12 +930,10 @@ def _process_time_index(
             ValueError(
                 "`time_index` must be a pandas `DatetimeIndex` or a `TimeSeries` indexed with a `DatetimeIndex`."
             ),
-            logger=logger,
         )
     if time_index.tz is not None:
         raise_log(
             ValueError("`time_index` must be time zone naive."),
-            logger=logger,
         )
     time_index = _extend_time_index_until(
         time_index, until, add_length, time_index.name

@@ -8,7 +8,7 @@ import math
 import torch
 import torch.nn as nn
 
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.components import glu_variants, layer_norm_variants
 from darts.models.components.glu_variants import GLU_FFN
 from darts.models.components.transformer import (
@@ -22,9 +22,6 @@ from darts.models.forecasting.pl_forecasting_module import (
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
-
-logger = get_logger(__name__)
-
 
 BUILT_IN = ["relu", "gelu"]
 FFN = GLU_FFN + BUILT_IN
@@ -205,7 +202,7 @@ class _TransformerModule(PLForecastingModule):
             self.layer_norm = norm_type
 
         if activation not in FFN:
-            raise_log(ValueError(f"'{activation}' is not in {FFN}."), logger)
+            raise_log(ValueError(f"'{activation}' is not in {FFN}."))
         if activation in GLU_FFN:
             if custom_encoder is not None or custom_decoder is not None:
                 raise_log(
@@ -213,7 +210,6 @@ class _TransformerModule(PLForecastingModule):
                         "Cannot use `custom_encoder` or `custom_decoder` along with an `activation` from "
                         f"{GLU_FFN}."
                     ),
-                    logger=logger,
                 )
             # use glu variant feed-forward layers
             ffn_cls = getattr(glu_variants, activation)

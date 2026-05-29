@@ -20,7 +20,6 @@ from darts.dataprocessing.encoders import (
     FutureCyclicEncoder,
     PastDatetimeAttributeEncoder,
 )
-from darts.logging import get_logger
 from darts.metrics import mae, rmse
 from darts.models import (
     CatBoostModel,
@@ -46,8 +45,6 @@ from darts.utils.likelihood_models.sklearn import (
 )
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import generate_index
-
-logger = get_logger(__name__)
 
 
 def train_test_split(series, split_ts):

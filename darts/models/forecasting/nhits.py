@@ -106,7 +106,7 @@ class _Block(nn.Module):
         self.MaxPool1d = MaxPool1d
 
         if activation not in ACTIVATIONS:
-            raise_log(ValueError(f"'{activation}' is not in {ACTIVATIONS}."), logger)
+            raise_log(ValueError(f"'{activation}' is not in {ACTIVATIONS}."))
         self.activation = getattr(nn, activation)()
 
         # number of parameters theta for backcast and forecast
@@ -735,7 +735,6 @@ class NHiTSModel(PastCovariatesTorchModel):
                     "Please pass an integer or a list of integers with length `num_stacks`"
                     "as value for the `layer_widths` argument."
                 ),
-                logger,
             )
 
         self.num_stacks = num_stacks
@@ -774,14 +773,12 @@ class NHiTSModel(PastCovariatesTorchModel):
                     ValueError(
                         f"the length of {name} must match the number of stacks."
                     ),
-                    logger,
                 )
             if not all([len(i) == num_blocks for i in tup]):
                 raise_log(
                     ValueError(
                         f"the length of each tuple in {name} must be `num_blocks={num_blocks}`."
                     ),
-                    logger,
                 )
 
         if pooling_kernel_sizes is None:
@@ -820,7 +817,6 @@ class NHiTSModel(PastCovariatesTorchModel):
                         "the downsampling coefficient of the last block of the last stack must be 1 "
                         + "(i.e., `n_freq_downsample[-1][-1]`)."
                     ),
-                    logger,
                 )
 
         return pooling_kernel_sizes, n_freq_downsample

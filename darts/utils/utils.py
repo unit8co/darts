@@ -70,7 +70,7 @@ class NotImportedModule:
             logger.warning(self.error_message)
 
     def __call__(self, *args, **kwargs):
-        raise_log(ImportError(self.error_message), logger=logger)
+        raise_log(ImportError(self.error_message))
 
 
 # Enums
@@ -165,7 +165,7 @@ def _with_sanity_checks(
     class Model:
         def _a_sanity_check(self, *args, **kwargs):
             if kwargs['b'] != kwargs['c']:
-                raise_log(ValueError('b must equal c'), logger)
+                raise_log(ValueError('b must equal c'))
         @_with_sanity_checks("_a_sanity_check")
         def fit(self, a, b=0, c=0):
             # at this point we can safely assume that 'b' and 'c' are equal...
@@ -257,13 +257,13 @@ def _is_method(func: Callable[..., Any]) -> bool:
 
 def _check_quantiles(quantiles):
     if not all([0 < q < 1 for q in quantiles]):
-        raise_log(ValueError("All provided quantiles must be between 0 and 1."), logger)
+        raise_log(ValueError("All provided quantiles must be between 0 and 1."))
 
     # we require the median to be present and the quantiles to be symmetric around it,
     # for correctness of sampling.
     median_q = 0.5
     if median_q not in quantiles:
-        raise_log(ValueError("median quantile `q=0.5` must be in `quantiles`."), logger)
+        raise_log(ValueError("median quantile `q=0.5` must be in `quantiles`."))
     is_centered = [
         -1e-6 < (median_q - left_q) + (median_q - right_q) < 1e-6
         for left_q, right_q in zip(quantiles, quantiles[::-1])
@@ -274,7 +274,6 @@ def _check_quantiles(quantiles):
                 "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles "
                 "higher than `q=0.5`."
             ),
-            logger,
         )
 
 
@@ -311,7 +310,6 @@ def slice_index(
             ValueError(
                 "start and end values must be of the same type (either both integers or both pd.Timestamps)"
             ),
-            logger,
         )
 
     if isinstance(start, pd.Timestamp) and isinstance(index, pd.RangeIndex):
@@ -320,7 +318,6 @@ def slice_index(
                 "start and end values are a pd.Timestamp, but time_index is a RangeIndex. "
                 "Please provide an integer start value."
             ),
-            logger,
         )
     if isinstance(start, int) and isinstance(index, pd.DatetimeIndex):
         raise_log(
@@ -328,7 +325,6 @@ def slice_index(
                 "start and end value are integer, but time_index is a RangeIndex. "
                 "Please provide an integer end value."
             ),
-            logger,
         )
 
     start_idx = index.get_indexer(generate_index(start, length=1), method="nearest")[0]
@@ -423,7 +419,6 @@ def n_steps_between(
     if not valid_freq:
         raise_log(
             ValueError(f"`freq` must be positive/increasing, received freq={freq}."),
-            logger=logger,
         )
     valid_int = (
         isinstance(start, int) and isinstance(end, int) and isinstance(freq, int)
@@ -439,7 +434,6 @@ def n_steps_between(
                 "Either `start` and `end` must be pandas Timestamps and `freq` a pandas Dateoffset, "
                 "or all `start`, `end`, `freq` must be integers."
             ),
-            logger=logger,
         )
 
     # frequency has a fixed period (e.g. non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’, 'W'), or integer step)
@@ -520,7 +514,6 @@ def infer_freq_intersection(
                 ValueError(
                     f"Cannot find intersecting frequency between ({freq}, {other}): {exc}"
                 ),
-                logger=logger,
             )
     return freq * (math.lcm(n_freq, n_other) // n_freq)
 
@@ -568,7 +561,6 @@ def generate_index(
                 "[`start`, `end`, `length`]. Observed parameters: {constructors}. For generating "
                 "an index with `end` and `length` consider setting `start` to None."
             ),
-            logger,
         )
 
     start = pd.Timestamp(start) if isinstance(start, str) else start
@@ -579,7 +571,6 @@ def generate_index(
             ValueError(
                 "index generation with `start` and `end` requires equal object types of `start` and `end`."
             ),
-            logger,
         )
 
     if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
@@ -720,7 +711,7 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
 
     # check that @random_method has been applied to a method.
     if not _is_method(decorated):
-        raise_log(ValueError("@random_method can only be used on methods."), logger)
+        raise_log(ValueError("@random_method can only be used on methods."))
 
     @wraps(decorated)
     def decorator(self, *args, **kwargs):

@@ -16,7 +16,7 @@ import torch
 import torch.nn as nn
 import torchmetrics
 
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.components.layer_norm_variants import RINorm
 from darts.utils.data.torch_datasets.utils import (
     PLModuleInput,
@@ -26,8 +26,6 @@ from darts.utils.data.torch_datasets.utils import (
 )
 from darts.utils.likelihood_models.torch import TorchLikelihood
 from darts.utils.torch import MonteCarloDropout
-
-logger = get_logger(__name__)
 
 
 def io_processor(forward):
@@ -169,7 +167,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 ValueError(
                     "Both `input_chunk_length` and `output_chunk_length` must be passed to `PLForecastingModule`."
                 ),
-                logger,
             )
 
         self.input_chunk_length = input_chunk_length
@@ -494,7 +491,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
                         f"\narguments (kwargs): {kws}"
                         f"\nerror:\n{e}"
                     ),
-                    logger,
                 )
 
         # Create the optimizer and (optionally) the learning rate scheduler
@@ -792,7 +788,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
                     f"Trying to load dtype `{dtype}`. Loading for this type is not implemented yet. Please report this "
                     f"issue on https://github.com/unit8co/darts."
                 ),
-                logger,
             )
 
     @property

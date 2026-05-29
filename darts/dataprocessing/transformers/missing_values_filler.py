@@ -8,10 +8,8 @@ from typing import Any
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers.base_data_transformer import BaseDataTransformer
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.utils.missing_values import fill_missing_values
-
-logger = get_logger(__name__)
 
 
 class MissingValuesFiller(BaseDataTransformer):
@@ -64,12 +62,11 @@ class MissingValuesFiller(BaseDataTransformer):
         """
         if not (isinstance(fill, str) or isinstance(fill, float)):
             raise_log(
-                ValueError("`fill` should either be a string or a float."), logger
+                ValueError("`fill` should either be a string or a float."),
             )
         if isinstance(fill, str) and fill != "auto":
             raise_log(
                 ValueError("invalid string for `fill`: can only be set to 'auto'."),
-                logger,
             )
         # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self._fill = fill

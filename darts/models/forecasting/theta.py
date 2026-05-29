@@ -91,11 +91,11 @@ class Theta(LocalForecastingModel):
 
         if season_mode not in SeasonalityMode:
             raise_log(
-                ValueError(f"Unknown value for season_mode: {season_mode}."), logger
+                ValueError(f"Unknown value for season_mode: {season_mode}."),
             )
 
         if self.theta == 0:
-            raise_log(ValueError("The parameter theta cannot be equal to 0."), logger)
+            raise_log(ValueError("The parameter theta cannot be equal to 0."))
 
     def fit(self, series: TimeSeries, verbose: bool | None = False):
         super().fit(series, verbose=verbose)
@@ -292,15 +292,15 @@ class FourTheta(LocalForecastingModel):
 
         if not isinstance(model_mode, ModelMode):
             raise_log(
-                ValueError(f"Unknown value for model_mode: {model_mode}."), logger
+                ValueError(f"Unknown value for model_mode: {model_mode}."),
             )
         if not isinstance(trend_mode, TrendMode):
             raise_log(
-                ValueError(f"Unknown value for trend_mode: {trend_mode}."), logger
+                ValueError(f"Unknown value for trend_mode: {trend_mode}."),
             )
         if not isinstance(season_mode, SeasonalityMode):
             raise_log(
-                ValueError(f"Unknown value for season_mode: {season_mode}."), logger
+                ValueError(f"Unknown value for season_mode: {season_mode}."),
             )
 
     def fit(self, series, verbose: bool | None = False):
@@ -315,7 +315,6 @@ class FourTheta(LocalForecastingModel):
                     ValueError(
                         "The mean value of the provided series is too close to zero to perform normalization."
                     ),
-                    logger,
                 )
             new_ts = series / self.mean
         else:

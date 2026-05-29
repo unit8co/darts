@@ -11,10 +11,8 @@ from pyod.models.base import BaseDetector
 
 from darts import metrics
 from darts.ad.scorers.scorers import WindowedAnomalyScorer
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.metrics.utils import METRIC_TYPE
-
-logger = get_logger(__name__)
 
 
 class PyODScorer(WindowedAnomalyScorer):
@@ -107,7 +105,6 @@ class PyODScorer(WindowedAnomalyScorer):
                 ValueError(
                     f"model must be a PyOD BaseDetector, found type: {type(model)}."
                 ),
-                logger,
             )
         self.model = model
         super().__init__(

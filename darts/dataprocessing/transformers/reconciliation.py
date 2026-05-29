@@ -19,9 +19,7 @@ from darts.dataprocessing.transformers import (
     BaseDataTransformer,
     FittableDataTransformer,
 )
-from darts.logging import get_logger, raise_log
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
 
 
 def _get_summation_matrix(series: TimeSeries):
@@ -42,7 +40,6 @@ def _get_summation_matrix(series: TimeSeries):
             ValueError(
                 "The provided series must have a hierarchy defined for reconciliation to be performed."
             ),
-            logger=logger,
         )
     hierarchy = series.hierarchy
     components_seq = list(series.components)
@@ -199,7 +196,7 @@ class MinTReconciliator(FittableDataTransformer):
         """
         known_methods = ["ols", "wls", "wls_var", "wls_struct", "wls_val", "mint_cov"]
         if method not in known_methods:
-            raise_log(ValueError(f"The method must be one of {known_methods}."), logger)
+            raise_log(ValueError(f"The method must be one of {known_methods}."))
         # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self.method = method
         super().__init__()
@@ -228,7 +225,6 @@ class MinTReconciliator(FittableDataTransformer):
                     + "has to be fit on a deterministic series "
                     + "containing residuals. This series is stochastic."
                 ),
-                logger,
             )
 
     @staticmethod
@@ -258,7 +254,7 @@ class MinTReconciliator(FittableDataTransformer):
                 series.values(copy=False).T
             )  # + 1e-3 * np.eye(len(series.components))
         else:
-            raise_log(ValueError(f"Unknown method: {method}."), logger)
+            raise_log(ValueError(f"Unknown method: {method}."))
 
         Wh_inv = np.linalg.inv(Wh)
         G = np.linalg.inv(S.T @ Wh_inv @ S) @ S.T @ Wh_inv

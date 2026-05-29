@@ -287,6 +287,5 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 ValueError(
                     "'trend' is not None. Range indexing is not supported in that case."
                 ),
-                logger,
             )
         return True

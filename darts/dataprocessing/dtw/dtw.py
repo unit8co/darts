@@ -325,7 +325,6 @@ def dtw(
                 ValueError(
                     "Expected series to have same number of components, or to supply custom distance function."
                 ),
-                logger,
             )
 
         distance = _default_distance_uni if both_univariate else _default_distance_multi
@@ -344,7 +343,6 @@ def dtw(
                 "You can use the module darts.utils.missing_values to fill them, "
                 "before passing them to dtw."
             ),
-            logger,
         )
     if np.any(np.isnan(values_y)):
         raise_log(
@@ -353,7 +351,6 @@ def dtw(
                 "You can use the module darts.utils.missing_values to fill them,"
                 "before passing it into dtw."
             ),
-            logger,
         )
 
     window = copy.deepcopy(window)
@@ -361,14 +358,13 @@ def dtw(
 
     if multi_grid_radius < -1:
         raise_log(
-            ValueError("Expected multi-grid radius to be positive or -1."), logger
+            ValueError("Expected multi-grid radius to be positive or -1."),
         )
 
     if multi_grid_radius >= 0:
         if not isinstance(window, NoWindow):
             raise_log(
                 ValueError("Multi-grid solver does not currently support windows."),
-                logger,
             )
         cost_matrix = _fast_dtw(values_x, values_y, distance, multi_grid_radius)
     else:

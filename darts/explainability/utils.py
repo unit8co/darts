@@ -75,7 +75,6 @@ def process_input(
             ValueError(
                 f"Unknown `input_type='{input_type}'`. Must be one of ['background', 'foreground']."
             ),
-            logger,
         )
 
     # if any input is given, treat it as if the input was required
@@ -96,7 +95,6 @@ def process_input(
                     f"Supplied {input_type} past or future covariates but no {input_type} series. Please also provide "
                     f"`{input_type}_series`."
                 ),
-                logger,
             )
         if requires_input and fallback_series is None:
             error_msg = (
@@ -106,7 +104,6 @@ def process_input(
             )
             raise_log(
                 ValueError(f"`{input_type}_series` must be provided {error_msg}"),
-                logger,
             )
         series = fallback_series
         past_covariates = fallback_past_covariates
@@ -224,7 +221,6 @@ def process_horizons_and_targets(
                         f"`background_series`: {invalid_components}. Provide some valid components from: "
                         f"{fallback_target_components}."
                     ),
-                    logger,
                 )
     else:
         target_components = fallback_target_components
@@ -239,10 +235,9 @@ def process_horizons_and_targets(
                     ValueError(
                         "At least one of the `horizons` is larger than `output_chunk_length`."
                     ),
-                    logger,
                 )
         if min(horizons) < 1:
-            raise_log(ValueError("All `horizons` must be `>=1`."), logger)
+            raise_log(ValueError("All `horizons` must be `>=1`."))
     else:
         horizons = range(1, fallback_horizon + 1)
 
@@ -319,7 +314,6 @@ def _check_valid_input(
             ValueError(
                 f"Unknown `input_type='{input_type}'`. Must be one of ['background', 'foreground']."
             ),
-            logger,
         )
     if past_covariates is not None:
         if len(series) != len(past_covariates):
@@ -327,7 +321,6 @@ def _check_valid_input(
                 ValueError(
                     f"The number of {input_type} series and past covariates must be the same."
                 ),
-                logger,
             )
 
     if future_covariates is not None:
@@ -336,7 +329,6 @@ def _check_valid_input(
                 ValueError(
                     f"The number of {input_type} series and future covariates must be the same."
                 ),
-                logger,
             )
 
     if requires_input:
@@ -345,14 +337,12 @@ def _check_valid_input(
                 ValueError(
                     f"A {input_type} past covariates is not provided, but the model requires past covariates."
                 ),
-                logger,
             )
         if model.uses_future_covariates and future_covariates is None:
             raise_log(
                 ValueError(
                     f"A {input_type} future covariates is not provided, but the model requires future covariates."
                 ),
-                logger,
             )
 
     if not check_component_names:
@@ -378,7 +368,6 @@ def _check_valid_input(
                 ValueError(
                     "Columns names must be identical between TimeSeries list components (multi-TimeSeries)."
                 ),
-                logger,
             )
 
 

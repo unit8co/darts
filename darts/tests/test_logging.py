@@ -21,7 +21,7 @@ def test_raise_log():
         logger = get_logger(__name__)
         logger.handlers = []
         try:
-            raise_log(Exception("test"), logger)
+            raise_log(Exception("test"))
         except Exception:
             exception_was_raised = True
 

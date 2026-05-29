@@ -209,7 +209,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                     ValueError(
                         "Parameter `cap` has to be set when `growth` is logistic."
                     ),
-                    logger,
                 )
             if floor is None:
                 # Use 0 as default value
@@ -261,7 +260,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                             f"The following components have been configured in `add_regressor_configs` "
                             f"but are not present in the `future_covariates`: `{comps_invalid}`."
                         ),
-                        logger=logger,
                     )
 
             fit_df = fit_df.merge(
@@ -334,7 +332,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                         "arguments have to return Sequences of identical length as their "
                         " input argument Sequence!"
                     ),
-                    logger,
                 )
             raise
         return df
@@ -424,7 +421,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                     f"Each conditional seasonality must be accompanied by a binary component/column in the "
                     f"`future_covariates` with the same name as the `condition_name`"
                 ),
-                logger,
             )
         return conditional_seasonality_covariates
 
@@ -579,7 +575,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                     f"Seasonality `{add_seasonality_call['name']}` has missing mandatory keywords or empty arguments: "
                     f"{missing_kws}."
                 ),
-                logger,
             )
 
         seasonality_name = add_seasonality_call["name"]
@@ -592,7 +587,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                     f"Adding seasonality with `name={seasonality_name}` failed. A seasonality with this name already "
                     f"exists."
                 ),
-                logger,
             )
 
         invalid_kws = [
@@ -604,7 +598,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                     f"Seasonality `{add_seasonality_call['name']}` has invalid keywords: {invalid_kws}. Only the "
                     f"following arguments are supported: {list(seasonality_default)}."
                 ),
-                logger,
             )
 
         invalid_types = [
@@ -619,7 +612,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                     f"Seasonality `{add_seasonality_call['name']}` has invalid value dtypes: {invalid_types} must be "
                     f"of type {[seasonality_properties[kw]['dtype'] for kw in invalid_types]}."
                 ),
-                logger,
             )
 
         self._add_seasonalities[seasonality_name] = add_seasonality_call
@@ -703,7 +695,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 ValueError(
                     f"freq {freq} not understood. Please report if you think this is in error."
                 ),
-                logger=logger,
             )
         return freq_times * days
 
@@ -715,5 +706,4 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 "Prophet does not support integer range index. The index of the TimeSeries must be of type "
                 "`pandas.DatetimeIndex`."
             ),
-            logger,
         )

@@ -4,9 +4,7 @@ Utils for filling missing values
 """
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
 
 
 def missing_values_ratio(series: TimeSeries) -> float:
@@ -52,10 +50,10 @@ def fill_missing_values(
         A new TimeSeries with all missing values filled according to the rules above.
     """
     if not (isinstance(fill, str) or isinstance(fill, float)):
-        raise_log(ValueError("`fill` should either be a string or a float."), logger)
+        raise_log(ValueError("`fill` should either be a string or a float."))
     if isinstance(fill, str) and fill != "auto":
         raise_log(
-            ValueError("invalid string for `fill`: can only be set to 'auto'."), logger
+            ValueError("invalid string for `fill`: can only be set to 'auto'."),
         )
 
     if fill == "auto":

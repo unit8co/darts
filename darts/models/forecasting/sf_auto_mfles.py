@@ -5,10 +5,7 @@ AutoMFLES
 
 from statsforecast.models import AutoMFLES as SFAutoMFLES
 
-from darts.logging import get_logger
 from darts.models.forecasting.sf_model import StatsForecastModel
-
-logger = get_logger(__name__)
 
 
 class AutoMFLES(StatsForecastModel):

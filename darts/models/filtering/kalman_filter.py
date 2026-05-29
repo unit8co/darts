@@ -12,10 +12,8 @@ from nfoursid.kalman import Kalman
 from nfoursid.nfoursid import NFourSID
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.filtering.filtering_model import FilteringModel
-
-logger = get_logger(__name__)
 
 
 class KalmanFilter(FilteringModel, ABC):
@@ -108,7 +106,6 @@ class KalmanFilter(FilteringModel, ABC):
                     ValueError(
                         "The number of timesteps in the series and the covariates must match."
                     ),
-                    logger,
                 )
 
         # TODO: Handle multiple timeseries. Needs reimplementation of NFourSID?
@@ -177,7 +174,6 @@ class KalmanFilter(FilteringModel, ABC):
                     "The Kalman filter has not been fitted yet. Call `fit()` first "
                     "or provide Kalman filter in constructor."
                 ),
-                logger,
             )
 
         if series.width != self.dim_y:
@@ -186,7 +182,6 @@ class KalmanFilter(FilteringModel, ABC):
                     "The provided TimeSeries dimensionality does not match "
                     "the output dimensionality of the Kalman filter."
                 ),
-                logger,
             )
 
         if covariates is not None and not self._expect_covariates:
@@ -194,7 +189,6 @@ class KalmanFilter(FilteringModel, ABC):
                 ValueError(
                     "Covariates were provided, but the Kalman filter was not fitted with covariates."
                 ),
-                logger,
             )
 
         if self._expect_covariates:
@@ -203,13 +197,11 @@ class KalmanFilter(FilteringModel, ABC):
                     ValueError(
                         "The Kalman filter was fitted with covariates, but these were not provided."
                     ),
-                    logger,
                 )
 
             if not covariates.is_deterministic:
                 raise_log(
                     ValueError("The covariates must be deterministic (observations)."),
-                    logger,
                 )
 
             covariates = covariates.slice_intersect(series)
@@ -218,7 +210,6 @@ class KalmanFilter(FilteringModel, ABC):
                     ValueError(
                         "The number of timesteps in the series and the covariates must match."
                     ),
-                    logger,
                 )
 
         kf = deepcopy(self.kf)

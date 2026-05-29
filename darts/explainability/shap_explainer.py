@@ -137,7 +137,6 @@ class ShapExplainer(_ForecastingModelExplainer):
                 ValueError(
                     "Invalid `model` type. Currently, only models of type `SKLearnModel` are supported."
                 ),
-                logger,
             )
 
         if not model.multi_models:
@@ -147,7 +146,6 @@ class ShapExplainer(_ForecastingModelExplainer):
                     "ShapExplainer only supports SKLearnModels "
                     "with `multi_models=True`."
                 ),
-                logger,
             )
 
         super().__init__(
@@ -470,7 +468,6 @@ class ShapExplainer(_ForecastingModelExplainer):
                 ValueError(
                     "The component parameter is required when the model has more than one component."
                 ),
-                logger,
             )
 
         if target_component is None:

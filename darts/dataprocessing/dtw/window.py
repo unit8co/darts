@@ -9,9 +9,7 @@ from math import atan, tan
 
 import numpy as np
 
-from darts.logging import get_logger, raise_log
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
 
 
 class Window(ABC):
@@ -157,7 +155,6 @@ class CRWindow(Window):
                     ValueError(
                         f"Expects a 2d array with [start, end] for each column and shape = ({n}, 2)."
                     ),
-                    logger,
                 )
 
             ranges = np.insert(ranges, 0, [0, 1], axis=0)
@@ -165,9 +162,9 @@ class CRWindow(Window):
             end = ranges[:, 1]
 
             if np.any(start < 0):
-                raise_log(ValueError("Start must be >=0."), logger)
+                raise_log(ValueError("Start must be >=0."))
             if np.any(end > m):
-                raise_log(ValueError("End must be <m."), logger)
+                raise_log(ValueError("End must be <m."))
 
             diff = np.maximum(end - start, 0)
             self.length = np.sum(diff)
@@ -317,7 +314,6 @@ class Itakura(CRWindow):
                 ValueError(
                     f"Itakura slope {max_slope} must be greater than {diagonal_slope} to form valid parallelogram."
                 ),
-                logger,
             )
 
         max_slope_angle = atan(max_slope)
@@ -389,7 +385,6 @@ class SakoeChiba(CRWindow):
                 ValueError(
                     f"Window size must be larger than size difference ({diff})."
                 ),
-                logger,
             )
 
         ranges = np.repeat(np.arange(n), 2)

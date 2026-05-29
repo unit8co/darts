@@ -555,7 +555,6 @@ class IntegerIndexEncoder(SingleEncoder):
                     f"Encountered invalid encoder argument `{attribute}` for encoder `position`. "
                     f'Attribute must be `"relative"`.'
                 ),
-                logger,
             )
         super().__init__(index_generator)
 
@@ -729,7 +728,6 @@ class CallableIndexEncoder(SingleEncoder):
                     f"Encountered invalid encoder argument `{attribute}` for encoder `callable`. "
                     f"Attribute must be a callable that returns a `np.ndarray`."
                 ),
-                logger,
             )
 
         super().__init__(index_generator)
@@ -761,7 +759,6 @@ class CallableIndexEncoder(SingleEncoder):
                     "or `pd.RangeIndex` and returns an array-like of shape "
                     "`(len(index),)` or `(len(index), n_output_components)`."
                 ),
-                logger,
             )
         return n_components
 
@@ -1132,7 +1129,6 @@ class SequentialEncoder(Encoder):
                     f"be trained before inference. Call method `encode_train()` before "
                     f"`encode_inference()`."
                 ),
-                logger,
             )
         return self._launch_encoder(
             target=target,
@@ -1494,7 +1490,6 @@ class SequentialEncoder(Encoder):
                     f"Encountered invalid encoder types `{invalid_encoders}` in `add_encoders` parameter at model "
                     f"creation. Supported encoder types are: `{ENCODER_KEYS + TRANSFORMER_KEYS}`."
                 ),
-                logger,
             )
 
         encoders = {enc: params[enc] for enc in ENCODER_KEYS if params.get(enc, None)}
@@ -1512,7 +1507,6 @@ class SequentialEncoder(Encoder):
                     f"Encountered invalid temporal types `{invalid_time_params}` in `add_encoders` parameter at model "
                     f"creation. Supported temporal types are: `{VALID_TIME_PARAMS}`."
                 ),
-                logger,
             )
 
         # check that encoders are not lambda functions (not pickable)
@@ -1528,7 +1522,6 @@ class SequentialEncoder(Encoder):
                             f"`{enc}` in `add_encoders` at model creation. Supported data types are: "
                             f"`{VALID_ENCODER_DTYPES}`."
                         ),
-                        logger,
                     )
                 attrs = [enc_attr] if isinstance(enc_attr, str) else enc_attr
                 for attr in attrs:
@@ -1549,7 +1542,6 @@ class SequentialEncoder(Encoder):
                     f"In order to prevent issues when saving the model, these encoders must be converted to "
                     f"named functions."
                 ),
-                logger,
             )
 
         for temp_enc, takes_temp, temp in [
@@ -1592,7 +1584,6 @@ class SequentialEncoder(Encoder):
                     f"in `add_encoders` at model creation. Transformer must be an instance of "
                     f"`{VALID_TRANSFORMER_DTYPES}`."
                 ),
-                logger,
             )
 
         transform_past_mask = [

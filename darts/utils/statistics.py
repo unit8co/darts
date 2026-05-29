@@ -68,10 +68,10 @@ def check_seasonality(
     ts._assert_univariate()
 
     if m is not None and (m < 2 or not isinstance(m, int)):
-        raise_log(ValueError("m must be an integer greater than 1."), logger)
+        raise_log(ValueError("m must be an integer greater than 1."))
 
     if m is not None and m > max_lag:
-        raise_log(ValueError("max_lag must be greater than or equal to m."), logger)
+        raise_log(ValueError("max_lag must be greater than or equal to m."))
 
     n_unique = np.unique(ts.values()).shape[0]
 
@@ -181,11 +181,11 @@ def extract_trend_and_seasonality(
 
     ts._assert_univariate()
     if not (model in ModelMode or model in SeasonalityMode):
-        raise_log(ValueError(f"Unknown value for model_mode: {model}."), logger)
+        raise_log(ValueError(f"Unknown value for model_mode: {model}."))
 
     if model is SeasonalityMode.NONE:
         raise_log(
-            ValueError("The model must be either MULTIPLICATIVE or ADDITIVE."), logger
+            ValueError("The model must be either MULTIPLICATIVE or ADDITIVE."),
         )
 
     if isinstance(freq, Sequence) and method != "MSTL":
@@ -193,7 +193,6 @@ def extract_trend_and_seasonality(
             ValueError(
                 f"{method} decomposition cannot be performed with more than one seasonality, received {freq}."
             ),
-            logger,
         )
 
     if method == "naive":
@@ -207,7 +206,6 @@ def extract_trend_and_seasonality(
                 ValueError(
                     f"Only ADDITIVE model is compatible with the STL method. Current model is {model}."
                 ),
-                logger,
             )
 
         decomp = STL(
@@ -222,7 +220,6 @@ def extract_trend_and_seasonality(
                 ValueError(
                     f"Only ADDITIVE model is compatible with the MSTL method. Current model is {model}."
                 ),
-                logger,
             )
 
         decomp = MSTL(
@@ -232,7 +229,7 @@ def extract_trend_and_seasonality(
         ).fit()
 
     else:
-        raise_log(ValueError(f"Unknown value for method: {method}."), logger)
+        raise_log(ValueError(f"Unknown value for method: {method}."))
 
     # keep components, ... only if the number of components matches
     season_shape = decomp.seasonal.shape
@@ -293,7 +290,7 @@ def remove_from_series(
 
     ts._assert_univariate()
     if not (model in ModelMode or model in SeasonalityMode):
-        raise_log(ValueError(f"Unknown value for model_mode: {model}."), logger)
+        raise_log(ValueError(f"Unknown value for model_mode: {model}."))
 
     if model.value == "multiplicative":
         new_ts = ts / other
@@ -350,14 +347,13 @@ def remove_seasonality(
     ts._assert_univariate()
     if model is SeasonalityMode.NONE:
         raise_log(
-            ValueError("The model must be either MULTIPLICATIVE or ADDITIVE."), logger
+            ValueError("The model must be either MULTIPLICATIVE or ADDITIVE."),
         )
     if model not in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE] and method == "STL":
         raise_log(
             ValueError(
                 f"Only ADDITIVE seasonality is compatible with the STL method. Current model is {model}."
             ),
-            logger,
         )
 
     _, seasonality = extract_trend_and_seasonality(ts, freq, model, method, **kwargs)
@@ -409,7 +405,6 @@ def remove_trend(
             ValueError(
                 f"Only ADDITIVE seasonality is compatible with the STL method. Current model is {model}."
             ),
-            logger,
         )
     trend, _ = extract_trend_and_seasonality(ts, model=model, method=method, **kwargs)
     new_ts = remove_from_series(ts, trend, model)
@@ -596,7 +591,7 @@ def granger_causality_tests(
 
     if ts_cause.freq != ts_effect.freq:
         raise_log(
-            ValueError("ts_cause and ts_effect must have the same frequency."), logger
+            ValueError("ts_cause and ts_effect must have the same frequency."),
         )
 
     if not ts_cause.has_same_time_as(ts_effect):
@@ -674,17 +669,15 @@ def plot_acf(
             ValueError(
                 "max_lag must be greater than or equal to 1 and less than len(ts)."
             ),
-            logger,
         )
     if m is not None and not (0 <= m <= max_lag):
         raise_log(
             ValueError(
                 "m must be greater than or equal to 0 and less than or equal to max_lag."
             ),
-            logger,
         )
     if alpha is None or not (0 < alpha < 1):
-        raise_log(ValueError("alpha must be greater than 0 and less than 1."), logger)
+        raise_log(ValueError("alpha must be greater than 0 and less than 1."))
 
     r, confint = acf(
         ts.values(),
@@ -781,17 +774,15 @@ def plot_pacf(
             ValueError(
                 "max_lag must be greater than or equal to 1 and less than len(ts)//2."
             ),
-            logger,
         )
     if m is not None and not (0 <= m <= max_lag):
         raise_log(
             ValueError(
                 "m must be greater than or equal to 0 and less than or equal to max_lag."
             ),
-            logger,
         )
     if alpha is None or not (0 < alpha < 1):
-        raise_log(ValueError("alpha must be greater than 0 and less than 1."), logger)
+        raise_log(ValueError("alpha must be greater than 0 and less than 1."))
 
     r, confint = pacf(ts.values(), nlags=max_lag, method=method, alpha=alpha)
 
@@ -883,22 +874,19 @@ def plot_ccf(
             ValueError(
                 "max_lag must be greater than or equal to 1 and less than len(ts)."
             ),
-            logger,
         )
     if m is not None and not (0 <= m <= max_lag):
         raise_log(
             ValueError(
                 "m must be greater than or equal to 0 and less than or equal to max_lag."
             ),
-            logger,
         )
     if alpha is None or not (0 < alpha < 1):
-        raise_log(ValueError("alpha must be greater than 0 and less than 1."), logger)
+        raise_log(ValueError("alpha must be greater than 0 and less than 1."))
     ts_other = ts_other.slice_intersect(ts)
     if len(ts_other) != len(ts):
         raise_log(
             ValueError("`ts_other` must contain at least the full time index of `ts`."),
-            logger=logger,
         )
 
     x = ts.values()

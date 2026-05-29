@@ -12,12 +12,11 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import FittableDataTransformer
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.typing import TimeIndex
 from darts.utils.utils import generate_index
 
 EncoderOutputType = Sequence[TimeSeries] | list[TimeSeries] | None
-logger = get_logger(__name__)
 
 
 class _EncoderMethod:
@@ -36,7 +35,6 @@ class _EncoderMethod:
                 ValueError(
                     f"Unknown encoder `stage={stage}`. Must be on of `('train', 'inference', 'train_inference')`"
                 ),
-                logger,
             )
 
 
@@ -227,7 +225,6 @@ class CovariatesIndexGenerator(ABC):
                     "https://unit8co.github.io/darts/generated_api/darts.dataprocessing.encoders.encoder_base.html"
                     "#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator"
                 ),
-                logger=logger,
             )
 
     def _verify_lags(self, min_covariates_lag, max_covariates_lag):
@@ -245,7 +242,6 @@ class CovariatesIndexGenerator(ABC):
                 ValueError(
                     "`min_covariates_lag` and `max_covariates_lag` must either both be `None` or both be integers"
                 ),
-                logger=logger,
             )
         if min_covariates_lag is not None:
             # check that if one of the two is given, both must be integers
@@ -256,7 +252,6 @@ class CovariatesIndexGenerator(ABC):
                     ValueError(
                         "`min_covariates_lag` and `max_covariates_lag` must be both be integers."
                     ),
-                    logger=logger,
                 )
             # minimum lag must be less than maximum lag
             if min_covariates_lag > max_covariates_lag:
@@ -264,7 +259,6 @@ class CovariatesIndexGenerator(ABC):
                     ValueError(
                         "`min_covariates_lag` must be smaller than/equal to `max_covariates_lag`."
                     ),
-                    logger=logger,
                 )
 
 
@@ -361,10 +355,10 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
         super()._verify_lags(min_covariates_lag, max_covariates_lag)
         # check past covariate specific lag requirements
         if min_covariates_lag is not None and min_covariates_lag >= 0:
-            raise_log(ValueError("`min_covariates_lag` must be < 0."), logger=logger)
+            raise_log(ValueError("`min_covariates_lag` must be < 0."))
 
         if max_covariates_lag is not None and max_covariates_lag >= 0:
-            raise_log(ValueError("`max_covariates_lag` must be < 0."), logger=logger)
+            raise_log(ValueError("`max_covariates_lag` must be < 0."))
 
 
 class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
@@ -721,7 +715,6 @@ class SingleEncoder(Encoder, ABC):
                     f"`{self.__class__.__name__}` object must be trained before inference. "
                     f"Call method `encode_train()` before `encode_inference()`."
                 ),
-                logger=logger,
             )
 
         # exclude encoded components from covariates to add the newly encoded components later

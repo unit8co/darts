@@ -22,11 +22,9 @@ import pandas as pd
 from darts import TimeSeries
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.typing import TimeSeriesLike
-
-logger = get_logger(__name__)
 
 
 class ForecastingAnomalyModel(AnomalyModel):
@@ -61,7 +59,6 @@ class ForecastingAnomalyModel(AnomalyModel):
         if not isinstance(model, GlobalForecastingModel):
             raise_log(
                 ValueError("`model` must be a Darts `GlobalForecastingModel`."),
-                logger=logger,
             )
         self.model = model
         super().__init__(model=model, scorer=scorer)
@@ -308,7 +305,6 @@ class ForecastingAnomalyModel(AnomalyModel):
                 ValueError(
                     f"Forecasting `model` {self.model} has not been trained yet. Call `fit()` before."
                 ),
-                logger=logger,
             )
         return self.model.historical_forecasts(
             series,
@@ -566,7 +562,6 @@ class ForecastingAnomalyModel(AnomalyModel):
                     f"must have already been trained. Either train it before or set `allow_model_training=True` "
                     f"(model will trained from scratch on the provided series)."
                 ),
-                logger=logger,
             )
 
         # generate the historical_forecast() prediction of the model on the train set

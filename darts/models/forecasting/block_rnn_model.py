@@ -14,7 +14,7 @@ from abc import ABC, abstractmethod
 import torch
 import torch.nn as nn
 
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
@@ -23,8 +23,6 @@ from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
 )
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
-
-logger = get_logger(__name__)
 
 
 class CustomBlockRNNModule(PLForecastingModule, ABC):
@@ -522,7 +520,6 @@ class BlockRNNModel(MixedCovariatesTorchModel):
                         "`model` is not a valid RNN model. Please specify 'RNN', 'LSTM', 'GRU', or give a subclass "
                         "(not an instance) of darts.models.forecasting.rnn_model.CustomBlockRNNModule."
                     ),
-                    logger=logger,
                 )
 
         self.rnn_type_or_module = model

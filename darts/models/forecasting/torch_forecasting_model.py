@@ -119,7 +119,6 @@ def _get_checkpoint_fname(work_dir, model_name, best=False):
                     "best-*" if best else "last-*", checkpoint_dir
                 )
             ),
-            logger,
         )
 
     file_name = max(checklist, key=os.path.getctime)
@@ -319,7 +318,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         f"initialize anyway to start training from scratch and remove all the "
                         f"model data."
                     ),
-                    logger,
                 )
             self.reset_model()
         elif save_checkpoints:
@@ -405,7 +403,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     f"Invalid model creation parameters. Model `{cls.__name__}` has "
                     f"no args/kwargs `{invalid_kwargs}`."
                 ),
-                logger=logger,
             )
 
     @classmethod
@@ -458,7 +455,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     "`super.__init__(...)`. Do this with "
                     "`self._extract_pl_module_params(**self.model_params).`"
                 ),
-                logger,
             )
 
         self.pl_module_params["train_sample_shape"] = [
@@ -512,7 +508,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     f"Invalid time series data type `{dtype}`. Cast your data to `np.float32` "
                     f"or `np.float64` or `np.float16`, e.g. with `TimeSeries.astype(np.float32)`."
                 ),
-                logger,
             )
         self.trainer_params["precision"] = precision
 
@@ -706,7 +701,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     f"dataset's `__getitem__` method returns the same output type as given in "
                     f"`darts.utils.data.inference_dataset.TorchInferenceDataset`."
                 ),
-                logger=logger,
             )
 
         for idx, (ds_in_train, ds_in_predict, ds_name) in enumerate(
@@ -718,7 +712,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         f"This model has been trained with `{ds_name}`; some `{ds_name}` "
                         f"of matching dimensionality are needed for prediction."
                     ),
-                    logger=logger,
                 )
             if not ds_in_train and ds_in_predict:
                 raise_log(
@@ -726,7 +719,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         f"This model has been trained without `{ds_name}`; No `{ds_name}` "
                         f"should be provided for prediction.",
                     ),
-                    logger=logger,
                 )
             if ds_in_train and ds_in_predict:
                 train_shape = train_features[idx].shape
@@ -746,7 +738,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                             f"`{ds_name}` used to train the model. Received number of components: "
                             f"`{preds_n_comp}`, expected: `{train_n_comp}`.",
                         ),
-                        logger=logger,
                     )
 
         # check dtype consistency within predict sample
@@ -780,7 +771,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 ValueError(
                     f"The model does not support {', '.join(invalid_covs)}. " + add_txt
                 ),
-                logger=logger,
             )
 
     @staticmethod
@@ -798,7 +788,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 ValueError(
                     "If `enable_finetuning` is a dict, it must contain exactly one key: 'freeze' or 'unfreeze'."
                 ),
-                logger,
             )
 
         patterns = enable_finetuning[keys[0]]
@@ -809,7 +798,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 ValueError(
                     "The value of the `enable_finetuning` dict must be a list of strings (patterns)."
                 ),
-                logger,
             )
 
     def _verify_dtypes(
@@ -899,7 +887,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # TODO: predictions with TFT and TCN models is incorrect, might be caused by helper function to process inputs
         if not self._fit_called:
             raise_log(
-                ValueError("`fit()` needs to be called before `to_onnx()`."), logger
+                ValueError("`fit()` needs to be called before `to_onnx()`."),
             )
 
         if path is None:
@@ -1190,7 +1178,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     + "This is likely due to the provided training series being too short. "
                     + f"This model expect series of length at least {self.min_train_series_length}."
                 ),
-                logger,
             )
         logger.info(f"Train dataset contains {len(train_dataset)} samples.")
 
@@ -1309,14 +1296,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 ValueError(
                     "The provided training time series dataset is too short for obtaining even one training point."
                 ),
-                logger,
             )
         if val_dataset is not None and (not val_length_ok or len(val_dataset) == 0):
             raise_log(
                 ValueError(
                     "The provided validation time series dataset is too short for obtaining even one training point."
                 ),
-                logger,
             )
 
         train_sample = train_dataset[0]
@@ -1341,7 +1326,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         f" previously trained on. Trained on tuples of length {len(self.train_sample)},"
                         f" received tuples of length {len(train_sample_no_weight)}."
                     ),
-                    logger,
                 )
             sample_shapes_last = [
                 s.shape[1] if s is not None else None for s in self.train_sample
@@ -1357,7 +1341,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         f"Model input/output dimensions = {sample_shapes_last},"
                         f" provided input/output dimensions = {sample_shapes}."
                     ),
-                    logger,
                 )
 
         # update the covariates usage based on the training sample (required if model training was called
@@ -1382,7 +1365,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         "torch loss function `loss_fn` must have an attribute `reduction` which controls how "
                         "to reduce the loss over each batch. With `reduction='none'` it must not reduce the loss."
                     ),
-                    logger=logger,
                 )
 
             # remember the original reduction (reset in `PLForecastingModule.on_fit_end()`
@@ -1402,7 +1384,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         "The loss function `loss_fn` must have an attribute `reduction` which when setting it to "
                         "`'none'`, must not reduce the output."
                     ),
-                    logger=logger,
                 )
 
         # setting drop_last to False makes the model see each sample at least once, and guarantee the presence of at
@@ -1773,7 +1754,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         "from not having fit the model yet, or from loading a model saved with "
                         "`clean=True`."
                     ),
-                    logger,
                 )
             series = self.training_series
 
@@ -1941,7 +1921,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     ValueError(
                         "`roll_size` must be an integer between 1 and `self.output_chunk_length`."
                     ),
-                    logger,
                 )
 
         # prevent auto-regression when prediction the likelihood parameters
@@ -1951,12 +1930,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     "`n` must be smaller than or equal to `output_chunk_length` "
                     "when `predict_likelihood_parameters=True`."
                 ),
-                logger,
             )
 
         # check that `num_samples` is a positive integer
         if num_samples <= 0:
-            raise_log(ValueError("`num_samples` must be a positive integer."), logger)
+            raise_log(ValueError("`num_samples` must be a positive integer."))
 
         # iterate through batches to produce predictions
         batch_size = batch_size or self.batch_size
@@ -2299,7 +2277,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 ValueError(
                     f"Could not find base model save file `{INIT_MODEL_NAME}` in {model_dir}."
                 ),
-                logger,
             )
         model: TorchForecastingModel = torch.load(
             base_model_path, weights_only=False, map_location=kwargs.get("map_location")
@@ -2403,7 +2380,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     "Passing `weights_only=True` to `torch.load` will disrupt this"
                     " method sanity checks."
                 ),
-                logger,
             )
 
         if skip_checks and load_encoders:
@@ -2412,7 +2388,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     "`skip-checks` and `load_encoders` are mutually exclusive parameters and cannot be both "
                     "set to `True`."
                 ),
-                logger,
             )
 
         # use the name of the model being loaded with the saved weights
@@ -2451,7 +2426,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     " be computed from the `model.train_sample` attribute and manually"
                     " added to the checkpoint prior to loading."
                 ),
-                logger,
             )
 
         # pl_forecasting module saves the train_sample shape, must recreate one
@@ -2471,7 +2445,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         f"Could not find {tfm_save_file_path}, necessary to load the encoders "
                         f"and run sanity checks on the model parameters."
                     ),
-                    logger,
                 )
 
             # updating model attributes before self._init_model() which create new tfm ckpt
@@ -2535,7 +2508,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 ValueError(
                     f"Could not find PyTorch LightningModule checkpoint {path_ptl_ckpt}."
                 ),
-                logger,
             )
 
         self.load_weights_from_checkpoint(
@@ -2737,7 +2709,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         f"Transformers defined in the loaded encoders and the new model "
                         f"must have the same type, received ({saved_msg}) and ({current_msg})."
                     ),
-                    logger,
                 )
             if not same_encoders:
                 raise_log(
@@ -2746,7 +2717,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         f"are different from the encoders defined in the new model "
                         f"({self.add_encoders})."
                     ),
-                    logger,
                 )
 
             new_add_encoders: dict = copy.deepcopy(tfm_save.add_encoders)
@@ -2760,7 +2730,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         f"Either set `load_encoders` to `True` or add a matching `add_encoders` "
                         f"dict at model creation."
                     ),
-                    logger,
                 )
 
             new_add_encoders: dict = self.add_encoders
@@ -2789,7 +2758,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                             f"- past covs: new {new_past_enc_n_comp}, checkpoint {ckpt_past_enc_n_comp}\n"
                             f"- future covs: new {new_future_enc_n_comp}, checkpoint {ckpt_future_enc_n_comp}."
                         ),
-                        logger,
                     )
 
                 # display warning, an exception will be raised if `fit()`` is not called before `predict()`
@@ -2865,7 +2833,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     for (param, exp_val, cur_val) in incorrect_params
                 ]
 
-            raise_log(ValueError("\n".join(msg)), logger)
+            raise_log(ValueError("\n".join(msg)))
 
     def __getstate__(self):
         # do not pickle the PyTorch LightningModule, and Trainer
@@ -2881,7 +2849,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
 def _raise_if_wrong_type(obj, exp_type, msg="expected type {}, got: {}"):
     if not isinstance(obj, exp_type):
-        raise_log(ValueError(msg.format(exp_type, type(obj))), logger)
+        raise_log(ValueError(msg.format(exp_type, type(obj))))
 
 
 """

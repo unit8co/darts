@@ -54,7 +54,7 @@ from torch.distributions import Poisson as _Poisson
 from torch.distributions import Weibull as _Weibull
 from torch.distributions.kl import kl_divergence
 
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.utils.likelihood_models.base import (
     Likelihood,
     LikelihoodType,
@@ -65,8 +65,6 @@ from darts.utils.likelihood_models.base import (
 from darts.utils.utils import (
     _check_quantiles,
 )
-
-logger = get_logger(__name__)
 
 MIN_CAUCHY_GAMMA_SAMPLING = 1e-100
 
@@ -81,13 +79,11 @@ def _check(param, predicate, param_name, condition_str):
                 ValueError(
                     f"All provided parameters {param_name} must be {condition_str}."
                 ),
-                logger,
             )
     else:
         if not predicate(param):
             raise_log(
                 ValueError(f"The parameter {param_name} must be {condition_str}."),
-                logger,
             )
 
 
@@ -1192,14 +1188,13 @@ class QuantileRegression(TorchLikelihood):
                 and model_output.shape[:2] == target.shape[:2]
             ):
                 raise_log(
-                    ValueError("mismatch between predicted and target shape."), logger
+                    ValueError("mismatch between predicted and target shape."),
                 )
             if model_output.shape[dim_q] != len(self.quantiles):
                 raise_log(
                     ValueError(
                         "mismatch between number of predicted quantiles and target quantiles."
                     ),
-                    logger,
                 )
             self.quantiles_tensor = torch.tensor(self.quantiles).to(device)
             self.first = False
@@ -1241,7 +1236,6 @@ from torch.distributions import MultivariateNormal as _MultivariateNormal
                             "The provided prior_mu must have a size matching the "
                             "provided dimension."
                         ),
-                        logger
                     )
             if self.prior_covmat is not None:
                 if self.prior_covmat.shape != (self.dim, self.dim):
@@ -1250,7 +1244,6 @@ from torch.distributions import MultivariateNormal as _MultivariateNormal
                             "The provided prior on the covariaance "
                             "matrix must have size (dim, dim)."
                         ),
-                        logger
                     )
                 _check_strict_positive(self.prior_covmat.flatten(), "covariance matrix")
 

@@ -162,7 +162,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 NotImplementedError(
                     "Model subclass must pass the `add_encoders` parameter to base class."
                 ),
-                logger=logger,
             )
 
         # by default models do not use encoders
@@ -190,7 +189,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if not isinstance(series, TimeSeries):
             raise_log(
                 ValueError("Train `series` must be a single `TimeSeries`."),
-                logger=logger,
             )
         if not len(series) >= self.min_train_series_length:
             raise_log(
@@ -198,7 +196,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     f"Train series only contains {len(series)} elements"
                     f" but {str(self)} model requires at least {self.min_train_series_length} entries"
                 ),
-                logger=logger,
             )
         self.training_series = series
         self._fit_called = True
@@ -385,7 +382,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "For global models, if predict() is called without specifying a series, "
                     "the model must have been fit on a single training series."
                 ),
-                logger,
             )
         is_autoregression = (
             False
@@ -398,7 +394,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "Cannot perform auto-regression `(n > output_chunk_length)` with a model that uses a "
                     "shifted output chunk `(output_chunk_shift > 0)`."
                 ),
-                logger=logger,
             )
 
         if not self.supports_probabilistic_prediction and num_samples > 1:
@@ -406,7 +401,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ValueError(
                     "`num_samples > 1` is only supported for probabilistic models."
                 ),
-                logger,
             )
 
     def _fit_wrapper(
@@ -436,7 +430,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             elif series_ is not None:
                 raise_log(
                     ValueError(f"Model cannot be fit/trained with `{series_name}`."),
-                    logger,
                 )
         return self.fit(series=series, **add_kwargs, **kwargs)
 
@@ -469,7 +462,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         f"does not support `{name}` in general, or because it was fit/trained "
                         f"without using `{name}`."
                     ),
-                    logger,
                 )
 
         if self.supports_likelihood_parameter_prediction:
@@ -1110,7 +1102,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                                 f"`historical_forecasts()`, use a different `retrain` value or modify the function "
                                 f"to return `True` at or before this timestamp."
                             ),
-                            logger,
                         )
                     _counter_train += 1
 
@@ -1490,7 +1481,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     f"For `metric_kwargs`, either give a list of dicts of length `{len(metric)}` "
                     f"with metric-specific kwargs, or a single dict that is applied to all metrics."
                 ),
-                logger=logger,
             )
         if len(metric_kwargs) != len(metric):
             metric_kwargs = [metric_kwargs[0] for _ in range(len(metric))]
@@ -1810,7 +1800,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "Please pass exactly one of the arguments 'forecast_horizon', "
                     "'val_series' or 'use_fitted_values'."
                 ),
-                logger,
             )
 
         if not isinstance(parameters, dict):
@@ -1827,7 +1816,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ValueError(
                     "Every value in the `parameters` dictionary should be a list or a np.ndarray."
                 ),
-                logger,
             )
 
         if use_fitted_values:
@@ -1840,7 +1828,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         "The model must have a fitted_values attribute to compare with the train "
                         "TimeSeries (local models)."
                     ),
-                    logger,
                 )
 
         elif val_series is not None:
@@ -1849,7 +1836,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     ValueError(
                         "Training and validation series require the same number of components."
                     ),
-                    logger,
                 )
 
         data_transformers = _convert_data_transformers(
@@ -2298,7 +2284,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     f"custom metric. The following exception was raised: "
                     f"{type(err).__name__}('{err}')"
                 ),
-                logger=logger,
             )
 
         # process residuals
@@ -2420,7 +2405,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "Encodings are not available. Consider adding parameter `add_encoders` at model creation "
                     "and fitting the model with `model.fit()` before."
                 ),
-                logger=logger,
             )
         return self.encoders.encode_train(
             target=series,
@@ -2465,7 +2449,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "Encodings are not available. Consider adding parameter `add_encoders` at model creation "
                     "and fitting the model with `model.fit()` before."
                 ),
-                logger=logger,
             )
         return self.encoders.encode_inference(
             n=n,
@@ -2511,7 +2494,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "Encodings are not available. Consider adding parameter `add_encoders` at model creation "
                     "and fitting the model with `model.fit()` before."
                 ),
-                logger=logger,
             )
         return self.encoders.encode_train_inference(
             n=n,
@@ -2609,7 +2591,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         f"{'' if len(val_series) == 1 else 'at sequence/list index `' + str(idx) + '` '}"
                         f"do not match."
                     ),
-                    logger=logger,
                 )
         return val_series, val_past_covariates, val_future_covariates
 
@@ -2643,7 +2624,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         "If supplied as an integer, n_random_samples must be greater than 0 and less"
                         "than or equal to the size of the cartesian product of the hyperparameters."
                     ),
-                    logger,
                 )
             return sample(params, n_random_samples)
 
@@ -2653,7 +2633,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     ValueError(
                         "If supplied as a float, n_random_samples must be greater than 0.0 and less than 1.0."
                     ),
-                    logger,
                 )
             return sample(params, int(n_random_samples * len(params)))
 
@@ -2737,7 +2716,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "Argument 'path' has to be either 'str' or 'PathLike' (for a filepath) "
                     f"or 'BufferedWriter' (for an already opened file), but was '{path.__class__}'."
                 ),
-                logger=logger,
             )
 
     @staticmethod
@@ -2753,7 +2731,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         if isinstance(path, str | os.PathLike):
             if not os.path.exists(path):
-                raise_log(ValueError(f"The file {path} doesn't exist."), logger)
+                raise_log(ValueError(f"The file {path} doesn't exist."))
 
             with open(path, "rb") as handle:
                 model = pickle.load(file=handle)
@@ -2765,7 +2743,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "Argument 'path' has to be either 'str' or 'PathLike' (for a filepath) "
                     f"or 'BufferedReader' (for an already opened file), but was '{path.__class__}'."
                 ),
-                logger=logger,
             )
 
         return model
@@ -2776,7 +2753,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ValueError(
                     f"Model `{self.__class__.__name__}` only supports univariate TimeSeries instances"
                 ),
-                logger=logger,
             )
 
     def _assert_multivariate(self, series: TimeSeries):
@@ -2785,7 +2761,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ValueError(
                     f"Model `{self.__class__.__name__}` only supports multivariate TimeSeries instances"
                 ),
-                logger=logger,
             )
 
     def __repr__(self):
@@ -2852,7 +2827,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         "`darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer` "
                         "or set `use_static_covariates=False` at model creation to ignore static covariates."
                     ),
-                    logger,
                 )
 
     def _optimized_historical_forecasts(
@@ -2892,7 +2866,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "`predict_likelihood_parameters=True` is only supported for probabilistic models fitted with "
                     "a likelihood."
                 ),
-                logger,
             )
         if num_samples != 1:
             raise_log(
@@ -2900,7 +2873,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     f"`predict_likelihood_parameters=True` is only supported for `num_samples=1`, "
                     f"received {num_samples}."
                 ),
-                logger,
             )
         if output_chunk_length is not None and n > output_chunk_length:
             raise_log(
@@ -2908,7 +2880,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "`predict_likelihood_parameters=True` is only supported for `n` smaller than or equal to "
                     "`output_chunk_length`."
                 ),
-                logger,
             )
 
 
@@ -3290,7 +3261,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                         "The provided `future_covariates` series must contain at least the same time steps/"
                         "indices as the target `series`."
                     ),
-                    logger=logger,
                 )
             self.future_covariate_series = future_covariates_copy
             self._uses_future_covariates = True
@@ -3382,7 +3352,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                         f"series must contain at least the next `n={n}` time steps/indices after the "
                         f"end of the target `series` that was used to train the model."
                     ),
-                    logger=logger,
                 )
 
         return self._predict(
@@ -3573,7 +3542,6 @@ class TransferableFutureCovariatesLocalForecastingModel(
                         "The provided `future_covariates` related to the new target series must contain at "
                         "least the same timesteps/indices as the target `series` + `n`."
                     ),
-                    logger=logger,
                 )
             historic_future_covariates = future_covariates.slice_intersect(series_)
 
@@ -3615,7 +3583,6 @@ class TransferableFutureCovariatesLocalForecastingModel(
                     "`add_encoders` at model creation and fitting the model "
                     "with `model.fit()` before."
                 ),
-                logger=logger,
             )
         return self.generate_fit_predict_encodings(
             n=n,

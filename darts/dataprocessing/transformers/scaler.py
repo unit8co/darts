@@ -17,10 +17,8 @@ from darts.dataprocessing.transformers.fittable_data_transformer import (
 from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.typing import TimeSeriesLike
-
-logger = get_logger(__name__)
 
 
 class Scaler(FittableDataTransformer, InvertibleDataTransformer):
@@ -113,7 +111,6 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
                 ValueError(
                     "The provided transformer object must have fit(), transform() and inverse_transform() methods"
                 ),
-                logger,
             )
         # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self.transformer = scaler

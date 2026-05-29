@@ -18,10 +18,8 @@ from darts.dataprocessing.transformers.fittable_data_transformer import (
 from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.typing import TimeSeriesLike
-
-logger = get_logger(__name__)
 
 
 class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
@@ -110,7 +108,6 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
                 ValueError(
                     "optim_method parameter must be either 'mle' or 'pearsonr'."
                 ),
-                logger,
             )
 
         # Define fixed params (i.e. attributes defined before calling `super().__init__`):
@@ -155,7 +152,6 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
                     ValueError(
                         "lmbda should have one value per dimension (ie. column or variable) of the time series."
                     ),
-                    logger,
                 )
         else:
             # Replicate lmbda to match dimensions of the time series
