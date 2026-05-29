@@ -173,7 +173,7 @@ from darts.dataprocessing.encoders.encoder_base import (
     _EncoderMethod,
 )
 from darts.dataprocessing.transformers import FittableDataTransformer
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_log
 from darts.timeseries import DIMS
 from darts.typing import TimeIndex, TimeSeriesLike, TimeZone
 from darts.utils.timeseries_generation import datetime_attribute_timeseries
@@ -548,12 +548,14 @@ class IntegerIndexEncoder(SingleEncoder):
             Currently only 'relative' is supported. The generated encoded values will range from (-inf, inf) and the
             target series end time will be used as a reference to evaluate the relative index positions.
         """
-        raise_if_not(
-            isinstance(attribute, str) and attribute in INTEGER_INDEX_ATTRIBUTES,
-            f"Encountered invalid encoder argument `{attribute}` for encoder `position`. "
-            f'Attribute must be `"relative"`.',
-            logger,
-        )
+        if not (isinstance(attribute, str) and attribute in INTEGER_INDEX_ATTRIBUTES):
+            raise_log(
+                ValueError(
+                    f"Encountered invalid encoder argument `{attribute}` for encoder `position`. "
+                    f'Attribute must be `"relative"`.'
+                ),
+                logger,
+            )
         super().__init__(index_generator)
 
         self.attribute = attribute
@@ -713,19 +715,21 @@ class CallableIndexEncoder(SingleEncoder):
             `generate_inference_idx()`. Used to generate the index for encoders.
         attribute
             A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
-            and returns a `np.ndarray` of shape `(len(index),)` or `(len(index), n)`.
+            and returns a `np.ndarray` of shape `(len(index),)` or `(len(index), n_output_components)`.
             Examples for a correct `attribute` for `index` of type `pd.DatetimeIndex`:
             ``attribute = lambda index: (index.year - 1950) / 50``
-            ``attribute = lambda index: np.stack([index.year, index.year - 1], axis=1)``
+            ``attribute = lambda index: np.stack([index.year, index.month], axis=1)``
             And for `pd.RangeIndex`:
             ``attribute = lambda index: (index - 1950) / 50``
         """
-        raise_if_not(
-            callable(attribute),
-            f"Encountered invalid encoder argument `{attribute}` for encoder `callable`. "
-            f"Attribute must be a callable that returns a `np.ndarray`.",
-            logger,
-        )
+        if not callable(attribute):
+            raise_log(
+                ValueError(
+                    f"Encountered invalid encoder argument `{attribute}` for encoder `callable`. "
+                    f"Attribute must be a callable that returns a `np.ndarray`."
+                ),
+                logger,
+            )
 
         super().__init__(index_generator)
 
@@ -752,15 +756,16 @@ class CallableIndexEncoder(SingleEncoder):
             except Exception:
                 continue
 
-        raise_if_not(
-            detected,
-            "Encountered invalid encoder argument for encoder `callable`. "
-            "Attribute must be a callable that accepts a `pd.DatetimeIndex` "
-            "or `pd.RangeIndex` and returns an array-like of shape "
-            "`(len(index),)` or `(len(index), n)`.",
-            logger,
-        )
-
+        if not detected:
+            raise_log(
+                ValueError(
+                    "Encountered invalid encoder argument for encoder `callable`. "
+                    "Attribute must be a callable that accepts a `pd.DatetimeIndex` "
+                    "or `pd.RangeIndex` and returns an array-like of shape "
+                    "`(len(index),)` or `(len(index), n)`."
+                ),
+                logger,
+            )
         return n_components
 
     def _encode(
@@ -1113,12 +1118,15 @@ class SequentialEncoder(Encoder):
             If input {x}_covariates is None and no {x}_encoders are given, will return `None`
             for the {x}_covariates.
         """
-        raise_if(
-            not self.fit_called and self.requires_fit,
-            f"`{self.__class__.__name__}` contains encoders or transformers which must be trained before inference. "
-            "Call method `encode_train()` before `encode_inference()`.",
-            logger=logger,
-        )
+        if not self.fit_called and self.requires_fit:
+            raise_log(
+                ValueError(
+                    f"`{self.__class__.__name__}` contains encoders or transformers which must "
+                    f"be trained before inference. Call method `encode_train()` before "
+                    f"`encode_inference()`."
+                ),
+                logger,
+            )
         return self._launch_encoder(
             target=target,
             past_covariates=past_covariates,
@@ -1473,12 +1481,14 @@ class SequentialEncoder(Encoder):
             for enc in params
             if enc not in ENCODER_KEYS + TZ_KEYS + TRANSFORMER_KEYS
         ]
-        raise_if(
-            len(invalid_encoders) > 0,
-            f"Encountered invalid encoder types `{invalid_encoders}` in `add_encoders` parameter at model "
-            f"creation. Supported encoder types are: `{ENCODER_KEYS + TRANSFORMER_KEYS}`.",
-            logger,
-        )
+        if len(invalid_encoders) > 0:
+            raise_log(
+                ValueError(
+                    f"Encountered invalid encoder types `{invalid_encoders}` in `add_encoders` parameter at model "
+                    f"creation. Supported encoder types are: `{ENCODER_KEYS + TRANSFORMER_KEYS}`."
+                ),
+                logger,
+            )
 
         encoders = {enc: params[enc] for enc in ENCODER_KEYS if params.get(enc, None)}
 
@@ -1489,12 +1499,14 @@ class SequentialEncoder(Encoder):
                 t_type for t_type in t_types.keys() if t_type not in VALID_TIME_PARAMS
             ]
 
-        raise_if(
-            len(invalid_time_params) > 0,
-            f"Encountered invalid temporal types `{invalid_time_params}` in `add_encoders` parameter at model "
-            f"creation. Supported temporal types are: `{VALID_TIME_PARAMS}`.",
-            logger,
-        )
+        if len(invalid_time_params) > 0:
+            raise_log(
+                ValueError(
+                    f"Encountered invalid temporal types `{invalid_time_params}` in `add_encoders` parameter at model "
+                    f"creation. Supported temporal types are: `{VALID_TIME_PARAMS}`."
+                ),
+                logger,
+            )
 
         # check that encoders are not lambda functions (not pickable)
         lambda_func_encoders = set()
@@ -1502,13 +1514,15 @@ class SequentialEncoder(Encoder):
         past_encoders, future_encoders = list(), list()
         for enc, enc_params in encoders.items():
             for enc_time, enc_attr in enc_params.items():
-                raise_if_not(
-                    isinstance(enc_attr, VALID_ENCODER_DTYPES),
-                    f"Encountered value `{enc_attr}` of invalid type `{type(enc_attr)}` for encoder "
-                    f"`{enc}` in `add_encoders` at model creation. Supported data types are: "
-                    f"`{VALID_ENCODER_DTYPES}`.",
-                    logger,
-                )
+                if not isinstance(enc_attr, VALID_ENCODER_DTYPES):
+                    raise_log(
+                        ValueError(
+                            f"Encountered value `{enc_attr}` of invalid type `{type(enc_attr)}` for encoder "
+                            f"`{enc}` in `add_encoders` at model creation. Supported data types are: "
+                            f"`{VALID_ENCODER_DTYPES}`."
+                        ),
+                        logger,
+                    )
                 attrs = [enc_attr] if isinstance(enc_attr, str) else enc_attr
                 for attr in attrs:
                     encoder_id = "_".join([enc, enc_time])
@@ -1520,14 +1534,16 @@ class SequentialEncoder(Encoder):
                     if isinstance(attr, Callable) and attr.__name__ == "<lambda>":
                         lambda_func_encoders.add(enc)
 
-        raise_if(
-            len(lambda_func_encoders) > 0,
-            f"Encountered lambda function in the following `add_encoders` entries : {lambda_func_encoders} "
-            f"at model creation. "
-            f"In order to prevent issues when saving the model, these encoders must be converted to "
-            f"named functions.",
-            logger,
-        )
+        if len(lambda_func_encoders) > 0:
+            raise_log(
+                ValueError(
+                    f"Encountered lambda function in the following `add_encoders` entries : {lambda_func_encoders} "
+                    f"at model creation. "
+                    f"In order to prevent issues when saving the model, these encoders must be converted to "
+                    f"named functions."
+                ),
+                logger,
+            )
 
         for temp_enc, takes_temp, temp in [
             (past_encoders, self.takes_past_covariates, "past"),
@@ -1562,13 +1578,15 @@ class SequentialEncoder(Encoder):
         if transformer is None:
             return None, [], []
 
-        raise_if_not(
-            isinstance(transformer, VALID_TRANSFORMER_DTYPES),
-            f"Encountered `{TRANSFORMER_KEYS[0]}` of invalid type `{type(transformer)}` "
-            f"in `add_encoders` at model creation. Transformer must be an instance of "
-            f"`{VALID_TRANSFORMER_DTYPES}`.",
-            logger,
-        )
+        if not isinstance(transformer, VALID_TRANSFORMER_DTYPES):
+            raise_log(
+                ValueError(
+                    f"Encountered `{TRANSFORMER_KEYS[0]}` of invalid type `{type(transformer)}` "
+                    f"in `add_encoders` at model creation. Transformer must be an instance of "
+                    f"`{VALID_TRANSFORMER_DTYPES}`."
+                ),
+                logger,
+            )
 
         transform_past_mask = [
             transform
