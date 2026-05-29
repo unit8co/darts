@@ -3,7 +3,7 @@ TiRex: Zero-Shot Forecasting
 ----------------------------
 
 TiRex can be used the same way as other foundation models (e.g. Chronos2), with the exception
-that it does not support any type of covariates.
+that it does not support covariates.
 
 For detailed examples and tutorials, see:
 
@@ -213,7 +213,7 @@ class TiRexModel(FoundationModel):
         likelihood
             The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of
             :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. If using ``QuantileRegression``,
-            the quantiles must be a subset of those used during Chronos-2 pre-training:
+            the quantiles must be a subset of those used during TiRex pre-training:
             [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].
             Default: ``None``, which will make the model deterministic (median quantile only).
             When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to
@@ -238,8 +238,8 @@ class TiRexModel(FoundationModel):
             Darts' :class:`TorchForecastingModel`.
 
         loss_fn
-            PyTorch loss function used for fine-tuning a deterministic TimesFM 2.5 model. Ignored for probabilistic
-            models when ``likelihood`` is specified. Default: ``nn.MSELoss()``.
+            PyTorch loss function used for fine-tuning a deterministic model. Ignored for probabilistic models when
+            ``likelihood`` is specified. Default: ``nn.MSELoss()``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
             at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
@@ -261,7 +261,7 @@ class TiRexModel(FoundationModel):
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
-            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            of the name is formatted with the local date and time, while PID is the process ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
@@ -322,7 +322,7 @@ class TiRexModel(FoundationModel):
 
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
-            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUs.
 
             For more info, see here:
             https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
