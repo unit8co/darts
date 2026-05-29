@@ -23,7 +23,7 @@ from statsmodels.tsa.stattools import (
 )
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.metrics.metrics import _tolerance_coverages
 from darts.metrics.utils import _get_tolerance_levels
 from darts.typing import TimeSeriesLike
@@ -180,21 +180,21 @@ def extract_trend_and_seasonality(
     """
 
     ts._assert_univariate()
-    raise_if_not(
-        model in ModelMode or model in SeasonalityMode,
-        f"Unknown value for model_mode: {model}.",
-        logger,
-    )
+    if not (model in ModelMode or model in SeasonalityMode):
+        raise_log(ValueError(f"Unknown value for model_mode: {model}."), logger)
 
-    raise_if_not(
-        model is not SeasonalityMode.NONE,
-        "The model must be either MULTIPLICATIVE or ADDITIVE.",
-    )
+    if model is SeasonalityMode.NONE:
+        raise_log(
+            ValueError("The model must be either MULTIPLICATIVE or ADDITIVE."), logger
+        )
 
-    raise_if(
-        isinstance(freq, Sequence) and method != "MSTL",
-        f"{method} decomposition cannot be performed with more than one seasonality, received {freq}.",
-    )
+    if isinstance(freq, Sequence) and method != "MSTL":
+        raise_log(
+            ValueError(
+                f"{method} decomposition cannot be performed with more than one seasonality, received {freq}."
+            ),
+            logger,
+        )
 
     if method == "naive":
         decomp = seasonal_decompose(
@@ -202,11 +202,13 @@ def extract_trend_and_seasonality(
         )
 
     elif method == "STL":
-        raise_if_not(
-            model in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE],
-            f"Only ADDITIVE model is compatible with the STL method. Current model is {model}.",
-            logger,
-        )
+        if model not in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE]:
+            raise_log(
+                ValueError(
+                    f"Only ADDITIVE model is compatible with the STL method. Current model is {model}."
+                ),
+                logger,
+            )
 
         decomp = STL(
             endog=ts.to_series(),
@@ -215,11 +217,13 @@ def extract_trend_and_seasonality(
         ).fit()
 
     elif method == "MSTL":
-        raise_if_not(
-            model in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE],
-            f"Only ADDITIVE model is compatible with the MSTL method. Current model is {model}.",
-            logger,
-        )
+        if model not in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE]:
+            raise_log(
+                ValueError(
+                    f"Only ADDITIVE model is compatible with the MSTL method. Current model is {model}."
+                ),
+                logger,
+            )
 
         decomp = MSTL(
             endog=ts.to_series(),
@@ -228,7 +232,7 @@ def extract_trend_and_seasonality(
         ).fit()
 
     else:
-        raise_log(ValueError(f"Unknown value for method: {method}"), logger)
+        raise_log(ValueError(f"Unknown value for method: {method}."), logger)
 
     # keep components, ... only if the number of components matches
     season_shape = decomp.seasonal.shape
@@ -288,11 +292,8 @@ def remove_from_series(
     """
 
     ts._assert_univariate()
-    raise_if_not(
-        model in ModelMode or model in SeasonalityMode,
-        f"Unknown value for model_mode: {model}.",
-        logger,
-    )
+    if not (model in ModelMode or model in SeasonalityMode):
+        raise_log(ValueError(f"Unknown value for model_mode: {model}."), logger)
 
     if model.value == "multiplicative":
         new_ts = ts / other
@@ -301,7 +302,7 @@ def remove_from_series(
     else:
         raise_log(
             ValueError(
-                f"Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: {model}"
+                f"Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: {model}."
             )
         )
     return new_ts
@@ -347,15 +348,17 @@ def remove_seasonality(
     .. [2] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html
     """
     ts._assert_univariate()
-    raise_if_not(
-        model is not SeasonalityMode.NONE,
-        "The model must be either MULTIPLICATIVE or ADDITIVE.",
-    )
-    raise_if(
-        model not in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE] and method == "STL",
-        f"Only ADDITIVE seasonality is compatible with the STL method. Current model is {model}.",
-        logger,
-    )
+    if model is SeasonalityMode.NONE:
+        raise_log(
+            ValueError("The model must be either MULTIPLICATIVE or ADDITIVE."), logger
+        )
+    if model not in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE] and method == "STL":
+        raise_log(
+            ValueError(
+                f"Only ADDITIVE seasonality is compatible with the STL method. Current model is {model}."
+            ),
+            logger,
+        )
 
     _, seasonality = extract_trend_and_seasonality(ts, freq, model, method, **kwargs)
     new_ts = remove_from_series(ts, seasonality, model)
@@ -401,11 +404,13 @@ def remove_trend(
 
     ts._assert_univariate()
 
-    raise_if(
-        model not in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE] and method == "STL",
-        f"Only ADDITIVE seasonality is compatible with the STL method. Current model is {model}.",
-        logger,
-    )
+    if model not in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE] and method == "STL":
+        raise_log(
+            ValueError(
+                f"Only ADDITIVE seasonality is compatible with the STL method. Current model is {model}."
+            ),
+            logger,
+        )
     trend, _ = extract_trend_and_seasonality(ts, model=model, method=method, **kwargs)
     new_ts = remove_from_series(ts, trend, model)
     return new_ts
@@ -589,10 +594,10 @@ def granger_causality_tests(
     ts_cause._assert_deterministic()
     ts_effect._assert_deterministic()
 
-    raise_if_not(
-        ts_cause.freq == ts_effect.freq,
-        "ts_cause and ts_effect must have the same frequency.",
-    )
+    if ts_cause.freq != ts_effect.freq:
+        raise_log(
+            ValueError("ts_cause and ts_effect must have the same frequency."), logger
+        )
 
     if not ts_cause.has_same_time_as(ts_effect):
         logger.warning(
@@ -664,18 +669,22 @@ def plot_acf(
     """
 
     ts._assert_univariate()
-    raise_if(
-        max_lag is None or not (1 <= max_lag < len(ts)),
-        "max_lag must be greater than or equal to 1 and less than len(ts).",
-    )
-    raise_if(
-        m is not None and not (0 <= m <= max_lag),
-        "m must be greater than or equal to 0 and less than or equal to max_lag.",
-    )
-    raise_if(
-        alpha is None or not (0 < alpha < 1),
-        "alpha must be greater than 0 and less than 1.",
-    )
+    if max_lag is None or not (1 <= max_lag < len(ts)):
+        raise_log(
+            ValueError(
+                "max_lag must be greater than or equal to 1 and less than len(ts)."
+            ),
+            logger,
+        )
+    if m is not None and not (0 <= m <= max_lag):
+        raise_log(
+            ValueError(
+                "m must be greater than or equal to 0 and less than or equal to max_lag."
+            ),
+            logger,
+        )
+    if alpha is None or not (0 < alpha < 1):
+        raise_log(ValueError("alpha must be greater than 0 and less than 1."), logger)
 
     r, confint = acf(
         ts.values(),
@@ -767,18 +776,22 @@ def plot_pacf(
     """
 
     ts._assert_univariate()
-    raise_if(
-        max_lag is None or not (1 <= max_lag < len(ts) // 2),
-        "max_lag must be greater than or equal to 1 and less than len(ts)//2.",
-    )
-    raise_if(
-        m is not None and not (0 <= m <= max_lag),
-        "m must be greater than or equal to 0 and less than or equal to max_lag.",
-    )
-    raise_if(
-        alpha is None or not (0 < alpha < 1),
-        "alpha must be greater than 0 and less than 1.",
-    )
+    if max_lag is None or not (1 <= max_lag < len(ts) // 2):
+        raise_log(
+            ValueError(
+                "max_lag must be greater than or equal to 1 and less than len(ts)//2."
+            ),
+            logger,
+        )
+    if m is not None and not (0 <= m <= max_lag):
+        raise_log(
+            ValueError(
+                "m must be greater than or equal to 0 and less than or equal to max_lag."
+            ),
+            logger,
+        )
+    if alpha is None or not (0 < alpha < 1):
+        raise_log(ValueError("alpha must be greater than 0 and less than 1."), logger)
 
     r, confint = pacf(ts.values(), nlags=max_lag, method=method, alpha=alpha)
 
@@ -865,18 +878,22 @@ def plot_ccf(
 
     ts._assert_univariate()
     ts_other._assert_univariate()
-    raise_if(
-        max_lag is None or not (1 <= max_lag < len(ts)),
-        "max_lag must be greater than or equal to 1 and less than len(ts).",
-    )
-    raise_if(
-        m is not None and not (0 <= m <= max_lag),
-        "m must be greater than or equal to 0 and less than or equal to max_lag.",
-    )
-    raise_if(
-        alpha is None or not (0 < alpha < 1),
-        "alpha must be greater than 0 and less than 1.",
-    )
+    if max_lag is None or not (1 <= max_lag < len(ts)):
+        raise_log(
+            ValueError(
+                "max_lag must be greater than or equal to 1 and less than len(ts)."
+            ),
+            logger,
+        )
+    if m is not None and not (0 <= m <= max_lag):
+        raise_log(
+            ValueError(
+                "m must be greater than or equal to 0 and less than or equal to max_lag."
+            ),
+            logger,
+        )
+    if alpha is None or not (0 < alpha < 1):
+        raise_log(ValueError("alpha must be greater than 0 and less than 1."), logger)
     ts_other = ts_other.slice_intersect(ts)
     if len(ts_other) != len(ts):
         raise_log(

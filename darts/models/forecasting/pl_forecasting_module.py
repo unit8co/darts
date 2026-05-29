@@ -16,7 +16,7 @@ import torch
 import torch.nn as nn
 import torchmetrics
 
-from darts.logging import get_logger, raise_if, raise_log
+from darts.logging import get_logger, raise_log
 from darts.models.components.layer_norm_variants import RINorm
 from darts.utils.data.torch_datasets.utils import (
     PLModuleInput,
@@ -164,11 +164,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # save hyper parameters for saving/loading
         self.save_hyperparameters(ignore=["loss_fn", "torch_metrics"])
 
-        raise_if(
-            input_chunk_length is None or output_chunk_length is None,
-            "Both `input_chunk_length` and `output_chunk_length` must be passed to `PLForecastingModule`",
-            logger,
-        )
+        if input_chunk_length is None or output_chunk_length is None:
+            raise_log(
+                ValueError(
+                    "Both `input_chunk_length` and `output_chunk_length` must be passed to `PLForecastingModule`."
+                ),
+                logger,
+            )
 
         self.input_chunk_length = input_chunk_length
         # output_chunk_length is a property
@@ -785,10 +787,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
         elif dtype == torch.float64:
             self.double()
         else:
-            raise_if(
-                True,
-                f"Trying to load dtype `{dtype}`. Loading for this type is not implemented yet. Please report this "
-                f"issue on https://github.com/unit8co/darts",
+            raise_log(
+                ValueError(
+                    f"Trying to load dtype `{dtype}`. Loading for this type is not implemented yet. Please report this "
+                    f"issue on https://github.com/unit8co/darts."
+                ),
                 logger,
             )
 

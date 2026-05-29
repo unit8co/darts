@@ -4,7 +4,7 @@ Utils for filling missing values
 """
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_log
 
 logger = get_logger(__name__)
 
@@ -51,16 +51,12 @@ def fill_missing_values(
     TimeSeries
         A new TimeSeries with all missing values filled according to the rules above.
     """
-    raise_if_not(
-        isinstance(fill, str) or isinstance(fill, float),
-        "`fill` should either be a string or a float",
-        logger,
-    )
-    raise_if(
-        isinstance(fill, str) and fill != "auto",
-        "invalid string for `fill`: can only be set to 'auto'",
-        logger,
-    )
+    if not (isinstance(fill, str) or isinstance(fill, float)):
+        raise_log(ValueError("`fill` should either be a string or a float."), logger)
+    if isinstance(fill, str) and fill != "auto":
+        raise_log(
+            ValueError("invalid string for `fill`: can only be set to 'auto'."), logger
+        )
 
     if fill == "auto":
         return _auto_fill(series, **interpolate_kwargs)

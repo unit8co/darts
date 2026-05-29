@@ -18,7 +18,7 @@ import pandas as pd
 from narwhals import DataFrame
 from pandas._libs.tslibs.offsets import BusinessMixin
 
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.typing import TimeIndex
 
 TORCH_AVAILABLE = importlib.util.find_spec("torch") is not None
@@ -164,7 +164,8 @@ def _with_sanity_checks(
     --------
     class Model:
         def _a_sanity_check(self, *args, **kwargs):
-            raise_if_not(kwargs['b'] == kwargs['c'], 'b must equal c', logger)
+            if kwargs['b'] != kwargs['c']:
+                raise_log(ValueError('b must equal c'), logger)
         @_with_sanity_checks("_a_sanity_check")
         def fit(self, a, b=0, c=0):
             # at this point we can safely assume that 'b' and 'c' are equal...
@@ -255,26 +256,26 @@ def _is_method(func: Callable[..., Any]) -> bool:
 
 
 def _check_quantiles(quantiles):
-    raise_if_not(
-        all([0 < q < 1 for q in quantiles]),
-        "All provided quantiles must be between 0 and 1.",
-    )
+    if not all([0 < q < 1 for q in quantiles]):
+        raise_log(ValueError("All provided quantiles must be between 0 and 1."), logger)
 
     # we require the median to be present and the quantiles to be symmetric around it,
     # for correctness of sampling.
     median_q = 0.5
-    raise_if_not(
-        median_q in quantiles, "median quantile `q=0.5` must be in `quantiles`"
-    )
+    if median_q not in quantiles:
+        raise_log(ValueError("median quantile `q=0.5` must be in `quantiles`."), logger)
     is_centered = [
         -1e-6 < (median_q - left_q) + (median_q - right_q) < 1e-6
         for left_q, right_q in zip(quantiles, quantiles[::-1])
     ]
-    raise_if_not(
-        all(is_centered),
-        "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles "
-        "higher than `q=0.5`",
-    )
+    if not all(is_centered):
+        raise_log(
+            ValueError(
+                "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles "
+                "higher than `q=0.5`."
+            ),
+            logger,
+        )
 
 
 def slice_index(
@@ -560,22 +561,26 @@ def generate_index(
         for arg, arg_name in zip([start, end, length], ["start", "end", "length"])
         if arg is not None
     ]
-    raise_if(
-        len(constructors) != 2,
-        "index can only be generated with exactly two of the following parameters: [`start`, `end`, `length`]. "
-        f"Observed parameters: {constructors}. For generating an index with `end` and `length` consider setting "
-        f"`start` to None.",
-        logger,
-    )
+    if len(constructors) != 2:
+        raise_log(
+            ValueError(
+                "index can only be generated with exactly two of the following parameters: "
+                "[`start`, `end`, `length`]. Observed parameters: {constructors}. For generating "
+                "an index with `end` and `length` consider setting `start` to None."
+            ),
+            logger,
+        )
 
     start = pd.Timestamp(start) if isinstance(start, str) else start
     end = pd.Timestamp(end) if isinstance(end, str) else end
 
-    raise_if(
-        end is not None and start is not None and type(start) is not type(end),
-        "index generation with `start` and `end` requires equal object types of `start` and `end`",
-        logger,
-    )
+    if end is not None and start is not None and type(start) is not type(end):
+        raise_log(
+            ValueError(
+                "index generation with `start` and `end` requires equal object types of `start` and `end`."
+            ),
+            logger,
+        )
 
     if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
         freq = "D" if freq is None else freq

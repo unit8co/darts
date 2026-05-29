@@ -8,7 +8,7 @@ import math
 import torch
 import torch.nn as nn
 
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.models.components import glu_variants, layer_norm_variants
 from darts.models.components.glu_variants import GLU_FFN
 from darts.models.components.transformer import (
@@ -204,14 +204,17 @@ class _TransformerModule(PLForecastingModule):
         else:
             self.layer_norm = norm_type
 
-        raise_if_not(activation in FFN, f"'{activation}' is not in {FFN}")
+        if activation not in FFN:
+            raise_log(ValueError(f"'{activation}' is not in {FFN}."), logger)
         if activation in GLU_FFN:
-            raise_if(
-                custom_encoder is not None or custom_decoder is not None,
-                "Cannot use `custom_encoder` or `custom_decoder` along with an `activation` from "
-                f"{GLU_FFN}",
-                logger=logger,
-            )
+            if custom_encoder is not None or custom_decoder is not None:
+                raise_log(
+                    ValueError(
+                        "Cannot use `custom_encoder` or `custom_decoder` along with an `activation` from "
+                        f"{GLU_FFN}."
+                    ),
+                    logger=logger,
+                )
             # use glu variant feed-forward layers
             ffn_cls = getattr(glu_variants, activation)
 

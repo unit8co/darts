@@ -50,7 +50,7 @@ from darts import TimeSeries, metrics
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import BaseDataTransformer
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.metrics.utils import METRIC_OUTPUT_TYPE, METRIC_TYPE
 from darts.typing import TimeIndex
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
@@ -1802,15 +1802,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             along with a dictionary containing these best hyper-parameters,
             and metric score for the best hyper-parameters.
         """
-        raise_if_not(
-            (forecast_horizon is not None)
-            + (val_series is not None)
-            + use_fitted_values
-            == 1,
-            "Please pass exactly one of the arguments 'forecast_horizon', "
-            "'val_series' or 'use_fitted_values'.",
-            logger,
-        )
+        if (forecast_horizon is not None) + (
+            val_series is not None
+        ) + use_fitted_values != 1:
+            raise_log(
+                ValueError(
+                    "Please pass exactly one of the arguments 'forecast_horizon', "
+                    "'val_series' or 'use_fitted_values'."
+                ),
+                logger,
+            )
 
         if not isinstance(parameters, dict):
             raise_log(
@@ -1830,21 +1831,26 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
 
         if use_fitted_values:
-            raise_if_not(
-                hasattr(
-                    model_class(**{k: v[0] for k, v in parameters.items()}),
-                    "fitted_values",
-                ),
-                "The model must have a fitted_values attribute to compare with the train TimeSeries (local models)",
-                logger,
-            )
+            if not hasattr(
+                model_class(**{k: v[0] for k, v in parameters.items()}),
+                "fitted_values",
+            ):
+                raise_log(
+                    ValueError(
+                        "The model must have a fitted_values attribute to compare with the train "
+                        "TimeSeries (local models)."
+                    ),
+                    logger,
+                )
 
         elif val_series is not None:
-            raise_if_not(
-                series.width == val_series.width,
-                "Training and validation series require the same number of components.",
-                logger,
-            )
+            if series.width != val_series.width:
+                raise_log(
+                    ValueError(
+                        "Training and validation series require the same number of components."
+                    ),
+                    logger,
+                )
 
         data_transformers = _convert_data_transformers(
             data_transformers=data_transformers, copy=True
@@ -2408,12 +2414,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             A tuple of (past covariates, future covariates). Each covariate contains the original as well as the
             encoded covariates.
         """
-        raise_if(
-            self.encoders is None or not self.encoders.encoding_available,
-            "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "
-            "model with `model.fit()` before.",
-            logger=logger,
-        )
+        if self.encoders is None or not self.encoders.encoding_available:
+            raise_log(
+                ValueError(
+                    "Encodings are not available. Consider adding parameter `add_encoders` at model creation "
+                    "and fitting the model with `model.fit()` before."
+                ),
+                logger=logger,
+            )
         return self.encoders.encode_train(
             target=series,
             past_covariates=past_covariates,
@@ -2451,12 +2459,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             A tuple of (past covariates, future covariates). Each covariate contains the original as well as the
             encoded covariates.
         """
-        raise_if(
-            self.encoders is None or not self.encoders.encoding_available,
-            "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "
-            "model with `model.fit()` before.",
-            logger=logger,
-        )
+        if self.encoders is None or not self.encoders.encoding_available:
+            raise_log(
+                ValueError(
+                    "Encodings are not available. Consider adding parameter `add_encoders` at model creation "
+                    "and fitting the model with `model.fit()` before."
+                ),
+                logger=logger,
+            )
         return self.encoders.encode_inference(
             n=n,
             target=series,
@@ -2495,12 +2505,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             A tuple of (past covariates, future covariates). Each covariate contains the original as well as the
             encoded covariates.
         """
-        raise_if(
-            self.encoders is None or not self.encoders.encoding_available,
-            "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "
-            "model with `model.fit()` before.",
-            logger=logger,
-        )
+        if self.encoders is None or not self.encoders.encoding_available:
+            raise_log(
+                ValueError(
+                    "Encodings are not available. Consider adding parameter `add_encoders` at model creation "
+                    "and fitting the model with `model.fit()` before."
+                ),
+                logger=logger,
+            )
         return self.encoders.encode_train_inference(
             n=n,
             target=series,
@@ -2625,18 +2637,24 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         supplied, select a fraction"""
 
         if isinstance(n_random_samples, int):
-            raise_if_not(
-                (n_random_samples > 0) and (n_random_samples <= len(params)),
-                "If supplied as an integer, n_random_samples must be greater than 0 and less"
-                "than or equal to the size of the cartesian product of the hyperparameters.",
-            )
+            if not ((n_random_samples > 0) and (n_random_samples <= len(params))):
+                raise_log(
+                    ValueError(
+                        "If supplied as an integer, n_random_samples must be greater than 0 and less"
+                        "than or equal to the size of the cartesian product of the hyperparameters."
+                    ),
+                    logger,
+                )
             return sample(params, n_random_samples)
 
         if isinstance(n_random_samples, float):
-            raise_if_not(
-                (n_random_samples > 0.0) and (n_random_samples <= 1.0),
-                "If supplied as a float, n_random_samples must be greater than 0.0 and less than 1.0.",
-            )
+            if not ((n_random_samples > 0.0) and (n_random_samples <= 1.0)):
+                raise_log(
+                    ValueError(
+                        "If supplied as a float, n_random_samples must be greater than 0.0 and less than 1.0."
+                    ),
+                    logger,
+                )
             return sample(params, int(n_random_samples * len(params)))
 
     def _extract_model_creation_params(self):
@@ -2734,11 +2752,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
 
         if isinstance(path, str | os.PathLike):
-            raise_if_not(
-                os.path.exists(path),
-                f"The file {path} doesn't exist",
-                logger,
-            )
+            if not os.path.exists(path):
+                raise_log(ValueError(f"The file {path} doesn't exist."), logger)
 
             with open(path, "rb") as handle:
                 model = pickle.load(file=handle)
@@ -3593,12 +3608,15 @@ class TransferableFutureCovariatesLocalForecastingModel(
         past_covariates: TimeSeriesLike | None = None,
         future_covariates: TimeSeriesLike | None = None,
     ) -> tuple[TimeSeriesLike, TimeSeriesLike]:
-        raise_if(
-            self.encoders is None or not self.encoders.encoding_available,
-            "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "
-            "model with `model.fit()` before.",
-            logger=logger,
-        )
+        if self.encoders is None or not self.encoders.encoding_available:
+            raise_log(
+                ValueError(
+                    "Encodings are not available. Consider adding parameter "
+                    "`add_encoders` at model creation and fitting the model "
+                    "with `model.fit()` before."
+                ),
+                logger=logger,
+            )
         return self.generate_fit_predict_encodings(
             n=n,
             series=series,

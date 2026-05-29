@@ -6,13 +6,15 @@ D-Linear
 import torch
 import torch.nn as nn
 
-from darts.logging import raise_if
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+
+logger = get_logger(__name__)
 
 
 class _MovingAvg(nn.Module):
@@ -479,12 +481,16 @@ class DLinearModel(MixedCovariatesTorchModel):
         (past_target, past_covariates, _, future_covariates, static_covariates, _) = (
             train_sample
         )
-        raise_if(
-            self.shared_weights
-            and (past_covariates is not None or future_covariates is not None),
-            "Covariates have been provided, but the model has been built with `shared_weights=True`. "
-            "Please set `shared_weights=False` to use covariates.",
-        )
+        if self.shared_weights and (
+            past_covariates is not None or future_covariates is not None
+        ):
+            raise_log(
+                ValueError(
+                    "Covariates have been provided, but the model has been built with `shared_weights=True`. "
+                    "Please set `shared_weights=False` to use covariates."
+                ),
+                logger,
+            )
 
         input_dim = past_target.shape[1] + sum(
             # add past covariates dim and historic future covariates dim, if present

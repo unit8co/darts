@@ -21,7 +21,7 @@ import pandas as pd
 import shap
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 
 logger = get_logger(__name__)
 
@@ -110,20 +110,26 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
             need to be specified for univariate series.
         """
         # validate component argument
-        raise_if(
-            component is None and len(self.explained_components) > 1,
-            f"The component parameter is required when the `{self.__class__.__name__}` has more than one component.",
-            logger,
-        )
+        if component is None and len(self.explained_components) > 1:
+            raise_log(
+                ValueError(
+                    f"The component parameter is required when the `{self.__class__.__name__}` "
+                    f"has more than one component."
+                ),
+                logger,
+            )
 
         if component is None:
             component = self.available_components[0]
 
-        raise_if_not(
-            component in self.available_components,
-            f"Component {component} is not available. Available components are: {self.available_components}",
-            logger,
-        )
+        if component not in self.available_components:
+            raise_log(
+                ValueError(
+                    f"Component {component} is not available. Available components are: "
+                    f"{self.available_components}."
+                ),
+                logger,
+            )
         return component
 
 
@@ -194,16 +200,20 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
     ):
         self.explained_forecasts = explained_forecasts
         if isinstance(self.explained_forecasts, list):
-            raise_if_not(
-                isinstance(self.explained_forecasts[0], dict),
-                "The explained_forecasts list must consist of dicts.",
-                logger,
-            )
-            raise_if_not(
-                all(isinstance(key, int) for key in self.explained_forecasts[0].keys()),
-                "The explained_forecasts dict list must have all integer keys.",
-                logger,
-            )
+            if not isinstance(self.explained_forecasts[0], dict):
+                raise_log(
+                    ValueError("The explained_forecasts list must consist of dicts."),
+                    logger,
+                )
+            if not all(
+                isinstance(key, int) for key in self.explained_forecasts[0].keys()
+            ):
+                raise_log(
+                    ValueError(
+                        "The explained_forecasts dict list must have all integer keys."
+                    ),
+                    logger,
+                )
             self.available_horizons = list(self.explained_forecasts[0].keys())
             h_0 = self.available_horizons[0]
             self.available_components = list(self.explained_forecasts[0][h_0].keys())
@@ -297,26 +307,32 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
             need to be specified for univariate series.
         """
         # validate component argument
-        raise_if(
-            component is None and len(self.available_components) > 1,
-            "The component parameter is required when the model has more than one component.",
-            logger,
-        )
+        if component is None and len(self.available_components) > 1:
+            raise_log(
+                ValueError(
+                    "The component parameter is required when the model has more than one component."
+                ),
+                logger,
+            )
 
         if component is None:
             component = self.available_components[0]
 
-        raise_if_not(
-            component in self.available_components,
-            f"Component {component} is not available. Available components are: {self.available_components}",
-            logger,
-        )
+        if component not in self.available_components:
+            raise_log(
+                ValueError(
+                    f"Component {component} is not available. Available components are: {self.available_components}."
+                ),
+                logger,
+            )
 
-        raise_if_not(
-            horizon in self.available_horizons,
-            f"Horizon {horizon} is not available. Available horizons are: {self.available_horizons}",
-            logger,
-        )
+        if horizon not in self.available_horizons:
+            raise_log(
+                ValueError(
+                    f"Horizon {horizon} is not available. Available horizons are: {self.available_horizons}."
+                ),
+                logger,
+            )
         return component
 
 

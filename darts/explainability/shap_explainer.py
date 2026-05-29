@@ -37,7 +37,7 @@ from sklearn.multioutput import MultiOutputRegressor
 from darts import TimeSeries
 from darts.explainability.explainability import _ForecastingModelExplainer
 from darts.explainability.explainability_result import ShapExplainabilityResult
-from darts.logging import get_logger, raise_if, raise_log
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
 from darts.utils.data.tabularization import create_lagged_prediction_data
@@ -465,10 +465,13 @@ class ShapExplainer(_ForecastingModelExplainer):
             Optionally, additional keyword arguments passed to `shap.force_plot()`.
         """
 
-        raise_if(
-            target_component is None and len(self.target_components) > 1,
-            "The component parameter is required when the model has more than one component.",
-        )
+        if target_component is None and len(self.target_components) > 1:
+            raise_log(
+                ValueError(
+                    "The component parameter is required when the model has more than one component."
+                ),
+                logger,
+            )
 
         if target_component is None:
             target_component = self.target_components[0]

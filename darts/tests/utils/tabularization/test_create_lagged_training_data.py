@@ -10,7 +10,7 @@ import pytest
 
 from darts import TimeSeries
 from darts import concatenate as darts_concatenate
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.utils.data.tabularization import (
     create_lagged_component_names,
     create_lagged_training_data,
@@ -337,10 +337,12 @@ class TestCreateLaggedTrainingData:
                     idx_to_get = time_idx + lag
                     # Account for prepended values:
                     idx_to_get -= num_prepended
-                    raise_if_not(
-                        idx_to_get >= 0,
-                        f"Unexpected case encountered: `time_idx + lag - num_prepended = {idx_to_get} < 0`.",
-                    )
+                    if idx_to_get < 0:
+                        raise_log(
+                            ValueError(
+                                f"Unexpected case encountered: `time_idx + lag - num_prepended = {idx_to_get} < 0`."
+                            ),
+                        )
                     # Extract all components at this lagged time:
                     X_row.append(array_vals[idx_to_get, :].reshape(-1))
                 # Concatenate together all lagged values into a single row:
@@ -374,14 +376,18 @@ class TestCreateLaggedTrainingData:
         array_vals = target.all_values(copy=False)
         y = []
         for time in feature_times:
-            raise_if(
-                time < target.start_time(),
-                f"Unexpected label time at {time}, but `series` starts at {target.start_time()}.",
-            )
-            raise_if(
-                time > target.end_time(),
-                f"Unexpected label time at {time}, but `series` ends at {target.end_time()}.",
-            )
+            if time < target.start_time():
+                raise_log(
+                    ValueError(
+                        f"Unexpected label time at {time}, but `series` starts at {target.start_time()}."
+                    ),
+                )
+            if time > target.end_time():
+                raise_log(
+                    ValueError(
+                        f"Unexpected label time at {time}, but `series` ends at {target.end_time()}."
+                    ),
+                )
             time_idx = np.searchsorted(target.time_index, time)
             # If `multi_models = True`, want to predict all values from time `t` to
             # time `t + output_chunk_lenth - 1`; if `multi_models = False`, only want to

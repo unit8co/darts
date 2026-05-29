@@ -12,7 +12,7 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import FittableDataTransformer
-from darts.logging import get_logger, raise_if, raise_log
+from darts.logging import get_logger, raise_log
 from darts.typing import TimeIndex
 from darts.utils.utils import generate_index
 
@@ -715,12 +715,14 @@ class SingleEncoder(Encoder, ABC):
             Whether to merge the encoded TimeSeries with `covariates`.
         """
         # some encoders must be fit before `encode_inference()`
-        raise_if(
-            not self.fit_called and self.requires_fit,
-            f"`{self.__class__.__name__}` object must be trained before inference. "
-            f"Call method `encode_train()` before `encode_inference()`.",
-            logger=logger,
-        )
+        if not self.fit_called and self.requires_fit:
+            raise_log(
+                ValueError(
+                    f"`{self.__class__.__name__}` object must be trained before inference. "
+                    f"Call method `encode_train()` before `encode_inference()`."
+                ),
+                logger=logger,
+            )
 
         # exclude encoded components from covariates to add the newly encoded components later
         covariates = self._drop_encoded_components(covariates, self.components)

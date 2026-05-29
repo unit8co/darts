@@ -10,7 +10,7 @@ import holidays
 import numpy as np
 import pandas as pd
 
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.timeseries import (
     DIMS,
     HIERARCHY_TAG,
@@ -276,19 +276,23 @@ def gaussian_timeseries(
     """
 
     if isinstance(mean, np.ndarray):
-        raise_if_not(
-            mean.shape == (length,),
-            "If a vector of means is provided, "
-            "it requires the same length as the TimeSeries.",
-            logger,
-        )
+        if mean.shape != (length,):
+            raise_log(
+                ValueError(
+                    "If a vector of means is provided, "
+                    "it requires the same length as the TimeSeries."
+                ),
+                logger,
+            )
     if isinstance(std, np.ndarray):
-        raise_if_not(
-            std.shape == (length, length),
-            "If a matrix of standard deviations is provided, "
-            "its shape has to match the length of the TimeSeries.",
-            logger,
-        )
+        if std.shape != (length, length):
+            raise_log(
+                ValueError(
+                    "If a matrix of standard deviations is provided, "
+                    "its shape has to match the length of the TimeSeries."
+                ),
+                logger,
+            )
 
     index = generate_index(
         start=start, end=end, freq=freq, length=length, name=TIMES_NAME
@@ -414,10 +418,8 @@ def autoregressive_timeseries(
     if start_values is None:
         start_values = np.ones(len(coef), dtype=dtype)
     else:
-        raise_if_not(
-            len(start_values) == len(coef),
-            "start_values must have same length as coef.",
-        )
+        if len(start_values) != len(coef):
+            raise_log(ValueError("start_values must have same length as coef."), logger)
 
     index = generate_index(
         start=start, end=end, freq=freq, length=length, name=TIMES_NAME
@@ -446,7 +448,8 @@ def _extend_time_index_until(
     if not add_length and not until:
         return time_index
 
-    raise_if(bool(add_length) and bool(until), "set only one of add_length and until")
+    if bool(add_length) and bool(until):
+        raise_log(ValueError("set only one of `add_length` and `until`."), logger)
 
     datetime_index = isinstance(time_index, pd.DatetimeIndex)
 
@@ -610,16 +613,21 @@ def datetime_attribute_timeseries(
         add_length=add_length,
     )
 
-    raise_if_not(
+    if not (
         hasattr(pd.DatetimeIndex, attribute)
-        or (attribute in ["week", "weekofyear", "week_of_year"]),
-        f"attribute `{attribute}` needs to be an attribute of pd.DatetimeIndex. "
-        "See all available attributes in "
-        "https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex",
-        logger,
-    )
+        or (attribute in ["week", "weekofyear", "week_of_year"])
+    ):
+        raise_log(
+            ValueError(
+                f"attribute `{attribute}` needs to be an attribute of pd.DatetimeIndex. "
+                "See all available attributes in "
+                "https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex"
+            ),
+            logger,
+        )
 
-    raise_if(one_hot and cyclic, "set only one of one_hot or cyclic to true", logger)
+    if one_hot and cyclic:
+        raise_log(ValueError("set only one of one_hot or cyclic to true"), logger)
 
     num_values_dict = {
         "month": 12,
@@ -678,12 +686,14 @@ def datetime_attribute_timeseries(
             num_values_dict[attribute] += 1
 
     if one_hot or cyclic:
-        raise_if_not(
-            attribute in num_values_dict,
-            f"Given datetime attribute `{attribute}` not supported with one-hot or cyclical encoding. "
-            f"Supported datetime attribute: {list(num_values_dict.keys())}",
-            logger,
-        )
+        if attribute not in num_values_dict:
+            raise_log(
+                ValueError(
+                    f"Given datetime attribute `{attribute}` not supported with one-hot or cyclical encoding. "
+                    f"Supported datetime attribute: {list(num_values_dict.keys())}."
+                ),
+                logger,
+            )
 
     if one_hot:
         values_df = pd.get_dummies(values)
@@ -707,12 +717,14 @@ def datetime_attribute_timeseries(
                 attribute + "_" + str(column_name) for column_name in values_df.columns
             ]
 
-        raise_if_not(
-            len(with_columns) == len(values_df.columns),
-            "For the given case with `one_hot=True`,`with_columns` must be a list of strings of length "
-            f"{values_df.columns}.",
-            logger=logger,
-        )
+        if len(with_columns) != len(values_df.columns):
+            raise_log(
+                ValueError(
+                    "For the given case with `one_hot=True`,`with_columns` must be a list of strings of length "
+                    f"{values_df.columns}."
+                ),
+                logger=logger,
+            )
 
         values_df.columns = with_columns
     else:
@@ -727,12 +739,14 @@ def datetime_attribute_timeseries(
             if with_columns is None:
                 with_columns = [attribute + "_sin", attribute + "_cos"]
 
-            raise_if(
-                len(with_columns) != 2,
-                "`with_columns` must be a list of two strings when `cyclic=True`. "
-                "The first string for the sine component name, the second for the cosine component name.",
-                logger=logger,
-            )
+            if len(with_columns) != 2:
+                raise_log(
+                    ValueError(
+                        "`with_columns` must be a list of two strings when `cyclic=True`. "
+                        "The first string for the sine component name, the second for the cosine component name."
+                    ),
+                    logger=logger,
+                )
             values_df = pd.DataFrame({
                 with_columns[0]: np.sin(freq * values),
                 with_columns[1]: np.cos(freq * values),
@@ -740,11 +754,13 @@ def datetime_attribute_timeseries(
         else:
             if with_columns is None:
                 with_columns = attribute
-            raise_if_not(
-                isinstance(with_columns, str),
-                "`with_columns` must be a string specifying the output component name.",
-                logger=logger,
-            )
+            if not isinstance(with_columns, str):
+                raise_log(
+                    ValueError(
+                        "`with_columns` must be a string specifying the output component name."
+                    ),
+                    logger=logger,
+                )
             values_df = pd.DataFrame({with_columns: values})
     return TimeSeries(
         times=time_index_ts,

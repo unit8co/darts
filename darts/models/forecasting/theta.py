@@ -9,7 +9,7 @@ import numpy as np
 import statsmodels.tsa.holtwinters as hw
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
 from darts.utils.statistics import (
     check_seasonality,
@@ -89,11 +89,10 @@ class Theta(LocalForecastingModel):
         self.season_period = None
         self.season_mode = season_mode
 
-        raise_if_not(
-            season_mode in SeasonalityMode,
-            f"Unknown value for season_mode: {season_mode}.",
-            logger,
-        )
+        if season_mode not in SeasonalityMode:
+            raise_log(
+                ValueError(f"Unknown value for season_mode: {season_mode}."), logger
+            )
 
         if self.theta == 0:
             raise_log(ValueError("The parameter theta cannot be equal to 0."), logger)
@@ -291,21 +290,18 @@ class FourTheta(LocalForecastingModel):
         self.fitted_values = None
         self.normalization = normalization
 
-        raise_if_not(
-            isinstance(model_mode, ModelMode),
-            f"Unknown value for model_mode: {model_mode}.",
-            logger,
-        )
-        raise_if_not(
-            isinstance(trend_mode, TrendMode),
-            f"Unknown value for trend_mode: {trend_mode}.",
-            logger,
-        )
-        raise_if_not(
-            isinstance(season_mode, SeasonalityMode),
-            f"Unknown value for season_mode: {season_mode}.",
-            logger,
-        )
+        if not isinstance(model_mode, ModelMode):
+            raise_log(
+                ValueError(f"Unknown value for model_mode: {model_mode}."), logger
+            )
+        if not isinstance(trend_mode, TrendMode):
+            raise_log(
+                ValueError(f"Unknown value for trend_mode: {trend_mode}."), logger
+            )
+        if not isinstance(season_mode, SeasonalityMode):
+            raise_log(
+                ValueError(f"Unknown value for season_mode: {season_mode}."), logger
+            )
 
     def fit(self, series, verbose: bool | None = False):
         super().fit(series, verbose=verbose)
@@ -314,11 +310,13 @@ class FourTheta(LocalForecastingModel):
         # normalization of data
         if self.normalization:
             self.mean = series.to_dataframe(copy=False).mean().mean()
-            raise_if_not(
-                not np.isclose(self.mean, 0),
-                "The mean value of the provided series is too close to zero to perform normalization",
-                logger,
-            )
+            if np.isclose(self.mean, 0):
+                raise_log(
+                    ValueError(
+                        "The mean value of the provided series is too close to zero to perform normalization."
+                    ),
+                    logger,
+                )
             new_ts = series / self.mean
         else:
             new_ts = series

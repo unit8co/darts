@@ -16,7 +16,7 @@ from sklearn.utils import check_random_state
 from statsmodels.tsa.api import VARMAX as staVARMA
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
@@ -282,9 +282,11 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
     @property
     def _supports_range_index(self) -> bool:
-        raise_if(
-            self.trend and self.trend != "c",
-            "'trend' is not None. Range indexing is not supported in that case.",
-            logger,
-        )
+        if self.trend and self.trend != "c":
+            raise_log(
+                ValueError(
+                    "'trend' is not None. Range indexing is not supported in that case."
+                ),
+                logger,
+            )
         return True

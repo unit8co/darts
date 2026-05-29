@@ -12,8 +12,10 @@ from nfoursid.kalman import Kalman
 from nfoursid.nfoursid import NFourSID
 
 from darts import TimeSeries
-from darts.logging import raise_if, raise_if_not
+from darts.logging import get_logger, raise_log
 from darts.models.filtering.filtering_model import FilteringModel
+
+logger = get_logger(__name__)
 
 
 class KalmanFilter(FilteringModel, ABC):
@@ -101,10 +103,13 @@ class KalmanFilter(FilteringModel, ABC):
         if covariates is not None:
             self._expect_covariates = True
             covariates = covariates.slice_intersect(series)
-            raise_if_not(
-                series.has_same_time_as(covariates),
-                "The number of timesteps in the series and the covariates must match.",
-            )
+            if not series.has_same_time_as(covariates):
+                raise_log(
+                    ValueError(
+                        "The number of timesteps in the series and the covariates must match."
+                    ),
+                    logger,
+                )
 
         # TODO: Handle multiple timeseries. Needs reimplementation of NFourSID?
         self.dim_y = series.width
@@ -166,39 +171,55 @@ class KalmanFilter(FilteringModel, ABC):
         """
         super().filter(series)
 
-        raise_if(
-            self.kf is None,
-            "The Kalman filter has not been fitted yet. Call `fit()` first "
-            "or provide Kalman filter in constructor.",
-        )
+        if self.kf is None:
+            raise_log(
+                ValueError(
+                    "The Kalman filter has not been fitted yet. Call `fit()` first "
+                    "or provide Kalman filter in constructor."
+                ),
+                logger,
+            )
 
-        raise_if_not(
-            series.width == self.dim_y,
-            "The provided TimeSeries dimensionality does not match "
-            "the output dimensionality of the Kalman filter.",
-        )
+        if series.width != self.dim_y:
+            raise_log(
+                ValueError(
+                    "The provided TimeSeries dimensionality does not match "
+                    "the output dimensionality of the Kalman filter."
+                ),
+                logger,
+            )
 
-        raise_if(
-            covariates is not None and not self._expect_covariates,
-            "Covariates were provided, but the Kalman filter was not fitted with covariates.",
-        )
+        if covariates is not None and not self._expect_covariates:
+            raise_log(
+                ValueError(
+                    "Covariates were provided, but the Kalman filter was not fitted with covariates."
+                ),
+                logger,
+            )
 
         if self._expect_covariates:
-            raise_if(
-                covariates is None,
-                "The Kalman filter was fitted with covariates, but these were not provided.",
-            )
+            if covariates is None:
+                raise_log(
+                    ValueError(
+                        "The Kalman filter was fitted with covariates, but these were not provided."
+                    ),
+                    logger,
+                )
 
-            raise_if_not(
-                covariates.is_deterministic,
-                "The covariates must be deterministic (observations).",
-            )
+            if not covariates.is_deterministic:
+                raise_log(
+                    ValueError("The covariates must be deterministic (observations)."),
+                    logger,
+                )
 
             covariates = covariates.slice_intersect(series)
-            raise_if_not(
-                series.has_same_time_as(covariates),
-                "The number of timesteps in the series and the covariates must match.",
-            )
+            if not series.has_same_time_as(covariates):
+                raise_log(
+                    ValueError(
+                        "The number of timesteps in the series and the covariates must match."
+                    ),
+                    logger,
+                )
 
         kf = deepcopy(self.kf)
 
