@@ -3313,23 +3313,28 @@ class TestSimpleStatistics:
                 new_ts._values, np.median(self.values, axis=axis, keepdims=True)
             ).all()
 
-    def test_quantile(self):
+    @pytest.mark.parametrize("dtype", ["float64", "float32"])
+    def test_quantile(self, dtype):
         qs = [0.01, 0.1, 0.5, 0.95]
+
+        ts = self.ts.astype(dtype)
+        values = self.values.astype(dtype)
 
         q_ts = []
         for q in qs:
-            new_ts = self.ts.quantile(q=q)
+            new_ts = ts.quantile(q=q)
+            assert new_ts.dtype == dtype
 
             # check component names
             q_comps = likelihood_component_names(
-                components=self.ts.components, parameter_names=quantile_names([q])
+                components=ts.components, parameter_names=quantile_names([q])
             )
             assert new_ts.components.tolist() == q_comps
 
             # check values
             assert np.isclose(
                 new_ts.values(),
-                np.quantile(self.values, q=q, axis=2),
+                np.quantile(values, q=q, axis=2),
             ).all()
             q_ts.append((new_ts[q_comps[0]], new_ts[q_comps[1]]))
 
@@ -3339,4 +3344,6 @@ class TestSimpleStatistics:
         q_ts = concatenate([q_ts_0, q_ts_1], axis=1)
 
         # computing all quantiles at once must be identical
-        assert self.ts.quantile(q=qs) == q_ts
+        new_ts = ts.quantile(q=qs)
+        assert new_ts == q_ts
+        assert new_ts.dtype == dtype
