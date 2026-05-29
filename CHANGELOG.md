@@ -14,6 +14,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - 🚀🚀 Added new forecasting model `PatchTSTFMModel` : IBM's pre-trained ~260M-parameter foundational model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series forecasting without training and can output deterministic or probabilistic forecasts. [#3120](https://github.com/unit8co/darts/pull/3120) by [Dennis Bader](https://github.com/dennisbader).
 - Added `use_longer_projection_head` to `TimesFM2p5Model` to enable longer non-autoregressive prediction horizons (up to 1024 steps for `output_chunk_length + output_chunk_shift`). [#3121](https://github.com/unit8co/darts/pull/3121) by [Zhihao Dai](https://github.com/daidahao).
 - `TimeSeries.from_dataframe()` now supports time columns of type `pl.Date` for `polars.DataFrame`. [#3124](https://github.com/unit8co/darts/pull/3124) by [Dennis Bader](https://github.com/dennisbader)
+- Custom encoders now support functions that return multiple components. Simply pass such a function via the `"custom"` encoder key in the `add_encoders` model input parameter. [#3069](https://github.com/unit8co/darts/pull/3069) by [Moritz Waldleben](https://github.com/mwaldleben).
 
 **Fixed**
 
