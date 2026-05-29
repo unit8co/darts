@@ -156,6 +156,7 @@ TorchForecastingModel (this is only meant to illustrate many features at once).
 ..
 """
 
+import contextlib
 import copy
 from collections.abc import Callable, Sequence
 
@@ -741,28 +742,24 @@ class CallableIndexEncoder(SingleEncoder):
         """Test the callable with sample `pd.DatetimeIndex` and `pd.RangeIndex` to determine
         the number of output components.
         """
-        n_components = 1
-        detected = False
+        n_components = None
 
         for idx in (
             pd.date_range("2000-01-01", periods=2, freq="D"),
             pd.RangeIndex(2),
         ):
-            try:
+            with contextlib.suppress(Exception):
                 encoded = np.asarray(attribute(idx))
                 n_components = 1 if encoded.ndim == 1 else encoded.shape[1]
-                detected = True
                 break
-            except Exception:
-                continue
 
-        if not detected:
+        if n_components is None:
             raise_log(
                 ValueError(
                     "Encountered invalid encoder argument for encoder `callable`. "
                     "Attribute must be a callable that accepts a `pd.DatetimeIndex` "
                     "or `pd.RangeIndex` and returns an array-like of shape "
-                    "`(len(index),)` or `(len(index), n)`."
+                    "`(len(index),)` or `(len(index), n_output_components)`."
                 ),
                 logger,
             )
@@ -774,7 +771,7 @@ class CallableIndexEncoder(SingleEncoder):
         """Apply the user-defined callable to encode the index."""
         super()._encode(index, target_end, dtype)
 
-        values = np.array(self.attribute(index)).astype(np.dtype(dtype))
+        values = np.array(self.attribute(index), dtype=dtype)
         components = [
             self.base_component_name + ("custom" if i == 0 else f"custom_{i}")
             for i in range(self._n_components)
@@ -822,10 +819,15 @@ class PastCallableIndexEncoder(CallableIndexEncoder):
         ----------
         attribute
             A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
-            and returns a `np.ndarray` of shape `(len(index),)` or `(len(index), n)`.
+            and returns a `np.ndarray` of shape `(len(index),)` or `(len(index), n_output_components)`.
             An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
-            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.RangeIndex:
-            ``attribute = lambda index: (index - 1950) / 50``
+
+            - ``attribute = lambda index: (index.year - 1950) / 50`` or
+            - ``attribute = lambda index: np.stack([index.year, index.month], axis=1)``,
+
+            And for pd.RangeIndex:
+
+            - ``attribute = lambda index: (index - 1950) / 50``
         input_chunk_length
             Optionally, the number of input target time steps per chunk. Only required for
             :class:`TorchForecastingModel`, and :class:`SKLearnModel`.
@@ -869,10 +871,15 @@ class FutureCallableIndexEncoder(CallableIndexEncoder):
         ----------
         attribute
             A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
-            and returns a `np.ndarray` of shape `(len(index),)` or `(len(index), n)`.
+            and returns a `np.ndarray` of shape `(len(index),)` or `(len(index), n_output_components)`.
             An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
-            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.RangeIndex:
-            ``attribute = lambda index: (index - 1950) / 50``
+
+            - ``attribute = lambda index: (index.year - 1950) / 50`` or
+            - ``attribute = lambda index: np.stack([index.year, index.month], axis=1)``,
+
+            And for pd.RangeIndex:
+
+            - ``attribute = lambda index: (index - 1950) / 50``
         input_chunk_length
             Optionally, the number of input target time steps per chunk. Only required for
             :class:`TorchForecastingModel`, and :class:`SKLearnModel`.

@@ -970,9 +970,11 @@ class TestEncoder:
         def invalid_callable(index):
             return index.year[0]
 
-        # ===> test callable index encoder with multi component ouput <===
+        # ===> test callable index encoder with multi component output <===
         # test invalid callable at encoder creation
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="Attribute must be a callable that accepts"
+        ):
             _ = PastCallableIndexEncoder(
                 attribute=invalid_callable,
                 input_chunk_length=input_chunk_length,
