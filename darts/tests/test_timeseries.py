@@ -203,7 +203,11 @@ class TestTimeSeries:
 
         # internally, Darts converts any temporal dtype into Datetime
         ts = TimeSeries.from_dataframe(df, time_col="time")
-        assert ts.time_index.equals(pd.DatetimeIndex(data["time"], name="time"))
+        assert ts.time_index.equals(
+            pd.DatetimeIndex(
+                data["time"], name="time", freq="MS", dtype=ts.time_index.dtype
+            )
+        )
         np.testing.assert_array_equal(
             ts.values(), np.array(data["values"])[:, np.newaxis]
         )
