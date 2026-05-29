@@ -4,6 +4,7 @@ import math
 from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 
+import narwhals as nw
 import numpy as np
 import pandas as pd
 import pytest
@@ -173,6 +174,44 @@ class TestTimeSeries:
         caplog.clear()
         assert ts_pl_df_2.equals(pl_df)
         assert ts_pl_df_2.dtypes == pl_df.dtypes
+
+    @pytest.mark.parametrize(
+        "backend,date_type",
+        itertools.product(
+            ["pandas"] + (["polars"] if POLARS_AVAILABLE else []),
+            ["str", "date", "datetime"],
+        ),
+    )
+    def test_creation_from_dataframe_with_dates(self, backend, date_type):
+        # month start freq in Date (not Datetime) resolution
+        data = {
+            "time": ["2000-01-01", "2000-02-01", "2000-03-01"],
+            "values": [1.0, 2.0, 3.0],
+        }
+        if backend == "pandas":
+            df = pd.DataFrame(data)
+            if date_type != "str":
+                # pandas only supports datetime
+                df["time"] = pd.to_datetime(df["time"])
+        else:
+            df = pl.DataFrame(data)
+            if date_type != "str":
+                # we must first convert to Date before optional Datetime
+                df = df.cast({"time": pl.Date})
+                if date_type == "datetime":
+                    df = df.cast({"time": pl.Datetime})
+
+        # internally, Darts converts any temporal dtype into Datetime
+        ts = TimeSeries.from_dataframe(df, time_col="time")
+        assert ts.time_index.equals(pd.DatetimeIndex(data["time"], name="time"))
+        np.testing.assert_array_equal(
+            ts.values(), np.array(data["values"])[:, np.newaxis]
+        )
+
+        # writing back to DataFrame always gives Datetime
+        df_inv = ts.to_dataframe(time_as_index=False, backend=backend)
+        df_inv_nw = nw.from_native(df_inv)
+        assert isinstance(df_inv_nw.get_column("time").dtype, nw.Datetime)
 
     def test_integer_range_indexing(self):
         # sanity checks for the integer-indexed series
