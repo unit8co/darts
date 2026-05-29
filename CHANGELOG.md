@@ -19,12 +19,14 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Fixed `_ScaledDotProductAttention` float16 overflow in `masked_fill` under mixed precision training. [#3087](https://github.com/unit8co/darts/pull/3087) by [Robert Ruidisch](https://github.com/robrui).
 - Fixed a bug in `TimeSeries.quantile()` where the output dtype did not match the input series dtype for dtypes `float32` or `float16`. Now the dtype is correctly propagated. [#3124](https://github.com/unit8co/darts/pull/3124) by [Dennis Bader](https://github.com/dennisbader)
+- Optuna integration's `PyTorchLightningPruningCallback` for hyperparameter optimization of torch models is now natively available in Darts via `darts.utils.callbacks`. [#3114](https://github.com/unit8co/darts/pull/3114) by [Jakub Chłapek](https://github.com/jakubchlapek).
 
 **Dependencies**
 
 ### For developers of the library:
 
 - Used GitHub Actions to publish the documentation to GitHub Pages, replacing the previous third-party branch-based deployment method. [#3107](https://github.com/unit8co/darts/pull/3107) by [Zhihao Dai](https://github.com/daidahao)
+- Removed `optuna-integration[pytorch-lightning]` from the testing dependencies. [#3114](https://github.com/unit8co/darts/pull/3114) by [Jakub Chłapek](https://github.com/jakubchlapek).
 
 ## [0.44.1](https://github.com/unit8co/darts/tree/0.44.1) (2026-05-05)
 
@@ -36,7 +38,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Fixed a `ValueError` in `backtest()` when using `overlap_end=True` with `predict_likelihood_parameters=True` and a quantile metric. The final forecast window could extend beyond the series end, producing an empty intersection that caused a reshape failure in the metric computation. [#3111](https://github.com/unit8co/darts/pull/3111) by [Dennis Bader](https://github.com/dennisbader)
 - Fixed rendering issues of `CustomBlockRNNModule` and `CustomRNNModule` in the documentation. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao)
-- Removed `optuna-integration[pytorch-lightning]` dependency and ported `PyTorchLightningPruningCallback` in `darts.utils.callbacks`, resolving a platform-specific dependency resolution failure. [#3114](https://github.com/unit8co/darts/pull/3114) by [Jakub Chłapek](https://github.com/jakubchlapek).
 - Fixed rendering issues of `20-SKLearnModel-examples` notebook in the documentation. [#3094](https://github.com/unit8co/darts/pull/3094) by [Zhihao Dai](https://github.com/daidahao)
 
 **Dependencies**
