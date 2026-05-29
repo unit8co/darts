@@ -29,6 +29,9 @@ if TYPE_CHECKING:
     from darts.utils.data.torch_datasets.training_dataset import (
         TorchTrainingDataset as TorchTrainingDataset,
     )
+    from darts.utils.data.torch_datasets.training_dataset import (
+        VariableLengthTorchTrainingDataset as VariableLengthTorchTrainingDataset,
+    )
 
 _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     "SequentialTorchInferenceDataset": (
@@ -52,6 +55,10 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
         "(Py)Torch",
     ),
     "TorchTrainingDataset": (
+        "darts.utils.data.torch_datasets.training_dataset",
+        "(Py)Torch",
+    ),
+    "VariableLengthTorchTrainingDataset": (
         "darts.utils.data.torch_datasets.training_dataset",
         "(Py)Torch",
     ),

@@ -6,10 +6,14 @@ Training Datasets
 - :class:`~darts.utils.data.training_dataset.ShiftedTorchTrainingDataset`
 - :class:`~darts.utils.data.training_dataset.SequentialTorchTrainingDataset`
 - :class:`~darts.utils.data.training_dataset.HorizonBasedTorchTrainingDataset`
+- :class:`~darts.utils.data.training_dataset.VariableLengthTorchTrainingDataset`
 """
 
+import bisect
 from abc import ABC, abstractmethod
 from math import ceil
+
+import numpy as np
 
 from darts.logging import get_logger, raise_log
 from darts.typing import TimeSeriesLike
@@ -564,3 +568,185 @@ class HorizonBasedTorchTrainingDataset(SequentialTorchTrainingDataset):
 
         # determine the index at the end of the output chunk
         return len(series) - ((self.min_lh - 1) * self.output_chunk_length + lh_idx)
+
+
+class VariableLengthTorchTrainingDataset(TorchTrainingDataset):
+    def __init__(
+        self,
+        series: TimeSeriesLike,
+        input_chunk_length: int,
+        output_chunk_length: int,
+        min_length: int | None = None,
+        max_samples_per_ts: int | None = None,
+        use_static_covariates: bool = True,
+    ):
+        """Variable-Length Training Dataset
+
+        A training dataset that supports series shorter than ``input_chunk_length`` by
+        left-padding short past windows with ``NaN``. This is useful for foundation models
+        (e.g. Chronos-2) that handle ``NaN`` values via attention masking, enabling fine-tuning
+        on heterogeneous datasets where series lengths vary widely.
+
+        Each sample drawn from this dataset is a seven-element tuple with the same structure as
+        :class:`SequentialTorchTrainingDataset`:
+
+        - past_target: target ``series`` values in the input chunk, left-padded with ``NaN`` if
+          the series is shorter than ``input_chunk_length``
+        - past_covariates: always ``None`` (not supported in this dataset)
+        - historic_future_covariates: always ``None`` (not supported in this dataset)
+        - future_covariates: always ``None`` (not supported in this dataset)
+        - static_covariates: ``static_covariates`` values of the ``series``
+          (``None`` if ``use_static_covariates=False``)
+        - sample_weight: always ``None`` (not supported in this dataset)
+        - future_target: target ``series`` values in the output chunk
+
+        Sampling logic per series of length ``L``:
+
+        - ``L < min_length``: the series is silently skipped (contributes 0 samples).
+        - ``min_length <= L < input_chunk_length + output_chunk_length``: the series contributes
+          exactly 1 sample. ``future_target`` is the last ``output_chunk_length`` values.
+          ``past_target`` is left-padded with ``NaN`` to ``input_chunk_length``.
+        - ``L >= input_chunk_length + output_chunk_length``: normal sliding-window behaviour,
+          yielding ``L - input_chunk_length - output_chunk_length + 1`` samples (capped by
+          ``max_samples_per_ts``).
+
+        .. note::
+            Covariates and sample weights are not supported. Use
+            :class:`SequentialTorchTrainingDataset` when covariates are required.
+
+        .. note::
+            **No cross-series data leakage from batching.** All normalisation (Darts' Reversible
+            Instance Normalization and foundation-model-internal statistics such as
+            ``torch.nanmean`` / ``torch.nanstd`` in Chronos-2) is computed independently per
+            series, not across the batch. For any **deterministic** model, running N series in
+            one batched ``predict()`` call is mathematically equivalent to N separate ``predict()``
+            calls. For **stochastic** models that draw ``num_samples > 1`` (e.g. Chronos-2 with
+            :class:`~darts.utils.likelihood_models.QuantileRegression`), results will differ
+            numerically between batched and serial runs because the PRNG is consumed in a
+            different order across batches. This is expected variance from sampling, not leakage,
+            and diminishes as ``num_samples`` increases.
+
+        Parameters
+        ----------
+        series
+            One or a sequence of target ``TimeSeries`` objects of potentially varying lengths.
+        input_chunk_length
+            The length of the past window returned in each sample. Series shorter than this are
+            left-padded with ``NaN``.
+        output_chunk_length
+            The length of the future window returned in each sample.
+        min_length
+            Minimum series length required to produce any sample. Series shorter than this are
+            silently skipped. Defaults to ``output_chunk_length`` — the smallest window that can
+            still yield a meaningful future target.
+        max_samples_per_ts
+            Upper bound on the number of samples from any single series. Only applies to series
+            long enough for the sliding-window regime
+            (``L >= input_chunk_length + output_chunk_length``). If ``None``, no cap is applied.
+        use_static_covariates
+            Whether to include static covariate data from the target ``series``.
+        """
+        super().__init__()
+
+        series = series2seq(series)
+
+        if min_length is None:
+            min_length = output_chunk_length
+
+        if min_length < 1:
+            raise_log(
+                ValueError("`min_length` must be >= 1."),
+                logger=logger,
+            )
+
+        full_window = input_chunk_length + output_chunk_length
+
+        # compute the number of samples each series contributes
+        counts: list[int] = []
+        for ts in series:
+            L = len(ts)
+            if L < min_length:
+                counts.append(0)
+            elif L < full_window:
+                # short series: exactly 1 NaN-padded sample
+                counts.append(1)
+            else:
+                n = L - full_window + 1
+                if max_samples_per_ts is not None:
+                    n = min(n, max_samples_per_ts)
+                counts.append(n)
+
+        total = sum(counts)
+        if total == 0:
+            raise_log(
+                ValueError(
+                    f"All input `series` are too short to extract even a single sample. "
+                    f"Expected min length: `{min_length}`, received max length: "
+                    f"`{max(len(ts) for ts in series)}`."
+                ),
+                logger=logger,
+            )
+
+        # cumulative counts for O(log n) index → series_idx lookup via bisect
+        cumulative: list[int] = []
+        running = 0
+        for c in counts:
+            running += c
+            cumulative.append(running)
+
+        self.series = series
+        self.input_chunk_length = input_chunk_length
+        self.output_chunk_length = output_chunk_length
+        self.min_length = min_length
+        self.max_samples_per_ts = max_samples_per_ts
+        self.use_static_covariates = use_static_covariates
+        self._counts = counts
+        self._cumulative = cumulative
+        self._total = total
+        self._full_window = full_window
+
+    def __len__(self) -> int:
+        return self._total
+
+    def __getitem__(self, idx: int) -> TorchTrainingDatasetOutput:
+        icl = self.input_chunk_length
+        ocl = self.output_chunk_length
+
+        # find which series this idx belongs to
+        series_idx = bisect.bisect_right(self._cumulative, idx)
+        # local index within that series (0-based, counted from end)
+        local_idx = idx - (self._cumulative[series_idx - 1] if series_idx > 0 else 0)
+
+        series = self.series[series_idx]
+        L = len(series)
+        vals = series.random_component_values(copy=False)
+        n_components = vals.shape[1]
+
+        if L < self._full_window:
+            # short series: single sample, future = last ocl values, past = NaN-padded
+            end_of_output = L
+        else:
+            # sliding window from the end: local_idx=0 → most recent window
+            end_of_output = L - local_idx
+
+        # slice future target
+        future_target = vals[end_of_output - ocl : end_of_output]
+
+        # slice available past (everything before the future window)
+        available_past = vals[: end_of_output - ocl]
+        available_len = len(available_past)
+
+        if available_len >= icl:
+            past_target = available_past[available_len - icl :]
+        else:
+            # left-pad with NaN so past_target always has shape (icl, n_components)
+            pad = np.full((icl - available_len, n_components), np.nan, dtype=vals.dtype)
+            past_target = np.vstack([pad, available_past])
+
+        # static covariates (per-series, shared across all samples of this series)
+        sc = None
+        if self.use_static_covariates and series.static_covariates is not None:
+            sc = series.static_covariates_values(copy=False)
+
+        # (past_target, past_cov, historic_future_cov, future_cov, static_cov, sample_weight, future_target)
+        return past_target, None, None, None, sc, None, future_target

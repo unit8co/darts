@@ -10,6 +10,8 @@ This file contains several abstract classes:
 
 from abc import ABC
 
+import numpy as np
+
 from darts.logging import get_logger
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 
@@ -199,3 +201,32 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
             self.pl_module_params["use_reversible_instance_norm"] = (
                 use_reversible_instance_norm
             )
+
+    def _build_inference_dataset(
+        self, n, series, past_covariates, future_covariates, stride=0, bounds=None
+    ):
+        """Override to left-pad short series with NaN for inference.
+
+        Series shorter than ``input_chunk_length`` are padded with leading NaN values so that
+        foundation model inference works without callers needing to pre-pad manually. The
+        padding is identical to what :class:`VariableLengthTorchTrainingDataset` does during
+        training, so no special pre-processing is required for either path.
+        """
+        icl = self.input_chunk_length
+        padded = []
+        for ts in series:
+            pad_len = icl - len(ts)
+            if pad_len > 0:
+                pad_values = np.full(
+                    (pad_len, ts.n_components, ts.n_samples), np.nan, dtype=float
+                )
+                ts = ts.prepend_values(pad_values)
+            padded.append(ts)
+        return super()._build_inference_dataset(
+            n=n,
+            series=padded,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            stride=stride,
+            bounds=bounds,
+        )
