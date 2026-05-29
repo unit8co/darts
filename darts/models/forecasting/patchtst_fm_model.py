@@ -3,7 +3,7 @@ PatchTST-FM
 -----------
 
 PatchTST-FM can be used the same way as other foundation models (e.g. Chronos2), with the exception
-that it does not support any type of covariates.
+that it does not support covariates.
 
 For detailed examples and tutorials, see:
 
@@ -255,7 +255,7 @@ class _PatchTSTFMModule(PLForecastingModule):
         output_chunk_shift = self.output_chunk_shift
         forecast_length = output_chunk_shift + output_chunk_length
 
-        # PatchTST-FM is a univariate model and its inputs does not have a variable dimension,
+        # PatchTST-FM is a univariate model and its inputs do not have a variable dimension,
         # so here we reshape `x_past` to (B * C, L)
         context = x_past.permute(0, 2, 1).reshape(-1, past_length)
         effective_batch = context.shape[0]
@@ -358,7 +358,7 @@ class PatchTSTFMModel(FoundationModel):
         output_chunk_shift: int = 0,
         likelihood: QuantileRegression | None = None,
         hub_model_name: str = "ibm-granite/granite-timeseries-patchtst-fm-r1",
-        hub_model_revision: str | None = None,
+        hub_model_revision: str | None = "151f9c6d576281b95c2ff784d0863bd3f12c80f1",
         local_dir: str | os.PathLike | None = None,
         **kwargs,
     ):
@@ -393,6 +393,11 @@ class PatchTSTFMModel(FoundationModel):
             PatchTST-FM weights from ``ibm-granite/granite-timeseries-patchtst-fm-r1`` are licensed under
             the `Apache-2.0 License <https://github.com/ibm-granite/granite-tsfm/blob/main/LICENSE>`_,
             copyright IBM. By using this model, you agree to the terms and conditions of the license.
+        .. note::
+            You may use non-commercial, research version of PatchTST-FM from
+            `ibm-research/patchtst-fm-r1 <https://huggingface.co/ibm-research/patchtst-fm-r1>`_ licensed under
+            the `Creative Commons Attribution Non Commercial Share Alike 4.0 <https://spdx.org/licenses/CC-BY-NC-SA-4.0>`_.
+            Note that this version may not be used for commercial purposes.
 
         Parameters
         ----------
@@ -430,7 +435,7 @@ class PatchTSTFMModel(FoundationModel):
             Default: ``"ibm-granite/granite-timeseries-patchtst-fm-r1"`` (Apache-2.0).
         hub_model_revision
             The model version to use. This can be a branch name, tag name, or commit hash. Default is
-            ``None``, which will use the default branch from ``hub_model_name``.
+            ``151f9c6d576281b95c2ff784d0863bd3f12c80f1``, which will use the March 25, 2026 release of PatchTST-FM.
         local_dir
             Optional local directory to load the pre-downloaded model. If specified and the directory is empty, the
             model will be downloaded from HuggingFace Hub and saved to this directory. Default is ``None``, which will
@@ -441,8 +446,8 @@ class PatchTSTFMModel(FoundationModel):
             Darts' :class:`TorchForecastingModel`.
 
         loss_fn
-            PyTorch loss function used for fine-tuning a deterministic TimesFM 2.5 model. Ignored for probabilistic
-            models when ``likelihood`` is specified. Default: ``nn.MSELoss()``.
+            PyTorch loss function used for fine-tuning a deterministic model. Ignored for probabilistic models when
+            ``likelihood`` is specified. Default: ``nn.MSELoss()``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
             at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
@@ -464,7 +469,7 @@ class PatchTSTFMModel(FoundationModel):
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
-            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            of the name is formatted with the local date and time, while PID is the process ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
@@ -525,7 +530,7 @@ class PatchTSTFMModel(FoundationModel):
 
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
-            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUs.
 
             For more info, see here:
             https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
