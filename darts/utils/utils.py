@@ -811,6 +811,8 @@ def dataframe_col_to_time_index(
             )
             time_col_vals = time_col_vals.dt.replace_time_zone(None)
         time_index = pd.DatetimeIndex(time_col_vals)
+    elif isinstance(time_col_vals.dtype, nw.Date):
+        time_index = pd.DatetimeIndex(time_col_vals)
     else:
         raise_log(
             AttributeError(
