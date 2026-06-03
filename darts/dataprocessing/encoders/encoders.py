@@ -178,7 +178,7 @@ from darts.logging import get_logger, raise_log
 from darts.timeseries import DIMS
 from darts.typing import TimeIndex, TimeSeriesLike, TimeZone
 from darts.utils.timeseries_generation import datetime_attribute_timeseries
-from darts.utils.ts_utils import seq2series, series2seq
+from darts.utils.ts_utils import get_series_seq_type, series2seq
 from darts.utils.utils import generate_index
 
 SupportedTimeSeries = TimeSeriesLike
@@ -1217,7 +1217,7 @@ class SequentialEncoder(Encoder):
             return past_covariates, future_covariates
 
         # guarantee that all inputs are either a sequence of TimeSeries or None
-        single_series = isinstance(target, TimeSeries)
+        sequence_type_in = get_series_seq_type(target)
         target = series2seq(target)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
@@ -1246,10 +1246,9 @@ class SequentialEncoder(Encoder):
                 n=n,
             )
 
-        # convert covariates back to single series if single target was used as input
-        if single_series:
-            past_covariates = seq2series(past_covariates)
-            future_covariates = seq2series(future_covariates)
+        # restore the covariates to the sequence type of the input `target`
+        past_covariates = series2seq(past_covariates, seq_type_out=sequence_type_in)
+        future_covariates = series2seq(future_covariates, seq_type_out=sequence_type_in)
         return past_covariates, future_covariates
 
     def _encode_sequence(
