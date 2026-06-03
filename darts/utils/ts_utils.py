@@ -307,15 +307,17 @@ def get_series_seq_type(
 
 
 # TODO: we do not check the time index here
-def retain_period_common_to_all(series: list[TimeSeries]) -> list[TimeSeries]:
+def retain_period_common_to_all(
+    series: Sequence[TimeSeries],
+) -> Sequence[TimeSeries]:
     """
-    Trims all series in the provided list, if necessary, so that the returned time series have
+    Trims all series in the provided sequence, if necessary, so that the returned time series have
     a common span (corresponding to largest time sub-interval common to all series).
 
     Parameters
     ----------
     series
-        The list of series to consider.
+        The sequence of series to consider.
 
     Raises
     ------
@@ -324,8 +326,8 @@ def retain_period_common_to_all(series: list[TimeSeries]) -> list[TimeSeries]:
 
     Returns
     -------
-    List[TimeSeries]
-        A list of series, where each series have the same span
+    Sequence[TimeSeries]
+        A sequence of series, where each series have the same span
     """
 
     last_first = max(map(lambda s: s.start_time(), series))
@@ -336,4 +338,5 @@ def retain_period_common_to_all(series: list[TimeSeries]) -> list[TimeSeries]:
             ValueError("The provided time series must have nonzero overlap"), logger
         )
 
-    return list(map(lambda s: s.slice(last_first, first_last), series))
+    common_series = [s.slice(last_first, first_last) for s in series]
+    return series2seq(common_series, seq_type_out=SeriesType.SEQ)
