@@ -1432,6 +1432,7 @@ def _apply_data_transformers(
     return tuple(transformed_ts)
 
 
+# TODO(oswald): TSS migration — touchpoint for nested `list[list[TS]]` (lpo=False) preservation
 def _apply_inverse_data_transformers(
     series: TimeSeriesLike,
     forecasts: TimeSeriesLike | Sequence[Sequence[TimeSeries]],
@@ -1451,15 +1452,15 @@ def _apply_inverse_data_transformers(
     :meth:`~darts.dataprocessing.pipeline.Pipeline.inverse_transform`.
     """
     if "series" in data_transformers and data_transformers["series"].invertible:
-        called_with_single_series = get_series_seq_type(series) == SeriesType.SINGLE
-        if called_with_single_series:
+        sequence_type_in = get_series_seq_type(series)
+        if sequence_type_in == SeriesType.SINGLE:
             forecasts = [forecasts]
         forecasts = data_transformers["series"].inverse_transform(
             data=forecasts,
             series_idx=series_idx,
             insample=series if pass_insample else None,
         )
-        return forecasts[0] if called_with_single_series else forecasts
+        return series2seq(forecasts, seq_type_out=sequence_type_in)
     else:
         return forecasts
 
