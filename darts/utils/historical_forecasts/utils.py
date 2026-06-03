@@ -1525,6 +1525,8 @@ def _pack_series_in_list(
     return series, past_covariates, future_covariates, sample_weight
 
 
+# TODO(oswald): TSS migration — touchpoint for nested `list[list[TS]]` (lpo=False) preservation;
+# TBD if Phase 2 supports nested TSS.
 def _process_historical_forecast_for_backtest(
     series: TimeSeriesLike,
     historical_forecasts: TimeSeries
