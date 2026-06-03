@@ -88,6 +88,16 @@ def series2seq(
 ) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]]: ...
 
 
+# Non-`None` Pattern-B exit for SEQ_SEQ-inclusive inputs (e.g. `_apply_inverse_data_transformers`):
+# like the overload above but accepts `Sequence[...]` (not only `list[...]`), so the return stays non-`None`.
+@overload
+def series2seq(
+    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]],
+    seq_type_out: Literal[SeriesType.SINGLE, SeriesType.SEQ],
+    nested: bool = ...,
+) -> TimeSeriesLike | Sequence[Sequence[TimeSeries]]: ...
+
+
 @overload
 def series2seq(
     ts: TimeSeriesLike | None,
