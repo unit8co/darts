@@ -3,6 +3,9 @@ Base Anomaly Model
 ------------------
 """
 
+import datetime
+import os
+import pickle
 import sys
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
@@ -40,6 +43,65 @@ class AnomalyModel(ABC):
                 logger=logger,
             )
         self.model = model
+
+    def save(
+        self,
+        path: str | os.PathLike | None = None,
+        **pkl_kwargs,
+    ) -> None:
+        """
+        Saves the anomaly model under a given path.
+
+        Parameters
+        ----------
+        path
+            Path under which to save the anomaly model at its current state. If no path is specified, it
+            is automatically saved under ``"{ClassName}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
+        pkl_kwargs
+            Keyword arguments passed to `pickle.dump()`
+        """
+        if path is None:
+            path = f"{type(self).__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')}.pkl"
+        if isinstance(path, str | os.PathLike):
+            with open(path, "wb") as handle:
+                pickle.dump(obj=self, file=handle, **pkl_kwargs)
+        else:
+            raise_log(
+                ValueError(
+                    "Argument 'path' has to be a filepath (str or PathLike), "
+                    f"but was '{path.__class__}'."
+                ),
+                logger=logger,
+            )
+
+    @staticmethod
+    def load(path: str | os.PathLike) -> "AnomalyModel":
+        """
+        Loads an anomaly model from a given path.
+
+        Parameters
+        ----------
+        path
+            Path from which to load the anomaly model.
+        """
+        if isinstance(path, str | os.PathLike):
+            if not os.path.exists(path):
+                raise_log(
+                    FileNotFoundError(f"The file {path} doesn't exist"),
+                    logger=logger,
+                )
+            with open(path, "rb") as handle:
+                model = pickle.load(file=handle)
+        else:
+            raise_log(
+                ValueError(
+                    "Argument 'path' has to be a filepath (str or PathLike), "
+                    f"but was '{path.__class__}'."
+                ),
+                logger=logger,
+            )
+        return model
+
 
     def fit(
         self,

@@ -11,9 +11,12 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+**Improved**
+
 - 🚀🚀 Added new forecasting model `PatchTSTFMModel` : IBM's pre-trained ~260M-parameter foundational model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series forecasting without training and can output deterministic or probabilistic forecasts. [#3120](https://github.com/unit8co/darts/pull/3120) by [Dennis Bader](https://github.com/dennisbader).
 - Added `use_longer_projection_head` to `TimesFM2p5Model` to enable longer non-autoregressive prediction horizons (up to 1024 steps for `output_chunk_length + output_chunk_shift`). [#3121](https://github.com/unit8co/darts/pull/3121) by [Zhihao Dai](https://github.com/daidahao).
 - `TimeSeries.from_dataframe()` now supports time columns of type `pl.Date` for `polars.DataFrame`. [#3124](https://github.com/unit8co/darts/pull/3124) by [Dennis Bader](https://github.com/dennisbader)
+- Added `save()` and `load()` methods to anomaly detection classes (AnomalyScorer, Detector, Aggregator, AnomalyModel) to persist and reload trained scorers, detectors, aggregators, and anomaly models. [#3051](https://github.com/unit8co/darts/issues/3051) by [Robert Ruidisch](https://github.com/robrui).
 - Custom encoders now support functions that return multiple components. Simply pass such a function via the `"custom"` encoder key in the `add_encoders` model input parameter. [#3069](https://github.com/unit8co/darts/pull/3069) by [Moritz Waldleben](https://github.com/mwaldleben).
 
 **Fixed**
@@ -32,6 +35,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ## [0.44.1](https://github.com/unit8co/darts/tree/0.44.1) (2026-05-05)
 
 ### For users of the library:
+
+**Improved**
 
 **Improved**
 
@@ -61,6 +66,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ## [0.44.0](https://github.com/unit8co/darts/tree/0.44.0) (2026-04-30)
 
 ### For users of the library:
+
+**Improved**
 
 **Improved**
 - 🚀🚀 Dramatically reduced import times by deferring heavy third-party dependencies (torch, sklearn, scipy, ...) until they are actually needed. This benefits cold-start scenarios (serverless functions, CLI tools, short-lived scripts), CI pipelines, and interactive development workflows where fast feedback loops matter. Here are some import speed-up examples: [#3066](https://github.com/unit8co/darts/pull/3066) by [Dennis Bader](https://github.com/dennisbader)
@@ -108,6 +115,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+**Improved**
+
 - Improvements to data transformers:  [#3023](https://github.com/unit8co/darts/pull/3023) by [Krzsztof Pęczek](https://github.com/u8-krpeczek)
   - Added parameter `columns` to all data transformers (e.g. `Scaler`, `Diff`, `BoxCox`, ...) to apply the transformations only on subset of components. This makes it much easier to build multivariate pipelines where different components require different transformations.
 - Improvements to `TFTExplainer` : [#3039](https://github.com/unit8co/darts/pull/3039) by [ReinerBRO](https://github.com/ReinerBRO).
@@ -120,6 +129,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 
+**Improved**
+
 **Fixed**
 
 - Removed an incorrect warning being raised by `NeuralForecastModel` regarding using static covariates with multivariate base models. [#3036](https://github.com/unit8co/darts/pull/3036) by [Dennis Bader](https://github.com/dennisbader).
@@ -127,6 +138,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ## [0.42.0](https://github.com/unit8co/darts/tree/0.42.0) (2026-03-07)
 
 ### For users of the library:
+
+**Improved**
 
 **Improved**
 
@@ -154,6 +167,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ## [0.41.0](https://github.com/unit8co/darts/tree/0.41.0) (2026-02-10)
 
 ### For users of the library:
+
+**Improved**
 
 **Migration from PyPI "u8darts" package to "darts" package**
 
@@ -205,6 +220,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+**Improved**
+
 - Improvements to `SKLearnModel`:
   - 🚀🚀 Optimized auto-regressive historical forecasts (when `forecast_horizon > output_chunk_length`), increasing throughput by multiple orders of magnitude! Now all historical forecasting scenarios are optimized. [#2921](https://github.com/unit8co/darts/pull/2921) by [Alain Gysi](https://github.com/Kurokabe)
   - `predict()` now raises a more informative exception when the input target series are too short. [#2921](https://github.com/unit8co/darts/pull/2921) by [Dennis Bader](https://github.com/dennisbader).
@@ -243,6 +260,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+**Improved**
+
 - Improvements to forecasting models:
   - 🚀🚀 Added new forecasting model `Chronos2Model`: Amazon's pre-trained 120M-parameter foundational model for zero-shot forecasting. `Chronos2Model` can be used for univariate, multivariate, and multiple time series forecasting without any training. It supports past and future covariates and can output deterministic or probabilistic forecasts. Check out the new [Chronos-2 Foundation Model Notebook](https://unit8co.github.io/darts/examples/25-FoundationModel-examples.html) for examples and usage of Chronos-2. [#2944](https://github.com/unit8co/darts/pull/2944) by [Zhihao Dai](https://github.com/daidahao).
 
@@ -274,6 +293,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ## [0.38.0](https://github.com/unit8co/darts/tree/0.38.0) (2025-10-03)
 
 ### For users of the library:
+
+**Improved**
 
 **Improved**
 
@@ -323,6 +344,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+**Improved**
+
 - Improved the documentation regarding the new classification models from version 0.37.0. [#2875](https://github.com/unit8co/darts/pull/2875) by [Dennis Bader](https://github.com/dennisbader).
 
 **Fixed**
@@ -332,6 +355,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ## [0.37.0](https://github.com/unit8co/darts/tree/0.37.0) (2025-08-17)
 
 ### For users of the library:
+
+**Improved**
 
 **Improved**
 
@@ -378,6 +403,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ## [0.36.0](https://github.com/unit8co/darts/tree/0.36.0) (2025-06-29)
 
 ### For users of the library:
+
+**Improved**
 
 **Improved**
 
@@ -440,6 +467,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+**Improved**
+
 - 🚀🚀 Added **new forecasting models**:
   - `AutoMFLES` : a simple time series method based on gradient boosting time series decomposition as proposed by Tyler Blume in [this repository](https://github.com/tblume1992/MFLES). Our implementation is based on [AutoMFLES](https://nixtlaverse.nixtla.io/statsforecast/docs/models/mfles.html) from Nixtla's `statsforecast` library. [#2747](https://github.com/unit8co/darts/pull/2747) by [Che Hang Ng](https://github.com/CheHangNg).
   - `StatsForecastModel` : allows to use **any forecasting model from StatsForecast** (see the [models here](https://nixtlaverse.nixtla.io/statsforecast/index.html#models)) in Darts with support for future covariates, probabilistic forecasting (sampled, direct quantile, and / or conformal predictions), and transferable series forecasting. [#2770](https://github.com/unit8co/darts/pull/2770) by [Dennis Bader](https://github.com/dennisbader).
@@ -481,6 +510,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ## [0.34.0](https://github.com/unit8co/darts/tree/0.34.0) (2025-03-09)
 
 ### For users of the library:
+
+**Improved**
 
 **Improved**
 
@@ -526,6 +557,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+**Improved**
+
 - Improvements to `TimeSeries`:
   - Added more resampling methods to `TimeSeries.resample()`. This allows to aggregate values when down-sampling and to fill or keep the holes when up-sampling. [#2654](https://github.com/unit8co/darts/pull/2654) by [Jonas Blanc](https://github.com/jonasblanc)
   - Added the `title` attribute to `TimeSeries.plot()`. This allows to set a title for the plot. [#2639](https://github.com/unit8co/darts/pull/2639) by [Jonathan Koch](https://github.com/jonathankoch99).
@@ -560,6 +593,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ## [0.32.0](https://github.com/unit8co/darts/tree/0.32.0) (2024-12-21)
 
 ### For users of the library:
+
+**Improved**
 
 **Improved**
 
@@ -619,6 +654,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+**Improved**
+
 - Improvements to `metrics`:
   - Added support for computing metrics on one or multiple quantiles `q`, either from probabilistic or quantile forecasts. [#2530](https://github.com/unit8co/darts/pull/2530) by [Dennis Bader](https://github.com/dennisbader).
   - Added quantile interval metrics `miw` (Mean Interval Width, time aggregated) and `iw` (Interval Width, per time step / non-aggregated) which compute the width of quantile intervals `q_intervals` (expected to be a tuple or sequence of tuples with (lower quantile, upper quantile)). [#2530](https://github.com/unit8co/darts/pull/2530) by [Dennis Bader](https://github.com/dennisbader).
@@ -671,6 +708,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ## [0.30.0](https://github.com/unit8co/darts/tree/0.30.0) (2024-06-19)
 
 ### For users of the library:
+
+**Improved**
 
 **Improved**
 
@@ -738,6 +777,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ## [0.29.0](https://github.com/unit8co/darts/tree/0.29.0) (2024-04-17)
 
 ### For users of the library:
+
+**Improved**
 
 **Improved**
 
@@ -822,6 +863,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+**Improved**
+
 - Improvements to `GlobalForecastingModel` :
   - 🚀🚀🚀 All global models (regression and torch models) now support shifted predictions with model creation parameter `output_chunk_shift`. This will shift the output chunk for training and prediction by `output_chunk_shift` steps into the future. [#2176](https://github.com/unit8co/darts/pull/2176) by [Dennis Bader](https://github.com/dennisbader).
 - Improvements to `TimeSeries`, [#2196](https://github.com/unit8co/darts/pull/2196) by [Dennis Bader](https://github.com/dennisbader):
@@ -877,6 +920,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+**Improved**
+
 - Added `darts.utils.statistics.plot_ccf` that can be used to plot the cross correlation between a time series (e.g. target series) and the lagged values of another time series (e.g. covariates series). [#2122](https://github.com/unit8co/darts/pull/2122) by [Dennis Bader](https://github.com/dennisbader).
 - Improvements to `TimeSeries` : Improved the time series frequency inference when using slices or pandas DatetimeIndex as keys for `__getitem__`. [#2152](https://github.com/unit8co/darts/pull/2152) by [DavidKleindienst](https://github.com/DavidKleindienst).
 
@@ -889,6 +934,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ## [0.27.1](https://github.com/unit8co/darts/tree/0.27.1) (2023-12-10)
 
 ### For users of the library:
+
+**Improved**
 
 **Improved**
 
@@ -907,6 +954,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ## [0.27.0](https://github.com/unit8co/darts/tree/0.27.0) (2023-11-18)
 
 ### For users of the library:
+
+**Improved**
 
 **Improved**
 
@@ -948,6 +997,8 @@ No changes.
 
 **Improved**
 
+**Improved**
+
 - Improvements to `RegressionModel`, [#1962](https://github.com/unit8co/darts/pull/1962) by [Antoine Madrona](https://github.com/madtoinou):
   - 🚀🚀 All models now support component/column-specific lags for target, past, and future covariates series.
 - Improvements to `TorchForecastingModel` :
@@ -986,6 +1037,8 @@ No changes.
 ## [0.25.0](https://github.com/unit8co/darts/tree/0.25.0) (2023-08-04)
 
 ### For users of the library:
+
+**Improved**
 
 **Installation**
 
@@ -1044,6 +1097,8 @@ No changes.
 ## [0.24.0](https://github.com/unit8co/darts/tree/0.24.0) (2023-04-12)
 
 ### For users of the library:
+
+**Improved**
 
 **Improved**
 
@@ -1125,6 +1180,8 @@ Patch release
 
 **Improved**
 
+**Improved**
+
 - 🚀🚀🚀 Brand new Darts module dedicated to anomaly detection on time series: `darts.ad`.
   More info on the API doc page: https://unit8co.github.io/darts/generated_api/darts.ad.html.
   [#1256](https://github.com/unit8co/darts/pull/1256) by [Julien Adda](https://github.com/julien12234)
@@ -1196,6 +1253,8 @@ Patch release
 
 **Improved**
 
+**Improved**
+
 - New explainability feature. The class `ShapExplainer` in `darts.explainability` can provide Shap-values explanations of the importance of each lag and each dimension in producing each forecasting lag for `RegressionModel`s. [#909](https://github.com/unit8co/darts/pull/909) by [Maxime Dumonal](https://github.com/dumjax).
 - New model: `StatsForecastsETS`. Similarly to `StatsForecastsAutoARIMA`, this model offers the ETS model from Nixtla's `statsforecasts` library as a local forecasting model supporting future covariates. [#1171](https://github.com/unit8co/darts/pull/1171) by [Julien Herzen](https://github.com/hrzn).
 - Added support for past and future covariates to `residuals()` function. [#1223](https://github.com/unit8co/darts/pull/1223) by [Eliane Maalouf](https://github.com/eliane-maalouf).
@@ -1222,6 +1281,8 @@ Patch release
 ## [0.21.0](https://github.com/unit8co/darts/tree/0.21.0) (2022-08-12)
 
 ### For users of the library:
+
+**Improved**
 
 **Improved**
 
@@ -1255,6 +1316,8 @@ Patch release
 ## [0.20.0](https://github.com/unit8co/darts/tree/0.20.0) (2022-06-22)
 
 ### For users of the library:
+
+**Improved**
 
 **Improved**
 
@@ -1294,6 +1357,8 @@ Patch release
 
 **Improved**
 
+**Improved**
+
 - New model: `NHiTS` implementing the N-HiTS model.
   [#898](https://github.com/unit8co/darts/pull/898) by [Julien Herzen](https://github.com/hrzn).
 - New model: `StatsForecastAutoARIMA` implementing the (faster) AutoARIMA version of
@@ -1319,6 +1384,8 @@ Patch release
 ## [0.18.0](https://github.com/unit8co/darts/tree/0.18.0) (2022-03-22)
 
 ### For users of the library:
+
+**Improved**
 
 **Improved**
 
@@ -1358,6 +1425,8 @@ Patch release
 
 ### For users of the library:
 
+**Improved**
+
 **Fixed**
 
 - Fixed issues with (now deprecated) `torch_device_str` parameter, and improved documentation
@@ -1373,6 +1442,8 @@ Patch release
 ## [0.17.0](https://github.com/unit8co/darts/tree/0.17.0) (2022-02-15)
 
 ### For users of the library:
+
+**Improved**
 
 **Improved**
 
@@ -1418,6 +1489,8 @@ Patch release
 
 ### For users of the library:
 
+**Improved**
+
 - Fixed an incompatibility with latest version of Pandas ([#752](https://github.com/unit8co/darts/pull/752))
   by [Julien Herzen](https://github.com/hrzn).
 - Fixed non contiguous error when using lstm_layers > 1 on GPU. ([#740](https://github.com/unit8co/darts/pull/740))
@@ -1435,6 +1508,8 @@ Patch release
 ## [0.16.0](https://github.com/unit8co/darts/tree/0.16.0) (2022-01-13)
 
 ### For users of the library:
+
+**Improved**
 
 **Improved**
 
@@ -1461,6 +1536,8 @@ Patch release
 ## [0.15.0](https://github.com/unit8co/darts/tree/0.15.0) (2021-12-24)
 
 ### For users of the library:
+
+**Improved**
 
 **Added**:
 
@@ -1523,6 +1600,8 @@ Patch release
 
 ### For users of the library:
 
+**Improved**
+
 **Added**:
 
 - Probabilistic N-BEATS: The `NBEATSModel` can now produce probabilistic forecasts,
@@ -1551,6 +1630,8 @@ Patch release
 
 ### For users of the library:
 
+**Improved**
+
 **Added**:
 
 - Factory methods in `TimeSeries` are now `classmethods`, which makes inheritance of
@@ -1563,6 +1644,8 @@ Patch release
 ## [0.13.0](https://github.com/unit8co/darts/tree/0.13.0) (2021-11-07)
 
 ### For users of the library:
+
+**Improved**
 
 **Added**:
 
@@ -1607,6 +1690,8 @@ Patch release
 
 ### For users of the library:
 
+**Improved**
+
 **Added**:
 
 - Improved probabilistic forecasting with neural networks
@@ -1644,6 +1729,8 @@ Patch release
 
 ### For users of the library:
 
+**Improved**
+
 **Added:**
 
 - New model: `LightGBMModel` is a new regression model. Regression models allow to predict future values
@@ -1665,6 +1752,8 @@ Patch release
 
 ### For users of the library:
 
+**Improved**
+
 **Fixed:**
 
 - A bug with memory pinning that was causing issues with training models on GPUs.
@@ -1676,6 +1765,8 @@ Patch release
 ## [0.10.0](https://github.com/unit8co/darts/tree/0.10.0) (2021-08-13)
 
 ### For users of the library:
+
+**Improved**
 
 **Added:**
 
@@ -1722,6 +1813,8 @@ Patch release
 
 ### For users of the library:
 
+**Improved**
+
 **Added:**
 
 - Improved `GaussianProcessFilter`, now handling missing values, and better handling
@@ -1752,6 +1845,8 @@ Patch release
 ## [0.9.0](https://github.com/unit8co/darts/tree/0.9.0) (2021-07-09)
 
 ### For users of the library:
+
+**Improved**
 
 **Added:**
 
@@ -1800,6 +1895,8 @@ ts: TimeSeries = AirPassengers().load()
 
 ### For users of the library:
 
+**Improved**
+
 **Added:**
 
 - `RandomForest` algorithm implemented. Uses the scikit-learn `RandomForestRegressor` to predict future values from (lagged) exogenous
@@ -1842,6 +1939,8 @@ ts: TimeSeries = AirPassengers().load()
 
 ### For users of the library:
 
+**Improved**
+
 **Added:**
 
 - `darts` Pypi package. It is now possible to `pip install darts`. The older name `u8darts` is still maintained
@@ -1875,6 +1974,8 @@ ts: TimeSeries = AirPassengers().load()
 ## [0.6.0](https://github.com/unit8co/darts/tree/0.6.0) (2021-02-02)
 
 ### For users of the library:
+
+**Improved**
 
 **Added:**
 
@@ -1914,6 +2015,8 @@ ts: TimeSeries = AirPassengers().load()
 
 ### For users of the library:
 
+**Improved**
+
 **Added:**
 
 - Ensemble models, a new kind of `ForecastingModel` which allows to ensemble multiple models to make predictions:
@@ -1944,6 +2047,8 @@ ts: TimeSeries = AirPassengers().load()
 ## [0.4.0](https://github.com/unit8co/darts/tree/0.4.0) (2020-10-28)
 
 ### For users of the library:
+
+**Improved**
 
 **Added:**
 
@@ -2009,6 +2114,8 @@ ts: TimeSeries = AirPassengers().load()
 ## [0.3.0](https://github.com/unit8co/darts/tree/0.3.0) (2020-10-05)
 
 ### For users of the library:
+
+**Improved**
 
 **Added:**
 
