@@ -28,6 +28,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Used GitHub Actions to publish the documentation to GitHub Pages, replacing the previous third-party branch-based deployment method. [#3107](https://github.com/unit8co/darts/pull/3107) by [Zhihao Dai](https://github.com/daidahao)
 - Removed `optuna-integration[pytorch-lightning]` from the testing dependencies. [#3114](https://github.com/unit8co/darts/pull/3114) by [Jakub Chłapek](https://github.com/jakubchlapek).
+- Refactored single-vs-sequence returns across the library to uniformly use `series2seq`, instead of per-site hardcoded `isinstance(series, TimeSeries)`. Added overloads to `series2seq` and `get_series_seq_type`. Behavior preserving groundwork for the upcoming `TimeSeriesSequence` migration ([#3037](https://github.com/unit8co/darts/issues/3037)). [#3131](https://github.com/unit8co/darts/pull/3131) by [Oswald Zink](https://github.com/ozink-u8).
 
 ## [0.44.1](https://github.com/unit8co/darts/tree/0.44.1) (2026-05-05)
 
