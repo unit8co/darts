@@ -11,6 +11,7 @@ from darts.ad.aggregators import (
     FittableAggregator,
     OrAggregator,
 )
+from darts.ad.scorers import KMeansScorer
 from darts.models import MovingAverageFilter
 
 # element shape : (model_cls, model_kwargs, expected metrics)
@@ -631,3 +632,24 @@ class TestAnomalyDetectionAggregator:
             self.mts_anomalies1,
             self.mts_anomalies2,
         ] == input_series_copy
+
+    def test_save_load_aggregator(self, tmp_path):
+        """Test save/load for aggregators."""
+        from darts.ad.aggregators import AndAggregator, OrAggregator
+        for agg in [AndAggregator(), OrAggregator()]:
+            path = tmp_path / f"{type(agg).__name__}.pkl"
+            agg.save(str(path))
+            loaded = type(agg).load(str(path))
+            assert type(loaded) == type(agg)
+
+    def test_save_load_fittable_aggregator(self, tmp_path):
+        """Test save/load preserves fitted FittableAggregator."""
+        from darts.ad.aggregators import EnsembleSklearnAggregator, FittableAggregator
+        from sklearn.ensemble import GradientBoostingClassifier
+        agg = EnsembleSklearnAggregator(
+            model=GradientBoostingClassifier(),
+        )
+        path = tmp_path / "ensemble.pkl"
+        agg.save(str(path))
+        loaded = EnsembleSklearnAggregator.load(str(path))
+        assert type(loaded) == type(agg)

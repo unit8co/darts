@@ -703,3 +703,25 @@ class TestAnomalyDetectionDetector:
         detection = detector.detect(anomalous_ts)
 
         assert detection.sum(axis=0).all_values().flatten()[0] == expected_anomalies
+
+    def test_save_load_detector(self, tmp_path):
+        """Test save/load for detectors."""
+        for config in list_detectors:
+            detector_cls, kwargs = config
+            detector = detector_cls(**kwargs)
+            path = tmp_path / f"{detector_cls.__name__}.pkl"
+            detector.save(str(path))
+            loaded = detector_cls.load(str(path))
+            assert type(loaded) == type(detector)
+
+    def test_save_load_fitted_detector(self, tmp_path):
+        """Test save/load preserves fitted QuantileDetector."""
+        from darts.ad.detectors.quantile_detector import QuantileDetector
+        detector = QuantileDetector(low_quantile=0.1, high_quantile=0.9)
+        detector.fit(self.train)
+        path = tmp_path / "quantile.pkl"
+        detector.save(str(path))
+        loaded = QuantileDetector.load(str(path))
+        detection_orig = detector.detect(self.test)
+        detection_loaded = loaded.detect(self.test)
+        assert detection_orig == detection_loaded

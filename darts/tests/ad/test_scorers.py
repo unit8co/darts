@@ -1741,3 +1741,48 @@ class TestAnomalyDetectionScorer:
 
         # Check that the original series is not modified
         assert series == input_series_copy
+
+    def test_save_load_non_fittable(self, tmp_path):
+        """Test save/load for non-fittable scorers."""
+        import tempfile
+        for scorer in list_NonFittableAnomalyScorer:
+            path = tmp_path / f"{type(scorer).__name__}.pkl"
+            scorer.save(str(path))
+            loaded = type(scorer).load(str(path))
+            assert type(loaded) == type(scorer)
+            assert loaded.window == scorer.window
+
+    def test_save_load_kmeans(self, tmp_path):
+        """Test save/load preserves fitted KMeansScorer."""
+        scorer = KMeansScorer(window=5, k=4)
+        scorer.fit(self.train)
+        path = tmp_path / "kmeans.pkl"
+        scorer.save(str(path))
+        loaded = KMeansScorer.load(str(path))
+        assert loaded.window == scorer.window
+        scores_orig = scorer.score(self.test)
+        scores_loaded = loaded.score(self.test)
+        assert scores_orig == scores_loaded
+
+    def test_save_load_wasserstein(self):
+        """Test save/load with default path."""
+        scorer = KMeansScorer(window=3, k=3)
+        scorer.fit(self.train)
+        scorer.save()
+        import glob, os
+        files = glob.glob("KMeansScorer_*.pkl")
+        assert len(files) == 1
+        loaded = KMeansScorer.load(files[0])
+        assert loaded.window == scorer.window
+        os.remove(files[0])
+
+    def test_save_load_pyod(self, tmp_path):
+        """Test save/load for PyODScorer."""
+        from pyod.models.knn import KNN
+        from darts.ad.scorers import PyODScorer
+        scorer = PyODScorer(window=5, model=KNN())
+        scorer.fit(self.train)
+        path = tmp_path / "pyod.pkl"
+        scorer.save(str(path))
+        loaded = PyODScorer.load(str(path))
+        assert loaded.window == scorer.window

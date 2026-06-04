@@ -1491,3 +1491,33 @@ class TestAnomalyDetectionModel:
 
         # Check that the original series is not modified
         assert series == input_series_copy
+
+    def test_save_load_filtering_anomaly_model(self, tmp_path):
+        """Test save/load for FilteringAnomalyModel."""
+        model = FilteringAnomalyModel(
+            model=MovingAverageFilter(window=10),
+            scorer=Norm(),
+        )
+        model.fit(self.train, allow_model_training=True)
+        path = tmp_path / "filtering_am.pkl"
+        model.save(str(path))
+        loaded = FilteringAnomalyModel.load(str(path))
+        scores_orig = model.score(self.test)
+        scores_loaded = loaded.score(self.test)
+        for s_orig, s_loaded in zip(scores_orig, scores_loaded):
+            assert s_orig == s_loaded
+
+    def test_save_load_forecasting_anomaly_model(self, tmp_path):
+        """Test save/load for ForecastingAnomalyModel."""
+        model = ForecastingAnomalyModel(
+            model=SKLearnModel(lags=5),
+            scorer=Norm(),
+        )
+        model.fit(self.train, allow_model_training=True)
+        path = tmp_path / "forecasting_am.pkl"
+        model.save(str(path))
+        loaded = ForecastingAnomalyModel.load(str(path))
+        scores_orig = model.score(self.test)
+        scores_loaded = loaded.score(self.test)
+        for s_orig, s_loaded in zip(scores_orig, scores_loaded):
+            assert s_orig == s_loaded
