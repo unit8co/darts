@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts.tests.conftest import TIREX_AVAILABLE, TORCH_AVAILABLE
+from darts.tests.conftest import TIREX_AVAILABLE, TORCH_AVAILABLE, tfm_kwargs
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -28,7 +28,6 @@ import torch
 from darts import TimeSeries, concatenate
 from darts.datasets import ElectricityConsumptionZurichDataset
 from darts.models import TiRexModel
-from darts.tests.conftest import tfm_kwargs
 from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
 from darts.utils.timeseries_generation import (
     gaussian_timeseries,

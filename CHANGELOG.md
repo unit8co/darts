@@ -9,10 +9,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 
-**Fixed**
-
-- Fixed `_ScaledDotProductAttention` float16 overflow in `masked_fill` under mixed precision training. [#3087](https://github.com/unit8co/darts/pull/3087) by [Robert Ruidisch](https://github.com/robrui).
-
 **Improved**
 
 - Improvements to `ShapExplainer` : [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
@@ -21,17 +17,26 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Method `summary_plot()` can now also be computed on any optional foreground series using parameters `foreground_series`, `foreground_past_covariates`, `foreground_future_covariates`.
   - 🔴 Renamed method `force_plot_from_ts()` to `force_plot()` to simplify.
   - Added a new [Explainability of Forecasting Models Notebook](https://unit8co.github.io/darts/examples/28-Explainability-examples.html) for detailed usage of `ShapExplainer`.
+- 🚀🚀 Added new forecasting model `PatchTSTFMModel` : IBM's pre-trained ~260M-parameter foundational model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series forecasting without training and can output deterministic or probabilistic forecasts. [#3120](https://github.com/unit8co/darts/pull/3120) by [Dennis Bader](https://github.com/dennisbader).
+- Added `use_longer_projection_head` to `TimesFM2p5Model` to enable longer non-autoregressive prediction horizons (up to 1024 steps for `output_chunk_length + output_chunk_shift`). [#3121](https://github.com/unit8co/darts/pull/3121) by [Zhihao Dai](https://github.com/daidahao).
+- `TimeSeries.from_dataframe()` now supports time columns of type `pl.Date` for `polars.DataFrame`. [#3124](https://github.com/unit8co/darts/pull/3124) by [Dennis Bader](https://github.com/dennisbader)
+- Custom encoders now support functions that return multiple components. Simply pass such a function via the `"custom"` encoder key in the `add_encoders` model input parameter. [#3069](https://github.com/unit8co/darts/pull/3069) by [Moritz Waldleben](https://github.com/mwaldleben).
 
 **Fixed**
 
 - Fixed several bugs in `ShapExplainer` including mismatched SHAP method enum values, feature naming conventions, inconsistent instance count in `explain()`. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 - Fixed a bug in explainability utils where stationarity tests were not properly conducted due to usage of `all()`. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+- Fixed `_ScaledDotProductAttention` float16 overflow in `masked_fill` under mixed precision training. [#3087](https://github.com/unit8co/darts/pull/3087) by [Robert Ruidisch](https://github.com/robrui).
+- Fixed a bug in `TimeSeries.quantile()` where the output dtype did not match the input series dtype for dtypes `float32` or `float16`. Now the dtype is correctly propagated. [#3124](https://github.com/unit8co/darts/pull/3124) by [Dennis Bader](https://github.com/dennisbader)
+- Optuna integration's `PyTorchLightningPruningCallback` for hyperparameter optimization of torch models is now natively available in Darts via `darts.utils.callbacks`. [#3114](https://github.com/unit8co/darts/pull/3114) by [Jakub Chłapek](https://github.com/jakubchlapek).
 
 **Dependencies**
 
 ### For developers of the library:
 
 - Added `ShapSingleExplainabilityResult` class as the return type of `explain_single()` method in `ShapExplainer` and `TorchExplainer` and to store the SHAP results of a single instance explanation. This is in contrast to the existing `ShapExplainabilityResult` which stores results for batched explanations. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+- Used GitHub Actions to publish the documentation to GitHub Pages, replacing the previous third-party branch-based deployment method. [#3107](https://github.com/unit8co/darts/pull/3107) by [Zhihao Dai](https://github.com/daidahao)
+- Removed `optuna-integration[pytorch-lightning]` from the testing dependencies. [#3114](https://github.com/unit8co/darts/pull/3114) by [Jakub Chłapek](https://github.com/jakubchlapek).
 
 ## [0.44.1](https://github.com/unit8co/darts/tree/0.44.1) (2026-05-05)
 

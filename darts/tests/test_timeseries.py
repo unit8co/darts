@@ -4,6 +4,7 @@ import math
 from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 
+import narwhals as nw
 import numpy as np
 import pandas as pd
 import pytest
@@ -173,6 +174,48 @@ class TestTimeSeries:
         caplog.clear()
         assert ts_pl_df_2.equals(pl_df)
         assert ts_pl_df_2.dtypes == pl_df.dtypes
+
+    @pytest.mark.parametrize(
+        "backend,date_type",
+        itertools.product(
+            ["pandas"] + (["polars"] if POLARS_AVAILABLE else []),
+            ["str", "date", "datetime"],
+        ),
+    )
+    def test_creation_from_dataframe_with_dates(self, backend, date_type):
+        # month start freq in Date (not Datetime) resolution
+        data = {
+            "time": ["2000-01-01", "2000-02-01", "2000-03-01"],
+            "values": [1.0, 2.0, 3.0],
+        }
+        if backend == "pandas":
+            df = pd.DataFrame(data)
+            if date_type != "str":
+                # pandas only supports datetime
+                df["time"] = pd.to_datetime(df["time"])
+        else:
+            df = pl.DataFrame(data)
+            if date_type != "str":
+                # we must first convert to Date before optional Datetime
+                df = df.cast({"time": pl.Date})
+                if date_type == "datetime":
+                    df = df.cast({"time": pl.Datetime})
+
+        # internally, Darts converts any temporal dtype into Datetime
+        ts = TimeSeries.from_dataframe(df, time_col="time")
+        assert ts.time_index.equals(
+            pd.DatetimeIndex(
+                data["time"], name="time", freq="MS", dtype=ts.time_index.dtype
+            )
+        )
+        np.testing.assert_array_equal(
+            ts.values(), np.array(data["values"])[:, np.newaxis]
+        )
+
+        # writing back to DataFrame always gives Datetime
+        df_inv = ts.to_dataframe(time_as_index=False, backend=backend)
+        df_inv_nw = nw.from_native(df_inv)
+        assert isinstance(df_inv_nw.get_column("time").dtype, nw.Datetime)
 
     def test_integer_range_indexing(self):
         # sanity checks for the integer-indexed series
@@ -3313,23 +3356,28 @@ class TestSimpleStatistics:
                 new_ts._values, np.median(self.values, axis=axis, keepdims=True)
             ).all()
 
-    def test_quantile(self):
+    @pytest.mark.parametrize("dtype", ["float64", "float32"])
+    def test_quantile(self, dtype):
         qs = [0.01, 0.1, 0.5, 0.95]
+
+        ts = self.ts.astype(dtype)
+        values = self.values.astype(dtype)
 
         q_ts = []
         for q in qs:
-            new_ts = self.ts.quantile(q=q)
+            new_ts = ts.quantile(q=q)
+            assert new_ts.dtype == dtype
 
             # check component names
             q_comps = likelihood_component_names(
-                components=self.ts.components, parameter_names=quantile_names([q])
+                components=ts.components, parameter_names=quantile_names([q])
             )
             assert new_ts.components.tolist() == q_comps
 
             # check values
             assert np.isclose(
                 new_ts.values(),
-                np.quantile(self.values, q=q, axis=2),
+                np.quantile(values, q=q, axis=2),
             ).all()
             q_ts.append((new_ts[q_comps[0]], new_ts[q_comps[1]]))
 
@@ -3339,4 +3387,6 @@ class TestSimpleStatistics:
         q_ts = concatenate([q_ts_0, q_ts_1], axis=1)
 
         # computing all quantiles at once must be identical
-        assert self.ts.quantile(q=qs) == q_ts
+        new_ts = ts.quantile(q=qs)
+        assert new_ts == q_ts
+        assert new_ts.dtype == dtype
