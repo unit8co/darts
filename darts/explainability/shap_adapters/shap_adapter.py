@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from enum import Enum
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -365,7 +364,7 @@ class ShapAdapter(ABC):
         background_arr: np.ndarray,
         shap_method: SHAPMethod,
         **kwargs,
-    ) -> Any:
+    ) -> shap.Explainer | dict[int, dict[int, shap.Explainer]]:
         """
         Builds the SHAP explainer based on the specified SHAP method.
 

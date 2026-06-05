@@ -12,6 +12,7 @@ from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.models.forecasting.rnn_model import CustomRNNModule
 from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 from darts.typing import TimeSeriesLike
+from darts.utils.data.tabularization import create_lagged_component_names
 from darts.utils.data.torch_datasets.utils import TorchInferenceDatasetOutput
 from darts.utils.historical_forecasts.optimized_historical_forecasts_torch import (
     _create_dataset_bounds,
@@ -40,15 +41,15 @@ class TorchShapAdapter(ShapAdapter):
         input_type: str = "background",
     ) -> tuple[np.ndarray, pd.Index]:
         # convert to sequence of TimeSeries if not already
-        series_: Sequence[TimeSeries] = series2seq(series)
-        past_covariates_: Sequence[TimeSeries] | None = series2seq(past_covariates)
-        future_covariates_: Sequence[TimeSeries] | None = series2seq(future_covariates)
+        series: Sequence[TimeSeries] = series2seq(series)
+        past_covariates: Sequence[TimeSeries] | None = series2seq(past_covariates)
+        future_covariates: Sequence[TimeSeries] | None = series2seq(future_covariates)
 
         bounds, _ = _create_dataset_bounds(
             model=self.model,
-            series=series_,
-            past_covariates=past_covariates_,
-            future_covariates=future_covariates_,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
             start=None,
             forecast_horizon=self.n,
             stride=1,
@@ -59,9 +60,9 @@ class TorchShapAdapter(ShapAdapter):
         # create inference dataset
         dataset = self.model._build_inference_dataset(
             n=self.n,
-            series=series_,
-            past_covariates=past_covariates_,
-            future_covariates=future_covariates_,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
             stride=1,
             bounds=bounds,
         )
@@ -142,36 +143,19 @@ class TorchShapAdapter(ShapAdapter):
             return data
 
     def _build_feature_names(self) -> list[str]:
-        feature_names = []
-        input_chunk_length = self.model.input_chunk_length
-        for i in range(input_chunk_length):
-            lag = input_chunk_length - i
-            for t in self.target_components:
-                feature_names.append(f"{t}_target_lag-{lag}")
-            if self.past_covariates_components is not None:
-                for c in self.past_covariates_components:
-                    feature_names.append(f"{c}_pastcov_lag-{lag}")
-            if self.future_covariates_components is not None:
-                for c in self.future_covariates_components:
-                    feature_names.append(f"{c}_futcov_lag-{lag}")
-
-        for i in range(self.output_chunk_length):
-            lag = i + self.output_chunk_shift
-            if self.future_covariates_components is not None:
-                for c in self.future_covariates_components:
-                    feature_names.append(f"{c}_futcov_lag{lag}")
-
-        if self.model.uses_static_covariates:
-            static_covs = self.background_series[0].static_covariates
-            if static_covs is not None:
-                # static covariate names
-                names = static_covs.columns.tolist()
-                # target components that the static covariates reference to
-                comps = static_covs.index.tolist()
-                feature_names += [
-                    f"{name}_statcov_target_{comp}" for name in names for comp in comps
-                ]
-
+        lags_past = [i for i in range(-self.model.input_chunk_length, 0)]
+        lags_future = lags_past + [i for i in range(self.model.output_chunk_length)]
+        feature_names, _ = create_lagged_component_names(
+            target_series=self.background_series,
+            past_covariates=self.background_past_covariates,
+            future_covariates=self.background_future_covariates,
+            lags=lags_past,
+            lags_past_covariates=lags_past,
+            lags_future_covariates=lags_future,
+            output_chunk_length=self.model.output_chunk_length,
+            concatenate=False,
+            use_static_covariates=self.model.uses_static_covariates,
+        )
         return feature_names
 
     def _build_explainer(

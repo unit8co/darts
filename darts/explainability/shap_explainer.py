@@ -135,10 +135,10 @@ class ShapExplainer(_ForecastingModelExplainer):
         --------
 
         For ``SKLearnModel``:
-        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.datasets import AusBeerDataset
         >>> from darts.explainability import ShapExplainer
         >>> from darts.models import LinearRegressionModel
-        >>> series = AirPassengersDataset().load().astype("float32")[:-36]
+        >>> series = AusBeerDataset().load().astype("float32")[:-36]
         >>> model = LinearRegressionModel(lags=12, output_chunk_length=1).fit(series)
         >>> explainer = ShapExplainer(model)
         >>> result = explainer.explain()
