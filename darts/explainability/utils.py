@@ -147,6 +147,9 @@ def process_input(
         future_covariates=future_covariates,
     )
 
+    if not model.uses_static_covariates:
+        static_covariates_components = None
+
     _check_valid_input(
         model,
         input_type,

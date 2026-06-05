@@ -9,7 +9,6 @@ from darts import TimeSeries
 from darts.explainability.shap_adapters.shap_adapter import ShapAdapter, SHAPMethod
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
-from darts.models.forecasting.rnn_model import CustomRNNModule
 from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 from darts.typing import TimeSeriesLike
 from darts.utils.data.tabularization import create_lagged_component_names
@@ -23,10 +22,6 @@ logger = get_logger(__name__)
 
 MIN_BACKGROUND_SAMPLE = 10
 MAX_BACKGROUND_SAMPLE = 1000
-
-INPUT_PAST_INDICES = [0, 1, 3]
-INPUT_FUTURE_INDICES = [4]
-INPUT_STATIC_INDICES = [5]
 
 
 class TorchShapAdapter(ShapAdapter):
@@ -98,49 +93,24 @@ class TorchShapAdapter(ShapAdapter):
         for i in indices:
             batch.append(dataset[i])
 
-        # follow the logic of `PLForecastingModule.predict_step()`
-        # to convert to 1D tensor
-        # - past_target
-        # - past_covariates
-        # - future_past_covariates
-        # - historic_future_covariates
-        # - future_covariates
-        # - static_covariates
-        input_past = self._batch_collate_np(batch, INPUT_PAST_INDICES)
-        input_future = self._batch_collate_np(batch, INPUT_FUTURE_INDICES)
-        input_static = self._batch_collate_np(batch, INPUT_STATIC_INDICES)
-        prediction_times = pd.Index([c[-1] for c in batch])
-
+        # - Collate each input type separately and arrange in the same feature order as SKLearnModel X array:
+        #   - lagged_target | lagged_past_covariates | lagged_future_covariates | static,
+        #   where lagged_future_covariates includes both historic (-ICL to -1) and actual future (0 to OCL-1)
+        # - `batch` is a list of tuples of (past target, past cov, future past cov, historic future cov, future cov,
+        #   static cov, target series schema, pred time)
+        # - since `ShapExplainer` never performs auto-regression, we can skip the "future past cov" part
+        extract_batch_indices = [0, 1, 3, 4, 5]
+        arrays = [
+            np.stack([sample[idx] for sample in batch])
+            for idx in extract_batch_indices
+            if batch[0][idx] is not None
+        ]
         shap_array = np.concatenate(
-            [
-                array.reshape(array.shape[0], -1)
-                for array in [input_past, input_future, input_static]
-                if array is not None
-            ],
+            [array.reshape(array.shape[0], -1) for array in arrays],
             axis=-1,
         )
-
+        prediction_times = pd.Index([c[-1] for c in batch])
         return shap_array, prediction_times
-
-    @staticmethod
-    def _batch_collate_np(batch: list[tuple], indices: list[int]) -> np.ndarray | None:
-        """
-        Collates a batch of samples from the inference dataset into a numpy array for SHAP explanations,
-        based on the specified indices for past covariates, future covariates, and static covariates.
-        It handles the case where some samples in the batch may have None values for certain inputs,
-        by skipping those samples when collating.
-        """
-        data = []
-        for index in indices:
-            if batch[0][index] is None:
-                continue
-            data.append(np.stack([sample[index] for sample in batch]))
-
-        if len(data) == 0:
-            return None
-        else:
-            data = np.concatenate(data, axis=2)
-            return data
 
     def _build_feature_names(self) -> list[str]:
         lags_past = [i for i in range(-self.model.input_chunk_length, 0)]
@@ -205,12 +175,10 @@ class TorchShapAdapter(ShapAdapter):
 
         Internally, it does the following steps:
         1. Reshape the input numpy array into the format expected by the torch forecasting model, separating past
-           covariates, future covariates, and static covariates based on the slices defined
-           in :func:`_setup_func_wrapper()`.
-        2. If the model is an RNN, handle the special case where future covariates are concatenated to
-           past covariates with a shift in time dimension.
-        3. Pass the reshaped inputs to the model in batches and collect the outputs.
-        4. Concatenate the outputs and reshape them into the expected output format for SHAP, which is a 2D array where
+           target, past covariates, future covariates, and static covariates based on the slices defined in
+           :func:`_setup_func_wrapper()`.
+        2. Pass the reshaped inputs to the model in batches and collect the outputs.
+        3. Concatenate the outputs and reshape them into the expected output format for SHAP, which is a 2D array where
            each column corresponds to a target component at a specific horizon.
 
         Parameters
@@ -225,92 +193,89 @@ class TorchShapAdapter(ShapAdapter):
             predictions for each target component at each horizon, to be used by the SHAP explainer.
         """
         pl_module: PLForecastingModule = self.model.model
-        input_chunk_length = self.model.input_chunk_length
-        past_slice = slice(0, input_chunk_length * self.n_variables)
-        future_slice = slice(
-            past_slice.stop,
-            past_slice.stop + self.output_chunk_length * self.n_future_covs,
+        pl_module.set_predict_parameters(
+            n=self.n,
+            num_samples=1,
+            roll_size=self.n,
+            batch_size=self.batch_size,
+            predict_likelihood_parameters=self.model.supports_likelihood_parameter_prediction,
+            mc_dropout=False,
         )
-        static_slice = slice(future_slice.stop, None)
 
-        x = torch.from_numpy(x_np).float()
+        input_chunk_length = self.model.input_chunk_length
+        output_chunk_length = self.output_chunk_length
+
+        x = torch.from_numpy(x_np).to(dtype=pl_module.dtype, device=pl_module.device)
         num_samples = x.shape[0]
 
-        x_past = x[:, past_slice]
-        x_past = x_past.reshape(num_samples, input_chunk_length, self.n_variables)
+        # The shap array follows the sklearn-style feature ordering:
+        #   lagged_target | lagged_past_covariates | lagged_future_covariates | static
+        offset = 0
 
-        if self.n_future_covs > 0:
-            x_future = x[:, future_slice]
-            x_future = x_future.reshape(
-                num_samples, self.output_chunk_length, self.n_future_covs
+        # extract all required batch elements from the input array
+        # past target
+        pt_size = input_chunk_length * self.n_targets
+        x_pt = x[:, :pt_size].reshape(num_samples, input_chunk_length, -1)
+        offset += pt_size
+
+        # past covariates
+        if self.n_past_covs > 0:
+            pc_size = input_chunk_length * self.n_past_covs
+            x_pc = x[:, offset : offset + pc_size].reshape(
+                num_samples, input_chunk_length, -1
             )
+            offset += pc_size
         else:
-            x_future = None
+            x_pc = None
 
+        # future covariates (historic + future)
+        if self.n_future_covs > 0:
+            hfc_size = input_chunk_length * self.n_future_covs
+            x_hfc = x[:, offset : offset + hfc_size].reshape(
+                num_samples, input_chunk_length, -1
+            )
+            offset += hfc_size
+
+            fc_size = output_chunk_length * self.n_future_covs
+            x_fc = x[:, offset : offset + fc_size].reshape(
+                num_samples, output_chunk_length, -1
+            )
+            offset += fc_size
+        else:
+            x_hfc = None
+            x_fc = None
+
+        # static covariates
         if self.n_static_covs > 0:
-            x_static = x[:, static_slice]
-            x_static = x_static.reshape(num_samples, -1, self.n_static_covs)
+            x_sc = x[:, offset:].reshape(num_samples, -1, self.n_static_covs)
         else:
-            x_static = None
-
-        if isinstance(pl_module, CustomRNNModule):
-            # handle the special case of RNN where future covariates are concatenated to
-            # past covariates with a shift in time dimension
-            if x_future is not None:
-                x_future = torch.cat(
-                    [
-                        x_past[:, 1:, -self.n_future_covs :],
-                        x_future,  # output chunk length is always 1 for RNN
-                    ],
-                    dim=1,
-                )
-                x_past = torch.cat(
-                    [
-                        x_past[:, :, : self.n_targets],
-                        x_future,
-                    ],
-                    dim=2,
-                )
-                x_future = None
+            x_sc = None
 
         # set model to eval mode to deactivate dropout layers
         pl_module.eval()
 
-        outputs: list[torch.Tensor] = []
-        for i in range(0, num_samples, self.batch_size):
-            s = slice(i, i + self.batch_size)
-            batch_x_past = x_past[s].to(pl_module.device)
-            batch_x_future = (
-                x_future[s].to(pl_module.device) if x_future is not None else None
-            )
-            batch_x_static = (
-                x_static[s].to(pl_module.device) if x_static is not None else None
+        outputs = []
+        for batch_idx, i in enumerate(range(0, num_samples, self.batch_size)):
+            batch_slice = slice(i, i + self.batch_size)
+            batch = tuple(
+                x_i[batch_slice] if x_i is not None else None
+                for x_i in [x_pt, x_pc, None, x_hfc, x_fc, x_sc, None, None]
             )
 
-            batch_output: torch.Tensor = pl_module((
-                batch_x_past,
-                batch_x_future,
-                batch_x_static,
-            ))
+            # output shape: (num_samples = 1, batch_size, output_chunk_length, n_targets_likelihood)
+            output, _, _ = pl_module.predict_step(
+                batch=batch,
+                batch_idx=batch_idx,
+                dataloader_idx=None,
+            )
+            outputs.append(output)
 
-            if isinstance(pl_module, CustomRNNModule):
-                # Note: RNN outputs predictions and hidden states
-                batch_output = batch_output[0]
-                # RNN also outputs predictions for all time steps,
-                # but we only need the last one for SHAP explanations
-                batch_output = batch_output[:, -1:, :, :]
-            else:
-                # Note: TCN has a different `first_prediction_index` than 0
-                batch_output = batch_output[:, pl_module.first_prediction_index :, :]
+        # concatenate and reshape to: (n forecasts, output_chunk_length * n_targets_likelihood)
+        outputs = torch.cat(outputs, dim=1)[0].flatten(start_dim=1)
 
-            outputs.append(batch_output)
-
-        # `output`: (batch, output_chunk_length, n_targets, likelihood_parameters)
-        output = torch.cat(outputs, dim=0)
-        # flatten the output to shape (batch, output_chunk_length * n_targets_likelihood)
-        output = output.flatten(start_dim=1)
-
-        return output.cpu().numpy()
+        if outputs.dtype == torch.bfloat16:
+            outputs = outputs.float()
+        return outputs.cpu().numpy()
 
     @property
     def _supported_shap_methods(self) -> set[SHAPMethod]:

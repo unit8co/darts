@@ -2288,7 +2288,6 @@ class TestShapExplainer:
             horizon=1,
         )
         assert isinstance(force_plot, shap.plots._force.BaseVisualizer)
-        assert explainer.explainer._batch_collate_np([(None,)], [0]) is None
 
     def test_helper_sampling_and_single_target_filtering(self):
         model = DLinearModel(
