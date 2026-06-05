@@ -2349,15 +2349,24 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             residuals_out.append(res_list_out)
 
-        # if required, reduce to `series` input type
-        if series_seq_type == SeriesType.SINGLE:
-            return residuals_out[0][0] if last_points_only else residuals_out[0]
-
-        return (
+        # `residuals_out` is always nested `list[list[X]]` (per series, per forecast). We
+        # reduce it back to the `series` input shape (SINGLE / SEQ):
+        # - lpo=True: each inner list is a singleton (guaranteed by
+        #   `_process_historical_forecast_for_backtest`, which wraps each forecast via
+        #   `nested=True`), so flattening yields exactly one residual per series (a SEQ).
+        # - lpo=False: keep the nested per-forecast structure (a SEQ_SEQ).
+        result = (
             [res for res_list in residuals_out for res in res_list]
             if last_points_only
             else residuals_out
         )
+        # `series2seq` reduces `result` to the input shape, collapsing the single-series case
+        # (e.g. the length-1 flattened list above back to a bare `TimeSeries`). It is
+        # `TimeSeries`-only though (it inspects the leaf type), so with `values_only=True`
+        # the leaves are `np.ndarray` and we must reduce the shape manually instead.
+        if values_only:
+            return result[0] if series_seq_type == SeriesType.SINGLE else result
+        return series2seq(result, seq_type_out=series_seq_type)
 
     def initialize_encoders(self, default=False) -> SequentialEncoder:
         """instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter
