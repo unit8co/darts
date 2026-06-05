@@ -299,7 +299,7 @@ class BaseDataTransformer(ABC):
         component_mask: np.ndarray | None = None,
         series_idx: int | Sequence[int] | None = None,
         **kwargs,
-    ) -> TimeSeries | Sequence[TimeSeries]:
+    ) -> TimeSeriesLike:
         """Transforms a (sequence of) of series by calling the user-implemeneted `ts_transform` method.
 
         In case a ``Sequence[TimeSeries]`` is passed as input data, this function takes care of
