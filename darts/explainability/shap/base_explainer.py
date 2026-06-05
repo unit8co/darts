@@ -137,7 +137,7 @@ class BaseShapExplainer(ABC):
         self.background_future_covariates = background_future_covariates
         self.feature_names = self._build_feature_names()
 
-        self.background_arr, _ = self.create_shap_array(
+        self.background_arr, _ = self.create_shap_input(
             series=self.background_series,
             past_covariates=self.background_past_covariates,
             future_covariates=self.background_future_covariates,
@@ -171,6 +171,8 @@ class BaseShapExplainer(ABC):
         ----------
         foreground_arr
             A numpy array of shape `(num_samples, num_features)` containing the input features for SHAP explanations.
+        foreground_times
+            The prediction times corresponding to each sample in ``foreground_arr``.
         horizons
             A sequence of integers representing which points/steps in the future to explain, starting from the first
             prediction step at 1. Each horizon must be no greater than ``output_chunk_length`` of the explained
@@ -189,8 +191,9 @@ class BaseShapExplainer(ABC):
             Explanation objects for each horizon and target component, where the SHAP values are extracted and
             reshaped for easier accessibility.
         """
+        # for models without native multioutput support (only for ``SKLearnModel`` if wrapped by MultiOutputMixin):
         # create a nested dictionary {horizon : {target_component : shap.Explanation}} for better accessibility of
-        # the explanations; note: this is only invoked by ``SKLearnModel``
+        # the explanations
         explanations = {}
         if isinstance(self.explainer, dict):
             for h in horizons:
@@ -210,15 +213,16 @@ class BaseShapExplainer(ABC):
                 explanations[h] = tmp_n
             return explanations
 
+        # for models with native multioutput support:
         # the native multioutput forces us to recompute all horizons and targets; can be either
-        # ``TorchForecastingModel`` or ``SKLearnModel`` with multioutput
+        # ``TorchForecastingModel`` or ``SKLearnModel`` with native multioutput
         explanation: shap.Explanation = self.explainer(foreground_arr, **kwargs)
 
         # bring arrays into expected shapes:
         # `values`: (E, F, C * OCL)
         # `base_values`: (E, C * OCL)
         # E: number of forecast examples
-        # F: number of model input features
+        # F: number of lagged model input features
         # C: number of target components (including likelihood parameters)
         # OCL: output chunk length
         values = explanation.values
@@ -234,9 +238,6 @@ class BaseShapExplainer(ABC):
             base_values = np.repeat(
                 base_values[np.newaxis, :], repeats=values.shape[0], axis=0
             )
-
-        assert values.shape == foreground_arr.shape + (self.n_output_features,)
-        assert base_values.shape == foreground_arr.shape[:1] + (self.n_output_features,)
 
         for h in horizons:
             tmp_n = {}
@@ -274,8 +275,11 @@ class BaseShapExplainer(ABC):
         Parameters
         ----------
         foreground_arr
-            A numpy array of shape `(1, num_features)` containing the input features for SHAP explanations for the
-            single forecasted timestamp. Must have only one sample corresponding to the single forecasted timestamp.
+            A numpy array of shape `(num_samples, num_features)` containing the input features for SHAP explanations.
+            Only the last sample (forecast) will be explained.
+        foreground_times
+            The prediction times corresponding to each sample in ``foreground_arr``. Only the last prediction time will
+            be explained.
         target_components
             A sequence of strings with the target components to explain. Each component must be among the target
             components of the explained forecasting model.
@@ -289,6 +293,10 @@ class BaseShapExplainer(ABC):
             A dictionary ``{target_component : DartsShapExplanation}`` containing the SHAP Explanation objects for each
             target component, where the SHAP values are extracted and reshaped for easier accessibility.
         """
+        # explain only the last forecast
+        foreground_arr = foreground_arr[-1:]
+        foreground_times = foreground_times[-1:]
+
         horizons = list(range(1, self.n + 1))
         explanations = self.shap_explanations(
             foreground_arr,
@@ -351,7 +359,7 @@ class BaseShapExplainer(ABC):
         """
 
     @abstractmethod
-    def create_shap_array(
+    def create_shap_input(
         self,
         series: TimeSeriesLike,
         past_covariates: TimeSeriesLike | None,
@@ -360,9 +368,9 @@ class BaseShapExplainer(ABC):
         input_type: str = "background",
     ) -> tuple[np.ndarray, pd.Index]:
         """
-        Creates the SHAP array for the given input series and covariates, by following the logic of the model's
-        prediction / inference dataset and prediction step. It returns the SHAP array, the schemas of the
-        samples, and the prediction times corresponding to each sample in the SHAP array.
+        Creates the SHAP input for the given series and covariates, by following the logic of the model's prediction /
+        inference dataset and prediction step. It returns the SHAP array (lagged features values) and the prediction
+        times corresponding to each sample in the SHAP array.
 
         Parameters
         ----------

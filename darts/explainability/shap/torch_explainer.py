@@ -31,7 +31,7 @@ INPUT_STATIC_INDICES = [5]
 class TorchShapExplainer(BaseShapExplainer):
     model: TorchForecastingModel
 
-    def create_shap_array(
+    def create_shap_input(
         self,
         series: TimeSeriesLike,
         past_covariates: TimeSeriesLike | None,

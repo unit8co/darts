@@ -2347,7 +2347,7 @@ class TestShapExplainer:
             columns=future_covariates.components,
         )
 
-        sampled_background, _ = explainer.explainer.create_shap_array(
+        sampled_background, _ = explainer.explainer.create_shap_input(
             long_background_series,
             long_background_past_covariates,
             long_background_future_covariates,

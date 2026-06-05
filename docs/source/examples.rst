@@ -249,8 +249,7 @@ Ensemble models example notebook:
 Explainability
 ==============
 
-Explainability example notebook showcasing the use of Darts' explainability module
-for both PyTorch and SKLearn models:
+Explainability example notebook showcasing the use of Darts' explainability module for both PyTorch and SKLearn models:
 
 .. toctree::
    :maxdepth: 1

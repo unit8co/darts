@@ -123,7 +123,7 @@ class SKLearnShapExplainer(BaseShapExplainer):
         logger.info("The SHAP method used is of type: " + str(type(explainer)))
         return explainer
 
-    def create_shap_array(
+    def create_shap_input(
         self,
         series: TimeSeriesLike,
         past_covariates: TimeSeriesLike | None,

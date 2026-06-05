@@ -15,10 +15,10 @@ relative to a baseline (average prediction).
 
 Depending on the model and training data, features can include:
 
-- lags of the target series (input chunk for torch models),
-- lags of past covariates  (input chunk for torch models),
-- lags of future covariates (input and output chunk for torch models),
-- static covariates (global or component-specific).
+- lags of the target series (input chunk for torch models)
+- lags of past covariates  (input chunk for torch models)
+- lags of future covariates (input and output chunk for torch models)
+- static covariates (global or component-specific)
 
 .. note::
     All input features except static covariates are named according to the convention
@@ -354,7 +354,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             if foreground_future_covariates:
                 foreground_future_cov_ts = foreground_future_covariates[idx]
 
-            foreground_arr, foreground_times = self.explainer.create_shap_array(
+            foreground_arr, foreground_times = self.explainer.create_shap_input(
                 series=foreground_ts,
                 past_covariates=foreground_past_cov_ts,
                 future_covariates=foreground_future_cov_ts,
@@ -523,7 +523,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         )
         _, target_names = self._process_horizons_and_targets(None, target_components)
 
-        foreground_arr, foreground_times = self.explainer.create_shap_array(
+        foreground_arr, foreground_times = self.explainer.create_shap_input(
             series=foreground_series_,
             past_covariates=foreground_past_covariates_,
             future_covariates=foreground_future_covariates_,
@@ -532,10 +532,6 @@ class ShapExplainer(_ForecastingModelExplainer):
         )
 
         # explain only the last forecasted timestamp
-        foreground_arr = foreground_arr[-1:]
-        foreground_times = foreground_times[-1:]
-        freq = foreground_series_[0].freq
-
         shap_ = self.explainer.shap_explanations_single(
             foreground_arr=foreground_arr,
             foreground_times=foreground_times,
@@ -543,6 +539,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             **kwargs,
         )
 
+        freq = foreground_series_[0].freq
         shap_values_dict = {}
         feature_values_dict = {}
         shap_explanation_object_dict = {}
@@ -643,7 +640,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             horizons, target_components
         )
 
-        foreground_arr, foreground_times = self.explainer.create_shap_array(
+        foreground_arr, foreground_times = self.explainer.create_shap_input(
             series=foreground_series_,
             past_covariates=foreground_past_covariates_,
             future_covariates=foreground_future_covariates_,
@@ -746,7 +743,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         )
         horizon, target_component = horizons[0], target_components[0]
 
-        foreground_arr, foreground_times = self.explainer.create_shap_array(
+        foreground_arr, foreground_times = self.explainer.create_shap_input(
             series=foreground_series_,
             past_covariates=foreground_past_covariates_,
             future_covariates=foreground_future_covariates_,
