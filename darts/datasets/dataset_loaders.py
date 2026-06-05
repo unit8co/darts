@@ -199,7 +199,8 @@ class DatasetLoader(ABC):
         return df
 
 
-# TODO(oswald): Should _to_multi_series not be an abstract method here?
+# TODO(oswald): All subclasses of DatasetLoaderCSV which use self._metadata.multivariate
+# have to implement ._to_multi_series() -> should have a conditional stub implementation
 class DatasetLoaderCSV(DatasetLoader):
     def __init__(self, metadata: DatasetLoaderMetadata, root_path: Path | None = None):
         super().__init__(metadata, root_path)
