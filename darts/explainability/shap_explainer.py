@@ -165,18 +165,22 @@ class ShapExplainer(_ForecastingModelExplainer):
         )
 
         if isinstance(self.model, SKLearnModel):
-            from darts.explainability.shap.sklearn_explainer import SKLearnShapExplainer
+            from darts.explainability.shap_adapters.sklearn_shap_adapter import (
+                SKLearnShapAdapter,
+            )
 
-            explainer_cls = SKLearnShapExplainer
+            explainer_cls = SKLearnShapAdapter
         else:
             # lazily import torch dependencies
-            from darts.explainability.shap.torch_explainer import TorchShapExplainer
+            from darts.explainability.shap_adapters.torch_shap_adapter import (
+                TorchShapAdapter,
+            )
             from darts.models.forecasting.torch_forecasting_model import (
                 TorchForecastingModel,
             )
 
             if isinstance(self.model, TorchForecastingModel):
-                explainer_cls = TorchShapExplainer
+                explainer_cls = TorchShapAdapter
             else:
                 raise_log(
                     ValueError(

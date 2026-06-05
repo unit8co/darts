@@ -6,7 +6,7 @@ import shap
 import torch
 
 from darts import TimeSeries
-from darts.explainability.shap.base_explainer import BaseShapExplainer, SHAPMethod
+from darts.explainability.shap_adapters.shap_adapter import ShapAdapter, SHAPMethod
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.models.forecasting.rnn_model import CustomRNNModule
@@ -28,7 +28,7 @@ INPUT_FUTURE_INDICES = [4]
 INPUT_STATIC_INDICES = [5]
 
 
-class TorchShapExplainer(BaseShapExplainer):
+class TorchShapAdapter(ShapAdapter):
     model: TorchForecastingModel
 
     def create_shap_input(

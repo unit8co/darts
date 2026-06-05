@@ -19,7 +19,7 @@ if not TORCH_AVAILABLE:
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
 from darts.explainability import ShapExplainer
-from darts.explainability.shap.base_explainer import (
+from darts.explainability.shap_adapters.shap_adapter import (
     MAX_BACKGROUND_SAMPLE,
     MIN_BACKGROUND_SAMPLE,
 )

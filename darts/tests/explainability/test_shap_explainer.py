@@ -14,7 +14,7 @@ from sklearn.preprocessing import MinMaxScaler
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
 from darts.explainability.explainability_result import ShapExplainabilityResult
-from darts.explainability.shap.base_explainer import MIN_BACKGROUND_SAMPLE
+from darts.explainability.shap_adapters.shap_adapter import MIN_BACKGROUND_SAMPLE
 from darts.explainability.shap_explainer import ShapExplainer
 from darts.models import (
     CatBoostModel,

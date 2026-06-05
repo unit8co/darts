@@ -3,7 +3,7 @@ import pandas as pd
 import shap
 from sklearn.multioutput import MultiOutputRegressor
 
-from darts.explainability.shap.base_explainer import BaseShapExplainer, SHAPMethod
+from darts.explainability.shap_adapters.shap_adapter import ShapAdapter, SHAPMethod
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
@@ -16,7 +16,7 @@ MIN_BACKGROUND_SAMPLE = 10
 MAX_BACKGROUND_SAMPLE = 1000
 
 
-class SKLearnShapExplainer(BaseShapExplainer):
+class SKLearnShapAdapter(ShapAdapter):
     model: SKLearnModel
     default_sklearn_shap_explainers: dict[str, SHAPMethod] = {
         # Gradient boosting models
@@ -68,6 +68,7 @@ class SKLearnShapExplainer(BaseShapExplainer):
         shap_method: SHAPMethod,
         **kwargs,
     ) -> shap.Explainer | dict[int, dict[int, shap.Explainer]]:
+        # models with native multioutput support
         if not isinstance(self.model.model, MultiOutputRegressor):
             return self._build_explainer_sklearn(
                 model_sklearn=model.model,
@@ -76,6 +77,7 @@ class SKLearnShapExplainer(BaseShapExplainer):
                 **kwargs,
             )
 
+        # models with multioutput support through MultiOutputMixin
         explainers = {}
         for i in range(self.n):
             explainers[i] = {}
@@ -95,7 +97,6 @@ class SKLearnShapExplainer(BaseShapExplainer):
         shap_method: SHAPMethod,
         **kwargs,
     ) -> shap.Explainer:
-        # we define properly the explainer given a shap method
         if shap_method == SHAPMethod.TREE:
             if kwargs.get("feature_perturbation") == "interventional":
                 explainer = shap.TreeExplainer(model_sklearn, background_arr, **kwargs)

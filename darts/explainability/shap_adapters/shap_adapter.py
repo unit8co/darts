@@ -35,7 +35,7 @@ class DartsShapExplanation(shap.Explanation):
         self.time_index = time_index
 
 
-class BaseShapExplainer(ABC):
+class ShapAdapter(ABC):
     def __init__(
         self,
         model: ForecastingModel,
@@ -52,11 +52,36 @@ class BaseShapExplainer(ABC):
         batch_size: int | None = None,
         **kwargs,
     ):
-        """
-        Helper Class to wrap the different cases encountered with SHAP different explainers, multivariates,
-        horizon etc.
-        Aim to provide SHAP values for any type of SKLearnModel. Manage the MultioutputRegressor cases.
-        For darts SKLearnModel only.
+        """Model-specific adapter between Darts forecasting models and the SHAP library.
+
+        Parameters
+        ----------
+        model
+            A fitted Darts forecasting model to explain.
+        n
+            The number of forecast steps to explain (at most ``output_chunk_length``).
+        target_components
+            Component names of the target series.
+        past_covariates_components
+            Component names of the past covariates, or ``None`` if unused.
+        future_covariates_components
+            Component names of the future covariates, or ``None`` if unused.
+        static_covariates_components
+            Component names of the static covariates, or ``None`` if unused.
+        background_series
+            Reference (background) target series for the SHAP explainer.
+        background_past_covariates
+            Reference past covariates, or ``None`` if unused.
+        background_future_covariates
+            Reference future covariates, or ``None`` if unused.
+        background_num_samples
+            Optional cap on the number of background samples (for performance).
+        shap_method
+            Name of the SHAP method to use, or ``None`` to auto-select.
+        batch_size
+            Optional batch size for model inference during explanation.
+        **kwargs
+            Extra keyword arguments forwarded to the ``shap_adapters.Explainer`` constructor.
         """
         self._validate_model(model)
 
