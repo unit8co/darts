@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import shap
-from sklearn.multioutput import MultiOutputRegressor
 
 from darts.explainability.shap_adapters.shap_adapter import ShapAdapter, SHAPMethod
 from darts.logging import get_logger, raise_log
@@ -68,8 +67,17 @@ class SKLearnShapAdapter(ShapAdapter):
         shap_method: SHAPMethod,
         **kwargs,
     ) -> shap.Explainer | dict[int, dict[int, shap.Explainer]]:
-        # models with native multioutput support
-        if not isinstance(self.model.model, MultiOutputRegressor):
+        likelihood = model.likelihood
+        has_quantile_container = model._model_container is not None
+
+        if has_quantile_container:
+            first_q_model = next(iter(model._model_container.values()))
+            uses_multi_output = isinstance(first_q_model, MultiOutputMixin)
+        else:
+            uses_multi_output = isinstance(model.model, MultiOutputMixin)
+
+        if not uses_multi_output and not has_quantile_container:
+            # native multioutput, no per-quantile models -> single explainer
             return self._build_explainer_sklearn(
                 model_sklearn=model.model,
                 background_arr=background_arr,
@@ -77,13 +85,22 @@ class SKLearnShapAdapter(ShapAdapter):
                 **kwargs,
             )
 
-        # models with multioutput support through MultiOutputMixin
+        # per-estimator explainers (MultiOutputMixin and/or QuantileRegression)
+        n_params = likelihood.num_parameters if likelihood is not None else 1
         explainers = {}
         for i in range(self.n):
             explainers[i] = {}
             for j in range(self.n_targets_likelihood):
+                if has_quantile_container:
+                    target_dim = j // n_params
+                    quantile = likelihood.quantiles[j % n_params]
+                else:
+                    target_dim = j
+                    quantile = None
                 explainers[i][j] = self._build_explainer_sklearn(
-                    model_sklearn=model.get_estimator(horizon=i, target_dim=j),
+                    model_sklearn=model.get_estimator(
+                        horizon=i, target_dim=target_dim, quantile=quantile
+                    ),
                     background_arr=background_arr,
                     shap_method=shap_method,
                     **kwargs,
@@ -186,10 +203,18 @@ class SKLearnShapAdapter(ShapAdapter):
         }
 
     def _get_default_shap_method(self, model: SKLearnModel) -> SHAPMethod:
-        if isinstance(model.model, MultiOutputMixin):
-            sklearn_model = model.get_estimator(horizon=0, target_dim=0)
+        if model._model_container is not None:
+            # quantile models
+            q = model.likelihood.quantiles[model.likelihood._median_idx]
+            actual_model = model._model_container[q]
         else:
-            sklearn_model = model.model
+            # regular models
+            actual_model = model.model
+
+        if isinstance(actual_model, MultiOutputMixin):
+            sklearn_model = actual_model.estimator
+        else:
+            sklearn_model = actual_model
 
         model_name = type(sklearn_model).__name__
         if model_name in self.default_sklearn_shap_explainers:
@@ -216,9 +241,4 @@ class SKLearnShapAdapter(ShapAdapter):
                     "with `multi_models=True`."
                 ),
                 logger,
-            )
-
-        if model.supports_probabilistic_prediction:
-            logger.warning(
-                "The model is probabilistic, but num_samples=1 will be used for explainability."
             )

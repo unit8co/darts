@@ -1,4 +1,5 @@
 import copy
+import itertools
 from datetime import date, timedelta
 
 import numpy as np
@@ -1253,3 +1254,211 @@ class TestShapExplainer:
         )
         assert isinstance(kernel_explainer.explainer.explainer, shap.explainers.Kernel)
         assert len(kernel_explainer.explainer.background_arr) == 1
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [[0.1, 0.5, 0.9], [0.5]],
+            [(LinearRegressionModel, {})]
+            + (
+                [
+                    (LightGBMModel, lgbm_test_params),
+                    (XGBModel, xgb_test_params),
+                    (CatBoostModel, cb_test_params),
+                ]
+                if GBM_AVAILABLE
+                else []
+            ),
+        ),
+    )
+    def test_explain_probabilistic_model(self, config):
+        quantiles, (model_cls, model_kwargs) = config
+        series = self.target_ts
+        foreground_series = series[-20:]
+
+        model = model_cls(
+            lags=4,
+            output_chunk_length=2,
+            likelihood="quantile",
+            quantiles=quantiles,
+            **model_kwargs,
+        )
+        model.fit(series=series)
+
+        explainer = ShapExplainer(model)
+        results = explainer.explain(foreground_series=foreground_series)
+
+        assert model.likelihood is not None
+        likelihood_components = model.likelihood.component_names(series)
+        assert set(explainer.explainer.target_components_likelihood) == set(
+            likelihood_components
+        )
+
+        # pre-likelihood component names should not be available
+        with pytest.raises(ValueError, match='Component "price" is not available'):
+            results.get_explanation(horizon=1, component="price")
+
+        components = {
+            f"{name}_target_lag-{lag + 1}"
+            for name in series.columns
+            for lag in range(abs(min(model.lags["target"])))
+        }
+
+        valid_horizon = 2
+
+        # check explanation is returned for valid horizon, component, and input features
+        explanation = results.get_explanation(
+            horizon=valid_horizon, component=likelihood_components[0]
+        )
+        assert isinstance(explanation, TimeSeries)
+        assert set(explanation.components) == components
+        assert np.isfinite(explanation.values()).all()
+
+        # verify SHAP additivity: shap_values_sum + base_value ≈ prediction
+        pred = model.historical_forecasts(
+            series=foreground_series,
+            forecast_horizon=valid_horizon,
+            last_points_only=True,
+            overlap_end=True,
+            retrain=False,
+            predict_likelihood_parameters=True,
+        )
+        assert isinstance(pred, TimeSeries)
+        shap_values_sum = explanation.values().sum(axis=1)
+        base_values = pred[likelihood_components[0]].values().ravel() - shap_values_sum
+        np.testing.assert_allclose(base_values, base_values[0], rtol=1e-3, atol=1e-5)
+
+        # check feature values for valid horizon and component
+        feature_values = results.get_feature_values(
+            horizon=valid_horizon,
+            component=likelihood_components[0],
+        )
+        assert isinstance(feature_values, TimeSeries)
+        assert feature_values.n_timesteps == explanation.n_timesteps
+        assert set(feature_values.components) == components
+        assert np.isfinite(feature_values.values()).all()
+
+        # check shap explanation object for valid horizon and component
+        shap_explanation_object = results.get_shap_explanation_object(
+            horizon=valid_horizon,
+            component=likelihood_components[-1],
+        )
+        explanation = results.get_explanation(
+            horizon=valid_horizon, component=likelihood_components[-1]
+        )
+        assert isinstance(shap_explanation_object, shap.Explanation)
+        np.testing.assert_array_equal(
+            shap_explanation_object.values,
+            explanation.values(),
+        )
+        np.testing.assert_array_equal(
+            shap_explanation_object.data,
+            feature_values.values(),
+        )
+        shap_values_sum = explanation.values().sum(axis=1)
+        base_values = pred[likelihood_components[-1]].values().ravel() - shap_values_sum
+        np.testing.assert_allclose(
+            shap_explanation_object.base_values,
+            base_values,
+            rtol=1e-3,
+            atol=1e-5,
+        )
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [[0.1, 0.5, 0.9], [0.5]],
+            [(LinearRegressionModel, {})]
+            + (
+                [
+                    (LightGBMModel, lgbm_test_params),
+                    (XGBModel, xgb_test_params),
+                    (CatBoostModel, cb_test_params),
+                ]
+                if GBM_AVAILABLE
+                else []
+            ),
+        ),
+    )
+    def test_explain_single_probabilistic_model(self, config):
+        quantiles, (model_cls, model_kwargs) = config
+        series = self.target_ts
+        foreground_series = series[-10:]
+
+        model = model_cls(
+            lags=4,
+            output_chunk_length=2,
+            likelihood="quantile",
+            quantiles=quantiles,
+            **model_kwargs,
+        )
+        model.fit(series=series)
+
+        explainer = ShapExplainer(model)
+        results = explainer.explain_single(
+            foreground_series=foreground_series,
+        )
+
+        assert model.likelihood is not None
+        likelihood_components = model.likelihood.component_names(series)
+        assert set(explainer.explainer.target_components_likelihood) == set(
+            likelihood_components
+        )
+
+        # pre-likelihood component names should not be available
+        with pytest.raises(ValueError, match='Component "price" is not available'):
+            results.get_explanation(component="price")
+
+        components = {
+            f"{name}_target_lag-{lag + 1}"
+            for name in series.columns
+            for lag in range(abs(min(model.lags["target"])))
+        }
+
+        explanation = results.get_explanation(component=likelihood_components[0])
+        assert isinstance(explanation, TimeSeries)
+        assert explanation.n_timesteps == model.output_chunk_length
+        assert set(explanation.components) == components
+        assert np.isfinite(explanation.values()).all()
+
+        prediction = model.predict(
+            n=model.output_chunk_length,
+            series=foreground_series,
+            predict_likelihood_parameters=True,
+        )
+        assert isinstance(prediction, TimeSeries)
+        assert prediction.n_timesteps == explanation.n_timesteps
+
+        with pytest.raises(ValueError, match="component parameter is required"):
+            results.get_feature_values(component=None)
+
+        feature_values = results.get_feature_values(component=likelihood_components[0])
+        assert isinstance(feature_values, TimeSeries)
+        assert feature_values.n_timesteps == 1
+        assert set(feature_values.components) == components
+        assert np.isfinite(feature_values.values()).all()
+
+        shap_explanation_object = results.get_shap_explanation_object(
+            component=likelihood_components[-1]
+        )
+        explanation = results.get_explanation(component=likelihood_components[-1])
+        assert isinstance(explanation, TimeSeries)
+        assert isinstance(shap_explanation_object, shap.Explanation)
+        np.testing.assert_array_equal(
+            shap_explanation_object.values,
+            explanation.values(),
+        )
+        np.testing.assert_array_equal(
+            shap_explanation_object.data[:1],
+            feature_values.values(),
+        )
+        shap_values_sum = explanation.values().sum(axis=1)
+        base_values = (
+            prediction[likelihood_components[-1]].values().ravel() - shap_values_sum
+        )
+        np.testing.assert_allclose(
+            shap_explanation_object.base_values,
+            base_values,
+            rtol=1e-3,
+            atol=1e-8,
+        )
