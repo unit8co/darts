@@ -11,12 +11,13 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- Improvements to `ShapExplainer` : [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+- Improvements to `ShapExplainer` : [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao) and [Dennis Bader](https://github.com/dennisbader).
   - 🚀🚀 `ShapExplainer` can now also explain any `TorchForecastingModel` including regular torch models (`TiDEModel`, ...) as well as foundation models (`Chronos2`, ...). It supports global and local explanations and can output SHAP values for further analysis.
   - Added method `explain_single()` to explain a single model forecast in detail, in addition to the existing batched method `explain()`. This is useful for local explanations of individual predictions with reduced computational cost.
   - Method `summary_plot()` can now also be computed on any optional foreground series using parameters `foreground_series`, `foreground_past_covariates`, `foreground_future_covariates`.
+  - `ShapExplainer` can now also explain the forecasted likelihood parameter of probabilistic forecasts.
+  - Added a new notebook for [Explainability of Forecasting Models](https://unit8co.github.io/darts/examples/28-Explainability-examples.html) including detailed usage examples of `ShapExplainer`.
   - 🔴 Renamed method `force_plot_from_ts()` to `force_plot()` to simplify.
-  - Added a new [Explainability of Forecasting Models Notebook](https://unit8co.github.io/darts/examples/28-Explainability-examples.html) for detailed usage of `ShapExplainer`.
 - 🚀🚀 Added new forecasting model `PatchTSTFMModel` : IBM's pre-trained ~260M-parameter foundational model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series forecasting without training and can output deterministic or probabilistic forecasts. [#3120](https://github.com/unit8co/darts/pull/3120) by [Dennis Bader](https://github.com/dennisbader).
 - Added `use_longer_projection_head` to `TimesFM2p5Model` to enable longer non-autoregressive prediction horizons (up to 1024 steps for `output_chunk_length + output_chunk_shift`). [#3121](https://github.com/unit8co/darts/pull/3121) by [Zhihao Dai](https://github.com/daidahao).
 - `TimeSeries.from_dataframe()` now supports time columns of type `pl.Date` for `polars.DataFrame`. [#3124](https://github.com/unit8co/darts/pull/3124) by [Dennis Bader](https://github.com/dennisbader)
