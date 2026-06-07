@@ -35,7 +35,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For developers of the library:
 
-- Added `ShapSingleExplainabilityResult` class as the return type of `explain_single()` method in `ShapExplainer` and `TorchExplainer` and to store the SHAP results of a single instance explanation. This is in contrast to the existing `ShapExplainabilityResult` which stores results for batched explanations. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+- Added `ShapSingleExplainabilityResult` class as the return type of `explain_single()` method in `ShapExplainer` and to store the SHAP results of a single instance explanation. This is in contrast to the existing `ShapExplainabilityResult` which stores results for batched explanations. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 - Used GitHub Actions to publish the documentation to GitHub Pages, replacing the previous third-party branch-based deployment method. [#3107](https://github.com/unit8co/darts/pull/3107) by [Zhihao Dai](https://github.com/daidahao)
 - Removed `optuna-integration[pytorch-lightning]` from the testing dependencies. [#3114](https://github.com/unit8co/darts/pull/3114) by [Jakub Chłapek](https://github.com/jakubchlapek).
 
