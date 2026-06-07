@@ -1,5 +1,6 @@
 import copy
 import itertools
+import logging
 from datetime import date, timedelta
 
 import numpy as np
@@ -22,6 +23,7 @@ from darts.models import (
     ExponentialSmoothing,
     LightGBMModel,
     LinearRegressionModel,
+    NaiveSeasonal,
     SKLearnModel,
     XGBModel,
 )
@@ -29,7 +31,7 @@ from darts.tests.conftest import (
     GBM_AVAILABLE,
     LGBM_AVAILABLE,
 )
-from darts.utils.timeseries_generation import linear_timeseries
+from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 from darts.utils.utils import generate_index
 
 xgb_test_params = {
@@ -584,6 +586,32 @@ class TestShapExplainer:
             # combination with the LightGBM configuration (lags=None and 'largest' covariates lags equal to -2) means
             # that at the start of the target series we have sufficient information to explain the prediction.
             assert explanation.start_time() == self.target_ts.start_time()
+
+    def test_stationarity_warning(self, caplog):
+        m = self.model_cls(
+            lags=4,
+            **self.model_kwargs,
+        )
+        m.fit(series=self.target_ts)
+
+        expected_msg = (
+            "At least component 'foo' of target series at index 0 is not stationary."
+        )
+        # stationary series does not warn
+        with caplog.at_level(logging.WARNING):
+            ShapExplainer(
+                m, background_series=sine_timeseries(length=20, column_name="foo")
+            )
+        assert expected_msg not in caplog.text
+        caplog.clear()
+
+        # non-stationary series (with trend) warns
+        with caplog.at_level(logging.WARNING):
+            ShapExplainer(
+                m, background_series=linear_timeseries(length=20, column_name="foo")
+            )
+        assert expected_msg in caplog.text
+        caplog.clear()
 
     def test_plot(self, mpl_safe_plotting):
         m_0 = self.model_cls(
@@ -1462,3 +1490,27 @@ class TestShapExplainer:
             rtol=1e-3,
             atol=1e-8,
         )
+
+    def test_invalid_model_or_shap_method(self):
+        with pytest.raises(
+            ValueError,
+            match="`model` must be a Darts `ForecastingModel` object.",
+        ):
+            ShapExplainer(model=None)
+
+        model = LinearRegressionModel(lags=4)
+        model.fit(series=self.target_ts)
+        explainer = ShapExplainer(model)
+
+        with pytest.raises(
+            ValueError,
+            match="Only models of type `SKLearnModel` are supported.",
+        ):
+            explainer.explainer._validate_model(model=NaiveSeasonal(K=1))
+
+        with pytest.raises(ValueError, match="Unknown SHAP method `'invalid'`."):
+            explainer.explainer._build_explainer(
+                model=model,
+                background_arr=np.array([0.0]),
+                shap_method="invalid",
+            )

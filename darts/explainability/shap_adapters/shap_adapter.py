@@ -332,8 +332,6 @@ class ShapAdapter(ABC):
 
         result = {}
         for t in target_components:
-            if t not in explanations[horizons[0]]:
-                continue
             horizon_expls = [explanations[h][t] for h in horizons]
             result[t] = DartsShapExplanation(
                 values=np.concatenate(

@@ -225,7 +225,9 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
         if isinstance(self.explained_forecasts, list):
             if not isinstance(self.explained_forecasts[0], dict):
                 raise_log(
-                    ValueError("The `explained_forecasts` list must consist of dicts."),
+                    ValueError(
+                        "The `explained_forecasts` list must consist of dictionaries."
+                    ),
                     logger,
                 )
             if not all(
@@ -233,7 +235,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
             ):
                 raise_log(
                     ValueError(
-                        "The `explained_forecasts` dict list must have all integer keys."
+                        "The `explained_forecasts` dictionary list must have all integer keys."
                     ),
                     logger,
                 )

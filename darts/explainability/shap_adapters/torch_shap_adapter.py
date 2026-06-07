@@ -6,7 +6,12 @@ import shap
 import torch
 
 from darts import TimeSeries
-from darts.explainability.shap_adapters.shap_adapter import ShapAdapter, SHAPMethod
+from darts.explainability.shap_adapters.shap_adapter import (
+    MAX_BACKGROUND_SAMPLE,
+    MIN_BACKGROUND_SAMPLE,
+    ShapAdapter,
+    SHAPMethod,
+)
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
@@ -19,9 +24,6 @@ from darts.utils.historical_forecasts.optimized_historical_forecasts_torch impor
 from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
-
-MIN_BACKGROUND_SAMPLE = 10
-MAX_BACKGROUND_SAMPLE = 1000
 
 
 class TorchShapAdapter(ShapAdapter):
@@ -162,7 +164,12 @@ class TorchShapAdapter(ShapAdapter):
         elif shap_method == SHAPMethod.PERMUTATION:
             explainer_cls = shap.PermutationExplainer
         else:
-            raise_log(ValueError(f"Unknown SHAP method {shap_method}"))
+            raise_log(
+                ValueError(
+                    f"Unknown SHAP method `'{shap_method}'`. Must be one of "
+                    f"{[el.name.lower() for el in self._supported_shap_methods]}"
+                )
+            )
 
         return explainer_cls(self._func_wrapper, background_arr, **kwargs)
 

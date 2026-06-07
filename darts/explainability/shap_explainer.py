@@ -89,7 +89,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         background_num_samples: int | None = None,
         shap_method: str | None = None,
         batch_size: int | None = None,
-        test_stationarity: bool = False,
+        test_stationarity: bool = True,
         **kwargs,
     ):
         """SHAP Explainer for SKLearn and Torch Models.

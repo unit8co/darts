@@ -4,6 +4,7 @@ Explainability Utils
 """
 
 from collections.abc import Sequence
+from typing import Literal
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
@@ -14,11 +15,13 @@ from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
 
+_INPUT_TYPE = Literal["background", "foreground"]
+
 
 def process_input(
     n: int,
     model: ForecastingModel,
-    input_type: str,
+    input_type: _INPUT_TYPE,
     series: TimeSeriesLike | None = None,
     past_covariates: TimeSeriesLike | None = None,
     future_covariates: TimeSeriesLike | None = None,
@@ -82,14 +85,6 @@ def process_input(
     test_stationarity
         Whether to raise a warning if not all components from the target `series` are stationary.
     """
-    if input_type not in ["background", "foreground"]:
-        raise_log(
-            ValueError(
-                f"Unknown `input_type='{input_type}'`. Must be one of ['background', 'foreground']."
-            ),
-            logger,
-        )
-
     # if any input is given, treat it as if the input was required
     if (
         series is not None
@@ -312,7 +307,7 @@ def get_component_names(
 
 def _check_valid_input(
     model,
-    input_type: str,
+    input_type: _INPUT_TYPE,
     series: Sequence[TimeSeries],
     past_covariates: Sequence[TimeSeries] | None,
     future_covariates: Sequence[TimeSeries] | None,
@@ -327,13 +322,6 @@ def _check_valid_input(
     if test_stationarity and series is not None:
         _test_stationarity(series)
 
-    if input_type not in ["background", "foreground"]:
-        raise_log(
-            ValueError(
-                f"Unknown `input_type='{input_type}'`. Must be one of ['background', 'foreground']."
-            ),
-            logger,
-        )
     if past_covariates is not None:
         raise_if_not(
             len(series) == len(past_covariates),

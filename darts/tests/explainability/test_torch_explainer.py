@@ -1,3 +1,4 @@
+import copy
 import itertools
 import os
 from pathlib import Path
@@ -121,6 +122,7 @@ kwargs = {
     "n_epochs": 1,
     **tfm_kwargs,
 }
+explainer_kwargs = {"batch_size": 1000}
 
 
 class TestShapExplainer:
@@ -289,6 +291,7 @@ class TestShapExplainer:
             background_series=background_series,
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
+            **explainer_kwargs,
         )
 
         # explain the foreground
@@ -445,6 +448,7 @@ class TestShapExplainer:
             background_series=background_series,
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
+            **explainer_kwargs,
         )
         assert loaded_explainer.n == loaded_model.output_chunk_length
 
@@ -534,6 +538,7 @@ class TestShapExplainer:
             background_series=background_series,
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
+            **explainer_kwargs,
         )
 
         # explain the foreground
@@ -741,6 +746,7 @@ class TestShapExplainer:
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
             shap_method=shap_method,
+            **explainer_kwargs,
         )
 
         # explain the foreground
@@ -939,6 +945,7 @@ class TestShapExplainer:
             background_series=background_series,
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
+            **explainer_kwargs,
         )
 
         # explain the foreground
@@ -1149,6 +1156,7 @@ class TestShapExplainer:
             background_series=background_series,
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
+            **explainer_kwargs,
         )
 
         # explain the foreground
@@ -1313,6 +1321,7 @@ class TestShapExplainer:
             background_series=background_series,
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
+            **explainer_kwargs,
         )
         results = explainer.explain(
             foreground_series=foreground_series,
@@ -1442,6 +1451,7 @@ class TestShapExplainer:
             background_series=background_series,
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
+            **explainer_kwargs,
         )
         results = explainer.explain(
             foreground_series=foreground_series,
@@ -1494,6 +1504,7 @@ class TestShapExplainer:
             background_series=background_series,
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
+            **explainer_kwargs,
         )
         results = explainer.explain_single(
             foreground_series=foreground_series,
@@ -1624,6 +1635,7 @@ class TestShapExplainer:
             background_series=background_series,
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
+            **explainer_kwargs,
         )
         results = explainer.explain_single()
 
@@ -1758,6 +1770,7 @@ class TestShapExplainer:
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
             shap_method=shap_method,
+            **explainer_kwargs,
         )
         results = explainer.explain_single(
             foreground_series=foreground_series,
@@ -1882,6 +1895,7 @@ class TestShapExplainer:
             background_series=background_series,
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
+            **explainer_kwargs,
         )
         results = explainer.explain_single(
             foreground_series=foreground_series,
@@ -2029,6 +2043,7 @@ class TestShapExplainer:
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
             background_num_samples=10,
+            **explainer_kwargs,
         )
 
         dict_shap_values = explainer.summary_plot(
@@ -2092,6 +2107,7 @@ class TestShapExplainer:
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
             background_num_samples=10,
+            **explainer_kwargs,
         )
 
         force_plot = explainer.force_plot(
@@ -2173,6 +2189,7 @@ class TestShapExplainer:
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
             background_num_samples=10,
+            **explainer_kwargs,
         )
 
         results = explainer.explain(
@@ -2192,6 +2209,32 @@ class TestShapExplainer:
                     shap_explanation_object[0], show=False
                 )
                 assert waterfall_plot is not None
+
+    @pytest.mark.parametrize(
+        "dtype_torch,dtype_np",
+        [
+            ("16-true", "float32"),
+            ("bf16-true", "float32"),
+            ("32-true", "float32"),
+            ("64-true", "float64"),
+        ],
+    )
+    def test_different_input_dtypes(self, dtype_torch, dtype_np):
+        dtype_kwargs = copy.deepcopy(kwargs)
+        dtype_kwargs["pl_trainer_kwargs"]["precision"] = dtype_torch
+        model = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=4,
+            **dtype_kwargs,
+        )
+
+        # fit the model
+        series = self.multivariate_series.astype(dtype_np)
+        model.fit(series=series[-20:])
+        explainer = ShapExplainer(model, **explainer_kwargs)
+        assert explainer.explainer.background_arr.dtype == dtype_np
+        # make sure that the explanation works for each dtype
+        _ = explainer.explain(self.multivariate_series[-10:])
 
     def test_validation_and_helper_branches(self):
         model = DLinearModel(
@@ -2275,6 +2318,7 @@ class TestShapExplainer:
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
             background_num_samples=10,
+            **explainer_kwargs,
         )
 
         assert {
@@ -2319,6 +2363,7 @@ class TestShapExplainer:
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
             background_num_samples=10,
+            **explainer_kwargs,
         )
 
         long_length = (
@@ -2354,9 +2399,31 @@ class TestShapExplainer:
         )
         assert sampled_background.shape[0] == MAX_BACKGROUND_SAMPLE
 
-    def test_invalid_model_type_check(self):
+    def test_invalid_model_or_shap_method(self):
         with pytest.raises(
             ValueError,
             match="Only models of type `SKLearnModel` or `TorchForecastingModel` are supported",
         ):
             ShapExplainer(NaiveSeasonal(K=1).fit(self.univariate_series))
+
+        model = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=4,
+            **kwargs,
+        )
+        # fit the model
+        model.fit(series=self.multivariate_series)
+        explainer = ShapExplainer(model)
+
+        with pytest.raises(
+            ValueError,
+            match="Only models of type `TorchForecastingModel` are supported.",
+        ):
+            explainer.explainer._validate_model(model=NaiveSeasonal(K=1))
+
+        with pytest.raises(ValueError, match="Unknown SHAP method `'invalid'`."):
+            explainer.explainer._build_explainer(
+                model=model,
+                background_arr=np.array([0.0]),
+                shap_method="invalid",
+            )

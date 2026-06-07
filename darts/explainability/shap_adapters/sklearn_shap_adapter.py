@@ -2,7 +2,11 @@ import numpy as np
 import pandas as pd
 import shap
 
-from darts.explainability.shap_adapters.shap_adapter import ShapAdapter, SHAPMethod
+from darts.explainability.shap_adapters.shap_adapter import (
+    MIN_BACKGROUND_SAMPLE,
+    ShapAdapter,
+    SHAPMethod,
+)
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
@@ -10,9 +14,6 @@ from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.multioutput import MultiOutputMixin
 
 logger = get_logger(__name__)
-
-MIN_BACKGROUND_SAMPLE = 10
-MAX_BACKGROUND_SAMPLE = 1000
 
 
 class SKLearnShapAdapter(ShapAdapter):
@@ -136,7 +137,12 @@ class SKLearnShapAdapter(ShapAdapter):
         elif shap_method == SHAPMethod.ADDITIVE:
             explainer = shap.AdditiveExplainer(model_sklearn, background_arr, **kwargs)
         else:
-            raise_log(ValueError(f"Unknown SHAP method {shap_method}"), logger=logger)
+            raise_log(
+                ValueError(
+                    f"Unknown SHAP method `'{shap_method}'`. Must be one of "
+                    f"{[el.name.lower() for el in self._supported_shap_methods]}"
+                )
+            )
 
         logger.info("The SHAP method used is of type: " + str(type(explainer)))
         return explainer
