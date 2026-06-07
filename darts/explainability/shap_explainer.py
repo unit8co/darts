@@ -133,8 +133,8 @@ class ShapExplainer(_ForecastingModelExplainer):
 
         Examples
         --------
-
         For ``SKLearnModel``:
+
         >>> from darts.datasets import AusBeerDataset
         >>> from darts.explainability import ShapExplainer
         >>> from darts.models import LinearRegressionModel
@@ -145,8 +145,12 @@ class ShapExplainer(_ForecastingModelExplainer):
         >>> explainer.summary_plot()
         >>> explainer.force_plot()
 
-        For ``TorchForecastingModel`` (extending the previous example):
+        For ``TorchForecastingModel``:
+
+        >>> from darts.datasets import AusBeerDataset
+        >>> from darts.explainability import ShapExplainer
         >>> from darts.models import TiDEModel
+        >>> series = AusBeerDataset().load().astype("float32")[:-36]
         >>> model = TiDEModel(input_chunk_length=12, output_chunk_length=1).fit(series)
         >>> explainer = ShapExplainer(model, batch_size=2048)
         >>> result = explainer.explain()
@@ -294,7 +298,6 @@ class ShapExplainer(_ForecastingModelExplainer):
         2008-04-01       29.418521        1.860425          -62.148784         -18.598769
         2008-07-01        5.371920      -13.905891          -24.253184          33.064478
         2008-10-01       -8.239364       -3.395013           13.642416          84.727725
-
         shape: (210, 4, 1), freq: QS-OCT, size: 6.56 KB
 
         The explanation has length 210, containing the feature SHAP values for all possible forecast start points
@@ -315,7 +318,6 @@ class ShapExplainer(_ForecastingModelExplainer):
         2008-04-01           473.0           420.0                 0.0                3.0
         2008-07-01           420.0           390.0                 3.0                6.0
         2008-10-01           390.0           410.0                 6.0                9.0
-
         shape: (210, 4, 1), freq: QS-OCT, size: 6.56 KB
 
         And also, we can get the raw `shap.Explanation` object for further processing:
@@ -492,7 +494,6 @@ class ShapExplainer(_ForecastingModelExplainer):
         >>> result.get_explanation()
                     Y_target_lag-2  Y_target_lag-1  month_futcov_lag-1  month_futcov_lag0
         2008-10-01       -8.239364       -3.395013           13.642416          84.727725
-
         shape: (1, 4, 1), freq: QS-OCT, size: 6.56 KB
 
         The explanation has length 210, containing the feature SHAP values for all possible forecast start points
@@ -503,7 +504,6 @@ class ShapExplainer(_ForecastingModelExplainer):
         >>> result.get_feature_values()
                     Y_target_lag-2  Y_target_lag-1  month_futcov_lag-1  month_futcov_lag0
         2008-10-01           390.0           410.0                 6.0                9.0
-
         shape: (1, 4, 1), freq: QS-OCT, size: 6.56 KB
 
         And also, we can get the raw `shap.Explanation` object for further processing:

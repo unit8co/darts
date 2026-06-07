@@ -1,3 +1,8 @@
+"""
+SKLearnModel Adapter for SHAP Explainer
+---------------------------------------
+"""
+
 import numpy as np
 import pandas as pd
 import shap

@@ -1,3 +1,8 @@
+"""
+TorchForecastingModel Adapter for SHAP Explainer
+------------------------------------------------
+"""
+
 from collections.abc import Sequence
 
 import numpy as np
