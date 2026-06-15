@@ -229,6 +229,10 @@ def _parallel_apply(
 
     """
 
+    if n_jobs == 1:
+        # avoid joblib.Parallel setup overhead for the common sequential case
+        return [fn(*sample, *fn_args, **fn_kwargs) for sample in iterator]
+
     from joblib import Parallel, delayed
 
     returned_data = Parallel(n_jobs=n_jobs)(

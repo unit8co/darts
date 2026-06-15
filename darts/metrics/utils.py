@@ -126,6 +126,8 @@ def classification_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     probabilities and categorical samples.
     """
 
+    params = signature(func).parameters
+
     @wraps(func)
     def wrapper_classification_support(*args, **kwargs):
         labels = kwargs.get(_PARAM_LABELS)
@@ -136,7 +138,6 @@ def classification_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                 labels = np.array(labels)
             kwargs[_PARAM_LABELS] = labels
 
-        params = signature(func).parameters
         if _PARAM_LABEL_REDUCTION in params:
             label_reduction = kwargs.get(
                 _PARAM_LABEL_REDUCTION, params[_PARAM_LABEL_REDUCTION].default
@@ -170,6 +171,8 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     evaluation regarding different ``TimeSeries`` (if the `n_jobs` parameter is not set 1).
     """
 
+    params = signature(func).parameters
+
     @wraps(func)
     def wrapper_multi_ts_support(*args, **kwargs):
         actual_series = (
@@ -183,7 +186,6 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             else args[1]
         )
 
-        params = signature(func).parameters
         n_jobs = kwargs.pop("n_jobs", params["n_jobs"].default)
         verbose = kwargs.pop("verbose", params["verbose"].default)
         name = kwargs.pop("name", params["name"].default)
@@ -333,9 +335,10 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     univariate metrics using a `component_reduction` subroutine passed as argument to the metric function.
     """
 
+    params = signature(func).parameters
+
     @wraps(func)
     def wrapper_multivariate_support(*args, **kwargs) -> METRIC_OUTPUT_TYPE:
-        params = signature(func).parameters
         # we can avoid checks about args and kwargs since the input is adjusted by the previous decorator
         actual_series = args[0]
         pred_series = args[1]
