@@ -3340,6 +3340,49 @@ class TestSimpleStatistics:
                 new_ts._values, self.values.max(axis=axis, keepdims=True)
             ).all()
 
+    def test_idxmin_idxmax_univariate_datetime(self):
+        idx = pd.date_range("2020-01-01", periods=5, freq="D")
+        values = np.array([3.0, 1.0, 4.0, 0.0, 2.0])
+        ts = TimeSeries(times=idx, values=values, components=["a"])
+
+        idxmin = ts.idxmin()
+        idxmax = ts.idxmax()
+        assert list(idxmin.index) == ["a"]
+        assert list(idxmax.index) == ["a"]
+        # minimum at position 3 (2020-01-04), maximum at position 2 (2020-01-03)
+        assert idxmin["a"] == pd.Timestamp("2020-01-04")
+        assert idxmax["a"] == pd.Timestamp("2020-01-03")
+
+    def test_idxmin_idxmax_multivariate(self):
+        idx = pd.date_range("2020-01-01", periods=3, freq="D")
+        values = np.array([[1.0, 0.0], [0.0, 0.0], [0.0, 1.0]])
+        ts = TimeSeries(times=idx, values=values, components=["a", "b"])
+
+        idxmin = ts.idxmin()
+        idxmax = ts.idxmax()
+        # first occurrence of the minimum, mirroring numpy
+        assert idxmin["a"] == pd.Timestamp("2020-01-02")
+        assert idxmin["b"] == pd.Timestamp("2020-01-01")
+        assert idxmax["a"] == pd.Timestamp("2020-01-01")
+        assert idxmax["b"] == pd.Timestamp("2020-01-03")
+
+    def test_idxmin_idxmax_range_index(self):
+        values = np.array([5.0, 3.0, 8.0, 1.0])
+        ts = TimeSeries(
+            times=pd.RangeIndex(start=10, stop=14, step=1),
+            values=values,
+            components=["x"],
+        )
+        assert ts.idxmin()["x"] == 13
+        assert ts.idxmax()["x"] == 12
+
+    def test_idxmin_idxmax_stochastic(self):
+        idx = pd.date_range("2020-01-01", periods=3, freq="D")
+        # sample 0 min at t=1, sample 1 min at t=2 — medians [3.0, 2.0, 1.5], min at t=2
+        values = np.array([[[2.0, 4.0]], [[1.0, 3.0]], [[3.0, 0.0]]])  # (3, 1, 2)
+        ts = TimeSeries(times=idx, values=values, components=["a"])
+        assert ts.idxmin()["a"] == pd.Timestamp("2020-01-03")
+
     def test_sum(self):
         for axis in range(3):
             new_ts = self.ts.sum(axis=axis)
