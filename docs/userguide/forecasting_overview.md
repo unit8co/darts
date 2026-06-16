@@ -290,7 +290,7 @@ In that case, train the model with the desired `likelihood` (e.g. `QuantileRegre
 
 Each Monte Carlo dropout pass yields one set of distribution parameters; Darts then draws one sample from that distribution per pass, so the resulting `num_samples` predictions reflect both epistemic uncertainty (different dropout masks) and aleatoric uncertainty (sampling from the predicted likelihood). You can then compute marginal quantiles, mean, std, etc. from those samples.
 
-> Note: `mc_dropout=True` and `predict_likelihood_parameters=True` should not be combined. `predict_likelihood_parameters=True` returns the *deterministic* parameters of the predicted distribution and bypasses the Monte Carlo sampling loop, so dropout has no observable effect on the output. See [issue #2105](https://github.com/unit8co/darts/issues/2105) for context.
+> Note: `mc_dropout=True` and `predict_likelihood_parameters=True` should not be combined. `predict_likelihood_parameters=True` is designed for use with `num_samples=1` to get the model's best estimate of the distribution parameters.
 
 
 ### Probabilistic regression models
