@@ -18,6 +18,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed `examples/14-transfer-learning.ipynb` raising a NaN error on the `air` dataset by calling `fill_missing_values(..., fill="auto")` to handle residual gaps in the raw `carrier_passengers.csv`. Closes [#3116](https://github.com/unit8co/darts/pull/3116) by [Jean-Baptiste Braun](https://github.com/jbbqqf).
 - Fixed `_ScaledDotProductAttention` float16 overflow in `masked_fill` under mixed precision training. [#3087](https://github.com/unit8co/darts/pull/3087) by [Robert Ruidisch](https://github.com/robrui).
 - Fixed a bug in `TimeSeries.quantile()` where the output dtype did not match the input series dtype for dtypes `float32` or `float16`. Now the dtype is correctly propagated. [#3124](https://github.com/unit8co/darts/pull/3124) by [Dennis Bader](https://github.com/dennisbader)
 - Optuna integration's `PyTorchLightningPruningCallback` for hyperparameter optimization of torch models is now natively available in Darts via `darts.utils.callbacks`. [#3114](https://github.com/unit8co/darts/pull/3114) by [Jakub Chłapek](https://github.com/jakubchlapek).
