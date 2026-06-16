@@ -4764,11 +4764,6 @@ class TimeSeries:
 
         If ``axis=1``, the static covariates and the hierarchy are discarded from the series.
 
-        .. note::
-            With ``axis=0`` the returned timestamp is the first entry of the
-            original ``time_index`` and **does not** correspond to the
-            timestamp of the actual minimum value. Use :func:`idxmin` to get
-            the timestamp at which each component attains its minimum.
 
         Parameters
         ----------
@@ -4799,11 +4794,6 @@ class TimeSeries:
 
         If ``axis=1``, the static covariates and the hierarchy are discarded from the series.
 
-        .. note::
-            With ``axis=0`` the returned timestamp is the first entry of the
-            original ``time_index`` and **does not** correspond to the
-            timestamp of the actual maximum value. Use :func:`idxmax` to get
-            the timestamp at which each component attains its maximum.
 
         Parameters
         ----------
@@ -4831,10 +4821,6 @@ class TimeSeries:
         finding the minimum, so the returned index is well-defined regardless
         of ``n_samples``.
 
-        Useful as a companion to :func:`min` because ``min(axis=0)`` returns a
-        single-row series whose timestamp is the *first* time index entry of
-        the original series, not the entry of the actual minimum (see
-        `issue #2696 <https://github.com/unit8co/darts/issues/2696>`_).
 
         Returns
         -------
@@ -4854,9 +4840,6 @@ class TimeSeries:
         b    0
         dtype: int64
         """
-        # Reduce samples first so the result is independent of stochasticity;
-        # using the median (rather than mean) keeps the returned index value
-        # an actual observed value when n_samples == 1.
         deterministic = (
             self._values
             if self.is_deterministic
@@ -4873,10 +4856,6 @@ class TimeSeries:
         finding the maximum, so the returned index is well-defined regardless
         of ``n_samples``.
 
-        Useful as a companion to :func:`max` because ``max(axis=0)`` returns a
-        single-row series whose timestamp is the *first* time index entry of
-        the original series, not the entry of the actual maximum (see
-        `issue #2696 <https://github.com/unit8co/darts/issues/2696>`_).
 
         Returns
         -------

@@ -11,7 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- Added `TimeSeries.idxmin()` and `TimeSeries.idxmax()`, returning a `pandas.Series` (indexed by component) of the time index value at which each component attains its minimum / maximum. Also clarified the docstrings of `min()` / `max()` to point users to these new helpers when they want the actual argmin/argmax timestamp. Closes [#2696](https://github.com/unit8co/darts/issues/2696).
+- Added `TimeSeries.idxmin()` and `TimeSeries.idxmax()`, returning a `pandas.Series` (indexed by component) of the time index value at which each component attains its minimum / maximum. Closes [#3115](https://github.com/unit8co/darts/pull/3115) by [Jean-Baptiste Braun](https://github.com/jbbqqf).
 
 **Fixed**
 

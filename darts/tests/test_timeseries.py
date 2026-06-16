@@ -3298,41 +3298,32 @@ class TestSimpleStatistics:
             ).all()
 
     def test_idxmin_idxmax_univariate_datetime(self):
-        # univariate, deterministic, datetime index — covers issue #2696
-        # where TimeSeries.min(axis=0) returns the first timestamp instead of
-        # the timestamp of the actual minimum.
         idx = pd.date_range("2020-01-01", periods=5, freq="D")
         values = np.array([3.0, 1.0, 4.0, 0.0, 2.0])
         ts = TimeSeries(times=idx, values=values, components=["a"])
 
-        # idxmin / idxmax return a pd.Series indexed by component name.
         idxmin = ts.idxmin()
         idxmax = ts.idxmax()
         assert list(idxmin.index) == ["a"]
         assert list(idxmax.index) == ["a"]
-        # The actual minimum is at position 3 (2020-01-04) and the maximum at
-        # position 2 (2020-01-03). This is the load-bearing assertion: it
-        # fails on master where users had to fall back to pd_dataframe()
-        # because TimeSeries provided no idx{min,max}.
+        # minimum at position 3 (2020-01-04), maximum at position 2 (2020-01-03)
         assert idxmin["a"] == pd.Timestamp("2020-01-04")
         assert idxmax["a"] == pd.Timestamp("2020-01-03")
 
     def test_idxmin_idxmax_multivariate(self):
-        # different argmin/argmax per component
         idx = pd.date_range("2020-01-01", periods=3, freq="D")
         values = np.array([[1.0, 0.0], [0.0, 0.0], [0.0, 1.0]])
         ts = TimeSeries(times=idx, values=values, components=["a", "b"])
 
         idxmin = ts.idxmin()
         idxmax = ts.idxmax()
-        # argmin returns first occurrence of the minimum, mirroring numpy.
+        # first occurrence of the minimum, mirroring numpy
         assert idxmin["a"] == pd.Timestamp("2020-01-02")
         assert idxmin["b"] == pd.Timestamp("2020-01-01")
         assert idxmax["a"] == pd.Timestamp("2020-01-01")
         assert idxmax["b"] == pd.Timestamp("2020-01-03")
 
     def test_idxmin_idxmax_range_index(self):
-        # RangeIndex-based series should return integer indices.
         values = np.array([5.0, 3.0, 8.0, 1.0])
         ts = TimeSeries(
             times=pd.RangeIndex(start=10, stop=14, step=1),
@@ -3343,16 +3334,9 @@ class TestSimpleStatistics:
         assert ts.idxmax()["x"] == 12
 
     def test_idxmin_idxmax_stochastic(self):
-        # For a stochastic series we reduce samples with the median first so
-        # the answer does not depend on how many samples were drawn.
-        rng = np.random.default_rng(0)
-        idx = pd.date_range("2020-01-01", periods=4, freq="D")
-        # Component "a" has its median minimum at t=2.
-        median_target = np.array([5.0, 3.0, 1.0, 2.0])
-        values = np.stack(
-            [median_target + rng.normal(0, 0.01, size=4) for _ in range(50)],
-            axis=-1,
-        )[:, None, :]
+        idx = pd.date_range("2020-01-01", periods=3, freq="D")
+        # sample 0 min at t=1, sample 1 min at t=2 — medians [3.0, 2.0, 1.5], min at t=2
+        values = np.array([[[2.0, 4.0]], [[1.0, 3.0]], [[3.0, 0.0]]])  # (3, 1, 2)
         ts = TimeSeries(times=idx, values=values, components=["a"])
         assert ts.idxmin()["a"] == pd.Timestamp("2020-01-03")
 
