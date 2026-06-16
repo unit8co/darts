@@ -21,16 +21,10 @@ import optuna
 
 if TORCH_AVAILABLE:
     import torch
-    from pytorch_lightning.callbacks import Callback, EarlyStopping
-
-    # hacky workaround found in https://github.com/Lightning-AI/pytorch-lightning/issues/17485
-    # to avoid import of both lightning and pytorch_lightning
-    class PatchedPruningCallback(
-        optuna.integration.PyTorchLightningPruningCallback, Callback
-    ):
-        pass
+    from pytorch_lightning.callbacks import EarlyStopping
 
     from darts.models import TCNModel
+    from darts.utils.callbacks import PyTorchLightningPruningCallback
     from darts.utils.likelihood_models.torch import GaussianLikelihood
 
 
@@ -62,7 +56,7 @@ class TestOptuna:
             include_year = trial.suggest_categorical("year", [False, True])
 
             # throughout training we'll monitor the validation loss for both pruning and early stopping
-            pruner = PatchedPruningCallback(trial, monitor="val_loss")
+            pruner = PyTorchLightningPruningCallback(trial, monitor="val_loss")
             early_stopper = EarlyStopping(
                 "val_loss", min_delta=0.001, patience=3, verbose=True
             )

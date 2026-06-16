@@ -18,7 +18,7 @@ if not TORCH_AVAILABLE:
         allow_module_level=True,
     )
 
-from darts.models import Chronos2Model, TimesFM2p5Model, TiRexModel
+from darts.models import Chronos2Model, PatchTSTFMModel, TimesFM2p5Model, TiRexModel
 
 
 def generate_series(n_variables: int, length: int, prefix: str):
@@ -422,6 +422,16 @@ class TestFoundationModel:
                 Chronos2Model,
                 "output_patch_embedding.*",
                 {"hub_model_name": "autogluon/chronos-2-small"},
+            ),
+            (
+                PatchTSTFMModel,
+                "*out_layer.*",
+                {
+                    "local_dir": Path(__file__).parent
+                    / "artefacts"
+                    / "patchtstfm"
+                    / "tiny_patchtst_fm"
+                },
             ),
         ]
         + (

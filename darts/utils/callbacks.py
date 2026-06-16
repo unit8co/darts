@@ -4,9 +4,19 @@ Callbacks for TorchForecastingModel
 """
 
 import sys
+import warnings
 
-from pytorch_lightning.callbacks import TQDMProgressBar
+from pytorch_lightning.callbacks import Callback, TQDMProgressBar
 from pytorch_lightning.callbacks.progress.tqdm_progress import Tqdm
+
+from darts.logging import get_logger, raise_log
+
+logger = get_logger(__name__)
+
+# system attr keys used to coordinate DDP pruning across processes
+_OPTUNA_EPOCH_KEY = "ddp_pl:epoch"
+_OPTUNA_INTERMEDIATE_VALUE = "ddp_pl:intermediate_value"
+_OPTUNA_PRUNED_KEY = "ddp_pl:pruned"
 
 
 class TFMProgressBar(TQDMProgressBar):
@@ -105,3 +115,164 @@ class TFMProgressBar(TQDMProgressBar):
             dynamic_ncols=True,
             file=sys.stdout,
         )
+
+
+# Adapted from optuna-integration (MIT License, Copyright (c) 2018 Preferred Networks, Inc.)
+# https://github.com/optuna/optuna-integration/blob/main/optuna_integration/pytorch_lightning/pytorch_lightning.py
+class PyTorchLightningPruningCallback(Callback):
+    """PyTorch Lightning callback to prune unpromising Optuna trials.
+
+    Reports the monitored metric to the Optuna trial after each validation epoch
+    and raises :class:`optuna.TrialPruned` when ``trial.should_prune()`` returns ``True``.
+
+    For distributed (DDP) training, :class:`~optuna.study.Study` must use RDB storage, and
+    :meth:`check_pruned` must be called manually after ``Trainer.fit()`` completes.
+
+    Parameters
+    ----------
+    trial
+        A :class:`~optuna.trial.Trial` corresponding to the current evaluation of the
+        objective function.
+    monitor
+        An evaluation metric for pruning, e.g., ``val_loss`` or
+        ``val_acc``. The metrics are obtained from the returned dictionaries from e.g.
+        ``lightning.pytorch.LightningModule.training_step`` or
+        ``lightning.pytorch.LightningModule.validation_epoch_end`` and the names thus depend on
+        how this dictionary is formatted.
+
+    Examples
+    --------
+    >>> import optuna
+    >>> from darts.utils.callbacks import PyTorchLightningPruningCallback
+    >>> def objective(trial):
+    ...     pruner = PyTorchLightningPruningCallback(trial, monitor="val_loss")
+    ...     model = TCNModel(..., pl_trainer_kwargs={"callbacks": [pruner]})
+    ...     model.fit(...)
+    """
+
+    def __init__(self, trial, monitor: str) -> None:
+        super().__init__()
+        self._trial = trial
+        self.monitor = monitor
+        self.is_ddp_backend = False
+
+    def on_fit_start(self, trainer, pl_module) -> None:
+        self.is_ddp_backend = trainer._accelerator_connector.is_distributed
+        if self.is_ddp_backend:
+            from optuna.storages._cached_storage import _CachedStorage
+            from optuna.storages._rdb.storage import RDBStorage
+
+            # If it were not for this block, fitting is started even if unsupported storage
+            # is used. Note that the ValueError is transformed into ProcessRaisedException inside
+            # torch.
+            if not (
+                isinstance(self._trial.study._storage, _CachedStorage)
+                and isinstance(self._trial.study._storage._backend, RDBStorage)
+            ):
+                raise_log(
+                    ValueError(
+                        "PyTorchLightningPruningCallback supports only "
+                        "optuna.storages.RDBStorage in DDP."
+                    ),
+                    logger,
+                )
+            # It is necessary to store intermediate values directly in the backend storage because
+            # they are not properly propagated to main process due to cached storage.
+            if trainer.is_global_zero:
+                self._trial.storage.set_trial_system_attr(
+                    self._trial._trial_id,
+                    _OPTUNA_INTERMEDIATE_VALUE,
+                    dict(),
+                )
+
+    def on_validation_end(self, trainer, pl_module) -> None:
+        import optuna
+
+        # Trainer calls on_validation_end for sanity check — skip to avoid double-reporting
+        # at epoch 0.
+        if trainer.sanity_checking:
+            return
+
+        current_score = trainer.callback_metrics.get(self.monitor)
+        if current_score is None:
+            warnings.warn(
+                f"The metric '{self.monitor}' is not in the evaluation logs for pruning. "
+                "Please make sure you set the correct metric name."
+            )
+            return
+
+        epoch = pl_module.current_epoch
+        should_stop = False
+
+        # Determine if the trial should be terminated in a single process.
+        if not self.is_ddp_backend:
+            self._trial.report(current_score.item(), step=epoch)
+            if not self._trial.should_prune():
+                return
+            raise_log(optuna.TrialPruned(f"Trial was pruned at epoch {epoch}."), logger)
+
+        # Determine if the trial should be terminated in a DDP.
+        if trainer.is_global_zero:
+            self._trial.report(current_score.item(), step=epoch)
+            should_stop = self._trial.should_prune()
+
+            # Update intermediate value in the storage.
+            _trial_id = self._trial._trial_id
+            _study = self._trial.study
+            _trial_system_attrs = _study._storage.get_trial_system_attrs(_trial_id)
+            intermediate_values = _trial_system_attrs.get(_OPTUNA_INTERMEDIATE_VALUE)
+            if intermediate_values is None:
+                return
+
+            intermediate_values[epoch] = current_score.item()
+            self._trial.storage.set_trial_system_attr(
+                self._trial._trial_id, _OPTUNA_INTERMEDIATE_VALUE, intermediate_values
+            )
+
+        # Terminate every process if any world process decides to stop.
+        should_stop = trainer.strategy.broadcast(should_stop)
+        trainer.should_stop = trainer.should_stop or should_stop
+        if not should_stop:
+            return
+
+        if trainer.is_global_zero:
+            # Update system_attr from global zero process.
+            self._trial.storage.set_trial_system_attr(
+                self._trial._trial_id, _OPTUNA_PRUNED_KEY, True
+            )
+            self._trial.storage.set_trial_system_attr(
+                self._trial._trial_id, _OPTUNA_EPOCH_KEY, epoch
+            )
+
+    def check_pruned(self) -> None:
+        """Raise :class:`optuna.TrialPruned` manually if pruned.
+
+        Currently, ``intermediate_values`` are not properly propagated between processes due to
+        storage cache. Therefore, necessary information is kept in ``trial.system_attrs`` when the
+        trial runs in a distributed situation. Please call this method right after calling
+        ``lightning.pytorch.Trainer.fit()``.
+        If a callback doesn't have any backend storage for DDP, this method does nothing.
+        """
+        import optuna
+        from optuna.storages._cached_storage import _CachedStorage
+
+        _trial_id = self._trial._trial_id
+        _study = self._trial.study
+        # Confirm if storage is not InMemory in case this method is called in a non-distributed
+        # situation by mistake.
+        if not isinstance(_study._storage, _CachedStorage):
+            return
+
+        _trial_system_attrs = _study._storage._backend.get_trial_system_attrs(_trial_id)
+        is_pruned = _trial_system_attrs.get(_OPTUNA_PRUNED_KEY)
+        intermediate_values = _trial_system_attrs.get(_OPTUNA_INTERMEDIATE_VALUE)
+
+        # Confirm if DDP backend is used in case this method is called from a non-DDP situation by
+        # mistake.
+        if intermediate_values is None:
+            return
+        for epoch, score in intermediate_values.items():
+            self._trial.report(score, step=int(epoch))
+        if is_pruned:
+            epoch = _trial_system_attrs.get(_OPTUNA_EPOCH_KEY)
+            raise_log(optuna.TrialPruned(f"Trial was pruned at epoch {epoch}."), logger)
