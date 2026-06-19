@@ -25,7 +25,6 @@ from darts.models import (
     LinearRegressionModel,
     NaiveSeasonal,
     SKLearnModel,
-    XGBModel,
 )
 from darts.tests.conftest import (
     GBM_AVAILABLE,
@@ -202,17 +201,17 @@ class TestShapExplainer:
                     **cb_test_params,
                 },
             },
-            {
-                "model_cls": XGBModel,
-                "config": {
-                    "lags": 4,
-                    "lags_past_covariates": [-1, -2, -3],
-                    "lags_future_covariates": [0],
-                    "output_chunk_length": 4,
-                    "add_encoders": add_encoders,
-                    **xgb_test_params,
-                },
-            },
+            # # TODO: add back test once raising min python version to 3.11
+            # {
+            #     "model_cls": XGBModel,
+            #     "config": {
+            #         "lags": 4,
+            #         "lags_past_covariates": [-1, -2, -3],
+            #         "lags_future_covariates": [0],
+            #         "output_chunk_length": 4,
+            #         "add_encoders": add_encoders,
+            #     },
+            # },
         ],
     )
     def test_gbm_creation(self, model):
@@ -803,13 +802,14 @@ class TestShapExplainer:
     @pytest.mark.parametrize(
         "config",
         [(LinearRegressionModel, {})]
+        # # TODO: add back test once raising min python version to 3.11
+        # + ([(XGBModel, {**xgb_test_params}})] if XGB_AVAILABLE else [])
         + (
             [
-                (XGBModel, {**xgb_test_params}),
                 (
                     LightGBMModel,
                     {"likelihood": "quantile", "quantiles": [0.5], **lgbm_test_params},
-                ),
+                )
             ]
             if GBM_AVAILABLE
             else []
@@ -818,7 +818,6 @@ class TestShapExplainer:
     def test_shap_selected_components(self, config):
         """Test selected components with and without Darts' MultiOutputRegressor"""
         model_cls, model_kwargs = config
-        # model_cls = XGBModel
         model = model_cls(
             lags=4,
             lags_past_covariates=2,
@@ -1301,7 +1300,8 @@ class TestShapExplainer:
             + (
                 [
                     (LightGBMModel, lgbm_test_params),
-                    (XGBModel, xgb_test_params),
+                    # # TODO: add back test once raising min python version to 3.11
+                    # (XGBModel, xgb_test_params),
                     (CatBoostModel, cb_test_params),
                 ]
                 if GBM_AVAILABLE
@@ -1410,7 +1410,8 @@ class TestShapExplainer:
             + (
                 [
                     (LightGBMModel, lgbm_test_params),
-                    (XGBModel, xgb_test_params),
+                    # # TODO: add back test once raising min python version to 3.11
+                    # (XGBModel, xgb_test_params),
                     (CatBoostModel, cb_test_params),
                 ]
                 if GBM_AVAILABLE
