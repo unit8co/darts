@@ -61,6 +61,7 @@ generate-api:
         ../darts/datasets/dataset_loaders.py \
         ../darts/explainability/explainability.py \
         ../darts/explainability/utils.py \
+        ../darts/explainability/shap_adapters/* \
         ../darts/models/components/* \
         ../darts/models/filtering/filtering_model.py \
         ../darts/models/forecasting/ensemble_model.py \

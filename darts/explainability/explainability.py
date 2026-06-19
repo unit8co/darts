@@ -66,6 +66,11 @@ class _ForecastingModelExplainer(ABC):
         test_stationarity
             Whether to raise a warning if not all `background_series` are stationary.
         """
+        if not isinstance(model, ForecastingModel):
+            raise_log(
+                ValueError("`model` must be a Darts `ForecastingModel` object."),
+                logger,
+            )
         if not model._fit_called:
             raise_log(
                 ValueError(
@@ -75,7 +80,7 @@ class _ForecastingModelExplainer(ABC):
             )
         self.model = model
         # default forecasting horizon
-        self.n: int | None = getattr(self.model, "output_chunk_length", None)
+        self.n: int = self.model.output_chunk_length or 1
 
         # check background input validity and process it
         (
@@ -83,10 +88,12 @@ class _ForecastingModelExplainer(ABC):
             self.background_past_covariates,
             self.background_future_covariates,
             self.target_components,
+            self.target_components_likelihood,
             self.static_covariates_components,
             self.past_covariates_components,
             self.future_covariates_components,
         ) = process_input(
+            n=self.n,
             model=model,
             input_type="background",
             series=background_series,
@@ -148,6 +155,7 @@ class _ForecastingModelExplainer(ABC):
         foreground_future_covariates: TimeSeriesLike | None = None,
     ):
         return process_input(
+            n=self.n,
             model=self.model,
             input_type="foreground",
             series=foreground_series,
@@ -171,6 +179,6 @@ class _ForecastingModelExplainer(ABC):
             horizons=horizons,
             fallback_horizon=self.n,
             target_components=target_components,
-            fallback_target_components=self.target_components,
+            fallback_target_components=self.target_components_likelihood,
             check_component_names=self.check_component_names,
         )

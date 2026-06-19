@@ -4,6 +4,7 @@ Explainability Utils
 """
 
 from collections.abc import Sequence
+from typing import Literal
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
@@ -14,10 +15,13 @@ from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
 
+_INPUT_TYPE = Literal["background", "foreground"]
+
 
 def process_input(
+    n: int,
     model: ForecastingModel,
-    input_type: str,
+    input_type: _INPUT_TYPE,
     series: TimeSeriesLike | None = None,
     past_covariates: TimeSeriesLike | None = None,
     future_covariates: TimeSeriesLike | None = None,
@@ -28,7 +32,16 @@ def process_input(
     requires_input: bool = True,
     requires_covariates_encoding: bool = False,
     test_stationarity: bool = False,
-):
+) -> tuple[
+    Sequence[TimeSeries],
+    Sequence[TimeSeries] | None,
+    Sequence[TimeSeries] | None,
+    Sequence[str],
+    Sequence[str],
+    Sequence[str] | None,
+    Sequence[str] | None,
+    Sequence[str] | None,
+]:
     """Helper function to process and check either of the background or foreground series input to
     `_ForecastingModelExplainer`.
 
@@ -41,6 +54,8 @@ def process_input(
 
     Parameters
     ----------
+    n
+        The forecast horizon (``output_chunk_length``) that the model was trained to predict.
     model
         any `ForecastingModel`.
     input_type
@@ -70,14 +85,6 @@ def process_input(
     test_stationarity
         Whether to raise a warning if not all components from the target `series` are stationary.
     """
-    if input_type not in ["background", "foreground"]:
-        raise_log(
-            ValueError(
-                f"Unknown `input_type='{input_type}'`. Must be one of ['background', 'foreground']."
-            ),
-            logger,
-        )
-
     # if any input is given, treat it as if the input was required
     if (
         series is not None
@@ -103,7 +110,7 @@ def process_input(
                 else "no `background_series` was provided at `Explainer` creation"
             )
             raise_log(
-                ValueError(f"`{input_type}_series` must be provided {error_msg}"),
+                ValueError(f"`{input_type}_series` must be provided when {error_msg}"),
                 logger,
             )
         series = fallback_series
@@ -113,7 +120,8 @@ def process_input(
     # if `requires_covariates_encoding=False`)
     else:
         if model.encoders.encoding_available:
-            past_covariates, future_covariates = model.generate_fit_encodings(
+            past_covariates, future_covariates = model.generate_fit_predict_encodings(
+                n=n,
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
@@ -134,6 +142,9 @@ def process_input(
         future_covariates=future_covariates,
     )
 
+    if not model.uses_static_covariates:
+        static_covariates_components = None
+
     _check_valid_input(
         model,
         input_type,
@@ -147,6 +158,14 @@ def process_input(
         requires_input=requires_input,
         test_stationarity=test_stationarity,
     )
+
+    likelihood = model.likelihood
+    if likelihood is not None:
+        target_components_likelihood = likelihood.component_names(
+            components=target_components
+        )
+    else:
+        target_components_likelihood = target_components
 
     # make sure to remove any encodings from covariates if downstream tasks require covariates without encodings
     if not requires_covariates_encoding and model.encoders.encoding_available:
@@ -177,6 +196,7 @@ def process_input(
         past_covariates,
         future_covariates,
         target_components,
+        target_components_likelihood,
         static_covariates_components,
         past_covariates_components,
         future_covariates_components,
@@ -287,7 +307,7 @@ def get_component_names(
 
 def _check_valid_input(
     model,
-    input_type: str,
+    input_type: _INPUT_TYPE,
     series: Sequence[TimeSeries],
     past_covariates: Sequence[TimeSeries] | None,
     future_covariates: Sequence[TimeSeries] | None,
@@ -300,19 +320,8 @@ def _check_valid_input(
 ):
     """Checks that the input is valid"""
     if test_stationarity and series is not None:
-        if not _test_stationarity(series):
-            logger.warning(
-                "At least one component of the target series is not stationary. "
-                "Beware of wrong interpretation of the chosen explainability."
-            )
+        _test_stationarity(series)
 
-    if input_type not in ["background", "foreground"]:
-        raise_log(
-            ValueError(
-                f"Unknown `input_type='{input_type}'`. Must be one of ['background', 'foreground']."
-            ),
-            logger,
-        )
     if past_covariates is not None:
         raise_if_not(
             len(series) == len(past_covariates),
@@ -364,5 +373,13 @@ def _check_valid_input(
         )
 
 
-def _test_stationarity(series: TimeSeriesLike):
-    return all([(stationarity_tests(bs[c]) for c in bs.components) for bs in series])
+def _test_stationarity(series: Sequence[TimeSeries]) -> bool:
+    for i, bs in enumerate(series):
+        for c in bs.components:
+            if not stationarity_tests(bs[c]):
+                logger.warning(
+                    f"At least component '{c}' of target series at index {i} is not stationary. "
+                    f"Beware of wrong interpretation of the chosen explainability."
+                )
+                return False
+    return True
