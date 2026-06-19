@@ -5,46 +5,55 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.44.1...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.45.0...master)
+
+### For users of the library:
+
+**Improved**
+
+**Fixed**
+
+**Dependencies**
+
+### For developers of the library:
+
+## [0.45.0](https://github.com/unit8co/darts/tree/0.45.0) (2026-06-19)
 
 ### For users of the library:
 
 **Improved**
 
 - Improvements to `ShapExplainer` : [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao) and [Dennis Bader](https://github.com/dennisbader).
-  - 🚀🚀 `ShapExplainer` can now also explain any `TorchForecastingModel` including regular torch models (`TiDEModel`, ...) as well as foundation models (`Chronos2`, ...). It supports global and local explanations and can output SHAP values for further analysis.
+  - 🚀🚀 Added support for explaining any `TorchForecastingModel` including regular torch models (`TiDEModel`, ...) as well as foundation models (`Chronos2`, ...). It supports global and local explanations and can output SHAP values for further analysis.
   - Added method `explain_single()` to explain a single model forecast in detail, in addition to the existing batched method `explain()`. This is useful for local explanations of individual predictions with reduced computational cost.
+  - Added support for explaining the forecasted likelihood parameter of probabilistic forecasts. For PyTorch models: all likelihoods are supported. For scikit-learn-like models: quantile and poisson regression are supported.
   - Method `summary_plot()` can now also be computed on any optional foreground series using parameters `foreground_series`, `foreground_past_covariates`, `foreground_future_covariates`.
-  - `ShapExplainer` can now also explain the forecasted likelihood parameter of probabilistic forecasts.
   - Added a new notebook for [Explainability of Forecasting Models](https://unit8co.github.io/darts/examples/28-Explainability-examples.html) including detailed usage examples of `ShapExplainer`.
   - 🔴 Renamed method `force_plot_from_ts()` to `force_plot()` to simplify.
-- 🚀🚀 Added new forecasting model `PatchTSTFMModel` : IBM's pre-trained ~260M-parameter foundational model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series forecasting without training and can output deterministic or probabilistic forecasts. [#3120](https://github.com/unit8co/darts/pull/3120) by [Dennis Bader](https://github.com/dennisbader).
-- Added `use_longer_projection_head` to `TimesFM2p5Model` to enable longer non-autoregressive prediction horizons (up to 1024 steps for `output_chunk_length + output_chunk_shift`). [#3121](https://github.com/unit8co/darts/pull/3121) by [Zhihao Dai](https://github.com/daidahao).
-- `TimeSeries.from_dataframe()` now supports time columns of type `pl.Date` for `polars.DataFrame`. [#3124](https://github.com/unit8co/darts/pull/3124) by [Dennis Bader](https://github.com/dennisbader)
-- Custom encoders now support functions that return multiple components. Simply pass such a function via the `"custom"` encoder key in the `add_encoders` model input parameter. [#3069](https://github.com/unit8co/darts/pull/3069) by [Moritz Waldleben](https://github.com/mwaldleben).
-- Improved the documentation for capturing model uncertainty using Monte Carlo Dropout in the [forecasting overiew user guide](https://unit8co.github.io/darts/userguide/forecasting_overview.html#capturing-model-uncertainty-using-monte-carlo-dropout). [#3117](https://github.com/unit8co/darts/pull/3117) by [Jean-Baptiste Braun](https://github.com/jbbqqf).
+- Improvements to forecasting models:
+  - 🚀 Added new forecasting model `PatchTSTFMModel` : IBM's pre-trained ~260M-parameter foundational model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series forecasting without training and can output deterministic or probabilistic forecasts. [#3120](https://github.com/unit8co/darts/pull/3120) by [Dennis Bader](https://github.com/dennisbader).
+  - Custom encoders now support functions that return multiple components. Simply pass such a function via the `"custom"` encoder key in the `add_encoders` model input parameter. [#3069](https://github.com/unit8co/darts/pull/3069) by [Moritz Waldleben](https://github.com/mwaldleben).
+  - Added `use_longer_projection_head` to `TimesFM2p5Model` to enable longer non-autoregressive prediction horizons (up to 1024 steps for `output_chunk_length + output_chunk_shift`). [#3121](https://github.com/unit8co/darts/pull/3121) by [Zhihao Dai](https://github.com/daidahao).
+  - Improved the documentation for capturing model uncertainty using Monte Carlo Dropout in the [forecasting overiew user guide](https://unit8co.github.io/darts/userguide/forecasting_overview.html#capturing-model-uncertainty-using-monte-carlo-dropout). [#3117](https://github.com/unit8co/darts/pull/3117) by [Jean-Baptiste Braun](https://github.com/jbbqqf).
+- Improvements to `TimeSeries` :
+  - `TimeSeries.from_dataframe()` now supports time columns of type `pl.Date` for `polars.DataFrame`. [#3124](https://github.com/unit8co/darts/pull/3124) by [Dennis Bader](https://github.com/dennisbader)
+- Other improvements:
+  - Optuna integration's `PyTorchLightningPruningCallback` for hyperparameter optimization of torch models is now natively available in Darts via `darts.utils.callbacks`. [#3114](https://github.com/unit8co/darts/pull/3114) by [Jakub Chłapek](https://github.com/jakubchlapek).
 
 **Fixed**
 
-- Fixed several bugs in `ShapExplainer` including mismatched SHAP method enum values, feature naming conventions, inconsistent instance count in `explain()`. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
-- Fixed a bug in explainability utils where stationarity tests were not properly conducted due to usage of `all()`. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
-- Fixed `_ScaledDotProductAttention` float16 overflow in `masked_fill` under mixed precision training. [#3087](https://github.com/unit8co/darts/pull/3087) by [Robert Ruidisch](https://github.com/robrui).
+- Fixed several bugs in `ShapExplainer` including mismatched SHAP method enum values, feature naming conventions, and inconsistent instance count in `explain()`. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
+- Fixed an issue in `TFTModel` where training under mixed precision resulted in float16 overflow. [#3087](https://github.com/unit8co/darts/pull/3087) by [Robert Ruidisch](https://github.com/robrui).
 - Fixed a bug in `TimeSeries.quantile()` where the output dtype did not match the input series dtype for dtypes `float32` or `float16`. Now the dtype is correctly propagated. [#3124](https://github.com/unit8co/darts/pull/3124) by [Dennis Bader](https://github.com/dennisbader)
-- Optuna integration's `PyTorchLightningPruningCallback` for hyperparameter optimization of torch models is now natively available in Darts via `darts.utils.callbacks`. [#3114](https://github.com/unit8co/darts/pull/3114) by [Jakub Chłapek](https://github.com/jakubchlapek).
-
-**Dependencies**
 
 ### For developers of the library:
 
-- Added `ShapSingleExplainabilityResult` class as the return type of `explain_single()` method in `ShapExplainer` and to store the SHAP results of a single instance explanation. This is in contrast to the existing `ShapExplainabilityResult` which stores results for batched explanations. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
 - Used GitHub Actions to publish the documentation to GitHub Pages, replacing the previous third-party branch-based deployment method. [#3107](https://github.com/unit8co/darts/pull/3107) by [Zhihao Dai](https://github.com/daidahao)
 - Removed `optuna-integration[pytorch-lightning]` from the testing dependencies. [#3114](https://github.com/unit8co/darts/pull/3114) by [Jakub Chłapek](https://github.com/jakubchlapek).
 
 ## [0.44.1](https://github.com/unit8co/darts/tree/0.44.1) (2026-05-05)
 
 ### For users of the library:
-
-**Improved**
 
 **Fixed**
 
@@ -74,6 +83,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For users of the library:
 
 **Improved**
+
 - 🚀🚀 Dramatically reduced import times by deferring heavy third-party dependencies (torch, sklearn, scipy, ...) until they are actually needed. This benefits cold-start scenarios (serverless functions, CLI tools, short-lived scripts), CI pipelines, and interactive development workflows where fast feedback loops matter. Here are some import speed-up examples: [#3066](https://github.com/unit8co/darts/pull/3066) by [Dennis Bader](https://github.com/dennisbader)
   - TimeSeries, metrics, datasets, data transformers: 8x faster (2.4 → 0.3 seconds)
   - Baseline models: 19x faster (5.7 → 0.3 seconds)
