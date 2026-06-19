@@ -71,7 +71,7 @@ from darts.explainability.explainability_result import (
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
-from darts.utils.utils import generate_index
+from darts.utils.utils import TORCH_AVAILABLE, generate_index
 
 if TYPE_CHECKING:
     from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
@@ -168,13 +168,14 @@ class ShapExplainer(_ForecastingModelExplainer):
             test_stationarity=test_stationarity,
         )
 
+        explainer_cls = None
         if isinstance(self.model, SKLearnModel):
             from darts.explainability.shap_adapters.sklearn_shap_adapter import (
                 SKLearnShapAdapter,
             )
 
             explainer_cls = SKLearnShapAdapter
-        else:
+        elif TORCH_AVAILABLE:
             # lazily import torch dependencies
             from darts.explainability.shap_adapters.torch_shap_adapter import (
                 TorchShapAdapter,
@@ -185,14 +186,15 @@ class ShapExplainer(_ForecastingModelExplainer):
 
             if isinstance(self.model, TorchForecastingModel):
                 explainer_cls = TorchShapAdapter
-            else:
-                raise_log(
-                    ValueError(
-                        f"Invalid `model` type: `{type(self.model)}`. Only models of type "
-                        f"`SKLearnModel` or `TorchForecastingModel` are supported."
-                    ),
-                    logger,
-                )
+
+        if explainer_cls is None:
+            raise_log(
+                ValueError(
+                    f"Invalid `model` type: `{type(self.model)}`. Only models of type "
+                    f"`SKLearnModel` or `TorchForecastingModel` are supported."
+                ),
+                logger,
+            )
 
         self.explainer = explainer_cls(
             model=self.model,
