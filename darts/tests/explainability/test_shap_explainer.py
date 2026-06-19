@@ -13,7 +13,7 @@ from numpy.testing import assert_array_equal
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.preprocessing import MinMaxScaler
 
-from darts import TimeSeries
+from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers import Scaler
 from darts.explainability.explainability_result import ShapExplainabilityResult
 from darts.explainability.shap_adapters.shap_adapter import MIN_BACKGROUND_SAMPLE
@@ -600,7 +600,12 @@ class TestShapExplainer:
         # stationary series does not warn
         with caplog.at_level(logging.WARNING):
             ShapExplainer(
-                m, background_series=sine_timeseries(length=20, column_name="foo")
+                m,
+                background_series=concatenate(
+                    [sine_timeseries(length=20, column_name="foo")]
+                    * self.target_ts.n_components,
+                    axis=1,
+                ),
             )
         assert expected_msg not in caplog.text
         caplog.clear()
@@ -608,7 +613,12 @@ class TestShapExplainer:
         # non-stationary series (with trend) warns
         with caplog.at_level(logging.WARNING):
             ShapExplainer(
-                m, background_series=linear_timeseries(length=20, column_name="foo")
+                m,
+                background_series=concatenate(
+                    [linear_timeseries(length=20, column_name="foo")]
+                    * self.target_ts.n_components,
+                    axis=1,
+                ),
             )
         assert expected_msg in caplog.text
         caplog.clear()
