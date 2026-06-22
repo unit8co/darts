@@ -10,8 +10,11 @@ This file contains several abstract classes:
 
 from abc import ABC
 
-from darts.logging import get_logger
+import numpy as np
+
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
+from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -199,3 +202,97 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
             self.pl_module_params["use_reversible_instance_norm"] = (
                 use_reversible_instance_norm
             )
+
+        # If `input_chunk_length` is None at model construction, we resolve it
+        # from the inference (or fit bootstrap) series and update it per call.
+        self._dynamic_input_chunk_length = (
+            self.model_params.get("input_chunk_length", None) is None
+        )
+
+    def _validate_runtime_input_chunk_length(self, input_chunk_length: int) -> None:
+        """Model-specific runtime validation hook for dynamic input chunk length."""
+
+    def _resolve_runtime_input_chunk_length(self, series) -> int:
+        series_seq = series2seq(series)
+        if series_seq is None or len(series_seq) == 0:
+            raise_log(
+                ValueError(
+                    "Cannot resolve `input_chunk_length` from an empty `series`."
+                ),
+                logger,
+            )
+        return max(len(ts) for ts in series_seq)
+
+    def _set_runtime_input_chunk_length(self, input_chunk_length: int) -> None:
+        self._validate_runtime_input_chunk_length(input_chunk_length)
+
+        # Update the active model-construction params used by dataset builders.
+        self.pl_module_params["input_chunk_length"] = input_chunk_length
+
+        # If model is already created, keep module state in sync for autoregression.
+        if self.model is not None:
+            self.model.input_chunk_length = input_chunk_length
+            try:
+                self.model.hparams["input_chunk_length"] = input_chunk_length
+            except Exception:
+                pass
+
+    def _update_runtime_input_chunk_length_from_series(self, series) -> None:
+        if not self._dynamic_input_chunk_length or series is None:
+            return
+
+        resolved_icl = self._resolve_runtime_input_chunk_length(series)
+        self._set_runtime_input_chunk_length(resolved_icl)
+
+    def fit(self, *args, **kwargs):
+        # Temporary bootstrap for inference-only workflows: resolve dynamic ICL
+        # before module initialization in `fit()`.
+        series = kwargs.get("series", args[0] if len(args) > 0 else None)
+        if self._dynamic_input_chunk_length and series is not None:
+            max_series_length = self._resolve_runtime_input_chunk_length(series)
+            # Sequential training datasets need room for both input and output windows.
+            resolved_icl = max(
+                1,
+                max_series_length
+                - (self.output_chunk_length + self.output_chunk_shift),
+            )
+            self._set_runtime_input_chunk_length(resolved_icl)
+        return super().fit(*args, **kwargs)
+
+    def predict(self, *args, **kwargs):
+        # For `predict(n, series=...)`, series is positional arg index 1.
+        series = kwargs.get("series", args[1] if len(args) > 1 else None)
+        if series is None:
+            series = self.training_series
+
+        self._update_runtime_input_chunk_length_from_series(series)
+        return super().predict(*args, **kwargs)
+
+    def _build_inference_dataset(
+        self, n, series, past_covariates, future_covariates, stride=0, bounds=None
+    ):
+        """Override to left-pad short series with NaN for inference.
+
+        Series shorter than ``input_chunk_length`` are padded with leading NaN values so that
+        foundation model inference works without callers needing to pre-pad manually. The
+        padding is identical to what :class:`VariableLengthTorchTrainingDataset` does during
+        training, so no special pre-processing is required for either path.
+        """
+        icl = self.input_chunk_length
+        padded = []
+        for ts in series:
+            pad_len = icl - len(ts)
+            if pad_len > 0:
+                pad_values = np.full(
+                    (pad_len, ts.n_components, ts.n_samples), np.nan, dtype=ts.dtype
+                )
+                ts = ts.prepend_values(pad_values)
+            padded.append(ts)
+        return super()._build_inference_dataset(
+            n=n,
+            series=padded,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            stride=stride,
+            bounds=bounds,
+        )

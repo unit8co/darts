@@ -131,10 +131,6 @@ class _TimesFM2p5Module(PLForecastingModule):
         else:
             self.output_patch_len = self.config.output_patch_len  # 128
 
-        # padding length for input target series to make its length a multiple of
-        # input_patch_len (32).
-        self.pad_len = -self.input_chunk_length % self.input_patch_len
-
         # define model submodules
         self.tokenizer = _ResidualBlock(self.config.tokenizer)
         self.stacked_xf = nn.ModuleList([
@@ -258,18 +254,20 @@ class _TimesFM2p5Module(PLForecastingModule):
 
         # `x_past`: (B, L, C)
         x_past, _, _ = x_in
+        past_length = x_past.shape[1]
 
         # TimesFM 2.5 is a univariate model and its inputs do not have a variable dimension,
         # so here we reshape `x_past` to (B * C, L)
-        x_past = x_past.permute(0, 2, 1).reshape(-1, self.input_chunk_length)
+        x_past = x_past.permute(0, 2, 1).reshape(-1, past_length)
 
         # We assume there are no missing values in x_past, so strip_leading_nans() and
         # linear_interpolation() are not needed here.
 
         # left-pad x_past with NaNs to make its length a multiple of input_patch_len (32)
         # `x_past` -> (B * C, Z)
-        if self.pad_len > 0:
-            x_past = F.pad(x_past, (self.pad_len, 0), value=float("nan"))
+        pad_len = -past_length % self.input_patch_len
+        if pad_len > 0:
+            x_past = F.pad(x_past, (pad_len, 0), value=float("nan"))
 
         # create mask for x_past
         # `x_mask`: (B * C, Z)
@@ -348,7 +346,7 @@ class _TimesFM2p5Module(PLForecastingModule):
 class TimesFM2p5Model(FoundationModel):
     def __init__(
         self,
-        input_chunk_length: int,
+        input_chunk_length: int | None,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
         use_longer_projection_head: bool = False,
@@ -403,6 +401,8 @@ class TimesFM2p5Model(FoundationModel):
         input_chunk_length
             Number of time steps in the past to take as a model input (per chunk). Applies to the target
             series, and past and/or future covariates (if the model supports it).
+            If set to ``None``, this value is resolved dynamically from the longest target series passed
+            to each :func:`predict()` call.
             For TimesFM 2.5, `input_chunk_length + output_chunk_length + output_chunk_shift` must be less than or equal
             to 16,384.
         output_chunk_length
@@ -641,18 +641,20 @@ class TimesFM2p5Model(FoundationModel):
 
         # validate `input_chunk_length` against model's maximum context_length
         context_length = config.context_limit
-        if (
-            input_chunk_length + output_chunk_length + output_chunk_shift
-            > context_length
-        ):
-            raise_log(
-                ValueError(
-                    f"`input_chunk_length` {input_chunk_length} plus `output_chunk_length` {output_chunk_length} "
-                    f"plus `output_chunk_shift` {output_chunk_shift} cannot be greater than model's maximum "
-                    f"context_length {context_length}"
-                ),
-                logger,
-            )
+        self._context_length_limit = context_length
+        if input_chunk_length is not None:
+            if (
+                input_chunk_length + output_chunk_length + output_chunk_shift
+                > context_length
+            ):
+                raise_log(
+                    ValueError(
+                        f"`input_chunk_length` {input_chunk_length} plus `output_chunk_length` {output_chunk_length} "
+                        f"plus `output_chunk_shift` {output_chunk_shift} cannot be greater than model's maximum "
+                        f"context_length {context_length}"
+                    ),
+                    logger,
+                )
 
         # validate `output_chunk_length` and `output_chunk_shift` against model's output limits
         self.use_longer_projection_head = use_longer_projection_head
@@ -701,6 +703,20 @@ class TimesFM2p5Model(FoundationModel):
 
         self.hf_connector = hf_connector
         super().__init__(**kwargs)
+
+    def _validate_runtime_input_chunk_length(self, input_chunk_length: int) -> None:
+        if (
+            input_chunk_length + self.output_chunk_length + self.output_chunk_shift
+            > self._context_length_limit
+        ):
+            raise_log(
+                ValueError(
+                    f"`input_chunk_length` {input_chunk_length} plus `output_chunk_length` {self.output_chunk_length} "
+                    f"plus `output_chunk_shift` {self.output_chunk_shift} cannot be greater than model's maximum "
+                    f"context_length {self._context_length_limit}"
+                ),
+                logger,
+            )
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}

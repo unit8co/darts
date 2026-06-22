@@ -268,6 +268,40 @@ class TestFoundationModel:
         "darts.models.components.huggingface_connector.hf_hub_download",
         side_effect=mock_download,
     )
+    def test_dynamic_input_chunk_length_updates_per_predict(self, mock_method):
+        model = Chronos2Model(
+            input_chunk_length=None,
+            output_chunk_length=1,
+            **tfm_kwargs,
+        )
+
+        # bootstrap model creation without fine-tuning
+        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+            model.fit(series=self.series[:21])
+            mock_fit.assert_not_called()
+
+        data_1 = [
+            generate_series(n_variables=2, length=4, prefix="d1"),
+            generate_series(n_variables=2, length=2, prefix="d1"),
+            generate_series(n_variables=2, length=3, prefix="d1"),
+        ]
+        preds_1 = model.predict(n=1, series=data_1)
+        assert len(preds_1) == len(data_1)
+        assert model.input_chunk_length == 4
+
+        data_2 = [
+            generate_series(n_variables=2, length=10, prefix="d2"),
+            generate_series(n_variables=2, length=7, prefix="d2"),
+            generate_series(n_variables=2, length=8, prefix="d2"),
+        ]
+        preds_2 = model.predict(n=1, series=data_2)
+        assert len(preds_2) == len(data_2)
+        assert model.input_chunk_length == 10
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
     def test_full_finetuning(self, mock_method, tmpdir):
         # 1. Enable Full Fine-tuning
         model = Chronos2Model(
@@ -409,6 +443,81 @@ class TestFoundationModel:
             )
 
             model.fit(self.series)
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (
+                Chronos2Model,
+                {
+                    "local_dir": Path(__file__).parent
+                    / "artefacts"
+                    / "chronos2"
+                    / "tiny_chronos2"
+                },
+                2e-5,
+            ),
+            (
+                PatchTSTFMModel,
+                {
+                    "local_dir": Path(__file__).parent
+                    / "artefacts"
+                    / "patchtstfm"
+                    / "tiny_patchtst_fm"
+                },
+                2e-5,
+            ),
+            (
+                TimesFM2p5Model,
+                {"hub_model_name": "google/timesfm-2.5-200m-pytorch"},
+                2e-5,
+            ),
+        ]
+        + (
+            [
+                (
+                    TiRexModel,
+                    {"hub_model_name": "NX-AI/TiRex", "accept_license": True},
+                    2e-5,
+                )
+            ]
+            if TIREX_AVAILABLE
+            else []
+        ),
+    )
+    def test_batch_vs_individual_inference_all_models(self, config):
+        """Checks batched and individual inference consistency for all foundation models."""
+        model_cls, kwargs, atol = config
+
+        icl, ocl = 18, 2
+        model = model_cls(
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            **kwargs,
+            **tfm_kwargs,
+        )
+
+        # initialize wrapper and pretrained model without fine-tuning
+        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+            model.fit(series=self.series[:40])
+            mock_fit.assert_not_called()
+
+        series_batch = [
+            self.series[:18],
+            self.series[2:17],
+            self.series[5:21],
+            self.series[11:29],
+        ]
+
+        pred_batch = model.predict(n=ocl, series=series_batch)
+        pred_individual = [model.predict(n=ocl, series=s) for s in series_batch]
+
+        assert len(pred_batch) == len(series_batch)
+        for pb, pi in zip(pred_batch, pred_individual):
+            vb = pb.all_values(copy=False)
+            vi = pi.all_values(copy=False)
+            np.testing.assert_allclose(vb, vi, rtol=0.0, atol=atol)
+            assert not np.isnan(vb).any()
 
     @pytest.mark.parametrize(
         "config",

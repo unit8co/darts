@@ -581,7 +581,7 @@ class _Chronos2Module(PLForecastingModule):
 class Chronos2Model(FoundationModel):
     def __init__(
         self,
-        input_chunk_length: int,
+        input_chunk_length: int | None,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
         likelihood: QuantileRegression | None = None,
@@ -643,6 +643,8 @@ class Chronos2Model(FoundationModel):
         input_chunk_length
             Number of time steps in the past to take as a model input (per chunk). Applies to the target
             series, and past and/or future covariates (if the model supports it).
+            If set to ``None``, this value is resolved dynamically from the longest target series passed
+            to each :func:`predict()` call.
             Maximum is 8192 for Chronos-2.
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
@@ -882,14 +884,9 @@ class Chronos2Model(FoundationModel):
 
         # validate `input_chunk_length` against model's context_length
         context_length = chronos_config["context_length"]
-        if input_chunk_length > context_length:
-            raise_log(
-                ValueError(
-                    f"`input_chunk_length` {input_chunk_length} cannot be greater than "
-                    f"model's context_length {context_length}"
-                ),
-                logger,
-            )
+        self._context_length_limit = context_length
+        if input_chunk_length is not None:
+            self._validate_runtime_input_chunk_length(input_chunk_length)
 
         # validate `output_chunk_length` and `output_chunk_shift` against model's prediction length
         prediction_length = (
@@ -929,6 +926,16 @@ class Chronos2Model(FoundationModel):
 
         self.hf_connector = hf_connector
         super().__init__(**kwargs)
+
+    def _validate_runtime_input_chunk_length(self, input_chunk_length: int) -> None:
+        if input_chunk_length > self._context_length_limit:
+            raise_log(
+                ValueError(
+                    f"`input_chunk_length` {input_chunk_length} cannot be greater than "
+                    f"model's context_length {self._context_length_limit}"
+                ),
+                logger,
+            )
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}
