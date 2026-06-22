@@ -570,6 +570,7 @@ class HorizonBasedTorchTrainingDataset(SequentialTorchTrainingDataset):
         return len(series) - ((self.min_lh - 1) * self.output_chunk_length + lh_idx)
 
 
+# TODO Might serve as a base for variable length fine-tuning of FoundationModel, but for now it is not used anymore
 class VariableLengthTorchTrainingDataset(TorchTrainingDataset):
     def __init__(
         self,
