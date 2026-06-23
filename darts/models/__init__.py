@@ -103,6 +103,7 @@ if TYPE_CHECKING:
         SKLearnClassifierModel as SKLearnClassifierModel,
     )
     from darts.models.forecasting.sklearn_model import SKLearnModel as SKLearnModel
+    from darts.models.forecasting.t0_model import T0Model as T0Model
     from darts.models.forecasting.tcn_model import TCNModel as TCNModel
     from darts.models.forecasting.tft_model import TFTModel as TFTModel
     from darts.models.forecasting.theta import FourTheta as FourTheta
@@ -184,6 +185,7 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     "PatchTSTFMModel": ("darts.models.forecasting.patchtst_fm_model", "(Py)Torch"),
     "TimesFM2p5Model": ("darts.models.forecasting.timesfm2p5_model", "(Py)Torch"),
     "TiRexModel": ("darts.models.forecasting.tirex_model", "(Py)Torch and/or TiRex-TS"),
+    "T0Model": ("darts.models.forecasting.t0_model", "(Py)Torch and/or tfc-t0"),
     # --- Forecasting: NeuralForecast ---
     "NeuralForecastModel": ("darts.models.forecasting.nf_model", "NeuralForecast"),
     # --- Forecasting: Prophet ---

@@ -175,6 +175,7 @@ optional = [
     "plotly>=6.5.2",
     "neuralforecast>=3.0.0",
     "tirex-ts>=1.4.0",
+    "tfc-t0>=0.1.2",
 ]
 release = [
     "bump-my-version==1.3.0",
