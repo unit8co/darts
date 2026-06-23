@@ -614,17 +614,8 @@ def _autolog(
         if active_run is None:
             return result
 
-        # Resolve `metric` arg (keyword is the common case; fall back to sig-bind)
         metric = kwargs.get("metric")
         metric_kwargs = kwargs.get("metric_kwargs") or {}
-        if metric is None:
-            try:
-                sig = inspect.signature(original)
-                bound = sig.bind(self, *args, **kwargs)
-                bound.apply_defaults()
-                metric = bound.arguments.get("metric")
-            except Exception:
-                pass
 
         # Derive metric name(s)
         if callable(metric):
