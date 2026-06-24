@@ -36,6 +36,7 @@ POLARS_AVAILABLE = _package_available("polars")
 PLOTLY_AVAILABLE = _package_available("plotly")
 IPYTHON_AVAILABLE = _package_available("IPython")
 TIREX_AVAILABLE = _package_available("tirex")
+MLFLOW_AVAILABLE = _package_available("mlflow")
 
 tfm_kwargs: dict[str, Any] = {
     "pl_trainer_kwargs": {
