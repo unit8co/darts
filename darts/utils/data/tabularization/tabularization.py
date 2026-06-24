@@ -837,7 +837,7 @@ def create_lagged_component_names(
     output_chunk_length: int = 1,
     concatenate: bool = True,
     use_static_covariates: bool = False,
-) -> tuple[list[list[str]], list[list[str]]]:
+) -> tuple[list[str], list[str]]:
     """
     Helper function called to retrieve the name of the features and labels arrays created with
     `create_lagged_data()`. The order of the features is the following:
