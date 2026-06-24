@@ -25,7 +25,7 @@ import pandas as pd
 import shap
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
