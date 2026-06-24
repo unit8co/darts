@@ -5,7 +5,6 @@ Base Torch Forecasting Model
 This file contains several abstract classes:
 
     * TorchForecastingModel is the super-class of all torch (deep learning) darts forecasting models.
-
     * PastCovariatesTorchModel(TorchForecastingModel) for torch models consuming only past-observed covariates.
     * FutureCovariatesTorchModel(TorchForecastingModel) for torch models consuming only future values of
       future covariates.
@@ -19,6 +18,7 @@ This file contains several abstract classes:
 
 import copy
 import datetime
+import fnmatch
 import inspect
 import os
 import shutil
@@ -66,6 +66,7 @@ from darts.utils.data import (
 from darts.utils.data.torch_datasets.utils import (
     TorchBatch,
     TorchInferenceDatasetOutput,
+    TorchTrainingDatasetOutput,
     TorchTrainingSample,
 )
 from darts.utils.historical_forecasts import (
@@ -146,6 +147,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         random_state: int | None = None,
         pl_trainer_kwargs: dict | None = None,
         show_warnings: bool = False,
+        enable_finetuning: bool | dict[str, list[str]] | None = None,
     ):
         """Pytorch Lightning (PL)-based Forecasting Model.
 
@@ -168,7 +170,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
-            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            of the name is formatted with the local date and time, while PID is the process ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
@@ -229,7 +231,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
-            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUs.
 
             For more info, see here:
             `trainer flags
@@ -266,6 +268,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
         """
         super().__init__(add_encoders=add_encoders)
         suppress_lightning_warnings(suppress_all=not show_warnings)
@@ -361,6 +375,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # pl_module_params must be set in __init__ method of TorchForecastingModel subclass
         self.pl_module_params: dict | None = None
+
+        # fine-tuning control
+        self._verify_enable_finetuning(enable_finetuning)
+        self.enable_finetuning = enable_finetuning
 
     @classmethod
     def _validate_model_params(cls, **kwargs):
@@ -499,7 +517,34 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     _get_runs_folder(self.work_dir, self.model_name), INIT_MODEL_NAME
                 )
             )
+        self._setup_finetuning(model)
         return model
+
+    def _setup_finetuning(self, model: PLForecastingModule):
+        """
+        Sets up the model for fine-tuning based on `self.enable_finetuning`.
+        """
+        # default behavior (None): all parameters are trainable
+        if self.enable_finetuning is None:
+            return
+
+        if isinstance(self.enable_finetuning, bool):
+            # boolean behavior; freeze all or none
+            patterns = []
+            make_trainable = not self.enable_finetuning
+        else:
+            # dict behavior; freeze or unfreeze only the given patterns
+            # guaranteed to only have on key-value pair from (verified at model creation)
+            mode = list(self.enable_finetuning)[0]
+            make_trainable = mode == "unfreeze"
+            patterns = self.enable_finetuning[mode]
+
+        # freeze (or unfreeze) the patterns and unfreeze (or freeze) the remaining parameters
+        for name, param in model.named_parameters():
+            if any(fnmatch.fnmatch(name, p) for p in patterns):
+                param.requires_grad = make_trainable
+            else:
+                param.requires_grad = not make_trainable
 
     def _setup_trainer(
         self,
@@ -612,9 +657,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         _raise_if_wrong_type(inference_dataset, TorchInferenceDataset)
 
-    @staticmethod
     def _validate_predict_sample(
-        train_sample: TorchTrainingSample, predict_sample: TorchInferenceDatasetOutput
+        self,
+        train_sample: TorchTrainingSample,
+        predict_sample: TorchInferenceDatasetOutput,
     ):
         """Validates that the predict sample matches a sample that the model was trained on.
 
@@ -697,6 +743,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         logger=logger,
                     )
 
+        # check dtype consistency within predict sample
+        self._verify_dtypes(predict_sample)
+
     def _verify_past_future_covariates(self, past_covariates, future_covariates):
         """
         Verify that any non-None covariates comply with the model type.
@@ -727,6 +776,69 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 ),
                 logger=logger,
             )
+
+    @staticmethod
+    def _verify_enable_finetuning(
+        enable_finetuning: bool | dict[str, list[str]] | None,
+    ) -> None:
+        """Verify the `enable_finetuning` input."""
+        if enable_finetuning is None or isinstance(enable_finetuning, bool):
+            return
+
+        # dict
+        keys = list(enable_finetuning.keys())
+        if len(keys) != 1 or keys[0] not in ["freeze", "unfreeze"]:
+            raise_log(
+                ValueError(
+                    "If `enable_finetuning` is a dict, it must contain exactly one key: 'freeze' or 'unfreeze'."
+                ),
+                logger,
+            )
+
+        patterns = enable_finetuning[keys[0]]
+        if not isinstance(patterns, list) or not all(
+            isinstance(p, str) for p in patterns
+        ):
+            raise_log(
+                ValueError(
+                    "The value of the `enable_finetuning` dict must be a list of strings (patterns)."
+                ),
+                logger,
+            )
+
+    def _verify_dtypes(
+        self,
+        sample: TorchTrainingDatasetOutput | TorchInferenceDatasetOutput,
+    ):
+        """Dataset output dtype checks.
+
+        Checks that all dataset output arrays have the same dtype, and whether the dtype matches
+        the one of the training dataset
+        """
+        observed_dtypes = set([el.dtype for el in sample if isinstance(el, np.ndarray)])
+        if len(observed_dtypes) != 1:
+            logger.warning(
+                f"Observed mixed data types in the dataset output: {observed_dtypes}. "
+                f"This might cause downstream issues when running the model. If so, make "
+                f"sure all your input data share the same data type (TimeSeries, static covariates, ...)."
+            )
+            return
+
+        if self.train_sample is not None:
+            expected_dtype = (
+                self.train_sample[0].dtype
+                if isinstance(self.train_sample[0], np.ndarray)
+                else None
+            )
+            current_dtype = observed_dtypes.pop()
+            if current_dtype is not expected_dtype:
+                logger.warning(
+                    f"Dataset output has a different data type than the dataset the model was trained on; "
+                    f"current data type: {current_dtype}, expected data type: {expected_dtype}. "
+                    f"This might cause downstream issues when running the model. If so, make "
+                    f"sure all your input data have the expected data type (TimeSeries, static covariates, ...)."
+                )
+        return
 
     def _update_covariates_use(self):
         """Based on the Forecasting class and the training_sample attribute, update the
@@ -1197,6 +1309,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         train_sample = train_dataset[0]
         # ignore sample weights [-2] for model dimensions
         train_sample_no_weight = train_sample[:-2] + train_sample[-1:]
+
+        # Test dtypes of sample
+        self._verify_dtypes(train_sample)
+
         if self.model is None:
             # build model based on the dimensions of the first series in the train set.
             self.train_sample = train_sample_no_weight
@@ -2468,6 +2584,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @property
     def _requires_training(self) -> bool:
         """Whether the model should be trained when calling a `fit*` method."""
+        # no training if fine-tuning is explicitly disabled
+        if self.enable_finetuning is False:
+            return False
         return True
 
     def _check_optimizable_historical_forecasts(

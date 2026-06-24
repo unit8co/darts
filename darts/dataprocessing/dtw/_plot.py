@@ -1,6 +1,4 @@
 import numpy as np
-import xarray as xr
-from matplotlib import pyplot as plt
 
 
 def plot(
@@ -39,6 +37,7 @@ def plot(
     args_series2
         Some keyword arguments to pass to `plot()` method for series2
     """
+    from matplotlib import pyplot as plt
 
     if new_plot:
         fig = plt.figure()
@@ -126,6 +125,7 @@ def plot_alignment(
     args_series2
         Some keyword arguments to pass to `plot()` method for series2
     """
+    import xarray as xr
 
     series1 = self.series1
     series2 = self.series2

@@ -1,7 +1,8 @@
 import copy
+import itertools
+import logging
 from datetime import date, timedelta
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
@@ -9,29 +10,64 @@ import shap
 import sklearn
 from dateutil.relativedelta import relativedelta
 from numpy.testing import assert_array_equal
+from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.preprocessing import MinMaxScaler
 
-from darts import TimeSeries
+from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers import Scaler
 from darts.explainability.explainability_result import ShapExplainabilityResult
-from darts.explainability.shap_explainer import MIN_BACKGROUND_SAMPLE, ShapExplainer
+from darts.explainability.shap_adapters.shap_adapter import MIN_BACKGROUND_SAMPLE
+from darts.explainability.shap_explainer import ShapExplainer
 from darts.models import (
     CatBoostModel,
     ExponentialSmoothing,
     LightGBMModel,
     LinearRegressionModel,
+    NaiveSeasonal,
     SKLearnModel,
 )
 from darts.tests.conftest import (
     GBM_AVAILABLE,
     LGBM_AVAILABLE,
 )
-from darts.utils.timeseries_generation import linear_timeseries
+from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
+from darts.utils.utils import generate_index
+
+xgb_test_params = {
+    "n_estimators": 1,
+    "max_depth": 1,
+    "max_leaves": 1,
+}
+lgbm_test_params = {
+    "n_estimators": 1,
+    "max_depth": 1,
+    "num_leaves": 2,
+    "verbosity": -1,
+}
+cb_test_params = {
+    "iterations": 1,
+    "depth": 1,
+    "verbose": -1,
+}
 
 
 def extract_year(index):
     """Return year of time index entry, normalized"""
     return (index.year - 1950) / 50
+
+
+class CallableAdditiveRegressor(BaseEstimator, RegressorMixin):
+    def fit(self, X, y):
+        self.n_features_in_ = X.shape[1]
+        self.bias_ = float(np.mean(y))
+        return self
+
+    def predict(self, X):
+        X = np.asarray(X)
+        return self.bias_ + X.sum(axis=1)
+
+    def __call__(self, X):
+        return self.predict(X)
 
 
 class TestShapExplainer:
@@ -48,7 +84,7 @@ class TestShapExplainer:
 
     date_start = date(2012, 12, 12)
     date_end = date(2014, 6, 5)
-    days = pd.date_range(date_start, date_end, freq="d")
+    days = pd.date_range(date_start, date_end, freq="D")
     N = len(days)
     eps_1 = np.random.normal(0, 1, N).astype("float32")
     eps_2 = np.random.normal(0, 1, N).astype("float32")
@@ -58,7 +94,7 @@ class TestShapExplainer:
     x_3 = np.zeros(N).astype("float32")
 
     days_past_cov = pd.date_range(
-        date_start, date_start + timedelta(days=N - 2), freq="d"
+        date_start, date_start + timedelta(days=N - 2), freq="D"
     )
 
     past_cov_1 = np.random.normal(0, 1, N - 1).astype("float32")
@@ -137,6 +173,9 @@ class TestShapExplainer:
         np.concatenate([fut_cov_1.reshape(-1, 1), fut_cov_2.reshape(-1, 1)], axis=1),
     )
 
+    model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
+    model_kwargs = lgbm_test_params if LGBM_AVAILABLE else {}
+
     @pytest.mark.skipif(not GBM_AVAILABLE, reason="requires gradient boosting models")
     @pytest.mark.parametrize(
         "model",
@@ -149,6 +188,7 @@ class TestShapExplainer:
                     "lags_future_covariates": [0],
                     "output_chunk_length": 4,
                     "add_encoders": add_encoders,
+                    **model_kwargs,
                 },
             },
             {
@@ -158,9 +198,10 @@ class TestShapExplainer:
                     "lags_past_covariates": [-1, -2, -6],
                     "lags_future_covariates": [0],
                     "output_chunk_length": 4,
+                    **cb_test_params,
                 },
             },
-            # # TODO: add back test once shap fixes issue https://github.com/shap/shap/issues/4184
+            # # TODO: add back test once raising min python version to 3.11
             # {
             #     "model_cls": XGBModel,
             #     "config": {
@@ -214,10 +255,10 @@ class TestShapExplainer:
         if m._supports_native_multioutput:
             # since xgboost > 2.1.0, model supports native multi-output regression
             # CatBoostModel supports multi-output for certain loss functions
-            assert isinstance(shap_explain.explainers.explainers, shap.explainers.Tree)
+            assert isinstance(shap_explain.explainer.explainer, shap.explainers.Tree)
         else:
             assert isinstance(
-                shap_explain.explainers.explainers[0][0], shap.explainers.Tree
+                shap_explain.explainer.explainer[0][0], shap.explainers.Tree
             )
 
         # Bad choice of shap explainer
@@ -228,7 +269,10 @@ class TestShapExplainer:
         # Model should be a SKLearnModel
         m = ExponentialSmoothing()
         m.fit(self.target_ts["price"])
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError,
+            match="Only models of type `SKLearnModel` or `TorchForecastingModel` are supported.",
+        ):
             ShapExplainer(m)
 
         # For now, multi_models=False not allowed
@@ -255,7 +299,7 @@ class TestShapExplainer:
             future_covariates=self.fut_cov_ts,
         )
         shap_explain = ShapExplainer(m)
-        assert isinstance(shap_explain.explainers.explainers, shap.explainers.Linear)
+        assert isinstance(shap_explain.explainer.explainer, shap.explainers.Linear)
 
         # ExtraTreesRegressor - also not a MultiOutputRegressor
         m = SKLearnModel(
@@ -271,7 +315,7 @@ class TestShapExplainer:
             future_covariates=self.fut_cov_ts,
         )
         shap_explain = ShapExplainer(m)
-        assert isinstance(shap_explain.explainers.explainers, shap.explainers.Tree)
+        assert isinstance(shap_explain.explainer.explainer, shap.explainers.Tree)
 
         # No past or future covariates
         m = LinearRegressionModel(
@@ -283,16 +327,16 @@ class TestShapExplainer:
         )
 
         shap_explain = ShapExplainer(m)
-        assert isinstance(shap_explain.explainers.explainers, shap.explainers.Linear)
+        assert isinstance(shap_explain.explainer.explainer, shap.explainers.Linear)
 
     def test_explain(self):
-        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
-        m = model_cls(
+        m = self.model_cls(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
             lags_future_covariates=[0],
             output_chunk_length=4,
             add_encoders=self.add_encoders,
+            **self.model_kwargs,
         )
         m.fit(
             series=self.target_ts,
@@ -388,47 +432,48 @@ class TestShapExplainer:
             "power_target_lag-2",
             "price_target_lag-1",
             "power_target_lag-1",
-            "0_past_cov_lag-3",
-            "1_past_cov_lag-3",
-            "2_past_cov_lag-3",
-            "darts_enc_pc_cyc_month_sin_past_cov_lag-3",
-            "darts_enc_pc_cyc_month_cos_past_cov_lag-3",
-            "darts_enc_pc_cyc_day_sin_past_cov_lag-3",
-            "darts_enc_pc_cyc_day_cos_past_cov_lag-3",
-            "darts_enc_pc_pos_relative_past_cov_lag-3",
-            "darts_enc_pc_cus_custom_past_cov_lag-3",
-            "0_past_cov_lag-2",
-            "1_past_cov_lag-2",
-            "2_past_cov_lag-2",
-            "darts_enc_pc_cyc_month_sin_past_cov_lag-2",
-            "darts_enc_pc_cyc_month_cos_past_cov_lag-2",
-            "darts_enc_pc_cyc_day_sin_past_cov_lag-2",
-            "darts_enc_pc_cyc_day_cos_past_cov_lag-2",
-            "darts_enc_pc_pos_relative_past_cov_lag-2",
-            "darts_enc_pc_cus_custom_past_cov_lag-2",
-            "0_past_cov_lag-1",
-            "1_past_cov_lag-1",
-            "2_past_cov_lag-1",
-            "darts_enc_pc_cyc_month_sin_past_cov_lag-1",
-            "darts_enc_pc_cyc_month_cos_past_cov_lag-1",
-            "darts_enc_pc_cyc_day_sin_past_cov_lag-1",
-            "darts_enc_pc_cyc_day_cos_past_cov_lag-1",
-            "darts_enc_pc_pos_relative_past_cov_lag-1",
-            "darts_enc_pc_cus_custom_past_cov_lag-1",
-            "0_fut_cov_lag0",
-            "1_fut_cov_lag0",
-            "hour_fut_cov_lag0",
-            "dayofweek_fut_cov_lag0",
-            "relative_idx_fut_cov_lag0",
+            "0_pastcov_lag-3",
+            "1_pastcov_lag-3",
+            "2_pastcov_lag-3",
+            "darts_enc_pc_cyc_month_sin_pastcov_lag-3",
+            "darts_enc_pc_cyc_month_cos_pastcov_lag-3",
+            "darts_enc_pc_cyc_day_sin_pastcov_lag-3",
+            "darts_enc_pc_cyc_day_cos_pastcov_lag-3",
+            "darts_enc_pc_pos_relative_pastcov_lag-3",
+            "darts_enc_pc_cus_custom_pastcov_lag-3",
+            "0_pastcov_lag-2",
+            "1_pastcov_lag-2",
+            "2_pastcov_lag-2",
+            "darts_enc_pc_cyc_month_sin_pastcov_lag-2",
+            "darts_enc_pc_cyc_month_cos_pastcov_lag-2",
+            "darts_enc_pc_cyc_day_sin_pastcov_lag-2",
+            "darts_enc_pc_cyc_day_cos_pastcov_lag-2",
+            "darts_enc_pc_pos_relative_pastcov_lag-2",
+            "darts_enc_pc_cus_custom_pastcov_lag-2",
+            "0_pastcov_lag-1",
+            "1_pastcov_lag-1",
+            "2_pastcov_lag-1",
+            "darts_enc_pc_cyc_month_sin_pastcov_lag-1",
+            "darts_enc_pc_cyc_month_cos_pastcov_lag-1",
+            "darts_enc_pc_cyc_day_sin_pastcov_lag-1",
+            "darts_enc_pc_cyc_day_cos_pastcov_lag-1",
+            "darts_enc_pc_pos_relative_pastcov_lag-1",
+            "darts_enc_pc_cus_custom_pastcov_lag-1",
+            "0_futcov_lag0",
+            "1_futcov_lag0",
+            "darts_enc_fc_dta_hour_futcov_lag0",
+            "darts_enc_fc_dta_dayofweek_futcov_lag0",
+            "darts_enc_fc_pos_relative_futcov_lag0",
         ]
 
         results = shap_explain.explain()
 
         # all the features explained are here, in the right order
-        assert [
-            results.get_explanation(i, "price").components.to_list() == components_list
-            for i in range(1, 5)
-        ]
+        for i in range(1, 5):
+            assert (
+                results.get_explanation(i, "price").components.to_list()
+                == components_list
+            )
 
         # No past or future covariates
         m = LinearRegressionModel(
@@ -443,12 +488,12 @@ class TestShapExplainer:
         assert isinstance(shap_explain.explain(), ShapExplainabilityResult)
 
     def test_explain_with_lags_future_covariates_series_of_same_length_as_target(self):
-        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
-        model = model_cls(
+        model = self.model_cls(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
             lags_future_covariates=[2],
             output_chunk_length=1,
+            **self.model_kwargs,
         )
 
         model.fit(
@@ -475,16 +520,16 @@ class TestShapExplainer:
         # Constructing future covariates TimeSeries that extends further into the future than the target series
         date_start = date(2012, 12, 12)
         date_end = date(2014, 6, 7)
-        days = pd.date_range(date_start, date_end, freq="d")
+        days = pd.date_range(date_start, date_end, freq="D")
         fut_cov = np.random.normal(0, 1, len(days)).astype("float32")
         fut_cov_ts = TimeSeries.from_times_and_values(days, fut_cov.reshape(-1, 1))
 
-        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
-        model = model_cls(
+        model = self.model_cls(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
             lags_future_covariates=[2],
             output_chunk_length=1,
+            **self.model_kwargs,
         )
 
         model.fit(
@@ -509,18 +554,18 @@ class TestShapExplainer:
         # Constructing covariates TimeSeries with older timestamps than target
         date_start = date(2012, 12, 10)
         date_end = date(2014, 6, 5)
-        days = pd.date_range(date_start, date_end, freq="d")
+        days = pd.date_range(date_start, date_end, freq="D")
         fut_cov = np.random.normal(0, 1, len(days)).astype("float32")
         fut_cov_ts = TimeSeries.from_times_and_values(days, fut_cov.reshape(-1, 1))
         past_cov = np.random.normal(0, 1, len(days)).astype("float32")
         past_cov_ts = TimeSeries.from_times_and_values(days, past_cov.reshape(-1, 1))
 
-        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
-        model = model_cls(
+        model = self.model_cls(
             lags=None,
             lags_past_covariates=[-1, -2],
             lags_future_covariates=[-1, -2],
             output_chunk_length=1,
+            **self.model_kwargs,
         )
 
         model.fit(
@@ -541,14 +586,50 @@ class TestShapExplainer:
             # that at the start of the target series we have sufficient information to explain the prediction.
             assert explanation.start_time() == self.target_ts.start_time()
 
-    def test_plot(self):
-        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
-        m_0 = model_cls(
+    def test_stationarity_warning(self, caplog):
+        m = self.model_cls(
+            lags=4,
+            **self.model_kwargs,
+        )
+        m.fit(series=self.target_ts)
+
+        expected_msg = (
+            "At least component 'foo' of target series at index 0 is not stationary."
+        )
+        # stationary series does not warn
+        with caplog.at_level(logging.WARNING):
+            ShapExplainer(
+                m,
+                background_series=concatenate(
+                    [sine_timeseries(length=20, column_name="foo")]
+                    * self.target_ts.n_components,
+                    axis=1,
+                ),
+            )
+        assert expected_msg not in caplog.text
+        caplog.clear()
+
+        # non-stationary series (with trend) warns
+        with caplog.at_level(logging.WARNING):
+            ShapExplainer(
+                m,
+                background_series=concatenate(
+                    [linear_timeseries(length=20, column_name="foo")]
+                    * self.target_ts.n_components,
+                    axis=1,
+                ),
+            )
+        assert expected_msg in caplog.text
+        caplog.clear()
+
+    def test_plot(self, mpl_safe_plotting):
+        m_0 = self.model_cls(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
             lags_future_covariates=[0],
             output_chunk_length=4,
             add_encoders=self.add_encoders,
+            **self.model_kwargs,
         )
         m_0.fit(
             series=self.target_ts,
@@ -560,7 +641,7 @@ class TestShapExplainer:
 
         # We need at least 5 points for force_plot
         with pytest.raises(ValueError):
-            shap_explain.force_plot_from_ts(
+            shap_explain.force_plot(
                 self.target_ts[100:104],
                 self.past_cov_ts[100:104],
                 self.fut_cov_ts[100:104],
@@ -568,7 +649,7 @@ class TestShapExplainer:
                 "power",
             )
 
-        fplot = shap_explain.force_plot_from_ts(
+        fplot = shap_explain.force_plot(
             self.target_ts[100:105],
             self.past_cov_ts[100:105],
             self.fut_cov_ts[100:105],
@@ -576,11 +657,10 @@ class TestShapExplainer:
             "power",
         )
         assert isinstance(fplot, shap.plots._force.BaseVisualizer)
-        plt.close()
 
         # no component name -> multivariate error
         with pytest.raises(ValueError):
-            shap_explain.force_plot_from_ts(
+            shap_explain.force_plot(
                 self.target_ts[100:108],
                 self.past_cov_ts[100:108],
                 self.fut_cov_ts[100:108],
@@ -589,7 +669,7 @@ class TestShapExplainer:
 
         # fake component
         with pytest.raises(ValueError):
-            shap_explain.force_plot_from_ts(
+            shap_explain.force_plot(
                 self.target_ts[100:108],
                 self.past_cov_ts[100:108],
                 self.fut_cov_ts[100:108],
@@ -599,7 +679,7 @@ class TestShapExplainer:
 
         # horizon 0
         with pytest.raises(ValueError):
-            shap_explain.force_plot_from_ts(
+            shap_explain.force_plot(
                 self.target_ts[100:108],
                 self.past_cov_ts[100:108],
                 self.fut_cov_ts[100:108],
@@ -608,7 +688,7 @@ class TestShapExplainer:
             )
 
         # Check the dimensions of returned values
-        dict_shap_values = shap_explain.summary_plot(show=False)
+        dict_shap_values = shap_explain.summary_plot(plot_kwargs={"show": False})
         # One nested dict per horizon
         assert len(dict_shap_values) == m_0.output_chunk_length
         # Size of nested dict match number of component
@@ -635,19 +715,18 @@ class TestShapExplainer:
         )
 
         shap_explain = ShapExplainer(m)
-        fplot = shap_explain.force_plot_from_ts(
+        fplot = shap_explain.force_plot(
             foreground_series=self.target_ts[100:105],
             horizon=1,
             target_component="power",
         )
         assert isinstance(fplot, shap.plots._force.BaseVisualizer)
-        plt.close()
 
     def test_feature_values_align_with_input(self):
-        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
-        model = model_cls(
+        model = self.model_cls(
             lags=4,
             output_chunk_length=1,
+            **self.model_kwargs,
         )
         model.fit(
             series=self.target_ts,
@@ -671,10 +750,10 @@ class TestShapExplainer:
         )
 
     def test_feature_values_align_with_raw_output_shap(self):
-        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
-        model = model_cls(
+        model = self.model_cls(
             lags=4,
             output_chunk_length=1,
+            **self.model_kwargs,
         )
         model.fit(
             series=self.target_ts,
@@ -698,12 +777,12 @@ class TestShapExplainer:
         ), "The shape of the feature values should be the same as the shap values"
 
     def test_shap_explanation_object_validity(self):
-        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
-        model = model_cls(
+        model = self.model_cls(
             lags=4,
             lags_past_covariates=2,
             lags_future_covariates=[1],
             output_chunk_length=1,
+            **self.model_kwargs,
         )
         model.fit(
             series=self.target_ts,
@@ -723,18 +802,22 @@ class TestShapExplainer:
     @pytest.mark.parametrize(
         "config",
         [(LinearRegressionModel, {})]
-        # # TODO: add back test once shap fixes issue https://github.com/shap/shap/issues/4184
-        # + ([(XGBModel, {})] if XGB_AVAILABLE else [])
+        # # TODO: add back test once raising min python version to 3.11
+        # + ([(XGBModel, {**xgb_test_params}})] if XGB_AVAILABLE else [])
         + (
-            [(LightGBMModel, {"likelihood": "quantile", "quantiles": [0.5]})]
-            if LGBM_AVAILABLE
+            [
+                (
+                    LightGBMModel,
+                    {"likelihood": "quantile", "quantiles": [0.5], **lgbm_test_params},
+                )
+            ]
+            if GBM_AVAILABLE
             else []
         ),
     )
     def test_shap_selected_components(self, config):
         """Test selected components with and without Darts' MultiOutputRegressor"""
         model_cls, model_kwargs = config
-        # model_cls = XGBModel
         model = model_cls(
             lags=4,
             lags_past_covariates=2,
@@ -749,8 +832,17 @@ class TestShapExplainer:
         )
         shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
+
+        lkl = model.likelihood
+        if lkl is not None:
+            target_components_lkl = lkl.component_names(
+                components=self.target_ts.components
+            )
+        else:
+            target_components_lkl = self.target_ts.components
+
         # check that explain() with selected components gives identical results
-        for comp in self.target_ts.components:
+        for comp in target_components_lkl:
             explanation_comp = shap_explain.explain(target_components=[comp])
             assert explanation_comp.available_components == [comp]
             assert explanation_comp.available_horizons == [1]
@@ -770,13 +862,19 @@ class TestShapExplainer:
                 and comp in explanation_comp.shap_explanation_object[1]
             )
 
+        # with likelihood, users must give the likelihood parameter name
+        if lkl is not None:
+            with pytest.raises(
+                ValueError,
+                match=r"Provide some valid components from: \['price_q0.500', 'power_q0.500'\]",
+            ):
+                _ = shap_explain.explain(
+                    target_components=[self.target_ts.components[0]]
+                )
+
     def test_shapley_with_static_cov(self):
         ts = self.target_ts_with_static_covs
-        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
-        model = model_cls(
-            lags=4,
-            output_chunk_length=1,
-        )
+        model = self.model_cls(lags=4, output_chunk_length=1, **self.model_kwargs)
         model.fit(
             series=ts,
         )
@@ -817,11 +915,7 @@ class TestShapExplainer:
             ]
 
     def test_shapley_multiple_series_with_different_static_covs(self):
-        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
-        model = model_cls(
-            lags=4,
-            output_chunk_length=1,
-        )
+        model = self.model_cls(lags=4, output_chunk_length=1, **self.model_kwargs)
         model.fit(
             series=self.target_ts_multiple_series_with_different_static_covs,
         )
@@ -839,7 +933,7 @@ class TestShapExplainer:
             comps_out = explained_forecast[1]["price"].columns.tolist()
             assert comps_out[-1] == "type_statcov_target_price"
 
-    def test_shap_regressor_component_specific_lags(self):
+    def test_shap_regressor_component_specific_lags(self, mpl_safe_plotting):
         model = LinearRegressionModel(
             lags={"price": [-3, -2], "power": [-1]},
             output_chunk_length=1,
@@ -873,15 +967,561 @@ class TestShapExplainer:
                 [np.arange(1, 29), np.arange(3, 31), np.arange(106, 161, 2)], axis=1
             ),
             columns=expected_columns,
+            index=generate_index(
+                end=ts.end_time() + ts.freq,
+                length=28,
+                freq=ts.freq,
+            ),
         )
 
         # check that the appropriate lags are extracted
-        assert all(shap_explain.explainers.background_X == expected_df)
+        assert all(shap_explain.explainer.background_arr == expected_df)
         assert model.lagged_feature_names == list(expected_df.columns)
 
         # check that explain() can be called
         explanation_results = shap_explain.explain()
-        plt.close()
         for comp in ts.components:
             comps_out = explanation_results.explained_forecasts[1][comp].columns
             assert all(comps_out == expected_columns)
+
+    def test_explain_single(self):
+        model = LinearRegressionModel(
+            lags=4,
+            output_chunk_length=3,
+        )
+        model.fit(series=self.target_ts)
+
+        explainer = ShapExplainer(model)
+        foreground_series = self.target_ts[-10:]
+        results = explainer.explain_single(
+            foreground_series=foreground_series,
+            target_components=["price", "power"],
+        )
+
+        components = {
+            f"{name}_target_lag-{lag + 1}"
+            for name in foreground_series.columns
+            for lag in range(abs(min(model.lags["target"])))
+        }
+
+        with pytest.raises(ValueError, match="component parameter is required"):
+            results.get_explanation(component=None)
+        with pytest.raises(ValueError, match='Component "test" is not available'):
+            results.get_explanation(component="test")
+
+        explanation = results.get_explanation(component="price")
+        assert isinstance(explanation, TimeSeries)
+        assert explanation.n_timesteps == model.output_chunk_length
+        assert set(explanation.components) == components
+        assert np.isfinite(explanation.values()).all()
+
+        prediction = model.predict(
+            n=model.output_chunk_length, series=foreground_series
+        )
+        assert isinstance(prediction, TimeSeries)
+        assert prediction.n_timesteps == explanation.n_timesteps
+
+        with pytest.raises(ValueError, match="component parameter is required"):
+            results.get_feature_values(component=None)
+        with pytest.raises(ValueError, match='Component "test" is not available'):
+            results.get_feature_values(component="test")
+
+        results = explainer.explain_single(
+            foreground_series=foreground_series,
+            target_components=["power"],
+        )
+
+        feature_values = results.get_feature_values(component="power")
+        assert isinstance(feature_values, TimeSeries)
+        assert feature_values.n_timesteps == 1
+        assert set(feature_values.components) == components
+        assert np.isfinite(feature_values.values()).all()
+
+        with pytest.raises(ValueError, match='Component "test" is not available'):
+            results.get_shap_explanation_object(component="test")
+
+        shap_explanation_object = results.get_shap_explanation_object(component="power")
+        explanation = results.get_explanation(component="power")
+        assert isinstance(shap_explanation_object, shap.Explanation)
+        assert_array_equal(shap_explanation_object.values, explanation.values())
+        assert_array_equal(shap_explanation_object.data[:1], feature_values.values())
+
+        shap_values_sum = explanation.values().sum(axis=1)
+        base_values = prediction["power"].values().ravel() - shap_values_sum
+        np.testing.assert_allclose(
+            shap_explanation_object.base_values,
+            base_values,
+            rtol=1e-5,
+            atol=1e-8,
+        )
+
+    def test_explain_single_univariate_target(self):
+        model = LinearRegressionModel(
+            lags=4,
+            output_chunk_length=3,
+        )
+        series = self.target_ts["price"]
+        foreground_series = series[-10:]
+
+        model.fit(series=series)
+        explainer = ShapExplainer(model)
+        results = explainer.explain_single(foreground_series=foreground_series)
+
+        explanation = results.get_explanation()
+        feature_values = results.get_feature_values()
+        shap_explanation_object = results.get_shap_explanation_object()
+
+        expected_components = {
+            f"price_target_lag-{lag + 1}"
+            for lag in range(abs(min(model.lags["target"])))
+        }
+
+        assert isinstance(explanation, TimeSeries)
+        assert explanation.n_timesteps == model.output_chunk_length
+        assert set(explanation.components) == expected_components
+        assert np.isfinite(explanation.values()).all()
+
+        assert isinstance(feature_values, TimeSeries)
+        assert feature_values.n_timesteps == 1
+        assert set(feature_values.components) == expected_components
+        assert np.isfinite(feature_values.values()).all()
+
+        assert isinstance(shap_explanation_object, shap.Explanation)
+        assert_array_equal(shap_explanation_object.values, explanation.values())
+        assert_array_equal(
+            shap_explanation_object.data,
+            np.repeat(feature_values.values(), model.output_chunk_length, axis=0),
+        )
+
+        prediction = model.predict(
+            n=model.output_chunk_length, series=foreground_series
+        )
+        shap_values_sum = explanation.values().sum(axis=1)
+        base_values = prediction.values().ravel() - shap_values_sum
+        np.testing.assert_allclose(
+            shap_explanation_object.base_values,
+            base_values,
+            rtol=1e-5,
+            atol=1e-8,
+        )
+
+    def test_explain_single_univariate_single_output(self):
+        model = LinearRegressionModel(
+            lags=4,
+            output_chunk_length=1,
+        )
+        series = self.target_ts["price"]
+        foreground_series = series[-10:]
+
+        model.fit(series=series)
+        explainer = ShapExplainer(model)
+        results = explainer.explain_single(foreground_series=foreground_series)
+
+        explanation = results.get_explanation()
+        feature_values = results.get_feature_values()
+        shap_explanation_object = results.get_shap_explanation_object()
+
+        assert explanation.n_timesteps == 1
+        assert feature_values.n_timesteps == 1
+        assert isinstance(shap_explanation_object, shap.Explanation)
+        assert_array_equal(shap_explanation_object.values, explanation.values())
+        assert_array_equal(shap_explanation_object.data, feature_values.values())
+
+    def test_explain_single_multioutput_regressor(self):
+        series = linear_timeseries(length=40, column_name="price").stack(
+            linear_timeseries(length=40, start_value=50, column_name="power")
+        )
+        model = SKLearnModel(
+            lags=2,
+            output_chunk_length=2,
+            model=sklearn.svm.LinearSVR(),
+        )
+        model.fit(series=series)
+
+        explainer = ShapExplainer(
+            model,
+            background_series=series[-20:],
+            shap_method="permutation",
+        )
+        results = explainer.explain_single(
+            foreground_series=series[-10:],
+            target_components=["price"],
+        )
+
+        explanation = results.get_explanation()
+        feature_values = results.get_feature_values()
+        shap_explanation_object = results.get_shap_explanation_object()
+
+        assert results.available_components == ["price"]
+        assert explanation.n_timesteps == model.output_chunk_length
+        assert feature_values.n_timesteps == 1
+        assert isinstance(shap_explanation_object, shap.Explanation)
+        assert_array_equal(shap_explanation_object.values, explanation.values())
+        assert_array_equal(shap_explanation_object.data[:1], feature_values.values())
+        assert shap_explanation_object.base_values.shape == (model.output_chunk_length,)
+
+    @pytest.mark.parametrize(
+        ("model", "shap_method", "kwargs", "expected_explainer"),
+        [
+            (
+                LinearRegressionModel(lags=2, output_chunk_length=1),
+                "linear",
+                {},
+                shap.explainers.Linear,
+            ),
+            (
+                LinearRegressionModel(lags=2, output_chunk_length=1),
+                "permutation",
+                {},
+                shap.explainers.Permutation,
+            ),
+            (
+                LinearRegressionModel(lags=2, output_chunk_length=1),
+                "partition",
+                {},
+                shap.explainers.Partition,
+            ),
+            (
+                SKLearnModel(
+                    lags=2,
+                    output_chunk_length=1,
+                    model=sklearn.tree.DecisionTreeRegressor(),
+                ),
+                "tree",
+                {"feature_perturbation": "interventional"},
+                shap.explainers.Tree,
+            ),
+            (
+                SKLearnModel(
+                    lags=2,
+                    output_chunk_length=1,
+                    model=CallableAdditiveRegressor(),
+                ),
+                "additive",
+                {},
+                shap.explainers.Additive,
+            ),
+        ],
+    )
+    def test_explicit_shap_methods(
+        self, model, shap_method, kwargs, expected_explainer
+    ):
+        series = linear_timeseries(length=40, column_name="price")
+        model.fit(series=series)
+
+        explainer = ShapExplainer(
+            model,
+            background_series=series[-20:],
+            shap_method=shap_method,
+            **kwargs,
+        )
+
+        assert isinstance(explainer.explainer.explainer, expected_explainer)
+
+    def test_gradient_shap_method_raises_builder_error(self):
+        series = linear_timeseries(length=40, column_name="price")
+        model = SKLearnModel(
+            lags=2,
+            output_chunk_length=1,
+            model=sklearn.dummy.DummyRegressor(),
+        )
+        model.fit(series=series)
+
+        with pytest.raises(ValueError, match="Invalid `shap_method='gradient'`"):
+            ShapExplainer(
+                model,
+                background_series=series[-20:],
+                shap_method="gradient",
+            )
+
+    def test_force_plot_defaults_to_single_component(self):
+        series = self.target_ts["price"]
+        model = LinearRegressionModel(
+            lags=4,
+            output_chunk_length=1,
+        )
+        model.fit(series=series)
+
+        shap_explain = ShapExplainer(model)
+        fplot = shap_explain.force_plot(
+            foreground_series=series[100:105],
+            horizon=1,
+        )
+
+        assert isinstance(fplot, shap.plots._force.BaseVisualizer)
+
+    def test_regression_shap_explainer_builder_and_background_sampling(self):
+        series = self.target_ts["price"]
+
+        linear_model = LinearRegressionModel(lags=1, output_chunk_length=1)
+        linear_model.fit(series=series)
+
+        too_small_background = linear_timeseries(
+            start_value=1,
+            end_value=MIN_BACKGROUND_SAMPLE,
+            length=MIN_BACKGROUND_SAMPLE,
+            column_name="price",
+        )
+        with pytest.raises(ValueError, match="background dataset is too small"):
+            ShapExplainer(
+                linear_model,
+                background_series=too_small_background,
+                shap_method="linear",
+            )
+
+        linear_explainer = ShapExplainer(
+            linear_model,
+            background_series=series[-20:],
+            background_num_samples=1,
+            shap_method="linear",
+        )
+        assert isinstance(linear_explainer.explainer.explainer, shap.explainers.Linear)
+        assert len(linear_explainer.explainer.background_arr) == 1
+
+        kernel_model = SKLearnModel(
+            lags=1,
+            output_chunk_length=1,
+            model=sklearn.dummy.DummyRegressor(),
+        )
+        kernel_model.fit(series=series)
+        kernel_explainer = ShapExplainer(
+            kernel_model,
+            background_series=series[-20:],
+            background_num_samples=1,
+        )
+        assert isinstance(kernel_explainer.explainer.explainer, shap.explainers.Kernel)
+        assert len(kernel_explainer.explainer.background_arr) == 1
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [[0.1, 0.5, 0.9], [0.5]],
+            [(LinearRegressionModel, {})]
+            + (
+                [
+                    (LightGBMModel, lgbm_test_params),
+                    # # TODO: add back test once raising min python version to 3.11
+                    # (XGBModel, xgb_test_params),
+                    (CatBoostModel, cb_test_params),
+                ]
+                if GBM_AVAILABLE
+                else []
+            ),
+        ),
+    )
+    def test_explain_probabilistic_model(self, config):
+        quantiles, (model_cls, model_kwargs) = config
+        series = self.target_ts
+        foreground_series = series[-20:]
+
+        model = model_cls(
+            lags=4,
+            output_chunk_length=2,
+            likelihood="quantile",
+            quantiles=quantiles,
+            **model_kwargs,
+        )
+        model.fit(series=series)
+
+        explainer = ShapExplainer(model)
+        results = explainer.explain(foreground_series=foreground_series)
+
+        assert model.likelihood is not None
+        likelihood_components = model.likelihood.component_names(series)
+        assert set(explainer.explainer.target_components_likelihood) == set(
+            likelihood_components
+        )
+
+        # pre-likelihood component names should not be available
+        with pytest.raises(ValueError, match='Component "price" is not available'):
+            results.get_explanation(horizon=1, component="price")
+
+        components = {
+            f"{name}_target_lag-{lag + 1}"
+            for name in series.columns
+            for lag in range(abs(min(model.lags["target"])))
+        }
+
+        valid_horizon = 2
+
+        # check explanation is returned for valid horizon, component, and input features
+        explanation = results.get_explanation(
+            horizon=valid_horizon, component=likelihood_components[0]
+        )
+        assert isinstance(explanation, TimeSeries)
+        assert set(explanation.components) == components
+        assert np.isfinite(explanation.values()).all()
+
+        # verify SHAP additivity: shap_values_sum + base_value ≈ prediction
+        pred = model.historical_forecasts(
+            series=foreground_series,
+            forecast_horizon=valid_horizon,
+            last_points_only=True,
+            overlap_end=True,
+            retrain=False,
+            predict_likelihood_parameters=True,
+        )
+        assert isinstance(pred, TimeSeries)
+        shap_values_sum = explanation.values().sum(axis=1)
+        base_values = pred[likelihood_components[0]].values().ravel() - shap_values_sum
+        np.testing.assert_allclose(base_values, base_values[0], rtol=1e-3, atol=1e-5)
+
+        # check feature values for valid horizon and component
+        feature_values = results.get_feature_values(
+            horizon=valid_horizon,
+            component=likelihood_components[0],
+        )
+        assert isinstance(feature_values, TimeSeries)
+        assert feature_values.n_timesteps == explanation.n_timesteps
+        assert set(feature_values.components) == components
+        assert np.isfinite(feature_values.values()).all()
+
+        # check shap explanation object for valid horizon and component
+        shap_explanation_object = results.get_shap_explanation_object(
+            horizon=valid_horizon,
+            component=likelihood_components[-1],
+        )
+        explanation = results.get_explanation(
+            horizon=valid_horizon, component=likelihood_components[-1]
+        )
+        assert isinstance(shap_explanation_object, shap.Explanation)
+        np.testing.assert_array_equal(
+            shap_explanation_object.values,
+            explanation.values(),
+        )
+        np.testing.assert_array_equal(
+            shap_explanation_object.data,
+            feature_values.values(),
+        )
+        shap_values_sum = explanation.values().sum(axis=1)
+        base_values = pred[likelihood_components[-1]].values().ravel() - shap_values_sum
+        np.testing.assert_allclose(
+            shap_explanation_object.base_values,
+            base_values,
+            rtol=1e-3,
+            atol=1e-5,
+        )
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [[0.1, 0.5, 0.9], [0.5]],
+            [(LinearRegressionModel, {})]
+            + (
+                [
+                    (LightGBMModel, lgbm_test_params),
+                    # # TODO: add back test once raising min python version to 3.11
+                    # (XGBModel, xgb_test_params),
+                    (CatBoostModel, cb_test_params),
+                ]
+                if GBM_AVAILABLE
+                else []
+            ),
+        ),
+    )
+    def test_explain_single_probabilistic_model(self, config):
+        quantiles, (model_cls, model_kwargs) = config
+        series = self.target_ts
+        foreground_series = series[-10:]
+
+        model = model_cls(
+            lags=4,
+            output_chunk_length=2,
+            likelihood="quantile",
+            quantiles=quantiles,
+            **model_kwargs,
+        )
+        model.fit(series=series)
+
+        explainer = ShapExplainer(model)
+        results = explainer.explain_single(
+            foreground_series=foreground_series,
+        )
+
+        assert model.likelihood is not None
+        likelihood_components = model.likelihood.component_names(series)
+        assert set(explainer.explainer.target_components_likelihood) == set(
+            likelihood_components
+        )
+
+        # pre-likelihood component names should not be available
+        with pytest.raises(ValueError, match='Component "price" is not available'):
+            results.get_explanation(component="price")
+
+        components = {
+            f"{name}_target_lag-{lag + 1}"
+            for name in series.columns
+            for lag in range(abs(min(model.lags["target"])))
+        }
+
+        explanation = results.get_explanation(component=likelihood_components[0])
+        assert isinstance(explanation, TimeSeries)
+        assert explanation.n_timesteps == model.output_chunk_length
+        assert set(explanation.components) == components
+        assert np.isfinite(explanation.values()).all()
+
+        prediction = model.predict(
+            n=model.output_chunk_length,
+            series=foreground_series,
+            predict_likelihood_parameters=True,
+        )
+        assert isinstance(prediction, TimeSeries)
+        assert prediction.n_timesteps == explanation.n_timesteps
+
+        with pytest.raises(ValueError, match="component parameter is required"):
+            results.get_feature_values(component=None)
+
+        feature_values = results.get_feature_values(component=likelihood_components[0])
+        assert isinstance(feature_values, TimeSeries)
+        assert feature_values.n_timesteps == 1
+        assert set(feature_values.components) == components
+        assert np.isfinite(feature_values.values()).all()
+
+        shap_explanation_object = results.get_shap_explanation_object(
+            component=likelihood_components[-1]
+        )
+        explanation = results.get_explanation(component=likelihood_components[-1])
+        assert isinstance(explanation, TimeSeries)
+        assert isinstance(shap_explanation_object, shap.Explanation)
+        np.testing.assert_array_equal(
+            shap_explanation_object.values,
+            explanation.values(),
+        )
+        np.testing.assert_array_equal(
+            shap_explanation_object.data[:1],
+            feature_values.values(),
+        )
+        shap_values_sum = explanation.values().sum(axis=1)
+        base_values = (
+            prediction[likelihood_components[-1]].values().ravel() - shap_values_sum
+        )
+        np.testing.assert_allclose(
+            shap_explanation_object.base_values,
+            base_values,
+            rtol=1e-3,
+            atol=1e-8,
+        )
+
+    def test_invalid_model_or_shap_method(self):
+        with pytest.raises(
+            ValueError,
+            match="`model` must be a Darts `ForecastingModel` object.",
+        ):
+            ShapExplainer(model=None)
+
+        model = LinearRegressionModel(lags=4)
+        model.fit(series=self.target_ts)
+        explainer = ShapExplainer(model)
+
+        with pytest.raises(
+            ValueError,
+            match="Only models of type `SKLearnModel` are supported.",
+        ):
+            explainer.explainer._validate_model(model=NaiveSeasonal(K=1))
+
+        with pytest.raises(ValueError, match="Unknown SHAP method `'invalid'`."):
+            explainer.explainer._build_explainer(
+                model=model,
+                background_arr=np.array([0.0]),
+                shap_method="invalid",
+            )

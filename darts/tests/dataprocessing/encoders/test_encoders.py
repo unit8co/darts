@@ -895,6 +895,16 @@ class TestEncoder:
             and (fc2.univariate_values() == np.arange(3, 10)).all()
         )
 
+        encoder_params = {"position": {"past": ["invalid"]}}
+        with pytest.raises(ValueError, match='Attribute must be `"relative"`.'):
+            _ = SequentialEncoder(
+                add_encoders=encoder_params,
+                input_chunk_length=input_chunk_length,
+                output_chunk_length=output_chunk_length,
+                takes_past_covariates=True,
+                takes_future_covariates=True,
+            )
+
     def test_callable_encoder(self):
         """Test `CallableIndexEncoder`"""
         ts = tg.linear_timeseries(length=24, freq="YE")
@@ -956,6 +966,84 @@ class TestEncoder:
 
         # check that the input series is not modified
         assert ts == ts_copy
+
+        encoder_params = {"custom": {"past": ["invalid"]}}
+        with pytest.raises(ValueError, match="Attribute must be a callable"):
+            _ = SequentialEncoder(
+                add_encoders=encoder_params,
+                input_chunk_length=input_chunk_length,
+                output_chunk_length=output_chunk_length,
+                takes_past_covariates=True,
+                takes_future_covariates=True,
+            )
+
+    def test_callable_encoder_multi_component_output(self):
+        """Test `CallableIndexEncoder` with a callable returning multiple components."""
+        ts = tg.linear_timeseries(length=24, freq="YE")
+
+        input_chunk_length = 12
+        output_chunk_length = 6
+
+        def index_year_and_shifted(index):
+            return np.stack([index.year, index.year - 1], axis=1)
+
+        def invalid_callable(index):
+            return index.year[0]
+
+        # ===> test callable index encoder with multi component output <===
+        # test invalid callable at encoder creation
+        with pytest.raises(
+            ValueError, match="Attribute must be a callable that accepts"
+        ):
+            _ = PastCallableIndexEncoder(
+                attribute=invalid_callable,
+                input_chunk_length=input_chunk_length,
+                output_chunk_length=output_chunk_length,
+            )
+
+        # test valid multi component callable
+        encoder_params = {
+            "custom": {
+                "past": [index_year_and_shifted],
+                "future": [index_year_and_shifted],
+            }
+        }
+        encs = SequentialEncoder(
+            add_encoders=encoder_params,
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            takes_past_covariates=True,
+            takes_future_covariates=True,
+        )
+
+        # train set
+        pc, fc = encs.encode_train(ts)
+        # past covariates
+        np.testing.assert_array_equal(
+            ts[:-output_chunk_length].time_index.year.values,
+            pc.values()[:, 0],
+        )
+        np.testing.assert_array_equal(
+            ts[:-output_chunk_length].time_index.year.values - 1,
+            pc.values()[:, 1],
+        )
+        # future covariates
+        np.testing.assert_array_equal(ts.time_index.year.values, fc.values()[:, 0])
+        np.testing.assert_array_equal(
+            ts.time_index.year.values - 1,
+            fc.values()[:, 1],
+        )
+        # verify number and names of components
+        assert pc.n_components == 2
+        assert list(pc.components) == [
+            "darts_enc_pc_cus_custom",
+            "darts_enc_pc_cus_custom_1",
+        ]
+        assert fc.n_components == 2
+        assert list(fc.components) == [
+            "darts_enc_fc_cus_custom",
+            "darts_enc_fc_cus_custom_1",
+        ]
 
     def test_transformer_single_series(self):
         def test_routine_cyclic(past_covs):
@@ -1194,6 +1282,20 @@ class TestEncoder:
                     assert abs(cov[cov_name].values(copy=False).max() - 2.5) < 10e-9
                 else:
                     assert abs(cov[cov_name].values(copy=False).max() - 1.0) < 10e-9
+
+    def test_transformer_invalid(self):
+        encoder_params = {
+            "datetime_attribute": {"past": ["month"]},
+            "transformer": "invalid",
+        }
+        with pytest.raises(ValueError, match="Transformer must be an instance of"):
+            _ = SequentialEncoder(
+                add_encoders=encoder_params,
+                input_chunk_length=11,
+                output_chunk_length=6,
+                takes_past_covariates=True,
+                takes_future_covariates=True,
+            )
 
     def helper_test_cyclic_encoder(
         self,

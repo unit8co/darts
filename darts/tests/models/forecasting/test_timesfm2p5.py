@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts.tests.conftest import TORCH_AVAILABLE
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -16,7 +16,6 @@ if not TORCH_AVAILABLE:
 from darts import TimeSeries, concatenate
 from darts.datasets import ElectricityConsumptionZurichDataset
 from darts.models import TimesFM2p5Model
-from darts.tests.conftest import tfm_kwargs
 from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
 from darts.utils.timeseries_generation import (
     gaussian_timeseries,
@@ -66,6 +65,8 @@ class TestTimesFM2p5Model:
     # maximum prediction length w/o triggering auto-regression where the results
     # would diverge from the original implementation due to different sampling methods
     max_prediction_length = 128
+    # maximum prediction length with longer projection head
+    max_prediction_length_longer_head = 1024
 
     # ---- Dummy Tests ---- #
     # univariate time series
@@ -166,7 +167,7 @@ class TestTimesFM2p5Model:
         # fit model w/o fine-tuning
         model.fit(series=self.ts_energy_train)
 
-        # predict on the validation inputs w/ covariates
+        # predict on the validation inputs
         pred = model.predict(
             n=self.max_prediction_length,
             predict_likelihood_parameters=probabilistic,
@@ -194,12 +195,57 @@ class TestTimesFM2p5Model:
         np.testing.assert_allclose(pred_np, original, rtol=1e-5, atol=1e-5)
 
     @pytest.mark.slow
-    def test_creation(self):
+    @pytest.mark.parametrize("probabilistic", [True, False])
+    def test_longer_projection_head(self, probabilistic: bool):
+        # load model
+        model = TimesFM2p5Model(
+            input_chunk_length=1024,  # maximum context length
+            output_chunk_length=self.max_prediction_length_longer_head,  # maximum prediction length w/o AR
+            use_longer_projection_head=True,  # use longer projection head for longer predictions
+            likelihood=(
+                QuantileRegression(quantiles=all_quantiles) if probabilistic else None
+            ),
+            **tfm_kwargs,
+        )
+        # fit model w/o fine-tuning
+        model.fit(series=self.ts_energy_train)
+
+        # predict on the validation inputs
+        pred = model.predict(
+            n=self.max_prediction_length_longer_head,
+            predict_likelihood_parameters=probabilistic,
+        )
+        assert isinstance(pred, TimeSeries)
+        assert pred.n_timesteps == self.max_prediction_length_longer_head
+
+        if probabilistic:
+            # check that we get the correct number of quantiles
+            assert pred.n_components == (
+                self.ts_energy_train.n_components * len(all_quantiles)
+            )
+        else:
+            # check that we get the correct number of variables
+            assert pred.n_components == self.ts_energy_train.n_components
+
+    @pytest.mark.slow
+    @pytest.mark.parametrize("use_longer_projection_head", [True, False])
+    def test_creation(self, use_longer_projection_head: bool):
+        # initialize model kwargs with TFM-specific parameters
+        model_kwargs = {}
+        model_kwargs.update(tfm_kwargs)
+
+        # `use_longer_projection_head` should default to `False` if not specified,
+        if use_longer_projection_head:
+            model_kwargs["use_longer_projection_head"] = True
+            max_prediction_length = self.max_prediction_length_longer_head
+        else:
+            max_prediction_length = self.max_prediction_length
+
         # can use shorter input/output chunk length than max
         model = TimesFM2p5Model(
             input_chunk_length=11,
             output_chunk_length=13,
-            **tfm_kwargs,
+            **model_kwargs,
         )
         model.fit(series=self.series)
         pred = model.predict(n=10, series=self.series)
@@ -211,24 +257,24 @@ class TestTimesFM2p5Model:
             TimesFM2p5Model(
                 input_chunk_length=self.context_limit,
                 output_chunk_length=11,
-                **tfm_kwargs,
+                **model_kwargs,
             )
 
         # cannot create longer output chunk length than max
         with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
             TimesFM2p5Model(
                 input_chunk_length=19,
-                output_chunk_length=self.max_prediction_length + 1,
-                **tfm_kwargs,
+                output_chunk_length=max_prediction_length + 1,
+                **model_kwargs,
             )
 
         # cannot create longer output chunk length + output chunk shift than max
         with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
             TimesFM2p5Model(
                 input_chunk_length=23,
-                output_chunk_length=self.max_prediction_length - 1,
+                output_chunk_length=max_prediction_length - 1,
                 output_chunk_shift=3,
-                **tfm_kwargs,
+                **model_kwargs,
             )
 
         # cannot use likelihood others than QuantileRegression
@@ -237,7 +283,7 @@ class TestTimesFM2p5Model:
                 input_chunk_length=29,
                 output_chunk_length=12,
                 likelihood=GaussianLikelihood(),
-                **tfm_kwargs,
+                **model_kwargs,
             )
 
         # cannot use quantiles other than those used in pre-training
@@ -248,7 +294,7 @@ class TestTimesFM2p5Model:
                 input_chunk_length=7,
                 output_chunk_length=6,
                 likelihood=QuantileRegression(quantiles=[0.23, 0.5, 0.77]),
-                **tfm_kwargs,
+                **model_kwargs,
             )
 
     @pytest.mark.slow

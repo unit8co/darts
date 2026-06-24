@@ -18,7 +18,7 @@ Time Series Made Easy in Python
 .. raw:: html
 
    <p align="center" style="margin-top: 20px;">
-       <a href="https://badge.fury.io/py/darts"><img src="https://badge.fury.io/py/u8darts.svg" alt="PyPI version"></a>
+       <a href="https://badge.fury.io/py/darts"><img src="https://badge.fury.io/py/darts.svg" alt="PyPI version"></a>
        <a href="https://anaconda.org/conda-forge/u8darts-all"><img src="https://img.shields.io/conda/vn/conda-forge/u8darts-all.svg" alt="Conda Version"></a>
        <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Supported versions">
        <a href="https://hub.docker.com/r/unit8/darts"><img src="https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date" alt="Docker Image Version"></a>
@@ -343,7 +343,7 @@ Features
 
 * **Forecast Start Shifting:** All global models support training and prediction on a shifted output window. This is useful for example for Day-Ahead Market forecasts, or when the covariates (or target series) are reported with a delay.
 
-* **Explainability:** Darts has the ability to *explain* some forecasting models using Shap values.
+* **Explainability:** Darts has the ability to *explain* some forecasting models using SHAP values.
 
 * **Data Processing:** Tools to easily apply (and revert) common transformations on time series data (scaling, filling missing values, differencing, boxcox, ...)
 
@@ -668,20 +668,32 @@ Our regression models are designed to predict continuous numerical values, makin
      - ✅ ✅ 🔴
      - ✅ ✅
      - ✅
-     - `Chronos-2 report <https://arxiv.org/abs/2510.15821>`_, `Amazon blog post <https://www.amazon.science/blog/introducing-chronos-2-from-univariate-to-universal-forecasting>`_
+     - `Chronos-2 paper <https://arxiv.org/abs/2510.15821>`_, `Amazon blog post <https://www.amazon.science/blog/introducing-chronos-2-from-univariate-to-universal-forecasting>`_
    * - `TimesFM2p5Model <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.timesfm2p5_model.html#darts.models.forecasting.timesfm2p5_model.TimesFM2p5Model>`_
      - ✅ ✅
      - 🔴 🔴 🔴
      - ✅ ✅
      - ✅
      - `TimesFM 1.0 paper <https://arxiv.org/abs/2310.10688>`_, `Google blog post <https://research.google/blog/a-decoder-only-foundation-model-for-time-series-forecasting>`_
+   * - `TiRexModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tirex_model.html#darts.models.forecasting.tirex_model.TiRexModel>`_
+     - ✅ ✅
+     - 🔴 🔴 🔴
+     - ✅ ✅
+     - ✅
+     - `TiRex paper <https://arxiv.org/abs/2505.23719>`_, `TiRex GitHub <https://github.com/NX-AI/tirex>`_
+   * - `PatchTSTFMModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.patchtst_fm_model.html#darts.models.forecasting.patchtst_fm_model.PatchTSTFMModel>`_
+     - ✅ ✅
+     - 🔴 🔴 🔴
+     - ✅ ✅
+     - ✅
+     - `PatchTST-FM paper <https://arxiv.org/abs/2602.06909>`_, `PatchTST-FM Github <https://github.com/ibm-granite/granite-tsfm>`_
    * - **Ensemble Models** (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_): Model support is dependent on ensembled forecasting models and the ensemble model itself
      -
      -
      -
      -
      -
-   * - `NaiveEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel>`_
+   * - `NaiveEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.naive_ensemble_model.html#darts.models.forecasting.naive_ensemble_model.NaiveEnsembleModel>`_
      - ✅ ✅
      - ✅ ✅ ✅
      - ✅ ✅

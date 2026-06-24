@@ -24,7 +24,6 @@ clean:
 	@rm -rf "./$(SOURCEDIR)/quickstart"
 	@rm -rf "./$(SOURCEDIR)/userguide"
 	@rm -rf "./$(SOURCEDIR)/release_notes"
-	@rm -rf "./$(SOURCEDIR)/README.rst"
 
 copy-examples:
 	@echo "[Makefile] copying examples..."
@@ -38,16 +37,14 @@ copy-quickstart:
 	@cp -r ../examples/static "$(SOURCEDIR)/quickstart/"
 
 generate-release_notes:
-	@echo "[Makefile] generating RELEASE_NOTES rst file..."
+	@echo "[Makefile] copying RELEASE_NOTES markdown file..."
 	@mkdir -p "$(SOURCEDIR)/release_notes"
-	@m2r2 ../CHANGELOG.md
-	@mv ../CHANGELOG.rst "$(SOURCEDIR)/release_notes/RELEASE_NOTES.rst"
+	@cp ../CHANGELOG.md "$(SOURCEDIR)/release_notes/RELEASE_NOTES.md"
 
 generate-userguide:
-	@echo "[Makefile] generating userguide rst files..."
-	@find $(USERGUIDEDIR)/*.md -exec m2r2 {} \;
+	@echo "[Makefile] copying userguide markdown files..."
 	@mkdir -p "$(SOURCEDIR)/userguide"
-	@mv $(USERGUIDEDIR)/*.rst "$(SOURCEDIR)/userguide/"
+	@cp $(USERGUIDEDIR)/*.md "$(SOURCEDIR)/userguide/"
 	@cp -r "$(USERGUIDEDIR)/images" "$(SOURCEDIR)/userguide/"
 
 generate-api:
@@ -64,6 +61,7 @@ generate-api:
         ../darts/datasets/dataset_loaders.py \
         ../darts/explainability/explainability.py \
         ../darts/explainability/utils.py \
+        ../darts/explainability/shap_adapters/* \
         ../darts/models/components/* \
         ../darts/models/filtering/filtering_model.py \
         ../darts/models/forecasting/ensemble_model.py \
@@ -85,7 +83,7 @@ generate-api:
 html:
 	# Note: this target has to be called "html" because its name is given as an argument to Sphinx
 	@echo "[Makefile] generating HTML pages using sphinx-build..."
-	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O) -j auto
 
 build-all-docs: clean copy-examples copy-quickstart generate-release_notes generate-userguide generate-api html
 build-api: clean generate-api html

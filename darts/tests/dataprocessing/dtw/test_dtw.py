@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
@@ -208,11 +207,10 @@ class TestDynamicTimeWarping:
 
             dtw.dtw(series1, series2)
 
-    def test_plot(self):
+    def test_plot(self, mpl_safe_plotting):
         align = dtw.dtw(self.series2, self.series1)
         align.plot()
         align.plot_alignment()
-        plt.close()
 
     def test_multivariate(self):
         n = 2

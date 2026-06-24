@@ -12,6 +12,7 @@ if not TORCH_AVAILABLE:
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+import torch
 import torch.nn as nn
 from torch.nn import MSELoss
 
@@ -432,6 +433,82 @@ class TestTFTModel:
             **tfm_kwargs,
         )
         model.fit(series, epochs=1)
+        preds = model.predict(n=3, series=series)
+        assert len(preds) == 3
+        assert np.all(np.isfinite(preds.values()))
+
+    def test_relative_index_and_attention_mask_follow_device_transfer(self):
+        """Regression test for https://github.com/unit8co/darts/issues/3052.
+
+        attention_mask and relative_index must be registered buffers so that
+        they are moved when the model is transferred to a different device/dtype.
+        """
+        model = TFTModel(
+            input_chunk_length=4,
+            output_chunk_length=2,
+            add_relative_index=True,
+            n_epochs=1,
+            **tfm_kwargs,
+        )
+        series = tg.linear_timeseries(length=20).astype("float32")
+        model.fit(series, verbose=False)
+
+        inner = model.model
+        # After training, cached tensors should exist
+        assert inner.attention_mask is not None
+        assert inner.relative_index is not None
+        assert inner.relative_index.dtype == torch.float32
+
+        # Verify they are registered buffers (not plain attributes)
+        assert "attention_mask" in dict(inner.named_buffers())
+        assert "relative_index" in dict(inner.named_buffers())
+
+        # Device transfer is tested via dtype changes since CI has no GPU.
+        # .to(dtype) exercises the same _apply codepath as .to(device).
+        # Note: attention_mask is bool and unaffected by dtype changes,
+        # but it would be moved by an actual device transfer.
+
+        # Transfer to float64 — buffers must follow
+        inner.to(torch.float64)
+        assert inner.relative_index.dtype == torch.float64
+
+        # Transfer back to float32 — buffers must follow again
+        inner.to(torch.float32)
+        assert inner.relative_index.dtype == torch.float32
+
+        # Prediction with the same batch_size_last must work after transfer.
+        # Before the fix, this would fail with a device/dtype mismatch because
+        # the cached tensors were plain attributes not moved by .to().
+        preds = model.predict(n=2, series=[series] * inner.batch_size_last)
+        assert len(preds) == inner.batch_size_last
+
+    @pytest.mark.skipif(
+        not torch.cuda.is_available(),
+        reason="true '16-mixed' precision requires CUDA; on CPU-only CI Lightning "
+        "falls back to bf16-mixed and does not reproduce issue #3081.",
+    )
+    def test_mixed_precision_attention_mask(self):
+        """Regression test for https://github.com/unit8co/darts/issues/3081.
+
+        _ScaledDotProductAttention must not overflow float16 during masked_fill
+        under PyTorch Lightning mixed precision (16-mixed) training.
+        The fix uses torch.finfo(attn.dtype).min instead of hardcoded -1e9.
+        """
+        train_kwargs = dict(tfm_kwargs, add_relative_index=True)
+        train_kwargs["pl_trainer_kwargs"] = dict(
+            train_kwargs["pl_trainer_kwargs"],
+            accelerator="gpu",
+            precision="16-mixed",
+        )
+        model = TFTModel(
+            input_chunk_length=4,
+            output_chunk_length=2,
+            n_epochs=1,
+            force_reset=True,
+            **train_kwargs,
+        )
+        series = tg.linear_timeseries(length=20).astype("float32")
+        model.fit(series, verbose=False)
         preds = model.predict(n=3, series=series)
         assert len(preds) == 3
         assert np.all(np.isfinite(preds.values()))

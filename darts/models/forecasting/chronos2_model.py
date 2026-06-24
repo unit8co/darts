@@ -4,8 +4,10 @@ Chronos-2
 
 For detailed examples and tutorials, see:
 
-* `Chronos-2 Foundation Model Examples
-  <https://unit8co.github.io/darts/examples/25-Chronos-2-examples.html>`__
+* `Foundation Model Examples
+  <https://unit8co.github.io/darts/examples/25-FoundationModel-examples.html>`__
+* `Fine-Tuning Examples
+  <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__
 """
 
 import math
@@ -23,14 +25,11 @@ from darts.models.components.chronos2_submodels import (
     _Patch,
     _ResidualBlock,
 )
-from darts.models.components.huggingface_connector import (
-    HuggingFaceConnector,
-)
-from darts.models.forecasting.foundation_model import (
-    FoundationModel,
-)
+from darts.models.components.huggingface_connector import HuggingFaceConnector
+from darts.models.forecasting.foundation_model import FoundationModel
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
+    io_processor,
 )
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.likelihood_models.torch import QuantileRegression
@@ -99,7 +98,8 @@ class _Chronos2Module(PLForecastingModule):
             all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
             base class.
         """
-
+        # for fine-tuning, model should be trained on pre-trained quantiles
+        enable_finetuning = kwargs.pop("enable_finetuning", False)
         super().__init__(**kwargs)
         self.d_model = d_model
         self.d_kv = d_kv
@@ -192,13 +192,22 @@ class _Chronos2Module(PLForecastingModule):
         quantiles_tensor = torch.tensor(quantiles)
         self.register_buffer("quantiles", quantiles_tensor, persistent=False)
 
-        # gather indices of user-specified quantiles
+        # gather indices of user-specified quantiles (used at prediction time)
         user_quantiles: list[float] = (
             self.likelihood.quantiles
             if isinstance(self.likelihood, QuantileRegression)
             else [0.5]
         )
         self.user_quantile_indices = [quantiles.index(q) for q in user_quantiles]
+
+        # during fine-tuning, train on ALL pre-trained quantiles to preserve the
+        # full distribution; prediction uses only user-specified quantiles
+        if enable_finetuning:
+            self._finetuning_likelihood = QuantileRegression(quantiles)
+            self._finetuning_quantile_indices = list(range(self.num_quantiles))
+        else:
+            self._finetuning_likelihood = None
+            self._finetuning_quantile_indices = None
 
         self.output_patch_embedding = _ResidualBlock(
             in_dim=self.d_model,
@@ -461,19 +470,20 @@ class _Chronos2Module(PLForecastingModule):
     # 3. Chronos-2 uses normalized values for loss computation, while Darts uses denormalized values.
     # We need to think about how best to implement Chronos-2 `RINorm` in `io_processor()` without
     # breaking existing behavior, while also allowing fine-tuning with normalized loss.
+    @io_processor
     def forward(self, x_in: PLModuleInput, *args, **kwargs) -> Any:
         """Chronos-2 model forward pass.
 
         Parameters
         ----------
         x_in
-            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
+            comes as a tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
             is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
 
         Returns
         -------
         torch.Tensor
-            the output tensor in the shape of `(n_samples, n_time_steps, n_targets, n_quantiles)` for
+            the output tensor in the shape `(n_samples, n_time_steps, n_targets, n_quantiles)` for
             probabilistic forecasts, or `(n_samples, n_time_steps, n_targets, 1)` for
             deterministic forecasts (median only).
         """
@@ -549,17 +559,26 @@ class _Chronos2Module(PLForecastingModule):
         # select only target variables
         quantile_preds = quantile_preds[:, :, : self.n_targets, :]
 
-        # select only user-specified quantiles or median if deterministic
-        quantile_preds = quantile_preds[:, :, :, self.user_quantile_indices]
+        # during training (fine-tuning), output all pre-trained quantiles for loss;
+        # during prediction, output only user-specified quantiles
+        if self.training:
+            quantile_preds = quantile_preds[:, :, :, self._finetuning_quantile_indices]
+        else:
+            quantile_preds = quantile_preds[:, :, :, self.user_quantile_indices]
 
         return quantile_preds
 
+    def _compute_loss(self, output, target, criterion, sample_weight):
+        if self.training:
+            # compute loss on pre-trained quantiles
+            return self._finetuning_likelihood.compute_loss(
+                output, target, sample_weight
+            )
+        else:
+            return super()._compute_loss(output, target, criterion, sample_weight)
+
 
 class Chronos2Model(FoundationModel):
-    # Fine-tuning is turned off for now pending proper fine-tuning support
-    # and configuration.
-    _allows_finetuning = False
-
     def __init__(
         self,
         input_chunk_length: int,
@@ -607,6 +626,18 @@ class Chronos2Model(FoundationModel):
         below for details. It is recommended to call :func:`predict()` with ``predict_likelihood_parameters=True``
         or ``num_samples >> 1`` to get meaningful results.
 
+        .. tip::
+            You can perform full or partial fine-tuning of the model by setting the ``enable_finetuning`` parameter.
+            Read more in the parameter description below and in the `Fine-Tuning Examples
+            <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__.
+        .. note::
+            Chronos-2 is licensed under the `Apache-2.0 License <https://github.com/amazon-science/chronos-forecasting/blob/main/LICENSE>`_,
+            copyright Amazon.com, Inc. or its affiliates. By using this model, you agree to the terms and conditions of
+            the license.
+        .. note::
+            Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from
+            those obtained using the original implementation when prediction horizon `n` is larger than 1024.
+
         Parameters
         ----------
         input_chunk_length
@@ -634,7 +665,10 @@ class Chronos2Model(FoundationModel):
             the quantiles must be a subset of those used during Chronos-2 pre-training:
             [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9,
             0.95, 0.99].
-            Default: ``None``, which will make Chronos-2 deterministic (median quantile only).
+            Default: ``None``, which will make the model deterministic (median quantile only).
+            When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to
+            preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood`` parameter
+            only affects prediction output.
         hub_model_name
             The model ID on HuggingFace Hub. Default: ``"amazon/chronos-2"``. Other available variants include
             ``"autogluon/chronos-2-small"`` and ``"autogluon/chronos-2-synth"``.
@@ -651,8 +685,8 @@ class Chronos2Model(FoundationModel):
             Darts' :class:`TorchForecastingModel`.
 
         loss_fn
-            PyTorch loss function used for fine-tuning a deterministic Chronos-2 model. Ignored for probabilistic
-            Chronos-2 when ``likelihood`` is specified. Default: ``nn.MSELoss()``.
+            PyTorch loss function used for fine-tuning a deterministic model. Ignored for probabilistic models when
+            ``likelihood`` is specified. Default: ``nn.MSELoss()``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
             at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
@@ -674,7 +708,7 @@ class Chronos2Model(FoundationModel):
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
-            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            of the name is formatted with the local date and time, while PID is the process ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
@@ -735,7 +769,7 @@ class Chronos2Model(FoundationModel):
 
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
-            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUs.
 
             For more info, see here:
             https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
@@ -770,6 +804,18 @@ class Chronos2Model(FoundationModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         References
         ----------
@@ -780,45 +826,49 @@ class Chronos2Model(FoundationModel):
 
         Examples
         --------
-        >>> from darts.datasets import WeatherDataset
+        Point forecasting:
+
         >>> from darts.models import Chronos2Model
-        >>> # load data in float32 format (macOS issues with float64 and PyTorch)
-        >>> series = WeatherDataset().load().astype("float32")
-        >>> # predicting atmospheric pressure
-        >>> target = series['p (mbar)'][:100]
-        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
-        >>> past_cov = series['rain (mm)'][:100]
-        >>> # optionally, use future temperatures (pretending this component is a forecast)
-        >>> future_cov = series['T (degC)'][:106]
-        >>> # by default, Chronos2Model is deterministic; to enable probabilistic forecasts,
-        >>> # set likelihood to QuantileRegression and use a subset of the pre-trained quantiles
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries as dat
+        >>> series = AirPassengersDataset().load().astype("float32")
+        >>> # generate future covariates containing a cyclic encoding of the month value
+        >>> future_cov = dat(series, "month", cyclic=True, add_length=6, dtype="float32")
         >>> model = Chronos2Model(
-        >>>     input_chunk_length=6,
+        >>>     input_chunk_length=12,
         >>>     output_chunk_length=6,
         >>> )
-        >>> # calling fit is still mandatory to ensure consistent number of components; however,
-        >>> # Chronos2Model is training-free and the model weights are not updated
-        >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
-        >>> # when Chronos2Model is probabilistic, set ``predict_likelihood_parameters=True``
-        >>> # or ``num_samples>>1`` to get meaningful results
-        >>> pred = model.predict(6)
-        >>> print(pred.all_values())
-        [[[1005.7576 ]]
-        [[1005.7418 ]]
-        [[1005.7186 ]]
-        [[1005.7074 ]]
-        [[1005.6928 ]]
-        [[1005.69617]]]
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(n=6)
+        >>> pred
+                    #Passengers
+        Month
+        1961-01-01   420.806458
+        1961-02-01   428.115662
+        1961-03-01   447.146454
+        1961-04-01   480.961609
+        1961-05-01   530.656006
+        1961-06-01   552.928589
 
-        .. note::
-            Fine-tuning of Chronos-2 is not supported at the moment.
-        .. note::
-            Chronos-2 is licensed under the `Apache-2.0 License <https://github.com/amazon-science/chronos-forecasting/blob/main/LICENSE>`_,
-            copyright Amazon.com, Inc. or its affiliates. By using this model, you agree to the terms and conditions of
-            the license.
-        .. warning::
-            Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from
-            those obtained using the original implementation when prediction horizon `n` is larger than 1024.
+        Probabilistic forecasting:
+
+        >>> from darts.utils.likelihood_models import QuantileRegression
+        >>> model = Chronos2Model(
+        >>>     input_chunk_length=12,
+        >>>     output_chunk_length=6,
+        >>>     likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
+        >>> )
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(n=6, predict_likelihood_parameters=True)
+        >>> pred
+                    #Passengers_q0.100  #Passengers_q0.500  #Passengers_q0.900
+        Month
+        1961-01-01          377.162231          420.806458          469.667480
+        1961-02-01          363.401550          428.115662          500.943939
+        1961-03-01          369.062866          447.146454          547.883057
+        1961-04-01          379.869171          480.961609          619.510010
+        1961-05-01          403.206635          530.656006          689.074951
+        1961-06-01          407.336609          552.928589          720.469299
         """
         hf_connector = HuggingFaceConnector(
             model_name=hub_model_name,
@@ -878,7 +928,7 @@ class Chronos2Model(FoundationModel):
                 )
 
         self.hf_connector = hf_connector
-        super().__init__(enable_finetuning=False, **kwargs)
+        super().__init__(**kwargs)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}

@@ -640,7 +640,7 @@ class TestNeuralForecastModel:
             )
 
     def test_ignored_model_kwargs(self, caplog):
-        with caplog.at_level(logging.INFO):
+        with caplog.at_level(logging.WARNING):
             NeuralForecastModel(
                 model="NLinear",
                 input_chunk_length=7,

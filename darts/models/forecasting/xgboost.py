@@ -31,7 +31,10 @@ from darts.models.forecasting.sklearn_model import (
 )
 from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
-from darts.utils.likelihood_models.sklearn import QuantileRegression, _get_likelihood
+from darts.utils.likelihood_models.sklearn import (
+    QuantileRegression,
+    _get_likelihood,
+)
 
 logger = get_logger(__name__)
 
@@ -151,16 +154,21 @@ class XGBModel(SKLearnModel):
                 To enable past and / or future encodings for any `SKLearnModel`, you must also define the
                 corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
-            Can be set to `poisson` or `quantile`. If set, the model will be probabilistic, allowing sampling at
-            prediction time. This will overwrite any `objective` parameter.
+            One of ``"multiquantile"``, ``"quantile"``, or ``"poisson"``. If set, the model becomes probabilistic
+            and supports sampling at prediction time. ``"multiquantile"`` and ``"quantile"`` use XGBoost's
+            ``"reg:quantileerror"`` objective. Both quantile likelihoods fit dedicated models per quantile, but
+            ``"multiquantile"`` can be more efficient due to fewer tabularization operations. This overrides any
+            ``objective`` parameter. Default is ``None``.
         quantiles
-            Fit the model to these quantiles if the `likelihood` is set to `quantile`.
+            Fit the model to these quantiles if the ``likelihood`` is set to ``"quantile"`` or ``"multiquantile"``.
+            Default is ``None`` and will use :class:`~darts.utils.likelihood_models.sklearn.QuantileRegression`'s
+            default quantiles.
         random_state
             Controls the randomness for reproducible forecasting.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model
-            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
-            `output_chunk_length - n` for each step `n`). Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -237,7 +245,11 @@ class XGBModel(SKLearnModel):
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
             quantiles=quantiles,
-            available_likelihoods=[LikelihoodType.Quantile, LikelihoodType.Poisson],
+            available_likelihoods=[
+                LikelihoodType.Quantile,
+                LikelihoodType.MultiQuantile,
+                LikelihoodType.Poisson,
+            ],
         )
 
         if likelihood is None:
@@ -245,7 +257,10 @@ class XGBModel(SKLearnModel):
 
         if likelihood == LikelihoodType.Poisson.value:
             self.kwargs["objective"] = f"count:{likelihood}"
-        else:  # quantile
+        elif likelihood == LikelihoodType.MultiQuantile.value:
+            self.kwargs["objective"] = "reg:quantileerror"
+            self.kwargs["quantile_alpha"] = self._likelihood.quantiles
+        else:  # QuantileRegression — per-quantile loop in fit()
             self.kwargs["objective"] = "reg:quantileerror"
             self._model_container = _QuantileModelContainer()
 
@@ -261,6 +276,7 @@ class XGBModel(SKLearnModel):
         n_jobs_multioutput_wrapper: int | None = None,
         sample_weight: TimeSeriesLike | str | None = None,
         val_sample_weight: TimeSeriesLike | str | None = None,
+        stride: int = 1,
         verbose: int | bool | None = None,
         **kwargs,
     ):
@@ -303,15 +319,17 @@ class XGBModel(SKLearnModel):
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         val_sample_weight
             Same as for `sample_weight` but for the evaluation dataset.
+        stride
+            The number of time steps between consecutive samples, applied starting from the end of the series. The same
+            stride will be applied to both the training and evaluation set (if supplied and supported). This should be
+            used with caution as it might introduce bias in the forecasts.
         verbose
             Optionally, set the fit verbosity. Not effective for all models.
         **kwargs
             Additional kwargs passed to `xgb.XGBRegressor.fit()`
         """
-        # TODO: XGBRegressor supports multi quantile reqression which we could leverage in the future
-        #  see https://xgboost.readthedocs.io/en/latest/python/examples/quantile_regression.html
         likelihood = self.likelihood
-        if isinstance(likelihood, QuantileRegression):
+        if type(likelihood) is QuantileRegression:
             # empty model container in case of multiple calls to fit, e.g. when backtesting
             self._model_container.clear()
             for quantile in likelihood.quantiles:
@@ -328,6 +346,7 @@ class XGBModel(SKLearnModel):
                     n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
                     sample_weight=sample_weight,
                     val_sample_weight=val_sample_weight,
+                    stride=stride,
                     verbose=verbose,
                     **kwargs,
                 )
@@ -346,6 +365,7 @@ class XGBModel(SKLearnModel):
             n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
             sample_weight=sample_weight,
             val_sample_weight=val_sample_weight,
+            stride=stride,
             verbose=verbose,
             **kwargs,
         )
@@ -468,9 +488,9 @@ class XGBClassifierModel(_ClassifierMixin, XGBModel):
         random_state
             Controls the randomness for reproducible forecasting.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model
-            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
-            `output_chunk_length - n` for each step `n`). Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce

@@ -35,6 +35,7 @@ class TestLocalFittableInvertibleDataTransformer:
             stack_samples: bool = False,
             mask_components: bool = True,
             parallel_params: bool | Sequence[str] = False,
+            columns: str | list[str] | None = None,
         ):
             """
             Applies the (invertible) transform `transformed_series = scale * series + translation`.
@@ -65,6 +66,7 @@ class TestLocalFittableInvertibleDataTransformer:
                 name="DataTransformerMock",
                 mask_components=mask_components,
                 parallel_params=parallel_params,
+                columns=columns,
             )
 
         @staticmethod
@@ -134,7 +136,10 @@ class TestLocalFittableInvertibleDataTransformer:
 
         @staticmethod
         def ts_inverse_transform(
-            series: TimeSeries, params: Mapping[str, Any], **kwargs
+            series: TimeSeries,
+            params: Mapping[str, Any],
+            insample: TimeSeries | None = None,
+            **kwargs,
         ) -> TimeSeries:
             """
             Implements the inverse transform `(series - translation) / scale`.
@@ -203,6 +208,43 @@ class TestLocalFittableInvertibleDataTransformer:
             == test_input
         )
         assert transformed == transformed_copy
+
+    @pytest.mark.parametrize("col_names", ["A", None, ["A"], ["B"], ["A", "B"]])
+    def test_columns_subset(self, col_names):
+        """
+        Tests if the `columns` argument correctly applies the transform and
+        it's inverse only to the specified columns.
+        """
+        ts_a = constant_timeseries(value=1, length=10, column_name="A")
+        ts_b = constant_timeseries(value=2, length=10, column_name="B")
+
+        test_input = ts_a.stack(ts_b)
+        test_input_copy = test_input.copy()
+
+        mock = self.DataTransformerMock(scale=2, translation=10, columns=col_names)
+
+        transformed = mock.fit_transform(test_input)
+
+        if col_names is None or "A" in col_names:
+            assert transformed["A"] == constant_timeseries(
+                value=12, length=10, column_name="A"
+            )
+        else:
+            assert transformed["A"] == constant_timeseries(
+                value=1, length=10, column_name="A"
+            )
+
+        if col_names is None or "B" in col_names:
+            assert transformed["B"] == constant_timeseries(
+                value=14, length=10, column_name="B"
+            )
+        else:
+            assert transformed["B"] == constant_timeseries(
+                value=2, length=10, column_name="B"
+            )
+
+        assert mock.inverse_transform(transformed) == test_input
+        assert test_input == test_input_copy
 
     def test_input_transformed_multiple_series(self):
         """
@@ -452,6 +494,32 @@ class TestLocalFittableInvertibleDataTransformer:
         inv = mock.inverse_transform(transformed, component_mask=mask)
         assert inv == test_input
 
+    def test_inverse_tf_on_nested_series_with_series_idx(self):
+        """
+        Tests for correct (inverse) transformation for nested lists of input series with `series_idx`.
+        """
+        inp_1 = constant_timeseries(value=1, length=10)
+        inp_2 = constant_timeseries(value=2, length=10)
+
+        mock = self.DataTransformerMock(scale=2, translation=10)
+
+        tf_1, tf_2 = mock.fit_transform([inp_1, inp_2])
+
+        nested_inp = [[tf_1[1:], tf_1[2:]], [tf_2[1:]]]
+        inv_tf_direct = mock.inverse_transform(nested_inp)
+        inv_tf_direct_reversed = mock.inverse_transform(
+            nested_inp[::-1], series_idx=[1, 0]
+        )[::-1]
+        inv_tf_separate = [
+            mock.inverse_transform([nested_inp[idx]], series_idx=idx)[0]
+            for idx in range(2)
+        ]
+        assert inv_tf_direct == inv_tf_direct_reversed
+        assert inv_tf_separate == inv_tf_direct
+        assert inv_tf_separate[0][0] == inp_1[1:]
+        assert inv_tf_separate[0][1] == inp_1[2:]
+        assert inv_tf_separate[1][0] == inp_2[1:]
+
 
 class TestGlobalFittableInvertibleDataTransformer:
     """
@@ -521,11 +589,12 @@ class TestGlobalFittableInvertibleDataTransformer:
 
         @staticmethod
         def ts_inverse_transform(
-            series: TimeSeries, params: Mapping[str, Any], **kwargs
+            series: TimeSeries,
+            params: Mapping[str, Any],
+            insample: TimeSeries | None = None,
+            **kwargs,
         ) -> TimeSeries:
-            """
-            Implements the inverse transform `series + mean`.
-            """
+            """Implements the inverse transform `series + mean`."""
             mean = params["fitted"]
             vals = series.all_values()
             vals += mean

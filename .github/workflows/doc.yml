@@ -4,21 +4,21 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy-docs:
+  build-docs:
     runs-on: ubuntu-latest
     steps:
       - name: "Clone repository"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: "Set up Python 3.11"
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
       - name: "Install uv"
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.1.0
         with:
-          version: "0.9.26"
+          version: "0.11.7"
           enable-cache: true
           python-version: '3.11'
 
@@ -46,10 +46,24 @@ jobs:
           # This reduces cache size while retaining expensive-to-rebuild packages
           uv cache prune --ci
 
-      - name: "Publish documentation to gh-pages"
-        uses: s0/git-publish-subdir-action@v2.2.0
-        env:
-          REPO: self
-          BRANCH: gh-pages
-          FOLDER: docs/build/html
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Upload documentation as artifact"
+        uses: actions/upload-pages-artifact@v5.0.0
+        with:
+          path: docs/build/html
+
+  deploy-docs:
+    needs: [build-docs]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+    steps:
+      - name: "Deploy to GitHub Pages"
+        id: deployment
+        uses: actions/deploy-pages@v5.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}

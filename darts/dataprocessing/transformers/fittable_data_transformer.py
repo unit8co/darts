@@ -29,7 +29,9 @@ class FittableDataTransformer(BaseDataTransformer):
         verbose: bool = False,
         parallel_params: bool | Sequence[str] = False,
         mask_components: bool = True,
+        columns: str | list[str] | None = None,
         global_fit: bool = False,
+        uses_insample: bool = False,
     ):
         """Base class for fittable transformers.
 
@@ -67,6 +69,11 @@ class FittableDataTransformer(BaseDataTransformer):
             'unmasked' in the returned `TimeSeries`. If `False`, then `component_mask` (if provided) will
             be passed as a keyword argument, but won't automatically be applied to the input timeseries.
             See `apply_component_mask` method of `BaseDataTransformer` for further details.
+        columns
+            Optionally, a string or list of strings specifying the names of the components (columns) to transform.
+            If specified, only these components will be transformed, and the remaining components will be kept
+            untouched. For more information refer to the `BaseDataTransformer` documentation. In case the transformer
+            is applied on multiple TimeSeries, it is expected that all series have the same column order.
         global_fit
             Optionally, whether all `TimeSeries` passed to the `fit()` method should be used to fit
             a *single* set of parameters, or if a different set of parameters should be independently fitted
@@ -74,6 +81,12 @@ class FittableDataTransformer(BaseDataTransformer):
             and a single set of parameters is fitted using all provided `TimeSeries`. If `False`, then
             each `TimeSeries` is individually passed to `ts_fit`, and a different set of fitted parameters
             if yielded for each of these fitting operations. See `ts_fit` for further details.
+        uses_insample
+            Whether the transformer requires the in-sample (historic) series during inverse transformation.
+            If `True`, `inverse_transform` will use the ``insample`` argument to pass the transformed
+            historic series to `ts_inverse_transform`. This is needed when inverse transforming a partial
+            series (e.g. a forecast) requires information from earlier times (e.g. for
+            :class:`~darts.dataprocessing.transformers.diff.Diff`).
 
         Notes
         -----
@@ -147,6 +160,8 @@ class FittableDataTransformer(BaseDataTransformer):
             verbose=verbose,
             parallel_params=parallel_params,
             mask_components=mask_components,
+            columns=columns,
+            uses_insample=uses_insample,
         )
 
         self._fit_called = False
@@ -259,6 +274,12 @@ class FittableDataTransformer(BaseDataTransformer):
         n_jobs = len(data) if not self._global_fit else 1
         input_iterator = _build_tqdm_iterator(
             fit_iterator, verbose=self._verbose, desc=desc, total=n_jobs
+        )
+
+        component_mask = BaseDataTransformer._generate_component_mask(
+            series=data[0],
+            component_mask=component_mask,
+            columns=self._columns,
         )
 
         # apply component masking to the fit method

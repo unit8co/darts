@@ -1,5 +1,4 @@
 from itertools import product
-from unittest.mock import patch
 
 import matplotlib.collections as mcollections
 import matplotlib.pyplot as plt
@@ -34,7 +33,6 @@ class TestTimeSeriesPlot:
         values=np.random.random((10, n_comps, 5)),
     )
 
-    @patch("matplotlib.pyplot.show")
     @pytest.mark.parametrize(
         "config",
         product(
@@ -44,7 +42,7 @@ class TestTimeSeriesPlot:
             [True, False],
         ),
     )
-    def test_plot_single_series(self, mock_show, config):
+    def test_plot_single_series(self, config, mpl_safe_plotting):
         index_type, stoch_type, use_ax, use_darts_style = config
         with option_context("plotting.use_darts_style", use_darts_style):
             series = getattr(self, f"series_{index_type}_{stoch_type}")
@@ -71,10 +69,6 @@ class TestTimeSeriesPlot:
                 ]
                 assert len(areas) == self.n_comps
 
-            plt.show()
-            plt.close()
-
-    @patch("matplotlib.pyplot.show")
     @pytest.mark.parametrize(
         "config",
         product(
@@ -82,7 +76,7 @@ class TestTimeSeriesPlot:
             ["d", "p"],
         ),
     )
-    def test_plot_point_series(self, mock_show, config):
+    def test_plot_point_series(self, mpl_safe_plotting, config):
         index_type, stoch_type = config
         series = getattr(self, f"series_{index_type}_{stoch_type}")
         series = series[:1]
@@ -119,10 +113,6 @@ class TestTimeSeriesPlot:
                         vert_lines.append(line)
             assert len(vert_lines) == self.n_comps
 
-        plt.show()
-        plt.close()
-
-    @patch("matplotlib.pyplot.show")
     @pytest.mark.parametrize(
         "config",
         product(
@@ -130,7 +120,7 @@ class TestTimeSeriesPlot:
             ["d", "p"],
         ),
     )
-    def test_plot_empty_series(self, mock_show, config):
+    def test_plot_empty_series(self, mpl_safe_plotting, config):
         index_type, stoch_type = config
         series = getattr(self, f"series_{index_type}_{stoch_type}")
         series = series[:0]
@@ -159,10 +149,6 @@ class TestTimeSeriesPlot:
         ]
         assert len(areas) == 0
 
-        plt.show()
-        plt.close()
-
-    @patch("matplotlib.pyplot.show")
     @pytest.mark.parametrize(
         "config",
         product(
@@ -180,14 +166,11 @@ class TestTimeSeriesPlot:
             ],
         ),
     )
-    def test_plot_params(self, mock_show, config):
+    def test_plot_params(self, mpl_safe_plotting, config):
         index_type, stoch_type, kwargs = config
         series = getattr(self, f"series_{index_type}_{stoch_type}")
         series.plot(**kwargs)
-        plt.show()
-        plt.close()
 
-    @patch("matplotlib.pyplot.show")
     @pytest.mark.parametrize(
         "config",
         product(
@@ -204,27 +187,21 @@ class TestTimeSeriesPlot:
             ],
         ),
     )
-    def test_plot_stochastic_params(self, mock_show, config):
+    def test_plot_stochastic_params(self, mpl_safe_plotting, config):
         (index_type, kwargs), stoch_type = config, "p"
         series = getattr(self, f"series_{index_type}_{stoch_type}")
         series.plot(**kwargs)
-        plt.show()
-        plt.close()
 
-    @patch("matplotlib.pyplot.show")
     @pytest.mark.parametrize("config", ["dt", "ri"])
-    def test_plot_deterministic_and_stochastic(self, mock_show, config):
+    def test_plot_deterministic_and_stochastic(self, mpl_safe_plotting, config):
         index_type = config
         series1 = getattr(self, f"series_{index_type}_d")
         series2 = getattr(self, f"series_{index_type}_p")
         series1.plot()
         series2.plot()
-        plt.show()
-        plt.close()
 
-    @patch("matplotlib.pyplot.show")
     @pytest.mark.parametrize("config", ["d", "p"])
-    def test_cannot_plot_different_index_types(self, mock_show, config):
+    def test_cannot_plot_different_index_types(self, mpl_safe_plotting, config):
         stoch_type = config
         series1 = getattr(self, f"series_dt_{stoch_type}")
         series2 = getattr(self, f"series_ri_{stoch_type}")
@@ -233,5 +210,3 @@ class TestTimeSeriesPlot:
         # cannot plot a range index on datetime index
         with pytest.raises(TypeError):
             series2.plot()
-        plt.show()
-        plt.close()

@@ -542,11 +542,13 @@ class _ScaledDotProductAttention(nn.Module):
         attn = torch.bmm(q, k.permute(0, 2, 1))  # query-key overlap
 
         if self.scale:
-            dimension = torch.sqrt(torch.tensor(k.shape[-1]).to(torch.float32))
+            dimension = torch.sqrt(
+                torch.tensor(k.shape[-1], dtype=attn.dtype, device=attn.device)
+            )
             attn = attn / dimension
 
         if mask is not None:
-            attn = attn.masked_fill(mask, -1e9)
+            attn = attn.masked_fill(mask, torch.finfo(attn.dtype).min)
         attn = self.softmax(attn)
 
         if self.dropout is not None:

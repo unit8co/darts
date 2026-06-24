@@ -33,6 +33,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         global_fit: bool = False,
         n_jobs: int = 1,
         verbose: bool = False,
+        columns: str | list[str] | None = None,
     ):
         """Box-Cox data transformer.
 
@@ -80,6 +81,11 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
             required amount of time.
         verbose
             Whether to print operations progress
+        columns
+            Optionally, a string or list of strings specifying the names of the components (columns) to transform.
+            If specified, only these components will be transformed, and the remaining components will be kept
+            untouched. For more information refer to the `BaseDataTransformer` documentation. In case the transformer
+            is applied on multiple TimeSeries, it is expected that all series have the same column order.
 
         Examples
         --------
@@ -121,6 +127,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
             parallel_params=parallel_params,
             mask_components=True,
             global_fit=global_fit,
+            columns=columns,
         )
 
     @staticmethod
@@ -174,7 +181,10 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
 
     @staticmethod
     def ts_inverse_transform(
-        series: TimeSeries, params: Mapping[str, Any], **kwargs
+        series: TimeSeries,
+        params: Mapping[str, Any],
+        insample: TimeSeries | None = None,
+        **kwargs,
     ) -> TimeSeries:
         lmbda = params["fitted"]
 

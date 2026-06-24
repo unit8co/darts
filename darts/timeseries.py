@@ -39,6 +39,8 @@ Optionally, ``TimeSeries`` can store static covariates, a hierarchy, and / or me
 - Have a hierarchy consistent with their components, or no hierarchy
 """
 
+from __future__ import annotations
+
 import itertools
 import json
 import math
@@ -51,20 +53,17 @@ from copy import deepcopy
 from inspect import signature
 from io import StringIO
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal
 
-import matplotlib.axes
 import narwhals as nw
 import numpy as np
 import pandas as pd
-import xarray as xr
 from narwhals.utils import Implementation
 from pandas.tseries.frequencies import to_offset
-from scipy.stats import kurtosis, skew
 
 from darts.config import get_option
 from darts.logging import get_logger, raise_log
-from darts.typing import TimeIndex
+from darts.typing import TimeIndex, TimeZone
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils._formatting import (
     format_bytes,
@@ -72,8 +71,6 @@ from darts.utils._formatting import (
     make_collapsible_section,
     make_paragraph,
 )
-from darts.utils._plotting import plot as _plot
-from darts.utils._plotting import plotly as _plotly
 from darts.utils.utils import (
     SUPPORTED_RESAMPLE_METHODS,
     dataframe_col_to_time_index,
@@ -89,7 +86,9 @@ else:
     from typing_extensions import Self
 
 if TYPE_CHECKING:
+    import matplotlib.axes
     import plotly.graph_objects as go
+    import xarray as xr
 
 logger = get_logger(__name__)
 
@@ -1745,6 +1744,8 @@ class TimeSeries:
         xarray.DataArray
             An ``xarray.DataArray`` representation of  represents the time series.
         """
+        import xarray as xr
+
         xa = xr.DataArray(
             self._values,
             dims=(self._time_dim,) + DIMS[-2:],
@@ -3558,7 +3559,7 @@ class TimeSeries:
         attribute,
         one_hot: bool = False,
         cyclic: bool = False,
-        tz: Any = None,
+        tz: TimeZone = None,
     ) -> Self:
         """Return a new series with one (or more) additional component(s) that contain an attribute of the series' time
         index.
@@ -3612,7 +3613,7 @@ class TimeSeries:
         country_code: str,
         prov: str | None = None,
         state: str | None = None,
-        tz: Any = None,
+        tz: TimeZone = None,
     ) -> Self:
         """Return a new series with an added holiday component.
 
@@ -3726,6 +3727,8 @@ class TimeSeries:
         [2.5]
         [4.5]]
         """
+        import xarray as xr
+
         method_kwargs = method_kwargs or {}
         if isinstance(freq, pd.DateOffset):
             freq = freq.freqstr
@@ -4487,6 +4490,8 @@ class TimeSeries:
         matplotlib.axes.Axes
             Either the passed `ax` axis, a newly created one if `new_plot=True`, or the existing one.
         """
+        from darts.utils._plotting import plot as _plot
+
         return _plot(
             self,
             new_plot=new_plot,
@@ -4507,7 +4512,7 @@ class TimeSeries:
 
     def plotly(
         self,
-        fig: Optional["go.Figure"] = None,
+        fig: go.Figure | None = None,
         central_quantile: float | str = 0.5,
         low_quantile: float | None = 0.05,
         high_quantile: float | None = 0.95,
@@ -4519,7 +4524,7 @@ class TimeSeries:
         c: str | Sequence[str] | None = None,
         downsample_threshold: int = 100_000,
         **kwargs,
-    ) -> "go.Figure":
+    ) -> go.Figure:
         """Plot the series using Plotly.
 
         Parameters
@@ -4571,6 +4576,8 @@ class TimeSeries:
         plotly.graph_objects.Figure
             The Plotly figure object containing the plot. Call `.show()` on the returned figure to display it.
         """
+        from darts.utils._plotting import plotly as _plotly
+
         return _plotly(
             self,
             fig=fig,
@@ -4831,10 +4838,11 @@ class TimeSeries:
             A new series containing the desired quantile(s) of each component.
         """
         self._assert_stochastic()
-        if isinstance(q, float):
-            q = [q]
 
-        if not all([0 <= q_i <= 1 for q_i in q]):
+        # `q_arr` must be of same dtype to conserve it in `np.quantile`
+        q_arr = np.array([q] if isinstance(q, float) else q, dtype=self.dtype)
+
+        if not all([0 <= q_i <= 1 for q_i in q_arr]):
             raise_log(
                 ValueError(
                     "The quantile values must be expressed as fraction (between 0 and 1 inclusive)."
@@ -4843,10 +4851,10 @@ class TimeSeries:
             )
 
         # component names
-        cnames = [f"{comp}_q{q_i:.3f}" for comp in self.components for q_i in q]
+        cnames = [f"{comp}_q{q_i:.3f}" for comp in self.components for q_i in q_arr]
 
         # get quantiles of shape (n quantiles, n times, n components)
-        new_data = np.quantile(self._values, q=q, axis=2, **kwargs)
+        new_data = np.quantile(self._values, q=q_arr, axis=2, **kwargs)
         # transpose and reshape into (n times, n components * n quantiles, 1)
         new_data = new_data.transpose((1, 2, 0)).reshape(len(self), len(cnames), 1)
 
@@ -4855,8 +4863,8 @@ class TimeSeries:
             times=self._time_index,
             values=new_data,
             components=cnames,
-            static_covariates=self.static_covariates if len(q) == 1 else None,
-            hierarchy=self.hierarchy if len(q) == 1 else None,
+            static_covariates=self.static_covariates if len(q_arr) == 1 else None,
+            hierarchy=self.hierarchy if len(q_arr) == 1 else None,
             metadata=self.metadata,
             copy=False,
         )
@@ -4919,6 +4927,8 @@ class TimeSeries:
         TimeSeries
             A new series containing the skew of each component.
         """
+        from scipy.stats import skew
+
         self._assert_stochastic()
         vals = np.expand_dims(skew(self._values, axis=2, **kwargs), axis=2)
         return self.with_values(vals)
@@ -4939,6 +4949,8 @@ class TimeSeries:
         TimeSeries
             A new series containing the kurtosis of each component.
         """
+        from scipy.stats import kurtosis
+
         self._assert_stochastic()
         vals = np.expand_dims(kurtosis(self._values, axis=2, **kwargs), axis=2)
         return self.with_values(vals)
@@ -4955,10 +4967,10 @@ class TimeSeries:
 
         if isinstance(other, TimeSeries):
             other_vals = other._values
-        elif isinstance(other, xr.DataArray):
-            other_vals = other.values
-        else:
+        elif isinstance(other, np.ndarray):
             other_vals = other
+        else:
+            other_vals = other.values
 
         t, c, s = self.shape
         other_shape = other_vals.shape
@@ -5358,7 +5370,7 @@ class TimeSeries:
         return len(self._values)
 
     def __add__(self, other):
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5375,7 +5387,7 @@ class TimeSeries:
         return self + other
 
     def __sub__(self, other):
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5392,7 +5404,7 @@ class TimeSeries:
         return other + (-self)
 
     def __mul__(self, other):
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5416,7 +5428,7 @@ class TimeSeries:
                     logger,
                 )
             n = float(n)
-        elif isinstance(n, TimeSeries | xr.DataArray | np.ndarray):
+        elif isinstance(n, TimeSeries | np.ndarray) or _is_xarray(n):
             n = self._extract_values(n)  # elementwise power
         else:
             raise_log(
@@ -5433,7 +5445,7 @@ class TimeSeries:
         if isinstance(other, int | float | np.integer):
             if other == 0:
                 raise_log(ZeroDivisionError("Cannot divide by 0."), logger)
-        elif isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        elif isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
             if (other == 0).any():
                 raise_log(
@@ -5474,7 +5486,7 @@ class TimeSeries:
         return ts
 
     def __lt__(self, other) -> np.ndarray:
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5486,7 +5498,7 @@ class TimeSeries:
         return np.less(self._values, other)
 
     def __gt__(self, other) -> np.ndarray:
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5498,7 +5510,7 @@ class TimeSeries:
         return np.greater(self._values, other)
 
     def __le__(self, other) -> np.ndarray:
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5510,7 +5522,7 @@ class TimeSeries:
         return np.less_equal(self._values, other)
 
     def __ge__(self, other) -> np.ndarray:
-        if isinstance(other, TimeSeries | xr.DataArray | np.ndarray):
+        if isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, int | float | np.integer):
             raise_log(
@@ -5989,7 +6001,7 @@ def concatenate(
     ignore_static_covariates: bool = False,
     drop_hierarchy: bool = True,
     drop_metadata: bool = False,
-):
+) -> TimeSeries:
     """Concatenates multiple series along a given axis.
 
     ``axis`` can be an integer in (0, 1, 2) to denote (time, component, sample) or, alternatively, a string denoting
@@ -6299,3 +6311,8 @@ def _clean_components(components: pd.Index) -> pd.Index:
         has_duplicate = len(set(clist)) != len(clist)
 
     return pd.Index(clist)
+
+
+def _is_xarray(obj) -> bool:
+    """Check if *obj* is an xarray type without importing xarray."""
+    return type(obj).__module__.startswith("xarray")

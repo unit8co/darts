@@ -186,6 +186,7 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         params = signature(func).parameters
         n_jobs = kwargs.pop("n_jobs", params["n_jobs"].default)
         verbose = kwargs.pop("verbose", params["verbose"].default)
+        name = kwargs.pop("name", params["name"].default)
 
         # sanity check reduction functions
         _ = _get_reduction(
@@ -287,7 +288,7 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             iterable=zip(*input_series),
             verbose=verbose,
             total=len(actual_series),
-            desc=f"metric `{func.__name__}()`",
+            desc=f"metric `{name or func.__name__}`",
         )
 
         # `vals` is a list of series metrics of length `len(actual_series)`. Each metric has shape
@@ -549,7 +550,8 @@ def _get_values(
             # we extract the relevant quantile components with shape (times, components * quantiles)
             vals = vals[:, vals_components.get_indexer(q_names)]
             # rearrange into (times, components, quantiles)
-            vals = vals.reshape((len(vals), len(actual_components), -1))
+            n_quantiles = vals.shape[1] // len(actual_components)
+            vals = vals.reshape((len(vals), len(actual_components), n_quantiles))
         return vals
 
     # probabilistic input
@@ -861,9 +863,81 @@ def _get_error_scale(
             logger=logger,
         )
 
-    if np.isclose(scale, 0.0).any():
-        raise_log(ValueError("cannot use MASE with periodical signals"), logger=logger)
     return scale
+
+
+def _safe_scaled_divide(
+    errors: np.ndarray,
+    scale: np.ndarray,
+    zero_division: str = "warn",
+) -> np.ndarray:
+    """Divides ``errors`` by ``scale``, handling zero-scale entries gracefully.
+
+    When ``zero_division`` is ``"warn"`` (default), the behavior depends on
+    whether the *numerator* is also zero:
+
+    * **Case 1** – scale ≈ 0, errors ≠ 0 (non-zero / zero): the scaled error
+      is undefined, so the result is ``np.nan``.
+    * **Case 2** – scale ≈ 0, errors ≈ 0 (zero / zero): the model is on par
+      with the naive baseline, so the result is ``1.0``.
+
+    .. note::
+       Returning ``1.0`` for the 0/0 case assumes "model matches naive baseline"
+       since we cannot distinguish whether the model trivially *is* the seasonal
+       naive or made a non-trivial prediction that happens to match. For practical
+       purposes ``1.0`` is the right default.
+
+    Parameters
+    ----------
+    errors
+        Numerator array of shape ``(t, c)`` or ``(c,)``.
+    scale
+        Denominator array of shape ``(c,)``.
+    zero_division
+        Controls behavior when ``scale`` is (near) zero.
+
+        * ``"warn"`` (default) – applies the defaults described above
+          (``np.nan`` for case 1, ``1.0`` for case 2) and emits a ``UserWarning``.
+        * ``"raise"`` – raises a ``ValueError`` (the legacy behavior).
+
+    Returns
+    -------
+    np.ndarray
+        The result of ``errors / scale``, with zero-scale entries replaced.
+    """
+    if zero_division not in ["warn", "raise"]:
+        raise_log(
+            ValueError(
+                f"`zero_division` must be 'warn' or 'raise'. Received {zero_division}."
+            ),
+            logger=logger,
+        )
+
+    zero_mask = np.isclose(scale, 0.0)
+    if not zero_mask.any():
+        return errors / scale
+
+    # --- legacy behavior: raise on zero scale ---
+    if zero_division == "raise":
+        raise_log(
+            ValueError("Cannot use scaled metric with periodical signals."),
+            logger=logger,
+        )
+
+    # Determine the fill value for zero-scale entries in a single pass.
+    # For numeric zero_division: use that value everywhere.
+    # For "warn": Case 1 (non-zero / zero) → nan, Case 2 (0 / 0) → 1.0.
+    fill = np.where(np.isclose(errors, 0.0), 1.0, np.nan)
+
+    # Single-pass: where scale ≈ 0 use fill, otherwise normal division
+    result = np.where(zero_mask, fill, errors / np.where(zero_mask, 1.0, scale))
+
+    logger.warning(
+        "The error scale (denominator) is zero for some components. "
+        "Those entries are set to NaN (when numerator is non-zero) or "
+        "1.0 (when numerator is also zero, i.e. on par with naive)."
+    )
+    return result
 
 
 def _unique_labels(y_true: np.ndarray, y_pred: np.ndarray) -> list[np.ndarray]:

@@ -507,7 +507,7 @@ def plotly(
     step = 1
     points_to_plot = len(series) * n_components_to_plot * (3 if plot_ci else 1)
     if downsample_threshold != -1 and points_to_plot > downsample_threshold:
-        step = np.pow(
+        step = np.power(
             2, np.ceil(np.log2(points_to_plot / downsample_threshold))
         ).astype(int)
 

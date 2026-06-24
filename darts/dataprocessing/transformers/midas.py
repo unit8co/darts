@@ -322,6 +322,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
     def ts_inverse_transform(
         series: TimeSeries,
         params: Mapping[str, Any],
+        insample: TimeSeries | None = None,
     ) -> TimeSeries:
         """
         Transforms series back to high frequency by retrieving the original high frequency and reshaping the values.

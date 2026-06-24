@@ -32,6 +32,9 @@ from darts.utils.missing_values import fill_missing_values
 from darts.utils.ts_utils import get_single_series
 from darts.utils.utils import ModelMode, SeasonalityMode
 
+_NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
+_NP_TRAPEZOID_FN = np.trapezoid if _NP_2_OR_ABOVE else np.trapz
+
 logger = get_logger(__name__)
 
 
@@ -1194,7 +1197,7 @@ def plot_tolerance_curve(
         coverages_comp = coverages[:, i]
         coverages_perc = coverages_comp * 100.0
 
-        auc = np.trapezoid(coverages_comp, tolerances)
+        auc = _NP_TRAPEZOID_FN(coverages_comp, tolerances)
         label = f"{comp_name} (AUTC = {auc:.3f})"
         axis.step(
             tolerances_perc,
