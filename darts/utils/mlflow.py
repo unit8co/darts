@@ -542,9 +542,12 @@ def _autolog(
         # Track which model is active so metric patches can prefix their keys
         _autolog_state.current_model_name = type(self).__name__
 
-        run_id = mlflow.active_run().info.run_id
-
         result = original(self, *args, **kwargs)
+
+        active_run = mlflow.active_run()
+        if active_run is None:
+            return result
+        run_id = active_run.info.run_id
 
         # Set tags to identify the model class and relevant information
         autologging_client.set_tags(run_id=run_id, tags=_get_model_info_tags(self))
