@@ -1,9 +1,12 @@
+import logging
 import os
 
 import numpy as np
 import pandas as pd
 import pytest
 
+import darts.metrics as dm
+import darts.metrics.metrics as dmm
 import darts.utils.timeseries_generation as tg
 from darts import TimeSeries
 from darts.models.forecasting.forecasting_model import (
@@ -19,9 +22,12 @@ if not MLFLOW_AVAILABLE:
     )
 
 import mlflow
+from mlflow.utils.autologging_utils.client import MlflowAutologgingQueueingClient
 
 from darts.models import ExponentialSmoothing, LinearRegressionModel
 from darts.utils.mlflow import (
+    _infer_metric_axes,
+    _log_backtest_metrics,
     autolog,
     load_model,
     log_model,
@@ -121,6 +127,13 @@ class TestMLflow:
     )
     ts_past_cov = tg.sine_timeseries(length=62).astype("float32")
     ts_future_cov = tg.constant_timeseries(value=1.0, length=62).astype("float32")
+    # binary classification series with values {0.0, 1.0}
+    ts_binary = tg.constant_timeseries(value=0.0, length=50).with_values(
+        np.random.default_rng(42)
+        .choice([0.0, 1.0], size=50)
+        .astype(np.float32)
+        .reshape(-1, 1)
+    )
 
     def test_save_load_statistical_model(self, tmpdir_fn):
         """Test save/load round-trip for statistical model"""
@@ -602,10 +615,8 @@ class TestMLflow:
     def test_autolog_metric_logging_scalar(self, mlflow_tracking, autolog_context):
         """Calling a darts metric inside an active run logs a scalar to MLflow."""
         with autolog_context(log_metrics=True):
-            from darts.metrics import mae
-
             with mlflow.start_run() as run:
-                result = mae(self.ts_univariate, self.ts_univariate * 1.1)
+                result = dm.mae(self.ts_univariate, self.ts_univariate * 1.1)
 
         run_data = mlflow.get_run(run.info.run_id).data
         assert "mae" in run_data.metrics, "mae should be logged to MLflow"
@@ -616,11 +627,9 @@ class TestMLflow:
     def test_autolog_metric_repeated_call(self, mlflow_tracking, autolog_context):
         """Calling the same metric twice overwrites the value (last-value-wins)."""
         with autolog_context(log_metrics=True):
-            from darts.metrics import rmse
-
             with mlflow.start_run() as run:
-                rmse(self.ts_univariate, self.ts_univariate * 1.1)
-                rmse(self.ts_univariate, self.ts_univariate * 1.2)
+                dm.rmse(self.ts_univariate, self.ts_univariate * 1.1)
+                dm.rmse(self.ts_univariate, self.ts_univariate * 1.2)
 
         run_data = mlflow.get_run(run.info.run_id).data
         assert "rmse" in run_data.metrics, "rmse should be logged to MLflow"
@@ -634,10 +643,8 @@ class TestMLflow:
         'mae_linear' and 'mae_linear_1'.
         """
         with autolog_context(log_metrics=True):
-            from darts.metrics import mae
-
             with mlflow.start_run() as run:
-                mae(
+                dm.mae(
                     self.ts_multivariate,
                     self.ts_multivariate * 1.1,
                     component_reduction=None,
@@ -656,10 +663,8 @@ class TestMLflow:
     def test_autolog_metric_no_active_run(self, mlflow_tracking, autolog_context):
         """Calling a metric without an active run does not raise and returns correctly."""
         with autolog_context(log_metrics=True):
-            from darts.metrics import mse
-
             # called outside any start_run — must not raise
-            result = mse(self.ts_univariate, self.ts_univariate * 1.1)
+            result = dm.mse(self.ts_univariate, self.ts_univariate * 1.1)
 
         assert np.isscalar(result)
         assert np.isfinite(float(result))
@@ -669,15 +674,13 @@ class TestMLflow:
     ):
         """The patched metric returns the same value whether inside or outside a run."""
         with autolog_context(log_metrics=True):
-            from darts.metrics import mae
-
             pred = self.ts_univariate * 1.05
 
             with mlflow.start_run():
-                result_inside = mae(self.ts_univariate, pred)
+                result_inside = dm.mae(self.ts_univariate, pred)
 
             # call outside a run — no logging, same computation
-            result_outside = mae(self.ts_univariate, pred)
+            result_outside = dm.mae(self.ts_univariate, pred)
 
         np.testing.assert_almost_equal(result_inside, result_outside, decimal=6)
         assert np.isfinite(result_inside)
@@ -685,10 +688,8 @@ class TestMLflow:
     def test_autolog_log_metrics_false(self, mlflow_tracking, autolog_context):
         """autolog(log_metrics=False) leaves metrics unpatched — nothing is logged."""
         with autolog_context(log_metrics=False):
-            from darts.metrics import mape
-
             with mlflow.start_run() as run:
-                mape(self.ts_univariate, self.ts_univariate * 1.1)
+                dm.mape(self.ts_univariate, self.ts_univariate * 1.1)
 
         run_data = mlflow.get_run(run.info.run_id).data
         assert "mape" not in run_data.metrics, (
@@ -702,9 +703,6 @@ class TestMLflow:
         calls within the implementation module (e.g. rmse calling mse internally).
         """
         with autolog_context(log_metrics=True):
-            import darts.metrics as dm
-            import darts.metrics.metrics as dmm
-
             # public namespace → patched: call inside a run should log
             with mlflow.start_run() as run_public:
                 dm.mae(self.ts_univariate, self.ts_univariate * 1.1)
@@ -721,3 +719,337 @@ class TestMLflow:
         assert "mae" not in run_data_impl.metrics, (
             "darts.metrics.metrics.mae should NOT log (implementation module is not patched)"
         )
+
+    def test_autolog_backtest_scalar(self, mlflow_tracking, autolog_context):
+        """Default (reduced) backtest of a single univariate series logs one scalar."""
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                ref = self._fit_lr().backtest(
+                    self.ts_univariate, metric=dm.mae, retrain=False, stride=10
+                )
+
+        run_data = mlflow.get_run(run.info.run_id).data
+        assert "backtest_mae" in run_data.metrics
+        assert run_data.metrics["backtest_mae"] == pytest.approx(float(ref), abs=1e-5)
+
+    def test_autolog_backtest_per_window_steps(self, mlflow_tracking, autolog_context):
+        """reduction=None logs per-window values as consecutive steps of one key."""
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                ref = self._fit_lr().backtest(
+                    self.ts_univariate,
+                    metric=dm.mae,
+                    retrain=False,
+                    stride=10,
+                    reduction=None,
+                )
+
+        history = mlflow_tracking.get_metric_history(run.info.run_id, "backtest_mae")
+        assert len(history) > 1, "Expected multiple per-window steps"
+        steps = sorted(m.step for m in history)
+        assert steps == list(range(len(history)))
+        logged = [m.value for m in sorted(history, key=lambda m: m.step)]
+        np.testing.assert_allclose(logged, np.asarray(ref, dtype=float), atol=1e-5)
+
+    def test_autolog_backtest_per_component(self, mlflow_tracking, autolog_context):
+        """component_reduction=None logs one key per component name."""
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                ref = self._fit_lr(self.ts_multivariate).backtest(
+                    self.ts_multivariate,
+                    metric=dm.mae,
+                    retrain=False,
+                    stride=10,
+                    metric_kwargs={"component_reduction": None},
+                )
+
+        run_data = mlflow.get_run(run.info.run_id).data
+        assert "backtest_mae_linear" in run_data.metrics
+        assert "backtest_mae_linear_1" in run_data.metrics
+        ref = np.asarray(ref, dtype=float)
+        assert run_data.metrics["backtest_mae_linear"] == pytest.approx(
+            ref[0], abs=1e-5
+        )
+        assert run_data.metrics["backtest_mae_linear_1"] == pytest.approx(
+            ref[1], abs=1e-5
+        )
+
+    def test_autolog_backtest_multi_metric(self, mlflow_tracking, autolog_context):
+        """Multiple metrics are logged under one key each."""
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                ref = self._fit_lr().backtest(
+                    self.ts_univariate,
+                    metric=[dm.mae, dm.rmse],
+                    retrain=False,
+                    stride=10,
+                )
+
+        run_data = mlflow.get_run(run.info.run_id).data
+        assert "backtest_mae" in run_data.metrics
+        assert "backtest_rmse" in run_data.metrics
+        assert run_data.metrics["backtest_mae"] == pytest.approx(
+            float(ref[0]), abs=1e-5
+        )
+        assert run_data.metrics["backtest_rmse"] == pytest.approx(
+            float(ref[1]), abs=1e-5
+        )
+
+    def test_autolog_backtest_multi_series(self, mlflow_tracking, autolog_context):
+        """A list of series logs one key per series index."""
+        series = [self.ts_univariate, self.ts_univariate * 1.2]
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                ref = self._fit_lr(series).backtest(
+                    series, metric=dm.mae, retrain=False, stride=10
+                )
+
+        run_data = mlflow.get_run(run.info.run_id).data
+        assert "backtest_mae_s0" in run_data.metrics
+        assert "backtest_mae_s1" in run_data.metrics
+        assert run_data.metrics["backtest_mae_s0"] == pytest.approx(
+            float(ref[0]), abs=1e-5
+        )
+        assert run_data.metrics["backtest_mae_s1"] == pytest.approx(
+            float(ref[1]), abs=1e-5
+        )
+
+    def test_autolog_backtest_per_timestep_scalar(
+        self, mlflow_tracking, autolog_context
+    ):
+        """A per-timestep metric (ae) under default reduction collapses to one scalar."""
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                ref = self._fit_lr().backtest(
+                    self.ts_univariate, metric=dm.ae, retrain=False, stride=10
+                )
+
+        history = mlflow_tracking.get_metric_history(run.info.run_id, "backtest_ae")
+        assert len(history) == 1, "Default reduction should yield a single value"
+        assert history[0].value == pytest.approx(float(ref), abs=1e-5)
+
+    def test_autolog_backtest_per_timestep_per_window(
+        self, mlflow_tracking, autolog_context
+    ):
+        """ae + reduction=None + forecast_horizon>1 logs one key per window, with
+        one step per forecast horizon timestep."""
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                ref = self._fit_lr().backtest(
+                    self.ts_univariate,
+                    metric=dm.ae,
+                    retrain=False,
+                    stride=10,
+                    forecast_horizon=4,
+                    reduction=None,
+                )
+
+        ref = np.asarray(ref, dtype=float)  # shape (n_windows, forecast_horizon)
+        history = mlflow_tracking.get_metric_history(run.info.run_id, "backtest_ae_w0")
+        assert len(history) == 4, "Expected one step per forecast horizon timestep"
+        logged = [m.value for m in sorted(history, key=lambda m: m.step)]
+        np.testing.assert_allclose(logged, ref[0], atol=1e-5)
+
+    def test_autolog_backtest_quantile(self, mlflow_tracking, autolog_context):
+        """A quantile metric (mql) logs one key per quantile."""
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                self._fit_qlr().backtest(
+                    self.ts_univariate,
+                    metric=dm.mql,
+                    metric_kwargs={"q": [0.1, 0.5, 0.9]},
+                    retrain=False,
+                    stride=10,
+                    num_samples=200,
+                )
+
+        m = mlflow.get_run(run.info.run_id).data.metrics
+        for key in ("backtest_mql_q0_1", "backtest_mql_q0_5", "backtest_mql_q0_9"):
+            assert key in m, f"Expected quantile key {key}"
+            assert np.isfinite(m[key])
+
+    def test_autolog_backtest_inconsistent_axes_flat_fallback(
+        self, mlflow_tracking, autolog_context
+    ):
+        """Metrics with mismatched axes (mae has no time axis, ae does) cannot be
+        merged into a structured layout, so values are logged flat by index."""
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                self._fit_lr().backtest(
+                    self.ts_univariate,
+                    metric=[dm.mae, dm.ae],
+                    retrain=False,
+                    stride=10,
+                )
+
+        m = mlflow.get_run(run.info.run_id).data.metrics
+        flat_keys = [k for k in m if k.startswith("backtest_metrics_")]
+        assert flat_keys, "Expected flat fallback keys for inconsistent axes"
+        assert "backtest_mae" not in m, "No structured key on flat fallback"
+
+    def test_autolog_backtest_classification_labels_in_data(
+        self, mlflow_tracking, autolog_context
+    ):
+        """f1 with explicit labels present in the series logs finite per-label keys."""
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                self._fit_lr(self.ts_binary).backtest(
+                    self.ts_binary,
+                    metric=dm.f1,
+                    metric_kwargs={"label_reduction": None, "labels": [0, 1]},
+                    retrain=False,
+                    stride=10,
+                )
+
+        m = mlflow.get_run(run.info.run_id).data.metrics
+        assert "backtest_f1_label0" in m
+        assert "backtest_f1_label1" in m
+        assert np.isfinite(m["backtest_f1_label0"])
+        assert np.isfinite(m["backtest_f1_label1"])
+
+    def test_autolog_backtest_classification_labels_not_in_data(
+        self, mlflow_tracking, autolog_context
+    ):
+        """f1 with explicit labels absent from the series still creates the keys, but
+        the scores are NaN (the labels never appear in any window)."""
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                self._fit_lr(self.ts_binary).backtest(
+                    self.ts_binary,
+                    metric=dm.f1,
+                    metric_kwargs={"label_reduction": None, "labels": [5, 10]},
+                    retrain=False,
+                    stride=10,
+                )
+
+        m = mlflow.get_run(run.info.run_id).data.metrics
+        assert "backtest_f1_label5" in m
+        assert "backtest_f1_label10" in m
+        assert np.isnan(m["backtest_f1_label5"])
+        assert np.isnan(m["backtest_f1_label10"])
+
+    def test_autolog_backtest_classification_labels_inferred(
+        self, mlflow_tracking, autolog_context
+    ):
+        """f1 with label_reduction=None and no explicit labels infers class names
+        from series values and logs structured per-label keys instead of flat
+        integer-indexed ones."""
+        # binary classification series: values are 0.0 and 1.0
+        rng = np.random.default_rng(42)
+        vals = rng.choice([0.0, 1.0], size=50).astype(np.float32).reshape(-1, 1)
+        ts_bin = tg.constant_timeseries(value=0.0, length=50).with_values(vals)
+
+        model = LinearRegressionModel(lags=4)
+        model.fit(ts_bin)
+
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                model.backtest(
+                    series=ts_bin,
+                    metric=dm.f1,
+                    metric_kwargs={"label_reduction": None},
+                    retrain=False,
+                    stride=10,
+                )
+
+        m = mlflow.get_run(run.info.run_id).data.metrics
+        # unique values are 0.0 and 1.0 → keys should use actual class values
+        assert "backtest_f1_label0" in m, "Expected 'backtest_f1_label0' for class 0.0"
+        assert "backtest_f1_label1" in m, "Expected 'backtest_f1_label1' for class 1.0"
+        # no flat integer-indexed keys
+        flat_keys = [
+            k
+            for k in m
+            if k.startswith("backtest_f1_") and k[-1].isdigit() and "_label" not in k
+        ]
+        assert not flat_keys, f"Did not expect flat fallback keys: {flat_keys}"
+
+    def test_log_backtest_metrics_label_count_mismatch(self, mlflow_tracking, caplog):
+        """When the inferred label count does not divide the metric output size,
+        logging is skipped with a warning rather than raising — keeping autologging
+        non-fatal for the surrounding backtest call.
+
+        This is tested by calling _log_backtest_metrics directly so the warning is
+        not swallowed by MLflow's safe_patch wrapper.
+        """
+        # Series has 3 unique classes so np.unique(series.values()) → [0, 1, 2].
+        vals = np.array([0.0, 1.0, 2.0] * 17, dtype=np.float32)[:50].reshape(-1, 1)
+        ts_3class = tg.constant_timeseries(value=0.0, length=50).with_values(vals)
+
+        # Simulate a backtest result with only 2 entries — as if the metric was
+        # evaluated on windows that only contained classes 0 and 1.
+        # quantiles_num will be inferred as 3 (from series) but result has 2 → mismatch.
+        fake_result = np.array([0.8, 0.6], dtype=float)
+
+        backtest_args = {
+            "metric": dm.f1,
+            "metric_kwargs": {"label_reduction": None},
+            "series": ts_3class,
+            "forecast_horizon": 1,
+            "reduction": np.mean,  # not None → has_windows=False → single window
+            "last_points_only": True,
+        }
+
+        with mlflow.start_run() as run:
+            client = MlflowAutologgingQueueingClient()
+            with caplog.at_level(logging.WARNING):
+                # must not raise — logging is skipped on shape mismatch
+                _log_backtest_metrics(
+                    client, run.info.run_id, fake_result, backtest_args
+                )
+            assert "not divisible" in caplog.text
+            client.flush(synchronous=True)
+
+        assert not mlflow.get_run(run.info.run_id).data.metrics
+
+    def _fit_lr(self, series=None):
+        """Fit and return a fresh LinearRegressionModel (no active run)."""
+        model = LinearRegressionModel(lags=4)
+        model.fit(series if series is not None else self.ts_univariate)
+        return model
+
+    def _fit_qlr(self, series=None):
+        """Fit and return a fresh quantile LinearRegressionModel (no active run)."""
+        model = LinearRegressionModel(
+            lags=4, likelihood="quantile", quantiles=[0.1, 0.5, 0.9]
+        )
+        model.fit(series if series is not None else self.ts_univariate)
+        return model
+
+
+@pytest.mark.parametrize(
+    "metric_name, metric_kwargs, expected",
+    [
+        ("mae", {}, dict(has_time_axis=False, has_comp_axis=False, quantiles_num=1)),
+        ("ae", {}, dict(has_time_axis=True, has_comp_axis=False, quantiles_num=1)),
+        ("mae", {"component_reduction": None}, dict(has_comp_axis=True)),
+    ],
+)
+def test_infer_metric_axes_reductions(metric_name, metric_kwargs, expected):
+    _attr_idx = {"has_time_axis": 0, "has_comp_axis": 1, "quantiles_num": 2}
+    axes = _infer_metric_axes(getattr(dm, metric_name), metric_kwargs)
+    for attr, value in expected.items():
+        assert axes[_attr_idx[attr]] == value
+
+
+def test_infer_metric_axes_quantiles():
+    _, _, quantiles_num, quantiles_labels = _infer_metric_axes(
+        dm.mql, {"q": [0.1, 0.5, 0.9]}
+    )
+    assert quantiles_num == 3
+    assert quantiles_labels == ["_q0.1", "_q0.5", "_q0.9"]
+
+
+def test_infer_metric_axes_quantile_interval():
+    has_time, _, quantiles_num, quantiles_labels = _infer_metric_axes(
+        dm.iw, {"q_interval": (0.1, 0.9)}
+    )
+    assert quantiles_num == 1
+    assert quantiles_labels == ["_qi0.1_0.9"]
+    assert has_time is True
+
+
+def test_infer_metric_axes_unknown_labels():
+    """label_reduction=None with no explicit labels cannot determine QL."""
+    _, _, quantiles_num, _ = _infer_metric_axes(dm.f1, {"label_reduction": None})
+    assert quantiles_num is None
