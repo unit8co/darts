@@ -240,8 +240,9 @@ class TestMLflow:
     def test_autolog_enable_disable(self, mlflow_tracking, autolog_context):
         """Test autolog can be enabled and disabled"""
         with autolog_context():
-            model = ExponentialSmoothing()
-            model.fit(self.ts_univariate)
+            with mlflow.start_run():
+                model = ExponentialSmoothing()
+                model.fit(self.ts_univariate)
 
             runs = mlflow.search_runs()
             assert len(runs) == 1, "Expected exactly one run after autolog fit"
@@ -263,8 +264,9 @@ class TestMLflow:
     def test_autolog_parameters(self, mlflow_tracking, autolog_context):
         """Test that autolog logs model parameters"""
         with autolog_context():
-            model = ExponentialSmoothing(seasonal_periods=12)
-            model.fit(self.ts_univariate)
+            with mlflow.start_run():
+                model = ExponentialSmoothing(seasonal_periods=12)
+                model.fit(self.ts_univariate)
 
             runs = mlflow.search_runs()
             assert len(runs) == 1
@@ -277,14 +279,15 @@ class TestMLflow:
     def test_autolog_torch_metrics(self, mlflow_tracking, autolog_context):
         """Test that autolog logs training metrics for torch models"""
         with autolog_context():
-            model = NBEATSModel(
-                input_chunk_length=4,
-                output_chunk_length=2,
-                n_epochs=2,
-                **tfm_kwargs_dev,
-            )
-            train, val = self.ts_univariate.split_before(0.7)
-            model.fit(train, val_series=val)
+            with mlflow.start_run():
+                model = NBEATSModel(
+                    input_chunk_length=4,
+                    output_chunk_length=2,
+                    n_epochs=2,
+                    **tfm_kwargs_dev,
+                )
+                train, val = self.ts_univariate.split_before(0.7)
+                model.fit(train, val_series=val)
 
             runs = mlflow.search_runs()
             assert len(runs) == 1, "Expected exactly one run"
@@ -327,15 +330,16 @@ class TestMLflow:
         with autolog_context():
             assert not autologging_is_disabled("pytorch")
 
-            model = NBEATSModel(
-                input_chunk_length=4,
-                output_chunk_length=2,
-                n_epochs=n_epochs,
-                torch_metrics=torchmetrics.MeanAbsoluteError(),
-                **tfm_kwargs_dev,
-            )
-            train, val = self.ts_univariate.split_before(0.7)
-            model.fit(train, val_series=val)
+            with mlflow.start_run():
+                model = NBEATSModel(
+                    input_chunk_length=4,
+                    output_chunk_length=2,
+                    n_epochs=n_epochs,
+                    torch_metrics=torchmetrics.MeanAbsoluteError(),
+                    **tfm_kwargs_dev,
+                )
+                train, val = self.ts_univariate.split_before(0.7)
+                model.fit(train, val_series=val)
 
             runs = mlflow.search_runs()
             assert len(runs) == 1
