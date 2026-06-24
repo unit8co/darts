@@ -64,8 +64,15 @@ from mlflow.utils.requirements_utils import _get_pinned_requirement
 
 import darts
 from darts.logging import get_logger, raise_log
+from darts.metrics import CLASSIFICATION_METRICS
+from darts.metrics.utils import _LabelReduction
 from darts.models.forecasting.forecasting_model import ForecastingModel
-from darts.utils.ts_utils import get_single_series
+from darts.utils.ts_utils import (
+    SeriesType,
+    get_series_seq_type,
+    get_single_series,
+    series2seq,
+)
 
 logger = get_logger(__name__)
 
@@ -598,11 +605,10 @@ def _autolog(
             _autolog_state.in_historical_forecasts = False
 
     def _patched_backtest(original, self, *args, **kwargs):
-        """Log backtest metric result(s) to the active MLflow run.
+        """Wrap ``backtest`` to log metric result(s) to the active MLflow run.
 
-        Scalar results (default reduction) are logged as a single metric value.
-        Per-window arrays (reduction=None) are logged as consecutive steps of
-        the same metric key so the MLflow UI renders them as a chart.
+        Delegates to ``_log_backtest_metrics``, which infers result shape from
+        the metric signature and logs every cell under a descriptive key.
         """
         _autolog_state.in_backtest = True
         try:
@@ -610,85 +616,18 @@ def _autolog(
         finally:
             _autolog_state.in_backtest = False
 
-        if not log_metrics:
-            return result
-
         active_run = mlflow.active_run()
-        if active_run is None:
+        if not log_metrics or active_run is None:
             return result
 
-        metric = kwargs.get("metric")
-        metric_kwargs = kwargs.get("metric_kwargs") or {}
+        bound = inspect.signature(ForecastingModel.backtest).bind(self, *args, **kwargs)
+        bound.apply_defaults()
+        backtest_args = bound.arguments
 
-        # Derive metric name(s)
-        if callable(metric):
-            names = [
-                getattr(metric, "__name__", "metric") + _kwargs_suffix(metric_kwargs)
-            ]
-        elif isinstance(metric, (list | tuple)):
-            kw_list = (
-                list(metric_kwargs)
-                if isinstance(metric_kwargs, (list | tuple))
-                else [metric_kwargs]
-            )
-            if len(kw_list) < len(metric):
-                kw_list = kw_list + [{}] * (len(metric) - len(kw_list))
-            names = [
-                getattr(m, "__name__", f"metric_{i}") + _kwargs_suffix(kw)
-                for i, (m, kw) in enumerate(zip(metric, kw_list))
-            ]
-        else:
-            names = ["mape"]  # darts default
-
-        run_id = active_run.info.run_id
         autologging_client = MlflowAutologgingQueueingClient()
-
-        def _log(key, val_or_arr):
-            arr = np.asarray(val_or_arr)
-            if arr.ndim == 0:
-                autologging_client.log_metrics(run_id=run_id, metrics={key: float(arr)})
-            elif arr.ndim == 1:
-                # per-window: log as steps so the MLflow UI shows a chart
-                for step, val in enumerate(arr):
-                    autologging_client.log_metrics(
-                        run_id=run_id, metrics={key: float(val)}, step=step
-                    )
-            # 2-D and higher: skip to keep MVP simple
-
-        result_arr = np.asarray(result) if not isinstance(result, list) else None
-
-        if isinstance(metric, (list | tuple)) and isinstance(result, list):
-            # multiple metrics → result is list[scalar_or_array], one per metric
-            for name, r in zip(names, result):
-                _log(f"backtest_{name}", r)
-        elif (
-            isinstance(metric, list | tuple)
-            and result_arr is not None
-            and result_arr.ndim == 1
-            and len(result_arr) == len(names)
-        ):
-            # multiple metrics with scalar reduction returned as a 1-D ndarray
-            # (e.g. np.mean/median/percentile) — log each as a separate scalar
-            for name, r in zip(names, result_arr):
-                autologging_client.log_metrics(
-                    run_id=run_id, metrics={f"backtest_{name}": float(r)}
-                )
-        elif result_arr is not None and result_arr.ndim == 2:
-            # (N_windows, N_metrics) ndarray — multi-metric + reduction=None
-            for col_i, name in enumerate(names[: result_arr.shape[1]]):
-                for step, val in enumerate(result_arr[:, col_i]):
-                    autologging_client.log_metrics(
-                        run_id=run_id,
-                        metrics={f"backtest_{name}": float(val)},
-                        step=step,
-                    )
-        elif isinstance(result, list):
-            # single metric, multiple series → result is list[scalar_or_array]
-            for s_i, r in enumerate(result):
-                _log(f"backtest_{names[0]}_{s_i}", r)
-        else:
-            _log(f"backtest_{names[0]}", result)
-
+        _log_backtest_metrics(
+            autologging_client, active_run.info.run_id, result, backtest_args
+        )
         autologging_client.flush(synchronous=False).await_completion()
         return result
 
@@ -876,12 +815,6 @@ def _extract_covariate_metadata(
     return info
 
 
-def _kwargs_suffix(kw: dict | None) -> str:
-    if not kw:
-        return ""
-    return "".join(f"_{k}{v}" for k, v in sorted(kw.items()))
-
-
 def _sanitize_mlflow_key(name: str) -> str:
     """Sanitize a string for use as an MLflow metric key.
 
@@ -900,6 +833,276 @@ def _sanitize_mlflow_key(name: str) -> str:
         A string safe for use as an MLflow metric key.
     """
     return re.sub(r"[^\w-]", "_", name)
+
+
+def _log_backtest_metrics(
+    autologging_client: MlflowAutologgingQueueingClient,
+    run_id: str,
+    result,
+    backtest_args: dict,
+) -> None:
+    """Log backtest metric result(s) to MLflow.
+
+    Reshapes each per-series result to a canonical ``(W, T, C, M)`` layout
+    (windows, timesteps, components × quantiles, metrics) inferred from the
+    metric signatures and ``backtest_args``, logging every cell under a
+    descriptive key with the time axis (or window axis when time is reduced)
+    mapped to the MLflow ``step``.
+
+    Shape inference respects all kwargs that affect output dimensions:
+
+    * ``time_reduction`` – collapses the time axis (``T=1``).
+    * ``component_reduction`` – collapses the component axis (``C=1``).
+    * ``series_reduction`` – if non-``None``, windows are already aggregated
+      inside the metric, so ``W=1`` regardless of ``backtest.reduction``.
+    * ``q`` / ``q_interval`` – expand the component axis with one entry per
+      quantile / interval.
+    * ``label_reduction`` / ``labels`` – expand the component axis for
+      classification metrics.
+    * ``reduction=None`` – no aggregation across windows → one value per window.
+    * ``last_points_only`` – collapses all windows into one TimeSeries before scoring,
+      so there is effectively only one window regardless of reduction.
+
+    When ``label_reduction=None`` is used without explicit ``labels``, the
+    unique class values are inferred from ``series`` at runtime so structured
+    per-label keys are still produced. When two metrics have incompatible axis
+    layouts (different ``time_reduction`` / ``component_reduction`` / quantile
+    count), each series result is flattened to integer-indexed keys instead.
+
+    Parameters
+    ----------
+    autologging_client
+        MLflow autologging client used to queue metric writes.
+    run_id
+        ID of the active MLflow run.
+    result
+        Return value of ``backtest()``.
+    backtest_args
+        Bound arguments of the ``backtest()`` call (from
+        ``inspect.BoundArguments.arguments`` after ``apply_defaults``).
+    """
+    metric = backtest_args.get("metric")
+    metric = metric if isinstance(metric, list) else [metric]
+    metric_kwargs = backtest_args.get("metric_kwargs") or {}
+    metric_kwargs = (
+        metric_kwargs if isinstance(metric_kwargs, list) else [metric_kwargs]
+    )
+    # backtest accepts a single dict that applies to all metrics; broadcast it
+    if len(metric_kwargs) != len(metric):
+        metric_kwargs = [metric_kwargs[0]] * len(metric)
+    metric_names = [
+        _sanitize_mlflow_key(getattr(m, "__name__", f"metric_{i}"))
+        for i, m in enumerate(metric)
+    ]
+    n_metrics = len(metric)
+
+    # reduction=None means no aggregation across windows → one value per window.
+    # last_points_only collapses all windows into one TimeSeries before scoring,
+    # so there is effectively only one window regardless of reduction.
+    has_windows = backtest_args.get("reduction") is None and not backtest_args.get(
+        "last_points_only", False
+    )
+
+    # series_reduction inside the metric itself already aggregates across windows,
+    # so the result has no window axis even when backtest.reduction is None.
+    metric_0_params = inspect.signature(metric[0]).parameters
+    if "series_reduction" in metric_0_params:
+        effective_sr = metric_kwargs[0].get(
+            "series_reduction", metric_0_params["series_reduction"].default
+        )
+        if effective_sr is not None:
+            has_windows = False
+
+    # check the dim axes from the metric kwargs for each
+    metric_axes = [_infer_metric_axes(m, kw) for m, kw in zip(metric, metric_kwargs)]
+    has_time_axis, has_comp_axis, quantiles_num, _ = metric_axes[0]
+
+    # Inconsistent axes across metrics (different has_time_axis, has_comp_axis, or
+    # quantiles_num) means the result can't be reshaped into a single canonical array.
+    # Fall back to flat integer-indexed keys for this case.
+    axes_inconsistent = any(ax[:3] != metric_axes[0][:3] for ax in metric_axes[1:])
+
+    # quantiles_num=None means label_reduction=None was requested with labels=None,
+    labels_unknown = quantiles_num is None
+
+    series = backtest_args.get("series")
+    forecast_horizon = backtest_args.get("forecast_horizon")
+
+    series_seq = series2seq(series)
+    results = [result] if get_series_seq_type(series) == SeriesType.SINGLE else result
+
+    metrics_by_step: dict[int, dict[str, float]] = {}
+    for series_index, (s, r) in enumerate(zip(series_seq, results)):
+        series_suffix = f"_s{series_index}" if len(series_seq) > 1 else ""
+
+        if axes_inconsistent:
+            name_prefix = metric_names[0] if len(metric_names) == 1 else "metrics"
+            flat = np.asarray(r, dtype=float).flatten()
+            for i, val in enumerate(flat):
+                key = _sanitize_mlflow_key(f"backtest_{name_prefix}{series_suffix}_{i}")
+                metrics_by_step.setdefault(0, {})[key] = float(val)
+            continue
+
+        # resolve label names from series data when not provided explicitly.
+        # mirrors np.unique(np.concatenate([y_true, y_pred])) inside _confusion_matrix.
+        # NOTE: importantly this checks the series for labels, not just the windows, if
+        # this is an issue, then I'd suggest falling back to flat integer-indexed keys
+        # and enforcing explicit labels.
+        if labels_unknown:
+            inferred_labels = np.unique(s.values())
+            quantiles_num = len(inferred_labels)
+            metric_axes = [
+                (
+                    has_time_axis,
+                    has_comp_axis,
+                    quantiles_num,
+                    [f"_label{x:g}" for x in inferred_labels],
+                )
+            ] + list(metric_axes[1:])
+
+        comps = s.components.tolist()
+        # c_size = components × quantiles/intervals/labels per component
+        c_size = (s.n_components if has_comp_axis else 1) * quantiles_num
+        arr = np.asarray(r, dtype=float)
+        # after stripping C and M axes, rest = W*T (or W or T alone)
+        rest, extra = divmod(arr.size, c_size * n_metrics)
+        if extra:
+            logger.warning(
+                "Backtest metric logging skipped: result size (%d) is not "
+                "divisible by c_size * n_metrics (%d * %d = %d). "
+                "The metric output shape does not match the inferred axes.",
+                arr.size,
+                c_size,
+                n_metrics,
+                c_size * n_metrics,
+            )
+            return
+
+        # both time and window axes present: backtest returns (W*T*C*M,) in C order so we can
+        # recover W and T only if forecast_horizon is known (T = forecast_horizon)
+        if has_time_axis and has_windows:
+            if not forecast_horizon or rest % forecast_horizon:
+                logger.warning(
+                    "Backtest metric logging skipped: cannot split window/time "
+                    "axes — %d elements remain after stripping component and "
+                    "metric axes, but forecast_horizon=%r does not divide "
+                    "evenly. Pass an explicit forecast_horizon to backtest().",
+                    rest,
+                    forecast_horizon,
+                )
+                return
+            t_size, w_size = forecast_horizon, rest // forecast_horizon
+        elif has_time_axis:
+            t_size, w_size = rest, 1
+        elif has_windows:
+            t_size, w_size = 1, rest
+        else:
+            if rest != 1:
+                logger.warning(
+                    "Backtest metric logging skipped: expected a single scalar "
+                    "per component/metric after reduction, but got %d elements. "
+                    "Check time_reduction and component_reduction defaults.",
+                    rest,
+                )
+                return
+            t_size, w_size = 1, 1
+
+        canonical = arr.reshape(w_size, t_size, c_size, n_metrics)
+        for m, metric_name in enumerate(metric_names):
+            quantiles_labels = metric_axes[m][3]
+            for w in range(w_size):
+                for c in range(c_size):
+                    # c is a flat index into the (n_components × quantiles_num) C axis:
+                    # c = comp_i * quantiles_num + q_i
+                    component_index, quantile_index = divmod(c, quantiles_num)
+                    comp_part = (
+                        "_" + _sanitize_mlflow_key(comps[component_index])
+                        if has_comp_axis
+                        else ""
+                    )
+                    key = f"backtest_{metric_name}{comp_part}{quantiles_labels[quantile_index]}"
+                    if has_time_axis and has_windows:
+                        key += f"_w{w}"
+                    key = _sanitize_mlflow_key(key + series_suffix)
+                    for t in range(t_size):
+                        # MLflow step maps to the axis the UI should chart:
+                        # time when present, otherwise window index
+                        step = t if has_time_axis else w
+                        metrics_by_step.setdefault(step, {})[key] = float(
+                            canonical[w, t, c, m]
+                        )
+
+    for step, metrics in metrics_by_step.items():
+        autologging_client.log_metrics(run_id=run_id, metrics=metrics, step=step)
+
+
+def _infer_metric_axes(metric: Callable, metric_kwargs: dict) -> tuple:
+    """Infer a metric's output axes from its signature and ``metric_kwargs``.
+
+    Covers ``time_reduction``, ``component_reduction``, ``q``, ``q_interval``,
+    and ``label_reduction`` / ``labels`` for classification metrics.
+    ``series_reduction`` is handled at the ``_log_backtest_metrics`` level.
+
+    Parameters
+    ----------
+    metric
+        A darts metric callable.
+    metric_kwargs
+        Keyword arguments that will be forwarded to ``metric``.
+
+    Returns
+    -------
+    tuple
+        ``(has_time_axis, has_comp_axis, quantiles_num, quantiles_labels)`` where
+
+        - ``has_time_axis`` – ``True`` when ``time_reduction`` is ``None`` (i.e. a
+          per-timestep axis is present in the output).
+        - ``has_comp_axis`` – ``True`` when components are expanded (not collapsed to a scalar).
+        - ``quantiles_num`` – number of quantile/interval/label entries; ``None`` when it
+          cannot be determined (e.g. ``label_reduction=None`` without explicit
+          ``labels``), signalling the caller to fall back to flat logging.
+        - ``quantiles_labels`` – one key suffix per ``quantiles_num`` entry (empty list when
+          ``quantiles_num`` is ``None``).
+    """
+    params = inspect.signature(metric).parameters
+
+    def effective(param_name: str) -> Any:
+        """Return metric_kwargs value if present, else the signature default."""
+        if param_name in metric_kwargs:
+            return metric_kwargs[param_name]
+        return params[param_name].default if param_name in params else None
+
+    has_time_axis = "time_reduction" in params and effective("time_reduction") is None
+    has_comp_axis = (
+        "component_reduction" in params and effective("component_reduction") is None
+    )
+
+    q_interval, q = metric_kwargs.get("q_interval"), metric_kwargs.get("q")
+    if "q_interval" in params and q_interval is not None:
+        intervals = np.atleast_2d(np.array(q_interval, dtype=float))
+        quantiles_labels = [f"_qi{lo:g}_{hi:g}" for lo, hi in intervals]
+    elif "q" in params and q is not None:
+        quantiles_labels = [f"_q{v:g}" for v in np.atleast_1d(np.array(q, dtype=float))]
+    elif "label_reduction" in params and getattr(metric, "__name__", "") in {
+        m.__name__ for m in CLASSIFICATION_METRICS
+    }:
+        label_reduction = effective("label_reduction")
+        if isinstance(label_reduction, _LabelReduction):
+            label_reduction = label_reduction.value
+        labels = metric_kwargs.get("labels")
+        # label_reduction=None means one output per label, but without explicit
+        # labels we can't know how many — signal the caller to fall back
+        if label_reduction is None and labels is None:
+            return (has_time_axis, has_comp_axis, None, [])
+        quantiles_labels = (
+            [f"_label{x}" for x in np.atleast_1d(labels)]
+            if label_reduction is None
+            else [""]
+        )
+    else:
+        quantiles_labels = [""]
+
+    return (has_time_axis, has_comp_axis, len(quantiles_labels), quantiles_labels)
 
 
 def _log_metric_result(
