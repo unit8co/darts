@@ -6,7 +6,6 @@ Additional TimeSeries related util functions
 from collections.abc import Sequence
 from enum import Enum
 from functools import total_ordering
-from typing import Literal, overload
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
@@ -54,64 +53,6 @@ class SeriesType(Enum):
 
     def __str__(self):
         return _SEQ_TYPE_NAMES[self.value]
-
-
-@overload
-def series2seq(
-    ts: TimeSeriesLike,
-    seq_type_out: Literal[SeriesType.SEQ] = ...,
-    nested: bool = ...,
-) -> Sequence[TimeSeries]: ...
-
-
-@overload
-def series2seq(
-    ts: TimeSeriesLike | None,
-    seq_type_out: Literal[SeriesType.SEQ] = ...,
-    nested: bool = ...,
-) -> Sequence[TimeSeries] | None: ...
-
-
-@overload
-def series2seq(
-    ts: TimeSeriesLike,
-    seq_type_out: Literal[SeriesType.SINGLE, SeriesType.SEQ],
-    nested: bool = ...,
-) -> TimeSeriesLike: ...
-
-
-@overload
-def series2seq(
-    ts: TimeSeries | list[TimeSeries] | list[list[TimeSeries]],
-    seq_type_out: Literal[SeriesType.SINGLE, SeriesType.SEQ],
-    nested: bool = ...,
-) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]]: ...
-
-
-# Non-`None` Pattern-B exit for SEQ_SEQ-inclusive inputs (e.g. `_apply_inverse_data_transformers`):
-# like the overload above but accepts `Sequence[...]` (not only `list[...]`), so the return stays non-`None`.
-@overload
-def series2seq(
-    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]],
-    seq_type_out: Literal[SeriesType.SINGLE, SeriesType.SEQ],
-    nested: bool = ...,
-) -> TimeSeriesLike | Sequence[Sequence[TimeSeries]]: ...
-
-
-@overload
-def series2seq(
-    ts: TimeSeriesLike | None,
-    seq_type_out: Literal[SeriesType.SINGLE, SeriesType.SEQ, SeriesType.NONE],
-    nested: bool = ...,
-) -> TimeSeriesLike | None: ...
-
-
-@overload
-def series2seq(
-    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None,
-    seq_type_out: SeriesType = ...,
-    nested: bool = ...,
-) -> TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None: ...
 
 
 def series2seq(
@@ -242,31 +183,6 @@ def get_single_series(
         return ts[0]
     else:
         return ts[0][0]
-
-
-@overload
-def get_series_seq_type(
-    ts: TimeSeries,
-) -> Literal[SeriesType.SINGLE]: ...
-
-
-@overload
-def get_series_seq_type(
-    ts: TimeSeriesLike,
-) -> Literal[SeriesType.SINGLE, SeriesType.SEQ]: ...
-
-
-# Optional Pattern B entry: matches `series: TimeSeriesLike | None` inputs.
-@overload
-def get_series_seq_type(
-    ts: TimeSeriesLike | None,
-) -> Literal[SeriesType.SINGLE, SeriesType.SEQ, SeriesType.NONE]: ...
-
-
-@overload
-def get_series_seq_type(
-    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None,
-) -> SeriesType: ...
 
 
 def get_series_seq_type(
