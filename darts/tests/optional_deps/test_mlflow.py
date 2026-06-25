@@ -724,6 +724,180 @@ class TestMLflow:
             "darts.metrics.metrics.mae should NOT log (implementation module is not patched)"
         )
 
+    def test_autolog_metric_per_timestep(self, mlflow_tracking, autolog_context):
+        """A per-timestep metric (ae) logs one value per timestep across MLflow steps.
+
+        time_reduction=None (ae's default) means the result keeps a per-timestep
+        axis, which is mapped to the MLflow step (mirroring the backtest path)
+        rather than being mislabeled as per-component.
+        """
+        train = self.ts_univariate[:40]
+        model = LinearRegressionModel(lags=4)
+        model.fit(train)
+        pred = model.predict(n=10)
+        actual = self.ts_univariate[40:]
+
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                ref = dm.ae(actual, pred)
+
+        # the first-arg variable name ("actual") is captured as the key prefix
+        ref = np.asarray(ref, dtype=float)  # shape (n_timesteps,)
+        history = mlflow_tracking.get_metric_history(run.info.run_id, "actual_ae")
+        assert len(history) == len(ref), "Expected one step per timestep"
+        steps = sorted(m.step for m in history)
+        assert steps == list(range(len(ref)))
+        logged = [m.value for m in sorted(history, key=lambda m: m.step)]
+        np.testing.assert_allclose(logged, ref, atol=1e-5)
+
+    def test_autolog_metric_quantile(self, mlflow_tracking, autolog_context):
+        """A quantile metric (mql) logs one key per quantile with matching values."""
+        train = self.ts_univariate[:40]
+        model = LinearRegressionModel(
+            lags=4, likelihood="quantile", quantiles=[0.1, 0.5, 0.9]
+        )
+        model.fit(train)
+        pred = model.predict(n=10, num_samples=200)
+        actual = self.ts_univariate[40:]
+
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                ref = dm.mql(actual, pred, q=[0.1, 0.5, 0.9])
+
+        # the first-arg variable name ("actual") is captured as the key prefix
+        ref = np.asarray(ref, dtype=float)  # shape (n_quantiles,)
+        m = mlflow.get_run(run.info.run_id).data.metrics
+        for i, key in enumerate((
+            "actual_mql_q0_1",
+            "actual_mql_q0_5",
+            "actual_mql_q0_9",
+        )):
+            assert key in m, f"Expected quantile key {key}"
+            assert m[key] == pytest.approx(ref[i], abs=1e-5)
+
+    def test_autolog_metric_quantile_interval(self, mlflow_tracking, autolog_context):
+        """A quantile interval metric (miw) logs one key per interval."""
+        train = self.ts_univariate[:40]
+        model = LinearRegressionModel(
+            lags=4, likelihood="quantile", quantiles=[0.1, 0.5, 0.9]
+        )
+        model.fit(train)
+        pred = model.predict(n=10, num_samples=200)
+        actual = self.ts_univariate[40:]
+
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                ref = dm.miw(actual, pred, q_interval=(0.1, 0.9))
+
+        # the first-arg variable name ("actual") is captured as the key prefix
+        m = mlflow.get_run(run.info.run_id).data.metrics
+        assert "actual_miw_qi0_1_0_9" in m
+        assert m["actual_miw_qi0_1_0_9"] == pytest.approx(float(ref), abs=1e-5)
+
+    def test_autolog_metric_multi_series(self, mlflow_tracking, autolog_context):
+        """A list of series logs one key per series index using the _s{i} suffix."""
+        series = [self.ts_univariate, self.ts_univariate * 1.2]
+        pred = [s * 1.1 for s in series]
+
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                ref = dm.mae(series, pred)
+
+        # the first-arg variable name ("series") is captured as the key prefix
+        ref = np.asarray(ref, dtype=float)  # shape (n_series,)
+        m = mlflow.get_run(run.info.run_id).data.metrics
+        assert m["series_mae_s0"] == pytest.approx(ref[0], abs=1e-5)
+        assert m["series_mae_s1"] == pytest.approx(ref[1], abs=1e-5)
+
+    def test_autolog_metric_multi_series_per_component(
+        self, mlflow_tracking, autolog_context
+    ):
+        """A list of multivariate series with component_reduction=None logs one key
+        per (component, series) — exercising the 2-D (series × component) layout."""
+        series = [self.ts_multivariate, self.ts_multivariate * 1.2]
+        pred = [s * 1.1 for s in series]
+
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                ref = dm.mae(series, pred, component_reduction=None)
+
+        # the first-arg variable name ("series") is captured as the key prefix
+        ref = np.asarray(ref, dtype=float)  # shape (n_series, n_components)
+        m = mlflow.get_run(run.info.run_id).data.metrics
+        assert m["series_mae_linear_s0"] == pytest.approx(ref[0, 0], abs=1e-5)
+        assert m["series_mae_linear_1_s0"] == pytest.approx(ref[0, 1], abs=1e-5)
+        assert m["series_mae_linear_s1"] == pytest.approx(ref[1, 0], abs=1e-5)
+        assert m["series_mae_linear_1_s1"] == pytest.approx(ref[1, 1], abs=1e-5)
+
+    def test_autolog_metric_multi_series_classification_labels_inferred(
+        self, mlflow_tracking, autolog_context
+    ):
+        """f1 with label_reduction=None on a list of binary series infers class labels
+        per-series and logs structured per-label keys with the _s{i} suffix.
+
+        This exercises the labels_unknown branch inside the per-series loop so that
+        each series' own class set is inferred rather than reusing the first series'.
+        """
+        # two independent binary series (same classes, deterministic)
+        binary1 = tg.constant_timeseries(value=0.0, length=50).with_values(
+            np.array([0.0, 1.0] * 25, dtype=np.float32).reshape(-1, 1)
+        )
+        binary2 = tg.constant_timeseries(value=0.0, length=50).with_values(
+            np.array([1.0, 0.0] * 25, dtype=np.float32).reshape(-1, 1)
+        )
+        series = [binary1, binary2]
+        pred = series  # perfect predictions → f1 == 1.0 per label per series
+
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                ref = dm.f1(series, pred, label_reduction=None)
+
+        ref = [np.asarray(r, dtype=float).flatten() for r in ref]
+        m = mlflow.get_run(run.info.run_id).data.metrics
+        for i in range(2):
+            assert f"series_f1_label0_s{i}" in m, f"Missing key for series {i}, label 0"
+            assert f"series_f1_label1_s{i}" in m, f"Missing key for series {i}, label 1"
+            assert m[f"series_f1_label0_s{i}"] == pytest.approx(ref[i][0], abs=1e-5)
+            assert m[f"series_f1_label1_s{i}"] == pytest.approx(ref[i][1], abs=1e-5)
+
+    def test_autolog_metric_size_mismatch_warns_and_skips(
+        self, mlflow_tracking, autolog_context, caplog
+    ):
+        """When the inferred C-axis size doesn't divide the result, a warning is logged
+        and no metrics are written (non-fatal — autologging must not raise)."""
+        actual = self.ts_univariate[40:]
+        # mae with component_reduction=None on a univariate series produces shape (T,),
+        # which is size T — divisible by c_size=1 (1 component × 1 quantile), so we
+        # need to force a mismatch.  We do that by monkey-patching _infer_metric_axes
+        # to report has_comp_axis=True with a fake 3-component count, making c_size=3
+        # while the actual result is shape (T,).
+        train = self.ts_univariate[:40]
+        model = LinearRegressionModel(lags=4)
+        model.fit(train)
+        pred = model.predict(n=10)
+
+        import unittest.mock as mock
+
+        from darts.utils import mlflow as mlflow_utils
+
+        fake_axes = (False, True, 3, ["_c0", "_c1", "_c2"])
+        with mock.patch.object(
+            mlflow_utils, "_infer_metric_axes", return_value=fake_axes
+        ):
+            with autolog_context(log_metrics=True):
+                with mlflow.start_run() as run:
+                    with caplog.at_level(logging.WARNING, logger="darts"):
+                        dm.mae(actual, pred)
+
+        assert any("not divisible" in record.message for record in caplog.records), (
+            "Expected a 'not divisible' warning when axes don't match the result"
+        )
+        # no metrics should have been written for the (faked) mismatched call
+        run_data = mlflow.get_run(run.info.run_id).data.metrics
+        assert not any("mae" in k for k in run_data), (
+            "No mae metrics should be logged when the size check fails"
+        )
+
     def test_autolog_backtest_scalar(self, mlflow_tracking, autolog_context):
         """Default (reduced) backtest of a single univariate series logs one scalar."""
         with autolog_context(log_metrics=True):
