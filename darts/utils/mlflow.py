@@ -423,19 +423,21 @@ def autolog(
 
     .. note::
 
-        Logged metric keys depend on the result shape:
+        Logged metric keys follow the pattern
+        ``{dataset_name}_{metric_name}{component}{quantile_or_label}``, where
+        each part is included only when the corresponding axis is present:
 
-        * **Scalar** → ``{metric_name}``
-        * **Per-component** (1-D, single series) →
-          ``{metric_name}_{component_name}``
-        * **Per-series** (1-D, list of series) →
-          ``{metric_name}_{series_idx}``
-        * **Per-series × per-component** (2-D) →
-          ``{metric_name}_{component_name}_{series_idx}``
+        * ``dataset_name`` – variable name of the first argument, captured via
+          frame inspection (omitted when not found).
+        * ``metric_name`` – the metric function name, or the ``name`` keyword
+          argument when provided (it overrides only this token).
+        * ``component`` – the component name when ``component_reduction=None``.
+        * ``quantile_or_label`` – e.g. ``_q0.5`` / ``_qi0.1_0.9`` / ``_label1``.
 
-        When a dataset variable name can be captured via frame inspection,
-        it is inserted after the metric name (e.g.
-        ``{metric_name}_{dataset_name}_{component_name}``).
+        Per-timestep results (``time_reduction=None``) are charted across the
+        MLflow ``step``. For a list of series the logged value is the mean over
+        series and the full per-series breakdown is written to a
+        ``per_series_metrics/`` CSV artifact.
 
     Parameters
     ----------
@@ -879,7 +881,9 @@ def _log_backtest_metrics(
     (windows, timesteps, components × quantiles, metrics) inferred from the
     metric signatures and ``backtest_args``, logging every cell under a
     descriptive key with the time axis (or window axis when time is reduced)
-    mapped to the MLflow ``step``.
+    mapped to the MLflow ``step``. A metric's ``name`` entry in
+    ``metric_kwargs`` overrides the metric-name token in the key (the
+    ``backtest_`` prefix and axis suffixes are preserved).
 
     Shape inference respects all kwargs that affect output dimensions:
 
@@ -927,8 +931,11 @@ def _log_backtest_metrics(
     # backtest accepts a single dict that applies to all metrics; broadcast it
     if len(metric_kwargs) != len(metric):
         metric_kwargs = [metric_kwargs[0]] * len(metric)
+    # the `name` entry in metric_kwargs overrides the metric-name token in the key
     metric_names = [
-        _sanitize_mlflow_key(getattr(m, "__name__", f"metric_{i}"))
+        _sanitize_mlflow_key(
+            metric_kwargs[i].get("name") or getattr(m, "__name__", f"metric_{i}")
+        )
         for i, m in enumerate(metric)
     ]
     n_metrics = len(metric)
@@ -1207,7 +1214,8 @@ def _log_metric_result(
     Parameters
     ----------
     metric_name
-        Base metric name used as the MLflow key.
+        Base metric name used as the MLflow key (the metric's ``name`` keyword
+        argument when provided, otherwise the metric function name).
     result
         The metric result to log.
     series
@@ -1341,6 +1349,8 @@ def _make_metric_patch(metric_name: str) -> Callable:
 
     * ``dataset_name`` – Python variable name of the first argument in the
       caller's frame (captured via frame inspection, omitted if not found).
+    * ``metric_name`` – the metric function name, or the ``name`` keyword
+      argument when provided (it overrides only this token).
     * ``component`` – ``_{component_name}`` when ``component_reduction=None``.
     * ``quantile_or_label`` – quantile/interval/label suffix (e.g. ``_q0.5``,
       ``_qi0.1_0.9``, ``_label1``) when applicable.
@@ -1385,6 +1395,9 @@ def _make_metric_patch(metric_name: str) -> Callable:
         raw = _inspect_original_var_name(series, fallback_name=None)
         dataset_name = _sanitize_mlflow_key(raw) if raw else None
 
+        # the `name` kwarg overrides the metric-name token in the logged key
+        key_name = _sanitize_mlflow_key(kwargs.get("name") or metric_name)
+
         # infer output axes from the metric signature + call kwargs
         has_time_axis, has_comp_axis, quantiles_num, quantiles_labels = (
             _infer_metric_axes(original, kwargs)
@@ -1403,7 +1416,7 @@ def _make_metric_patch(metric_name: str) -> Callable:
         _log_metric_result(
             autologging_client,
             run_id,
-            metric_name,
+            key_name,
             result,
             series,
             has_time_axis,

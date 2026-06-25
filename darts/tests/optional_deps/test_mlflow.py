@@ -853,6 +853,39 @@ class TestMLflow:
         assert got[("series_mae_linear_1", 0)] == pytest.approx(ref[0, 1], abs=1e-5)
         assert got[("series_mae_linear_1", 1)] == pytest.approx(ref[1, 1], abs=1e-5)
 
+    def test_autolog_metric_name_override(self, mlflow_tracking, autolog_context):
+        """The metric `name` kwarg overrides only the metric-name token in the key,
+        keeping the dataset/backtest prefix and the quantile/axis suffixes."""
+        actual = self.ts_univariate
+        train = self.ts_univariate[:40]
+        qmodel = self._fit_qlr(train)
+        pred = qmodel.predict(n=10, num_samples=200)
+        target = self.ts_univariate[40:]
+
+        with autolog_context(log_metrics=True):
+            # direct call: name replaces the metric token; suffix (_q0_5) preserved
+            with mlflow.start_run() as run_direct:
+                dm.mae(actual, actual * 1.1, name="custom")
+                dm.mql(target, pred, q=0.5, name="myq")
+            # backtest: name replaces the metric token; backtest_ prefix preserved
+            with mlflow.start_run() as run_bt:
+                self._fit_lr().backtest(
+                    self.ts_univariate,
+                    metric=dm.mae,
+                    metric_kwargs={"name": "custom"},
+                    retrain=False,
+                    stride=10,
+                )
+
+        direct = mlflow.get_run(run_direct.info.run_id).data.metrics
+        assert "actual_custom" in direct
+        assert "actual_mae" not in direct, "default metric name should be replaced"
+        assert "target_myq_q0_5" in direct, "quantile suffix should be preserved"
+
+        bt = mlflow.get_run(run_bt.info.run_id).data.metrics
+        assert "backtest_custom" in bt
+        assert "backtest_mae" not in bt, "default metric name should be replaced"
+
     def test_autolog_metric_multi_series_classification_labels_inferred(
         self, mlflow_tracking, autolog_context
     ):
