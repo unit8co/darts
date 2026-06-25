@@ -64,8 +64,8 @@ if TYPE_CHECKING:
     from darts.models.forecasting.linear_regression_model import (
         LinearRegressionModel as LinearRegressionModel,
     )
-    from darts.models.forecasting.multivariate_forecasting_model_wrapper import (
-        MultivariateForecastingModelWrapper as MultivariateForecastingModelWrapper,
+    from darts.models.forecasting.multivariate_model_wrapper import (
+        MultivariateModelWrapper as MultivariateModelWrapper,
     )
     from darts.models.forecasting.naive_ensemble_model import (
         NaiveEnsembleModel as NaiveEnsembleModel,

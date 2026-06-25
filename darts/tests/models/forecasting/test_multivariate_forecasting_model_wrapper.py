@@ -13,7 +13,7 @@ from darts.models import (
     ExponentialSmoothing,
     FourTheta,
     KalmanForecaster,
-    MultivariateForecastingModelWrapper,
+    MultivariateModelWrapper,
     NaiveMean,
     NaiveMovingAverage,
     NaiveSeasonal,
@@ -108,7 +108,7 @@ class TestMultivariateForecastingModelWrapper:
             assert preds.univariate_component(component) == individual_preds[component]
 
     def trained_model_predictions(self, base_model, n, series, future_covariates):
-        model = MultivariateForecastingModelWrapper(base_model)
+        model = MultivariateModelWrapper(base_model)
         model.fit(series, future_covariates=future_covariates)
         return model.predict(n=n, series=series, future_covariates=future_covariates)
 

@@ -7,31 +7,65 @@ for each component of the target series, independently of the others hence ignor
 its components.
 """
 
-from darts.logging import get_logger, raise_if_not
+import darts.models as darts_models
+from darts.logging import get_logger, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import (
-    FutureCovariatesLocalForecastingModel,
     LocalForecastingModel,
     TransferableFutureCovariatesLocalForecastingModel,
 )
 from darts.timeseries import TimeSeries, concatenate
-from darts.utils.ts_utils import seq2series
 
 logger = get_logger(__name__)
 
 
-class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel):
-    def __init__(self, model: LocalForecastingModel):
+class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel):
+    def __init__(
+        self,
+        model: str | type[LocalForecastingModel] | LocalForecastingModel,
+        model_kwargs: dict | None = None,
+    ):
         """
         Wrapper for univariate LocalForecastingModel to enable multivariate series training and forecasting.
 
         A copy of the provided model will be trained independently on each component of the target series, ignoring the
         potential interactions.
+
+        Parameters
         ----------
         model
-            Model used to predict individual components
+            Name, class, or instance of the Darts
+            :class:`~darts.models.forecasting.forecasting_model.LocalForecastingModel` to be used, e.g.,
+            ``"ExponentialSmoothing"``, ``ExponentialSmoothing``, or ``ExponentialSmoothing()``.
+            See all available models in :mod:`darts.models`.
+        model_kwargs
+            A dictionary of model parameters to initialize the model. Only effective when `model` is a string or
+            class. Default: ``None``.
         """
-        super().__init__()
+        model_kwargs = model_kwargs or {}
+        if isinstance(model, LocalForecastingModel):
+            pass
+        elif isinstance(model, str):
+            try:
+                model_class = getattr(darts_models, model)
+            except AttributeError:
+                raise_log(
+                    ValueError(
+                        f"Could not find a Darts LocalForecastingModel named `{model}` in `darts.models`."
+                    ),
+                    logger,
+                )
+            model = model_class(**model_kwargs)
+        elif isinstance(model, type) and issubclass(model, LocalForecastingModel):
+            model = model(**model_kwargs)
+        else:
+            raise_log(
+                ValueError(
+                    "`model` must be a valid Darts LocalForecastingModel name (str), class, or instance."
+                ),
+                logger,
+            )
 
+        super().__init__()
         self.model: LocalForecastingModel = model
         self._trained_models: list[LocalForecastingModel] = []
 
@@ -43,8 +77,6 @@ class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel)
     ):
         super()._fit(series, future_covariates)
         self._trained_models = []
-
-        series = seq2series(series)
         for comp in series.components:
             comp = series.univariate_component(comp)
             component_model = (
