@@ -40,7 +40,7 @@ def _extract_targets(batch: tuple[torch.Tensor], n_targets: int):
     Parameters
     ----------
     batch
-        The input batch tuple for the forward method. Has elements `(x_past, x_future, x_static)`.
+        The input batch tuple for the forward method. Has elements `(x_past, x_future, x_static, future_target)`.
     n_targets
         The number of target components to extract.
     """
@@ -80,8 +80,8 @@ class _GlobalNaiveModule(PLForecastingModule, ABC):
         Parameters
         ----------
         x_in
-            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
-            is the output/future chunk. Input dimensions are `(batch_size, time_steps, components)`
+            comes as tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
+            `x_future` is the output/future chunk. Input dimensions are `(batch_size, time_steps, components)`
 
         Returns
         -------

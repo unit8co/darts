@@ -459,15 +459,15 @@ class _TFTModule(PLForecastingModule):
         Parameters
         ----------
         x_in
-            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
-            is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
+            comes as tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
+            `x_future` is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
 
         Returns
         -------
         torch.Tensor
             the output tensor
         """
-        x_cont_past, x_cont_future, x_static = x_in
+        x_cont_past, x_cont_future, x_static, _ = x_in
         dim_samples, dim_time, dim_variable = 0, 1, 2
         device = x_in[0].device
 

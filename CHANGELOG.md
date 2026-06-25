@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- 🔴 Improved `TransformerModel` with proper encoder-decoder transformer architecture using teacher forcing during training and autoregressive inference, aligning the implementation with "Attention Is All You Need" (Vaswani et al., 2017). The embedding scaling factor was also corrected to use `sqrt(d_model)` per the paper. [#1915](https://github.com/unit8co/darts/pull/1915) by [Jan Fidor](https://github.com/JanFidor).
+
 **Fixed**
 
 **Dependencies**

@@ -21,11 +21,7 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
-from darts.utils.data.torch_datasets.utils import (
-    PLModuleInput,
-    TorchTrainingBatch,
-    TorchTrainingSample,
-)
+from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -147,7 +143,7 @@ class _TransformerModule(PLForecastingModule):
         Parameters
         ----------
         input_size
-            The dimensionality of the TimeSeries instances that will be fed to the the fit and predict functions.
+            The dimensionality of the TimeSeries instances that will be fed to the fit and predict functions.
         output_size
             The dimensionality of the output time series.
         nr_params
@@ -192,12 +188,14 @@ class _TransformerModule(PLForecastingModule):
         self.input_size = input_size
         self.target_size = output_size
         self.nr_params = nr_params
-        self.target_length = self.output_chunk_length
+        self.target_length = (
+            self.output_chunk_length if self.output_chunk_length is not None else 0
+        )
         self.d_model = d_model
 
         self.encoder = nn.Linear(input_size, d_model)
         self.positional_encoding = _PositionalEncoding(
-            d_model, dropout, max(self.input_chunk_length, self.output_chunk_length + 1)
+            d_model, dropout, max(self.input_chunk_length, self.target_length + 1)
         )
 
         if isinstance(norm_type, str):
@@ -291,33 +289,39 @@ class _TransformerModule(PLForecastingModule):
 
     @io_processor
     def forward(self, x_in: PLModuleInput):
-        """
-        During training (teacher forcing) x_in = tuple(past_target + past_covariates, future_targets)
-        During inference x_in = tuple(past_target + past_covariates)
+        """Forward pass with teacher forcing (training) or autoregressive decoding (inference).
 
-        '_TimeSeriesSequentialDataset' stores time series in the
-        (batch_size, input_chunk_length, input_size) format. PyTorch's nn.Transformer
-        module needs it the (input_chunk_length, batch_size, input_size) format.
-        Therefore, the first two dimensions need to be swapped.
+        Parameters
+        ----------
+        x_in
+            ``PLModuleInput`` tuple of ``(x_past, x_future, x_static, future_target)``, where ``x_past``
+            has shape ``(batch_size, input_chunk_length, input_size)``.
         """
-
+        # PyTorch's nn.Transformer needs (seq_len, batch_size, features)
         src = x_in[0].permute(1, 0, 2)
         pad_size = (0, self.input_size - self.target_size)
         start_token = src[-1:, :, :]
 
-        # encode src once; memory is reused by both the teacher-forcing and
-        # autoregressive paths, avoiding redundant encoder passes
+        # Ground-truth future target values for teacher forcing during training.
+        # Shape: ``(batch_size, output_chunk_length, target_size)``.
+        # When ``None``, autoregressive decoding is used.
+        future_target = x_in[-1]
+
         memory = self._encode_src(src)
 
-        if len(x_in) == 2:  # teacher forcing
-            tgt = x_in[-1].permute(1, 0, 2)
+        if future_target is not None:
+            # training: use teacher forcing where ground-truth future targets are fed to the decoder
+            if self.rin is not None:
+                # with RIN, io_processor has already normalized x_in[0] (past targets) and stored the
+                # stats; apply the same normalization to the teacher-forcing targets so both sides see
+                # the same scale
+                future_target = self.rin.transform(future_target)
+            tgt = future_target.permute(1, 0, 2)
             tgt = F.pad(tgt, pad_size)
             tgt = torch.cat([start_token, tgt], dim=0)
             return self._decode(memory, tgt)[:, :-1, :, :]
 
         # autoregressive: cache tgt embeddings and extend by one token per step
-        # so the linear projection and positional encoding are not recomputed for
-        # previously seen positions
         tgt_emb = self._embed(start_token, pos=0)
         predictions = []
         for t in range(self.target_length):
@@ -328,19 +332,19 @@ class _TransformerModule(PLForecastingModule):
         return torch.stack(predictions, dim=1)
 
     def _encode_src(self, src: torch.Tensor) -> torch.Tensor:
-        # see section 3.2.1 in 'Attention is All you Need' by Vaswani et al. (2017)
+        # see section 3.4 in 'Attention is All you Need' by Vaswani et al. (2017)
         src = self.encoder(src) * math.sqrt(self.d_model)
         src = self.positional_encoding(src)
         return self.transformer.encoder(src)
 
     def _embed(self, x: torch.Tensor, pos: int) -> torch.Tensor:
-        """Project to d_model and add positional encoding starting at `pos`."""
-        x = self.encoder(x)
+        """Project to d_model, scale by sqrt(d_model), and add positional encoding starting at ``pos``."""
+        x = self.encoder(x) * math.sqrt(self.d_model)
         x = x + self.positional_encoding.pe[pos : pos + x.shape[0]]
         return self.positional_encoding.dropout(x)
 
     def _decode(self, memory: torch.Tensor, tgt: torch.Tensor) -> torch.Tensor:
-        tgt_emb = self.encoder(tgt)
+        tgt_emb = self.encoder(tgt) * math.sqrt(self.d_model)
         tgt_emb = self.positional_encoding(tgt_emb)
         return self._decode_from_emb(memory, tgt_emb)
 
@@ -359,76 +363,14 @@ class _TransformerModule(PLForecastingModule):
         )
         return predictions
 
-    def generate_square_subsequent_mask(self, sz, device, dtype):
+    @staticmethod
+    def generate_square_subsequent_mask(
+        sz: int, device: torch.device, dtype: torch.dtype
+    ) -> torch.Tensor:
         return torch.triu(
             torch.full((sz, sz), float("-inf"), dtype=dtype, device=device),
             diagonal=1,
         )
-
-    def _train_val_step(
-        self,
-        batch: TorchTrainingBatch,
-        name: str,
-        criterion,
-        metrics,
-    ) -> torch.Tensor:
-        """performs a training or validation step"""
-        (
-            past_target,
-            past_covariates,
-            _,
-            _,
-            _,
-            sample_weight,
-            future_target,
-        ) = batch
-
-        if name == "train":
-            output = self._produce_train_output(
-                (past_target, past_covariates, future_target),
-            )
-        else:
-            output = self._produce_train_output(
-                (
-                    past_target,
-                    past_covariates,
-                ),
-            )
-        loss = self._compute_loss(output, future_target, criterion, sample_weight)
-        self.log(
-            f"{name}_loss",
-            loss,
-            batch_size=past_target.shape[0],
-            prog_bar=True,
-            sync_dist=True,
-        )
-        self._update_metrics(output, future_target, metrics)
-        return loss
-
-    def _produce_train_output(self, input_batch: tuple):
-        """
-        Feeds PastCovariatesTorchModel with input and output chunks of a PastCovariatesSequentialDataset for
-        training.
-
-        Parameters:
-        input_batch
-            ``(past_target, past_covariates, future_target)`` during training
-
-            ``(past_target, past_covariates, static_covariates)`` during validation (not teacher forced)
-        """
-
-        past_target, past_covariates = input_batch[:2]
-        # Currently all our PastCovariates models require past target and covariates concatenated
-        inpt = [
-            torch.cat([past_target, past_covariates], dim=2)
-            if past_covariates is not None
-            else past_target,
-        ]
-
-        # add future targets when training (teacher forcing)
-        if len(input_batch) == 3:
-            inpt.append(input_batch[-1])
-        return self(inpt)
 
 
 class TransformerModel(PastCovariatesTorchModel):
@@ -708,7 +650,7 @@ class TransformerModel(PastCovariatesTorchModel):
         self.custom_encoder = custom_encoder
         self.custom_decoder = custom_decoder
 
-    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> _TransformerModule:
         # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
         (past_target, past_covariates, _, _, _, _) = train_sample
         input_dim = past_target.shape[1] + (

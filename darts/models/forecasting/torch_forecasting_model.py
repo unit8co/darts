@@ -911,6 +911,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             _randomize(train_sample_shape[2]),
             _randomize(train_sample_shape[3]),
             _randomize(train_sample_shape[4]),
+            _randomize(train_sample_shape[5]),
         )
         input_sample = self.model._process_input_batch(mock_batch)
 

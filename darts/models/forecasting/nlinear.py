@@ -110,11 +110,11 @@ class _NLinearModule(PLForecastingModule):
     def forward(self, x_in: PLModuleInput):
         """
         x_in
-            comes as tuple `(x, x_future, x_static)` where `x` is the past target, past covariates and
+            comes as tuple `(x, x_future, x_static, future_target)` where `x` is the past target, past covariates and
             historic future covariate chunk and `x_future` is the (non-historic) future chunk.
             Input dimensions are `(n_samples, n_time_steps, n_variables)`
         """
-        x, x_future, x_static = x_in  # x: (batch, in_len, in_dim)
+        x, x_future, x_static, _ = x_in  # x: (batch, in_len, in_dim)
         # we clone `x`, to avoid value mutation from normalization when performing auto-regression
         x = x.clone()
         batch, _, _ = x.shape
