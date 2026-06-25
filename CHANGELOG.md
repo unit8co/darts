@@ -11,9 +11,18 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- 🚀🚀 Added a custom MLflow model flavor for Darts, available under `darts.utils.mlflow`. It provides an MLflow integration for any Darts `ForecastingModel` (statistical, scikit-learn-like, and PyTorch-based). [#3022](https://github.com/unit8co/darts/pull/3022) by [Jakub Chłapek](https://github.com/jakubchlapek), [Zhihao Dai](https://github.com/daidahao) and [Michel Zeller](https://github.com/mizeller).
+  - Added `save_model()`, `load_model()`, and `log_model()` to persist and reload Darts models as MLflow models, including model and covariate metadata.
+  - Added `autolog()` to automatically log model creation parameters, covariate usage, metrics, and the trained model artifact on every `fit()`, `backtest()` and `historical_forecasts()` call within an active MLflow run.
+  - Metric functions from `darts.metrics` are automatically logged when called inside an active run, with keys reflecting the metric output shape (per-component, per-quantile/interval, per-label, and per-timestep results charted across MLflow steps). Multi-series results log the mean over series and write the full per-series breakdown to a CSV artifact.
+  - Added a new notebook for [MLflow quickstart](https://unit8co.github.io/darts/examples/29-MLflow-quickstart.html) with detailed usage examples.
+  - Note: model serving and deployment (MLflow's `pyfunc` flavor, model signatures, and input examples) are not yet supported.
+
 **Fixed**
 
 **Dependencies**
+
+- Added an optional `mlflow` extra (`mlflow>=3.0`) enabling the MLflow integration. [#3022](https://github.com/unit8co/darts/pull/3022) by [Jakub Chłapek](https://github.com/jakubchlapek), [Zhihao Dai](https://github.com/daidahao) and [Michel Zeller](https://github.com/mizeller).
 
 ### For developers of the library:
 
