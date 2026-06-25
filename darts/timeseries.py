@@ -4838,10 +4838,11 @@ class TimeSeries:
             A new series containing the desired quantile(s) of each component.
         """
         self._assert_stochastic()
-        if isinstance(q, float):
-            q = [q]
 
-        if not all([0 <= q_i <= 1 for q_i in q]):
+        # `q_arr` must be of same dtype to conserve it in `np.quantile`
+        q_arr = np.array([q] if isinstance(q, float) else q, dtype=self.dtype)
+
+        if not all([0 <= q_i <= 1 for q_i in q_arr]):
             raise_log(
                 ValueError(
                     "The quantile values must be expressed as fraction (between 0 and 1 inclusive)."
@@ -4850,10 +4851,10 @@ class TimeSeries:
             )
 
         # component names
-        cnames = [f"{comp}_q{q_i:.3f}" for comp in self.components for q_i in q]
+        cnames = [f"{comp}_q{q_i:.3f}" for comp in self.components for q_i in q_arr]
 
         # get quantiles of shape (n quantiles, n times, n components)
-        new_data = np.quantile(self._values, q=q, axis=2, **kwargs)
+        new_data = np.quantile(self._values, q=q_arr, axis=2, **kwargs)
         # transpose and reshape into (n times, n components * n quantiles, 1)
         new_data = new_data.transpose((1, 2, 0)).reshape(len(self), len(cnames), 1)
 
@@ -4862,8 +4863,8 @@ class TimeSeries:
             times=self._time_index,
             values=new_data,
             components=cnames,
-            static_covariates=self.static_covariates if len(q) == 1 else None,
-            hierarchy=self.hierarchy if len(q) == 1 else None,
+            static_covariates=self.static_covariates if len(q_arr) == 1 else None,
+            hierarchy=self.hierarchy if len(q_arr) == 1 else None,
             metadata=self.metadata,
             copy=False,
         )

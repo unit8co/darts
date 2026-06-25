@@ -543,7 +543,7 @@ class TransformerModel(PastCovariatesTorchModel):
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
-            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            of the name is formatted with the local date and time, while PID is the process ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
@@ -604,7 +604,7 @@ class TransformerModel(PastCovariatesTorchModel):
 
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
-            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUs.
 
             For more info, see here:
             https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and

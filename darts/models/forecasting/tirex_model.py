@@ -3,7 +3,7 @@ TiRex: Zero-Shot Forecasting
 ----------------------------
 
 TiRex can be used the same way as other foundation models (e.g. Chronos2), with the exception
-that it does not support any type of covariates.
+that it does not support covariates.
 
 For detailed examples and tutorials, see:
 
@@ -183,7 +183,6 @@ class TiRexModel(FoundationModel):
         .. note::
             TiRex is distributed under the `NXAI Community License <https://github.com/NX-AI/tirex/blob/main/LICENSE>`_.
             You must explicitly acknowledge this license by passing ``accept_license=True`` when constructing the model.
-
         .. note::
             Partial fine-tuning is supported via
             ``enable_finetuning={"unfreeze": ["tirex.output_patch_embedding*", ...]}``. Fine-tuning requires
@@ -214,7 +213,7 @@ class TiRexModel(FoundationModel):
         likelihood
             The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of
             :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. If using ``QuantileRegression``,
-            the quantiles must be a subset of those used during Chronos-2 pre-training:
+            the quantiles must be a subset of those used during TiRex pre-training:
             [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].
             Default: ``None``, which will make the model deterministic (median quantile only).
             When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to
@@ -239,8 +238,8 @@ class TiRexModel(FoundationModel):
             Darts' :class:`TorchForecastingModel`.
 
         loss_fn
-            PyTorch loss function used for fine-tuning a deterministic Chronos-2 model. Ignored for probabilistic
-            Chronos-2 when ``likelihood`` is specified. Default: ``nn.MSELoss()``.
+            PyTorch loss function used for fine-tuning a deterministic model. Ignored for probabilistic models when
+            ``likelihood`` is specified. Default: ``nn.MSELoss()``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
             at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
@@ -262,7 +261,7 @@ class TiRexModel(FoundationModel):
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
-            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            of the name is formatted with the local date and time, while PID is the process ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
@@ -323,7 +322,7 @@ class TiRexModel(FoundationModel):
 
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
-            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUs.
 
             For more info, see here:
             https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
@@ -378,6 +377,8 @@ class TiRexModel(FoundationModel):
 
         Examples
         --------
+        Point forecasting:
+
         >>> from darts.models import TiRexModel
         >>> from darts.datasets import AirPassengersDataset
         >>> series = AirPassengersDataset().load().astype("float32")
@@ -389,13 +390,15 @@ class TiRexModel(FoundationModel):
         ... )
         >>> model.fit(series)
         >>> pred = model.predict(n=6)
-        >>> print(pred.all_values())
-        [[[440.2505 ]]
-        [[444.44373]]
-        [[447.36362]]
-        [[451.50375]]
-        [[458.05853]]
-        [[461.98694]]]
+        >>> pred
+                    #Passengers
+        Month
+        1961-01-01   440.25050
+        1961-02-01   444.44373
+        1961-03-01   447.36362
+        1961-04-01   451.50375
+        1961-05-01   458.05853
+        1961-06-01   461.98694
 
         Probabilistic forecasting:
 
@@ -409,6 +412,15 @@ class TiRexModel(FoundationModel):
         ... )
         >>> model.fit(series)
         >>> pred = model.predict(n=6, predict_likelihood_parameters=True)
+        >>> pred
+                    #Passengers_q0.100  #Passengers_q0.500  #Passengers_q0.900
+        Month
+        1961-01-01          395.053131          507.465973          602.820312
+        1961-02-01          402.696472          517.345459          612.596741
+        1961-03-01          394.399231          519.231140          625.937439
+        1961-04-01          381.966797          506.727661          619.151367
+        1961-05-01          388.510803          504.759125          635.277893
+        1961-06-01          375.241638          496.883820          635.320679
         """
         if not accept_license:
             raise_log(

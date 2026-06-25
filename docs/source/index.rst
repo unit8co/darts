@@ -668,7 +668,7 @@ Our regression models are designed to predict continuous numerical values, makin
      - ✅ ✅ 🔴
      - ✅ ✅
      - ✅
-     - `Chronos-2 report <https://arxiv.org/abs/2510.15821>`_, `Amazon blog post <https://www.amazon.science/blog/introducing-chronos-2-from-univariate-to-universal-forecasting>`_
+     - `Chronos-2 paper <https://arxiv.org/abs/2510.15821>`_, `Amazon blog post <https://www.amazon.science/blog/introducing-chronos-2-from-univariate-to-universal-forecasting>`_
    * - `TimesFM2p5Model <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.timesfm2p5_model.html#darts.models.forecasting.timesfm2p5_model.TimesFM2p5Model>`_
      - ✅ ✅
      - 🔴 🔴 🔴
@@ -680,7 +680,13 @@ Our regression models are designed to predict continuous numerical values, makin
      - 🔴 🔴 🔴
      - ✅ ✅
      - ✅
-     - `TiRex report <https://arxiv.org/abs/2505.23719>`_, `Model card <https://huggingface.co/NX-AI/TiRex>`_
+     - `TiRex paper <https://arxiv.org/abs/2505.23719>`_, `TiRex GitHub <https://github.com/NX-AI/tirex>`_
+   * - `PatchTSTFMModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.patchtst_fm_model.html#darts.models.forecasting.patchtst_fm_model.PatchTSTFMModel>`_
+     - ✅ ✅
+     - 🔴 🔴 🔴
+     - ✅ ✅
+     - ✅
+     - `PatchTST-FM paper <https://arxiv.org/abs/2602.06909>`_, `PatchTST-FM Github <https://github.com/ibm-granite/granite-tsfm>`_
    * - **Ensemble Models** (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_): Model support is dependent on ensembled forecasting models and the ensemble model itself
      -
      -
