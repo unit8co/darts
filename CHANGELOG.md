@@ -11,7 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- 🚀 Added new forecasting model `T0Model` : The Forecasting Company's open-weights ~100M-parameter foundation model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series as well as future covariates, without training, and can output deterministic or probabilistic forecasts. [#3142](https://github.com/unit8co/darts/pull/3142) by [Geoffrey Négiar](https://github.com/GeoffNN).
+- 🚀 Added new forecasting model `T0Model` : The Forecasting Company's open-weights ~100M-parameter foundation model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series as well as past and future covariates, without training, and can output deterministic or probabilistic forecasts. [#3142](https://github.com/unit8co/darts/pull/3142) by [Geoffrey Négiar](https://github.com/GeoffNN).
 
 **Fixed**
 

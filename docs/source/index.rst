@@ -689,7 +689,7 @@ Our regression models are designed to predict continuous numerical values, makin
      - `PatchTST-FM paper <https://arxiv.org/abs/2602.06909>`_, `PatchTST-FM Github <https://github.com/ibm-granite/granite-tsfm>`_
    * - `T0Model <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.t0_model.html#darts.models.forecasting.t0_model.T0Model>`_
      - ✅ ✅
-     - 🔴 ✅ 🔴
+     - ✅ ✅ 🔴
      - ✅ ✅
      - ✅
      - `T0 model card <https://huggingface.co/theforecastingcompany/t0-alpha>`_, `tfc-t0 GitHub <https://github.com/theforecastingcompany/tfc-t0>`_

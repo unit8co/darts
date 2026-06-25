@@ -3,7 +3,7 @@ T0: Zero-Shot Forecasting
 -------------------------
 
 T0 can be used the same way as other foundation models (e.g. Chronos2). In addition to univariate and
-multivariate series, it supports future covariates.
+multivariate series, it supports past and future covariates.
 
 For detailed examples and tutorials, see:
 
@@ -30,8 +30,9 @@ logger = get_logger(__name__)
 class _T0Module(PLForecastingModule):
     """PyTorch Lightning module wrapping a pre-loaded T0 forecaster.
 
-    Adapts T0's ``predict`` interface to Darts' ``PLForecastingModule`` API. Multivariate inputs are forecast
-    jointly. Future covariates are mapped to T0's ``[batch, n_covariates, context + horizon]`` format.
+    Adapts T0's ``predict`` interface to Darts' ``PLForecastingModule`` API. Targets and past covariates are
+    forecast jointly (past-covariate predictions are dropped). Future covariates are mapped to T0's
+    ``[batch, n_covariates, context + horizon]`` format.
     """
 
     def __init__(
@@ -52,22 +53,30 @@ class _T0Module(PLForecastingModule):
         #   S: output chunk shift
         #   H: future length = T + S
         #   C: target components
+        #   P: past covariate components
         #   F: future covariate components
+        #   V: context variates = C + P (target + past covariates, jointly forecast)
         #   N: likelihood quantiles (user-specified, 1 if deterministic)
 
-        # `x_past`: (B, L, C + F) stack of [past_target, historic_future_covariates]; `x_future`: (B, T, F) or None
+        # `x_past`: (B, L, C + P + F) stack of [past_target, past_covariates, historic_future_covariates];
+        # `x_future`: (B, T, F) future covariates, or None.
         x_past, x_future, _ = x_in
-        batch_size, past_length, _ = x_past.shape
+        batch_size = x_past.shape[0]
 
-        # context: (B, C, L)
-        context = x_past[:, :, : self.n_targets].transpose(1, 2)
+        # Past covariates are forecast jointly with the target (T0 is variate-agnostic) and dropped from the
+        # output. Future covariates are the trailing columns of `x_past` (their historic part) and are passed to
+        # T0's covariate branch instead. `x_future` width gives the number of future covariates.
+        n_future_covs = x_future.shape[-1] if x_future is not None else 0
+        n_context = x_past.shape[-1] - n_future_covs
+
+        # context: (B, V, L)
+        context = x_past[:, :, :n_context].transpose(1, 2)
 
         # T0 expects covariates over context + horizon. Re-assemble them from the historic part (in `x_past`)
         # and the future chunk (`x_future`); the `output_chunk_shift` gap is left NaN (T0 treats NaN as missing).
-        n_future_covs = x_past.shape[-1] - self.n_targets
         future_covariates = None
         if n_future_covs > 0:
-            historic = x_past[:, :, self.n_targets :]  # (B, L, F)
+            historic = x_past[:, :, n_context:]  # (B, L, F)
             future = torch.full(
                 (batch_size, self.future_len, n_future_covs),
                 torch.nan,
@@ -84,13 +93,15 @@ class _T0Module(PLForecastingModule):
             if isinstance(self.likelihood, QuantileRegression)
             else [0.5]
         )
-        # quantiles: (B, C, H, N)
+        # quantiles: (B, V, H, N)
         quantiles = self.t0.predict(
             context,
             horizon=self.future_len,
             quantiles=user_q,
             future_covariates=future_covariates,
         ).quantiles
+        # drop the past-covariate variates, keep targets: (B, V, H, N) -> (B, C, H, N)
+        quantiles = quantiles[:, : self.n_targets]
         # (B, C, H, N) -> (B, H, C, N) -> slice output shift -> (B, T, C, N)
         return quantiles.permute(0, 2, 1, 3)[:, self.output_chunk_shift :, :, :]
 
@@ -119,8 +130,9 @@ class T0Model(FoundationModel):
         T0 is a ~100M-parameter pre-trained patch-transformer foundation model designed for zero-shot forecasting
         across both short and long horizons.
 
-        This model supports univariate and multivariate time series, as well as future covariates. Multivariate
-        series are forecast jointly; future covariates are conditioned on but not forecast.
+        This model supports univariate and multivariate time series, as well as past and future covariates.
+        Because T0 is variate-agnostic, past covariates are forecast jointly with the target series (and dropped
+        from the output); future covariates are conditioned on but not forecast.
 
         By default, the model is deterministic (median forecast only). To enable probabilistic forecasts, pass a
         :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the ``likelihood`` parameter.
@@ -299,7 +311,7 @@ class T0Model(FoundationModel):
 
     @property
     def supports_past_covariates(self) -> bool:
-        return False
+        return True
 
     @property
     def supports_future_covariates(self) -> bool:

@@ -152,19 +152,29 @@ class TestT0Model:
         else:
             assert pred.n_components == 3
 
-    def test_covariates(self):
+    @pytest.mark.parametrize("which", ["future", "past", "both"])
+    def test_covariates(self, which: str):
+        # past covariates are forecast jointly with the target and dropped from the output;
+        # future covariates are passed to T0's covariate branch ([B, F, context+horizon], asserted by the stub).
         model = T0Model(input_chunk_length=24, output_chunk_length=12, **tfm_kwargs)
+        past_cov = self.cov if which in ("past", "both") else None
+        future_cov = self.cov if which in ("future", "both") else None
 
-        # past covariates are not supported
-        with pytest.raises(ValueError, match="does not support `past_covariates`"):
-            model.fit(series=self.series, past_covariates=self.cov)
-
-        # future covariates ARE supported — the stub asserts the [B, F, context+horizon] shape
         with patch(_PATCH_T0_FROM_PRETRAINED, return_value=_StubT0Forecaster()):
-            model.fit(series=self.series, future_covariates=self.cov)
-        pred = model.predict(n=12, series=self.series, future_covariates=self.cov)
+            model.fit(
+                series=self.series,
+                past_covariates=past_cov,
+                future_covariates=future_cov,
+            )
+        pred = model.predict(
+            n=12,
+            series=self.series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
+        )
         assert isinstance(pred, TimeSeries)
         assert len(pred) == 12
+        # only the single target component is returned, never the past covariate
         assert pred.n_components == 1
 
     def test_multiple_series(self):
