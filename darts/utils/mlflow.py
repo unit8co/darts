@@ -1110,30 +1110,37 @@ def _log_metric_result(
     run_id: str,
     metric_name: str,
     result,
+    series,
+    has_time_axis: bool,
+    has_comp_axis: bool,
+    quantiles_num: int | None,
+    quantiles_labels: list[str],
     dataset_name: str | None = None,
-    component_names: list[str] | None = None,
-    input_is_list: bool = False,
+    series_reduced: bool = False,
 ) -> None:
     """Log a metric result to the active MLflow run.
 
-    Handles Python scalars, numpy scalars, 1-D arrays, and 2-D arrays.
+    Reshapes each per-series result into a canonical ``(T, C)`` layout
+    (timesteps, components × quantiles/intervals/labels) inferred from the
+    metric signature and call kwargs by ``_infer_metric_axes``, logging every
+    cell under a descriptive key with the time axis mapped to the MLflow
+    ``step``. This mirrors ``_log_backtest_metrics`` (without the
+    window/``forecast_horizon`` split, since ``multi_ts_support`` returns a
+    clean per-series list).
 
     The logged MLflow key follows the pattern::
 
-        {metric_name}_{dataset_name}_{component}_{series_index}
+        {dataset_name}_{metric_name}{component}{quantile_or_label}{series_suffix}
 
-    Specifically:
+    where each optional part is included only when the corresponding axis is
+    present:
 
-    * **Scalar** (0-d) → ``{metric}_{dataset}``
-    * **1-D, single TimeSeries input** (per-component) →
-      ``{metric}_{dataset}_{component_name_or_idx}``
-    * **1-D, list input** (per-series, component already reduced) →
-      ``{metric}_{dataset}_{series_idx}``
-    * **2-D, list input** (per-series × per-component) →
-      ``{metric}_{dataset}_{component_name_or_idx}_{series_idx}``
+    * ``component`` – ``_{component_name}`` when ``has_comp_axis``.
+    * ``quantile_or_label`` – e.g. ``_q0.5`` / ``_qi0.1_0.9`` / ``_label1``.
+    * ``series_suffix`` – ``_s{series_index}`` when more than one series.
 
-    All optional parts are omitted when not available (e.g. no dataset name
-    when the variable name could not be inspected).
+    On a shape/size mismatch it warns and returns (does not raise), keeping
+    autologging non-fatal.
 
     Parameters
     ----------
@@ -1141,80 +1148,129 @@ def _log_metric_result(
         Base metric name used as the MLflow key.
     result
         The metric result to log.
+    series
+        The ``actual_series`` argument passed to the metric (single series or
+        ``Sequence[TimeSeries]``); used for component names, series count, and
+        runtime label inference.
+    has_time_axis
+        ``True`` when the result carries a per-timestep axis (``time_reduction=None``).
+    has_comp_axis
+        ``True`` when components are expanded (``component_reduction=None``).
+    quantiles_num
+        Number of quantile/interval/label entries; ``None`` when it cannot be
+        determined ahead of time (``label_reduction=None`` without explicit
+        ``labels``), in which case labels are inferred from ``series`` at runtime.
+    quantiles_labels
+        One key suffix per ``quantiles_num`` entry (empty list when ``quantiles_num``
+        is ``None``).
     dataset_name
         Sanitized variable name of ``actual_series`` in the caller's frame.
         Omitted from key when ``None``.
-    component_names
-        Component name strings to use as the component part of the key.
-        For single-series input these come from ``series.components``; for
-        list input they come from the first series in the list.
-        Falls back to integer indices when ``None`` or length mismatches.
-    input_is_list
-        ``True`` when ``actual_series`` was a ``Sequence[TimeSeries]``.  Drives
-        whether the first result axis is treated as *series* or *components*.
+    series_reduced
+        ``True`` when ``series_reduction`` collapsed the series axis inside the
+        metric, so the result has no leading series axis even for list input.
     """
-    result_arr = np.asarray(result)
-
     base_key = f"{dataset_name}_{metric_name}" if dataset_name else metric_name
 
-    def _comp_suffix(idx: int) -> str:
-        if component_names is not None and idx < len(component_names):
-            return _sanitize_mlflow_key(component_names[idx])
-        return str(idx)
-
-    metrics = {}
-
-    if result_arr.ndim == 0:
-        # scalar result
-        metrics[base_key] = float(result_arr)
-
-    elif result_arr.ndim == 1:
-        if not input_is_list:
-            # single series: log per-component
-            for c_i, val in enumerate(result_arr):
-                metrics[f"{base_key}_{_comp_suffix(c_i)}"] = float(val)
-        else:
-            # list input, components already reduced: log per-series
-            for s_i, val in enumerate(result_arr):
-                metrics[f"{base_key}_{s_i}"] = float(val)
-
-    elif result_arr.ndim == 2:
-        # list input: log per-series and per-component
-        n_series, n_components = result_arr.shape
-        for s_i in range(n_series):
-            for c_i in range(n_components):
-                metrics[f"{base_key}_{_comp_suffix(c_i)}_{s_i}"] = float(
-                    result_arr[s_i, c_i]
-                )
-
+    if series_reduced:
+        # series_reduction aggregated across series → single result, no series axis
+        series_seq = [get_single_series(series)]
+        results = [result]
     else:
-        # unexpected shape — flatten with integer indices
-        for i, val in enumerate(result_arr.flatten()):
-            metrics[f"{base_key}_{i}"] = float(val)
+        series_seq = series2seq(series)
+        results = (
+            [result] if get_series_seq_type(series) == SeriesType.SINGLE else result
+        )
 
-    autologging_client.log_metrics(run_id=run_id, metrics=metrics)
-    operation = autologging_client.flush(synchronous=False)
-    operation.await_completion()
+    labels_unknown = quantiles_num is None
+
+    metrics_by_step: dict[int, dict[str, float]] = {}
+    for series_index, (s, r) in enumerate(zip(series_seq, results)):
+        series_suffix = f"_s{series_index}" if len(series_seq) > 1 else ""
+
+        # quantiles_num=None means label_reduction=None was requested without explicit labels
+        # so class labels are inferred per-series inside the loop.
+        if labels_unknown:
+            inferred_labels = np.unique(s.values())
+            quantiles_num = len(inferred_labels)
+            quantiles_labels = [f"_label{x:g}" for x in inferred_labels]
+
+        comps = s.components.tolist()
+        # c_size = components × quantiles/intervals/labels per component
+        c_size = (s.n_components if has_comp_axis else 1) * quantiles_num
+        arr = np.asarray(r, dtype=float)
+        # after stripping the C axis, the remainder is the time axis (or scalar)
+        rest, extra = divmod(arr.size, c_size)
+        if extra:
+            logger.warning(
+                "Metric logging skipped for `%s`: result size (%d) is not "
+                "divisible by the inferred component/quantile size (%d). "
+                "The metric output shape does not match the inferred axes.",
+                metric_name,
+                arr.size,
+                c_size,
+            )
+            return
+
+        if has_time_axis:
+            t_size = rest
+        elif rest != 1:
+            logger.warning(
+                "Metric logging skipped for `%s`: expected a single value per "
+                "component/quantile after reduction, but got %d elements. "
+                "Check time_reduction and component_reduction.",
+                metric_name,
+                rest,
+            )
+            return
+        else:
+            t_size = 1
+
+        canonical = arr.reshape(t_size, c_size)
+        for c in range(c_size):
+            # c is a flat index into the (n_components × quantiles_num) C axis:
+            # c = comp_i * quantiles_num + q_i
+            component_index, quantile_index = divmod(c, quantiles_num)
+            comp_part = (
+                "_" + _sanitize_mlflow_key(comps[component_index])
+                if has_comp_axis
+                else ""
+            )
+            key = _sanitize_mlflow_key(
+                base_key + comp_part + quantiles_labels[quantile_index] + series_suffix
+            )
+            for t in range(t_size):
+                # MLflow step maps to the time axis when present
+                step = t if has_time_axis else 0
+                metrics_by_step.setdefault(step, {})[key] = float(canonical[t, c])
+
+    for step, metrics in metrics_by_step.items():
+        autologging_client.log_metrics(run_id=run_id, metrics=metrics, step=step)
+    autologging_client.flush(synchronous=False).await_completion()
 
 
 def _make_metric_patch(metric_name: str) -> Callable:
     """Create a ``safe_patch``-compatible patch function for a darts metric.
 
     The returned patch calls the original metric and, when an active MLflow
-    run exists, logs the result under a key built as::
+    run exists, infers the output axes from the metric signature and call
+    kwargs (via ``_infer_metric_axes``) and delegates to ``_log_metric_result``,
+    which logs each cell under a key built as::
 
-        {metric_name}_{dataset_name}_{component}_{series_index}
+        {dataset_name}_{metric_name}{component}{quantile_or_label}{series_suffix}
 
     where:
 
     * ``dataset_name`` – Python variable name of the first argument in the
       caller's frame (captured via frame inspection, omitted if not found).
-    * ``component`` – component label from the ``TimeSeries`` if the result is
-      per-component, otherwise an integer index.
-    * ``series_index`` – integer index appended when the input is a
-      ``Sequence[TimeSeries]`` and the result has a series axis.
+    * ``component`` – ``_{component_name}`` when ``component_reduction=None``.
+    * ``quantile_or_label`` – quantile/interval/label suffix (e.g. ``_q0.5``,
+      ``_qi0.1_0.9``, ``_label1``) when applicable.
+    * ``series_suffix`` – ``_s{series_index}`` when the input is a
+      ``Sequence[TimeSeries]`` with more than one series.
 
-    The original return value is always forwarded unchanged.
+    The per-timestep axis (``time_reduction=None``) is mapped to the MLflow
+    ``step``. The original return value is always forwarded unchanged.
 
     Parameters
     ----------
@@ -1242,28 +1298,40 @@ def _make_metric_patch(metric_name: str) -> Callable:
             series = args[0]
         else:
             series = kwargs.get("actual_series", None)
+        if series is None:
+            return result
 
         # capture the variable name of actual_series for metric key
         raw = _inspect_original_var_name(series, fallback_name=None)
         dataset_name = _sanitize_mlflow_key(raw) if raw else None
 
-        # handling multi_series input
-        input_is_list = not hasattr(series, "components")
-
-        # extract component names from the series (or first element if list)
-        single_series = get_single_series(series)
-        component_names = (
-            single_series.components.tolist() if single_series is not None else None
+        # infer output axes from the metric signature + call kwargs
+        has_time_axis, has_comp_axis, quantiles_num, quantiles_labels = (
+            _infer_metric_axes(original, kwargs)
         )
+
+        # series_reduction collapses the series axis inside the metric, so the
+        # result has no leading series axis even for list input.
+        params = inspect.signature(original).parameters
+        series_reduced = False
+        if "series_reduction" in params:
+            effective_sr = kwargs.get(
+                "series_reduction", params["series_reduction"].default
+            )
+            series_reduced = effective_sr is not None
 
         _log_metric_result(
             autologging_client,
             run_id,
             metric_name,
             result,
+            series,
+            has_time_axis,
+            has_comp_axis,
+            quantiles_num,
+            quantiles_labels,
             dataset_name=dataset_name,
-            component_names=component_names,
-            input_is_list=input_is_list,
+            series_reduced=series_reduced,
         )
 
         return result
