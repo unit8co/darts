@@ -14,6 +14,7 @@ References:
 https://github.com/sktime/sktime/blob/main/sktime/utils/mlflow_sktime.py
 """
 
+import csv
 import inspect
 import json
 import os
@@ -835,6 +836,37 @@ def _sanitize_mlflow_key(name: str) -> str:
     return re.sub(r"[^\w-]", "_", name)
 
 
+def _write_per_series_csv(rows: list[dict], filename: str) -> None:
+    """Write the granular per-series metric breakdown to a CSV artifact.
+
+    Each row is a single metric cell for one series, with columns ``key`` (the
+    aggregate MLflow key, without any series suffix), ``series_index``, ``step``
+    (the time or window index charted by MLflow), and ``value``. The file is
+    logged under the ``per_series_metrics`` artifact subdirectory of the active
+    run. Used when more than one series is scored, since the logged metric keys
+    only carry the mean over series.
+
+    Parameters
+    ----------
+    rows
+        One dict per metric cell with keys ``key``, ``series_index``, ``step``,
+        and ``value``.
+    filename
+        Basename of the CSV file (e.g. ``series_mae_per_series.csv``).
+    """
+    if not rows:
+        return
+    sorted_rows = sorted(rows, key=itemgetter("key", "series_index", "step"))
+    fieldnames = ["key", "series_index", "step", "value"]
+    with TempDir() as tmp:
+        path = tmp.path(filename)
+        with open(path, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(sorted_rows)
+        mlflow.log_artifact(path, artifact_path="per_series_metrics")
+
+
 def _log_backtest_metrics(
     autologging_client: MlflowAutologgingQueueingClient,
     run_id: str,
@@ -868,6 +900,11 @@ def _log_backtest_metrics(
     per-label keys are still produced. When two metrics have incompatible axis
     layouts (different ``time_reduction`` / ``component_reduction`` / quantile
     count), each series result is flattened to integer-indexed keys instead.
+
+    When more than one series is scored, the logged value is the mean over
+    series for each cell, and the granular per-series breakdown is written to a
+    ``per_series_metrics/backtest_per_series.csv`` artifact. For a single series
+    the mean is just the value itself and no artifact is written.
 
     Parameters
     ----------
@@ -931,16 +968,23 @@ def _log_backtest_metrics(
     series_seq = series2seq(series)
     results = [result] if get_series_seq_type(series) == SeriesType.SINGLE else result
 
-    metrics_by_step: dict[int, dict[str, float]] = {}
+    # agg maps (key, step) -> per-series values, averaged into the logged metric.
+    agg: dict[tuple[str, int], list[float]] = {}
+    rows: list[dict] = []
     for series_index, (s, r) in enumerate(zip(series_seq, results)):
-        series_suffix = f"_s{series_index}" if len(series_seq) > 1 else ""
-
         if axes_inconsistent:
             name_prefix = metric_names[0] if len(metric_names) == 1 else "metrics"
             flat = np.asarray(r, dtype=float).flatten()
             for i, val in enumerate(flat):
-                key = _sanitize_mlflow_key(f"backtest_{name_prefix}{series_suffix}_{i}")
-                metrics_by_step.setdefault(0, {})[key] = float(val)
+                key = _sanitize_mlflow_key(f"backtest_{name_prefix}_{i}")
+                value = float(val)
+                agg.setdefault((key, 0), []).append(value)
+                rows.append({
+                    "key": key,
+                    "series_index": series_index,
+                    "step": 0,
+                    "value": value,
+                })
             continue
 
         # resolve label names from series data when not provided explicitly.
@@ -1023,17 +1067,31 @@ def _log_backtest_metrics(
                     key = f"backtest_{metric_name}{comp_part}{quantiles_labels[quantile_index]}"
                     if has_time_axis and has_windows:
                         key += f"_w{w}"
-                    key = _sanitize_mlflow_key(key + series_suffix)
+                    key = _sanitize_mlflow_key(key)
                     for t in range(t_size):
                         # MLflow step maps to the axis the UI should chart:
                         # time when present, otherwise window index
                         step = t if has_time_axis else w
-                        metrics_by_step.setdefault(step, {})[key] = float(
-                            canonical[w, t, c, m]
-                        )
+                        value = float(canonical[w, t, c, m])
+                        agg.setdefault((key, step), []).append(value)
+                        rows.append({
+                            "key": key,
+                            "series_index": series_index,
+                            "step": step,
+                            "value": value,
+                        })
 
+    # log the mean over series for each (key, step); for a single series this is
+    # just the value itself.
+    metrics_by_step: dict[int, dict[str, float]] = {}
+    for (key, step), values in agg.items():
+        metrics_by_step.setdefault(step, {})[key] = float(np.mean(values))
     for step, metrics in metrics_by_step.items():
         autologging_client.log_metrics(run_id=run_id, metrics=metrics, step=step)
+
+    # write the granular per-series breakdown to a CSV artifact (multi-series only)
+    if len(series_seq) > 1:
+        _write_per_series_csv(rows, "backtest_per_series.csv")
 
 
 def _infer_metric_axes(metric: Callable, metric_kwargs: dict) -> tuple:
@@ -1130,14 +1188,18 @@ def _log_metric_result(
 
     The logged MLflow key follows the pattern::
 
-        {dataset_name}_{metric_name}{component}{quantile_or_label}{series_suffix}
+        {dataset_name}_{metric_name}{component}{quantile_or_label}
 
     where each optional part is included only when the corresponding axis is
     present:
 
     * ``component`` – ``_{component_name}`` when ``has_comp_axis``.
     * ``quantile_or_label`` – e.g. ``_q0.5`` / ``_qi0.1_0.9`` / ``_label1``.
-    * ``series_suffix`` – ``_s{series_index}`` when more than one series.
+
+    When more than one series is scored, the logged value is the mean over
+    series for each cell, and the granular per-series breakdown is written to a
+    ``per_series_metrics/{base_key}_per_series.csv`` artifact. For a single
+    series the mean is just the value itself and no artifact is written.
 
     On a shape/size mismatch it warns and returns (does not raise), keeping
     autologging non-fatal.
@@ -1184,10 +1246,10 @@ def _log_metric_result(
 
     labels_unknown = quantiles_num is None
 
-    metrics_by_step: dict[int, dict[str, float]] = {}
+    # agg maps (key, step) -> per-series values, averaged into the logged metric.
+    agg: dict[tuple[str, int], list[float]] = {}
+    rows: list[dict] = []
     for series_index, (s, r) in enumerate(zip(series_seq, results)):
-        series_suffix = f"_s{series_index}" if len(series_seq) > 1 else ""
-
         # quantiles_num=None means label_reduction=None was requested without explicit labels
         # so class labels are inferred per-series inside the loop.
         if labels_unknown:
@@ -1237,16 +1299,32 @@ def _log_metric_result(
                 else ""
             )
             key = _sanitize_mlflow_key(
-                base_key + comp_part + quantiles_labels[quantile_index] + series_suffix
+                base_key + comp_part + quantiles_labels[quantile_index]
             )
             for t in range(t_size):
                 # MLflow step maps to the time axis when present
                 step = t if has_time_axis else 0
-                metrics_by_step.setdefault(step, {})[key] = float(canonical[t, c])
+                value = float(canonical[t, c])
+                agg.setdefault((key, step), []).append(value)
+                rows.append({
+                    "key": key,
+                    "series_index": series_index,
+                    "step": step,
+                    "value": value,
+                })
 
+    # log the mean over series for each (key, step); for a single series this is
+    # just the value itself.
+    metrics_by_step: dict[int, dict[str, float]] = {}
+    for (key, step), values in agg.items():
+        metrics_by_step.setdefault(step, {})[key] = float(np.mean(values))
     for step, metrics in metrics_by_step.items():
         autologging_client.log_metrics(run_id=run_id, metrics=metrics, step=step)
     autologging_client.flush(synchronous=False).await_completion()
+
+    # write the granular per-series breakdown to a CSV artifact (multi-series only)
+    if len(series_seq) > 1:
+        _write_per_series_csv(rows, f"{base_key}_per_series.csv")
 
 
 def _make_metric_patch(metric_name: str) -> Callable:
@@ -1257,7 +1335,7 @@ def _make_metric_patch(metric_name: str) -> Callable:
     kwargs (via ``_infer_metric_axes``) and delegates to ``_log_metric_result``,
     which logs each cell under a key built as::
 
-        {dataset_name}_{metric_name}{component}{quantile_or_label}{series_suffix}
+        {dataset_name}_{metric_name}{component}{quantile_or_label}
 
     where:
 
@@ -1266,8 +1344,10 @@ def _make_metric_patch(metric_name: str) -> Callable:
     * ``component`` – ``_{component_name}`` when ``component_reduction=None``.
     * ``quantile_or_label`` – quantile/interval/label suffix (e.g. ``_q0.5``,
       ``_qi0.1_0.9``, ``_label1``) when applicable.
-    * ``series_suffix`` – ``_s{series_index}`` when the input is a
-      ``Sequence[TimeSeries]`` with more than one series.
+
+    When the input is a ``Sequence[TimeSeries]`` with more than one series, the
+    logged value is the mean over series and the per-series breakdown is written
+    to a ``per_series_metrics/`` CSV artifact instead of per-series keys.
 
     The per-timestep axis (``time_reduction=None``) is mapped to the MLflow
     ``step``. The original return value is always forwarded unchanged.
