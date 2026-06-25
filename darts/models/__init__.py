@@ -76,6 +76,9 @@ if TYPE_CHECKING:
     )
     from darts.models.forecasting.nhits import NHiTSModel as NHiTSModel
     from darts.models.forecasting.nlinear import NLinearModel as NLinearModel
+    from darts.models.forecasting.patchtst_fm_model import (
+        PatchTSTFMModel as PatchTSTFMModel,
+    )
     from darts.models.forecasting.prophet_model import Prophet as Prophet
     from darts.models.forecasting.random_forest import RandomForest as RandomForest
     from darts.models.forecasting.random_forest import (
@@ -185,6 +188,7 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     "TSMixerModel": ("darts.models.forecasting.tsmixer_model", "(Py)Torch"),
     # --- Forecasting: Foundation models (Torch-based) ---
     "Chronos2Model": ("darts.models.forecasting.chronos2_model", "(Py)Torch"),
+    "PatchTSTFMModel": ("darts.models.forecasting.patchtst_fm_model", "(Py)Torch"),
     "TimesFM2p5Model": ("darts.models.forecasting.timesfm2p5_model", "(Py)Torch"),
     "TiRexModel": ("darts.models.forecasting.tirex_model", "(Py)Torch and/or TiRex-TS"),
     # --- Forecasting: NeuralForecast ---

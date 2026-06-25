@@ -3,7 +3,7 @@ TimesFM 2.5
 -----------
 
 TimesFM 2.5 can be used the same way as other foundation models (e.g. Chronos2), with the exception
-that it does not support any type of covariates.
+that it does not support covariates.
 
 For detailed examples and tutorials, see:
 
@@ -50,6 +50,7 @@ class _TimesFM2p5_200M_Definition:
     context_limit = 16384
     input_patch_len: int = 32
     output_patch_len: int = 128
+    output_quantile_len: int = 1024
     quantiles: list[float] = field(
         default_factory=lambda: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     )
@@ -96,6 +97,7 @@ class _TimesFM2p5Module(PLForecastingModule):
 
     def __init__(
         self,
+        use_longer_projection_head: bool = False,
         **kwargs,
     ):
         """PyTorch module implementing the TimesFM 2.5 model, ported from
@@ -104,6 +106,8 @@ class _TimesFM2p5Module(PLForecastingModule):
 
         Parameters
         ----------
+        use_longer_projection_head
+            Whether to use a longer projection head, which allows for longer prediction horizons.
         **kwargs
             all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
             base class.
@@ -114,10 +118,18 @@ class _TimesFM2p5Module(PLForecastingModule):
 
         # default model parameters (config.json is ignored)
         self.input_patch_len = self.config.input_patch_len  # 32
-        self.output_patch_len = self.config.output_patch_len  # 128
         self.num_layers = self.config.stacked_transformers.num_layers  # 20
         # see below `user_quantile_indices` for explanation of +1
         self.num_quantiles_plus_one = len(self.config.quantiles) + 1  # 10
+
+        # TimesFM 2.5 has two separate output projection heads:
+        # - the "point" head projects to the original output patch length of 128.
+        # - the "quantiles" head projects to the longer output quantile length of 1024.
+        self.use_longer_projection_head = use_longer_projection_head
+        if self.use_longer_projection_head:
+            self.output_patch_len = self.config.output_quantile_len  # 1024
+        else:
+            self.output_patch_len = self.config.output_patch_len  # 128
 
         # padding length for input target series to make its length a multiple of
         # input_patch_len (32).
@@ -207,8 +219,10 @@ class _TimesFM2p5Module(PLForecastingModule):
 
         # output projections
         # `output_ts`: (B * C, O * W)
-        output_ts = self.output_projection_point(last_embeddings)
-        # output_quantile_spread = self.output_projection_quantiles(last_embeddings)
+        if self.use_longer_projection_head:
+            output_ts = self.output_projection_quantiles(last_embeddings)
+        else:
+            output_ts = self.output_projection_point(last_embeddings)
 
         return output_ts
 
@@ -219,13 +233,13 @@ class _TimesFM2p5Module(PLForecastingModule):
         Parameters
         ----------
         x_in
-            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
+            comes as a tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
             is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
 
         Returns
         -------
         torch.Tensor
-            the output tensor in the shape of `(n_samples, n_time_steps, n_targets, n_quantiles)` for
+            the output tensor in the shape `(n_samples, n_time_steps, n_targets, n_quantiles)` for
             probabilistic forecasts, or `(n_samples, n_time_steps, n_targets, 1)` for
             deterministic forecasts (median only).
         """
@@ -233,7 +247,7 @@ class _TimesFM2p5Module(PLForecastingModule):
         # L: input chunk length
         # T: output chunk length
         # I = 32: input patch length
-        # O = 128: output patch length
+        # O = 128 or 1024: output patch length
         # P: minimum left-pad length such that (P+L) is divisible by I
         # Z = P + L: padded input chunk length
         # Q = Z / I: patches for the input chunk
@@ -245,7 +259,7 @@ class _TimesFM2p5Module(PLForecastingModule):
         # `x_past`: (B, L, C)
         x_past, _, _ = x_in
 
-        # TimesFM 2.5 is a univariate model and its inputs does not have a variable dimension,
+        # TimesFM 2.5 is a univariate model and its inputs do not have a variable dimension,
         # so here we reshape `x_past` to (B * C, L)
         x_past = x_past.permute(0, 2, 1).reshape(-1, self.input_chunk_length)
 
@@ -337,6 +351,7 @@ class TimesFM2p5Model(FoundationModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
+        use_longer_projection_head: bool = False,
         likelihood: QuantileRegression | None = None,
         hub_model_name: str = "google/timesfm-2.5-200m-pytorch",
         hub_model_revision: str | None = "1d952420fba87f3c6dee4f240de0f1a0fbc790e3",
@@ -368,6 +383,20 @@ class TimesFM2p5Model(FoundationModel):
             You can perform full or partial fine-tuning of the model by setting the ``enable_finetuning`` parameter.
             Read more in the parameter description below and in the `Fine-Tuning Examples
             <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__.
+        .. note::
+            TimesFM 2.5 is licensed under the `Apache-2.0 License <https://github.com/google-research/timesfm/blob/master/LICENSE>`_,
+            Copyright 2025 Google LLC. By using this model, you agree to the terms and conditions of the license.
+        .. note::
+            TimesFM 2.5 does not support covariates natively. The source implementation uses `Xreg` to fit a ridge
+            regression between covariates and the target series (or forecast residuals) as a pre/post-processing step.
+            You can implement a similar approach externally in Darts.
+            See `Issue #2976 <https://github.com/unit8co/darts/issues/2976#issuecomment-3691415141>`_ for details.
+        .. note::
+            Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from
+            those obtained using the original implementation when prediction horizon `n` is larger than 128.
+        .. note::
+            Due to differences in auto-regressive forecasting implementation, zero-shot forecasts would also differ when
+            ``use_longer_projection_head`` is `True`.
 
         Parameters
         ----------
@@ -391,6 +420,9 @@ class TimesFM2p5Model(FoundationModel):
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
             cannot generate autoregressive predictions (`n > output_chunk_length`).
+        use_longer_projection_head
+            Whether to use the longer output projection head, which allows for a longer horizon without auto-regression,
+            i.e., `output_chunk_length + output_chunk_shift <= 1024`. Default: ``False``.
         likelihood
             The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of
             :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. If using ``QuantileRegression``,
@@ -415,8 +447,8 @@ class TimesFM2p5Model(FoundationModel):
             Darts' :class:`TorchForecastingModel`.
 
         loss_fn
-            PyTorch loss function used for fine-tuning a deterministic TimesFM 2.5 model. Ignored for probabilistic
-            TimesFM 2.5 when ``likelihood`` is specified. Default: ``nn.MSELoss()``.
+            PyTorch loss function used for fine-tuning a deterministic model. Ignored for probabilistic models when
+            ``likelihood`` is specified. Default: ``nn.MSELoss()``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
             at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
@@ -438,7 +470,7 @@ class TimesFM2p5Model(FoundationModel):
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
-            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            of the name is formatted with the local date and time, while PID is the process ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
@@ -499,7 +531,7 @@ class TimesFM2p5Model(FoundationModel):
 
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
-            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUs.
 
             For more info, see here:
             https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
@@ -556,43 +588,46 @@ class TimesFM2p5Model(FoundationModel):
 
         Examples
         --------
-        >>> from darts.datasets import WeatherDataset
-        >>> from darts.models import TimesFM2p5Model
-        >>> # load data in float32 format (macOS issues with float64 and PyTorch)
-        >>> series = WeatherDataset().load().astype("float32")
-        >>> # predicting atmospheric pressure
-        >>> target = series['p (mbar)'][:100]
-        >>> # by default, TimesFM2p5Model is deterministic; to enable probabilistic forecasts,
-        >>> # set likelihood to QuantileRegression and use a subset of the pre-trained quantiles
-        >>> model = TimesFM2p5Model(
-        >>>     input_chunk_length=6,
-        >>>     output_chunk_length=6,
-        >>> )
-        >>> # calling fit is still mandatory to ensure consistent number of components; however,
-        >>> # TimesFM2p5Model is training-free and the model weights are not updated
-        >>> model.fit(target)
-        >>> # when TimesFM2p5Model is probabilistic, set ``predict_likelihood_parameters=True``
-        >>> # or ``num_samples>>1`` to get meaningful results
-        >>> pred = model.predict(6)
-        >>> print(pred.all_values())
-        [[[1005.7797 ]]
-        [[1005.78766]]
-        [[1005.7985 ]]
-        [[1005.7852 ]]
-        [[1005.7882 ]]
-        [[1005.79565]]]
+        Point forecasting:
 
-        .. note::
-            TimesFM 2.5 does not support covariates natively. The source implementation uses `Xreg` to fit a ridge
-            regression between covariates and the target series (or forecast residuals) as a pre/post-processing step.
-            You can implement a similar approach externally in Darts.
-            See `Issue #2976 <https://github.com/unit8co/darts/issues/2976#issuecomment-3691415141>`_ for details.
-        .. note::
-            TimesFM 2.5 is licensed under the `Apache-2.0 License <https://github.com/google-research/timesfm/blob/master/LICENSE>`_,
-            Copyright 2025 Google LLC. By using this model, you agree to the terms and conditions of the license.
-        .. warning::
-            Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from
-            those obtained using the original implementation when prediction horizon `n` is larger than 128.
+        >>> from darts.models import TimesFM2p5Model
+        >>> from darts.datasets import AirPassengersDataset
+        >>> series = AirPassengersDataset().load().astype("float32")
+        >>> model = TimesFM2p5Model(
+        ...     input_chunk_length=12,
+        ...     output_chunk_length=6,
+        ... )
+        >>> model.fit(series)
+        >>> pred = model.predict(n=6)
+        >>> pred
+                    #Passengers
+        Month
+        1961-01-01   413.913574
+        1961-02-01   421.871552
+        1961-03-01   432.572906
+        1961-04-01   454.879333
+        1961-05-01   468.185883
+        1961-06-01   465.574554
+
+        Probabilistic forecasting:
+
+        >>> from darts.utils.likelihood_models import QuantileRegression
+        >>> model = TimesFM2p5Model(
+        ...     input_chunk_length=12,
+        ...     output_chunk_length=6,
+        ...     likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
+        ... )
+        >>> model.fit(series)
+        >>> pred = model.predict(n=6, predict_likelihood_parameters=True)
+        >>> pred
+                    #Passengers_q0.100  #Passengers_q0.500  #Passengers_q0.900
+        Month
+        1961-01-01          368.495789          413.913574          479.579163
+        1961-02-01          375.655243          421.871552          482.435364
+        1961-03-01          380.316833          432.572906          505.683807
+        1961-04-01          392.675629          454.879333          521.257202
+        1961-05-01          405.622437          468.185883          541.932739
+        1961-06-01          394.438660          465.574554          539.628723
         """
         hf_connector = HuggingFaceConnector(
             model_name=hub_model_name,
@@ -620,12 +655,23 @@ class TimesFM2p5Model(FoundationModel):
             )
 
         # validate `output_chunk_length` and `output_chunk_shift` against model's output limits
-        prediction_length = config.output_patch_len
+        self.use_longer_projection_head = use_longer_projection_head
+        prediction_length = (
+            config.output_quantile_len
+            if self.use_longer_projection_head
+            else config.output_patch_len
+        )
         if output_chunk_length + output_chunk_shift > prediction_length:
+            extra_hint = (
+                f"Set `use_longer_projection_head=True` to increase it to {config.output_quantile_len}"
+                if not self.use_longer_projection_head
+                else ""
+            )
             raise_log(
                 ValueError(
                     f"`output_chunk_length` {output_chunk_length} plus `output_chunk_shift` {output_chunk_shift} "
-                    f"cannot be greater than model's maximum prediction length {prediction_length}"
+                    f"cannot be greater than model's maximum prediction length {prediction_length}. "
+                    + extra_hint
                 ),
                 logger,
             )
@@ -661,6 +707,9 @@ class TimesFM2p5Model(FoundationModel):
         return self.hf_connector.load_model(
             module_class=_TimesFM2p5Module,
             pl_module_params=pl_module_params,
+            additional_params={
+                "use_longer_projection_head": self.use_longer_projection_head,
+            },
         )
 
     @property
