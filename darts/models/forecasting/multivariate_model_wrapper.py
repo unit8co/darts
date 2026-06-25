@@ -134,8 +134,13 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
         int | None,
         int | None,
         int | None,
+        int,
     ]:
         return self._model.extreme_lags
+
+    @property
+    def _target_window_lengths(self) -> tuple[int, int]:
+        return self._model._target_window_lengths
 
     @property
     def _model_encoder_settings(
@@ -148,7 +153,7 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
         list[int] | None,
         list[int] | None,
     ]:
-        return None, None, False, self.supports_future_covariates, None, None
+        return self._model._model_encoder_settings
 
     @property
     def supports_multivariate(self) -> bool:
@@ -167,13 +172,26 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
         return self._model.supports_static_covariates
 
     @property
-    def _is_probabilistic(self) -> bool:
-        """
-        A MultivariateForecastingModelWrapper is probabilistic if the base_model
-        is probabilistic
-        """
-        return self._model._is_probabilistic
+    def supports_sample_weight(self) -> bool:
+        return self._model.supports_sample_weight
 
+    @property
+    def supports_probabilistic_prediction(self) -> bool:
+        return self._model.supports_probabilistic_prediction
+
+    @property
+    def supports_transferable_series_prediction(self) -> bool:
+        return self._model.supports_transferable_series_prediction
+
+    @property
+    def likelihood(self):
+        return self._model.likelihood
+
+    @property
+    def _supports_range_index(self) -> bool:
+        return self._model._supports_range_index
+
+    @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         return isinstance(
             self._model, TransferableFutureCovariatesLocalForecastingModel
