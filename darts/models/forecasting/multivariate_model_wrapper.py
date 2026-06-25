@@ -8,7 +8,7 @@ its components.
 """
 
 import darts.models as darts_models
-from darts.logging import get_logger, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
     TransferableFutureCovariatesLocalForecastingModel,
@@ -66,7 +66,7 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
             )
 
         super().__init__()
-        self.model: LocalForecastingModel = model
+        self._model: LocalForecastingModel = model
         self._trained_models: list[LocalForecastingModel] = []
 
     def _fit(
@@ -77,14 +77,15 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
     ):
         super()._fit(series, future_covariates)
         self._trained_models = []
+
         for comp in series.components:
             comp = series.univariate_component(comp)
             component_model = (
-                self.model.untrained_model().fit(
+                self._model.untrained_model().fit(
                     series=comp, future_covariates=future_covariates
                 )
-                if self.supports_future_covariates
-                else self.model.untrained_model().fit(series=comp)
+                if self._model.supports_future_covariates
+                else self._model.untrained_model().fit(series=comp)
             )
             self._trained_models.append(component_model)
 
@@ -98,27 +99,28 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
         num_samples: int = 1,
         **kwargs,
     ) -> TimeSeries:
-        return self._predict(n, future_covariates, num_samples, **kwargs)
+        return self._predict(n, series, future_covariates, num_samples, **kwargs)
 
     def _predict(
         self,
         n: int,
+        series: TimeSeries | None = None,
         future_covariates: TimeSeries | None = None,
         num_samples: int = 1,
         verbose: bool = False,
         **kwargs,
     ) -> TimeSeries:
-        predictions = [
-            model.predict(n=n, future_covariates=future_covariates)
-            if self.supports_future_covariates
-            else model.predict(n=n)
-            for model in self._trained_models
-        ]
+        prediction_kwargs = {"n", n}
+        if self._model.supports_transferable_series_prediction:
+            prediction_kwargs["series"] = series
+        if self._model.supports_future_covariates:
+            prediction_kwargs["future_covariates"] = future_covariates
+        if self._model.supports_probabilistic_prediction:
+            prediction_kwargs["num_samples"] = num_samples
 
-        raise_if_not(
-            len(predictions) == len(self._trained_models),
-            f"Prediction contains {len(predictions)} components but {len(self._trained_models)} models were fitted",
-        )
+        predictions = [
+            model.predict(**prediction_kwargs) for model in self._trained_models
+        ]
 
         return concatenate(predictions, axis=1)
 
@@ -133,7 +135,7 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
         int | None,
         int | None,
     ]:
-        return self.model.extreme_lags
+        return self._model.extreme_lags
 
     @property
     def _model_encoder_settings(
@@ -154,15 +156,15 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
 
     @property
     def supports_past_covariates(self) -> bool:
-        return self.model.supports_past_covariates
+        return self._model.supports_past_covariates
 
     @property
     def supports_future_covariates(self) -> bool:
-        return self.model.supports_future_covariates
+        return self._model.supports_future_covariates
 
     @property
     def supports_static_covariates(self) -> bool:
-        return self.model.supports_static_covariates
+        return self._model.supports_static_covariates
 
     @property
     def _is_probabilistic(self) -> bool:
@@ -170,11 +172,15 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
         A MultivariateForecastingModelWrapper is probabilistic if the base_model
         is probabilistic
         """
-        return self.model._is_probabilistic
+        return self._model._is_probabilistic
 
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
-        return isinstance(self.model, TransferableFutureCovariatesLocalForecastingModel)
+        return isinstance(
+            self._model, TransferableFutureCovariatesLocalForecastingModel
+        )
 
     @property
     def _supress_generate_predict_encoding(self) -> bool:
-        return isinstance(self.model, TransferableFutureCovariatesLocalForecastingModel)
+        return isinstance(
+            self._model, TransferableFutureCovariatesLocalForecastingModel
+        )
