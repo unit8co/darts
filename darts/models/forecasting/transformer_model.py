@@ -333,18 +333,18 @@ class _TransformerModule(PLForecastingModule):
 
     def _encode_src(self, src: torch.Tensor) -> torch.Tensor:
         # see section 3.4 in 'Attention is All you Need' by Vaswani et al. (2017)
-        src = self.encoder(src) * math.sqrt(self.d_model)
+        src = self.encoder(src)
         src = self.positional_encoding(src)
         return self.transformer.encoder(src)
 
     def _embed(self, x: torch.Tensor, pos: int) -> torch.Tensor:
         """Project to d_model, scale by sqrt(d_model), and add positional encoding starting at ``pos``."""
-        x = self.encoder(x) * math.sqrt(self.d_model)
+        x = self.encoder(x)
         x = x + self.positional_encoding.pe[pos : pos + x.shape[0]]
         return self.positional_encoding.dropout(x)
 
     def _decode(self, memory: torch.Tensor, tgt: torch.Tensor) -> torch.Tensor:
-        tgt_emb = self.encoder(tgt) * math.sqrt(self.d_model)
+        tgt_emb = self.encoder(tgt)
         tgt_emb = self.positional_encoding(tgt_emb)
         return self._decode_from_emb(memory, tgt_emb)
 

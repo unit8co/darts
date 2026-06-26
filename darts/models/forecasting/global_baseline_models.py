@@ -29,7 +29,7 @@ from darts.utils.data import (
     SequentialTorchTrainingDataset,
     TorchTrainingDataset,
 )
-from darts.utils.data.torch_datasets.utils import TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 
 logger = get_logger(__name__)
 
@@ -72,9 +72,7 @@ class _GlobalNaiveModule(PLForecastingModule, ABC):
         super().__init__(*args, **kwargs)
 
     @io_processor
-    def forward(
-        self, x_in: tuple[torch.Tensor, torch.Tensor | None, torch.Tensor | None]
-    ) -> torch.Tensor:
+    def forward(self, x_in: PLModuleInput) -> torch.Tensor:
         """Naive model forward pass.
 
         Parameters

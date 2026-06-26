@@ -84,6 +84,16 @@ class _TiRexModule(PLForecastingModule):
 
         During training with fine-tuning enabled, all 9 pre-trained quantiles are returned
         for the loss. At prediction time, only user-specified quantiles are returned.
+
+        Parameters
+        ----------
+        x_in
+            ``(x_past, x_future, x_static, future_target)`` the past, future, and static features, as well as
+            the future target.
+        *args
+            Positional arguments passed to the forward method.
+        **kwargs
+            Optional keyword arguments.
         """
         # Dimension notation in comments below:
         #   B: batch size
@@ -96,7 +106,7 @@ class _TiRexModule(PLForecastingModule):
         #   N: likelihood quantiles (user-specified, 1 if deterministic)
 
         # `x_past`: (B, L, C)
-        x_past, _, _ = x_in
+        x_past, _, _, _ = x_in
         # fold target components into batch dim for multivariate support: (B, L, C) -> (B*C, L)
         x_past = x_past.transpose(1, 2).flatten(start_dim=0, end_dim=1)
 

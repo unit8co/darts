@@ -99,13 +99,7 @@ class RINorm(nn.Module):
             torch.var(x, dim=calc_dims, keepdim=True, unbiased=False) + self.eps
         ).detach()
 
-        x = x - self.mean
-        x = x / self.stdev
-        if self.affine:
-            x = x * self.affine_weight
-            x = x + self.affine_bias
-
-        return x
+        return self.transform(x)
 
     def transform(self, x: torch.Tensor) -> torch.Tensor:
         """Normalize ``x`` using statistics previously computed by :meth:`forward`.
