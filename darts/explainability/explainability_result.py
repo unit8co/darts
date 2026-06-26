@@ -25,9 +25,7 @@ import pandas as pd
 import shap
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
 
 
 class _ExplainabilityResult(ABC):
@@ -69,8 +67,7 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
                 raise_log(
                     ValueError(
                         "When giving a list of explained component dicts, the dict keys must match."
-                    ),
-                    logger=logger,
+                    )
                 )
         else:
             comps_available = explained_components.keys()
@@ -128,8 +125,7 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
             raise_log(
                 ValueError(
                     "The component parameter is required when the model has more than one component."
-                ),
-                logger,
+                )
             )
 
         component_out = self.available_components[0] if component is None else component
@@ -139,8 +135,7 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
                 ValueError(
                     f'Component "{component_out}" is not available. '
                     f"Available components are: {self.available_components}"
-                ),
-                logger,
+                )
             )
         return component_out
 
@@ -227,8 +222,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
                 raise_log(
                     ValueError(
                         "The `explained_forecasts` list must consist of dictionaries."
-                    ),
-                    logger,
+                    )
                 )
             if not all(
                 isinstance(key, int) for key in self.explained_forecasts[0].keys()
@@ -236,8 +230,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
                 raise_log(
                     ValueError(
                         "The `explained_forecasts` dictionary list must have all integer keys."
-                    ),
-                    logger,
+                    )
                 )
             self.available_horizons = list(self.explained_forecasts[0].keys())
             h_0 = self.available_horizons[0]
@@ -251,15 +244,13 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
                 raise_log(
                     ValueError(
                         "The `explained_forecasts` dictionary must have all integer keys."
-                    ),
-                    logger,
+                    )
                 )
         else:
             raise_log(
                 ValueError(
                     "The `explained_forecasts` must be a dictionary or a list of dictionaries."
-                ),
-                logger,
+                )
             )
 
     def get_explanation(
@@ -314,7 +305,6 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
                 ValueError(
                     f"Something went wrong. {self.__class__.__name__} got instantiated with an unexpected type."
                 ),
-                logger,
             )
 
     def _validate_input_for_querying_explainability_result(
@@ -336,8 +326,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
             raise_log(
                 ValueError(
                     "The component parameter is required when the model has more than one component."
-                ),
-                logger,
+                )
             )
 
         component_out = self.available_components[0] if component is None else component
@@ -347,16 +336,14 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
                 ValueError(
                     f'Component "{component_out}" is not available. '
                     f"Available components are: {self.available_components}"
-                ),
-                logger,
+                )
             )
 
         if horizon not in self.available_horizons:
             raise_log(
                 ValueError(
                     f"Horizon {horizon} is not available. Available horizons are: {self.available_horizons}"
-                ),
-                logger,
+                )
             )
         return component_out
 

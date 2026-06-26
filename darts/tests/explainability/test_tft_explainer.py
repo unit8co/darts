@@ -454,6 +454,9 @@ class TestTFTExplainer:
             _check_plot(n_series, 2, plot_type="heatmap", show_index_as="relative")
             _check_plot(n_series, 2, plot_type="heatmap", show_index_as="time")
 
+            with pytest.raises(ValueError, match="`plot_type` must be either"):
+                _check_plot(n_series, 2, plot_type="invalid", show_index_as="time")
+
     def helper_create_model(
         self, use_encoders=True, add_relative_idx=True, full_attention=False
     ):

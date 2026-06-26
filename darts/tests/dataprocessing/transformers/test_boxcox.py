@@ -140,3 +140,9 @@ class TestBoxCox:
             ._fitted_params
         )
         assert local_params == global_params
+
+
+class TestBoxCoxInputValidation:
+    def test_invalid_optim_method(self):
+        with pytest.raises(ValueError, match="optim_method parameter must be"):
+            BoxCox(optim_method="invalid")

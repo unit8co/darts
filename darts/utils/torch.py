@@ -14,11 +14,10 @@ from sklearn.utils import check_random_state
 from torch import Tensor
 from torch.random import fork_rng, manual_seed
 
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.utils.utils import MAX_NUMPY_SEED_VALUE, MAX_TORCH_SEED_VALUE, _is_method
 
 T = TypeVar("T")
-logger = get_logger(__name__)
 
 
 class MonteCarloDropout(nn.Dropout):
@@ -63,7 +62,7 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
     """
     # check that @random_method has been applied to a method.
     if not _is_method(decorated):
-        raise_log(ValueError("@random_method can only be used on methods."), logger)
+        raise_log(ValueError("@random_method can only be used on methods."))
 
     @wraps(decorated)
     def decorator(self, *args, **kwargs) -> T:

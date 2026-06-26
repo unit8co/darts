@@ -1525,3 +1525,61 @@ class TestShapExplainer:
                 background_arr=np.array([0.0]),
                 shap_method="invalid",
             )
+
+
+class TestExplainabilityUtilsInputValidation:
+    def test_process_input_covariates_without_series(self):
+        from darts.explainability.utils import process_input
+
+        model = LinearRegressionModel(lags=3, lags_past_covariates=3)
+        ts = TimeSeries.from_values(np.random.rand(50))
+        cov = TimeSeries.from_values(np.random.rand(50))
+        model.fit(ts, past_covariates=cov)
+        with pytest.raises(ValueError, match="covariates but no.*series"):
+            process_input(
+                n=1,
+                model=model,
+                input_type="background",
+                series=None,
+                past_covariates=cov,
+            )
+
+    def test_check_valid_input_future_covariates_length_mismatch(self):
+        from darts.explainability.utils import _check_valid_input
+
+        model = LinearRegressionModel(lags=3)
+        ts1 = TimeSeries.from_values(np.random.rand(20))
+        ts2 = TimeSeries.from_values(np.random.rand(20))
+        fc1 = TimeSeries.from_values(np.random.rand(20))
+        model.fit(ts1)
+        with pytest.raises(ValueError, match="number of.*series and future covariates"):
+            _check_valid_input(
+                model=model,
+                input_type="background",
+                series=[ts1, ts2],
+                past_covariates=None,
+                future_covariates=[fc1],
+                target_components=ts1.columns.to_list(),
+                past_covariates_components=None,
+                future_covariates_components=fc1.columns.to_list(),
+            )
+
+    def test_check_valid_input_component_names_mismatch(self):
+        from darts.explainability.utils import _check_valid_input
+
+        model = LinearRegressionModel(lags=3)
+        ts1 = TimeSeries.from_values(np.random.rand(20, 1), columns=["a"])
+        ts2 = TimeSeries.from_values(np.random.rand(20, 1), columns=["b"])
+        model.fit(ts1)
+        with pytest.raises(ValueError, match="Columns names must be identical"):
+            _check_valid_input(
+                model=model,
+                input_type="background",
+                series=[ts1, ts2],
+                past_covariates=None,
+                future_covariates=None,
+                target_components=ts1.columns.to_list(),
+                past_covariates_components=None,
+                future_covariates_components=None,
+                check_component_names=True,
+            )

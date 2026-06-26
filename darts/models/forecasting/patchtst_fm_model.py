@@ -20,7 +20,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.components.huggingface_connector import HuggingFaceConnector
 from darts.models.components.patchtst_fm_submodels import (
     _LearnedPositionalEmbedding,
@@ -36,8 +36,6 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.likelihood_models.torch import QuantileRegression
-
-logger = get_logger(__name__)
 
 
 class _PatchTSTFMBackbone(nn.Module):
@@ -647,7 +645,6 @@ class PatchTSTFMModel(FoundationModel):
                     f"plus `output_chunk_shift` {output_chunk_shift} cannot be greater than model's maximum "
                     f"context_length {context_length}"
                 ),
-                logger,
             )
 
         quantile_levels = config["quantile_levels"]
@@ -661,7 +658,6 @@ class PatchTSTFMModel(FoundationModel):
                         f"Only QuantileRegression likelihood is supported for PatchTST-FM in Darts. "
                         f"Got {type(likelihood)}."
                     ),
-                    logger,
                 )
             user_quantiles: list[float] = likelihood.quantiles
             if not set(user_quantiles).issubset(quantile_levels):
@@ -670,7 +666,6 @@ class PatchTSTFMModel(FoundationModel):
                         f"The quantiles for QuantileRegression likelihood {user_quantiles} "
                         f"must be a subset of PatchTST-FM quantiles {quantile_levels}."
                     ),
-                    logger,
                 )
 
         self.hf_connector = hf_connector

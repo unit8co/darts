@@ -68,13 +68,7 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.utils.validation import has_fit_parameter
 
 from darts import TimeSeries
-from darts.logging import (
-    get_logger,
-    raise_deprecation_warning,
-    raise_if,
-    raise_if_not,
-    raise_log,
-)
+from darts.logging import get_logger, raise_deprecation_warning, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.typing import TimeSeriesLike
 from darts.utils.data.tabularization import (
@@ -266,11 +260,12 @@ class SKLearnModel(GlobalForecastingModel):
         )
 
         # check and set output_chunk_length
-        raise_if_not(
-            isinstance(output_chunk_length, int) and output_chunk_length > 0,
-            f"output_chunk_length must be an integer greater than 0. Given: {output_chunk_length}",
-            logger=logger,
-        )
+        if not (isinstance(output_chunk_length, int) and output_chunk_length > 0):
+            raise_log(
+                ValueError(
+                    f"output_chunk_length must be an integer greater than 0. Given: {output_chunk_length}."
+                ),
+            )
         self._output_chunk_length = output_chunk_length
         self._output_chunk_shift = output_chunk_shift
 
@@ -279,13 +274,9 @@ class SKLearnModel(GlobalForecastingModel):
             self.model = LinearRegression(n_jobs=-1)
 
         if not callable(getattr(self.model, "fit", None)):
-            raise_log(
-                Exception("Provided model object must have a fit() method", logger)
-            )
+            raise_log(ValueError("Provided model object must have a fit() method"))
         if not callable(getattr(self.model, "predict", None)):
-            raise_log(
-                Exception("Provided model object must have a predict() method", logger)
-            )
+            raise_log(ValueError("Provided model object must have a predict() method"))
 
         # check lags
         self._validate_lags(
@@ -311,12 +302,16 @@ class SKLearnModel(GlobalForecastingModel):
         lags_past_covariates: LAGS_TYPE | None,
         lags_future_covariates: FUTURE_LAGS_TYPE | None,
     ):
-        raise_if(
+        if (
             (lags is None)
             and (lags_future_covariates is None)
-            and (lags_past_covariates is None),
-            "At least one of `lags`, `lags_future_covariates` or `lags_past_covariates` must be not None.",
-        )
+            and (lags_past_covariates is None)
+        ):
+            raise_log(
+                ValueError(
+                    "At least one of `lags`, `lags_future_covariates` or `lags_past_covariates` must be not None."
+                ),
+            )
 
     @staticmethod
     def _generate_lags(
@@ -354,7 +349,6 @@ class SKLearnModel(GlobalForecastingModel):
                     ValueError(
                         f"When passed as a dictionary, `{lags_name}` must contain at least one key."
                     ),
-                    logger,
                 )
 
             invalid_type = False
@@ -365,62 +359,76 @@ class SKLearnModel(GlobalForecastingModel):
             for comp_name, comp_lags in lags_values.items():
                 if lags_name == "lags_future_covariates":
                     if isinstance(comp_lags, tuple):
-                        raise_if_not(
+                        if not (
                             len(comp_lags) == 2
                             and isinstance(comp_lags[0], int)
-                            and isinstance(comp_lags[1], int),
-                            f"`{lags_name}` - `{comp_name}`: tuple must be of length 2, and must contain two integers",
-                            logger,
-                        )
+                            and isinstance(comp_lags[1], int)
+                        ):
+                            raise_log(
+                                ValueError(
+                                    f"`{lags_name}` - `{comp_name}`: tuple must be of length 2, and must "
+                                    f"contain two integers."
+                                ),
+                            )
 
-                        raise_if(
-                            isinstance(comp_lags[0], bool)
-                            or isinstance(comp_lags[1], bool),
-                            f"`{lags_name}` - `{comp_name}`: tuple must contain integers, not bool",
-                            logger,
-                        )
+                        if isinstance(comp_lags[0], bool) or isinstance(
+                            comp_lags[1], bool
+                        ):
+                            raise_log(
+                                ValueError(
+                                    f"`{lags_name}` - `{comp_name}`: tuple must contain integers, not bool."
+                                ),
+                            )
 
-                        raise_if_not(
-                            comp_lags[0] >= 0 and comp_lags[1] >= 0,
-                            f"`{lags_name}` - `{comp_name}`: tuple must contain positive integers. Given: {comp_lags}.",
-                            logger,
-                        )
-                        raise_if(
-                            comp_lags[0] == 0 and comp_lags[1] == 0,
-                            f"`{lags_name}` - `{comp_name}`: tuple cannot be (0, 0) as it corresponds to an empty "
-                            f"list of lags.",
-                            logger,
-                        )
+                        if not (comp_lags[0] >= 0 and comp_lags[1] >= 0):
+                            raise_log(
+                                ValueError(
+                                    f"`{lags_name}` - `{comp_name}`: tuple must contain positive integers. "
+                                    f"Given: {comp_lags}."
+                                ),
+                            )
+                        if comp_lags[0] == 0 and comp_lags[1] == 0:
+                            raise_log(
+                                ValueError(
+                                    f"`{lags_name}` - `{comp_name}`: tuple cannot be (0, 0) as it corresponds "
+                                    f"to an empty list of lags."
+                                ),
+                            )
                         tmp_components_lags[comp_name] = list(
                             range(-comp_lags[0], comp_lags[1])
                         )
                     elif isinstance(comp_lags, list):
                         for lag in comp_lags:
-                            raise_if(
-                                not isinstance(lag, int) or isinstance(lag, bool),
-                                f"`{lags_name}` - `{comp_name}`: list must contain only integers. Given: {comp_lags}.",
-                                logger,
-                            )
+                            if not isinstance(lag, int) or isinstance(lag, bool):
+                                raise_log(
+                                    ValueError(
+                                        f"`{lags_name}` - `{comp_name}`: list must contain "
+                                        f"only integers. Given: {comp_lags}."
+                                    ),
+                                )
                         tmp_components_lags[comp_name] = sorted(comp_lags)
                     else:
                         invalid_type = True
                         supported_types = "tuple or a list"
                 else:
                     if isinstance(comp_lags, int):
-                        raise_if_not(
-                            comp_lags > 0,
-                            f"`{lags_name}` - `{comp_name}`: integer must be strictly positive . Given: {comp_lags}.",
-                            logger,
-                        )
+                        if comp_lags <= 0:
+                            raise_log(
+                                ValueError(
+                                    f"`{lags_name}` - `{comp_name}`: integer must be strictly "
+                                    f"positive . Given: {comp_lags}."
+                                ),
+                            )
                         tmp_components_lags[comp_name] = list(range(-comp_lags, 0))
                     elif isinstance(comp_lags, list):
                         for lag in comp_lags:
-                            raise_if(
-                                not isinstance(lag, int) or (lag >= 0),
-                                f"`{lags_name}` - `{comp_name}`: list must contain only strictly negative integers. "
-                                f"Given: {comp_lags}.",
-                                logger,
-                            )
+                            if not isinstance(lag, int) or (lag >= 0):
+                                raise_log(
+                                    ValueError(
+                                        f"`{lags_name}` - `{comp_name}`: list must contain "
+                                        f"only strictly negative integers. Given: {comp_lags}."
+                                    ),
+                                )
                         tmp_components_lags[comp_name] = sorted(comp_lags)
                     else:
                         invalid_type = True
@@ -432,7 +440,6 @@ class SKLearnModel(GlobalForecastingModel):
                             f"`{lags_name}` - `{comp_name}`: must be either a {supported_types}. "
                             f"Given : {type(comp_lags)}."
                         ),
-                        logger,
                     )
 
                 # extracting min and max lags va
@@ -508,7 +515,6 @@ class SKLearnModel(GlobalForecastingModel):
                     ValueError(
                         f"`{series_name}` cannot be `None` when lags are specified for it."
                     ),
-                    logger=logger,
                 )
 
             is_comp_specific = self.component_lags.get(lags_name) is not None
@@ -666,7 +672,6 @@ class SKLearnModel(GlobalForecastingModel):
                     ValueError(
                         "`quantile` is only supported for probabilistic models that use `likelihood='quantile'`."
                     ),
-                    logger=logger,
                 )
             if isinstance(likelihood, MultiQuantileRegression):
                 logger.warning(
@@ -685,7 +690,6 @@ class SKLearnModel(GlobalForecastingModel):
                         f"Invalid `quantile={quantile}`. Must be one of the fitted quantiles "
                         f"`{list(self._model_container.keys())}`."
                     ),
-                    logger,
                 )
             model = self._model_container[quantile]
         else:
@@ -702,14 +706,12 @@ class SKLearnModel(GlobalForecastingModel):
                 ValueError(
                     f"`horizon` must be `>= 0` and `< output_chunk_length={self.output_chunk_length}`."
                 ),
-                logger,
             )
         if not 0 <= target_dim < self.input_dim["target"]:
             raise_log(
                 ValueError(
                     f"`target_dim` must be `>= 0`, and `< n_target_components={self.input_dim['target']}`."
                 ),
-                logger,
             )
 
         # when multi_models=True, one model per horizon and target component
@@ -808,7 +810,7 @@ class SKLearnModel(GlobalForecastingModel):
                             f"Expected {self.input_dim[cov_name]} components but received "
                             f"{ts[i].width} components at index {i} of `{arg_name}`."
                         )
-                raise_log(ValueError("\n".join(shape_error_msg)), logger)
+                raise_log(ValueError("\n".join(shape_error_msg)))
             features[i] = X_i[:, :, 0]
             labels[i] = y_i[:, :, 0]
             if sample_weights is not None:
@@ -1009,17 +1011,21 @@ class SKLearnModel(GlobalForecastingModel):
             self._uses_static_covariates = True
 
         for covs, name in zip([past_covariates, future_covariates], ["past", "future"]):
-            raise_if(
-                covs is not None and name not in self.lags,
-                f"`{name}_covariates` not None in `fit()` method call, but `lags_{name}_covariates` is None in "
-                f"constructor.",
-            )
+            if covs is not None and name not in self.lags:
+                raise_log(
+                    ValueError(
+                        f"`{name}_covariates` not None in `fit()` method call, but "
+                        f"`lags_{name}_covariates` is None in constructor."
+                    ),
+                )
 
-            raise_if(
-                covs is None and name in self.lags,
-                f"`{name}_covariates` is None in `fit()` method call, but `lags_{name}_covariates` is not None in "
-                "constructor.",
-            )
+            if covs is None and name in self.lags:
+                raise_log(
+                    ValueError(
+                        f"`{name}_covariates` is None in `fit()` method call, but "
+                        f"`lags_{name}_covariates` is not None in constructor."
+                    ),
+                )
 
         if self._supports_val_series:
             val_series, val_past_covariates, val_future_covariates = (
@@ -1126,7 +1132,7 @@ class SKLearnModel(GlobalForecastingModel):
 
         # single error message for all the lags arguments
         if len(component_lags_error_msg) > 0:
-            raise_log(ValueError("\n".join(component_lags_error_msg)), logger)
+            raise_log(ValueError("\n".join(component_lags_error_msg)))
 
         self._fit_model(
             series=series,
@@ -1202,7 +1208,6 @@ class SKLearnModel(GlobalForecastingModel):
                         "Input `series` must be provided. This is the result either from fitting on multiple series, "
                         "from not having fit the model yet, or from loading a model saved with `clean=True`."
                     ),
-                    logger,
                 )
             series = self.training_series
 
@@ -1248,14 +1253,16 @@ class SKLearnModel(GlobalForecastingModel):
             "past": past_covariates[0].width if past_covariates else None,
             "future": future_covariates[0].width if future_covariates else None,
         }
-        raise_if_not(
-            pred_input_dim == self.input_dim,
-            f"The number of components of the target series and the covariates provided for prediction doesn't "
-            f"match the number of components of the target series and the covariates this model has been "
-            f"trained on.\n"
-            f"Provided number of components for prediction: {pred_input_dim}\n"
-            f"Provided number of components for training: {self.input_dim}",
-        )
+        if pred_input_dim != self.input_dim:
+            raise_log(
+                ValueError(
+                    f"The number of components of the target series and the covariates provided for prediction doesn't "
+                    f"match the number of components of the target series and the covariates this model has been "
+                    f"trained on.\n"
+                    f"Provided number of components for prediction: {pred_input_dim}\n"
+                    f"Provided number of components for training: {self.input_dim}"
+                ),
+            )
 
         # prediction preprocessing
         covariates = {
@@ -1295,7 +1302,6 @@ class SKLearnModel(GlobalForecastingModel):
                             f"range from {start_ts} until {end_ts} (inclusive), but it only ranges from "
                             f"{series_.start_time()} until {end_ts}."
                         ),
-                        logger=logger,
                     )
 
         # dictionary containing covariate data over time span required for prediction
@@ -1335,7 +1341,6 @@ class SKLearnModel(GlobalForecastingModel):
                             f"range from {start_ts} until {end_ts} (inclusive), but they only range from "
                             f"{cov.start_time()} until {cov.end_time()}."
                         ),
-                        logger=logger,
                     )
 
                 # use slice() instead of [] as for integer-indexed series [] does not act on time index
@@ -1760,21 +1765,18 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
                 ValueError(
                     "`categorical_static_covariates` is declared but `use_static_covariates` is set to False."
                 ),
-                logger,
             )
         if categorical_past_covariates is not None and lags_past_covariates is None:
             raise_log(
                 ValueError(
                     "`categorical_past_covariates` is declared but `lags_past_covariates` is not set."
                 ),
-                logger,
             )
         if categorical_future_covariates is not None and lags_future_covariates is None:
             raise_log(
                 ValueError(
                     "`categorical_future_covariates` is declared but `lags_future_covariates` is not set."
                 ),
-                logger,
             )
 
         self.categorical_past_covariates = (
@@ -1869,7 +1871,6 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
                         f"not present in the `{s_type}` passed to the `fit()` call. "
                         f"Available feature(s) are: {set([comp for _, comp, _ in features])}"
                     ),
-                    logger=logger,
                 )
         return indices, col_names
 
@@ -1921,7 +1922,6 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
                 ValueError(
                     "Categorical features must be integer-encoded, decimal values found instead."
                 ),
-                logger=logger,
             )
 
     def _format_samples(
@@ -2360,7 +2360,6 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
                 ValueError(
                     "`SKLearnClassifierModel` must be initialized with a classifier `model`."
                 ),
-                logger,
             )
         if not hasattr(model, "predict_proba"):
             logger.warning(

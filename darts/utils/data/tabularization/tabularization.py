@@ -17,13 +17,11 @@ import pandas as pd
 from numpy.lib.stride_tricks import as_strided
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.typing import TimeIndex, TimeSeriesLike
 from darts.utils.data.utils import _process_sample_weight
 from darts.utils.ts_utils import get_single_series, series2seq
 from darts.utils.utils import n_steps_between
-
-logger = get_logger(__name__)
 
 NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
 STABLE_SORT_KWARGS = {"stable": True} if NP_2_OR_ABOVE else {"kind": "stable"}
@@ -309,7 +307,6 @@ def create_lagged_data(
     if is_training and (target_series is None):
         raise_log(
             ValueError("Must specify `target_series` if `is_training = True`."),
-            logger=logger,
         )
 
     # ensure list of TimeSeries format
@@ -328,7 +325,6 @@ def create_lagged_data(
             ValueError(
                 "Must specify the same number of `TimeSeries` for each series input."
             ),
-            logger,
         )
 
     # process / check sample weight and generate series in case of built-in weight generator
@@ -344,7 +340,6 @@ def create_lagged_data(
                 "`use_moving_windows=False` is not supported when any of the lags is provided as a dictionary. "
                 f"Received: {[lags, lags_past_covariates, lags_future_covariates]}."
             ),
-            logger,
         )
 
     if max_samples_per_ts is None:
@@ -371,7 +366,6 @@ def create_lagged_data(
                     "the same frequency and some of the lags are provided as a dictionary. Either resample the "
                     "series or change the lags definition."
                 ),
-                logger,
             )
         if use_moving_windows and series_equal_freq:
             X_i, y_i, times_i, weights_i = _create_lagged_data_by_moving_window(
@@ -795,7 +789,6 @@ def add_static_covariates_to_lagged_data(
                     "Static covariates mismatch across the sequence of target series. Some of the series "
                     "contain static covariates and others do not."
                 ),
-                logger,
             )
         else:
             if last_shape is None:
@@ -806,7 +799,6 @@ def add_static_covariates_to_lagged_data(
                         "Static covariates dimension mismatch across the sequence of target series. The static "
                         "covariates must have the same number of columns and rows across all target series."
                     ),
-                    logger,
                 )
             # flatten static covariates along columns -> results in [scov0_comp0, scov0_comp1, scov1_comp0, ...]
             static_covs = ts.static_covariates.values.flatten(order="F")
@@ -952,7 +944,6 @@ def create_lagged_component_names(
                         "All the lags must be explicitly defined, 'default_lags' is not allowed in the "
                         "lags dictionary."
                     ),
-                    logger,
                 )
 
             # combine all the lags and sort them in ascending order across all the components
@@ -1083,12 +1074,11 @@ def _create_lagged_data_by_moving_window(
         series_and_lags_not_specified = [max_lag is None for max_lag in max_lags]
         if all(series_and_lags_not_specified):
             raise_log(
-                ValueError("Must specify at least one series-lags pair."), logger=logger
+                ValueError("Must specify at least one series-lags pair."),
             )
         if not (isinstance(stride, int) and stride > 0):
             raise_log(
                 ValueError("`stride` must be a positive integer greater than 0."),
-                logger=logger,
             )
     sample_weight_vals = _extract_sample_weight(sample_weight, target_series)
 
@@ -1098,7 +1088,6 @@ def _create_lagged_data_by_moving_window(
             ValueError(
                 "Specified series do not share any common times for which features can be created."
             ),
-            logger=logger,
         )
     freq = _get_freqs(target_series, past_covariates, future_covariates)[0]
     if isinstance(time_bounds[0], int):
@@ -1308,12 +1297,11 @@ def _create_lagged_data_by_intersecting_times(
         series_and_lags_not_specified = [min_lag is None for min_lag in min_lags]
         if all(series_and_lags_not_specified):
             raise_log(
-                ValueError("Must specify at least one series-lags pair."), logger=logger
+                ValueError("Must specify at least one series-lags pair."),
             )
         if not (isinstance(stride, int) and stride > 0):
             raise_log(
                 ValueError("`stride` must be a positive integer greater than 0."),
-                logger=logger,
             )
     sample_weight_vals = _extract_sample_weight(sample_weight, target_series)
     shared_times = get_shared_times(*feature_times, sort=True)
@@ -1322,7 +1310,6 @@ def _create_lagged_data_by_intersecting_times(
             ValueError(
                 "Specified series do not share any common times for which features can be created."
             ),
-            logger=logger,
         )
     if stride > 1:
         # calculate the starting index so that the last element is included after applying the stride
@@ -1700,13 +1687,11 @@ def _get_feature_times(
     if is_training and (target_series is None):
         raise_log(
             ValueError("Must specify `target_series` when `is_training = True`."),
-            logger=logger,
         )
     if check_inputs:
         if not isinstance(output_chunk_length, int) or output_chunk_length < 1:
             raise_log(
                 ValueError("`output_chunk_length` must be a positive `int`."),
-                logger=logger,
             )
         _check_lags(lags, lags_past_covariates, lags_future_covariates)
     feature_times, min_lags, max_lags = [], [], []
@@ -1861,7 +1846,6 @@ def get_shared_times(
                         "Specified series and/or times must all have the same type of "
                         "`time_index` (i.e. all `pd.RangeIndex` or all `pd.DatetimeIndex`)."
                     ),
-                    logger=logger,
                 )
     return shared_times
 
@@ -1942,7 +1926,6 @@ def get_shared_times_bounds(
                     "Specified series and/or times must all have the same type of "
                     "`time_index` (i.e. all `pd.RangeIndex` or all `pd.DatetimeIndex`)."
                 ),
-                logger=logger,
             )
         # If `start_times` empty, no series were specified -> `bounds = (1, -1)` will
         # be 'converted' to `None` in next line:
@@ -2016,20 +1999,18 @@ def strided_moving_window(
     """
     if check_inputs:
         if not isinstance(stride, int) or stride < 1:
-            raise_log(ValueError("`stride` must be a positive `int`."), logger=logger)
+            raise_log(ValueError("`stride` must be a positive `int`."))
         if not isinstance(window_len, int) or window_len < 1:
             raise_log(
-                ValueError("`window_len` must be a positive `int`."), logger=logger
+                ValueError("`window_len` must be a positive `int`."),
             )
         if not isinstance(axis, int) or axis > x.ndim - 1 or axis < -x.ndim:
             raise_log(
                 ValueError("`axis` must be an `int` that is less than `x.ndim`."),
-                logger=logger,
             )
         if window_len > x.shape[axis]:
             raise_log(
                 ValueError("`window_len` must be less than or equal to x.shape[axis]."),
-                logger=logger,
             )
     num_windows = (x.shape[axis] - window_len) // stride + 1
     new_shape = list(x.shape)
@@ -2113,7 +2094,6 @@ def _check_lags(
                         f"`lags{suffix}` must be a `Sequence` or `Dict` containing only `int` "
                         f"values less than {max_lag + 1}."
                     ),
-                    logger=logger,
                 )
 
     if all(lags_is_none):
@@ -2121,7 +2101,6 @@ def _check_lags(
             ValueError(
                 "Must specify at least one of: `lags`, `lags_past_covariates`, `lags_future_covariates`."
             ),
-            logger=logger,
         )
     return None
 
@@ -2163,7 +2142,6 @@ def _check_series_length(
                     f"`{name}` must have at least `{minimum_len_str}` = {minimum_len} time "
                     f"steps; instead, it only has {series.n_timesteps}."
                 ),
-                logger=logger,
             )
     return None
 
@@ -2179,7 +2157,6 @@ def _extract_sample_weight(sample_weight, target_series):
             ValueError(
                 "The `sample_weight` series must have at least the same times as the target `series`."
             ),
-            logger=logger,
         )
 
     weight_n_comp = sample_weight_vals.shape[1]
@@ -2190,7 +2167,6 @@ def _extract_sample_weight(sample_weight, target_series):
                 "The number of components in `sample_weight` must either be `1` or match "
                 f"the number of target series components `{series_n_comp}`."
             ),
-            logger=logger,
         )
     elif weight_n_comp != series_n_comp:
         sample_weight_vals = sample_weight_vals.repeat(series_n_comp, axis=1)

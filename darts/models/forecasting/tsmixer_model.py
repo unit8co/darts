@@ -27,7 +27,7 @@ from collections.abc import Callable
 import torch
 from torch import nn
 
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.components import layer_norm_variants
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
@@ -36,8 +36,6 @@ from darts.models.forecasting.pl_forecasting_module import (
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
-
-logger = get_logger(__name__)
 
 ACTIVATIONS = [
     "ReLU",
@@ -76,7 +74,6 @@ class TimeBatchNorm2d(nn.BatchNorm2d):
                 ValueError(
                     f"Expected 3D input Tensor, but got {x.ndim}D Tensor instead."
                 ),
-                logger=logger,
             )
         # apply 2D batch norm over reshape input_data `(batch_size, 1, timepoints, features)`
         output = super().forward(x.unsqueeze(1))
@@ -370,7 +367,6 @@ class _TSMixerModule(PLForecastingModule):
                 ValueError(
                     f"Invalid `activation={activation}`. Must be on of {ACTIVATIONS}."
                 ),
-                logger=logger,
             )
         activation = getattr(nn, activation)()
 
@@ -380,7 +376,6 @@ class _TSMixerModule(PLForecastingModule):
                     ValueError(
                         f"Invalid `norm_type={norm_type}`. Must be on of {NORMS}."
                     ),
-                    logger=logger,
                 )
             if norm_type == "TimeBatchNorm2d":
                 norm_type = TimeBatchNorm2d

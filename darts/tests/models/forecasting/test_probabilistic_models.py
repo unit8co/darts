@@ -7,7 +7,6 @@ import pytest
 
 from darts import TimeSeries
 from darts.datasets import IceCreamHeaterDataset
-from darts.logging import get_logger
 from darts.metrics import mae
 from darts.models import (
     ARIMA,
@@ -36,8 +35,6 @@ from darts.tests.conftest import (
     tfm_kwargs,
 )
 from darts.utils import timeseries_generation as tg
-
-logger = get_logger(__name__)
 
 if TORCH_AVAILABLE:
     import torch

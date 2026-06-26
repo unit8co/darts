@@ -200,3 +200,25 @@ class TestTCNModel:
     def test_pred_length(self):
         series = tg.linear_timeseries(length=100)
         self.helper_test_pred_length(TCNModel, series)
+
+
+class TestTCNModelInputValidation:
+    def test_kernel_size_exceeds_input_length(self):
+        with pytest.raises(ValueError, match="kernel size must be strictly smaller"):
+            TCNModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                kernel_size=5,
+                n_epochs=1,
+                **tfm_kwargs,
+            )
+
+    def test_output_length_exceeds_input_length(self):
+        with pytest.raises(ValueError, match="output length must be strictly smaller"):
+            TCNModel(
+                input_chunk_length=4,
+                output_chunk_length=5,
+                kernel_size=2,
+                n_epochs=1,
+                **tfm_kwargs,
+            )

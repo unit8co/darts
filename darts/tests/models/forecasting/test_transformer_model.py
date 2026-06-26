@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
-from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs, tfm_kwargs_dev
 from darts.utils import timeseries_generation as tg
 
 if not TORCH_AVAILABLE:
@@ -195,3 +195,32 @@ class TestTransformerModel:
                 **tfm_kwargs,
             )
             model4.fit(self.series, epochs=1)
+
+
+class TestTransformerModelInputValidation:
+    series = tg.linear_timeseries(length=50)
+
+    def test_invalid_activation(self):
+        with pytest.raises(ValueError, match="is not in"):
+            m = TransformerModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                activation="invalid_activation",
+                n_epochs=1,
+                **tfm_kwargs_dev,
+            )
+            m.fit(self.series)
+
+    def test_glu_activation_with_custom_encoder(self):
+        with pytest.raises(
+            ValueError, match="Cannot use.*custom_encoder.*custom_decoder"
+        ):
+            m = TransformerModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                activation="GLU",
+                custom_encoder=nn.TransformerEncoderLayer(d_model=64, nhead=4),
+                n_epochs=1,
+                **tfm_kwargs_dev,
+            )
+            m.fit(self.series)

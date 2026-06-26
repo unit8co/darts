@@ -429,7 +429,6 @@ class TiRexModel(FoundationModel):
                     "Set `accept_license=True` to confirm you have reviewed and accept the terms: "
                     "https://github.com/NX-AI/tirex/blob/main/LICENSE"
                 ),
-                logger,
             )
 
         if likelihood is not None:
@@ -439,7 +438,6 @@ class TiRexModel(FoundationModel):
                         f"Only QuantileRegression likelihood is supported for TiRex in Darts. "
                         f"Got {type(likelihood)}."
                     ),
-                    logger,
                 )
             user_quantiles: list[float] = likelihood.quantiles
             if not set(user_quantiles).issubset(self._DEFAULT_QUANTILES):
@@ -448,7 +446,6 @@ class TiRexModel(FoundationModel):
                         f"The quantiles for QuantileRegression likelihood {user_quantiles} "
                         f"must be a subset of TiRex quantiles {self._DEFAULT_QUANTILES}."
                     ),
-                    logger,
                 )
 
         if output_chunk_length + output_chunk_shift > self._MAX_PREDICTION_LENGTH:
@@ -457,7 +454,6 @@ class TiRexModel(FoundationModel):
                     f"`output_chunk_length` {output_chunk_length} plus `output_chunk_shift` {output_chunk_shift} "
                     f"cannot be greater than model's maximum prediction length {self._MAX_PREDICTION_LENGTH}"
                 ),
-                logger,
             )
 
         tirex_kwargs = tirex_kwargs or {}
@@ -467,7 +463,6 @@ class TiRexModel(FoundationModel):
                     "The `path` argument for loading the TiRex model should be passed via `hub_model_name`,"
                     "not `tirex_kwargs`."
                 ),
-                logger,
             )
 
         if kwargs.get("enable_finetuning", None):

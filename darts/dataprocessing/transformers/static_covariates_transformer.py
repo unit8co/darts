@@ -19,9 +19,7 @@ from darts.dataprocessing.transformers.fittable_data_transformer import (
 from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
-from darts.logging import get_logger, raise_log
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
 
 
 class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransformer):
@@ -129,7 +127,6 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
                         f"The provided `{transformer_name}` object must have fit(), transform() and "
                         f"inverse_transform() methods"
                     ),
-                    logger,
                 )
 
         # numeric/categorical cols will be inferred at fitting time, if user did not set them
@@ -420,7 +417,6 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
                 ValueError(
                     f"Expected `{n_cat_cols}` categorical value columns but only encountered `{n_vals_cat_cols}`"
                 ),
-                logger,
             )
 
         # Transform static covs:

@@ -13,12 +13,9 @@ if not PROPHET_AVAILABLE:
     )
 
 from darts import TimeSeries
-from darts.logging import get_logger
 from darts.models import Prophet
 from darts.utils import timeseries_generation as tg
 from darts.utils.utils import generate_index
-
-logger = get_logger(__name__)
 
 
 class TestProphet:

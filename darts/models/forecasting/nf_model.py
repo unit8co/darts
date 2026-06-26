@@ -660,7 +660,6 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
                 NotImplementedError(
                     "Recurrent NeuralForecast models are currently not supported."
                 ),
-                logger,
             )
 
         # consider static covariates if supported by `nf_model_class`
@@ -677,7 +676,6 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
                 ValueError(
                     f"Could not find a NeuralForecast model class named `{model}` in `neuralforecast.models`."
                 ),
-                logger,
             )
         return model_class
 
@@ -687,7 +685,6 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
                 ValueError(
                     f"`{name}` must be a NeuralForecast base model class,  but got {type(self.nf_model_class)}."
                 ),
-                logger,
             )
 
     def _validate_nf_model_params(
@@ -705,7 +702,6 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
                     f"The following parameters are not valid for the provided NeuralForecast model "
                     f"{self.nf_model_class.__name__} and should be removed from `model_kwargs`: {invalid_params}"
                 ),
-                logger,
             )
 
         # remove ignored params

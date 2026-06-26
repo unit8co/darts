@@ -193,3 +193,9 @@ class TestDatasetLoader:
             ms = dataset()._to_multi_series(ts)
             assert len(ms) == 5
             assert len(ms[0]) == len(ts.index)
+
+
+class TestDatasetInputValidation:
+    def test_uber_invalid_sample_freq(self):
+        with pytest.raises(ValueError, match="sample_freq must be one of"):
+            UberTLCDataset(sample_freq="weekly")

@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from torch.utils.data import Dataset
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.utils.data.torch_datasets.utils import (
     TorchInferenceDatasetOutput,
     TorchTrainingDatasetOutput,
@@ -17,8 +17,6 @@ from darts.utils.data.utils import (
     _SERIES_TYPES,
     FeatureType,
 )
-
-logger = get_logger(__name__)
 
 _SampleIndexType = dict[FeatureType, tuple[int | None, int | None]]
 
@@ -159,7 +157,6 @@ class TorchDataset(ABC, Dataset):
                                 f"Invalid `{main_feat_type.value}`; could not find values in index "
                                 f"range: {start_time} - {end_time}."
                             ),
-                            logger=logger,
                         )
 
                     # inference: more verbose error including forecast horizon;
@@ -172,7 +169,6 @@ class TorchDataset(ABC, Dataset):
                                 f"`{main_feat_type.value}` must start at or before time step `{start_time}`, "
                                 f"whereas now the start is at time step `{feat.start_time()}`."
                             ),
-                            logger=logger,
                         )
                     else:
                         forecast_info = (
@@ -187,7 +183,6 @@ class TorchDataset(ABC, Dataset):
                                 f"`{forecast_info}` the `{main_feat_type.value}` must end at or after time step "
                                 f"`{end_time}`, whereas now the end is at time step `{feat.end_time()}`."
                             ),
-                            logger=logger,
                         )
 
                 # extract the index position (index) from the start index
