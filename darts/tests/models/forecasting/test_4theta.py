@@ -1,4 +1,5 @@
 import random
+import sys
 
 import numpy as np
 import pytest
@@ -9,6 +10,8 @@ from darts.utils.timeseries_generation import linear_timeseries as lt
 from darts.utils.timeseries_generation import random_walk_timeseries as rt
 from darts.utils.timeseries_generation import sine_timeseries as st
 from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode
+
+py_312_or_higher = sys.version_info >= (3, 12, 0)
 
 
 class TestFourTheta:
@@ -126,7 +129,13 @@ class TestFourTheta:
 
 class TestThetaInputValidation:
     def test_invalid_season_mode(self):
-        with pytest.raises(ValueError, match="Unknown value for season_mode"):
+        if py_312_or_higher:
+            exc = ValueError
+            msg = "Unknown value for season_mode"
+        else:
+            exc = TypeError
+            msg = None
+        with pytest.raises(exc, match=msg):
             Theta(season_mode="invalid")
 
     def test_zero_theta(self):

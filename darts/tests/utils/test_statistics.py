@@ -1,3 +1,5 @@
+import sys
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -15,6 +17,7 @@ from darts.utils.statistics import (
     plot_pacf,
     plot_residuals_analysis,
     plot_tolerance_curve,
+    remove_from_series,
     remove_seasonality,
     remove_trend,
     stationarity_test_adf,
@@ -27,6 +30,8 @@ from darts.utils.timeseries_generation import (
     linear_timeseries,
 )
 from darts.utils.utils import ModelMode, SeasonalityMode
+
+py_312_or_higher = sys.version_info >= (3, 12, 0)
 
 
 class TestTimeSeries:
@@ -328,7 +333,13 @@ class TestStatisticsInputValidation:
             check_seasonality(self.ts, m=10, max_lag=5)
 
     def test_extract_trend_and_seasonality_invalid_model(self):
-        with pytest.raises(ValueError, match="Unknown value for model_mode"):
+        if py_312_or_higher:
+            exc = ValueError
+            msg = "Unknown value for model_mode"
+        else:
+            exc = TypeError
+            msg = None
+        with pytest.raises(exc, match=msg):
             extract_trend_and_seasonality(self.ts, freq=6, model="invalid")
 
     def test_extract_trend_and_seasonality_none_model(self):
@@ -344,9 +355,13 @@ class TestStatisticsInputValidation:
             )
 
     def test_remove_from_series_invalid_model(self):
-        from darts.utils.statistics import remove_from_series
-
-        with pytest.raises(ValueError, match="Unknown value for model_mode"):
+        if py_312_or_higher:
+            exc = ValueError
+            msg = "Unknown value for model_mode"
+        else:
+            exc = TypeError
+            msg = None
+        with pytest.raises(exc, match=msg):
             remove_from_series(self.ts, self.ts_other, model="invalid")
 
     def test_remove_seasonality_none_model(self):
