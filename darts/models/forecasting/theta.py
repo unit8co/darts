@@ -89,7 +89,7 @@ class Theta(LocalForecastingModel):
         self.season_period = None
         self.season_mode = season_mode
 
-        if season_mode not in SeasonalityMode:
+        if season_mode not in SeasonalityMode:  # pragma: no cover
             raise_log(
                 ValueError(f"Unknown value for season_mode: {season_mode}."),
             )

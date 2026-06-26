@@ -180,7 +180,7 @@ def extract_trend_and_seasonality(
     """
 
     ts._assert_univariate()
-    if not (model in ModelMode or model in SeasonalityMode):
+    if not (model in ModelMode or model in SeasonalityMode):  # pragma: no cover
         raise_log(ValueError(f"Unknown value for model_mode: {model}."))
 
     if model is SeasonalityMode.NONE:
@@ -289,7 +289,7 @@ def remove_from_series(
     """
 
     ts._assert_univariate()
-    if not (model in ModelMode or model in SeasonalityMode):
+    if not (model in ModelMode or model in SeasonalityMode):  # pragma: no cover
         raise_log(ValueError(f"Unknown value for model_mode: {model}."))
 
     if model.value == "multiplicative":
