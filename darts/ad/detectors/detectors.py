@@ -29,7 +29,7 @@ from darts.ad.utils import (
 )
 from darts.logging import get_logger, raise_log
 from darts.typing import TimeSeriesLike
-from darts.utils.ts_utils import series2seq
+from darts.utils.ts_utils import get_series_seq_type, series2seq
 
 logger = get_logger(__name__)
 
@@ -59,7 +59,7 @@ class Detector(ABC):
         TimeSeriesLike
             binary prediction (1 if considered as an anomaly, 0 if not)
         """
-        called_with_single_series = isinstance(series, TimeSeries)
+        sequence_type_in = get_series_seq_type(series)
         series = _check_input(
             series,
             name=name,
@@ -69,7 +69,7 @@ class Detector(ABC):
         detected_series = []
         for s in series:
             detected_series.append(self._detect_core(s, name=name))
-        return detected_series[0] if called_with_single_series else detected_series
+        return series2seq(detected_series, seq_type_out=sequence_type_in)
 
     def eval_metric(
         self,

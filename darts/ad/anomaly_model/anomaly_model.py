@@ -59,6 +59,8 @@ class AnomalyModel(ABC):
         )
         return self
 
+    # TODO(oswald): Discuss how we want to handle those nested lists.
+    # TODO(oswald): The collapsing for single scorers also only happens for single TS input
     @abstractmethod
     def score(
         self,

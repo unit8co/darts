@@ -16,9 +16,9 @@ from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
 from darts.utils import n_steps_between
 from darts.utils.ts_utils import (
+    SeriesType,
     get_series_seq_type,
     get_single_series,
-    seq2series,
     series2seq,
 )
 
@@ -514,7 +514,9 @@ class RegressionEnsembleModel(EnsembleModel):
         random_state: int | None = None,
         verbose: bool | None = None,
     ) -> TimeSeriesLike:
-        is_single_series = isinstance(series, TimeSeries) or series is None
+        sequence_type_in = (
+            SeriesType.SINGLE if series is None else get_series_seq_type(series)
+        )
         predictions = series2seq(predictions)
         series = series2seq(series) if series is not None else [None]
 
@@ -530,7 +532,7 @@ class RegressionEnsembleModel(EnsembleModel):
             )
             for serie, prediction in zip(series, predictions)
         ]
-        return seq2series(ensembled) if is_single_series else ensembled
+        return series2seq(ensembled, seq_type_out=sequence_type_in)
 
     @property
     def supports_likelihood_parameter_prediction(self) -> bool:

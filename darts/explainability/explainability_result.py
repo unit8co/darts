@@ -26,6 +26,7 @@ import shap
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -262,9 +263,10 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
                 logger,
             )
 
+    # TODO(oswald): TSS migration — wrap `list[TimeSeries]` return as TimeSeriesSequence once TSS lands.
     def get_explanation(
         self, horizon: int, component: str | None = None
-    ) -> TimeSeries | list[TimeSeries]:
+    ) -> TimeSeriesLike:
         """
         Returns one or several ``TimeSeries`` representing the explanations
         for a given horizon and component.
@@ -418,9 +420,10 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
         self.feature_values = feature_values
         self.shap_explanation_object = shap_explanation_object
 
+    # TODO(oswald): TSS migration — wrap `list[TimeSeries]` return as TimeSeriesSequence once TSS lands.
     def get_feature_values(
         self, horizon: int, component: str | None = None
-    ) -> TimeSeries | list[TimeSeries]:
+    ) -> TimeSeriesLike:
         """
         Returns one or several ``TimeSeries`` representing the feature values
         for a given horizon and component.
@@ -617,6 +620,7 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
             "static_covariates_importance",
         ]
 
+    # TODO(oswald): TSS migration — wrap `list[TimeSeries]` return as TimeSeriesSequence once TSS lands.
     def get_attention(self) -> TimeSeries | list[TimeSeries]:
         """
         Returns the time-dependent attention on the encoder and decoder for each `horizon` in (1,

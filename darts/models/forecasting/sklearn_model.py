@@ -95,7 +95,13 @@ from darts.utils.likelihood_models.sklearn import (
     _get_likelihood,
 )
 from darts.utils.multioutput import MultiOutputMixin, get_multioutput_estimator_cls
-from darts.utils.ts_utils import get_single_series, seq2series, series2seq
+from darts.utils.ts_utils import (
+    SeriesType,
+    get_series_seq_type,
+    get_single_series,
+    seq2series,
+    series2seq,
+)
 from darts.utils.utils import ModelType, random_method
 
 logger = get_logger(__name__)
@@ -1206,7 +1212,7 @@ class SKLearnModel(GlobalForecastingModel):
                 )
             series = self.training_series
 
-        called_with_single_series = isinstance(series, TimeSeries)
+        sequence_type_in = get_series_seq_type(series)
 
         # guarantee that all inputs are either list of TimeSeries or None
         series = series2seq(series)
@@ -1279,7 +1285,7 @@ class SKLearnModel(GlobalForecastingModel):
                 if len(series_) < min_target_length:
                     index_text = (
                         " "
-                        if called_with_single_series
+                        if sequence_type_in == SeriesType.SINGLE
                         else f" at list/sequence index {idx} "
                     )
                     end_ts = series_.end_time()
@@ -1323,7 +1329,7 @@ class SKLearnModel(GlobalForecastingModel):
                 if not (cov.start_time() <= start_ts and cov.end_time() >= end_ts):
                     index_text = (
                         " "
-                        if called_with_single_series
+                        if sequence_type_in == SeriesType.SINGLE
                         else f" at list/sequence index {idx} "
                     )
                     raise_log(
@@ -1442,7 +1448,7 @@ class SKLearnModel(GlobalForecastingModel):
             for idx_ts, (row, input_tgt) in enumerate(zip(predictions, series))
         ]
 
-        return predictions[0] if called_with_single_series else predictions
+        return series2seq(predictions, seq_type_out=sequence_type_in)
 
     @random_method
     def _predict(

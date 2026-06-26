@@ -170,6 +170,11 @@ class SplitTimeSeriesSequence(Sequence):
         tuple[TimeSeries, TimeSeries]
         | tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
     ):
+        # TODO(oswald): Intentionally left as hand-rolled Pattern A. Unlike the migrated
+        # series->same-series sites, this returns a (train, test) PAIR (outside the
+        # SeriesType taxonomy series2seq restores), and lazy=True returns a lazy
+        # SplitTimeSeriesSequence. A TSS-aware version is a deliberate Phase 2 design
+        # call, not a mechanical series2seq exit.
         if not isinstance(data, Sequence):
             axis = 1
             data = [data]  # convert to sequence for unified processing later

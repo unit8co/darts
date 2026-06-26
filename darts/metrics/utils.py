@@ -158,6 +158,7 @@ def classification_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     return wrapper_classification_support
 
 
+# TODO(oswald): Does not need change for migration bcs its list[literals] not TS
 def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     """
     This decorator further adapts the metrics that took as input two (or three for scaled metrics with `insample`)

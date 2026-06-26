@@ -241,6 +241,10 @@ class InvertibleDataTransformer(BaseDataTransformer):
         """
         pass
 
+    # TODO(oswald): Skipped for now — SEQ_SEQ branch (PR #2267, historical-forecasts
+    # inversion) has its own custom regrouping with `cum_len` and two flags, which
+    # doesn't fit Pattern B's `series2seq(out, seq_type_out=sequence_type_in)` cleanly.
+    # Revisit when we decide how to handle nested sequences.
     def inverse_transform(
         self,
         series: TimeSeriesLike | Sequence[Sequence[TimeSeries]],

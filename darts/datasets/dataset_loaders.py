@@ -17,6 +17,7 @@ import requests
 
 from darts import TimeSeries
 from darts.logging import get_logger
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -198,13 +199,15 @@ class DatasetLoader(ABC):
         return df
 
 
+# TODO(oswald): All subclasses of DatasetLoaderCSV which use self._metadata.multivariate
+# have to implement ._to_multi_series() -> should have a conditional stub implementation
 class DatasetLoaderCSV(DatasetLoader):
     def __init__(self, metadata: DatasetLoaderMetadata, root_path: Path | None = None):
         super().__init__(metadata, root_path)
 
     def _load_from_disk(
         self, path_to_file: Path, metadata: DatasetLoaderMetadata
-    ) -> TimeSeries | list[TimeSeries]:
+    ) -> TimeSeriesLike:
         df = pd.read_csv(path_to_file)
         if metadata.header_time is not None:
             df = self._format_time_column(df)

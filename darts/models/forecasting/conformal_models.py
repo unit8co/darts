@@ -40,7 +40,6 @@ from darts.utils.historical_forecasts.utils import (
 )
 from darts.utils.timeseries_generation import _build_forecast_series
 from darts.utils.ts_utils import (
-    SeriesType,
     get_series_seq_type,
     series2seq,
 )
@@ -338,7 +337,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         )
 
         series = series or self.model.training_series
-        called_with_single_series = get_series_seq_type(series) == SeriesType.SINGLE
+        sequence_type_in = get_series_seq_type(series)
         series = series2seq(series)
 
         # generate only the required forecasts for calibration (including the last forecast which is the output of
@@ -386,11 +385,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             predict_likelihood_parameters=predict_likelihood_parameters,
             random_state=random_state,
         )
-        # convert historical forecasts output to simple forecast / prediction
-        if called_with_single_series:
-            return cal_preds[0][0]
-        else:
-            return [cp[0] for cp in cal_preds]
+        cal_preds = [cp[0] for cp in cal_preds]
+        return series2seq(cal_preds, seq_type_out=sequence_type_in)
 
     @_with_sanity_checks("_historical_forecasts_sanity_checks")
     def historical_forecasts(
@@ -558,7 +554,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             is over the series provided in the input sequence, and the inner lists contain the historical forecasts for
             each series.
         """
-        called_with_single_series = get_series_seq_type(series) == SeriesType.SINGLE
+        sequence_type_in = get_series_seq_type(series)
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
@@ -620,11 +616,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             predict_likelihood_parameters=predict_likelihood_parameters,
             random_state=random_state,
         )
-        return (
-            calibrated_forecasts[0]
-            if called_with_single_series
-            else calibrated_forecasts
-        )
+        return series2seq(calibrated_forecasts, seq_type_out=sequence_type_in)
 
     def backtest(
         self,
@@ -859,6 +851,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             random_state=random_state,
         )
 
+    # TODO(oswald): TSS migration — touchpoint for nested `list[list[TS]]` (lpo=False) preservation
     def residuals(
         self,
         series: TimeSeriesLike,
@@ -1085,6 +1078,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         )
 
     @random_method
+    # TODO(oswald): TSS migration — touchpoint for nested `list[list[TS]]` (lpo=False) preservation
     def _calibrate_forecasts(
         self,
         series: Sequence[TimeSeries],
