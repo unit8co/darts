@@ -113,8 +113,8 @@ class _PositionalEncoding(nn.Module):
         pe = pe.unsqueeze(0).transpose(0, 1)
         self.register_buffer("pe", pe)
 
-    def forward(self, x):
-        x = x + self.pe[: x.size(0), :]
+    def forward(self, x, start_pos: int = 0):
+        x = x + self.pe[start_pos : start_pos + x.size(0)]
         return self.dropout(x)
 
 
@@ -304,73 +304,55 @@ class _TransformerModule(PLForecastingModule):
 
         # Ground-truth future target values for teacher forcing during training.
         # Shape: ``(batch_size, output_chunk_length, target_size)``.
-        # When ``None``, autoregressive decoding is used.
+        # ``None`` during validation and inference.
         future_target = x_in[-1]
 
-        memory = self._encode_src(src)
+        # encoder
+        memory = self.transformer.encoder(self._embed(src))
 
+        # decoder
         if future_target is not None:
             # training: use teacher forcing where ground-truth future targets are fed to the decoder
             if self.rin is not None:
-                # with RIN, io_processor has already normalized x_in[0] (past targets) and stored the
-                # stats; apply the same normalization to the teacher-forcing targets so both sides see
-                # the same scale
+                # with RIN, io_processor only normalized past targets; apply the same to future targets
                 future_target = self.rin.transform(future_target)
-            tgt = future_target.permute(1, 0, 2)
-            tgt = F.pad(tgt, pad_size)
+            tgt = F.pad(future_target.permute(1, 0, 2), pad_size)
             tgt = torch.cat([start_token, tgt], dim=0)
-            return self._decode(memory, tgt)[:, :-1, :, :]
+            return self._decode(memory, self._embed(tgt))[:, :-1, :, :]
 
-        # autoregressive: cache tgt embeddings and extend by one token per step
-        tgt_emb = self._embed(start_token, pos=0)
+        # autoregressive: build up tgt embeddings and extend by one token per step
+        tgt_emb = self._embed(start_token)
         predictions = []
         for t in range(self.target_length):
-            pred = self._decode_from_emb(memory, tgt_emb)[:, -1, :, :]
+            pred = self._decode(memory, tgt_emb)[:, -1, :, :]
             predictions.append(pred)
             next_token = F.pad(pred.mean(dim=2).unsqueeze(0), pad_size)
-            tgt_emb = torch.cat([tgt_emb, self._embed(next_token, pos=t + 1)], dim=0)
+            tgt_emb = torch.cat(
+                [tgt_emb, self._embed(next_token, start_pos=t + 1)], dim=0
+            )
         return torch.stack(predictions, dim=1)
 
-    def _encode_src(self, src: torch.Tensor) -> torch.Tensor:
-        # see section 3.4 in 'Attention is All you Need' by Vaswani et al. (2017)
-        src = self.encoder(src)
-        src = self.positional_encoding(src)
-        return self.transformer.encoder(src)
-
-    def _embed(self, x: torch.Tensor, pos: int) -> torch.Tensor:
-        """Project to d_model, scale by sqrt(d_model), and add positional encoding starting at ``pos``."""
+    def _embed(self, x: torch.Tensor, start_pos: int = 0) -> torch.Tensor:
+        """Project to d_model and add positional encoding starting at ``pos``."""
         x = self.encoder(x)
-        x = x + self.positional_encoding.pe[pos : pos + x.shape[0]]
-        return self.positional_encoding.dropout(x)
+        return self.positional_encoding(x, start_pos=start_pos)
 
-    def _decode(self, memory: torch.Tensor, tgt: torch.Tensor) -> torch.Tensor:
-        tgt_emb = self.encoder(tgt)
-        tgt_emb = self.positional_encoding(tgt_emb)
-        return self._decode_from_emb(memory, tgt_emb)
-
-    def _decode_from_emb(
-        self, memory: torch.Tensor, tgt_emb: torch.Tensor
-    ) -> torch.Tensor:
-        target_length = tgt_emb.shape[0]
-        tgt_mask = self.generate_square_subsequent_mask(
-            target_length, memory.device, memory.dtype
-        )
-        x = self.transformer.decoder(tgt=tgt_emb, memory=memory, tgt_mask=tgt_mask)
-        out = self.decoder(x)
-        predictions = out.permute(1, 0, 2)
-        predictions = predictions.view(
-            -1, target_length, self.target_size, self.nr_params
-        )
-        return predictions
-
-    @staticmethod
-    def generate_square_subsequent_mask(
-        sz: int, device: torch.device, dtype: torch.dtype
-    ) -> torch.Tensor:
-        return torch.triu(
-            torch.full((sz, sz), float("-inf"), dtype=dtype, device=device),
+    def _decode(self, memory: torch.Tensor, tgt_emb: torch.Tensor) -> torch.Tensor:
+        """Run transformer decoder with causal mask and reshape to ``(batch, seq_len, target_size, nr_params)``."""
+        seq_len = tgt_emb.shape[0]
+        # square subsequent mask
+        tgt_mask = torch.triu(
+            input=torch.full(
+                size=(seq_len, seq_len),
+                fill_value=torch.finfo(tgt_emb.dtype).min,  # -inf
+                dtype=memory.dtype,
+                device=memory.device,
+            ),
             diagonal=1,
         )
+        x = self.transformer.decoder(tgt=tgt_emb, memory=memory, tgt_mask=tgt_mask)
+        out = self.decoder(x).permute(1, 0, 2)
+        return out.view(-1, seq_len, self.target_size, self.nr_params)
 
 
 class TransformerModel(PastCovariatesTorchModel):
@@ -445,9 +427,9 @@ class TransformerModel(PastCovariatesTorchModel):
             The type of LayerNorm variant to use.  Default: ``None``. Available options are
             ["LayerNorm", "RMSNorm", "LayerNormNoBias"], or provide a custom nn.Module.
         custom_encoder
-            A custom user-provided encoder module for the transformer (default=None).
+            A custom user-provided encoder module for the transformer. Default: ``None``.
         custom_decoder
-            A custom user-provided decoder module for the transformer (default=None).
+            A custom user-provided decoder module for the transformer. Default: ``None``.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
