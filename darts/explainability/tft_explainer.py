@@ -409,7 +409,7 @@ class TFTExplainer(_ForecastingModelExplainer):
                 prediction_start_color = "lightblue"
                 fig.colorbar(c, ax=ax, orientation="horizontal")
             else:
-                raise raise_log(
+                raise_log(
                     ValueError("`plot_type` must be either 'all', 'time' or 'heatmap'"),
                 )
 

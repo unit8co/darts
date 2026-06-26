@@ -28,8 +28,8 @@ class EnsembleSklearnAggregator(FittableAggregator):
         if not isinstance(model, BaseEnsemble):
             raise_log(
                 ValueError(
-                    "Scorer is expecting a model of type BaseEnsemble (from sklearn ensemble), "
-                    "found type {type(model)}."
+                    f"Scorer is expecting a model of type BaseEnsemble (from sklearn ensemble), "
+                    f"found type {type(model)}."
                 ),
             )
 
