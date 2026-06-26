@@ -191,7 +191,6 @@ class _TransformerModule(PLForecastingModule):
         self.target_length = (
             self.output_chunk_length if self.output_chunk_length is not None else 0
         )
-        self.d_model = d_model
 
         self.encoder = nn.Linear(input_size, d_model)
         self.positional_encoding = _PositionalEncoding(
