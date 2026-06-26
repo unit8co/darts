@@ -734,6 +734,8 @@ class TFTModel(MixedCovariatesTorchModel):
         categorical_embedding_sizes
             A dictionary used to construct embeddings for categorical static covariates. The keys are the column names
             of the categorical static covariates. Each value is either a single integer or a tuple of integers.
+            When training with :func:`fit_from_dataset()`, static covariate column names are not available to the
+            model; use zero-based integer column indices as keys instead.
             For a single integer give the number of unique categories (n) of the corresponding variable. For example
             ``{"some_column": 64}``. The embedding size will be automatically determined by
             ``min(round(1.6 * n**0.56), 100)``.

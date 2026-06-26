@@ -1213,6 +1213,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         These datasets implement a PyTorch ``Dataset``, and specify how the target and covariates are sliced
         for training. If you are not sure which training dataset to use, consider calling :func:`fit()` instead,
         which will create a default training dataset appropriate for this model.
+        Encoders defined with ``add_encoders`` are applied by :func:`fit()`, but are not applied when using
+        this method; any encoded covariates must already be present in ``train_dataset`` and ``val_dataset``.
 
         Training is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
         ``pl_trainer_kwargs`` used at model creation. You can also use a custom Trainer with optional parameter
@@ -1255,6 +1257,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self
             Fitted model.
         """
+        if self.add_encoders:
+            logger.warning(
+                "`fit_from_dataset()` was called on a model with encoders defined at model creation. "
+                "These encoders will not be applied to the provided datasets. To use encoders, call `fit()` "
+                "instead, or include the encoded covariates in `train_dataset` and `val_dataset`."
+            )
         self._train(
             *self._setup_for_train(
                 train_dataset=train_dataset,
@@ -1845,6 +1853,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         These datasets implement a PyTorch ``Dataset``, and specify how the target and covariates are sliced
         for inference. In most cases, you'll rather want to call :func:`predict()` instead, which will create an
         appropriate :class:`TorchInferenceDataset` for you.
+        Encoders defined with ``add_encoders`` are applied by :func:`predict()`, but are not applied when using
+        this method; any encoded covariates must already be present in ``dataset``.
 
         Prediction is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
         ``pl_trainer_kwargs`` used at model creation. You can also use a custom Trainer with optional parameter

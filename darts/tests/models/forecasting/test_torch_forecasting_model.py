@@ -165,6 +165,25 @@ class TestTorchForecastingModel:
         assert params_old.keys() == params_new.keys()
         assert all([params_old[k] == params_new[k] for k in params_old])
 
+    def test_fit_from_dataset_warns_with_encoders(self, caplog):
+        model = RNNModel(
+            12,
+            "RNN",
+            10,
+            10,
+            add_encoders={"datetime_attribute": {"future": ["month"]}},
+            **tfm_kwargs,
+        )
+
+        with (
+            patch.object(model, "_setup_for_train", return_value=(None,) * 5),
+            patch.object(model, "_train"),
+            caplog.at_level(logging.WARNING),
+        ):
+            model.fit_from_dataset(train_dataset=None)
+
+        assert "These encoders will not be applied to the provided datasets" in caplog.text
+
     @patch(
         "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.save"
     )
