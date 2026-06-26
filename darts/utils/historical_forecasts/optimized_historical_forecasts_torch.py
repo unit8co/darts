@@ -43,56 +43,22 @@ def _optimized_historical_forecasts(
 
     The data_transformers are applied in historical_forecasts (input and predictions)
     """
+    bounds, cum_lengths = _create_dataset_bounds(
+        model=model,
+        series=series,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
+        start=start,
+        start_format=start_format,
+        forecast_horizon=forecast_horizon,
+        stride=stride,
+        overlap_end=overlap_end,
+        show_warnings=show_warnings,
+    )
+
     predict_kwargs = predict_kwargs or {}
     if "verbose" not in predict_kwargs:
         predict_kwargs["verbose"] = verbose
-    bounds = []
-    for idx, series_ in enumerate(series):
-        past_covariates_ = past_covariates[idx] if past_covariates is not None else None
-        future_covariates_ = (
-            future_covariates[idx] if future_covariates is not None else None
-        )
-        # obtain forecastable indexes boundaries, adjust target & covariates boundaries accordingly
-        (
-            hist_fct_start,
-            hist_fct_end,
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-        ) = _get_historical_forecast_boundaries(
-            model=model,
-            series=series_,
-            series_idx=idx,
-            past_covariates=past_covariates_,
-            future_covariates=future_covariates_,
-            start=start,
-            start_format=start_format,
-            forecast_horizon=forecast_horizon,
-            overlap_end=overlap_end,
-            stride=stride,
-            freq=series_.freq,
-            show_warnings=show_warnings,
-        )
-        # latest possible prediction start is one time step after end of target series
-        if hist_fct_start > series_.end_time():
-            left_bound = len(series_)
-        else:
-            left_bound = series_.get_index_at_point(hist_fct_start)
-
-        if hist_fct_end > series_.end_time():
-            right_bound = len(series_)
-        else:
-            right_bound = series_.get_index_at_point(hist_fct_end)
-        bounds.append((left_bound, right_bound))
-
-    bounds, cum_lengths = _process_predict_start_points_bounds(
-        series=series,
-        bounds=np.array(bounds),
-        stride=stride,
-    )
 
     # TODO: is there a better way to call the super().predict() from TorchForecastingModel, without having to
     #  import it? (avoid circular imports)
@@ -170,3 +136,67 @@ def _optimized_historical_forecasts(
             preds = model_out[pred_idx_start:pred_idx_end]
         forecasts_list.append(preds)
     return forecasts_list
+
+
+def _create_dataset_bounds(
+    model,
+    series: Sequence[TimeSeries],
+    past_covariates: Sequence[TimeSeries] | None = None,
+    future_covariates: Sequence[TimeSeries] | None = None,
+    start: pd.Timestamp | float | int | None = None,
+    start_format: Literal["position", "value"] = "value",
+    forecast_horizon: int = 1,
+    stride: int = 1,
+    overlap_end: bool = False,
+    show_warnings: bool = True,
+):
+    """
+    Creates the bounds for the inference dataset based on the input series and whether it is for training or not.
+    """
+    bounds = []
+    for idx, series_ in enumerate(series):
+        past_covariates_ = past_covariates[idx] if past_covariates is not None else None
+        future_covariates_ = (
+            future_covariates[idx] if future_covariates is not None else None
+        )
+        # obtain forecastable indexes boundaries, adjust target & covariates boundaries accordingly
+        (
+            hist_fct_start,
+            hist_fct_end,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+        ) = _get_historical_forecast_boundaries(
+            model=model,
+            series=series_,
+            series_idx=idx,
+            past_covariates=past_covariates_,
+            future_covariates=future_covariates_,
+            start=start,
+            start_format=start_format,
+            forecast_horizon=forecast_horizon,
+            overlap_end=overlap_end,
+            stride=stride,
+            freq=series_.freq,
+            show_warnings=show_warnings,
+        )
+        # latest possible prediction start is one time step after end of target series
+        if hist_fct_start > series_.end_time():
+            left_bound = len(series_)
+        else:
+            left_bound = series_.get_index_at_point(hist_fct_start)
+
+        if hist_fct_end > series_.end_time():
+            right_bound = len(series_)
+        else:
+            right_bound = series_.get_index_at_point(hist_fct_end)
+        bounds.append((left_bound, right_bound))
+
+    return _process_predict_start_points_bounds(
+        series=series,
+        bounds=np.array(bounds),
+        stride=stride,
+    )

@@ -182,6 +182,7 @@ class TFTExplainer(_ForecastingModelExplainer):
             _,
             _,
             _,
+            _,
         ) = self._process_foreground(
             foreground_series,
             foreground_past_covariates,
