@@ -17,6 +17,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For developers of the library:
 
+- Simplified internal error handling: removed `raise_if` and `raise_if_not` in favor of `raise_log`, and made `raise_log` automatically resolve the caller's logger (no longer requires passing `logger` explicitly). [#3126](https://github.com/unit8co/darts/pull/3126) by [Dennis Bader](https://github.com/dennisbader).
+
 ## [0.45.0](https://github.com/unit8co/darts/tree/0.45.0) (2026-06-19)
 
 ### For users of the library:
@@ -50,7 +52,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Used GitHub Actions to publish the documentation to GitHub Pages, replacing the previous third-party branch-based deployment method. [#3107](https://github.com/unit8co/darts/pull/3107) by [Zhihao Dai](https://github.com/daidahao)
 - Removed `optuna-integration[pytorch-lightning]` from the testing dependencies. [#3114](https://github.com/unit8co/darts/pull/3114) by [Jakub Chłapek](https://github.com/jakubchlapek).
-- Simplified internal error handling: removed `raise_if` and `raise_if_not` in favor of `raise_log`, and made `raise_log` automatically resolve the caller's logger (no longer requires passing `logger` explicitly). [#3126](https://github.com/unit8co/darts/pull/3126) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.44.1](https://github.com/unit8co/darts/tree/0.44.1) (2026-05-05)
 
