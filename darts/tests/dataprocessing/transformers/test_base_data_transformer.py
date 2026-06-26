@@ -315,3 +315,23 @@ class TestBaseDataTransformer:
         mock = self.DataTransformerMock(scale=2, translation=10, mask_components=False)
         transformed = mock.transform(test_input, component_mask=mask)
         assert transformed == expected
+
+
+class TestBaseDataTransformerInputValidation:
+    def _make_transformer(self):
+        class _Mock(BaseDataTransformer):
+            @staticmethod
+            def ts_transform(series, params, **kwargs):
+                return series
+
+        return _Mock()
+
+    def test_set_verbose_non_bool(self):
+        transformer = self._make_transformer()
+        with pytest.raises(ValueError, match="Verbosity status must be a boolean"):
+            transformer.set_verbose("True")
+
+    def test_set_n_jobs_non_int(self):
+        transformer = self._make_transformer()
+        with pytest.raises(ValueError, match="n_jobs must be an integer"):
+            transformer.set_n_jobs(1.5)

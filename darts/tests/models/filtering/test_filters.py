@@ -219,3 +219,81 @@ class TestGaussianProcessFilter:
         gpf = GaussianProcessFilter(kernel=kernel)
         filtered_values = gpf.filter(ts).values()
         np.testing.assert_allclose(filtered_values, np.ones_like(filtered_values))
+
+
+class TestFilteringModelInputValidation:
+    def test_filter_stochastic_series(self):
+        stochastic = TimeSeries.from_values(np.random.rand(10, 1, 5))
+        kf = KalmanFilter(dim_x=1)
+        kf.fit(tg.sine_timeseries(length=30, value_frequency=0.1))
+        with pytest.raises(ValueError, match="must be deterministic"):
+            kf.filter(stochastic)
+
+
+class TestKalmanFilterInputValidation:
+    def test_fit_covariates_time_mismatch(self):
+        series = tg.sine_timeseries(length=30, value_frequency=0.1)
+        cov = tg.constant_timeseries(value=1, length=20)
+        kf = KalmanFilter(dim_x=2)
+        with pytest.raises(ValueError, match="timesteps.*must match"):
+            kf.fit(series, covariates=cov)
+
+    def test_filter_not_fitted(self):
+        kf = KalmanFilter(dim_x=2)
+        ts = tg.sine_timeseries(length=30, value_frequency=0.1)
+        with pytest.raises(ValueError, match="has not been fitted"):
+            kf.filter(ts)
+
+    def test_filter_dimension_mismatch(self, fix_random_state):
+        kf = KalmanFilter(dim_x=2)
+        ts = tg.sine_timeseries(length=30, value_frequency=0.1)
+        kf.fit(ts)
+        multi_ts = ts.stack(ts)
+        with pytest.raises(ValueError, match="dimensionality does not match"):
+            kf.filter(multi_ts)
+
+    def test_filter_covariates_unexpected(self, fix_random_state):
+        kf = KalmanFilter(dim_x=2)
+        ts = tg.sine_timeseries(length=30, value_frequency=0.1)
+        kf.fit(ts)
+        cov = tg.constant_timeseries(value=1, length=30)
+        with pytest.raises(ValueError, match="was not fitted with covariates"):
+            kf.filter(ts, covariates=cov)
+
+    def test_filter_covariates_missing(self, fix_random_state):
+        kf = KalmanFilter(dim_x=2)
+        ts = tg.sine_timeseries(length=30, value_frequency=0.1)
+        cov = tg.constant_timeseries(
+            value=1,
+            start=ts.start_time(),
+            end=ts.end_time(),
+        )
+        kf.fit(ts, covariates=cov)
+        with pytest.raises(ValueError, match="was fitted with covariates"):
+            kf.filter(ts)
+
+    def test_filter_covariates_stochastic(self, fix_random_state):
+        kf = KalmanFilter(dim_x=2)
+        ts = tg.sine_timeseries(length=30, value_frequency=0.1)
+        cov = tg.constant_timeseries(
+            value=1,
+            start=ts.start_time(),
+            end=ts.end_time(),
+        )
+        kf.fit(ts, covariates=cov)
+        stochastic_cov = TimeSeries.from_values(np.random.rand(30, 1, 5))
+        with pytest.raises(ValueError, match="covariates must be deterministic"):
+            kf.filter(ts, covariates=stochastic_cov)
+
+    def test_filter_covariates_time_mismatch(self, fix_random_state):
+        kf = KalmanFilter(dim_x=2)
+        ts = tg.sine_timeseries(length=30, value_frequency=0.1)
+        cov = tg.constant_timeseries(
+            value=1,
+            start=ts.start_time(),
+            end=ts.end_time(),
+        )
+        kf.fit(ts, covariates=cov)
+        short_cov = tg.constant_timeseries(value=1, length=15)
+        with pytest.raises(ValueError, match="timesteps.*must match"):
+            kf.filter(ts, covariates=short_cov)

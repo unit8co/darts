@@ -12,7 +12,7 @@ import pandas as pd
 from darts import TimeSeries
 from darts.dataprocessing.dtw.cost_matrix import CostMatrix
 from darts.dataprocessing.dtw.window import CRWindow, NoWindow, Window
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_log
 
 logger = get_logger(__name__)
 
@@ -320,11 +320,12 @@ def dtw(
     both_univariate = series1.is_univariate and series2.is_univariate
 
     if distance is None:
-        raise_if_not(
-            series1.n_components == series2.n_components,
-            "Expected series to have same number of components, or to supply custom distance function",
-            logger,
-        )
+        if series1.n_components != series2.n_components:
+            raise_log(
+                ValueError(
+                    "Expected series to have same number of components, or to supply custom distance function."
+                ),
+            )
 
         distance = _default_distance_uni if both_univariate else _default_distance_multi
 
@@ -335,32 +336,36 @@ def dtw(
         values_x = series1.values(copy=False)
         values_y = series2.values(copy=False)
 
-    raise_if(
-        np.any(np.isnan(values_x)),
-        "Dynamic Time Warping does not support nan values. "
-        "You can use the module darts.utils.missing_values to fill them, "
-        "before passing them to dtw.",
-        logger,
-    )
-    raise_if(
-        np.any(np.isnan(values_y)),
-        "Dynamic Time Warping does not support nan values. "
-        "You can use the module darts.utils.missing_values to fill them,"
-        "before passing it into dtw",
-        logger,
-    )
+    if np.any(np.isnan(values_x)):
+        raise_log(
+            ValueError(
+                "Dynamic Time Warping does not support nan values. "
+                "You can use the module darts.utils.missing_values to fill them, "
+                "before passing them to dtw."
+            ),
+        )
+    if np.any(np.isnan(values_y)):
+        raise_log(
+            ValueError(
+                "Dynamic Time Warping does not support nan values. "
+                "You can use the module darts.utils.missing_values to fill them,"
+                "before passing it into dtw."
+            ),
+        )
 
     window = copy.deepcopy(window)
     window.init_size(len(values_x), len(values_y))
 
-    raise_if(multi_grid_radius < -1, "Expected multi-grid radius to be positive or -1")
+    if multi_grid_radius < -1:
+        raise_log(
+            ValueError("Expected multi-grid radius to be positive or -1."),
+        )
 
     if multi_grid_radius >= 0:
-        raise_if_not(
-            isinstance(window, NoWindow),
-            "Multi-grid solver does not currently support windows",
-            logger,
-        )
+        if not isinstance(window, NoWindow):
+            raise_log(
+                ValueError("Multi-grid solver does not currently support windows."),
+            )
         cost_matrix = _fast_dtw(values_x, values_y, distance, multi_grid_radius)
     else:
         cost_matrix = _dtw_cost_matrix(values_x, values_y, distance, window)

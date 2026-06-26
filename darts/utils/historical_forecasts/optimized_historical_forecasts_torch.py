@@ -11,14 +11,11 @@ import numpy as np
 import pandas as pd
 
 from darts import TimeSeries
-from darts.logging import get_logger
 from darts.utils.historical_forecasts.utils import (
     _get_historical_forecast_boundaries,
     _process_predict_start_points_bounds,
 )
 from darts.utils.timeseries_generation import _build_forecast_series_from_schema
-
-logger = get_logger(__name__)
 
 
 def _optimized_historical_forecasts(

@@ -1,6 +1,7 @@
 from itertools import combinations
 
 import pytest
+import torch
 
 from darts.tests.conftest import TORCH_AVAILABLE
 
@@ -62,4 +63,48 @@ class TestTorchLikelihoodModel:
             assert (
                 likelihood_models[first_model_name][0]
                 != likelihood_models[second_model_name][0]
+            )
+
+
+class TestTorchLikelihoodInputValidation:
+    def test_gaussian_negative_prior_mu(self):
+        with pytest.raises(ValueError, match="strictly positive"):
+            GaussianLikelihood(prior_sigma=-1.0)
+
+    def test_exponential_negative_lmbda(self):
+        with pytest.raises(ValueError, match="strictly positive"):
+            ExponentialLikelihood(prior_lambda=-0.5)
+
+    def test_beta_invalid_prior(self):
+        with pytest.raises(ValueError, match="strictly positive"):
+            BetaLikelihood(prior_alpha=-1.0)
+
+    def test_gaussian_negative_prior_sigma_sequence(self):
+        with pytest.raises(
+            ValueError, match="All provided parameters.*strictly positive"
+        ):
+            GaussianLikelihood(prior_sigma=[-1.0, 1.0])
+
+    def test_quantile_input_tensors(self):
+        qs = [0.1, 0.5, 0.9]
+        lkl = QuantileRegression(qs)
+
+        output_shape = (4, 3, 2, len(qs))
+        target_shape = (4, 3, 2)
+        with pytest.raises(
+            ValueError, match="mismatch between predicted and target shape."
+        ):
+            lkl.compute_loss(
+                model_output=torch.zeros(output_shape[:-1]),
+                target=torch.zeros(target_shape),
+                sample_weight=torch.zeros(target_shape),
+            )
+
+        with pytest.raises(
+            ValueError, match="mismatch between number of predicted quantiles."
+        ):
+            lkl.compute_loss(
+                model_output=torch.zeros(output_shape[:-1] + (len(qs) - 1,)),
+                target=torch.zeros(target_shape),
+                sample_weight=torch.zeros(target_shape),
             )

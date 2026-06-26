@@ -11,7 +11,7 @@ Training Datasets
 from abc import ABC, abstractmethod
 from math import ceil
 
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.typing import TimeSeriesLike
 from darts.utils.data.torch_datasets.dataset import TorchDataset
 from darts.utils.data.torch_datasets.utils import TorchTrainingDatasetOutput
@@ -20,8 +20,6 @@ from darts.utils.data.utils import (
     _process_sample_weight,
 )
 from darts.utils.ts_utils import series2seq
-
-logger = get_logger(__name__)
 
 
 class TorchTrainingDataset(TorchDataset, ABC):
@@ -141,7 +139,6 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         if not (isinstance(stride, int) and stride > 0):
             raise_log(
                 ValueError("`stride` must be a positive integer greater than 0."),
-                logger=logger,
             )
 
         # setup target and sequence
@@ -163,7 +160,6 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
                         f"The sequence of `{name}` must have the same length as "
                         f"the sequence of target `series`."
                     ),
-                    logger=logger,
                 )
 
         size_of_both_chunks = max(input_chunk_length, shift + output_chunk_length)
@@ -240,7 +236,6 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
                         f"either be `1` or match the number of target series components "
                         f"`{series.n_components}` (at series sequence idx `{series_idx}`)."
                     ),
-                    logger=logger,
                 )
 
         # get start and end indices (positions) of all feature types for the current sample
@@ -318,7 +313,6 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
                     f"even a single example. Expected min length: `{self.size_of_both_chunks}`, "
                     f"received length `{len(series)}` (at series sequence idx `{series_idx}`)."
                 ),
-                logger=logger,
             )
 
         # determine the index at the end of the output chunk
@@ -524,7 +518,6 @@ class HorizonBasedTorchTrainingDataset(SequentialTorchTrainingDataset):
                     f"Invalid `lh={lh}`. `lh` must be a tuple `(min_lh, max_lh)`, "
                     f"with `1 <= min_lh <= max_lh`."
                 ),
-                logger=logger,
             )
         max_samples_per_ts = (max_lh - min_lh) * output_chunk_length + 1
         max_samples_per_ts = ceil(max_samples_per_ts / stride)
@@ -555,7 +548,6 @@ class HorizonBasedTorchTrainingDataset(SequentialTorchTrainingDataset):
                     f"even a single example. Expected min length: `{min_length}`, received "
                     f"length `{len(series)}` (at series sequence idx `{series_idx}`)."
                 ),
-                logger=logger,
             )
 
         # determine the index lh_idx of the forecasting point (the last point of the input series, before the target)

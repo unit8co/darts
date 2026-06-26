@@ -29,7 +29,7 @@ import pandas as pd
 from catboost import CatBoostClassifier, CatBoostRegressor, Pool
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
@@ -44,8 +44,6 @@ from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
     _get_likelihood,
 )
-
-logger = get_logger(__name__)
 
 
 class CatBoostModel(SKLearnModelWithCategoricalFeatures):
@@ -707,7 +705,6 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
                         "Target series must only contain integer-like values. "
                         "Found decimal values instead."
                     ),
-                    logger=logger,
                 )
         return super()._format_samples(samples=samples, labels=labels)
 
