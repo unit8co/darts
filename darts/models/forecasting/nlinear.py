@@ -453,15 +453,6 @@ class NLinearModel(MixedCovariatesTorchModel):
         (past_target, past_covariates, _, future_covariates, static_covariates, _) = (
             train_sample
         )
-        if self.shared_weights and (
-            past_covariates is not None or future_covariates is not None
-        ):
-            raise_log(
-                ValueError(
-                    "Covariates have been provided, but the model has been built with `shared_weights=True`."
-                    + "Please set `shared_weights=False` to use covariates."
-                ),
-            )
 
         input_dim = past_target.shape[1] + sum(
             # add past covariates dim and historic future covariates dim, if present

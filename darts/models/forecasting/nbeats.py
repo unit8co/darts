@@ -199,11 +199,9 @@ class _Block(nn.Module):
                 expansion_coefficient_dim, input_chunk_length
             )
             self.forecast_g = _TrendGenerator(expansion_coefficient_dim, target_length)
-        elif g_type == _GType.SEASONALITY:
+        else:  # _GType.SEASONALITY
             self.backcast_g = _SeasonalityGenerator(input_chunk_length)
             self.forecast_g = _SeasonalityGenerator(target_length)
-        else:
-            raise_log(ValueError("g_type not supported"))
 
     def forward(self, x):
         batch_size = x.shape[0]

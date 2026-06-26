@@ -445,8 +445,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _init_model(self, trainer: pl.Trainer | None = None) -> PLForecastingModule:
         """Initializes model and trainer based on examples of input/output tensors (to get the sizes right):"""
-
-        if self.pl_module_params is None:
+        if self.pl_module_params is None:  # pragma: no cover
             raise_log(
                 ValueError(
                     "`pl_module_params` must be extracted in __init__ method of "
@@ -1164,20 +1163,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         else:
             val_dataset = None
 
-        # proactively catch length exceptions to display nicer messages
-        length_ok = True
-        try:
-            len(train_dataset)
-        except ValueError:
-            length_ok = False
-        if not length_ok or len(train_dataset) == 0:  # mind the order
-            raise_log(
-                ValueError(
-                    "The train dataset does not contain even one training sample. "
-                    + "This is likely due to the provided training series being too short. "
-                    + f"This model expect series of length at least {self.min_train_series_length}."
-                ),
-            )
         logger.info(f"Train dataset contains {len(train_dataset)} samples.")
 
         series_input = (series, past_covariates, future_covariates)
@@ -2415,17 +2400,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         ckpt_path = os.path.join(checkpoint_dir, file_name)
         ckpt = torch.load(ckpt_path, weights_only=False, **kwargs)
-
-        # indicate to the user than checkpoints generated with darts <= 0.23.1 are not supported
-        if "train_sample_shape" not in ckpt.keys():
-            raise_log(
-                ValueError(
-                    "The provided checkpoint was generated with darts release <= 0.23.1"
-                    " and it is missing the 'train_sample_shape' key. This value must"
-                    " be computed from the `model.train_sample` attribute and manually"
-                    " added to the checkpoint prior to loading."
-                ),
-            )
 
         # pl_forecasting module saves the train_sample shape, must recreate one
         np_dtype = TORCH_NP_DTYPES[ckpt["model_dtype"]]

@@ -6,7 +6,6 @@ D-Linear
 import torch
 import torch.nn as nn
 
-from darts.logging import raise_log
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
@@ -474,20 +473,11 @@ class DLinearModel(MixedCovariatesTorchModel):
         self.const_init = const_init
         self._considers_static_covariates = use_static_covariates
 
-    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
         (past_target, past_covariates, _, future_covariates, static_covariates, _) = (
             train_sample
         )
-        if self.shared_weights and (
-            past_covariates is not None or future_covariates is not None
-        ):
-            raise_log(
-                ValueError(
-                    "Covariates have been provided, but the model has been built with `shared_weights=True`. "
-                    "Please set `shared_weights=False` to use covariates."
-                ),
-            )
 
         input_dim = past_target.shape[1] + sum(
             # add past covariates dim and historic future covariates dim, if present

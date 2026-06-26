@@ -122,3 +122,13 @@ class TestFourTheta:
                 seasonality_period=12,
             )
             theta.fit(sine_series)
+
+
+class TestThetaInputValidation:
+    def test_invalid_season_mode(self):
+        with pytest.raises(ValueError, match="Unknown value for season_mode"):
+            Theta(season_mode="invalid")
+
+    def test_zero_theta(self):
+        with pytest.raises(ValueError, match="theta cannot be equal to 0"):
+            Theta(theta=0)

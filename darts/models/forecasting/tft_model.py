@@ -970,6 +970,16 @@ class TFTModel(MixedCovariatesTorchModel):
             if categorical_embedding_sizes is not None
             else {}
         )
+        for embedding in self.categorical_embedding_sizes.values():
+            if not isinstance(embedding, int | tuple):
+                raise_log(
+                    ValueError(
+                        "Dict values of `categorical_embedding_sizes` must "
+                        "either be integers or tuples. Read the TFTModel "
+                        "documentation for more information."
+                    ),
+                )
+
         self.add_relative_index = add_relative_index
         self.skip_interpolation = skip_interpolation
         self.output_dim: tuple[int, int] | None = None
@@ -1111,14 +1121,6 @@ class TFTModel(MixedCovariatesTorchModel):
                         else:
                             # get embedding sizes for each categorical variable
                             embedding = self.categorical_embedding_sizes[col_name]
-                            if not isinstance(embedding, int | tuple):
-                                raise_log(
-                                    ValueError(
-                                        "Dict values of `categorical_embedding_sizes` must "
-                                        "either be integers or tuples. Read the TFTModel "
-                                        "documentation for more information."
-                                    ),
-                                )
                             if isinstance(embedding, int):
                                 embedding = (embedding, get_embedding_size(n=embedding))
                             categorical_embedding_sizes[vars_meta[idx]] = embedding

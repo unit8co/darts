@@ -162,13 +162,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # save hyper parameters for saving/loading
         self.save_hyperparameters(ignore=["loss_fn", "torch_metrics"])
 
-        if input_chunk_length is None or output_chunk_length is None:
-            raise_log(
-                ValueError(
-                    "Both `input_chunk_length` and `output_chunk_length` must be passed to `PLForecastingModule`."
-                ),
-            )
-
         self.input_chunk_length = input_chunk_length
         # output_chunk_length is a property
         self._output_chunk_length = output_chunk_length
