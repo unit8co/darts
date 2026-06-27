@@ -15,7 +15,7 @@ from collections.abc import Callable, Sequence
 import torch
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
@@ -30,8 +30,6 @@ from darts.utils.data import (
     TorchTrainingDataset,
 )
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
-
-logger = get_logger(__name__)
 
 
 def _extract_targets(batch: tuple[torch.Tensor], n_targets: int):
@@ -194,7 +192,6 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
             NotImplementedError(
                 "GlobalNaiveModels do not support loading from checkpoint since they are never trained."
             ),
-            logger=logger,
         )
 
     def load_weights_from_checkpoint(
@@ -212,7 +209,6 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
             NotImplementedError(
                 "GlobalNaiveModels do not support weights loading since they do not have any weights/parameters."
             ),
-            logger=logger,
         )
 
     def _verify_predict_sample(self, predict_sample: tuple):
@@ -406,12 +402,10 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
                         "When `agg_fn` is a string, must be the name of a PyTorch function that "
                         "can be imported directly from `torch`. E.g., `'mean'` for `torch.mean`"
                     ),
-                    logger=logger,
                 )
         if not isinstance(agg_fn, Callable):
             raise_log(
                 ValueError("`agg_fn` must be a string or callable."),
-                logger=logger,
             )
 
         # check that `agg_fn` returns the expected output
@@ -432,7 +426,6 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
                     f"`agg_fn` sanity check raised the following error: ({err}) Read the parameter "
                     f"description to properly define the aggregation function."
                 ),
-                logger=logger,
             )
         self.agg_fn = agg_fn
 

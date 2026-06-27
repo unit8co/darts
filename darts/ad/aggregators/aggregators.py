@@ -31,10 +31,8 @@ from darts.ad.utils import (
     eval_metric_from_binary_prediction,
     series2seq,
 )
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.typing import TimeSeriesLike
-
-logger = get_logger(__name__)
 
 
 class Aggregator(ABC):
@@ -197,7 +195,6 @@ class FittableAggregator(Aggregator):
                 ValueError(
                     "`anomalies` and `series` must contain the same number of series."
                 ),
-                logger=logger,
             )
         anomalies_vals, series_vals = [], []
         for anom, pred_anom in zip(anomalies, series):

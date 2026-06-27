@@ -521,7 +521,6 @@ class RNNModel(DualCovariatesTorchModel):
                 ValueError(
                     f"`training_length` ({training_length}) must be `>=input_chunk_length` ({input_chunk_length})."
                 ),
-                logger=logger,
             )
         # create copy of model parameters
         model_kwargs = {key: val for key, val in self.model_params.items()}
@@ -554,7 +553,6 @@ class RNNModel(DualCovariatesTorchModel):
                         "`model` is not a valid RNN model. Please specify 'RNN', 'LSTM', 'GRU', or give a subclass "
                         "(not an instance) of darts.models.forecasting.rnn_model.CustomRNNModule."
                     ),
-                    logger=logger,
                 )
 
         self.rnn_type_or_module = model
@@ -618,14 +616,12 @@ class RNNModel(DualCovariatesTorchModel):
                     "RNNModel requires a training dataset of type `GenericShiftDataset`. "
                     f"Got {type(train_dataset)} instead."
                 ),
-                logger=logger,
             )
         if train_dataset.shift != 1:
             raise_log(
                 ValueError(
                     f"RNNModel requires a shifted training dataset with shift=1. Got shift={train_dataset.shift}."
                 ),
-                logger=logger,
             )
 
     @property

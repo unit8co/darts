@@ -11,10 +11,8 @@ from pyod.models.base import BaseDetector
 
 from darts import metrics
 from darts.ad.scorers.scorers import WindowedAnomalyScorer
-from darts.logging import get_logger, raise_if_not
+from darts.logging import raise_log
 from darts.metrics.utils import METRIC_TYPE
-
-logger = get_logger(__name__)
 
 
 class PyODScorer(WindowedAnomalyScorer):
@@ -102,11 +100,12 @@ class PyODScorer(WindowedAnomalyScorer):
             By default, uses the absolute difference (:func:`~darts.metrics.metrics.ae`).
         """
 
-        raise_if_not(
-            isinstance(model, BaseDetector),
-            f"model must be a PyOD BaseDetector, found type: {type(model)}",
-            logger,
-        )
+        if not isinstance(model, BaseDetector):
+            raise_log(
+                ValueError(
+                    f"model must be a PyOD BaseDetector, found type: {type(model)}."
+                ),
+            )
         self.model = model
         super().__init__(
             is_univariate=(not component_wise),

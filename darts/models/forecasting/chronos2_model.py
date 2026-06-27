@@ -18,7 +18,7 @@ from typing import Any, Literal, cast
 import torch
 from torch import nn
 
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.components.chronos2_submodels import (
     _Chronos2Encoder,
     _InstanceNorm,
@@ -33,8 +33,6 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.likelihood_models.torch import QuantileRegression
-
-logger = get_logger(__name__)
 
 
 @dataclass
@@ -118,7 +116,6 @@ class _Chronos2Module(PLForecastingModule):
         if self.is_gated_act:
             raise_log(
                 ValueError("gated activation is not supported"),
-                logger,
             )
 
         # Attention implementation - default to "sdpa" if not specified
@@ -128,7 +125,6 @@ class _Chronos2Module(PLForecastingModule):
                 ValueError(
                     f"attn_implementation {self.attn_implementation} is not supported"
                 ),
-                logger,
             )
 
         # Chronos-2 forecasting specific config
@@ -148,7 +144,6 @@ class _Chronos2Module(PLForecastingModule):
                     f"input_patch_size and output_patch_size sizes must be equal, "
                     f"but found {self.chronos_config.input_patch_size} and {self.chronos_config.output_patch_size}"
                 ),
-                logger,
             )
 
         self.vocab_size = 2 if self.chronos_config.use_reg_token else 1
@@ -888,7 +883,6 @@ class Chronos2Model(FoundationModel):
                     f"`input_chunk_length` {input_chunk_length} cannot be greater than "
                     f"model's context_length {context_length}"
                 ),
-                logger,
             )
 
         # validate `output_chunk_length` and `output_chunk_shift` against model's prediction length
@@ -901,7 +895,6 @@ class Chronos2Model(FoundationModel):
                     f"`output_chunk_length` {output_chunk_length} plus `output_chunk_shift` {output_chunk_shift} "
                     f"cannot be greater than model's maximum prediction length {prediction_length}"
                 ),
-                logger,
             )
 
         quantiles = chronos_config["quantiles"]
@@ -915,7 +908,6 @@ class Chronos2Model(FoundationModel):
                         f"Only QuantileRegression likelihood is supported for Chronos2Model in Darts. "
                         f"Got {type(likelihood)}."
                     ),
-                    logger,
                 )
             user_quantiles: list[float] = likelihood.quantiles
             if not set(user_quantiles).issubset(quantiles):
@@ -924,7 +916,6 @@ class Chronos2Model(FoundationModel):
                         f"The quantiles for QuantileRegression likelihood {user_quantiles} "
                         f"must be a subset of Chronos-2 quantiles {quantiles}."
                     ),
-                    logger,
                 )
 
         self.hf_connector = hf_connector

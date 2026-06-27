@@ -68,15 +68,13 @@ from darts.explainability.explainability_result import (
     ShapExplainabilityResult,
     ShapSingleExplainabilityResult,
 )
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
 from darts.utils.utils import TORCH_AVAILABLE, generate_index
 
 if TYPE_CHECKING:
     from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
-
-logger = get_logger(__name__)
 
 
 class ShapExplainer(_ForecastingModelExplainer):
@@ -192,8 +190,7 @@ class ShapExplainer(_ForecastingModelExplainer):
                 ValueError(
                     f"Invalid `model` type: `{type(self.model)}`. Only models of type "
                     f"`SKLearnModel` or `TorchForecastingModel` are supported."
-                ),
-                logger,
+                )
             )
 
         self.explainer = explainer_cls(
@@ -722,8 +719,7 @@ class ShapExplainer(_ForecastingModelExplainer):
                 ValueError(
                     f"The `target_component` parameter is required when the model has more than one component. "
                     f"Please select a component from {self.target_components_likelihood}."
-                ),
-                logger,
+                )
             )
 
         if target_component is None:

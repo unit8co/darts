@@ -499,7 +499,7 @@ class TestPipeline:
 
         assert (
             str(err.value)
-            == "transformers should be objects deriving from BaseDataTransformer"
+            == "transformers should be objects deriving from BaseDataTransformer."
         )
 
     def test_raises_on_bad_key(self):
@@ -510,7 +510,7 @@ class TestPipeline:
         # when & then
         with pytest.raises(ValueError) as err:
             p[bad_key]
-        assert str(err.value) == "key must be either an int or a slice"
+        assert str(err.value) == "key must be either an int or a slice."
 
     def test_multi_ts(self):
         series1 = constant_timeseries(value=0.0, length=3)

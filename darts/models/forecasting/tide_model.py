@@ -639,7 +639,6 @@ class TiDEModel(MixedCovariatesTorchModel):
                 ValueError(
                     "`temporal_width_past` and `temporal_width_future` must be >= 0."
                 ),
-                logger=logger,
             )
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 

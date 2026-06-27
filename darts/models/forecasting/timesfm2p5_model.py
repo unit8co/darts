@@ -21,7 +21,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.components.huggingface_connector import HuggingFaceConnector
 from darts.models.components.timesfm2p5_submodels import (
     _ResidualBlock,
@@ -39,8 +39,6 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.likelihood_models import QuantileRegression
-
-logger = get_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -651,7 +649,6 @@ class TimesFM2p5Model(FoundationModel):
                     f"plus `output_chunk_shift` {output_chunk_shift} cannot be greater than model's maximum "
                     f"context_length {context_length}"
                 ),
-                logger,
             )
 
         # validate `output_chunk_length` and `output_chunk_shift` against model's output limits
@@ -673,7 +670,6 @@ class TimesFM2p5Model(FoundationModel):
                     f"cannot be greater than model's maximum prediction length {prediction_length}. "
                     + extra_hint
                 ),
-                logger,
             )
 
         quantiles = config.quantiles
@@ -687,7 +683,6 @@ class TimesFM2p5Model(FoundationModel):
                         f"Only QuantileRegression likelihood is supported for TimesFM 2.5 in Darts. "
                         f"Got {type(likelihood)}."
                     ),
-                    logger,
                 )
             user_quantiles: list[float] = likelihood.quantiles
             if not set(user_quantiles).issubset(quantiles):
@@ -696,7 +691,6 @@ class TimesFM2p5Model(FoundationModel):
                         f"The quantiles for QuantileRegression likelihood {user_quantiles} "
                         f"must be a subset of TimesFM 2.5 quantiles {quantiles}."
                     ),
-                    logger,
                 )
 
         self.hf_connector = hf_connector

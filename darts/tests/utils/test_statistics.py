@@ -1,3 +1,5 @@
+import sys
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -15,6 +17,7 @@ from darts.utils.statistics import (
     plot_pacf,
     plot_residuals_analysis,
     plot_tolerance_curve,
+    remove_from_series,
     remove_seasonality,
     remove_trend,
     stationarity_test_adf,
@@ -27,6 +30,8 @@ from darts.utils.timeseries_generation import (
     linear_timeseries,
 )
 from darts.utils.utils import ModelMode, SeasonalityMode
+
+py_312_or_higher = sys.version_info >= (3, 12, 0)
 
 
 class TestTimeSeries:
@@ -309,3 +314,106 @@ class TestPlotToleranceCurve:
     def test_plot_tolerance_curve_with_axis(self, mpl_safe_plotting):
         _, ax = plt.subplots()
         plot_tolerance_curve(self.actual_uni, self.pred_uni, axis=ax)
+
+
+class TestStatisticsInputValidation:
+    ts = constant_timeseries(value=2, length=100)
+    ts_other = constant_timeseries(value=1, length=100)
+
+    def test_check_seasonality_invalid_m(self):
+        with pytest.raises(ValueError, match="m must be an integer greater than 1"):
+            check_seasonality(self.ts, m=1.5)
+        with pytest.raises(ValueError, match="m must be an integer greater than 1"):
+            check_seasonality(self.ts, m=1)
+
+    def test_check_seasonality_m_exceeds_max_lag(self):
+        with pytest.raises(
+            ValueError, match="max_lag must be greater than or equal to m"
+        ):
+            check_seasonality(self.ts, m=10, max_lag=5)
+
+    def test_extract_trend_and_seasonality_invalid_model(self):
+        if py_312_or_higher:
+            exc = ValueError
+            msg = "Unknown value for model_mode"
+        else:
+            exc = TypeError
+            msg = None
+        with pytest.raises(exc, match=msg):
+            extract_trend_and_seasonality(self.ts, freq=6, model="invalid")
+
+    def test_extract_trend_and_seasonality_none_model(self):
+        with pytest.raises(
+            ValueError, match="The model must be either MULTIPLICATIVE or ADDITIVE"
+        ):
+            extract_trend_and_seasonality(self.ts, freq=6, model=SeasonalityMode.NONE)
+
+    def test_extract_trend_and_seasonality_invalid_method(self):
+        with pytest.raises(ValueError, match="Unknown value for method"):
+            extract_trend_and_seasonality(
+                self.ts, freq=6, model=ModelMode.ADDITIVE, method="invalid"
+            )
+
+    def test_remove_from_series_invalid_model(self):
+        if py_312_or_higher:
+            exc = ValueError
+            msg = "Unknown value for model_mode"
+        else:
+            exc = TypeError
+            msg = None
+        with pytest.raises(exc, match=msg):
+            remove_from_series(self.ts, self.ts_other, model="invalid")
+
+    def test_remove_seasonality_none_model(self):
+        with pytest.raises(
+            ValueError, match="The model must be either MULTIPLICATIVE or ADDITIVE"
+        ):
+            remove_seasonality(self.ts, freq=6, model=SeasonalityMode.NONE)
+
+    @pytest.mark.parametrize(
+        "plot_fn,extra_kwargs",
+        [
+            (plot_acf, {}),
+            (plot_pacf, {}),
+            (plot_ccf, {}),
+        ],
+    )
+    def test_plot_invalid_max_lag(self, mpl_safe_plotting, plot_fn, extra_kwargs):
+        args = [self.ts]
+        if plot_fn is plot_ccf:
+            args.append(self.ts)
+        with pytest.raises(ValueError, match="max_lag must be greater than or equal"):
+            plot_fn(*args, max_lag=0, **extra_kwargs)
+        with pytest.raises(ValueError, match="max_lag must be greater than or equal"):
+            plot_fn(*args, max_lag=len(self.ts), **extra_kwargs)
+
+    @pytest.mark.parametrize(
+        "plot_fn",
+        [plot_acf, plot_pacf, plot_ccf],
+    )
+    def test_plot_invalid_m(self, mpl_safe_plotting, plot_fn):
+        args = [self.ts]
+        if plot_fn is plot_ccf:
+            args.append(self.ts)
+        with pytest.raises(
+            ValueError,
+            match="m must be greater than or equal to 0 and less than or equal to max_lag",
+        ):
+            plot_fn(*args, max_lag=10, m=11)
+
+    @pytest.mark.parametrize(
+        "plot_fn",
+        [plot_acf, plot_pacf, plot_ccf],
+    )
+    def test_plot_invalid_alpha(self, mpl_safe_plotting, plot_fn):
+        args = [self.ts]
+        if plot_fn is plot_ccf:
+            args.append(self.ts)
+        with pytest.raises(
+            ValueError, match="alpha must be greater than 0 and less than 1"
+        ):
+            plot_fn(*args, max_lag=10, alpha=0)
+        with pytest.raises(
+            ValueError, match="alpha must be greater than 0 and less than 1"
+        ):
+            plot_fn(*args, max_lag=10, alpha=1)
