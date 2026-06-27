@@ -16,25 +16,44 @@ abstract: >-
 license: Apache-2.0
 preferred-citation:
   authors:
-    - name: Julien Herzen
-    - name: Francesco LÃ¤ssig
-    - name: Samuele Giuliano Piazzetta
-    - name: Thomas Neuer
-    - name: LÃ©o Tafti
-    - name: Guillaume Raille
-    - name: Tomas Van Pottelbergh
-    - name: Marek Pasieka
-    - name: Andrzej Skrodzki
-    - name: Nicolas Huguenin
-    - name: Maxime Dumonal
-    - name: Jan KoÅ›cisz
-    - name: Dennis Bader
-    - name: FrÃ©dÃ©rick Gusset
-    - name: Mounir Benheddi
-    - name: Camila Williamson
-    - name: Michal Kosinski
-    - name: Matej Petrik
-    - name: GaÃ«l Grosch
+    - given-names: Julien
+      family-names: Herzen
+    - given-names: Francesco
+      family-names: LÃ¤ssig
+    - given-names: Samuele Giuliano
+      family-names: Piazzetta
+    - given-names: Thomas
+      family-names: Neuer
+    - given-names: LÃ©o
+      family-names: Tafti
+    - given-names: Guillaume
+      family-names: Raille
+    - given-names: Tomas
+      family-names: Van Pottelbergh
+    - given-names: Marek
+      family-names: Pasieka
+    - given-names: Andrzej
+      family-names: Skrodzki
+    - given-names: Nicolas
+      family-names: Huguenin
+    - given-names: Maxime
+      family-names: Dumonal
+    - given-names: Jan
+      family-names: KoÅ›cisz
+    - given-names: Dennis
+      family-names: Bader
+    - given-names: FrÃ©dÃ©rick
+      family-names: Gusset
+    - given-names: Mounir
+      family-names: Benheddi
+    - given-names: Camila
+      family-names: Williamson
+    - given-names: Michal
+      family-names: Kosinski
+    - given-names: Matej
+      family-names: Petrik
+    - given-names: GaÃ«l
+      family-names: Grosch
   title: 'Darts: User-Friendly Modern Machine Learning for Time Series'
   url: 'http://jmlr.org/papers/v23/21-1177.html'
   type: article
