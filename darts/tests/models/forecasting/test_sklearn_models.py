@@ -4703,6 +4703,7 @@ class TestSKLearnModelInputValidation:
         with pytest.raises(ValueError):
             model.fit(ts)
 
+    @pytest.mark.skipif(not XGB_AVAILABLE, reason="xgboost required")
     def test_xgb_quantile_loss_invalid_quantile(self):
         from darts.models.forecasting.xgboost import xgb_quantile_loss
 
