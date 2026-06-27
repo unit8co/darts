@@ -1,7 +1,6 @@
 from itertools import combinations
 
 import pytest
-import torch
 
 from darts.tests.conftest import TORCH_AVAILABLE
 
@@ -10,6 +9,8 @@ if not TORCH_AVAILABLE:
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+import torch
+
 from darts.utils.likelihood_models.torch import (
     BetaLikelihood,
     CauchyLikelihood,

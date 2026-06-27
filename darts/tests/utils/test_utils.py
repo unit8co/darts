@@ -22,6 +22,7 @@ from darts.utils.utils import (
     generate_index,
     infer_freq_intersection,
     n_steps_between,
+    random_method,
     sample_from_quantiles,
 )
 
@@ -903,8 +904,6 @@ class TestBuildTqdmIterator:
 
 class TestRandomMethodInputValidation:
     def test_random_method_on_function(self):
-        from darts.utils.utils import random_method
-
         with pytest.raises(ValueError, match="can only be used on methods"):
 
             @random_method
