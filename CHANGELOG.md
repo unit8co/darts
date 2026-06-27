@@ -18,6 +18,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For developers of the library:
 
 - Simplified internal error handling: removed `raise_if` and `raise_if_not` in favor of `raise_log`, and made `raise_log` automatically resolve the caller's logger (no longer requires passing `logger` explicitly). [#3126](https://github.com/unit8co/darts/pull/3126) by [Dennis Bader](https://github.com/dennisbader).
+- Added a `CITATION.cff` file with the recommended citation metadata for Darts. [#3147](https://github.com/unit8co/darts/pull/3147) by [Zhihao Dai](https://github.com/daidahao).
 
 ## [0.45.0](https://github.com/unit8co/darts/tree/0.45.0) (2026-06-19)
 
