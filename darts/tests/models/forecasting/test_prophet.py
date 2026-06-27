@@ -345,6 +345,27 @@ class TestProphet:
             f"are not present in the `future_covariates`: `{set(invalid_config)}`."
         )
 
+    def test_logistic_growth_without_cap(self):
+        with pytest.raises(ValueError, match="cap.*has to be set"):
+            Prophet(growth="logistic")
+
+    def test_logistic_growth_cap_callable_wrong_length(self):
+        series, _ = self.helper_generate_input_series()
+
+        model = Prophet(growth="logistic", cap=lambda dates: [1.0])
+        with pytest.raises(ValueError, match="Callables supplied to"):
+            model.fit(series)
+
+    def test_add_seasonality_invalid_dtype(self):
+        with pytest.raises(ValueError, match="invalid value dtypes"):
+            Prophet(
+                add_seasonalities={
+                    "name": "test_seasonality",
+                    "seasonal_periods": "invalid",
+                    "fourier_order": 5,
+                }
+            )
+
     def helper_generate_input_series(self):
         # Create a simple timeseries
         times = pd.date_range(start="2020-01-01", periods=30, freq="MS")

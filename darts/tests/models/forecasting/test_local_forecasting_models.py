@@ -799,33 +799,3 @@ class TestForecastingModelInputValidation:
         model.fit(self.series)
         with pytest.raises(ValueError, match="Encodings are not available"):
             model.generate_predict_encodings(n=1, series=self.series)
-
-
-@pytest.mark.skipif(not PROPHET_AVAILABLE, reason="Prophet not installed")
-class TestProphetInputValidation:
-    series = AirPassengersDataset().load()
-
-    def test_logistic_growth_without_cap(self):
-        from darts.models import Prophet
-
-        with pytest.raises(ValueError, match="cap.*has to be set"):
-            Prophet(growth="logistic")
-
-    def test_logistic_growth_cap_callable_wrong_length(self):
-        from darts.models import Prophet
-
-        model = Prophet(growth="logistic", cap=lambda dates: [1.0])
-        with pytest.raises(ValueError, match="Callables supplied to"):
-            model.fit(self.series)
-
-    def test_add_seasonality_invalid_dtype(self):
-        from darts.models import Prophet
-
-        with pytest.raises(ValueError, match="invalid value dtypes"):
-            Prophet(
-                add_seasonalities={
-                    "name": "test_seasonality",
-                    "seasonal_periods": "invalid",
-                    "fourier_order": 5,
-                }
-            )

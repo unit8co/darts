@@ -18,6 +18,7 @@ from darts.dataprocessing.transformers import Scaler
 from darts.explainability.explainability_result import ShapExplainabilityResult
 from darts.explainability.shap_adapters.shap_adapter import MIN_BACKGROUND_SAMPLE
 from darts.explainability.shap_explainer import ShapExplainer
+from darts.explainability.utils import _check_valid_input, process_input
 from darts.models import (
     CatBoostModel,
     ExponentialSmoothing,
@@ -1529,8 +1530,6 @@ class TestShapExplainer:
 
 class TestExplainabilityUtilsInputValidation:
     def test_process_input_covariates_without_series(self):
-        from darts.explainability.utils import process_input
-
         model = LinearRegressionModel(lags=3, lags_past_covariates=3)
         ts = TimeSeries.from_values(np.random.rand(50))
         cov = TimeSeries.from_values(np.random.rand(50))
@@ -1545,8 +1544,6 @@ class TestExplainabilityUtilsInputValidation:
             )
 
     def test_check_valid_input_future_covariates_length_mismatch(self):
-        from darts.explainability.utils import _check_valid_input
-
         model = LinearRegressionModel(lags=3)
         ts1 = TimeSeries.from_values(np.random.rand(20))
         ts2 = TimeSeries.from_values(np.random.rand(20))
@@ -1565,8 +1562,6 @@ class TestExplainabilityUtilsInputValidation:
             )
 
     def test_check_valid_input_component_names_mismatch(self):
-        from darts.explainability.utils import _check_valid_input
-
         model = LinearRegressionModel(lags=3)
         ts1 = TimeSeries.from_values(np.random.rand(20, 1), columns=["a"])
         ts2 = TimeSeries.from_values(np.random.rand(20, 1), columns=["b"])
