@@ -91,23 +91,16 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
 
         return self
 
-    def predict(
-        self,
-        n: int,
-        series: TimeSeries | None = None,
-        future_covariates: TimeSeries | None = None,
-        num_samples: int = 1,
-        **kwargs,
-    ) -> TimeSeries:
-        return self._predict(n, series, future_covariates, num_samples, **kwargs)
-
     def _predict(
         self,
         n: int,
         series: TimeSeries | None = None,
         future_covariates: TimeSeries | None = None,
         num_samples: int = 1,
-        verbose: bool = False,
+        predict_likelihood_parameters: bool = False,
+        verbose: bool | None = None,
+        show_warnings: bool = True,
+        random_state: int | None = None,
         **kwargs,
     ) -> TimeSeries:
         prediction_kwargs = {"n", n}
@@ -117,7 +110,12 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
             prediction_kwargs["future_covariates"] = future_covariates
         if self._model.supports_probabilistic_prediction:
             prediction_kwargs["num_samples"] = num_samples
-
+        if self._model.supports_likelihood_parameter_prediction:
+            prediction_kwargs["predict_likelihood_parameters"] = (
+                predict_likelihood_parameters
+            )
+        if self._model.supports_random_state:
+            prediction_kwargs["random_state"] = random_state
         predictions = [
             model.predict(**prediction_kwargs) for model in self._trained_models
         ]
@@ -178,6 +176,10 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
     @property
     def supports_probabilistic_prediction(self) -> bool:
         return self._model.supports_probabilistic_prediction
+
+    @property
+    def supports_likelihood_parameter_prediction(self) -> bool:
+        return self._model.supports_likelihood_parameter_prediction
 
     @property
     def supports_transferable_series_prediction(self) -> bool:
