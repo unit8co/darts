@@ -105,8 +105,6 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
         **kwargs,
     ) -> TimeSeries:
         prediction_kwargs = {"n": n, "random_state": random_state}
-        if self._model.supports_transferable_series_prediction:
-            prediction_kwargs["series"] = series
         if self._model.supports_future_covariates:
             prediction_kwargs["future_covariates"] = future_covariates
         if self._model.supports_probabilistic_prediction:
@@ -115,9 +113,14 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
             prediction_kwargs["predict_likelihood_parameters"] = (
                 predict_likelihood_parameters
             )
-        predictions = [
-            model.predict(**prediction_kwargs) for model in self._trained_models
-        ]
+
+        predictions = []
+        for comp, model in zip(series.components, self._trained_models):
+            model_kwargs = prediction_kwargs.copy()
+            if self._model.supports_transferable_series_prediction:
+                comp = series.univariate_component(comp)
+                model_kwargs["series"] = comp
+            predictions.append(model.predict(**model_kwargs))
 
         return concatenate(predictions, axis=1)
 
