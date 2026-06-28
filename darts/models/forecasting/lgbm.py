@@ -20,7 +20,6 @@ https://github.com/unit8co/darts/blob/master/INSTALL.md
 
 import lightgbm as lgb
 
-from darts.logging import get_logger
 from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
@@ -31,8 +30,6 @@ from darts.models.forecasting.sklearn_model import (
 from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import QuantileRegression, _get_likelihood
-
-logger = get_logger(__name__)
 
 
 class LightGBMModel(SKLearnModelWithCategoricalFeatures):

@@ -28,12 +28,10 @@ from darts.dataprocessing.encoders.encoders import (
     IntegerIndexEncoder,
 )
 from darts.dataprocessing.transformers import Scaler
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.tests.conftest import TORCH_AVAILABLE
 from darts.utils import timeseries_generation as tg
 from darts.utils.utils import generate_index
-
-logger = get_logger(__name__)
 
 if TORCH_AVAILABLE:
     from darts.models import TFTModel
@@ -354,7 +352,7 @@ class TestEncoder:
                 requires_fit = False
             else:
                 attr, comps_expected, requires_fit = None, None, False
-                raise_log(ValueError("unknown encoder class"), logger=logger)
+                raise_log(ValueError("unknown encoder class"))
 
             enc = enc_cls(
                 input_chunk_length=input_chunk_length,

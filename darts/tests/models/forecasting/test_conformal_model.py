@@ -163,13 +163,13 @@ class TestConformalModel:
         with pytest.raises(ValueError) as exc:
             ConformalNaiveModel(model=global_model, quantiles=[0.2, 0.5, 0.6])
         assert str(exc.value) == (
-            "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles higher than `q=0.5`"
+            "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles higher than `q=0.5`."
         )
 
         # quantiles missing median
         with pytest.raises(ValueError) as exc:
             ConformalNaiveModel(model=global_model, quantiles=[0.1, 0.9])
-        assert str(exc.value) == "median quantile `q=0.5` must be in `quantiles`"
+        assert str(exc.value) == "median quantile `q=0.5` must be in `quantiles`."
 
         # too low and high quantiles
         with pytest.raises(ValueError) as exc:

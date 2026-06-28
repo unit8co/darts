@@ -14,7 +14,7 @@ from darts.dataprocessing.transformers import (
     FittableDataTransformer,
     InvertibleDataTransformer,
 )
-from darts.logging import get_logger, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
@@ -69,11 +69,12 @@ class Pipeline:
          [1.  ]]
         """
 
-        raise_if_not(
-            all((isinstance(t, BaseDataTransformer)) for t in transformers),
-            "transformers should be objects deriving from BaseDataTransformer",
-            logger,
-        )
+        if not all((isinstance(t, BaseDataTransformer)) for t in transformers):
+            raise_log(
+                ValueError(
+                    "transformers should be objects deriving from BaseDataTransformer."
+                ),
+            )
 
         if transformers is None or len(transformers) == 0:
             logger.warning("Empty pipeline created")
@@ -220,7 +221,6 @@ class Pipeline:
                 ValueError(
                     "Not all transformers in the pipeline can perform inverse_transform"
                 ),
-                logger,
             )
 
         # only inverse-transform insample as long as it is required
@@ -296,11 +296,8 @@ class Pipeline:
         Pipeline
             Subset of pipeline determined by key.
         """
-        raise_if_not(
-            isinstance(key, int) or isinstance(key, slice),
-            "key must be either an int or a slice",
-            logger,
-        )
+        if not (isinstance(key, int) or isinstance(key, slice)):
+            raise_log(ValueError("key must be either an int or a slice."))
 
         if isinstance(key, int):
             transformers = [self._transformers[key]]
