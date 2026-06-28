@@ -195,12 +195,8 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
 
     @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
-        return isinstance(
-            self._model, TransferableFutureCovariatesLocalForecastingModel
-        )
+        return self._model._supports_non_retrainable_historical_forecasts
 
     @property
     def _supress_generate_predict_encoding(self) -> bool:
-        return isinstance(
-            self._model, TransferableFutureCovariatesLocalForecastingModel
-        )
+        return self._model._supress_generate_predict_encoding
