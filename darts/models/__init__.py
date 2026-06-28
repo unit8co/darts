@@ -145,8 +145,8 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     "LinearRegressionModel": ("darts.models.forecasting.linear_regression_model", None),
     "RandomForest": ("darts.models.forecasting.random_forest", None),
     "RandomForestModel": ("darts.models.forecasting.random_forest", None),
-    "MultivariateForecastingModelWrapper": (
-        "darts.models.forecasting.multivariate_forecasting_model_wrapper",
+    "MultivariateModelWrapper": (
+        "darts.models.forecasting.multivariate_model_wrapper",
         None,
     ),
     "RegressionEnsembleModel": (
