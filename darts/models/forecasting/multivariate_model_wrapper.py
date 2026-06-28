@@ -10,6 +10,7 @@ its components.
 import darts.models as darts_models
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import (
+    FutureCovariatesLocalForecastingModel,
     LocalForecastingModel,
     TransferableFutureCovariatesLocalForecastingModel,
 )
@@ -103,7 +104,7 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
         random_state: int | None = None,
         **kwargs,
     ) -> TimeSeries:
-        prediction_kwargs = {"n", n}
+        prediction_kwargs = {"n": n, "random_state": random_state}
         if self._model.supports_transferable_series_prediction:
             prediction_kwargs["series"] = series
         if self._model.supports_future_covariates:
@@ -114,8 +115,6 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
             prediction_kwargs["predict_likelihood_parameters"] = (
                 predict_likelihood_parameters
             )
-        if self._model.supports_random_state:
-            prediction_kwargs["random_state"] = random_state
         predictions = [
             model.predict(**prediction_kwargs) for model in self._trained_models
         ]
@@ -199,4 +198,7 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
 
     @property
     def _supress_generate_predict_encoding(self) -> bool:
-        return self._model._supress_generate_predict_encoding
+        if isinstance(self._model, FutureCovariatesLocalForecastingModel):
+            return self._model._supress_generate_predict_encoding
+
+        return False
