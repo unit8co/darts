@@ -92,6 +92,30 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
 
         return self
 
+    def predict(
+        self,
+        n: int,
+        series: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
+        num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
+        verbose: bool | None = None,
+        show_warnings: bool = True,
+        random_state: int | None = None,
+        **kwargs,
+    ) -> TimeSeries:
+        return self._predict(
+            n=n,
+            series=series,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            verbose=verbose,
+            show_warnings=show_warnings,
+            random_state=random_state,
+            **kwargs,
+        )
+
     def _predict(
         self,
         n: int,
