@@ -324,8 +324,10 @@ Bibtex entry (or copy directly via GitHub's repository citation):
 ```
 @article{Herzen_Darts_User-Friendly_Modern_2022,
   author = {Herzen, Julien and Lässig, Francesco and Piazzetta, Samuele Giuliano and Neuer, Thomas and Tafti, Léo and Raille, Guillaume and Van Pottelbergh, Tomas and Pasieka, Marek and Skrodzki, Andrzej and Huguenin, Nicolas and Dumonal, Maxime and Kościsz, Jan and Bader, Dennis and Gusset, Frédérick and Benheddi, Mounir and Williamson, Camila and Kosinski, Michal and Petrik, Matej and Grosch, Gaël},
-  title = {{Darts: User-Friendly Modern Machine Learning for Time Series}},
   journal = {Journal of Machine Learning Research},
+  number = {124},
+  pages = {1--6},
+  title = {{Darts: User-Friendly Modern Machine Learning for Time Series}},
   url = {https://jmlr.org/papers/v23/21-1177.html},
   volume = {23},
   year = {2022}
