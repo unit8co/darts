@@ -152,11 +152,11 @@ class _DLinearModule(PLForecastingModule):
     def forward(self, x_in: PLModuleInput):
         """
         x_in
-            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
-            is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
+            comes as tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
+            `x_future` is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
         """
 
-        x, x_future, x_static = x_in  # x: (batch, in_len, in_dim)
+        x, x_future, x_static, _ = x_in  # x: (batch, in_len, in_dim)
         batch, _, _ = x.shape
 
         if self.shared_weights:
