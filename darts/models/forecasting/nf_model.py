@@ -207,8 +207,8 @@ class _NeuralForecastModule(PLForecastingModule):
         Parameters
         ----------
         x_in
-            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk, `x_future`
-            is the output/future chunk, and `x_static` is the static covariates.
+            comes as tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk,
+            `x_future` is the output/future chunk, and `x_static` is the static covariates.
             Input dimensions are `(n_samples, n_time_steps, n_variables)` for `x_past` and `x_future`,
             and `(n_samples, n_targets, n_static_covariates)` for `x_static`.
 
@@ -223,7 +223,7 @@ class _NeuralForecastModule(PLForecastingModule):
         # `x_past`: (B, L, C + X + F)
         # `x_future`: (B, H, F)
         # `x_static`: (B, C, S) or (B, 1, S)
-        x_past, x_future, x_static = x_in
+        x_past, x_future, x_static, _ = x_in
 
         # build window_batch dict expected by `nf.forward()`
         # Expected shapes in the univariate case (C=1):

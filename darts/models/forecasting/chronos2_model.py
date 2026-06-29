@@ -472,8 +472,8 @@ class _Chronos2Module(PLForecastingModule):
         Parameters
         ----------
         x_in
-            comes as a tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
-            is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
+            comes as a tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
+            `x_future` is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
 
         Returns
         -------
@@ -482,7 +482,7 @@ class _Chronos2Module(PLForecastingModule):
             probabilistic forecasts, or `(n_samples, n_time_steps, n_targets, 1)` for
             deterministic forecasts (median only).
         """
-        x_past, x_future, _ = x_in
+        x_past, x_future, _, _ = x_in
         # x_past is a stack of [past_target, past_covariates, historic_future_covariates],
         # x_future is just future_covariates.
         # So here we need to create `future_covariates` in Chronos2's format that is

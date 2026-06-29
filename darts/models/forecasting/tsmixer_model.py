@@ -455,14 +455,14 @@ class _TSMixerModule(PLForecastingModule):
         Parameters
         ----------
         x_in
-            comes as Tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and
+            comes as Tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
             `x_future` is the output/future chunk. Input dimensions are `(batch_size, time_steps,
             components)`.
 
         Returns
         -------
         torch.torch.Tensor
-            The output  Tensorof shape `(batch_size, output_chunk_length, output_dim, nr_params)`.
+            The output Tensor of shape `(batch_size, output_chunk_length, output_dim, nr_params)`.
         """
         # B: batch size
         # L: input chunk length
@@ -476,7 +476,7 @@ class _TSMixerModule(PLForecastingModule):
         # N_P: likelihood parameters
 
         # `x`: (B, L, H), `x_future`: (B, T, F), `x_static`: (B, C or 1, S)
-        x, x_future, x_static = x_in
+        x, x_future, x_static, _ = x_in
 
         # swap feature and time dimensions (B, L, H) -> (B, H, L)
         x = _time_to_feature(x)

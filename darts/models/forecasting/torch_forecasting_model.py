@@ -903,6 +903,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             _randomize(train_sample_shape[2]),
             _randomize(train_sample_shape[3]),
             _randomize(train_sample_shape[4]),
+            # future_target is excluded: ONNX export traces the inference path only
+            None,
         )
         input_sample = self.model._process_input_batch(mock_batch)
 
