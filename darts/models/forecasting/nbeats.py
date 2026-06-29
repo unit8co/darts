@@ -491,7 +491,7 @@ class _NBEATSModule(PLForecastingModule):
 
     @io_processor
     def forward(self, x_in: PLModuleInput):
-        x, _, _ = x_in
+        x, _, _, _ = x_in
 
         # if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts
         # we reshape into x1, y1, a1, x2, y2, a2... etc

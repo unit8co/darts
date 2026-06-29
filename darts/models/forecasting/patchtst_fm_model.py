@@ -227,7 +227,7 @@ class _PatchTSTFMModule(PLForecastingModule):
         Parameters
         ----------
         x_in
-            Comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk
+            Comes as tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk
             and `x_future` is the output/future chunk. Input dimensions are
             `(n_samples, n_time_steps, n_variables)`.
 
@@ -247,7 +247,7 @@ class _PatchTSTFMModule(PLForecastingModule):
         # N: likelihood quantiles (user-specified)
 
         # `x_past`: (B, L, C)
-        x_past, _, _ = x_in
+        x_past, _, _, _ = x_in
         batch_size, past_length, n_variables = x_past.shape
         output_chunk_length = self.output_chunk_length or 0
         output_chunk_shift = self.output_chunk_shift
