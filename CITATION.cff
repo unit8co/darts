@@ -52,7 +52,7 @@ preferred-citation:
     - given-names: Gaël
       family-names: Grosch
   title: 'Darts: User-Friendly Modern Machine Learning for Time Series'
-  url: 'http://jmlr.org/papers/v23/21-1177.html'
+  url: 'https://jmlr.org/papers/v23/21-1177.html'
   type: article
   journal: Journal of Machine Learning Research
   volume: 23

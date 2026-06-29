@@ -319,16 +319,15 @@ If you are using Darts in your scientific work, we would appreciate citations to
 
 [Darts: User-Friendly Modern Machine Learning for Time Series](https://www.jmlr.org/papers/v23/21-1177.html)
 
-Bibtex entry:
+Bibtex entry (or copy directly via GitHub's repository citation):
+
 ```
-@article{JMLR:v23:21-1177,
-  author  = {Julien Herzen and Francesco LÃ¤ssig and Samuele Giuliano Piazzetta and Thomas Neuer and LÃ©o Tafti and Guillaume Raille and Tomas Van Pottelbergh and Marek Pasieka and Andrzej Skrodzki and Nicolas Huguenin and Maxime Dumonal and Jan KoÅ›cisz and Dennis Bader and FrÃ©dÃ©rick Gusset and Mounir Benheddi and Camila Williamson and Michal Kosinski and Matej Petrik and GaÃ«l Grosch},
-  title   = {Darts: User-Friendly Modern Machine Learning for Time Series},
+@article{Herzen_Darts_User-Friendly_Modern_2022,
+  author = {Herzen, Julien and Lässig, Francesco and Piazzetta, Samuele Giuliano and Neuer, Thomas and Tafti, Léo and Raille, Guillaume and Van Pottelbergh, Tomas and Pasieka, Marek and Skrodzki, Andrzej and Huguenin, Nicolas and Dumonal, Maxime and Kościsz, Jan and Bader, Dennis and Gusset, Frédérick and Benheddi, Mounir and Williamson, Camila and Kosinski, Michal and Petrik, Matej and Grosch, Gaël},
+  title = {{Darts: User-Friendly Modern Machine Learning for Time Series}},
   journal = {Journal of Machine Learning Research},
-  year    = {2022},
-  volume  = {23},
-  number  = {124},
-  pages   = {1-6},
-  url     = {http://jmlr.org/papers/v23/21-1177.html}
+  url = {https://jmlr.org/papers/v23/21-1177.html},
+  volume = {23},
+  year = {2022}
 }
 ```
