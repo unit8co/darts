@@ -56,6 +56,7 @@ preferred-citation:
   type: article
   journal: Journal of Machine Learning Research
   volume: 23
-  number: 124
-  pages: 1-6
+  issue: 124
+  start: 1  # First page number
+  end: 6  # Last page number
   year: 2022
