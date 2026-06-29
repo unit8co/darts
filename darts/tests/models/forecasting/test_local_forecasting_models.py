@@ -26,6 +26,7 @@ from darts.models import (
     FourTheta,
     KalmanForecaster,
     LinearRegressionModel,
+    MultivariateModel,
     NaiveDrift,
     NaiveMean,
     NaiveMovingAverage,
@@ -78,6 +79,7 @@ models = [
     (KalmanForecaster(dim_x=3), 20),
     (LinearRegressionModel(lags=12), 13),
     (RandomForestModel(lags=12, n_estimators=5, max_depth=3), 14),
+    (MultivariateModel(model="NaiveSeasonal"), 32),
 ]
 
 # forecasting models with exogenous variables support
@@ -89,6 +91,7 @@ multivariate_models = [
     (NaiveMean(), 37),
     (NaiveDrift(), 39),
     (NaiveMovingAverage(input_chunk_length=5), 34),
+    (MultivariateModel(model="NaiveSeasonal"), 32),
 ]
 
 dual_models = [
@@ -359,7 +362,7 @@ class TestLocalForecastingModels:
 
         series = (
             target
-            if not isinstance(model_object, VARIMA)
+            if not isinstance(model_object, VARIMA | MultivariateModel)
             else target.stack(target.map(np.log))
         )
         model_params = {
