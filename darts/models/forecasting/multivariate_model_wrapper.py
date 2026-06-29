@@ -52,8 +52,7 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
                 raise_log(
                     ValueError(
                         f"Could not find a Darts LocalForecastingModel named `{model}` in `darts.models`."
-                    ),
-                    logger,
+                    )
                 )
             model = model_class(**model_kwargs)
         elif isinstance(model, type) and issubclass(model, LocalForecastingModel):
@@ -62,8 +61,7 @@ class MultivariateModelWrapper(TransferableFutureCovariatesLocalForecastingModel
             raise_log(
                 ValueError(
                     "`model` must be a valid Darts LocalForecastingModel name (str), class, or instance."
-                ),
-                logger,
+                )
             )
 
         super().__init__()
