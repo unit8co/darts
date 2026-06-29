@@ -1,60 +1,57 @@
 cff-version: 1.2.0
-title: >-
-  Darts: User-Friendly Modern Machine Learning for Time Series
-message: >-
-  If you are using Darts in your scientific work, we would appreciate citations to the following JMLR paper.
-type: software
+title: "Darts: User-Friendly Modern Machine Learning for Time Series"
+message: "If you are using Darts in your scientific work, we would appreciate citations to the following JMLR paper."
+type: "software"
 authors:
-  - name: Unit8 SA
-repository-code: 'https://github.com/unit8co/darts'
-url: 'https://unit8co.github.io/darts/'
-abstract: >-
-  A python library for user-friendly forecasting and anomaly detection on time series.
-license: Apache-2.0
+  - name: "Unit8 SA"
+repository-code: "https://github.com/unit8co/darts"
+url: "https://unit8co.github.io/darts/"
+abstract: "A python library for user-friendly forecasting and anomaly detection on time series."
+license: "Apache-2.0"
 preferred-citation:
   authors:
-    - given-names: Julien
-      family-names: Herzen
-    - given-names: Francesco
-      family-names: Lässig
-    - given-names: Samuele Giuliano
-      family-names: Piazzetta
-    - given-names: Thomas
-      family-names: Neuer
-    - given-names: Léo
-      family-names: Tafti
-    - given-names: Guillaume
-      family-names: Raille
-    - given-names: Tomas
-      family-names: Van Pottelbergh
-    - given-names: Marek
-      family-names: Pasieka
-    - given-names: Andrzej
-      family-names: Skrodzki
-    - given-names: Nicolas
-      family-names: Huguenin
-    - given-names: Maxime
-      family-names: Dumonal
-    - given-names: Jan
-      family-names: Kościsz
-    - given-names: Dennis
-      family-names: Bader
-    - given-names: Frédérick
-      family-names: Gusset
-    - given-names: Mounir
-      family-names: Benheddi
-    - given-names: Camila
-      family-names: Williamson
-    - given-names: Michal
-      family-names: Kosinski
-    - given-names: Matej
-      family-names: Petrik
-    - given-names: Gaël
-      family-names: Grosch
-  title: 'Darts: User-Friendly Modern Machine Learning for Time Series'
-  url: 'https://jmlr.org/papers/v23/21-1177.html'
-  type: article
-  journal: Journal of Machine Learning Research
+    - given-names: "Julien"
+      family-names: "Herzen"
+    - given-names: "Francesco"
+      family-names: "Lässig"
+    - given-names: "Samuele Giuliano"
+      family-names: "Piazzetta"
+    - given-names: "Thomas"
+      family-names: "Neuer"
+    - given-names: "Léo"
+      family-names: "Tafti"
+    - given-names: "Guillaume"
+      family-names: "Raille"
+    - given-names: "Tomas"
+      family-names: "Van Pottelbergh"
+    - given-names: "Marek"
+      family-names: "Pasieka"
+    - given-names: "Andrzej"
+      family-names: "Skrodzki"
+    - given-names: "Nicolas"
+      family-names: "Huguenin"
+    - given-names: "Maxime"
+      family-names: "Dumonal"
+    - given-names: "Jan"
+      family-names: "Kościsz"
+    - given-names: "Dennis"
+      family-names: "Bader"
+    - given-names: "Frédérick"
+      family-names: "Gusset"
+    - given-names: "Mounir"
+      family-names: "Benheddi"
+    - given-names: "Camila"
+      family-names: "Williamson"
+    - given-names: "Michal"
+      family-names: "Kosinski"
+    - given-names: "Matej"
+      family-names: "Petrik"
+    - given-names: "Gaël"
+      family-names: "Grosch"
+  title: "Darts: User-Friendly Modern Machine Learning for Time Series"
+  url: "https://jmlr.org/papers/v23/21-1177.html"
+  type: "article"
+  journal: "Journal of Machine Learning Research"
   volume: 23
   issue: 124
   start: 1  # First page number
