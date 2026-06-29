@@ -2,9 +2,8 @@
 Multivariate forecasting model wrapper
 -------------------------
 
-A wrapper around local forecasting models to enable multivariate series training and forecasting. One model is trained
-for each component of the target series, independently of the others hence ignoring the potential interactions between
-its components.
+A wrapper around any base forecasting model to enable multivariate series training and forecasting. One independent
+model is trained per component of the target series. Interactions between components are not covered.
 """
 
 from typing import Any
@@ -27,16 +26,16 @@ class MultivariateModel(TransferableFutureCovariatesLocalForecastingModel):
         model_kwargs: dict | None = None,
     ):
         """
-        Wrapper for univariate LocalForecastingModel to enable multivariate series training and forecasting.
+        Wrapper for any base ForecastingModel to enable multivariate forecasting support.
 
-        A copy of the provided model will be trained independently on each component of the target series, ignoring the
-        potential interactions.
+        One independent model-copy is trained per component of the target series. Interactions between components are
+        not covered. Bypasses the multimodel setup if the base model already supports multivariate forecasting.
 
         Parameters
         ----------
         model
             Name, class, or instance of the Darts
-            :class:`~darts.models.forecasting.forecasting_model.LocalForecastingModel` to be used, e.g.,
+            :class:`~darts.models.forecasting.forecasting_model.ForecastingModel` to be used, e.g.,
             ``"ExponentialSmoothing"``, ``ExponentialSmoothing``, or ``ExponentialSmoothing()``.
             See all available models in :mod:`darts.models`.
         model_kwargs
@@ -75,10 +74,11 @@ class MultivariateModel(TransferableFutureCovariatesLocalForecastingModel):
         verbose: bool | None = None,
         **kwargs,
     ):
-        fit_kwargs: dict[str, Any] = {"verbose": verbose, **kwargs}
+        fit_kwargs: dict[str, Any] = {"verbose": verbose}
 
         ForecastingModel.fit(self, series=series, **fit_kwargs)
 
+        fit_kwargs = {**fit_kwargs, **kwargs}
         if self.supports_future_covariates:
             fit_kwargs["future_covariates"] = future_covariates
 
