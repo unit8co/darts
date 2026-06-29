@@ -268,10 +268,13 @@ class TestFoundationModel:
         "darts.models.components.huggingface_connector.hf_hub_download",
         side_effect=mock_download,
     )
-    def test_dynamic_input_chunk_length_updates_per_predict(self, mock_method):
+    def test_dynamic_input_chunk_length_batch_vs_individual_common_context(
+        self, mock_method
+    ):
+        """For dynamic ICL, compare batch vs individual predictions under identical effective context length."""
         model = Chronos2Model(
             input_chunk_length=None,
-            output_chunk_length=1,
+            output_chunk_length=2,
             **tfm_kwargs,
         )
 
@@ -280,23 +283,36 @@ class TestFoundationModel:
             model.fit(series=self.series[:21])
             mock_fit.assert_not_called()
 
-        data_1 = [
-            generate_series(n_variables=2, length=4, prefix="d1"),
-            generate_series(n_variables=2, length=2, prefix="d1"),
-            generate_series(n_variables=2, length=3, prefix="d1"),
+        series_batch = [
+            self.series[:18],
+            self.series[2:17],
+            self.series[5:21],
+            self.series[11:29],
         ]
-        preds_1 = model.predict(n=1, series=data_1)
-        assert len(preds_1) == len(data_1)
-        assert model.input_chunk_length == 4
 
-        data_2 = [
-            generate_series(n_variables=2, length=10, prefix="d2"),
-            generate_series(n_variables=2, length=7, prefix="d2"),
-            generate_series(n_variables=2, length=8, prefix="d2"),
-        ]
-        preds_2 = model.predict(n=1, series=data_2)
-        assert len(preds_2) == len(data_2)
-        assert model.input_chunk_length == 10
+        max_len = max(len(s) for s in series_batch)
+        aligned_len = model._align_runtime_input_chunk_length(max_len)
+        series_individual = []
+        for s in series_batch:
+            pad_len = aligned_len - len(s)
+            if pad_len > 0:
+                pad_values = np.full(
+                    (pad_len, s.n_components, s.n_samples),
+                    np.nan,
+                    dtype=s.dtype,
+                )
+                s = s.prepend_values(pad_values)
+            series_individual.append(s)
+
+        pred_batch = model.predict(n=2, series=series_batch)
+        pred_individual = [model.predict(n=2, series=s) for s in series_individual]
+
+        assert len(pred_batch) == len(series_batch)
+        for pb, pi in zip(pred_batch, pred_individual):
+            vb = pb.all_values(copy=False)
+            vi = pi.all_values(copy=False)
+            np.testing.assert_allclose(vb, vi, rtol=0.0, atol=2e-5)
+            assert not np.isnan(vb).any()
 
     @patch(
         "darts.models.components.huggingface_connector.hf_hub_download",

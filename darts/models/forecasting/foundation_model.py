@@ -212,6 +212,14 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
     def _validate_runtime_input_chunk_length(self, input_chunk_length: int) -> None:
         """Model-specific runtime validation hook for dynamic input chunk length."""
 
+    def _align_runtime_input_chunk_length(self, input_chunk_length: int) -> int:
+        """Model-specific runtime alignment hook for dynamic input chunk length.
+
+        Subclasses can override this to align the runtime-resolved
+        ``input_chunk_length`` to model-specific boundaries (for example, patch size).
+        """
+        return input_chunk_length
+
     def _resolve_runtime_input_chunk_length(self, series) -> int:
         series_seq = series2seq(series)
         if series_seq is None or len(series_seq) == 0:
@@ -242,6 +250,7 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
             return
 
         resolved_icl = self._resolve_runtime_input_chunk_length(series)
+        resolved_icl = self._align_runtime_input_chunk_length(resolved_icl)
         self._set_runtime_input_chunk_length(resolved_icl)
 
     def fit(self, *args, **kwargs):

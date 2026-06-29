@@ -885,6 +885,7 @@ class Chronos2Model(FoundationModel):
         # validate `input_chunk_length` against model's context_length
         context_length = chronos_config["context_length"]
         self._context_length_limit = context_length
+        self._input_patch_size = chronos_config["input_patch_size"]
         if input_chunk_length is not None:
             self._validate_runtime_input_chunk_length(input_chunk_length)
 
@@ -936,6 +937,14 @@ class Chronos2Model(FoundationModel):
                 ),
                 logger,
             )
+
+    def _align_runtime_input_chunk_length(self, input_chunk_length: int) -> int:
+        patch_size = getattr(self, "_input_patch_size", 1)
+        if patch_size <= 1:
+            return input_chunk_length
+
+        aligned = ((input_chunk_length + patch_size - 1) // patch_size) * patch_size
+        return min(aligned, self._context_length_limit)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}
