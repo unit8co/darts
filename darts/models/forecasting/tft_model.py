@@ -1015,6 +1015,16 @@ class TFTModel(MixedCovariatesTorchModel):
             future_target,
         ) = train_sample
 
+        if future_covariate is None and not self.add_relative_index:
+            raise_log(
+                ValueError(
+                    "TFTModel requires future covariates. The model applies multi-head attention queries on future "
+                    "inputs. Consider specifying a future encoder with `add_encoders` or setting `add_relative_index` "
+                    "to `True` at model creation (read TFT model docs for more information). "
+                    "These will automatically generate `future_covariates` from indexes."
+                ),
+            )
+
         # add a covariate placeholder so that relative index will be included
         if self.add_relative_index:
             time_steps = self.input_chunk_length + self.output_chunk_length
