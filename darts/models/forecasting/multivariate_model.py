@@ -1,6 +1,6 @@
 """
-Multivariate forecasting model wrapper
--------------------------
+Multivariate Model
+------------------
 
 A wrapper around any base forecasting model to enable multivariate series training and forecasting. One independent
 model is trained per component of the target series. Interactions between components are not covered.
