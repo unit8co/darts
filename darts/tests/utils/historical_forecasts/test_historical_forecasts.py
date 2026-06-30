@@ -26,6 +26,7 @@ from darts.models import (
     ConformalNaiveModel,
     LightGBMModel,
     LinearRegressionModel,
+    MultivariateModel,
     NaiveDrift,
     NaiveSeasonal,
     Prophet,
@@ -677,8 +678,13 @@ class TestHistoricalforecast:
             "Model cannot be fit/trained with `past_covariates`."
         )
 
-    def test_historical_forecasts_local_models(self):
-        model = NaiveSeasonal()
+    @pytest.mark.parametrize(
+        "config",
+        [(NaiveSeasonal, {}), (MultivariateModel, {"model": "NaiveSeasonal"})],
+    )
+    def test_historical_forecasts_local_models(self, config):
+        model_cls, model_kwargs = config
+        model = model_cls(**model_kwargs)
         assert model.min_train_series_length == 3
         series = tg.sine_timeseries(length=4)
         res = model.historical_forecasts(
@@ -695,11 +701,11 @@ class TestHistoricalforecast:
         assert series.end_time() == res.time_index[0]
 
         model.fit(series)
-        with pytest.raises(ValueError) as msg:
+        with pytest.raises(
+            ValueError,
+            match="ForecastingModel does not support historical forecasting with `retrain` set to `False`",
+        ):
             model.historical_forecasts(series, retrain=False, forecast_horizon=1)
-        assert str(msg.value).startswith(
-            "LocalForecastingModel does not support historical forecasting with `retrain` set to `False`"
-        )
 
     def test_historical_forecasts_position_start(self):
         series = tg.sine_timeseries(length=10)

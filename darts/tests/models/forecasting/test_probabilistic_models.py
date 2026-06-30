@@ -20,6 +20,7 @@ from darts.models import (
     KalmanForecaster,
     LightGBMModel,
     LinearRegressionModel,
+    MultivariateModel,
     NaiveEnsembleModel,
     Prophet,
     RegressionEnsembleModel,
@@ -85,6 +86,12 @@ conformal_forecaster.fit(constant_noisy_ts_short)
 # model_cls, model_kwargs, err_univariate, err_multivariate
 models_cls_kwargs_errs = [
     (ExponentialSmoothing, {"random_state": 3}, 0.3, None),
+    (
+        MultivariateModel,
+        {"model": "ExponentialSmoothing", "model_kwargs": {"random_state": 3}},
+        0.3,
+        0.3,
+    ),
     (ARIMA, {"p": 1, "d": 0, "q": 1, "random_state": 42}, 0.03, None),
     (
         ConformalNaiveModel,
@@ -398,7 +405,7 @@ class TestProbabilisticModels:
             fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
         else:
             fit_kwargs = {}
-        if issubclass(model_cls, VARIMA):
+        if issubclass(model_cls, VARIMA | MultivariateModel):
             series = self.ts_ice_heater_short
         else:
             series = self.constant_noisy_ts_short
@@ -440,7 +447,7 @@ class TestProbabilisticModels:
             fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
         else:
             fit_kwargs = {}
-        if issubclass(model_cls, VARIMA):
+        if issubclass(model_cls, VARIMA | MultivariateModel):
             series = self.ts_ice_heater_short
         else:
             series = self.constant_noisy_ts_short
@@ -514,8 +521,17 @@ class TestProbabilisticModels:
     @pytest.mark.parametrize("config", models_cls_kwargs_errs + extra_configs)
     def test_fit_predict_randomized(self, config):
         model_cls, model_kwargs, _, _ = config
+
         model_kwargs = {k: v for k, v in model_kwargs.items() if k != "random_state"}
-        if issubclass(model_cls, VARIMA):
+        if "model_kwargs" in model_kwargs:
+            # some models have random_state inside the model kwargs
+            model_kwargs["model_kwargs"] = {
+                k: v
+                for k, v in model_kwargs["model_kwargs"].items()
+                if k != "random_state"
+            }
+
+        if issubclass(model_cls, VARIMA | MultivariateModel):
             series = self.ts_ice_heater_short
         else:
             series = self.constant_noisy_ts_short
