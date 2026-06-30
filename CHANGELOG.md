@@ -17,6 +17,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed a bug in `TimeSeries.window_transform()` where `treat_na` (`"dropna"`, scalar, `"bfill"`) did not handle NaN values introduced by functions that produce NaN even when `min_periods` is satisfied (e.g., `std` with `ddof=1` on a single value). [#3151](https://github.com/unit8co/darts/pull/3151) by [Dennis Bader](https://github.com/dennisbader).
+
 **Dependencies**
 
 ### For developers of the library:
