@@ -17,14 +17,21 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Metric functions from `darts.metrics` are automatically logged when called inside an active run, with keys reflecting the metric output shape (per-component, per-quantile/interval, per-label, and per-timestep results charted across MLflow steps). Multi-series results log the mean over series and write the full per-series breakdown to a CSV artifact.
   - Added a new notebook for [MLflow quickstart](https://unit8co.github.io/darts/examples/29-MLflow-quickstart.html) with detailed usage examples.
   - Note: model serving and deployment (MLflow's `pyfunc` flavor, model signatures, and input examples) are not yet supported.
+- 🔴 Improved `TransformerModel` with proper encoder-decoder transformer architecture using teacher forcing during training and autoregressive inference, aligning the implementation with [Vaswani et al., 2017](https://arxiv.org/abs/1706.03762). Previously trained checkpoints are incompatible and must be retrained. [#1915](https://github.com/unit8co/darts/pull/1915) by [Jan Fidor](https://github.com/JanFidor) and [Dennis Bader](https://github.com/dennisbader).
+- Added a `CITATION.cff` file with the recommended citation metadata for Darts. [#3147](https://github.com/unit8co/darts/pull/3147) by [Zhihao Dai](https://github.com/daidahao).
 
 **Fixed**
+
+- Fixed a bug in `TimeSeries.window_transform()` where `treat_na` (`"dropna"`, scalar, `"bfill"`) did not handle NaN values introduced by functions that produce NaN even when `min_periods` is satisfied (e.g., `std` with `ddof=1` on a single value). [#3151](https://github.com/unit8co/darts/pull/3151) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
 
 - Added an optional `mlflow` extra (`mlflow>=3.0`) enabling the MLflow integration. [#3022](https://github.com/unit8co/darts/pull/3022) by [Jakub Chłapek](https://github.com/jakubchlapek), [Zhihao Dai](https://github.com/daidahao) and [Michel Zeller](https://github.com/mizeller).
 
 ### For developers of the library:
+
+- Simplified internal error handling: removed `raise_if` and `raise_if_not` in favor of `raise_log`, and made `raise_log` automatically resolve the caller's logger (no longer requires passing `logger` explicitly). [#3126](https://github.com/unit8co/darts/pull/3126) by [Dennis Bader](https://github.com/dennisbader).
+- Moved TFT submodels from `darts.models.forecasting` to `darts.models.components` for better organization. [#3146](https://github.com/unit8co/darts/pull/3146) by [Zhihao Dai](https://github.com/daidahao).
 
 ## [0.45.0](https://github.com/unit8co/darts/tree/0.45.0) (2026-06-19)
 

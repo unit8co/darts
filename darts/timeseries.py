@@ -223,7 +223,6 @@ class TimeSeries:
                     "the `times` argument must be a `pandas.RangeIndex`, or `pandas.DateTimeIndex`. Use "
                     "TimeSeries.from_values() if you want to use an automatic `RangeIndex`.",
                 ),
-                logger=logger,
             )
 
         # avoid copying if data is already np.ndarray:
@@ -249,13 +248,11 @@ class TimeSeries:
                     f"TimeSeries require a `values` array that has or can be expanded to "
                     f"3 dimensions ({DIMS})."
                 ),
-                logger,
             )
 
         if not len(times) == len(values):
             raise_log(
                 ValueError("The time index and values must have the same length."),
-                logger,
             )
 
         if components is None:
@@ -272,7 +269,6 @@ class TimeSeries:
                     "components from `values` (`values.shape[1]`). Expected "
                     f"number of components: `{values.shape[1]}`, received: `{len(components)}`."
                 ),
-                logger=logger,
             )
 
         if copy:
@@ -352,7 +348,6 @@ class TimeSeries:
                         "freq=actual_frequency`. If not, try setting `fill_missing_dates=True, freq=None` to see if a "
                         "frequency can be inferred."
                     ),
-                    logger,
                 )
 
             freq_str: str | None = freq.freqstr
@@ -378,7 +373,6 @@ class TimeSeries:
                 ValueError(
                     "`static_covariates` must be either a pandas Series, DataFrame or None"
                 ),
-                logger,
             )
 
         # check if valid static covariates for multivariate TimeSeries
@@ -391,7 +385,6 @@ class TimeSeries:
                         "components of the TimeSeries object (multi-component/multi-row static covariates "
                         "must map to each TimeSeries component)."
                     ),
-                    logger,
                 )
             if copy:
                 static_covariates = static_covariates.copy()
@@ -425,7 +418,6 @@ class TimeSeries:
                 ValueError(
                     "`metadata` must be of type `dict` mapping metadata attributes to their values."
                 ),
-                logger,
             )
 
         # handle hierarchy
@@ -438,7 +430,6 @@ class TimeSeries:
                         "The hierarchy must be a dict mapping (non-top) component names to their parent(s) "
                         "in the hierarchy."
                     ),
-                    logger,
                 )
             # pre-compute grouping information
             components_set = set(self.components)
@@ -454,7 +445,6 @@ class TimeSeries:
                     ValueError(
                         "The keys of the hierarchy must be time series components"
                     ),
-                    logger,
                 )
             ancestors = set().union(*hierarchy.values())
             if not all(a in components_set for a in ancestors):
@@ -463,7 +453,6 @@ class TimeSeries:
                         "The values of the hierarchy must only contain component names matching those "
                         "of the series."
                     ),
-                    logger,
                 )
             hierarchy_top = components_set - children
             if not len(hierarchy_top) == 1:
@@ -472,7 +461,6 @@ class TimeSeries:
                         "The hierarchy must be such that only one component does not appear as a key "
                         "(the top level component)."
                     ),
-                    logger,
                 )
             self._top_level_component = hierarchy_top.pop()
             if self._top_level_component not in ancestors:
@@ -481,7 +469,6 @@ class TimeSeries:
                         "Invalid hierarchy. Component {} appears as it should be top-level, but "
                         "does not appear as an ancestor in the hierarchy dict."
                     ),
-                    logger,
                 )
             bottom_level = components_set - ancestors
 
@@ -835,7 +822,6 @@ class TimeSeries:
                         "If time_col is not specified, the DataFrame must be indexed either with "
                         "a DatetimeIndex, a RangeIndex, or an integer Index that can be converted into a RangeIndex"
                     ),
-                    logger,
                 )
 
         # get values
@@ -982,7 +968,6 @@ class TimeSeries:
                     ValueError(
                         "`time_col` is required when `df` is not a `pandas.DataFrame`."
                     ),
-                    logger=logger,
                 )
             is_sorted = nw.maybe_get_index(df).is_monotonic_increasing
         else:
@@ -1018,7 +1003,6 @@ class TimeSeries:
                         f"Found invalid `drop_group_cols` columns. All columns must be in the passed `group_cols`. "
                         f"Expected any of: {group_cols}, received: {invalid_cols}."
                     ),
-                    logger=logger,
                 )
             drop_group_col_idx = [
                 idx for idx, col in enumerate(group_cols) if col in drop_group_cols
@@ -1888,7 +1872,6 @@ class TimeSeries:
                         f"do not exist: {missing_cols}. Available static covariates are: "
                         f"{static_covs.columns.tolist()}"
                     ),
-                    logger=logger,
                 )
 
             for static_cov_col in static_cov_cols:
@@ -1920,7 +1903,6 @@ class TimeSeries:
                         f"do not exist: {missing_cols}. Available metadata are: "
                         f"{set(metadata)}"
                     ),
-                    logger=logger,
                 )
 
             for metadata_col in metadata_cols:
@@ -2078,7 +2060,6 @@ class TimeSeries:
                     "This series contains one sample only (deterministic),"
                     "so only sample=0 is accepted.",
                 ),
-                logger=logger,
             )
         values = self._values[:, :, sample]
         if copy:
@@ -2322,7 +2303,6 @@ class TimeSeries:
                 ValueError(
                     f"Keyword mode accepts only 'any' or 'all'. Provided {mode}"
                 ),
-                logger,
             )
         diff = pd.Series(np.diff(is_nan_series.values), index=is_nan_series.index[:-1])
         gap_starts = diff[diff == 1].index + self._freq
@@ -2404,7 +2384,7 @@ class TimeSeries:
         if isinstance(point, float):
             if not 0.0 <= point <= 1.0:
                 raise_log(
-                    ValueError("point (float) should be between 0.0 and 1.0."), logger
+                    ValueError("point (float) should be between 0.0 and 1.0."),
                 )
             point_index = int((len(self) - 1) * point)
         elif isinstance(point, int | np.int64):
@@ -2418,14 +2398,12 @@ class TimeSeries:
                         ValueError(
                             "The provided point is not a valid index for this series."
                         ),
-                        logger,
                     )
             if not 0 <= point_index < len(self):
                 raise_log(
                     ValueError(
                         f"The index corresponding to the provided point ({point}) should be a valid index in series"
                     ),
-                    logger,
                 )
         elif isinstance(point, pd.Timestamp):
             if not self._has_datetime_index:
@@ -2433,7 +2411,6 @@ class TimeSeries:
                     ValueError(
                         "A Timestamp has been provided, but this series is not time-indexed."
                     ),
-                    logger,
                 )
             self._raise_if_not_within(point)
             if point in self:
@@ -2449,7 +2426,6 @@ class TimeSeries:
                 TypeError(
                     "`point` needs to be either `float`, `int` or `pandas.Timestamp`"
                 ),
-                logger,
             )
         return point_index
 
@@ -2608,7 +2584,6 @@ class TimeSeries:
                 ValueError(
                     "The two timestamps provided to slice() have to be of the same type."
                 ),
-                logger,
             )
         if isinstance(start_ts, pd.Timestamp):
             if not self._has_datetime_index:
@@ -2617,7 +2592,6 @@ class TimeSeries:
                         "Timestamps have been provided to slice(), but the series is "
                         "indexed using an integer-based RangeIndex."
                     ),
-                    logger,
                 )
             if start_ts in self._time_index and end_ts in self._time_index:
                 return self[
@@ -2635,7 +2609,6 @@ class TimeSeries:
                         "start and end times have been provided as integers to slice(), but "
                         "the series is indexed with a DatetimeIndex."
                     ),
-                    logger,
                 )
             # get closest timestamp if either start or end are not in the index
             effective_start_ts = (
@@ -2676,7 +2649,7 @@ class TimeSeries:
             A new series, with length at most `n`, starting at `start_ts`.
         """
         if n <= 0:
-            raise_log(ValueError("n should be a positive integer."), logger)
+            raise_log(ValueError("n should be a positive integer."))
         self._raise_if_not_within(start_ts)
 
         if isinstance(start_ts, int | np.int64):
@@ -2688,7 +2661,7 @@ class TimeSeries:
             return self[point_index : point_index + n]
         else:
             raise_log(
-                ValueError("start_ts must be an int or a pandas Timestamp."), logger
+                ValueError("start_ts must be an int or a pandas Timestamp."),
             )
 
     def slice_n_points_before(self, end_ts: pd.Timestamp | int, n: int) -> Self:
@@ -2707,7 +2680,7 @@ class TimeSeries:
             A new series, with length at most `n`, ending at `end_ts`.
         """
         if n <= 0:
-            raise_log(ValueError("n should be a positive integer."), logger)
+            raise_log(ValueError("n should be a positive integer."))
         self._raise_if_not_within(end_ts)
 
         if isinstance(end_ts, int | np.int64):
@@ -2719,7 +2692,7 @@ class TimeSeries:
             return self[max(0, point_index - n + 1) : point_index + 1]
         else:
             raise_log(
-                ValueError("start_ts must be an int or a pandas Timestamp."), logger
+                ValueError("start_ts must be an int or a pandas Timestamp."),
             )
 
     def slice_intersect(self, other: Self) -> Self:
@@ -2842,7 +2815,7 @@ class TimeSeries:
         """
         if self.is_probabilistic:
             raise_log(
-                ValueError("`strip` cannot be applied to stochastic TimeSeries"), logger
+                ValueError("`strip` cannot be applied to stochastic TimeSeries"),
             )
 
         first_finite_row, last_finite_row = _finite_rows_boundaries(
@@ -2924,7 +2897,7 @@ class TimeSeries:
             A new series, where the first value is `value_at_first_step` and other values have been scaled accordingly.
         """
         if (self._values[0, :, :] == 0).any():
-            raise_log(ValueError("Cannot rescale with first value `0`."), logger)
+            raise_log(ValueError("Cannot rescale with first value `0`."))
         coef = value_at_first_step / self._values[:1]
         return self.__class__(
             times=self._time_index,
@@ -2965,7 +2938,6 @@ class TimeSeries:
                     f"the add operation between {n * self.freq} and {self.time_index[-1]} will "
                     "overflow"
                 ),
-                logger,
             )
 
         if self.has_range_index:
@@ -3009,9 +2981,9 @@ class TimeSeries:
             A new series, with the differenced values.
         """
         if not isinstance(n, int) or n < 1:
-            raise_log(ValueError("'n' must be a positive integer >= 1."), logger)
+            raise_log(ValueError("'n' must be a positive integer >= 1."))
         if not isinstance(periods, int) or periods < 1:
-            raise_log(ValueError("'periods' must be an integer >= 1."), logger)
+            raise_log(ValueError("'periods' must be an integer >= 1."))
 
         def _compute_diff(values_: np.ndarray, times_):
             if not dropna:
@@ -3098,18 +3070,16 @@ class TimeSeries:
                 ValueError(
                     "Both series must have the same type of time index (either DatetimeIndex or RangeIndex)."
                 ),
-                logger,
             )
         if other.freq != self.freq:
-            raise_log(ValueError("Both series must have the same frequency."), logger)
+            raise_log(ValueError("Both series must have the same frequency."))
         if other.n_components != self.n_components:
             raise_log(
                 ValueError("Both series must have the same number of components."),
-                logger,
             )
         if other.n_samples != self.n_samples:
             raise_log(
-                ValueError("Both series must have the same number of samples."), logger
+                ValueError("Both series must have the same number of samples."),
             )
         if len(self) > 0 and len(other) > 0:
             if other.start_time() != self.end_time() + self.freq:
@@ -3117,7 +3087,6 @@ class TimeSeries:
                     ValueError(
                         "Appended TimeSeries must start one (time) step after current one."
                     ),
-                    logger,
                 )
         values = np.concatenate((self._values, other._values), axis=0)
         times = self._time_index.append(other._time_index)
@@ -3159,7 +3128,6 @@ class TimeSeries:
                     f"(second and third dims) as the series to append to. "
                     f"Received shape: {values.shape}, expected: {self.shape}"
                 ),
-                logger=logger,
             )
 
         idx = generate_index(
@@ -3199,7 +3167,6 @@ class TimeSeries:
                 ValueError(
                     f"`other` to prepend must be a {self.__class__.__name__} object."
                 ),
-                logger,
             )
         return other.append(self)
 
@@ -3234,7 +3201,6 @@ class TimeSeries:
                     f"(second and third dims) as the series to prepend to. "
                     f"Received shape: {values.shape}, expected: {self._values.shape}"
                 ),
-                logger=logger,
             )
 
         idx = generate_index(
@@ -3300,7 +3266,6 @@ class TimeSeries:
                     "The new values must have the same number of components as the present series. "
                     f"Received: {values.shape[1]}, expected: {self.shape[1]}"
                 ),
-                logger,
             )
         return self.__class__(
             times=times,
@@ -3334,7 +3299,6 @@ class TimeSeries:
                     "The new values must have the same shape (time, components) as the present series. "
                     f"Received: {values.shape[:2]}, expected: {self.shape[:2]}"
                 ),
-                logger,
             )
         return self.__class__(
             times=self._time_index,
@@ -3516,7 +3480,6 @@ class TimeSeries:
                 ValueError(
                     "Some column names in `col_names` don't exist in the time series."
                 ),
-                logger,
             )
         indexer = []
         for idx, col in enumerate(comp_list):
@@ -3747,7 +3710,7 @@ class TimeSeries:
             if new_xa.dtype == "bool":
                 new_xa = new_xa.astype(int)
         else:
-            raise_log(ValueError(f"Unknown method: {method}"), logger)
+            raise_log(ValueError(f"Unknown method: {method}"))
         return self.__class__.from_xarray(new_xa)
 
     def is_within_range(self, ts: pd.Timestamp | int) -> bool:
@@ -3822,7 +3785,7 @@ class TimeSeries:
                [0.06451613]])
         """
         if not isinstance(fn, Callable):
-            raise_log(TypeError("fn must be a callable"), logger)
+            raise_log(TypeError("fn must be a callable"))
 
         if isinstance(fn, np.ufunc):
             if fn.nin == 1 and fn.nout == 1:
@@ -3834,7 +3797,6 @@ class TimeSeries:
                     ValueError(
                         "fn must have either one or two arguments and return a single value"
                     ),
-                    logger,
                 )
         else:
             try:
@@ -3844,7 +3806,6 @@ class TimeSeries:
                     ValueError(
                         "inspect.signature(fn) failed. Try wrapping fn in a lambda, e.g. lambda x: fn(x)"
                     ),
-                    logger,
                 )
 
         if num_args == 1:  # apply fn on values directly
@@ -3853,7 +3814,7 @@ class TimeSeries:
             # apply function on (times, values)
             values = fn(self._time_index, self._values)
         else:
-            raise_log(ValueError("fn must accept either one or two arguments"), logger)
+            raise_log(ValueError("fn must accept either one or two arguments"))
 
         if values.shape != self.shape:
             raise_log(
@@ -4033,7 +3994,6 @@ class TimeSeries:
                     ValueError(
                         f"Invalid window operation: '{mode}'. Must be one of {PD_WINDOW_OPERATIONS.keys()}."
                     ),
-                    logger,
                 )
             window_mode = PD_WINDOW_OPERATIONS[mode]
 
@@ -4049,7 +4009,6 @@ class TimeSeries:
                             ValueError(
                                 "When `forecasting_safe` is True, `center` must be False."
                             ),
-                            logger,
                         )
 
             if isinstance(transformation["function"], Callable):
@@ -4068,7 +4027,6 @@ class TimeSeries:
                         "A list of those function can be found in the `documentation "
                         "<https://pandas.pydata.org/pandas-docs/stable/reference/window.html>`."
                     ),
-                    logger,
                 )
 
             available_keys = set(transformation.keys()) - {
@@ -4143,7 +4101,6 @@ class TimeSeries:
             if not isinstance(tr, dict):
                 raise_log(
                     ValueError("Every entry in `transforms` must be a dictionary"),
-                    logger,
                 )
             tr_comps = set(tr["components"] if "components" in tr else self.components)
             if len(transformed_components.intersection(tr_comps)) > 0:
@@ -4156,7 +4113,6 @@ class TimeSeries:
                     "Cannot keep the original component names as some transforms are overlapping "
                     "(applied to the same components). Set `keep_names` to `False`."
                 ),
-                logger,
             )
 
         # actually, this could be allowed to allow transformation "in place"?
@@ -4166,7 +4122,6 @@ class TimeSeries:
                 ValueError(
                     "`keep_names = True` and `keep_non_transformed = True` cannot be used together."
                 ),
-                logger,
             )
 
         partial_transforms = transformed_components != set(self.components)
@@ -4188,7 +4143,6 @@ class TimeSeries:
                 ValueError(
                     "`transforms` must be a non-empty dictionary or a non-empty list of dictionaries."
                 ),
-                logger,
             )
 
         # read series DataFrame
@@ -4278,13 +4232,14 @@ class TimeSeries:
                         )
                     })
 
-            # track how many NaN rows are added by each transformation on each transformed column
-            # NaNs would appear only if user changes "min_periods" to else than 1, if not,
-            # by default there should be no NaNs unless the original series starts with NaNs (those would be maintained)
-            total_na = min_periods + shifts + (closed == "left")
-            added_na.extend([
-                total_na - 1 if min_periods > 0 else total_na for _ in filter_df_columns
-            ])
+        # Detect actual leading NaN count per transformed column.
+        # More robust than predicting from window params, as some functions
+        # (e.g., std with ddof=1) produce NaN even when min_periods is satisfied.
+        if treat_na is not None:
+            na_mask = np.isnan(resulting_transformations.values)
+            has_na = na_mask.any(axis=0)
+            first_valid = np.where(has_na, np.argmax(~na_mask, axis=0), 0)
+            added_na = first_valid.tolist()
 
         # keep all original components
         if keep_non_transformed:
@@ -4301,7 +4256,6 @@ class TimeSeries:
                     ValueError(
                         f"`treat_na` must be one of {VALID_TREAT_NA} or a scalar, but found {treat_na}",
                     ),
-                    logger,
                 )
 
             if treat_na in VALID_BFILL_NA and forecasting_safe:
@@ -4310,7 +4264,6 @@ class TimeSeries:
                         "when `forecasting_safe` is True, back filling NaNs is not allowed as "
                         "it risks contaminating past time steps with future values."
                     ),
-                    logger,
                 )
 
         if isinstance(treat_na, int | float) or (treat_na in VALID_BFILL_NA):
@@ -4623,7 +4576,6 @@ class TimeSeries:
                 ValueError(
                     "Some column names in col_names don't exist in the time series."
                 ),
-                logger,
             )
 
         if len(col_names) != len(col_names_new):
@@ -4631,7 +4583,6 @@ class TimeSeries:
                 ValueError(
                     "Length of col_names_new list should be equal to the length of col_names list."
                 ),
-                logger,
             )
 
         old2new = {old: new for (old, new) in zip(col_names, col_names_new)}
@@ -4847,7 +4798,6 @@ class TimeSeries:
                 ValueError(
                     "The quantile values must be expressed as fraction (between 0 and 1 inclusive)."
                 ),
-                logger,
             )
 
         # component names
@@ -4988,7 +4938,6 @@ class TimeSeries:
                 ValueError(
                     "Attempted to perform operation on two TimeSeries of unequal shapes."
                 ),
-                logger=logger,
             )
         return other_vals
 
@@ -5037,7 +4986,6 @@ class TimeSeries:
                 ValueError(
                     "Input time series must be of (length>=3) when fill_missing_dates=True and freq=None."
                 ),
-                logger,
             )
 
         times, values = cls._sort_index(times=times, values=values)
@@ -5067,7 +5015,6 @@ class TimeSeries:
                     f"{observed_freqs}. If any of those is the actual frequency, try passing it with "
                     f"`fill_missing_dates=True` and `freq=your_frequency`.{offset_alias_info}"
                 ),
-                logger,
             )
 
         freq = observed_freqs.pop()
@@ -5141,7 +5088,6 @@ class TimeSeries:
                     f"sizes/frequencies: `{observed_freqs}`. If any of those is the actual frequency, "
                     f"try passing it with `fill_missing_dates=True` and `freq=your_frequency`."
                 ),
-                logger=logger,
             )
         freq = observed_freqs.pop()
         times = pd.RangeIndex(
@@ -5213,7 +5159,6 @@ class TimeSeries:
                     f"Not all input {'time stamps' if has_datetime_index else 'indices'} contained in the newly "
                     f"created TimeSeries.{offset_alias_info}"
                 ),
-                logger,
             )
         # convert to float as for instance integer arrays cannot accept nans
         dtype = (
@@ -5238,7 +5183,6 @@ class TimeSeries:
             if not 0 <= axis <= 2:
                 raise_log(
                     ValueError("If `axis` is an integer it must be between 0 and 2."),
-                    logger,
                 )
             return axis
         else:
@@ -5247,7 +5191,6 @@ class TimeSeries:
                     ValueError(
                         f"`axis` must be a known dimension of this series: {DIMS}"
                     ),
-                    logger,
                 )
             return DIMS.index(axis)
 
@@ -5265,7 +5208,6 @@ class TimeSeries:
         else:
             raise_log(
                 ValueError(f"Invalid `axis={axis}`. Must be one of `(1, 2, 3)`."),
-                logger,
             )
 
     def _get_first_timestamp_after(self, ts: pd.Timestamp) -> pd.Timestamp | int:
@@ -5280,7 +5222,6 @@ class TimeSeries:
                 AssertionError(
                     "Only univariate TimeSeries instances support this method"
                 ),
-                logger,
             )
 
     def _assert_deterministic(self):
@@ -5289,7 +5230,6 @@ class TimeSeries:
                 AssertionError(
                     "Only deterministic TimeSeries (with 1 sample) instances support this method"
                 ),
-                logger,
             )
 
     def _assert_stochastic(self):
@@ -5299,7 +5239,6 @@ class TimeSeries:
                     "Only non-deterministic TimeSeries (with more than 1 samples) "
                     "instances support this method"
                 ),
-                logger,
             )
 
     def _raise_if_not_within(self, ts: pd.Timestamp | int):
@@ -5310,7 +5249,6 @@ class TimeSeries:
                     ValueError(
                         "Function called with a timestamp, but series not time-indexed."
                     ),
-                    logger,
                 )
             is_inside = self.start_time() <= ts <= self.end_time()
         else:
@@ -5324,7 +5262,6 @@ class TimeSeries:
                 ValueError(
                     f"Timestamp must be between {self.start_time()} and {self.end_time()}"
                 ),
-                logger,
             )
 
     def __eq__(self, other):
@@ -5377,7 +5314,6 @@ class TimeSeries:
                 TypeError(
                     f"unsupported operand type(s) for + or add(): '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
-                logger,
             )
         ts = self.copy()
         np.add(ts._values, other, out=ts._values)
@@ -5394,7 +5330,6 @@ class TimeSeries:
                 TypeError(
                     f"unsupported operand type(s) for - or sub(): '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
-                logger,
             )
         ts = self.copy()
         np.subtract(ts._values, other, out=ts._values)
@@ -5411,7 +5346,6 @@ class TimeSeries:
                 TypeError(
                     f"unsupported operand type(s) for * or mul(): '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
-                logger,
             )
         ts = self.copy()
         np.multiply(ts._values, other, out=ts._values)
@@ -5425,7 +5359,6 @@ class TimeSeries:
             if n < 0:
                 raise_log(
                     ValueError("Attempted to raise a series to a negative power."),
-                    logger,
                 )
             n = float(n)
         elif isinstance(n, TimeSeries | np.ndarray) or _is_xarray(n):
@@ -5435,7 +5368,6 @@ class TimeSeries:
                 TypeError(
                     f"unsupported operand type(s) for ** or pow(): '{type(self).__name__}' and '{type(n).__name__}'."
                 ),
-                logger,
             )
         ts = self.copy()
         np.power(ts._values, n, out=ts._values)
@@ -5444,13 +5376,12 @@ class TimeSeries:
     def __truediv__(self, other):
         if isinstance(other, int | float | np.integer):
             if other == 0:
-                raise_log(ZeroDivisionError("Cannot divide by 0."), logger)
+                raise_log(ZeroDivisionError("Cannot divide by 0."))
         elif isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
             if (other == 0).any():
                 raise_log(
                     ZeroDivisionError("Cannot divide by a TimeSeries with a value 0."),
-                    logger,
                 )
         else:
             raise_log(
@@ -5458,7 +5389,6 @@ class TimeSeries:
                     "unsupported operand type(s) for / or truediv():"
                     f" '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
-                logger,
             )
         ts = self.copy()
         np.divide(ts._values, other, out=ts._values)
@@ -5493,7 +5423,6 @@ class TimeSeries:
                 TypeError(
                     f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
-                logger,
             )
         return np.less(self._values, other)
 
@@ -5505,7 +5434,6 @@ class TimeSeries:
                 TypeError(
                     f"unsupported operand type(s) for > : '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
-                logger,
             )
         return np.greater(self._values, other)
 
@@ -5517,7 +5445,6 @@ class TimeSeries:
                 TypeError(
                     f"unsupported operand type(s) for <= : '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
-                logger,
             )
         return np.less_equal(self._values, other)
 
@@ -5529,7 +5456,6 @@ class TimeSeries:
                 TypeError(
                     f"unsupported operand type(s) for >= : '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
-                logger,
             )
         return np.greater_equal(self._values, other)
 
@@ -5685,7 +5611,6 @@ class TimeSeries:
                         "Attempted indexing a series with a DatetimeIndex or a timestamp, "
                         "but the series uses a RangeIndex."
                     ),
-                    logger,
                 )
 
         def _check_range():
@@ -5695,7 +5620,6 @@ class TimeSeries:
                         "Attempted indexing a series with a RangeIndex, "
                         "but the series uses a DatetimeIndex."
                     ),
-                    logger,
                 )
 
         adapt_covs_on_component = (
@@ -5717,7 +5641,7 @@ class TimeSeries:
             else:
                 idx = times.get_indexer(key)
                 if (idx < 0).any():
-                    raise_log(KeyError("Not all indices found in time index."), logger)
+                    raise_log(KeyError("Not all indices found in time index."))
                 times = self._time_index[idx]
                 values = self._values[idx]
 
@@ -5742,7 +5666,6 @@ class TimeSeries:
                             "Indexing a `TimeSeries` with a `slice` of `step<=0` (reverse) is not "
                             "possible since `TimeSeries` must have a monotonically increasing time index."
                         ),
-                        logger=logger,
                     )
                 else:
                     return self.__class__(
@@ -5756,7 +5679,7 @@ class TimeSeries:
                 idx = self.components.get_indexer(pd.Index([key.start, key.stop]))
                 if (idx < 0).any():
                     raise_log(
-                        KeyError("Not all components found in time index."), logger
+                        KeyError("Not all components found in time index."),
                     )
                 indexer = slice(idx[0], idx[-1] + 1)
                 values = self._values[:, indexer]
@@ -5792,7 +5715,6 @@ class TimeSeries:
                             "Indexing a `TimeSeries` with a `slice` of `step<=0` (reverse) is not "
                             "possible since `TimeSeries` must have a monotonically increasing time index."
                         ),
-                        logger=logger,
                     )
                 _check_dt()
                 start_time = self.start_time()
@@ -5846,7 +5768,7 @@ class TimeSeries:
                 **self._attrs,
             )
             if len(ts) == 0:
-                raise_log(IndexError("Integer index out of range."), logger)
+                raise_log(IndexError("Integer index out of range."))
             return ts
         elif isinstance(key, pd.Timestamp):
             _check_dt()
@@ -5866,7 +5788,7 @@ class TimeSeries:
                 indexer = self.components.get_indexer(key)
                 if (indexer < 0).any():
                     raise_log(
-                        KeyError("Not all components found in time index."), logger
+                        KeyError("Not all components found in time index."),
                     )
                 values = self._values[:, indexer]
                 components = self.components[indexer]
@@ -5892,7 +5814,6 @@ class TimeSeries:
                             f"Cannot index a `TimeSeries` with a list of integers with non-constant step sizes. "
                             f"Observed step sizes: `{step_sizes}`."
                         ),
-                        logger,
                     )
                 elif len(step_sizes) == 1:
                     step_size = step_sizes.pop()
@@ -5905,7 +5826,6 @@ class TimeSeries:
                             "Indexing a `TimeSeries` with a list of integers with `step<=0` is not "
                             "possible since `TimeSeries` must have a monotonically increasing time index."
                         ),
-                        logger=logger,
                     )
                 return self[key[0] : key[-1] + step_size : step_size]
 
@@ -5919,7 +5839,7 @@ class TimeSeries:
                     **self._attrs,
                 )
 
-        raise_log(IndexError("The type of your index was not matched."), logger)
+        raise_log(IndexError("The type of your index was not matched."))
 
 
 def _concat_static_covs(series: Sequence[TimeSeries]) -> pd.DataFrame | None:
@@ -5955,7 +5875,6 @@ def _concat_static_covs(series: Sequence[TimeSeries]) -> pd.DataFrame | None:
             ValueError(
                 "Either none, only the first or all TimeSeries must have `static_covariates`."
             ),
-            logger,
         )
 
     if only_first:
@@ -5975,7 +5894,6 @@ def _concat_static_covs(series: Sequence[TimeSeries]) -> pd.DataFrame | None:
                 "components must match the number of corresponding static covariate components (the number of rows "
                 "in `series.static_covariates`)."
             ),
-            logger,
         )
 
     return pd.concat(
@@ -6061,7 +5979,6 @@ def concatenate(
                     "when concatenating along time dimension, the component and sample dimensions of all "
                     "provided series must match."
                 ),
-                logger,
             )
 
         # check, if timeseries are consecutive
@@ -6080,7 +5997,6 @@ def concatenate(
                         "this behavior and concatenate the series by extending the time axis "
                         "of the first series."
                     ),
-                    logger,
                 )
 
         times = generate_index(
@@ -6110,7 +6026,6 @@ def concatenate(
                     "True), and all series must have the same number of samples (if concatenating along component "
                     "dimension), or the same number of components (if concatenating along sample dimension)."
                 ),
-                logger,
             )
 
         if axis == 1:
@@ -6265,7 +6180,7 @@ def _finite_rows_boundaries(
 
     if len(dims) > 3:
         raise_log(
-            ValueError(f"Expected 1D to 3D array, received {len(dims)}D array"), logger
+            ValueError(f"Expected 1D to 3D array, received {len(dims)}D array"),
         )
 
     finite_rows = ~np.isnan(values)

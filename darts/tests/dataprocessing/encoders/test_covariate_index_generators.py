@@ -8,11 +8,8 @@ from darts.dataprocessing.encoders.encoder_base import (
     FutureCovariatesIndexGenerator,
     PastCovariatesIndexGenerator,
 )
-from darts.logging import get_logger
 from darts.utils import timeseries_generation as tg
 from darts.utils.utils import generate_index
-
-logger = get_logger(__name__)
 
 
 class TestCovariatesIndexGenerator:
@@ -711,3 +708,21 @@ class TestCovariatesIndexGenerator:
             n=n, target=target, covariates=self.cov_int_inf_short
         )
         assert idx.equals(self.cov_int_inf_short.time_index)
+
+
+class TestCovariatesIndexGeneratorInputValidation:
+    def test_past_covariates_max_lag_non_negative(self):
+        with pytest.raises(ValueError, match="max_covariates_lag.*must be < 0"):
+            PastCovariatesIndexGenerator(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                lags_covariates=[-2, 0],
+            )
+
+    def test_past_covariates_min_lag_non_negative(self):
+        with pytest.raises(ValueError, match="min_covariates_lag.*must be < 0"):
+            PastCovariatesIndexGenerator(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                lags_covariates=[0],
+            )

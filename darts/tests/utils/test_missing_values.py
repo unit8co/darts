@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.utils.missing_values import fill_missing_values, missing_values_ratio
@@ -95,3 +96,15 @@ class TestMissingValues:
 
         # multivariate case
         assert missing_values_ratio(seriesF.stack(seriesF)) == 0.1
+
+
+class TestMissingValuesInputValidation:
+    ts = TimeSeries.from_values(np.ones(10))
+
+    def test_fill_invalid_type(self):
+        with pytest.raises(ValueError, match="should either be a string or a float"):
+            fill_missing_values(self.ts, fill=None)
+
+    def test_fill_invalid_string(self):
+        with pytest.raises(ValueError, match="can only be set to 'auto'"):
+            fill_missing_values(self.ts, fill="mean")

@@ -728,3 +728,52 @@ class TestTimeSeriesGeneration:
 
         # check that the dtype of the values is as expected
         assert ts.dtype == dtype
+
+
+class TestTimeSeriesGenerationInputValidation:
+    def test_gaussian_timeseries_wrong_mean_shape(self):
+        with pytest.raises(ValueError, match="vector of means"):
+            gaussian_timeseries(length=10, mean=np.ones(5))
+
+    def test_gaussian_timeseries_wrong_std_shape(self):
+        with pytest.raises(ValueError, match="matrix of standard deviations"):
+            gaussian_timeseries(length=10, std=np.ones((5, 5)))
+
+    def test_autoregressive_timeseries_start_values_length(self):
+        with pytest.raises(ValueError, match="start_values must have same length"):
+            autoregressive_timeseries(coef=[1.0, 0.5], start_values=[1.0], length=10)
+
+    def test_extend_time_index_until_both_set(self):
+        from darts.utils.timeseries_generation import _extend_time_index_until
+
+        idx = generate_index(start="2000-01-01", length=10, freq="D")
+        with pytest.raises(ValueError, match="set only one of"):
+            _extend_time_index_until(
+                idx, until=pd.Timestamp("2001-01-01"), add_length=5, name="test"
+            )
+
+    def test_datetime_attribute_one_hot_and_cyclic(self):
+        idx = generate_index(start="2000-01-01", length=10, freq="D")
+        with pytest.raises(ValueError, match="set only one of one_hot or cyclic"):
+            datetime_attribute_timeseries(
+                idx, attribute="month", one_hot=True, cyclic=True
+            )
+
+    def test_datetime_attribute_with_columns_one_hot_wrong_length(self):
+        idx = generate_index(start="2000-01-01", length=365, freq="D")
+        with pytest.raises(ValueError, match="with_columns.*must be a list of strings"):
+            datetime_attribute_timeseries(
+                idx, attribute="month", one_hot=True, with_columns=["a", "b"]
+            )
+
+    def test_datetime_attribute_with_columns_cyclic_wrong_length(self):
+        idx = generate_index(start="2000-01-01", length=10, freq="D")
+        with pytest.raises(ValueError, match="must be a list of two strings"):
+            datetime_attribute_timeseries(
+                idx, attribute="month", cyclic=True, with_columns=["a"]
+            )
+
+    def test_datetime_attribute_with_columns_plain_not_string(self):
+        idx = generate_index(start="2000-01-01", length=10, freq="D")
+        with pytest.raises(ValueError, match="must be a string"):
+            datetime_attribute_timeseries(idx, attribute="month", with_columns=["a"])

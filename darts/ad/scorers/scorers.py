@@ -59,7 +59,6 @@ class AnomalyScorer(ABC):
                 ValueError(
                     f"Parameter `window` must be strictly greater than 0, found `{window}`."
                 ),
-                logger=logger,
             )
         self.window = window
         self._is_univariate = is_univariate
@@ -287,7 +286,6 @@ class AnomalyScorer(ABC):
                         f"Found a multivariate `anomalies`. "
                         f"The evaluation of the accuracy cannot be computed between the two series."
                     ),
-                    logger=logger,
                 )
 
         _ = _check_input(anomalies, name="anomalies", extra_checks=_check_univariate)
@@ -301,7 +299,6 @@ class AnomalyScorer(ABC):
                     f"must be lower or equal. Decrease the window size or increase the length series "
                     f"input to score on."
                 ),
-                logger=logger,
             )
 
     def _assert_stochastic(self, series: np.ndarray, name_series: str):
@@ -312,7 +309,6 @@ class AnomalyScorer(ABC):
                     f"Scorer {str(self)} is expecting `{name_series}` to be a stochastic "
                     f"timeseries (number of samples must be higher than 1, found: {series.shape[2]}).",
                 ),
-                logger=logger,
             )
 
     def _extract_deterministic_series(self, series: TimeSeries, name_series: str):
@@ -383,7 +379,6 @@ class FittableAnomalyScorer(AnomalyScorer):
                     f"`diff_fn` must be one of Darts 'per time step' metrics "
                     f"{valid_metrics}. Found `{diff_fn}`"
                 ),
-                logger=logger,
             )
         self.diff_fn = diff_fn
         self.window_agg = window_agg
@@ -745,7 +740,6 @@ class FittableAnomalyScorer(AnomalyScorer):
                 ValueError(
                     f"The Scorer {str(self)} has not been fitted yet. Call `fit()` first."
                 ),
-                logger=logger,
             )
 
 

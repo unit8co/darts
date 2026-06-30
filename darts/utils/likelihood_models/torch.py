@@ -54,7 +54,7 @@ from torch.distributions import Poisson as _Poisson
 from torch.distributions import Weibull as _Weibull
 from torch.distributions.kl import kl_divergence
 
-from darts.logging import raise_if_not
+from darts.logging import raise_log
 from darts.utils.likelihood_models.base import (
     Likelihood,
     LikelihoodType,
@@ -74,15 +74,17 @@ def _check(param, predicate, param_name, condition_str):
     if param is None:
         return
     if isinstance(param, collections.abc.Sequence | np.ndarray):
-        raise_if_not(
-            all(predicate(p) for p in param),
-            f"All provided parameters {param_name} must be {condition_str}.",
-        )
+        if not all(predicate(p) for p in param):
+            raise_log(
+                ValueError(
+                    f"All provided parameters {param_name} must be {condition_str}."
+                ),
+            )
     else:
-        raise_if_not(
-            predicate(param),
-            f"The parameter {param_name} must be {condition_str}.",
-        )
+        if not predicate(param):
+            raise_log(
+                ValueError(f"The parameter {param_name} must be {condition_str}."),
+            )
 
 
 def _check_strict_positive(param, param_name=""):
@@ -1180,16 +1182,20 @@ class QuantileRegression(TorchLikelihood):
 
         # test if torch model forward produces correct output and store quantiles tensor
         if self.first:
-            raise_if_not(
+            if not (
                 len(model_output.shape) == 4
                 and len(target.shape) == 3
-                and model_output.shape[:2] == target.shape[:2],
-                "mismatch between predicted and target shape",
-            )
-            raise_if_not(
-                model_output.shape[dim_q] == len(self.quantiles),
-                "mismatch between number of predicted quantiles and target quantiles",
-            )
+                and model_output.shape[:2] == target.shape[:2]
+            ):
+                raise_log(
+                    ValueError("mismatch between predicted and target shape."),
+                )
+            if model_output.shape[dim_q] != len(self.quantiles):
+                raise_log(
+                    ValueError(
+                        "mismatch between number of predicted quantiles and target quantiles."
+                    ),
+                )
             self.quantiles_tensor = torch.tensor(self.quantiles).to(device)
             self.first = False
 
@@ -1224,17 +1230,21 @@ from torch.distributions import MultivariateNormal as _MultivariateNormal
             self.prior_mu = prior_mu
             self.prior_covmat = prior_covmat
             if self.prior_mu is not None:
-                raise_if_not(
-                    len(self.prior_mu) == self.dim,
-                    "The provided prior_mu must have a size matching the "
-                    "provided dimension.",
-                )
+                if len(self.prior_mu) != self.dim:
+                    raise_log(
+                        ValueError(
+                            "The provided prior_mu must have a size matching the "
+                            "provided dimension."
+                        ),
+                    )
             if self.prior_covmat is not None:
-                raise_if_not(
-                    self.prior_covmat.shape == (self.dim, self.dim),
-                    "The provided prior on the covariaance "
-                    "matrix must have size (dim, dim).",
-                )
+                if self.prior_covmat.shape != (self.dim, self.dim):
+                    raise_log(
+                        ValueError(
+                            "The provided prior on the covariaance "
+                            "matrix must have size (dim, dim)."
+                        ),
+                    )
                 _check_strict_positive(self.prior_covmat.flatten(), "covariance matrix")
 
             self.softplus = nn.Softplus()
