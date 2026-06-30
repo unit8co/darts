@@ -4232,13 +4232,14 @@ class TimeSeries:
                         )
                     })
 
-            # track how many NaN rows are added by each transformation on each transformed column
-            # NaNs would appear only if user changes "min_periods" to else than 1, if not,
-            # by default there should be no NaNs unless the original series starts with NaNs (those would be maintained)
-            total_na = min_periods + shifts + (closed == "left")
-            added_na.extend([
-                total_na - 1 if min_periods > 0 else total_na for _ in filter_df_columns
-            ])
+        # Detect actual leading NaN count per transformed column.
+        # More robust than predicting from window params, as some functions
+        # (e.g., std with ddof=1) produce NaN even when min_periods is satisfied.
+        if treat_na is not None:
+            na_mask = np.isnan(resulting_transformations.values)
+            has_na = na_mask.any(axis=0)
+            first_valid = np.where(has_na, np.argmax(~na_mask, axis=0), 0)
+            added_na = first_valid.tolist()
 
         # keep all original components
         if keep_non_transformed:
