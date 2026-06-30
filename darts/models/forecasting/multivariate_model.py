@@ -81,6 +81,12 @@ class MultivariateModel(TransferableFutureCovariatesLocalForecastingModel):
         fit_kwargs = {**fit_kwargs, **kwargs}
         if self.supports_future_covariates:
             fit_kwargs["future_covariates"] = future_covariates
+        elif future_covariates is not None:
+            raise_log(
+                ValueError(
+                    "The underlying model does not support `future_covariates`."
+                ),
+            )
 
         base_model = self._base_model
 
@@ -125,10 +131,27 @@ class MultivariateModel(TransferableFutureCovariatesLocalForecastingModel):
             predict_kwargs["predict_likelihood_parameters"] = (
                 predict_likelihood_parameters
             )
+        elif predict_likelihood_parameters:
+            raise_log(
+                ValueError(
+                    "The underlying model does not support `predict_likelihood_parameters`."
+                ),
+            )
         if self.supports_future_covariates:
             predict_kwargs["future_covariates"] = future_covariates
+        elif future_covariates is not None:
+            raise_log(
+                ValueError(
+                    "The underlying model does not support `future_covariates`."
+                ),
+            )
         if not self.supports_transferable_series_prediction:
-            series = None
+            if series is not None:
+                raise_log(
+                    ValueError(
+                        "The underlying model does not support `series` for prediction."
+                    ),
+                )
 
         if len(self._models) == 1:
             if series is not None:
@@ -143,10 +166,12 @@ class MultivariateModel(TransferableFutureCovariatesLocalForecastingModel):
         return concatenate(predictions, axis=1)
 
     def _fit(*args, **kwargs):
-        raise_log(NotImplementedError("`_fit` not implemented."))
+        raise_log(NotImplementedError("`_fit` not implemented."))  # pragma: no cover
 
     def _predict(*args, **kwargs):
-        raise_log(NotImplementedError("`_predict` not implemented."))
+        raise_log(
+            NotImplementedError("`_predict` not implemented.")
+        )  # pragma: no cover
 
     @property
     def _base_model(self) -> ForecastingModel:
