@@ -60,7 +60,7 @@ class _T0Module(PLForecastingModule):
 
         # `x_past`: (B, L, C + P + F) stack of [past_target, past_covariates, historic_future_covariates];
         # `x_future`: (B, T, F) future covariates, or None.
-        x_past, x_future, _ = x_in
+        x_past, x_future, _, _ = x_in
         batch_size = x_past.shape[0]
 
         # Past covariates are forecast jointly with the target (T0 is variate-agnostic) and dropped from the
