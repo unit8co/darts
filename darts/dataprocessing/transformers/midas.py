@@ -14,12 +14,10 @@ from darts.dataprocessing.transformers import (
     FittableDataTransformer,
     InvertibleDataTransformer,
 )
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.timeseries import DEFAULT_GLOBAL_STATIC_COV_NAME, _finite_rows_boundaries
 from darts.typing import TimeIndex, TimeSeriesLike
 from darts.utils.utils import generate_index
-
-logger = get_logger(__name__)
 
 
 class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
@@ -108,7 +106,6 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
                     f"Cannot infer period alias for `low_freq={low_freq}`. "
                     f"Is it a valid pandas offset/frequency alias?"
                 ),
-                logger=logger,
             )
         self._low_freq = pd.tseries.frequencies.to_offset(low_freq).freqstr
         self._strip = strip
@@ -147,7 +144,6 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
                         f"`low_freq` set at MIDAS creation. "
                         f"Received series frequency {high_freq} against `low_freq={low_freq}`"
                     ),
-                    logger=logger,
                 )
             fitted_params.append({
                 "high_freq": high_freq,
@@ -221,7 +217,6 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
                     f"{low_freq}. E.g., a valid conversion would be from a monthly (high) to a quarterly "
                     f"(low) frequency."
                 ),
-                logger=logger,
             )
 
         # max size is the number of higher frequency time steps per lower frequency period
@@ -415,7 +410,6 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         if not isinstance(series.time_index, pd.DatetimeIndex):
             raise_log(
                 ValueError("MIDAS input series must have a pd.Datetime index"),
-                logger,
             )
 
         series_freq_str = series.freq_str
@@ -430,7 +424,6 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
                     f"The frequency string of the series to transform must be identical to the fitted one, expected "
                     f"{high_freq} but received {series_freq_str}."
                 ),
-                logger=logger,
             )
         if low_freq is not None and low_freq not in input_freq:
             raise_log(
@@ -438,7 +431,6 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
                     f"The frequency string of the series to inverse-transform must be identical to the fitted one, "
                     f"expected {low_freq} but received {series_freq_str}."
                 ),
-                logger=logger,
             )
 
     @staticmethod

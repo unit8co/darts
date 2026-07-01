@@ -46,9 +46,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from darts.logging import get_logger, raise_log
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
 
 _TOLERANCE = 1e-6
 
@@ -139,7 +137,6 @@ class _ResidualBlock(nn.Module):
         else:
             raise_log(
                 ValueError(f"Activation: {config.activation} not supported."),
-                logger,
             )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -205,7 +202,6 @@ class _RotaryPositionalEmbedding(nn.Module):
         else:
             raise_log(
                 ValueError("Inputs must be of rank 4."),
-                logger,
             )
 
         sinusoid_inp = position / timescale
@@ -286,7 +282,6 @@ class _MultiHeadAttention(nn.Module):
                     f"Memory dimension ({self.in_features}) must be divisible by "
                     f"'num_heads' heads ({self.num_heads})."
                 ),
-                logger,
             )
 
         if self.fuse_qkv:
@@ -383,7 +378,6 @@ class _Transformer(nn.Module):
         else:
             raise_log(
                 ValueError(f"Layer norm: {config.attention_norm} not supported."),
-                logger,
             )
 
         self.attn = _MultiHeadAttention(
@@ -401,7 +395,6 @@ class _Transformer(nn.Module):
         else:
             raise_log(
                 ValueError(f"Layer norm: {config.feedforward_norm} not supported."),
-                logger,
             )
 
         self.ff0 = nn.Linear(
@@ -423,7 +416,6 @@ class _Transformer(nn.Module):
         else:
             raise_log(
                 ValueError(f"Activation: {config.ff_activation} not supported."),
-                logger,
             )
 
     def forward(

@@ -286,7 +286,6 @@ class T0Model(FoundationModel):
                     f"Only QuantileRegression likelihood is supported for T0 in Darts. "
                     f"Got {type(likelihood)}."
                 ),
-                logger,
             )
 
         if kwargs.get("enable_finetuning"):
@@ -295,7 +294,6 @@ class T0Model(FoundationModel):
                     "Fine-tuning is not supported for `T0Model`; it is a zero-shot inference model. "
                     "Leave `enable_finetuning` unset (or `False`)."
                 ),
-                logger,
             )
 
         super().__init__(**kwargs)

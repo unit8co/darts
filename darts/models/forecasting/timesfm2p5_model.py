@@ -21,7 +21,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.components.huggingface_connector import HuggingFaceConnector
 from darts.models.components.timesfm2p5_submodels import (
     _ResidualBlock,
@@ -39,8 +39,6 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.likelihood_models import QuantileRegression
-
-logger = get_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -233,8 +231,8 @@ class _TimesFM2p5Module(PLForecastingModule):
         Parameters
         ----------
         x_in
-            comes as a tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
-            is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
+            comes as a tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
+            `x_future` is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
 
         Returns
         -------
@@ -257,7 +255,7 @@ class _TimesFM2p5Module(PLForecastingModule):
         # N: likelihood quantiles (user-specified)
 
         # `x_past`: (B, L, C)
-        x_past, _, _ = x_in
+        x_past, _, _, _ = x_in
 
         # TimesFM 2.5 is a univariate model and its inputs do not have a variable dimension,
         # so here we reshape `x_past` to (B * C, L)
@@ -651,7 +649,6 @@ class TimesFM2p5Model(FoundationModel):
                     f"plus `output_chunk_shift` {output_chunk_shift} cannot be greater than model's maximum "
                     f"context_length {context_length}"
                 ),
-                logger,
             )
 
         # validate `output_chunk_length` and `output_chunk_shift` against model's output limits
@@ -673,7 +670,6 @@ class TimesFM2p5Model(FoundationModel):
                     f"cannot be greater than model's maximum prediction length {prediction_length}. "
                     + extra_hint
                 ),
-                logger,
             )
 
         quantiles = config.quantiles
@@ -687,7 +683,6 @@ class TimesFM2p5Model(FoundationModel):
                         f"Only QuantileRegression likelihood is supported for TimesFM 2.5 in Darts. "
                         f"Got {type(likelihood)}."
                     ),
-                    logger,
                 )
             user_quantiles: list[float] = likelihood.quantiles
             if not set(user_quantiles).issubset(quantiles):
@@ -696,7 +691,6 @@ class TimesFM2p5Model(FoundationModel):
                         f"The quantiles for QuantileRegression likelihood {user_quantiles} "
                         f"must be a subset of TimesFM 2.5 quantiles {quantiles}."
                     ),
-                    logger,
                 )
 
         self.hf_connector = hf_connector

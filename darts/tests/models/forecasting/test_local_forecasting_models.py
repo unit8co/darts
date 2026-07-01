@@ -17,7 +17,6 @@ if SF_AVAILABLE:
 
 from darts import TimeSeries
 from darts.datasets import AirPassengersDataset, IceCreamHeaterDataset
-from darts.logging import get_logger
 from darts.metrics import mape
 from darts.models import (
     ARIMA,
@@ -27,6 +26,7 @@ from darts.models import (
     FourTheta,
     KalmanForecaster,
     LinearRegressionModel,
+    MultivariateModel,
     NaiveDrift,
     NaiveMean,
     NaiveMovingAverage,
@@ -62,8 +62,6 @@ from darts.utils.utils import (
     generate_index,
 )
 
-logger = get_logger(__name__)
-
 # (forecasting models, maximum error) tuples
 models = [
     (ExponentialSmoothing(), 5.4),
@@ -81,6 +79,7 @@ models = [
     (KalmanForecaster(dim_x=3), 20),
     (LinearRegressionModel(lags=12), 13),
     (RandomForestModel(lags=12, n_estimators=5, max_depth=3), 14),
+    (MultivariateModel(model="NaiveSeasonal"), 32),
 ]
 
 # forecasting models with exogenous variables support
@@ -92,6 +91,7 @@ multivariate_models = [
     (NaiveMean(), 37),
     (NaiveDrift(), 39),
     (NaiveMovingAverage(input_chunk_length=5), 34),
+    (MultivariateModel(model="NaiveSeasonal"), 32),
 ]
 
 dual_models = [
@@ -362,7 +362,7 @@ class TestLocalForecastingModels:
 
         series = (
             target
-            if not isinstance(model_object, VARIMA)
+            if not isinstance(model_object, VARIMA | MultivariateModel)
             else target.stack(target.map(np.log))
         )
         model_params = {
@@ -742,3 +742,63 @@ class TestLocalForecastingModels:
     def test_model_repr_call(self, config):
         model, expected = config
         assert expected == repr(model)
+
+
+class TestForecastingModelInputValidation:
+    series = AirPassengersDataset().load()
+
+    def test_gridsearch_mutually_exclusive_args(self):
+        with pytest.raises(ValueError, match="exactly one of the arguments"):
+            NaiveDrift.gridsearch(
+                parameters={},
+                series=self.series,
+                forecast_horizon=None,
+                val_series=None,
+                use_fitted_values=False,
+            )
+        with pytest.raises(ValueError, match="exactly one of the arguments"):
+            NaiveDrift.gridsearch(
+                parameters={},
+                series=self.series,
+                forecast_horizon=5,
+                val_series=self.series[-10:],
+            )
+
+    def test_gridsearch_use_fitted_values_unsupported(self):
+        with pytest.raises(ValueError, match="fitted_values"):
+            NaiveDrift.gridsearch(
+                parameters={},
+                series=self.series,
+                use_fitted_values=True,
+            )
+
+    def test_gridsearch_val_series_width_mismatch(self):
+        multi = self.series.stack(self.series)
+        with pytest.raises(ValueError, match="same number of components"):
+            NaiveDrift.gridsearch(
+                parameters={},
+                series=self.series,
+                val_series=multi,
+            )
+
+    def test_generate_encodings_not_available(self):
+        model = NaiveDrift()
+        model.fit(self.series)
+        with pytest.raises(ValueError, match="Encodings are not available"):
+            model.generate_fit_encodings(series=self.series)
+        with pytest.raises(ValueError, match="Encodings are not available"):
+            model.generate_predict_encodings(n=1, series=self.series)
+        with pytest.raises(ValueError, match="Encodings are not available"):
+            model.generate_fit_predict_encodings(n=1, series=self.series)
+
+    def test_load_nonexistent_path(self):
+        from darts.models.forecasting.forecasting_model import ForecastingModel
+
+        with pytest.raises(ValueError, match="doesn't exist"):
+            ForecastingModel.load("/nonexistent/path/model.pkl")
+
+    def test_transferable_local_model_generate_predict_encodings_unavailable(self):
+        model = ARIMA()
+        model.fit(self.series)
+        with pytest.raises(ValueError, match="Encodings are not available"):
+            model.generate_predict_encodings(n=1, series=self.series)

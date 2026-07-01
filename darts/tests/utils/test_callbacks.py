@@ -80,7 +80,7 @@ class Model(LightningModule):
         return torch.utils.data.DataLoader(dataset, batch_size=1)
 
 
-def test_pytorch_lightning_pruning_callback() -> None:
+def test_pytorch_lightning_pruning_callback(tmpdir_fn) -> None:
     def objective(trial: optuna.trial.Trial) -> float:
         callback = PyTorchLightningPruningCallback(trial, monitor="accuracy")
         trainer = pl.Trainer(

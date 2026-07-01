@@ -92,7 +92,6 @@ class EnsembleModel(GlobalForecastingModel):
                 ValueError(
                     "`forecasting_models` must be a non-empty list of forecasting models."
                 ),
-                logger,
             )
 
         is_local_model = [
@@ -114,7 +113,6 @@ class EnsembleModel(GlobalForecastingModel):
                     "All models must be of type `GlobalForecastingModel`, or `LocalForecastingModel`. "
                     "Also, make sure that all `forecasting_models` are instantiated."
                 ),
-                logger,
             )
 
         model_fit_status = [m._fit_called for m in forecasting_models]
@@ -128,7 +126,6 @@ class EnsembleModel(GlobalForecastingModel):
                     "only supported if all models are of type `GlobalForecastingModel`. "
                     "Consider resetting all models with `my_model.untrained_model()`."
                 ),
-                logger,
             )
         elif self.is_global_ensemble and not (self.all_trained or not some_trained):
             raise_log(
@@ -137,7 +134,6 @@ class EnsembleModel(GlobalForecastingModel):
                     "Consider resetting all models with `my_model.untrained_model()` or using only trained "
                     "`GlobalForecastingModel` together with `train_forecasting_models=False`."
                 ),
-                logger,
             )
 
         if train_forecasting_models:
@@ -149,7 +145,6 @@ class EnsembleModel(GlobalForecastingModel):
                         "Consider resetting all the `forecasting_models` with `my_model.untrained_model()` "
                         "before passing them to the `EnsembleModel`."
                     ),
-                    logger,
                 )
         else:
             if not (self.is_global_ensemble and self.all_trained):
@@ -158,7 +153,6 @@ class EnsembleModel(GlobalForecastingModel):
                         "`train_forecasting_models=False` is supported only if all the `forecasting_models` are "
                         "already trained `GlobalForecastingModels`."
                     ),
-                    logger,
                 )
 
         if (
@@ -173,7 +167,6 @@ class EnsembleModel(GlobalForecastingModel):
                     "`train_num_samples` is greater than 1 but the `RegressionEnsembleModel` "
                     "contains only deterministic `forecasting_models`."
                 ),
-                logger,
             )
 
         supported_reduction = ["mean", "median"]
@@ -186,7 +179,6 @@ class EnsembleModel(GlobalForecastingModel):
                         f"if a float, `train_samples_reduction` must be between "
                         f"0 and 1, received ({train_samples_reduction})"
                     ),
-                    logger,
                 )
         elif isinstance(train_samples_reduction, str):
             if train_samples_reduction not in supported_reduction:
@@ -195,7 +187,6 @@ class EnsembleModel(GlobalForecastingModel):
                         f"if a string, `train_samples_reduction` must be one of {supported_reduction}, "
                         f"received ({train_samples_reduction})"
                     ),
-                    logger,
                 )
         else:
             raise_log(
@@ -204,7 +195,6 @@ class EnsembleModel(GlobalForecastingModel):
                     f"({train_samples_reduction}). Must be `float` "
                     f" or one of {supported_reduction}."
                 ),
-                logger,
             )
 
         if train_n_points == -1 and not (
@@ -215,7 +205,6 @@ class EnsembleModel(GlobalForecastingModel):
                     "`regression_train_n_points` can only be `-1` if `retrain_forecasting_model=False` and "
                     "all `forecasting_models` are already fitted."
                 ),
-                logger,
             )
 
         # ensemble model checks
@@ -285,7 +274,6 @@ class EnsembleModel(GlobalForecastingModel):
                     "The `forecasting_models` contain at least one LocalForecastingModel, "
                     "which does not support training on multiple series."
                 ),
-                logger,
             )
 
         # check that if timeseries is single series, that covariates are as well and vice versa
@@ -305,7 +293,6 @@ class EnsembleModel(GlobalForecastingModel):
                 ValueError(
                     "Both series and covariates have to be either single TimeSeries or sequences of TimeSeries."
                 ),
-                logger,
             )
 
         self._verify_past_future_covariates(past_covariates, future_covariates)
@@ -324,7 +311,6 @@ class EnsembleModel(GlobalForecastingModel):
                     f"{'All time series in ' if not is_single_series else ''}`series` must have "
                     f"a minimum length of `{min_train_series_length}` to fit the model."
                 ),
-                logger,
             )
 
         super().fit(series, past_covariates, future_covariates, verbose=verbose)
@@ -853,7 +839,6 @@ class EnsembleModel(GlobalForecastingModel):
                     "`past_covariates` were provided to an `EnsembleModel` but none of its "
                     "`forecasting_models` support such covariates."
                 ),
-                logger,
             )
         if future_covariates is not None and not self.supports_future_covariates:
             raise_log(
@@ -861,5 +846,4 @@ class EnsembleModel(GlobalForecastingModel):
                     "`future_covariates` were provided to an `EnsembleModel` but none of its "
                     "`forecasting_models` support such covariates."
                 ),
-                logger,
             )

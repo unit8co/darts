@@ -410,7 +410,6 @@ class FittableDataTransformer(BaseDataTransformer):
                     ValueError(
                         "Must call `fit` before calling `transform`/`inverse_transform`."
                     ),
-                    logger=logger,
                 )
             fitted_params = self._fitted_params
         else:
@@ -424,7 +423,6 @@ class FittableDataTransformer(BaseDataTransformer):
                         f"but only {len(fitted_params)} TimeSeries "
                         f"were specified upon training {self.name}."
                     ),
-                    logger=logger,
                 )
             elif n_timeseries_ < len(fitted_params) and not series_specified:
                 logger.warning(
