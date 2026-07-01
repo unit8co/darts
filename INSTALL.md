@@ -21,6 +21,7 @@ Some models have additional dependencies that are not included in the `all` inst
 |-----------------------|-----------------------|
 | `NeuralForecastModel` | neuralforecast>=3.0.0 |
 | `TiRexModel`          | tirex-ts>=1.4.0       |
+| `T0Model`             | tfc-t0>=0.1.2         |
 
 
 ## From conda-forge
@@ -52,6 +53,7 @@ Some models have dependencies not available on conda-forge. To use them, you nee
 | Model                 | Dependencies          |
 |-----------------------|-----------------------|
 | `TiRexModel`          | tirex-ts>=1.4.0       |
+| `T0Model`             | tfc-t0>=0.1.2         |
 
 
 ## Other Information
