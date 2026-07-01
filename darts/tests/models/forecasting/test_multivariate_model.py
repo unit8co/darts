@@ -12,6 +12,8 @@ from darts.models import (
     Prophet,
     StatsForecastModel,
 )
+from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.tests.conftest import PROPHET_AVAILABLE, SF_AVAILABLE
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -22,11 +24,17 @@ no_cov_models_kwargs = [
     (LinearRegressionModel, {"lags": 3}),  # global, multivariate
 ]
 
-fut_cov_models_kwargs = [
-    (Prophet, {}),  # simple future cov model
-    (StatsForecastModel, {"model": "AutoETS"}),  # transferable future cov model
+fut_cov_models_kwargs: list[tuple[type[ForecastingModel], dict]] = [
     (ARIMA, {"p": 12, "d": 1, "q": 1}),  # transferable future cov model
 ]
+if PROPHET_AVAILABLE:
+    fut_cov_models_kwargs.append(
+        (Prophet, {}),  # simple future cov model
+    )
+if SF_AVAILABLE:
+    fut_cov_models_kwargs.append(
+        (StatsForecastModel, {"model": "AutoETS"}),  # transferable future cov model
+    )
 
 prob_models_kwargs = [
     (ExponentialSmoothing, {}),  # local, univariate
@@ -42,7 +50,7 @@ prob_models_kwargs = [
 ]
 
 
-class TestMultivariateForecastingModelWrapper:
+class TestMultivariateModel:
     np.random.seed(42)
 
     ts_length = 50
