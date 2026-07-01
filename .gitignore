@@ -25,3 +25,7 @@ docs_env
 .venv
 .env
 uv.lock
+
+# C++ build artifacts
+*.so
+_ext.pyi
