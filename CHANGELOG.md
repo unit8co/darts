@@ -16,6 +16,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Added `MultivariateModel` that adds multivariate forecasting support to any base local `ForecastingModel` by fitting one model per component. This is bypassed if the base model already supports multivariate forecasting. [#1917](https://github.com/unit8co/darts/pull/1917) by [Jan Fidor](https://github.com/JanFidor) and [Dennis Bader](https://github.com/dennisbader).
 
 **Fixed**
+- `backtest()` now provides clear, actionable error messages when `future_covariates` don't extend far enough or start too late, replacing cryptic `IndexError` and `TypeError` with detailed `ValueError` messages that include timestamps, missing steps, and code examples. Also fixed bug in `residuals()` method where `past_covariates` and `future_covariates` weren't being forwarded to `backtest()`. [#2846](https://github.com/unit8co/darts/issues/2846) by [Aditya Mehra](https://github.com/addym).
 
 - Fixed a bug in `TimeSeries.window_transform()` where `treat_na` (`"dropna"`, scalar, `"bfill"`) did not handle NaN values introduced by functions that produce NaN even when `min_periods` is satisfied (e.g., `std` with `ddof=1` on a single value). [#3151](https://github.com/unit8co/darts/pull/3151) by [Dennis Bader](https://github.com/dennisbader).
 
