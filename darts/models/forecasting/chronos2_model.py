@@ -579,6 +579,7 @@ class Chronos2Model(FoundationModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
+        min_input_chunk_length: int | None = None,
         likelihood: QuantileRegression | None = None,
         hub_model_name: str = "amazon/chronos-2",
         hub_model_revision: str | None = None,
@@ -638,7 +639,8 @@ class Chronos2Model(FoundationModel):
         input_chunk_length
             Number of time steps in the past to take as a model input (per chunk). Applies to the target
             series, and past and/or future covariates (if the model supports it).
-            Maximum is 8192 for Chronos-2.
+            Maximum is 8192 for Chronos-2. When ``min_input_chunk_length`` is set, this acts as the
+            **maximum** input chunk length.
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
@@ -654,6 +656,12 @@ class Chronos2Model(FoundationModel):
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
             cannot generate autoregressive predictions (`n > output_chunk_length`).
+        min_input_chunk_length
+            Optionally, the minimum input chunk length the model accepts. When set, the model supports
+            variable-length inputs: series shorter than ``input_chunk_length`` (but at least
+            ``min_input_chunk_length``) are automatically left-padded with NaN during inference and
+            fine-tuning. Chronos-2 handles NaN values via attention masking.
+            Default: ``None`` (same as ``input_chunk_length``, i.e. fixed-length input).
         likelihood
             The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of
             :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. If using ``QuantileRegression``,
@@ -877,6 +885,8 @@ class Chronos2Model(FoundationModel):
 
         # validate `input_chunk_length` against model's context_length
         context_length = chronos_config["context_length"]
+        self._context_length_limit = context_length
+        self._input_patch_size = chronos_config["input_patch_size"]
         if input_chunk_length > context_length:
             raise_log(
                 ValueError(
@@ -920,6 +930,13 @@ class Chronos2Model(FoundationModel):
 
         self.hf_connector = hf_connector
         super().__init__(**kwargs)
+
+    def _align_input_chunk_length(self, input_chunk_length: int) -> int:
+        patch_size = self._input_patch_size
+        if patch_size <= 1:
+            return input_chunk_length
+        aligned = ((input_chunk_length + patch_size - 1) // patch_size) * patch_size
+        return min(aligned, self._context_length_limit)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}

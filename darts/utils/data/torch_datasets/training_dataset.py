@@ -65,6 +65,7 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         max_samples_per_ts: int | None = None,
         use_static_covariates: bool = True,
         sample_weight: TimeSeriesLike | str | None = None,
+        min_input_chunk_length: int | None = None,
     ):
         """Shifted Training Dataset
 
@@ -94,7 +95,9 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
 
         .. note::
             Each series in the provided sequence must have a minimum length of
-            `max(input_chunk_length, shift + output_chunk_length)`.
+            `max(input_chunk_length, shift + output_chunk_length)`, or
+            `max(min_input_chunk_length, shift + output_chunk_length)` when
+            ``min_input_chunk_length`` is set.
 
         Parameters
         ----------
@@ -133,6 +136,12 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
+        min_input_chunk_length
+            Optionally, the minimum number of real (non-padded) input values required per sample.
+            When set to a value smaller than ``input_chunk_length``, series shorter than
+            ``input_chunk_length`` can still produce valid samples: the input is left-padded
+            with NaN up to ``input_chunk_length``. Defaults to ``None`` (= ``input_chunk_length``,
+            i.e. no padding, backward compatible).
         """
         super().__init__()
 
@@ -163,16 +172,24 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
                 )
 
         size_of_both_chunks = max(input_chunk_length, shift + output_chunk_length)
+        if min_input_chunk_length is not None:
+            min_size_of_both_chunks = size_of_both_chunks - (
+                input_chunk_length - min_input_chunk_length
+            )
+        else:
+            min_size_of_both_chunks = size_of_both_chunks
 
         # compute the maximum available samples over all series
-        max_available_indices = max(len(ts) for ts in series) - size_of_both_chunks + 1
+        max_available_indices = (
+            max(len(ts) for ts in series) - min_size_of_both_chunks + 1
+        )
         max_available_samples = ceil(max_available_indices / stride)
 
         if max_available_indices <= 0:
             raise_log(
                 ValueError(
                     f"The input `series` are too short to extract even a single sample. "
-                    f"Expected min length: `{size_of_both_chunks}`, received max length: "
+                    f"Expected min length: `{min_size_of_both_chunks}`, received max length: "
                     f"`{max(len(ts) for ts in series)}`."
                 )
             )
@@ -186,6 +203,7 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
         self.size_of_both_chunks = size_of_both_chunks
+        self.min_size_of_both_chunks = min_size_of_both_chunks
         self.shift = shift
         self.stride = stride
         self.max_samples_per_ts = max_samples_per_ts
@@ -253,9 +271,15 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         )
 
         series_vals = series.random_component_values(copy=False)
-        # extract past target series
-        start, end = idx_bounds[FeatureType.PAST_TARGET]
-        pt = series_vals[start:end]
+        past_start, past_end = idx_bounds[FeatureType.PAST_TARGET]
+        _pad = past_start < 0
+
+        # extract past target series (NaN-padded when past_start < 0)
+        pt = (
+            self._extract_padded(series_vals, past_start, past_end, past_start)
+            if _pad
+            else series_vals[past_start:past_end]
+        )
 
         # extract future target series
         start, end = idx_bounds[FeatureType.FUTURE_TARGET]
@@ -267,18 +291,30 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         # extract past covariates
         if self.uses_past_covariates:
             start, end = idx_bounds[FeatureType.PAST_COVARIATES]
-            pc = past_covariates.random_component_values(copy=False)[start:end]
+            if _pad:
+                pc = self._extract_padded(
+                    past_covariates.random_component_values(copy=False),
+                    start,
+                    end,
+                    past_start,
+                )
+            else:
+                pc = past_covariates.random_component_values(copy=False)[start:end]
 
         # extract future covariates
         if self.uses_future_covariates:
+            vals = future_covariates.random_component_values(copy=False)
             # future part of future covariates
             start, end = idx_bounds[FeatureType.FUTURE_COVARIATES]
-            vals = future_covariates.random_component_values(copy=False)
             fc = vals[start:end]
 
             # historic part of future covariates
             hfc_start, hfc_end = idx_bounds[FeatureType.HISTORIC_FUTURE_COVARIATES]
-            hfc = vals[hfc_start:hfc_end]
+            hfc = (
+                self._extract_padded(vals, hfc_start, hfc_end, past_start)
+                if _pad
+                else vals[hfc_start:hfc_end]
+            )
 
         # extract sample weights
         if self.sample_weight is not None:
@@ -303,14 +339,14 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
     def _get_end_of_output_idx(self, series, series_idx, idx):
         # determine the actual number of possible samples in this time series
         n_samples_in_ts = ceil(
-            (len(series) - self.size_of_both_chunks + 1) / self.stride
+            (len(series) - self.min_size_of_both_chunks + 1) / self.stride
         )
 
         if n_samples_in_ts < 1:
             raise_log(
                 ValueError(
                     f"The dataset contains target `series` that are too short to extract "
-                    f"even a single example. Expected min length: `{self.size_of_both_chunks}`, "
+                    f"even a single example. Expected min length: `{self.min_size_of_both_chunks}`, "
                     f"received length `{len(series)}` (at series sequence idx `{series_idx}`)."
                 ),
             )
@@ -338,6 +374,7 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
         max_samples_per_ts: int | None = None,
         use_static_covariates: bool = True,
         sample_weight: TimeSeriesLike | str | None = None,
+        min_input_chunk_length: int | None = None,
     ):
         """Sequential Training Dataset
 
@@ -367,7 +404,9 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
 
         .. note::
             Each series in the provided sequence must have a minimum length of
-            `input_chunk_length + output_chunk_shift + output_chunk_length`.
+            `input_chunk_length + output_chunk_shift + output_chunk_length`, or
+            `min_input_chunk_length + output_chunk_shift + output_chunk_length`
+            when ``min_input_chunk_length`` is set.
 
         Parameters
         ----------
@@ -406,6 +445,12 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
+        min_input_chunk_length
+            Optionally, the minimum number of real (non-padded) input values required per sample.
+            When set to a value smaller than ``input_chunk_length``, series shorter than
+            ``input_chunk_length`` can still produce valid samples: the input is left-padded
+            with NaN up to ``input_chunk_length``. Defaults to ``None`` (= ``input_chunk_length``,
+            i.e. no padding, backward compatible).
         """
         shift = input_chunk_length + output_chunk_shift
         super().__init__(
@@ -419,6 +464,7 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=use_static_covariates,
             sample_weight=sample_weight,
+            min_input_chunk_length=min_input_chunk_length,
         )
 
 

@@ -604,17 +604,24 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         Models can override this method to return a custom `TorchTrainingDataset`.
         """
+        if self._requires_training:
+            ocl = self.output_chunk_length
+            ocs = self.output_chunk_shift
+        else:
+            ocl = 0
+            ocs = 0
         return SequentialTorchTrainingDataset(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
-            output_chunk_shift=self.output_chunk_shift,
+            output_chunk_length=ocl,
+            output_chunk_shift=ocs,
             stride=stride,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
             sample_weight=sample_weight,
+            min_input_chunk_length=self.min_input_chunk_length,
         )
 
     def _build_inference_dataset(
@@ -640,6 +647,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             output_chunk_length=self.output_chunk_length,
             output_chunk_shift=self.output_chunk_shift,
             use_static_covariates=self.uses_static_covariates,
+            min_input_chunk_length=self.min_input_chunk_length,
         )
 
     @staticmethod
@@ -2006,8 +2014,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @property
     def _target_window_lengths(self) -> tuple[int, int]:
         return (
-            self.input_chunk_length,
-            self.output_chunk_length + self.output_chunk_shift,
+            self.min_input_chunk_length,
+            self.output_chunk_length + self.output_chunk_shift
+            if self._requires_training
+            else 0,
         )
 
     @staticmethod
@@ -2528,6 +2538,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @property
+    def min_input_chunk_length(self) -> int:
+        """The minimum input chunk length supported by the model.
+
+        For models that support variable input chunk lengths, this returns the
+        lower bound. For standard models, this equals ``input_chunk_length``.
+        """
+        return self.input_chunk_length
+
+    @property
     def output_chunk_length(self) -> int:
         return (
             self.model.output_chunk_length
@@ -2956,11 +2975,11 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         int,
     ]:
         return (
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             -1,
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
         )

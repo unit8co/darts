@@ -484,3 +484,284 @@ class TestFoundationModel:
         preds = model.predict(n=6, predict_likelihood_parameters=True)
         assert preds.shape == (6, self.series.n_components * len(quantiles), 1)
         assert not np.isnan(preds.all_values()).any()
+
+
+class TestVariableInputChunkLength:
+    """Tests for variable input chunk length support in foundation models."""
+
+    series_long = generate_series(n_variables=2, length=20, prefix="A")
+    series_short = generate_series(n_variables=2, length=8, prefix="B")
+    series_very_short = generate_series(n_variables=2, length=3, prefix="C")
+    future_cov = generate_series(n_variables=3, length=200, prefix="FC")
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_variable_icl_properties(self, mock_method):
+        """Variable ICL model should report correct properties."""
+        model = Chronos2Model(
+            input_chunk_length=14,
+            output_chunk_length=6,
+            min_input_chunk_length=1,
+            **tfm_kwargs,
+        )
+        assert model.min_input_chunk_length == 1
+        assert model.input_chunk_length == 14
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_fixed_icl_properties(self, mock_method):
+        """Fixed ICL model should not report variable input support."""
+        model = Chronos2Model(
+            input_chunk_length=14,
+            output_chunk_length=6,
+            **tfm_kwargs,
+        )
+        assert model.min_input_chunk_length == 14
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_invalid_min_icl(self, mock_method):
+        """min_input_chunk_length > input_chunk_length should raise."""
+        msg_expected = (
+            "`min_input_chunk_length` must be >= 1 and <= input_chunk_length`."
+        )
+        with pytest.raises(ValueError, match=msg_expected):
+            Chronos2Model(
+                input_chunk_length=10,
+                output_chunk_length=6,
+                min_input_chunk_length=15,
+                **tfm_kwargs,
+            )
+        with pytest.raises(ValueError, match=msg_expected):
+            Chronos2Model(
+                input_chunk_length=10,
+                output_chunk_length=6,
+                min_input_chunk_length=0,
+                **tfm_kwargs,
+            )
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    @pytest.mark.parametrize("series_length", [16, 14, 8, 1])
+    def test_variable_icl_fit_predict(self, mock_method, series_length):
+        """Fit and Predict with variable ICL should work on series longer or shorter than ICL."""
+        model = Chronos2Model(
+            input_chunk_length=14,
+            output_chunk_length=6,
+            min_input_chunk_length=1,
+            **tfm_kwargs,
+        )
+        # should not raise even though series_short < input_chunk_length
+        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+            model.fit(series=self.series_long[:series_length])
+            mock_fit.assert_not_called()
+
+        # predict on a short series (shorter than input_chunk_length)
+        pred = model.predict(n=6, series=self.series_long[:series_length])
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 6
+        assert pred.n_components == self.series_short.n_components
+        assert not np.isnan(pred.all_values()).any()
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    @pytest.mark.parametrize("series_length", [16, 14, 8, 1])
+    def test_variable_icl_with_covariates(self, mock_method, series_length):
+        """Variable ICL inference should work with future covariates on a long series."""
+        model = Chronos2Model(
+            input_chunk_length=14,
+            output_chunk_length=6,
+            min_input_chunk_length=1,
+            **tfm_kwargs,
+        )
+        model.fit(
+            series=self.series_long[:series_length], future_covariates=self.future_cov
+        )
+
+        # use a long enough series so padding doesn't extend the time index
+        # beyond what covariates cover
+        pred = model.predict(
+            n=6,
+            series=self.series_long[:series_length],
+            future_covariates=self.future_cov,
+        )
+        assert len(pred) == 6
+        assert not np.isnan(pred.all_values()).any()
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_variable_icl_inference_mixed_lengths(self, mock_method):
+        """Predict should work on a mix of short and long series."""
+        model = Chronos2Model(
+            input_chunk_length=14,
+            output_chunk_length=6,
+            min_input_chunk_length=1,
+            **tfm_kwargs,
+        )
+        model.fit(series=self.series_long)
+
+        preds = model.predict(n=6, series=[self.series_long, self.series_short])
+        assert isinstance(preds, list)
+        assert len(preds) == 2
+        for pred in preds:
+            assert len(pred) == 6
+            assert not np.isnan(pred.all_values()).any()
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_variable_icl_finetuning_short_series(self, mock_method):
+        """Fine-tuning with variable ICL should accept series shorter than ICL
+        but at least min_input_chunk_length + output_chunk_length."""
+        icl = 14
+        ocl = 6
+        model = Chronos2Model(
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            min_input_chunk_length=1,
+            enable_finetuning=True,
+            likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
+            **tfm_kwargs,
+        )
+        # series_short has length 8, which is >= min_icl(1) + ocl(6) = 7
+        model.fit(series=self.series_short, epochs=1)
+
+        pred = model.predict(n=6, series=self.series_short)
+        assert len(pred) == 6
+        assert not np.isnan(pred.all_values()).any()
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_variable_icl_finetuning_too_short(self, mock_method):
+        """Fine-tuning should fail if series < min_icl + ocl."""
+        icl = 14
+        ocl = 6
+        model = Chronos2Model(
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            min_input_chunk_length=5,
+            enable_finetuning=True,
+            likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
+            **tfm_kwargs,
+        )
+        # series_very_short has length 3, which is < min_icl(5) + ocl(6) = 11
+        with pytest.raises(ValueError, match="too short"):
+            model.fit(series=self.series_very_short, epochs=1)
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_fixed_icl_still_rejects_short_series(self, mock_method):
+        """Without min_input_chunk_length, short series should still fail."""
+        model = Chronos2Model(
+            input_chunk_length=14,
+            output_chunk_length=6,
+            **tfm_kwargs,
+        )
+        model.fit(series=self.series_long)
+
+        with pytest.raises(ValueError):
+            model.predict(n=6, series=self.series_short)
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_extreme_lags_variable_icl(self, mock_method):
+        """extreme_lags should use min_input_chunk_length for variable ICL."""
+        model = Chronos2Model(
+            input_chunk_length=14,
+            output_chunk_length=6,
+            min_input_chunk_length=3,
+            **tfm_kwargs,
+        )
+        min_target_lag = model.extreme_lags[0]
+        assert min_target_lag == -3
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_extreme_lags_fixed_icl(self, mock_method):
+        """extreme_lags should use input_chunk_length for fixed ICL."""
+        model = Chronos2Model(
+            input_chunk_length=14,
+            output_chunk_length=6,
+            **tfm_kwargs,
+        )
+        min_target_lag = model.extreme_lags[0]
+        assert min_target_lag == -14
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_align_input_chunk_length_chronos2(self, mock_method):
+        """Chronos2 should align to input_patch_size (7 for tiny model)."""
+        model = Chronos2Model(
+            input_chunk_length=14,
+            output_chunk_length=6,
+            min_input_chunk_length=1,
+            **tfm_kwargs,
+        )
+        assert model._align_input_chunk_length(5) == 7
+        assert model._align_input_chunk_length(7) == 7
+        assert model._align_input_chunk_length(8) == 14
+        assert model._align_input_chunk_length(14) == 14
+        # should not exceed context_length (21)
+        assert model._align_input_chunk_length(20) == 21
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_min_train_series_length_variable(self, mock_method):
+        """min_train_series_length should use min_input_chunk_length."""
+        model_var = Chronos2Model(
+            input_chunk_length=14,
+            output_chunk_length=6,
+            min_input_chunk_length=2,
+            **tfm_kwargs,
+        )
+        # inference-only: min_train_series_length = min_icl + 0
+        assert model_var.min_train_series_length == 2
+
+        model_var_ft = Chronos2Model(
+            input_chunk_length=14,
+            output_chunk_length=6,
+            min_input_chunk_length=2,
+            enable_finetuning=True,
+            **tfm_kwargs,
+        )
+        # finetuning: min_train_series_length = min_icl + ocl
+        assert model_var_ft.min_train_series_length == 8
+
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_min_train_series_length_fixed(self, mock_method):
+        """min_train_series_length for fixed ICL should be standard (ICL only as pre-trained)."""
+        icl = 14
+        model = Chronos2Model(
+            input_chunk_length=icl,
+            output_chunk_length=6,
+            **tfm_kwargs,
+        )
+        assert model.min_train_series_length == icl

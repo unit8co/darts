@@ -160,6 +160,7 @@ class TiRexModel(FoundationModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
+        min_input_chunk_length: int | None = None,
         accept_license: bool = False,
         likelihood: QuantileRegression | None = None,
         hub_model_name: str = "NX-AI/TiRex",
@@ -220,6 +221,12 @@ class TiRexModel(FoundationModel):
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
             cannot generate autoregressive predictions (`n > output_chunk_length`).
+        min_input_chunk_length
+            Optionally, the minimum input chunk length the model accepts. When set, the model supports
+            variable-length inputs: series shorter than ``input_chunk_length`` (but at least
+            ``min_input_chunk_length``) are automatically left-padded with NaN during inference and
+            fine-tuning. TiRex handles NaN values internally.
+            Default: ``None`` (same as ``input_chunk_length``, i.e. fixed-length input).
         likelihood
             The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of
             :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. If using ``QuantileRegression``,

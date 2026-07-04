@@ -354,6 +354,7 @@ class PatchTSTFMModel(FoundationModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
+        min_input_chunk_length: int | None = None,
         likelihood: QuantileRegression | None = None,
         hub_model_name: str = "ibm-granite/granite-timeseries-patchtst-fm-r1",
         hub_model_revision: str | None = "151f9c6d576281b95c2ff784d0863bd3f12c80f1",
@@ -419,6 +420,12 @@ class PatchTSTFMModel(FoundationModel):
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
             cannot generate autoregressive predictions (`n > output_chunk_length`).
             For PatchTST-FM, `input_chunk_length + output_chunk_length + output_chunk_shift` must be `<=8192`.
+        min_input_chunk_length
+            Optionally, the minimum input chunk length the model accepts. When set, the model supports
+            variable-length inputs: series shorter than ``input_chunk_length`` (but at least
+            ``min_input_chunk_length``) are automatically left-padded with NaN during inference and
+            fine-tuning. PatchTST-FM handles NaN values via mean imputation and masking.
+            Default: ``None`` (same as ``input_chunk_length``, i.e. fixed-length input).
         likelihood
             The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of
             :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. If using ``QuantileRegression``,
@@ -635,6 +642,8 @@ class PatchTSTFMModel(FoundationModel):
 
         # validate input_chunk_length + output_chunk_length + output_chunk_shift <= context_length
         context_length = config["context_length"]
+        self._context_length_limit = context_length
+        self._d_patch = config.get("d_patch", 16)
         if (
             input_chunk_length + output_chunk_length + output_chunk_shift
             > context_length
@@ -670,6 +679,13 @@ class PatchTSTFMModel(FoundationModel):
 
         self.hf_connector = hf_connector
         super().__init__(**kwargs)
+
+    def _align_input_chunk_length(self, input_chunk_length: int) -> int:
+        d_patch = self._d_patch
+        if d_patch <= 1:
+            return input_chunk_length
+        aligned = ((input_chunk_length + d_patch - 1) // d_patch) * d_patch
+        return min(aligned, self._context_length_limit)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}

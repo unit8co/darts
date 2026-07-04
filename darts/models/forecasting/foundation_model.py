@@ -10,7 +10,7 @@ This file contains several abstract classes:
 
 from abc import ABC
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 
 logger = get_logger(__name__)
@@ -199,3 +199,35 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
             self.pl_module_params["use_reversible_instance_norm"] = (
                 use_reversible_instance_norm
             )
+
+        # minimum input chunk length for variable-length support; if not set, uses fixed-length input chunks
+        min_input_chunk_length: int | None = self.model_params.get(
+            "min_input_chunk_length", None
+        )
+        if min_input_chunk_length is not None:
+            if not 1 <= min_input_chunk_length <= self.input_chunk_length:
+                raise_log(
+                    ValueError(
+                        "`min_input_chunk_length` must be >= 1 and <= input_chunk_length`."
+                    ),
+                )
+        self._min_input_chunk_length = (
+            min_input_chunk_length
+            if min_input_chunk_length is not None
+            else self.input_chunk_length
+        )
+
+    @property
+    def min_input_chunk_length(self) -> int:
+        return self._min_input_chunk_length
+
+    def _align_input_chunk_length(self, input_chunk_length: int) -> int:
+        """Align an input chunk length to model-specific boundaries.
+
+        Subclasses can override this to round up ``input_chunk_length``
+        to the nearest valid value (e.g. a multiple of patch size).
+        The returned value must not exceed any model-imposed maximum.
+
+        The default implementation returns the value unchanged.
+        """
+        return input_chunk_length

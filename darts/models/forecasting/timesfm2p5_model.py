@@ -349,6 +349,7 @@ class TimesFM2p5Model(FoundationModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
+        min_input_chunk_length: int | None = None,
         use_longer_projection_head: bool = False,
         likelihood: QuantileRegression | None = None,
         hub_model_name: str = "google/timesfm-2.5-200m-pytorch",
@@ -418,6 +419,12 @@ class TimesFM2p5Model(FoundationModel):
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
             cannot generate autoregressive predictions (`n > output_chunk_length`).
+        min_input_chunk_length
+            Optionally, the minimum input chunk length the model accepts. When set, the model supports
+            variable-length inputs: series shorter than ``input_chunk_length`` (but at least
+            ``min_input_chunk_length``) are automatically left-padded with NaN during inference and
+            fine-tuning. TimesFM 2.5 handles NaN values via its internal masking.
+            Default: ``None`` (same as ``input_chunk_length``, i.e. fixed-length input).
         use_longer_projection_head
             Whether to use the longer output projection head, which allows for a longer horizon without auto-regression,
             i.e., `output_chunk_length + output_chunk_shift <= 1024`. Default: ``False``.
@@ -639,6 +646,8 @@ class TimesFM2p5Model(FoundationModel):
 
         # validate `input_chunk_length` against model's maximum context_length
         context_length = config.context_limit
+        self._context_length_limit = context_length
+        self._input_patch_len = config.input_patch_len
         if (
             input_chunk_length + output_chunk_length + output_chunk_shift
             > context_length
@@ -695,6 +704,13 @@ class TimesFM2p5Model(FoundationModel):
 
         self.hf_connector = hf_connector
         super().__init__(**kwargs)
+
+    def _align_input_chunk_length(self, input_chunk_length: int) -> int:
+        patch_len = self._input_patch_len
+        if patch_len <= 1:
+            return input_chunk_length
+        aligned = ((input_chunk_length + patch_len - 1) // patch_len) * patch_len
+        return min(aligned, self._context_length_limit)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}
