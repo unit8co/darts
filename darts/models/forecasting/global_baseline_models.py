@@ -253,7 +253,6 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
             sample_weight=sample_weight,
-            min_input_chunk_length=None,
         )
 
 

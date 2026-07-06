@@ -2620,9 +2620,8 @@ class TestVariableICLDataset:
 
         ds = SequentialTorchTrainingDataset(
             series=series,
-            input_chunk_length=icl,
+            input_chunk_length=(min_icl, icl),
             output_chunk_length=ocl,
-            min_input_chunk_length=min_icl,
         )
         # min_size = 6 + 2 = 8, n_samples = 25 - 8 + 1 = 18
         assert len(ds) == 18
@@ -2649,10 +2648,9 @@ class TestVariableICLDataset:
 
         ds = SequentialTorchInferenceDataset(
             series=series,
-            input_chunk_length=icl,
+            input_chunk_length=(min_icl, icl),
             output_chunk_length=ocl,
             n=ocl,
-            min_input_chunk_length=min_icl,
         )
         assert len(ds) == 1
 
@@ -2663,8 +2661,8 @@ class TestVariableICLDataset:
         assert np.isnan(pt[:pad_len]).all()
         assert not np.isnan(pt[pad_len:]).any()
 
-    def test_dataset_no_padding_without_min_icl(self):
-        """Without min_input_chunk_length, datasets should behave unchanged."""
+    def test_dataset_no_padding_without_variable_icl(self):
+        """With a fixed input chunk length, datasets should not left-pad."""
         icl, ocl = 14, 6
         series = generate_series(n_variables=1, length=25, prefix="T")
 
@@ -2675,9 +2673,8 @@ class TestVariableICLDataset:
         )
         ds_explicit = SequentialTorchTrainingDataset(
             series=series,
-            input_chunk_length=icl,
+            input_chunk_length=(icl, icl),
             output_chunk_length=ocl,
-            min_input_chunk_length=icl,
         )
         assert len(ds_default) == len(ds_explicit)
 
@@ -2695,9 +2692,8 @@ class TestVariableICLDataset:
 
         ds = SequentialTorchTrainingDataset(
             series=series,
-            input_chunk_length=icl,
+            input_chunk_length=(min_icl, icl),
             output_chunk_length=ocl,
-            min_input_chunk_length=min_icl,
         )
         # min_size = (10 + 4) - (10 - 2) = 6, n_samples = 15 - 6 + 1 = 10
         assert len(ds) == 10
@@ -2720,9 +2716,8 @@ class TestVariableICLDataset:
             series=series,
             past_covariates=past_cov,
             future_covariates=future_cov,
-            input_chunk_length=icl,
+            input_chunk_length=(min_icl, icl),
             output_chunk_length=ocl,
-            min_input_chunk_length=min_icl,
         )
 
         # leftmost sample (most padding)

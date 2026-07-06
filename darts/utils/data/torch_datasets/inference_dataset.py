@@ -14,7 +14,11 @@ import numpy as np
 from darts.logging import raise_log
 from darts.typing import TimeSeriesLike
 from darts.utils.data.torch_datasets.dataset import TorchDataset
-from darts.utils.data.torch_datasets.utils import TorchInferenceDatasetOutput
+from darts.utils.data.torch_datasets.utils import (
+    InputChunkLength,
+    TorchInferenceDatasetOutput,
+    _parse_input_chunk_length,
+)
 from darts.utils.data.utils import FeatureType
 from darts.utils.historical_forecasts.utils import _process_predict_start_points_bounds
 from darts.utils.ts_utils import series2seq
@@ -63,11 +67,10 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
         n: int = 1,
         stride: int = 0,
         bounds: np.ndarray | None = None,
-        input_chunk_length: int = 12,
+        input_chunk_length: InputChunkLength = 12,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         use_static_covariates: bool = True,
-        min_input_chunk_length: int | None = None,
     ):
         """Sequential Inference Dataset
 
@@ -127,6 +130,8 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
             If provided, `stride` must be `>=1`.
         input_chunk_length
             The length of the lookback / past window the model takes as input.
+            An integer denotes a fixed input window. A ``(min_length, max_length)`` tuple
+            enables variable-length inputs with left-padding up to ``max_length``.
         output_chunk_length
             The length of the lookahead / future window that the model emits as output (for the target) and takes as
             input (for future covariates).
@@ -134,14 +139,10 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
             Optionally, the number of steps to shift the start of the output chunk into the future.
         use_static_covariates
             Whether to use/include static covariate data from the target `series`.
-        min_input_chunk_length
-            Optionally, the minimum number of real (non-padded) input values required per sample.
-            When set to a value smaller than ``input_chunk_length``, series shorter than
-            ``input_chunk_length`` can still be used for prediction: the input is left-padded
-            with NaN up to ``input_chunk_length``. Defaults to ``None`` (= ``input_chunk_length``,
-            i.e. no padding, backward compatible).
         """
         super().__init__()
+
+        min_icl, max_icl = _parse_input_chunk_length(input_chunk_length)
 
         # setup target and sequence
         series = series2seq(series)
@@ -188,15 +189,11 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
         self.uses_static_covariates_covariates = static_covariates is not None
 
         self.n = n
-        self.input_chunk_length = input_chunk_length
+        self.input_chunk_length = max_icl
+        self.min_input_chunk_length = min_icl
         self.output_chunk_length = output_chunk_length
         self.output_chunk_shift = output_chunk_shift
         self.use_static_covariates = use_static_covariates
-        self.min_input_chunk_length = (
-            min_input_chunk_length
-            if min_input_chunk_length is not None
-            else input_chunk_length
-        )
 
         self.stride = stride
         if bounds is None:

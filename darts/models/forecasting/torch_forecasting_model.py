@@ -610,18 +610,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         else:
             ocl = 0
             ocs = 0
+
         return SequentialTorchTrainingDataset(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            input_chunk_length=self.input_chunk_length,
+            input_chunk_length=(self.min_input_chunk_length, self.input_chunk_length),
             output_chunk_length=ocl,
             output_chunk_shift=ocs,
             stride=stride,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
             sample_weight=sample_weight,
-            min_input_chunk_length=self.min_input_chunk_length,
         )
 
     def _build_inference_dataset(
@@ -643,11 +643,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             n=n,
             stride=stride,
             bounds=bounds,
-            input_chunk_length=self.input_chunk_length,
+            input_chunk_length=(self.min_input_chunk_length, self.input_chunk_length),
             output_chunk_length=self.output_chunk_length,
             output_chunk_shift=self.output_chunk_shift,
             use_static_covariates=self.uses_static_covariates,
-            min_input_chunk_length=self.min_input_chunk_length,
         )
 
     @staticmethod

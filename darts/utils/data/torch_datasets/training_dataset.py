@@ -14,7 +14,11 @@ from math import ceil
 from darts.logging import raise_log
 from darts.typing import TimeSeriesLike
 from darts.utils.data.torch_datasets.dataset import TorchDataset
-from darts.utils.data.torch_datasets.utils import TorchTrainingDatasetOutput
+from darts.utils.data.torch_datasets.utils import (
+    InputChunkLength,
+    TorchTrainingDatasetOutput,
+    _parse_input_chunk_length,
+)
 from darts.utils.data.utils import (
     FeatureType,
     _process_sample_weight,
@@ -58,14 +62,13 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         series: TimeSeriesLike,
         past_covariates: TimeSeriesLike | None = None,
         future_covariates: TimeSeriesLike | None = None,
-        input_chunk_length: int = 12,
+        input_chunk_length: InputChunkLength = 12,
         output_chunk_length: int = 1,
         shift: int = 1,
         stride: int = 1,
         max_samples_per_ts: int | None = None,
         use_static_covariates: bool = True,
         sample_weight: TimeSeriesLike | str | None = None,
-        min_input_chunk_length: int | None = None,
     ):
         """Shifted Training Dataset
 
@@ -95,9 +98,10 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
 
         .. note::
             Each series in the provided sequence must have a minimum length of
-            `max(input_chunk_length, shift + output_chunk_length)`, or
+            `max(input_chunk_length, shift + output_chunk_length)` when
+            ``input_chunk_length`` is an integer, or
             `max(min_input_chunk_length, shift + output_chunk_length)` when
-            ``min_input_chunk_length`` is set.
+            ``input_chunk_length`` is a ``(min_length, max_length)`` tuple.
 
         Parameters
         ----------
@@ -109,6 +113,8 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
             Optionally, one or a sequence of `TimeSeries` containing future-known covariates.
         input_chunk_length
             The length of the lookback / past window the model takes as input.
+            An integer denotes a fixed input window. A ``(min_length, max_length)`` tuple
+            enables variable-length inputs with left-padding up to ``max_length``.
         output_chunk_length
             The length of the lookahead / future window that the model emits as output (for the target) and takes as
             input (for future covariates).
@@ -136,14 +142,10 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
-        min_input_chunk_length
-            Optionally, the minimum number of real (non-padded) input values required per sample.
-            When set to a value smaller than ``input_chunk_length``, series shorter than
-            ``input_chunk_length`` can still produce valid samples: the input is left-padded
-            with NaN up to ``input_chunk_length``. Defaults to ``None`` (= ``input_chunk_length``,
-            i.e. no padding, backward compatible).
         """
         super().__init__()
+
+        min_icl, max_icl = _parse_input_chunk_length(input_chunk_length)
 
         if not (isinstance(stride, int) and stride > 0):
             raise_log(
@@ -171,9 +173,9 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
                     ),
                 )
 
-        size_of_both_chunks = max(input_chunk_length, shift + output_chunk_length)
-        if min_input_chunk_length is not None:
-            size_of_both_chunks -= input_chunk_length - min_input_chunk_length
+        size_of_both_chunks = max(max_icl, shift + output_chunk_length)
+        if min_icl < max_icl:
+            size_of_both_chunks -= max_icl - min_icl
 
         # compute the maximum available samples over all series
         max_available_indices = max(len(ts) for ts in series) - size_of_both_chunks + 1
@@ -194,7 +196,8 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
             # upper bound maximum available samples by max_samples_per_ts
             max_samples_per_ts = min(max_samples_per_ts, max_available_samples)
 
-        self.input_chunk_length = input_chunk_length
+        self.input_chunk_length = max_icl
+        self.min_input_chunk_length = min_icl
         self.output_chunk_length = output_chunk_length
         self.size_of_both_chunks = size_of_both_chunks
         self.shift = shift
@@ -345,14 +348,13 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
         series: TimeSeriesLike,
         past_covariates: TimeSeriesLike | None = None,
         future_covariates: TimeSeriesLike | None = None,
-        input_chunk_length: int = 12,
+        input_chunk_length: InputChunkLength = 12,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         stride: int = 1,
         max_samples_per_ts: int | None = None,
         use_static_covariates: bool = True,
         sample_weight: TimeSeriesLike | str | None = None,
-        min_input_chunk_length: int | None = None,
     ):
         """Sequential Training Dataset
 
@@ -382,9 +384,10 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
 
         .. note::
             Each series in the provided sequence must have a minimum length of
-            `input_chunk_length + output_chunk_shift + output_chunk_length`, or
+            `max_input_chunk_length + output_chunk_shift + output_chunk_length` when
+            ``input_chunk_length`` is an integer, or
             `min_input_chunk_length + output_chunk_shift + output_chunk_length`
-            when ``min_input_chunk_length`` is set.
+            when ``input_chunk_length`` is a ``(min_length, max_length)`` tuple.
 
         Parameters
         ----------
@@ -396,6 +399,8 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
             Optionally, one or a sequence of `TimeSeries` containing future-known covariates.
         input_chunk_length
             The length of the lookback / past window the model takes as input.
+            An integer denotes a fixed input window. A ``(min_length, max_length)`` tuple
+            enables variable-length inputs with left-padding up to ``max_length``.
         output_chunk_length
             The length of the lookahead / future window that the model emits as output (for the target) and takes as
             input (for future covariates).
@@ -423,14 +428,9 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
-        min_input_chunk_length
-            Optionally, the minimum number of real (non-padded) input values required per sample.
-            When set to a value smaller than ``input_chunk_length``, series shorter than
-            ``input_chunk_length`` can still produce valid samples: the input is left-padded
-            with NaN up to ``input_chunk_length``. Defaults to ``None`` (= ``input_chunk_length``,
-            i.e. no padding, backward compatible).
         """
-        shift = input_chunk_length + output_chunk_shift
+        _, max_icl = _parse_input_chunk_length(input_chunk_length)
+        shift = max_icl + output_chunk_shift
         super().__init__(
             series=series,
             past_covariates=past_covariates,
@@ -442,7 +442,6 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=use_static_covariates,
             sample_weight=sample_weight,
-            min_input_chunk_length=min_input_chunk_length,
         )
 
 

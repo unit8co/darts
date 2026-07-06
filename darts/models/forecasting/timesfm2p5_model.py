@@ -37,7 +37,12 @@ from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
 )
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    InputChunkLength,
+    PLModuleInput,
+    TorchTrainingSample,
+    _parse_input_chunk_length,
+)
 from darts.utils.likelihood_models import QuantileRegression
 
 
@@ -346,10 +351,9 @@ class _TimesFM2p5Module(PLForecastingModule):
 class TimesFM2p5Model(FoundationModel):
     def __init__(
         self,
-        input_chunk_length: int,
+        input_chunk_length: InputChunkLength,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        min_input_chunk_length: int | None = None,
         use_longer_projection_head: bool = False,
         likelihood: QuantileRegression | None = None,
         hub_model_name: str = "google/timesfm-2.5-200m-pytorch",
@@ -402,7 +406,9 @@ class TimesFM2p5Model(FoundationModel):
         input_chunk_length
             Number of time steps in the past to take as a model input (per chunk). Applies to the target
             series, and past and/or future covariates (if the model supports it).
-            For TimesFM 2.5, `input_chunk_length + output_chunk_length + output_chunk_shift` must be less than or equal
+            Can be either an ``int`` for a fixed input window, or a ``(min_length, max_length)`` tuple to enable
+            variable-length inputs for inference and fine-tuning.
+            For TimesFM 2.5, ``max_length + output_chunk_length + output_chunk_shift`` must be less than or equal
             to 16,384.
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
@@ -419,12 +425,6 @@ class TimesFM2p5Model(FoundationModel):
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
             cannot generate autoregressive predictions (`n > output_chunk_length`).
-        min_input_chunk_length
-            Optionally, the minimum input chunk length the model accepts. When set, the model supports
-            variable-length inputs: series shorter than ``input_chunk_length`` (but at least
-            ``min_input_chunk_length``) are automatically left-padded with NaN during inference and
-            fine-tuning. TimesFM 2.5 handles NaN values via its internal masking.
-            Default: ``None`` (same as ``input_chunk_length``, i.e. fixed-length input).
         use_longer_projection_head
             Whether to use the longer output projection head, which allows for a longer horizon without auto-regression,
             i.e., `output_chunk_length + output_chunk_shift <= 1024`. Default: ``False``.
@@ -646,13 +646,11 @@ class TimesFM2p5Model(FoundationModel):
 
         # validate `input_chunk_length` against model's maximum context_length
         context_length = config.context_limit
-        if (
-            input_chunk_length + output_chunk_length + output_chunk_shift
-            > context_length
-        ):
+        _, max_icl = _parse_input_chunk_length(input_chunk_length)
+        if max_icl + output_chunk_length + output_chunk_shift > context_length:
             raise_log(
                 ValueError(
-                    f"`input_chunk_length` {input_chunk_length} plus `output_chunk_length` {output_chunk_length} "
+                    f"`input_chunk_length` {max_icl} plus `output_chunk_length` {output_chunk_length} "
                     f"plus `output_chunk_shift` {output_chunk_shift} cannot be greater than model's maximum "
                     f"context_length {context_length}"
                 ),

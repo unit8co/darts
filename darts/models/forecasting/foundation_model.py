@@ -10,8 +10,9 @@ This file contains several abstract classes:
 
 from abc import ABC
 
-from darts.logging import get_logger, raise_log
+from darts.logging import get_logger
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
+from darts.utils.data.torch_datasets.utils import _parse_input_chunk_length
 
 logger = get_logger(__name__)
 
@@ -168,11 +169,17 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
         if self.model_params.get("enable_finetuning", None) is None:
             self.model_params["enable_finetuning"] = False
 
+        min_icl, max_icl = _parse_input_chunk_length(
+            self.model_params["input_chunk_length"]
+        )
+        self._min_input_chunk_length = min_icl
+        model_init_params = {**self.model_params, "input_chunk_length": max_icl}
+
         # initialize `TorchForecastingModel` base class
-        super().__init__(**self._extract_torch_model_params(**self.model_params))
+        super().__init__(**self._extract_torch_model_params(**model_init_params))
 
         # extract pytorch lightning module kwargs
-        self.pl_module_params = self._extract_pl_module_params(**self.model_params)
+        self.pl_module_params = self._extract_pl_module_params(**model_init_params)
 
         # pass fine-tuning flag to the PLModule so it can set up training-specific
         # quantile handling (separate from prediction-time likelihood)
@@ -199,23 +206,6 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
             self.pl_module_params["use_reversible_instance_norm"] = (
                 use_reversible_instance_norm
             )
-
-        # minimum input chunk length for variable-length support; if not set, uses fixed-length input chunks
-        min_input_chunk_length: int | None = self.model_params.get(
-            "min_input_chunk_length", None
-        )
-        if min_input_chunk_length is not None:
-            if not 1 <= min_input_chunk_length <= self.input_chunk_length:
-                raise_log(
-                    ValueError(
-                        "`min_input_chunk_length` must be >= 1 and <= input_chunk_length`."
-                    ),
-                )
-        self._min_input_chunk_length = (
-            min_input_chunk_length
-            if min_input_chunk_length is not None
-            else self.input_chunk_length
-        )
 
     @property
     def min_input_chunk_length(self) -> int:

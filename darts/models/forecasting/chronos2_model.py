@@ -31,7 +31,12 @@ from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
 )
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    InputChunkLength,
+    PLModuleInput,
+    TorchTrainingSample,
+    _parse_input_chunk_length,
+)
 from darts.utils.likelihood_models.torch import QuantileRegression
 
 
@@ -576,10 +581,9 @@ class _Chronos2Module(PLForecastingModule):
 class Chronos2Model(FoundationModel):
     def __init__(
         self,
-        input_chunk_length: int,
+        input_chunk_length: InputChunkLength,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        min_input_chunk_length: int | None = None,
         likelihood: QuantileRegression | None = None,
         hub_model_name: str = "amazon/chronos-2",
         hub_model_revision: str | None = None,
@@ -639,8 +643,9 @@ class Chronos2Model(FoundationModel):
         input_chunk_length
             Number of time steps in the past to take as a model input (per chunk). Applies to the target
             series, and past and/or future covariates (if the model supports it).
-            Maximum is 8192 for Chronos-2. When ``min_input_chunk_length`` is set, this acts as the
-            **maximum** input chunk length.
+            Can be either an ``int`` for a fixed input window, or a ``(min_length, max_length)`` tuple to enable
+            variable-length inputs for inference and fine-tuning.
+            The maximum value is 8192 for Chronos-2.
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
@@ -656,12 +661,6 @@ class Chronos2Model(FoundationModel):
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
             cannot generate autoregressive predictions (`n > output_chunk_length`).
-        min_input_chunk_length
-            Optionally, the minimum input chunk length the model accepts. When set, the model supports
-            variable-length inputs: series shorter than ``input_chunk_length`` (but at least
-            ``min_input_chunk_length``) are automatically left-padded with NaN during inference and
-            fine-tuning. Chronos-2 handles NaN values via attention masking.
-            Default: ``None`` (same as ``input_chunk_length``, i.e. fixed-length input).
         likelihood
             The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of
             :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. If using ``QuantileRegression``,
@@ -885,10 +884,11 @@ class Chronos2Model(FoundationModel):
 
         # validate `input_chunk_length` against model's context_length
         context_length = chronos_config["context_length"]
-        if input_chunk_length > context_length:
+        _, max_icl = _parse_input_chunk_length(input_chunk_length)
+        if max_icl > context_length:
             raise_log(
                 ValueError(
-                    f"`input_chunk_length` {input_chunk_length} cannot be greater than "
+                    f"`input_chunk_length` {max_icl} cannot be greater than "
                     f"model's context_length {context_length}"
                 ),
             )

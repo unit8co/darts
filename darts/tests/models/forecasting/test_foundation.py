@@ -484,9 +484,8 @@ class TestVariableInputChunkLength:
     def test_variable_icl_properties(self, mock_method):
         """Variable ICL model should report correct properties."""
         model = Chronos2Model(
-            input_chunk_length=14,
+            input_chunk_length=(1, 14),
             output_chunk_length=6,
-            min_input_chunk_length=1,
             **tfm_kwargs,
         )
         assert model.min_input_chunk_length == 1
@@ -509,23 +508,47 @@ class TestVariableInputChunkLength:
         HF_HUB_DOWNLOAD_PATCH_TARGET,
         side_effect=mock_hf_hub_download,
     )
-    def test_invalid_min_icl(self, mock_method):
-        """min_input_chunk_length > input_chunk_length should raise."""
-        msg_expected = (
-            "`min_input_chunk_length` must be >= 1 and <= input_chunk_length`."
-        )
+    def test_invalid_variable_icl(self, mock_method):
+        """Invalid (min, max) tuples should raise."""
+        msg_expected = "must be an integer or a"
         with pytest.raises(ValueError, match=msg_expected):
             Chronos2Model(
-                input_chunk_length=10,
+                input_chunk_length=(1, 10, 5),
                 output_chunk_length=6,
-                min_input_chunk_length=15,
                 **tfm_kwargs,
             )
         with pytest.raises(ValueError, match=msg_expected):
             Chronos2Model(
-                input_chunk_length=10,
+                input_chunk_length=[1, 10],
                 output_chunk_length=6,
-                min_input_chunk_length=0,
+                **tfm_kwargs,
+            )
+        with pytest.raises(ValueError, match=msg_expected):
+            Chronos2Model(
+                input_chunk_length=1.2,
+                output_chunk_length=6,
+                **tfm_kwargs,
+            )
+
+        msg_expected = "must be >= 1."
+        with pytest.raises(ValueError, match=msg_expected):
+            Chronos2Model(
+                input_chunk_length=0,
+                output_chunk_length=6,
+                **tfm_kwargs,
+            )
+
+        msg_expected = "must satisfy `1 <= min_length <= max_length`"
+        with pytest.raises(ValueError, match=msg_expected):
+            Chronos2Model(
+                input_chunk_length=(15, 10),
+                output_chunk_length=6,
+                **tfm_kwargs,
+            )
+        with pytest.raises(ValueError, match=msg_expected):
+            Chronos2Model(
+                input_chunk_length=(0, 10),
+                output_chunk_length=6,
                 **tfm_kwargs,
             )
 
@@ -571,9 +594,8 @@ class TestVariableInputChunkLength:
         """Fit and Predict with variable ICL should work on series longer or shorter than ICL."""
         with mock_ctx_factory():
             model = model_cls(
-                input_chunk_length=14,
+                input_chunk_length=(1, 14),
                 output_chunk_length=6,
-                min_input_chunk_length=1,
                 **extra_kwargs,
                 **tfm_kwargs,
             )
@@ -603,9 +625,8 @@ class TestVariableInputChunkLength:
     def test_variable_icl_with_covariates(self, mock_method, series_length):
         """Variable ICL inference should work with future covariates on a long series."""
         model = Chronos2Model(
-            input_chunk_length=14,
+            input_chunk_length=(1, 14),
             output_chunk_length=6,
-            min_input_chunk_length=1,
             **tfm_kwargs,
         )
         model.fit(
@@ -639,9 +660,8 @@ class TestVariableInputChunkLength:
         series_length = 2
         ocl = 6
         model = Chronos2Model(
-            input_chunk_length=14,
+            input_chunk_length=(1, 14),
             output_chunk_length=6,
-            min_input_chunk_length=1,
             **tfm_kwargs,
         )
         model.fit(
@@ -670,9 +690,8 @@ class TestVariableInputChunkLength:
     def test_variable_icl_inference_mixed_lengths(self, mock_method):
         """Predict should work on a mix of short and long series."""
         model = Chronos2Model(
-            input_chunk_length=14,
+            input_chunk_length=(1, 14),
             output_chunk_length=6,
-            min_input_chunk_length=1,
             **tfm_kwargs,
         )
         model.fit(series=self.series_long)
@@ -694,9 +713,8 @@ class TestVariableInputChunkLength:
         icl = 14
         ocl = 6
         model = Chronos2Model(
-            input_chunk_length=icl,
+            input_chunk_length=(1, icl),
             output_chunk_length=ocl,
-            min_input_chunk_length=1,
             enable_finetuning=True,
             likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
             **tfm_kwargs,
@@ -717,9 +735,8 @@ class TestVariableInputChunkLength:
         icl = 14
         ocl = 6
         model = Chronos2Model(
-            input_chunk_length=icl,
+            input_chunk_length=(5, icl),
             output_chunk_length=ocl,
-            min_input_chunk_length=5,
             enable_finetuning=True,
             likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
             **tfm_kwargs,
@@ -733,7 +750,7 @@ class TestVariableInputChunkLength:
         side_effect=mock_hf_hub_download,
     )
     def test_fixed_icl_still_rejects_short_series(self, mock_method):
-        """Without min_input_chunk_length, short series should still fail."""
+        """Without a variable input chunk length tuple, short series should still fail."""
         model = Chronos2Model(
             input_chunk_length=14,
             output_chunk_length=6,
@@ -751,9 +768,8 @@ class TestVariableInputChunkLength:
     def test_extreme_lags_variable_icl(self, mock_method):
         """extreme_lags should use min_input_chunk_length for variable ICL."""
         model = Chronos2Model(
-            input_chunk_length=14,
+            input_chunk_length=(3, 14),
             output_chunk_length=6,
-            min_input_chunk_length=3,
             **tfm_kwargs,
         )
         min_target_lag = model.extreme_lags[0]
@@ -780,18 +796,16 @@ class TestVariableInputChunkLength:
     def test_min_train_series_length_variable(self, mock_method):
         """min_train_series_length should use min_input_chunk_length."""
         model_var = Chronos2Model(
-            input_chunk_length=14,
+            input_chunk_length=(2, 14),
             output_chunk_length=6,
-            min_input_chunk_length=2,
             **tfm_kwargs,
         )
         # inference-only: min_train_series_length = min_icl + 0
         assert model_var.min_train_series_length == 2
 
         model_var_ft = Chronos2Model(
-            input_chunk_length=14,
+            input_chunk_length=(2, 14),
             output_chunk_length=6,
-            min_input_chunk_length=2,
             enable_finetuning=True,
             **tfm_kwargs,
         )
