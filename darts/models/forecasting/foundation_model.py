@@ -220,14 +220,3 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
     @property
     def min_input_chunk_length(self) -> int:
         return self._min_input_chunk_length
-
-    def _align_input_chunk_length(self, input_chunk_length: int) -> int:
-        """Align an input chunk length to model-specific boundaries.
-
-        Subclasses can override this to round up ``input_chunk_length``
-        to the nearest valid value (e.g. a multiple of patch size).
-        The returned value must not exceed any model-imposed maximum.
-
-        The default implementation returns the value unchanged.
-        """
-        return input_chunk_length

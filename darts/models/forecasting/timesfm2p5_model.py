@@ -646,8 +646,6 @@ class TimesFM2p5Model(FoundationModel):
 
         # validate `input_chunk_length` against model's maximum context_length
         context_length = config.context_limit
-        self._context_length_limit = context_length
-        self._input_patch_len = config.input_patch_len
         if (
             input_chunk_length + output_chunk_length + output_chunk_shift
             > context_length
@@ -704,13 +702,6 @@ class TimesFM2p5Model(FoundationModel):
 
         self.hf_connector = hf_connector
         super().__init__(**kwargs)
-
-    def _align_input_chunk_length(self, input_chunk_length: int) -> int:
-        patch_len = self._input_patch_len
-        if patch_len <= 1:
-            return input_chunk_length
-        aligned = ((input_chunk_length + patch_len - 1) // patch_len) * patch_len
-        return min(aligned, self._context_length_limit)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}

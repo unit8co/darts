@@ -885,8 +885,6 @@ class Chronos2Model(FoundationModel):
 
         # validate `input_chunk_length` against model's context_length
         context_length = chronos_config["context_length"]
-        self._context_length_limit = context_length
-        self._input_patch_size = chronos_config["input_patch_size"]
         if input_chunk_length > context_length:
             raise_log(
                 ValueError(
@@ -930,13 +928,6 @@ class Chronos2Model(FoundationModel):
 
         self.hf_connector = hf_connector
         super().__init__(**kwargs)
-
-    def _align_input_chunk_length(self, input_chunk_length: int) -> int:
-        patch_size = self._input_patch_size
-        if patch_size <= 1:
-            return input_chunk_length
-        aligned = ((input_chunk_length + patch_size - 1) // patch_size) * patch_size
-        return min(aligned, self._context_length_limit)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}

@@ -777,25 +777,6 @@ class TestVariableInputChunkLength:
         HF_HUB_DOWNLOAD_PATCH_TARGET,
         side_effect=mock_hf_hub_download,
     )
-    def test_align_input_chunk_length_chronos2(self, mock_method):
-        """Chronos2 should align to input_patch_size (7 for tiny model)."""
-        model = Chronos2Model(
-            input_chunk_length=14,
-            output_chunk_length=6,
-            min_input_chunk_length=1,
-            **tfm_kwargs,
-        )
-        assert model._align_input_chunk_length(5) == 7
-        assert model._align_input_chunk_length(7) == 7
-        assert model._align_input_chunk_length(8) == 14
-        assert model._align_input_chunk_length(14) == 14
-        # should not exceed context_length (21)
-        assert model._align_input_chunk_length(20) == 21
-
-    @patch(
-        HF_HUB_DOWNLOAD_PATCH_TARGET,
-        side_effect=mock_hf_hub_download,
-    )
     def test_min_train_series_length_variable(self, mock_method):
         """min_train_series_length should use min_input_chunk_length."""
         model_var = Chronos2Model(

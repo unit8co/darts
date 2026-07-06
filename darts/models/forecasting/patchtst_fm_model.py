@@ -642,8 +642,6 @@ class PatchTSTFMModel(FoundationModel):
 
         # validate input_chunk_length + output_chunk_length + output_chunk_shift <= context_length
         context_length = config["context_length"]
-        self._context_length_limit = context_length
-        self._d_patch = config.get("d_patch", 16)
         if (
             input_chunk_length + output_chunk_length + output_chunk_shift
             > context_length
@@ -679,13 +677,6 @@ class PatchTSTFMModel(FoundationModel):
 
         self.hf_connector = hf_connector
         super().__init__(**kwargs)
-
-    def _align_input_chunk_length(self, input_chunk_length: int) -> int:
-        d_patch = self._d_patch
-        if d_patch <= 1:
-            return input_chunk_length
-        aligned = ((input_chunk_length + d_patch - 1) // d_patch) * d_patch
-        return min(aligned, self._context_length_limit)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}
