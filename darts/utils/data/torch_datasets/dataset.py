@@ -49,14 +49,14 @@ class TorchDataset(ABC, Dataset):
         feat_end: int,
         target_past_start: int,
     ) -> np.ndarray:
-        """Extract a feature slice, NaN-padding the front when the target's
-        past start is negative (variable input chunk length support).
+        """Extract a feature slice, potentially NaN-padding the front for variable input chunk length support.
 
-        ``target_past_start`` is the target-relative index of the input
-        chunk start. When negative, the first ``abs(target_past_start)``
-        positions have no data and are filled with NaN. The real values
-        are taken starting from the feature index that corresponds to
-        target position 0.
+        ``target_past_start`` is the target-relative index of the input chunk start. When negative, the first
+        ``abs(target_past_start)`` positions have no data and are filled with NaN. The real values are taken starting
+        from the feature index that corresponds to target position 0.
+
+        For covariates: even if more historic data was available than the target series provides, these values are
+        ignored and the same number of steps are left-padded as for the target series.
         """
         if target_past_start >= 0:
             return vals[feat_start:feat_end]
@@ -166,7 +166,8 @@ class TorchDataset(ABC, Dataset):
 
                 # `start` represents start index (e.g. `ts[start]`)
                 if start < 0:
-                    start_time = series_times[0] + start * series.freq
+                    # variable icl: input extends before the series start and will be left NaN-padded
+                    start_time = series_times[0]
                 elif start < len(series):
                     start_time = series_times[start]
                 else:
@@ -180,30 +181,7 @@ class TorchDataset(ABC, Dataset):
                 else:
                     end_time = series_times[-1] + (end - len(series)) * feat.freq
 
-                start_in_feat = start_time in feat_times
-                end_in_feat = end_time in feat_times
-
-                if start < 0 and not start_in_feat:
-                    # Variable ICL: input extends before the series start.
-                    # The covariate doesn't cover the padded region -- that's
-                    # expected; __getitem__ will NaN-pad those positions.
-                    # Compute a virtual start index that preserves the linear
-                    # offset from target-relative positions (needed for cache
-                    # shift consistency).
-                    if not end_in_feat:
-                        raise_log(
-                            ValueError(
-                                f"Invalid `{main_feat_type.value}`; could not find values in index "
-                                f"range: {series_times[0]} - {end_time}."
-                            ),
-                        )
-                    cov_at_0 = feat_times.get_loc(series_times[0])
-                    feat_start = cov_at_0 + start
-                    feat_end = feat_times.get_loc(end_time) + 1
-                    idx_bounds[feat_type] = (feat_start, feat_end)
-                    continue
-
-                if not start_in_feat or not end_in_feat:
+                if start_time not in feat_times or end_time not in feat_times:
                     if is_training:
                         raise_log(
                             ValueError(
@@ -240,6 +218,9 @@ class TorchDataset(ABC, Dataset):
 
                 # extract the index position (index) from the start index
                 feat_start = feat_times.get_loc(start_time)
+                if start < 0:
+                    # variable icl: input extends before the series start and will be left NaN-padded
+                    feat_start += start
                 # extract the exclusive range end position (idx + 1) from the end index
                 feat_end = feat_times.get_loc(end_time) + 1
                 idx_bounds[feat_type] = (feat_start, feat_end)
