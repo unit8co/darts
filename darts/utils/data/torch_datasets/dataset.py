@@ -43,25 +43,24 @@ class TorchDataset(ABC, Dataset):
         """Returns a sample drawn from this dataset."""
 
     @staticmethod
-    def _extract_padded(
+    def _extract_values(
         vals: np.ndarray,
         feat_start: int,
         feat_end: int,
-        target_past_start: int,
+        pad_len: int = 0,
     ) -> np.ndarray:
         """Extract a feature slice, potentially NaN-padding the front for variable input chunk length support.
 
-        ``target_past_start`` is the target-relative index of the input chunk start. When negative, the first
-        ``abs(target_past_start)`` positions have no data and are filled with NaN. The real values are taken starting
-        from the feature index that corresponds to target position 0.
+        If ``pad_len`` != , the first ``pad_len`` positions are considered having no data and are filled with NaN.
+        The real values are taken starting from the feature index that corresponds to target position 0 (e.g. starting
+        at the time when the first target value is known).
 
         For covariates: even if more historic data was available than the target series provides, these values are
         ignored and the same number of steps are left-padded as for the target series.
         """
-        if target_past_start >= 0:
+        if pad_len == 0:
             return vals[feat_start:feat_end]
 
-        pad_len = abs(target_past_start)
         expected_len = feat_end - feat_start
         real_start = feat_start + pad_len
         real_vals = vals[real_start:feat_end]

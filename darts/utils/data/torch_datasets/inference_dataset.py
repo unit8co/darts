@@ -272,16 +272,11 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
             n=self.n,
         )
 
-        series_vals = series.random_component_values(copy=False)
-        past_start, past_end = idx_bounds[FeatureType.PAST_TARGET]
-        _pad = past_start < 0
-
-        # extract past target series (NaN-padded when past_start < 0)
-        pt = (
-            self._extract_padded(series_vals, past_start, past_end, past_start)
-            if _pad
-            else series_vals[past_start:past_end]
-        )
+        # extract past target series (NaN-padded when pt_start < 0)
+        vals = series.random_component_values(copy=False)
+        start, end = idx_bounds[FeatureType.PAST_TARGET]
+        pad_len = abs(start) if start is not None and start < 0 else 0
+        pt = self._extract_values(vals, start, end, pad_len=pad_len)
 
         # extract prediction start
         start, _ = idx_bounds[FeatureType.FUTURE_TARGET]
@@ -297,32 +292,28 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
 
         # extract past covariates
         if self.uses_past_covariates:
-            vals = past_covariates.random_component_values(copy=False)
             # past part of past covariates
             start, end = idx_bounds[FeatureType.PAST_COVARIATES]
-            if _pad:
-                pc = self._extract_padded(vals, start, end, past_start)
-            else:
-                pc = vals[start:end]
+            vals = past_covariates.random_component_values(copy=False)
+            pc = self._extract_values(vals, start, end, pad_len=pad_len)
 
             # future part of past covariates (`None` if not performing auto-regression)
             fpc_start, fpc_end = idx_bounds[FeatureType.FUTURE_PAST_COVARIATES]
-            fpc = vals[fpc_start:fpc_end] if fpc_start is not None else None
+            if fpc_start is not None:
+                fpc = self._extract_values(vals, fpc_start, fpc_end)
+            else:
+                fpc = None
 
         # extract future covariates
         if self.uses_future_covariates:
+            # historic part of future covariates
+            start, end = idx_bounds[FeatureType.HISTORIC_FUTURE_COVARIATES]
             vals = future_covariates.random_component_values(copy=False)
+            hfc = self._extract_values(vals, start, end, pad_len=pad_len)
+
             # future part of future covariates
             start, end = idx_bounds[FeatureType.FUTURE_COVARIATES]
-            fc = vals[start:end]
-
-            # historic part of future covariates
-            hfc_start, hfc_end = idx_bounds[FeatureType.HISTORIC_FUTURE_COVARIATES]
-            hfc = (
-                self._extract_padded(vals, hfc_start, hfc_end, past_start)
-                if _pad
-                else vals[hfc_start:hfc_end]
-            )
+            fc = self._extract_values(vals, start, end)
 
         # extract static covariates
         if self.uses_static_covariates_covariates:
