@@ -26,6 +26,7 @@ from darts.tests.models.forecasting.foundation_test_utils import (
     TIREX_LOAD_MODEL_PATCH_TARGET,
     TiRexStub,
     mock_hf_hub_download,
+    timesfm2p5_tiny_context,
 )
 
 
@@ -529,56 +530,46 @@ class TestVariableInputChunkLength:
             )
 
     @pytest.mark.parametrize(
-        "model_cls,extra_kwargs,patch_target,patch_kwargs",
+        "model_cls,extra_kwargs,mock_ctx_factory",
         [
             pytest.param(
                 Chronos2Model,
                 {},
-                HF_HUB_DOWNLOAD_PATCH_TARGET,
-                {"side_effect": mock_hf_hub_download},
+                lambda: patch(
+                    HF_HUB_DOWNLOAD_PATCH_TARGET,
+                    side_effect=mock_hf_hub_download,
+                ),
                 id="Chronos2",
             ),
             pytest.param(
                 PatchTSTFMModel,
                 {"local_dir": PATCHTST_FM_TINY_DIR},
-                None,
-                None,
+                contextlib.nullcontext,
                 id="PatchTSTFM",
             ),
             pytest.param(
                 TimesFM2p5Model,
-                {"hub_model_name": "google/timesfm-2.5-200m-pytorch"},
-                None,
-                None,
-                marks=pytest.mark.slow,
+                {},
+                timesfm2p5_tiny_context,
                 id="TimesFM2p5",
             ),
-        ]
-        + (
-            [
-                pytest.param(
-                    TiRexModel,
-                    {"accept_license": True},
+            pytest.param(
+                TiRexModel,
+                {"accept_license": True},
+                lambda: patch(
                     TIREX_LOAD_MODEL_PATCH_TARGET,
-                    {"return_value": TiRexStub()},
-                    id="TiRex",
-                )
-            ]
-            if TIREX_AVAILABLE
-            else []
-        ),
+                    return_value=TiRexStub(),
+                ),
+                id="TiRex",
+            ),
+        ],
     )
     @pytest.mark.parametrize("series_length", [16, 14, 8, 1])
     def test_variable_icl_fit_predict(
-        self, model_cls, extra_kwargs, patch_target, patch_kwargs, series_length
+        self, model_cls, extra_kwargs, mock_ctx_factory, series_length
     ):
         """Fit and Predict with variable ICL should work on series longer or shorter than ICL."""
-        mock_ctx = (
-            patch(patch_target, **patch_kwargs)
-            if patch_target
-            else contextlib.nullcontext()
-        )
-        with mock_ctx:
+        with mock_ctx_factory():
             model = model_cls(
                 input_chunk_length=14,
                 output_chunk_length=6,

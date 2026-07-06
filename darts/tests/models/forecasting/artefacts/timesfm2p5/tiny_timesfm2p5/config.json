@@ -1,0 +1,3 @@
+{
+  "_description": "Tiny TimesFM 2.5 test artefact. Architecture is patched at test time via timesfm2p5_tiny_context()."
+}
