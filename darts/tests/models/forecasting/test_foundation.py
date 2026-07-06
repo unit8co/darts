@@ -1,7 +1,7 @@
+import contextlib
 import logging
 import os
 import shutil
-from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
@@ -19,6 +19,14 @@ if not TORCH_AVAILABLE:
     )
 
 from darts.models import Chronos2Model, PatchTSTFMModel, TimesFM2p5Model, TiRexModel
+from darts.tests.models.forecasting.foundation_test_utils import (
+    CHRONOS2_TINY_DIR,
+    HF_HUB_DOWNLOAD_PATCH_TARGET,
+    PATCHTST_FM_TINY_DIR,
+    TIREX_LOAD_MODEL_PATCH_TARGET,
+    TiRexStub,
+    mock_hf_hub_download,
+)
 
 
 def generate_series(n_variables: int, length: int, prefix: str):
@@ -33,34 +41,13 @@ def generate_series(n_variables: int, length: int, prefix: str):
     )
 
 
-dummy_local_dir = (
-    Path(__file__).parent / "artefacts" / "chronos2" / "tiny_chronos2"
-).absolute()
-
-
-def mock_download(
-    repo_id: str,
-    filename: str,
-    revision: str | None,
-    local_dir: str | Path | None,
-    **kwargs,
-):
-    path = dummy_local_dir / filename
-    if local_dir is None:
-        return str(path)
-    else:
-        dest_path = Path(local_dir) / filename
-        shutil.copy(path, dest_path)
-        return str(dest_path)
-
-
 class TestFoundationModel:
     series = generate_series(n_variables=2, length=100, prefix="A")
     future_cov = generate_series(n_variables=3, length=200, prefix="C")
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_default(self, mock_method):
         model = Chronos2Model(
@@ -91,8 +78,8 @@ class TestFoundationModel:
         assert pred.n_components == self.series.n_components
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_invalid_params(self, mock_method):
         with pytest.raises(ValueError, match="Invalid model creation parameters"):
@@ -104,8 +91,8 @@ class TestFoundationModel:
             )
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     @pytest.mark.parametrize(
         "user_rin, expected_rin",
@@ -150,14 +137,14 @@ class TestFoundationModel:
             assert model.model.rin is None
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_local_dir(self, mock_method, caplog):
         model = Chronos2Model(
             input_chunk_length=12,
             output_chunk_length=6,
-            local_dir=dummy_local_dir,
+            local_dir=CHRONOS2_TINY_DIR,
             **tfm_kwargs,
         )
 
@@ -180,7 +167,7 @@ class TestFoundationModel:
         assert pred.n_components == self.series.n_components
 
         # create an empty directory
-        empty_dir = dummy_local_dir / "empty_dir"
+        empty_dir = CHRONOS2_TINY_DIR / "empty_dir"
         shutil.rmtree(empty_dir, ignore_errors=True)
         empty_dir.mkdir(exist_ok=True)
         # loading from an empty directory should trigger download
@@ -210,12 +197,12 @@ class TestFoundationModel:
             _ = Chronos2Model(
                 input_chunk_length=12,
                 output_chunk_length=6,
-                local_dir=dummy_local_dir / "config.json",
+                local_dir=CHRONOS2_TINY_DIR / "config.json",
                 **tfm_kwargs,
             )
 
         # cannot load from a directory named config.json
-        test_local_dir = dummy_local_dir / "test"
+        test_local_dir = CHRONOS2_TINY_DIR / "test"
         test_local_dir.mkdir(exist_ok=True)
         config_path = test_local_dir / "config.json"
         config_path.mkdir(exist_ok=True)
@@ -230,8 +217,8 @@ class TestFoundationModel:
         test_local_dir.rmdir()
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_default_no_finetuning(self, mock_method):
         # Default behavior: enable_finetuning=False (no training)
@@ -265,8 +252,8 @@ class TestFoundationModel:
         assert pred.n_components == self.series.n_components
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_full_finetuning(self, mock_method, tmpdir):
         # 1. Enable Full Fine-tuning
@@ -301,8 +288,8 @@ class TestFoundationModel:
         assert np.allclose(pred_orig.values(), pred_loaded.values(), atol=1e-6)
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_partial_finetuning_block_freeze(self, mock_method):
         # Test freezing specific layers (partial fine-tuning)
@@ -335,8 +322,8 @@ class TestFoundationModel:
         assert trainable_found
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_partial_finetuning_unfreeze(self, mock_method):
         # Test unfreezing specific layers (partial fine-tuning)
@@ -370,8 +357,8 @@ class TestFoundationModel:
         assert frozen_found
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_finetuning_misconfiguration(self, mock_method):
         # 1. Invalid dict key
@@ -426,12 +413,7 @@ class TestFoundationModel:
             (
                 PatchTSTFMModel,
                 "*out_layer.*",
-                {
-                    "local_dir": Path(__file__).parent
-                    / "artefacts"
-                    / "patchtstfm"
-                    / "tiny_patchtst_fm"
-                },
+                {"local_dir": PATCHTST_FM_TINY_DIR},
             ),
         ]
         + (
@@ -495,8 +477,8 @@ class TestVariableInputChunkLength:
     future_cov = generate_series(n_variables=3, length=200, prefix="FC")
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_variable_icl_properties(self, mock_method):
         """Variable ICL model should report correct properties."""
@@ -510,8 +492,8 @@ class TestVariableInputChunkLength:
         assert model.input_chunk_length == 14
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_fixed_icl_properties(self, mock_method):
         """Fixed ICL model should not report variable input support."""
@@ -523,8 +505,8 @@ class TestVariableInputChunkLength:
         assert model.min_input_chunk_length == 14
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_invalid_min_icl(self, mock_method):
         """min_input_chunk_length > input_chunk_length should raise."""
@@ -546,34 +528,77 @@ class TestVariableInputChunkLength:
                 **tfm_kwargs,
             )
 
-    @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+    @pytest.mark.parametrize(
+        "model_cls,extra_kwargs,patch_target,patch_kwargs",
+        [
+            pytest.param(
+                Chronos2Model,
+                {},
+                HF_HUB_DOWNLOAD_PATCH_TARGET,
+                {"side_effect": mock_hf_hub_download},
+                id="Chronos2",
+            ),
+            pytest.param(
+                PatchTSTFMModel,
+                {"local_dir": PATCHTST_FM_TINY_DIR},
+                None,
+                None,
+                id="PatchTSTFM",
+            ),
+            pytest.param(
+                TimesFM2p5Model,
+                {"hub_model_name": "google/timesfm-2.5-200m-pytorch"},
+                None,
+                None,
+                marks=pytest.mark.slow,
+                id="TimesFM2p5",
+            ),
+        ]
+        + (
+            [
+                pytest.param(
+                    TiRexModel,
+                    {"accept_license": True},
+                    TIREX_LOAD_MODEL_PATCH_TARGET,
+                    {"return_value": TiRexStub()},
+                    id="TiRex",
+                )
+            ]
+            if TIREX_AVAILABLE
+            else []
+        ),
     )
     @pytest.mark.parametrize("series_length", [16, 14, 8, 1])
-    def test_variable_icl_fit_predict(self, mock_method, series_length):
+    def test_variable_icl_fit_predict(
+        self, model_cls, extra_kwargs, patch_target, patch_kwargs, series_length
+    ):
         """Fit and Predict with variable ICL should work on series longer or shorter than ICL."""
-        model = Chronos2Model(
-            input_chunk_length=14,
-            output_chunk_length=6,
-            min_input_chunk_length=1,
-            **tfm_kwargs,
+        mock_ctx = (
+            patch(patch_target, **patch_kwargs)
+            if patch_target
+            else contextlib.nullcontext()
         )
-        # should not raise even though series_short < input_chunk_length
-        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
-            model.fit(series=self.series_long[:series_length])
-            mock_fit.assert_not_called()
+        with mock_ctx:
+            model = model_cls(
+                input_chunk_length=14,
+                output_chunk_length=6,
+                min_input_chunk_length=1,
+                **extra_kwargs,
+                **tfm_kwargs,
+            )
+            with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+                model.fit(series=self.series_long[:series_length])
+                mock_fit.assert_not_called()
 
-        # predict on a short series (shorter than input_chunk_length)
-        pred = model.predict(n=6, series=self.series_long[:series_length])
+            pred = model.predict(n=6, series=self.series_long[:series_length])
         assert isinstance(pred, TimeSeries)
         assert len(pred) == 6
-        assert pred.n_components == self.series_short.n_components
+        assert pred.n_components == self.series_long.n_components
         assert not np.isnan(pred.all_values(copy=False)).any()
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     @pytest.mark.parametrize(
         "series_length",
@@ -615,8 +640,8 @@ class TestVariableInputChunkLength:
         assert pred == pred2
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_variable_icl_with_covariates_invalid_time_span(self, mock_method):
         """Variable ICL inference should fail with future covariates starting too late or ending too early."""
@@ -648,8 +673,8 @@ class TestVariableInputChunkLength:
             )
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_variable_icl_inference_mixed_lengths(self, mock_method):
         """Predict should work on a mix of short and long series."""
@@ -669,8 +694,8 @@ class TestVariableInputChunkLength:
             assert not np.isnan(pred.all_values(copy=False)).any()
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_variable_icl_finetuning_short_series(self, mock_method):
         """Fine-tuning with variable ICL should accept series shorter than ICL
@@ -693,8 +718,8 @@ class TestVariableInputChunkLength:
         assert not np.isnan(pred.all_values(copy=False)).any()
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_variable_icl_finetuning_too_short(self, mock_method):
         """Fine-tuning should fail if series < min_icl + ocl."""
@@ -713,8 +738,8 @@ class TestVariableInputChunkLength:
             model.fit(series=self.series_very_short, epochs=1)
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_fixed_icl_still_rejects_short_series(self, mock_method):
         """Without min_input_chunk_length, short series should still fail."""
@@ -729,8 +754,8 @@ class TestVariableInputChunkLength:
             model.predict(n=6, series=self.series_short)
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_extreme_lags_variable_icl(self, mock_method):
         """extreme_lags should use min_input_chunk_length for variable ICL."""
@@ -744,8 +769,8 @@ class TestVariableInputChunkLength:
         assert min_target_lag == -3
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_extreme_lags_fixed_icl(self, mock_method):
         """extreme_lags should use input_chunk_length for fixed ICL."""
@@ -758,8 +783,8 @@ class TestVariableInputChunkLength:
         assert min_target_lag == -14
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_align_input_chunk_length_chronos2(self, mock_method):
         """Chronos2 should align to input_patch_size (7 for tiny model)."""
@@ -777,8 +802,8 @@ class TestVariableInputChunkLength:
         assert model._align_input_chunk_length(20) == 21
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_min_train_series_length_variable(self, mock_method):
         """min_train_series_length should use min_input_chunk_length."""
@@ -802,8 +827,8 @@ class TestVariableInputChunkLength:
         assert model_var_ft.min_train_series_length == 8
 
     @patch(
-        "darts.models.components.huggingface_connector.hf_hub_download",
-        side_effect=mock_download,
+        HF_HUB_DOWNLOAD_PATCH_TARGET,
+        side_effect=mock_hf_hub_download,
     )
     def test_min_train_series_length_fixed(self, mock_method):
         """min_train_series_length for fixed ICL should be standard (ICL only as pre-trained)."""
