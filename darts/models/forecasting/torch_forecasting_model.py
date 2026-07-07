@@ -2014,9 +2014,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _target_window_lengths(self) -> tuple[int, int]:
         return (
             self.min_input_chunk_length,
-            self.output_chunk_length + self.output_chunk_shift
-            if self._requires_training
-            else 0,
+            self.output_chunk_length + self.output_chunk_shift,
         )
 
     @staticmethod
@@ -2079,7 +2077,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ----------
         path
             Path under which to save the model at its current state. Please avoid path starting with "last-" or
-            "best-" to avoid collision with Pytorch-Ligthning checkpoints. If no path is specified, the model
+            "best-" to avoid collision with Pytorch-Lightning checkpoints. If no path is specified, the model
             is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pt"``.
             E.g., ``"RNNModel_2020-01-01_12_00_00.pt"``.
         clean
@@ -2584,7 +2582,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @property
     def _requires_training(self) -> bool:
-        """Whether the model should be trained when calling a `fit*` method."""
         # no training if fine-tuning is explicitly disabled
         if self.enable_finetuning is False:
             return False
@@ -2878,9 +2875,9 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         int,
     ]:
         return (
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             -1,
             None,
             None,
@@ -2910,7 +2907,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         int,
     ]:
         return (
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             None,
             None,
@@ -2942,11 +2939,11 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         int,
     ]:
         return (
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             None,
             None,
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
         )
@@ -3006,9 +3003,9 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         int,
     ]:
         return (
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             -1,
             self.output_chunk_shift,
             self.output_chunk_length - 1 + self.output_chunk_shift,

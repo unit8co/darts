@@ -697,7 +697,9 @@ def _get_historical_forecasts_setup(
     int,
 ]:
     # get the first and last historical forecast start points for either (re)training or (zero shot) prediction
-    # mode
+    # mode; models that don't require training (e.g. global naive models, foundation models without fine-tuning)
+    # use prediction-mode extreme lags even when retrain is set
+    is_training = bool(retrain) and model._requires_training
     historical_forecasts_time_index = _get_maximum_historical_forecastable_time_index(
         model=model,
         series=series,
@@ -705,20 +707,20 @@ def _get_historical_forecasts_setup(
         overlap_end=overlap_end,
         past_covariates=past_covariates,
         future_covariates=future_covariates,
-        is_training=bool(retrain),
+        is_training=is_training,
     )
 
     if historical_forecasts_time_index is None:
         raise_log(
             ValueError(
-                f"Cannot build any dataset {'to train the model' if retrain else 'for prediction'} "
+                f"Cannot build any dataset {'to train the model' if is_training else 'for prediction'} "
                 f"with the provided `series` and `*_covariates` at series index: {series_idx}. "
-                f"The minimum {'training' if retrain else 'prediction'} input time index requirements "
+                f"The minimum {'training' if is_training else 'prediction'} input time index requirements "
                 f"were not met. Please check the time index of `series` and `*_covariates`."
             ),
         )
 
-    if retrain:
+    if is_training:
         # trainable time indexes (considering lags and available covariates)
         # We need the first value timestamp to be used in order to properly shift the series
         # Look at both past and future, since the target lags must be taken in consideration
@@ -731,7 +733,7 @@ def _get_historical_forecasts_setup(
         # we are only predicting: start of the series does not have to change
         min_timestamp_series = series.start_time()
 
-    # based on `retrain`, historical_forecasts_time_index is based either on train or predict
+    # based on `is_training`, historical_forecasts_time_index is based either on train or predict
     (
         historical_forecasts_time_index,
         train_length,
@@ -741,7 +743,7 @@ def _get_historical_forecasts_setup(
         historical_forecasts_time_index=historical_forecasts_time_index,
         series=series,
         series_idx=series_idx,
-        retrain=retrain,
+        is_training=is_training,
         train_length=train_length,
         val_length=val_length,
         show_warnings=show_warnings,
@@ -1024,20 +1026,20 @@ def _adjust_historical_forecasts_time_index_training(
     historical_forecasts_time_index: ExtendedTimeIndex,
     series: TimeSeries,
     series_idx: int,
-    retrain: bool | int | Callable[..., bool],
+    is_training: bool,
     train_length: int | None,
     val_length: int,
     show_warnings: bool,
 ) -> tuple[ExtendedTimeIndex, int | None, int]:
     """
-    Shrink the beginning of the historical forecasts time index based on the value of `retrain`, `train_length`
+    Shrink the beginning of the historical forecasts time index based on the value of `is_training`, `train_length`
     and `val_length`.
     """
-    # if not retraining and model is already fitted, ignore train_length and val_length
+    # if not training and model is already fitted, ignore train_length and val_length
     effective_train_length = None
     effective_val_length = 0
 
-    if not (retrain or (not model._fit_called)):
+    if not (is_training or (not model._fit_called)):
         return (
             historical_forecasts_time_index,
             effective_train_length,

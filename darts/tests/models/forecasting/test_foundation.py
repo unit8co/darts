@@ -800,17 +800,8 @@ class TestVariableInputChunkLength:
             output_chunk_length=6,
             **tfm_kwargs,
         )
-        # inference-only: min_train_series_length = min_icl + 0
-        assert model_var.min_train_series_length == 2
-
-        model_var_ft = Chronos2Model(
-            input_chunk_length=(2, 14),
-            output_chunk_length=6,
-            enable_finetuning=True,
-            **tfm_kwargs,
-        )
-        # finetuning: min_train_series_length = min_icl + ocl
-        assert model_var_ft.min_train_series_length == 8
+        # min_train_series_length = min_icl + ocl
+        assert model_var.min_train_series_length == 8
 
     @patch(
         HF_HUB_DOWNLOAD_PATCH_TARGET,
@@ -818,10 +809,226 @@ class TestVariableInputChunkLength:
     )
     def test_min_train_series_length_fixed(self, mock_method):
         """min_train_series_length for fixed ICL should be standard (ICL only as pre-trained)."""
-        icl = 14
         model = Chronos2Model(
-            input_chunk_length=icl,
+            input_chunk_length=14,
             output_chunk_length=6,
             **tfm_kwargs,
         )
-        assert model.min_train_series_length == icl
+        # min_train_series_length = icl + ocl
+        assert model.min_train_series_length == 20
+
+    @pytest.mark.parametrize(
+        "model_cls,extra_kwargs,mock_ctx_factory,supports_ckpt",
+        [
+            pytest.param(
+                Chronos2Model,
+                {},
+                lambda: patch(
+                    HF_HUB_DOWNLOAD_PATCH_TARGET,
+                    side_effect=mock_hf_hub_download,
+                ),
+                True,
+                id="Chronos2",
+            ),
+            pytest.param(
+                PatchTSTFMModel,
+                {"local_dir": PATCHTST_FM_TINY_DIR},
+                contextlib.nullcontext,
+                True,
+                id="PatchTSTFM",
+            ),
+            pytest.param(
+                TimesFM2p5Model,
+                {},
+                timesfm2p5_tiny_context,
+                True,
+                id="TimesFM2p5",
+            ),
+            pytest.param(
+                TiRexModel,
+                {"accept_license": True},
+                lambda: patch(
+                    TIREX_LOAD_MODEL_PATCH_TARGET,
+                    return_value=TiRexStub(),
+                ),
+                False,
+                id="TiRex",
+            ),
+        ],
+    )
+    def test_variable_icl_save_load(
+        self, model_cls, extra_kwargs, mock_ctx_factory, supports_ckpt, tmp_path
+    ):
+        """Saving and loading a model with variable ICL should preserve predictions.
+
+        Tests save()/load(), load_weights(), and load_from_checkpoint().
+        """
+        icl = (1, 14)
+        ocl = 6
+        series = self.series_short  # length 8, within (1, 14)
+
+        with mock_ctx_factory():
+            # -- save() / load() --
+            model = model_cls(
+                input_chunk_length=icl,
+                output_chunk_length=ocl,
+                **extra_kwargs,
+                **tfm_kwargs,
+            )
+            model.fit(series=series)
+            pred_orig = model.predict(n=ocl, series=series)
+
+            save_path = str(tmp_path / "var_icl_model.pt")
+            model.save(save_path)
+
+            loaded = model_cls.load(save_path)
+            assert loaded.min_input_chunk_length == icl[0]
+            assert loaded.input_chunk_length == icl[1]
+            pred_loaded = loaded.predict(n=ocl, series=series)
+            np.testing.assert_array_almost_equal(
+                pred_orig.all_values(copy=False),
+                pred_loaded.all_values(copy=False),
+            )
+
+            # -- load_weights() --
+            model2 = model_cls(
+                input_chunk_length=icl,
+                output_chunk_length=ocl,
+                **extra_kwargs,
+                **tfm_kwargs,
+            )
+            model2.load_weights(save_path)
+            assert model2.min_input_chunk_length == icl[0]
+            assert model2.input_chunk_length == icl[1]
+            pred_weights = model2.predict(n=ocl, series=series)
+            np.testing.assert_array_almost_equal(
+                pred_orig.all_values(copy=False),
+                pred_weights.all_values(copy=False),
+            )
+
+            # -- load_from_checkpoint() (requires fine-tuning + save_checkpoints) --
+            if not supports_ckpt:
+                return
+
+            model_name = "var_icl_ckpt"
+            model_ft = model_cls(
+                input_chunk_length=icl,
+                output_chunk_length=ocl,
+                enable_finetuning=True,
+                n_epochs=1,
+                save_checkpoints=True,
+                model_name=model_name,
+                work_dir=str(tmp_path),
+                force_reset=True,
+                **extra_kwargs,
+                **tfm_kwargs,
+            )
+            model_ft.fit(series=series)
+            pred_ft = model_ft.predict(n=ocl, series=series)
+
+            loaded_ckpt = model_cls.load_from_checkpoint(
+                model_name=model_name,
+                work_dir=str(tmp_path),
+                best=False,
+            )
+            assert loaded_ckpt.min_input_chunk_length == icl[0]
+            assert loaded_ckpt.input_chunk_length == icl[1]
+            pred_ckpt = loaded_ckpt.predict(n=ocl, series=series)
+            np.testing.assert_array_almost_equal(
+                pred_ft.all_values(copy=False),
+                pred_ckpt.all_values(copy=False),
+            )
+
+    @pytest.mark.parametrize(
+        "model_cls,extra_kwargs,mock_ctx_factory",
+        [
+            pytest.param(
+                Chronos2Model,
+                {},
+                lambda: patch(
+                    HF_HUB_DOWNLOAD_PATCH_TARGET,
+                    side_effect=mock_hf_hub_download,
+                ),
+                id="Chronos2",
+            ),
+            pytest.param(
+                PatchTSTFMModel,
+                {"local_dir": PATCHTST_FM_TINY_DIR},
+                contextlib.nullcontext,
+                id="PatchTSTFM",
+            ),
+            pytest.param(
+                TimesFM2p5Model,
+                {},
+                timesfm2p5_tiny_context,
+                id="TimesFM2p5",
+            ),
+            pytest.param(
+                TiRexModel,
+                {"accept_license": True},
+                lambda: patch(
+                    TIREX_LOAD_MODEL_PATCH_TARGET,
+                    return_value=TiRexStub(),
+                ),
+                id="TiRex",
+            ),
+        ],
+    )
+    def test_variable_icl_matches_fixed_icl(
+        self, model_cls, extra_kwargs, mock_ctx_factory
+    ):
+        """A single model with variable ICL should produce the same predictions
+        as dedicated fixed-ICL models for each series length.
+
+        With input_chunk_length=(1, len(longer_series)), the variable ICL model
+        should match a model with input_chunk_length=len(series_i) on each
+        series_i individually.
+        """
+        series_long = self.series_long  # length 20
+        series_short = self.series_short  # length 8
+        ocl = 6
+
+        with mock_ctx_factory():
+            # variable ICL model: covers both series lengths
+            var_model = model_cls(
+                input_chunk_length=(1, len(series_long)),
+                output_chunk_length=ocl,
+                **extra_kwargs,
+                **tfm_kwargs,
+            )
+            var_model.fit(series=series_long)
+
+            pred_var_long, pred_var_short = var_model.predict(
+                n=ocl, series=[series_long, series_short]
+            )
+
+        with mock_ctx_factory():
+            # fixed ICL model for the long series
+            fixed_long = model_cls(
+                input_chunk_length=len(series_long),
+                output_chunk_length=ocl,
+                **extra_kwargs,
+                **tfm_kwargs,
+            )
+            fixed_long.fit(series=series_long)
+            pred_fixed_long = fixed_long.predict(n=ocl, series=series_long)
+
+        with mock_ctx_factory():
+            # fixed ICL model for the short series
+            fixed_short = model_cls(
+                input_chunk_length=len(series_short),
+                output_chunk_length=ocl,
+                **extra_kwargs,
+                **tfm_kwargs,
+            )
+            fixed_short.fit(series=series_short)
+            pred_fixed_short = fixed_short.predict(n=ocl, series=series_short)
+
+        np.testing.assert_array_almost_equal(
+            pred_var_long.all_values(copy=False),
+            pred_fixed_long.all_values(copy=False),
+        )
+        np.testing.assert_array_almost_equal(
+            pred_var_short.all_values(copy=False),
+            pred_fixed_short.all_values(copy=False),
+        )
