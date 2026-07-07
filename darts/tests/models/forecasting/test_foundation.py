@@ -1032,3 +1032,88 @@ class TestVariableInputChunkLength:
             pred_var_short.all_values(copy=False),
             pred_fixed_short.all_values(copy=False),
         )
+
+    @pytest.mark.parametrize(
+        "model_cls,extra_kwargs,mock_ctx_factory",
+        [
+            pytest.param(
+                Chronos2Model,
+                {},
+                lambda: patch(
+                    HF_HUB_DOWNLOAD_PATCH_TARGET,
+                    side_effect=mock_hf_hub_download,
+                ),
+                id="Chronos2",
+            ),
+            pytest.param(
+                PatchTSTFMModel,
+                {"local_dir": PATCHTST_FM_TINY_DIR},
+                contextlib.nullcontext,
+                id="PatchTSTFM",
+            ),
+            pytest.param(
+                TimesFM2p5Model,
+                {},
+                timesfm2p5_tiny_context,
+                id="TimesFM2p5",
+            ),
+            pytest.param(
+                TiRexModel,
+                {"accept_license": True},
+                lambda: patch(
+                    TIREX_LOAD_MODEL_PATCH_TARGET,
+                    return_value=TiRexStub(),
+                ),
+                id="TiRex",
+            ),
+        ],
+    )
+    def test_load_weights_different_chunk_params(
+        self, model_cls, extra_kwargs, mock_ctx_factory, tmp_path
+    ):
+        """load_weights() should accept different ICL, OCL, and OCS for
+        foundation models, since their weights are independent of these
+        parameters."""
+        series = self.series_long  # length 20
+        save_icl, save_ocl = 14, 6
+
+        with mock_ctx_factory():
+            model_save = model_cls(
+                input_chunk_length=save_icl,
+                output_chunk_length=save_ocl,
+                **extra_kwargs,
+                **tfm_kwargs,
+            )
+            model_save.fit(series=series)
+            pred_save = model_save.predict(n=save_ocl)
+            save_path = str(tmp_path / "donor_model.pt")
+            model_save.save(save_path)
+
+            # same OCL but variable ICL: predictions must match
+            model_same_ocl = model_cls(
+                input_chunk_length=(1, save_icl),
+                output_chunk_length=save_ocl,
+                **extra_kwargs,
+                **tfm_kwargs,
+            )
+            model_same_ocl.load_weights(save_path)
+            pred_same_ocl = model_same_ocl.predict(n=save_ocl, series=series)
+            np.testing.assert_array_almost_equal(
+                pred_save.all_values(copy=False),
+                pred_same_ocl.all_values(copy=False),
+            )
+
+            # different OCL and OCS: weights load and predictions are valid
+            # (values may differ for models where OCL affects the forward pass,
+            # e.g. PatchTSTFM shifts patch boundaries based on forecast_length)
+            model_diff = model_cls(
+                input_chunk_length=(1, 20),
+                output_chunk_length=4,
+                output_chunk_shift=1,
+                **extra_kwargs,
+                **tfm_kwargs,
+            )
+            model_diff.load_weights(save_path)
+            pred_diff = model_diff.predict(n=4, series=series)
+            assert len(pred_diff) == 4
+            assert not np.isnan(pred_diff.all_values(copy=False)).any()

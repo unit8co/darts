@@ -208,5 +208,16 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
             )
 
     @property
+    def _ckpt_skipped_params(self) -> list[str]:
+        # foundation model weights are independent of input/output chunk parameters,
+        # so these can safely differ when loading weights from a checkpoint saved
+        # with different settings.
+        return super()._ckpt_skipped_params + [
+            "input_chunk_length",
+            "output_chunk_length",
+            "enable_finetuning",
+        ]
+
+    @property
     def min_input_chunk_length(self) -> int:
         return self._min_input_chunk_length

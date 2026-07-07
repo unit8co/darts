@@ -2712,7 +2712,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             new_add_encoders: dict = copy.deepcopy(tfm_save.add_encoders)
             new_encoders: SequentialEncoder = copy.deepcopy(tfm_save.encoders)
         else:
-            if len(tfm_save.add_encoders) > 0 and self.add_encoders is None:
+            if tfm_save.add_encoders and self.add_encoders is None:
                 raise_log(
                     ValueError(
                         f"Model was created without encoders and encoders were not loaded, "
@@ -2759,15 +2759,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         return new_encoders, new_add_encoders
 
-    def _check_ckpt_parameters(self, tfm_save):
-        """
-        Check that the positional parameters used to instantiate the new model loading the weights match those
-        of the saved model, to return meaningful messages in case of discrepancies.
-        """
-        # parameters unrelated to the weights shape
-        skipped_params = list(
-            inspect.signature(TorchForecastingModel.__init__).parameters.keys()
-        ) + [
+    @property
+    def _ckpt_skipped_params(self) -> list[str]:
+        """Model parameters that are unrelated to the weight shapes and can differ between the current model
+        and a loaded checkpoint."""
+        return [
             "loss_fn",
             "torch_metrics",
             "optimizer_cls",
@@ -2776,6 +2772,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "lr_scheduler_kwargs",
             "output_chunk_shift",
         ]
+
+    def _check_ckpt_parameters(self, tfm_save):
+        """
+        Check that the positional parameters used to instantiate the new model loading the weights match those
+        of the saved model, to return meaningful messages in case of discrepancies.
+        """
+        # parameters unrelated to the weights shape
+        skipped_params = (
+            list(inspect.signature(TorchForecastingModel.__init__).parameters.keys())
+            + self._ckpt_skipped_params
+        )
         # model_params can be missing some kwargs
         params_to_check = set(tfm_save.model_params.keys()).union(
             self.model_params.keys()
