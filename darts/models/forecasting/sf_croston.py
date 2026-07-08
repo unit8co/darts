@@ -8,10 +8,8 @@ import copy
 from statsforecast.models import TSB as CrostonTSB
 from statsforecast.models import CrostonClassic, CrostonOptimized, CrostonSBA
 
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.forecasting.sf_model import StatsForecastModel
-
-logger = get_logger(__name__)
 
 
 class Croston(StatsForecastModel):
@@ -143,7 +141,6 @@ class Croston(StatsForecastModel):
                 ValueError(
                     'The provided "version" parameter must be set to "classic", "optimized", "sba" or "tsb".'
                 ),
-                logger=logger,
             )
 
         kwargs = copy.deepcopy(kwargs)
@@ -159,7 +156,6 @@ class Croston(StatsForecastModel):
                     ValueError(
                         'alpha_d and alpha_p must be specified when using "tsb".'
                     ),
-                    logger=logger,
                 )
             kwargs["alpha_d"] = alpha_d
             kwargs["alpha_p"] = alpha_p

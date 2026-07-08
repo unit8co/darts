@@ -123,6 +123,7 @@ class CustomRNNModule(PLForecastingModule, ABC):
             _,  # historic future covariates
             future_covariates,
             static_covariates,
+            future_target,
         ) = input_batch
         # For the RNN we concatenate the past_target with the future_covariates
         # (they have the same length because we enforce a Shift dataset for RNNs)
@@ -132,6 +133,7 @@ class CustomRNNModule(PLForecastingModule, ABC):
             None,
             None,
             static_covariates,
+            future_target,
         )
         return super()._process_input_batch(input_batch)
 
@@ -183,6 +185,7 @@ class CustomRNNModule(PLForecastingModule, ABC):
             input_series,
             None,
             static_covariates,
+            None,
         ))
         batch_prediction.append(out[:, -1:, :])
         prediction_length = 1
@@ -203,7 +206,7 @@ class CustomRNNModule(PLForecastingModule, ABC):
 
             # feed new input to model, including the last hidden state from the previous iteration
             out, last_hidden_state = self._produce_predict_output(
-                (new_input, None, static_covariates), last_hidden_state
+                (new_input, None, static_covariates, None), last_hidden_state
             )
 
             # append prediction to batch prediction array, increase counter
@@ -270,7 +273,7 @@ class _RNNModule(CustomRNNModule):
     def forward(
         self, x_in: PLModuleInput, h: torch.Tensor | None = None
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        x, _, _ = x_in
+        x, _, _, _ = x_in
         # data is of size (batch_size, input_length, input_size)
         batch_size = x.shape[0]
 
@@ -518,7 +521,6 @@ class RNNModel(DualCovariatesTorchModel):
                 ValueError(
                     f"`training_length` ({training_length}) must be `>=input_chunk_length` ({input_chunk_length})."
                 ),
-                logger=logger,
             )
         # create copy of model parameters
         model_kwargs = {key: val for key, val in self.model_params.items()}
@@ -551,7 +553,6 @@ class RNNModel(DualCovariatesTorchModel):
                         "`model` is not a valid RNN model. Please specify 'RNN', 'LSTM', 'GRU', or give a subclass "
                         "(not an instance) of darts.models.forecasting.rnn_model.CustomRNNModule."
                     ),
-                    logger=logger,
                 )
 
         self.rnn_type_or_module = model
@@ -615,14 +616,12 @@ class RNNModel(DualCovariatesTorchModel):
                     "RNNModel requires a training dataset of type `GenericShiftDataset`. "
                     f"Got {type(train_dataset)} instead."
                 ),
-                logger=logger,
             )
         if train_dataset.shift != 1:
             raise_log(
                 ValueError(
                     f"RNNModel requires a shifted training dataset with shift=1. Got shift={train_dataset.shift}."
                 ),
-                logger=logger,
             )
 
     @property

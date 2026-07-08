@@ -4,6 +4,7 @@ import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing import dtw
+from darts.dataprocessing.dtw.window import CRWindow, Itakura, SakoeChiba
 from darts.metrics import dtw_metric, mae, mape
 from darts.utils import timeseries_generation as tg
 
@@ -262,3 +263,61 @@ def _benchmark_dtw():
 
     cProfile.run("_dtw_exact()", sort="tottime")
     cProfile.run("_dtw_multigrid()", sort="tottime")
+
+
+class TestDTWInputValidation:
+    ts1 = tg.sine_timeseries(length=20, value_frequency=0.05)
+    ts2 = tg.sine_timeseries(length=20, value_frequency=0.1)
+
+    def test_dtw_different_n_components_no_distance(self):
+        multi = self.ts1.stack(self.ts1)
+        with pytest.raises(ValueError, match="same number of components"):
+            dtw.dtw(multi, self.ts1)
+
+    def test_dtw_nan_values(self):
+        nan_vals = np.ones(20)
+        nan_vals[5] = np.nan
+        ts_nan = TimeSeries.from_values(nan_vals)
+        with pytest.raises(ValueError, match="does not support nan"):
+            dtw.dtw(ts_nan, self.ts2)
+        with pytest.raises(ValueError, match="does not support nan"):
+            dtw.dtw(self.ts1, ts_nan)
+
+    def test_dtw_invalid_multi_grid_radius(self):
+        with pytest.raises(ValueError, match="positive or -1"):
+            dtw.dtw(self.ts1, self.ts2, multi_grid_radius=-2)
+
+    def test_dtw_multi_grid_with_window(self):
+        with pytest.raises(ValueError, match="does not currently support windows"):
+            dtw.dtw(
+                self.ts1,
+                self.ts2,
+                multi_grid_radius=1,
+                window=SakoeChiba(window_size=5),
+            )
+
+
+class TestDTWWindowInputValidation:
+    def test_crwindow_wrong_ranges_shape(self):
+        with pytest.raises(ValueError, match="Expects a 2d array"):
+            CRWindow(n=5, m=10, ranges=np.zeros((3, 2)))
+
+    def test_crwindow_negative_start(self):
+        ranges = np.array([[0, 5], [-1, 5], [0, 5], [0, 5], [0, 5]])
+        with pytest.raises(ValueError, match="Start must be >=0"):
+            CRWindow(n=5, m=10, ranges=ranges)
+
+    def test_crwindow_end_exceeds_m(self):
+        ranges = np.array([[0, 5], [0, 11], [0, 5], [0, 5], [0, 5]])
+        with pytest.raises(ValueError, match="End must be <m"):
+            CRWindow(n=5, m=10, ranges=ranges)
+
+    def test_itakura_slope_too_small(self):
+        itk = Itakura(max_slope=1.0)
+        with pytest.raises(ValueError, match="must be greater than"):
+            itk.init_size(10, 20)
+
+    def test_sakoe_chiba_window_too_small(self):
+        sc = SakoeChiba(window_size=2)
+        with pytest.raises(ValueError, match="Window size must be larger"):
+            sc.init_size(10, 20)

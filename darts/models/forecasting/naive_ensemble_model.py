@@ -8,12 +8,9 @@ from collections.abc import Sequence
 import numpy as np
 
 from darts import TimeSeries
-from darts.logging import get_logger
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.typing import TimeSeriesLike
-
-logger = get_logger(__name__)
 
 
 class NaiveEnsembleModel(EnsembleModel):

@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 import time
 import warnings
 from typing import NoReturn
@@ -50,80 +51,27 @@ def raise_deprecation_warning(
     logger.warning("DeprecationWarning: " + message)
 
 
-def raise_if_not(
-    condition: bool,
-    message: str = "",
-    logger: logging.Logger = get_logger("main_logger"),
-):
-    """
-    Checks provided boolean condition and raises a ValueError if it evaluates to False.
-    It logs the error to the provided logger before raising it.
-
-    Parameters
-    ----------
-    condition
-        The boolean condition to be checked.
-    message
-        The message of the ValueError.
-    logger
-        The logger instance to log the error message if 'condition' is False.
-
-    Raises
-    ------
-    ValueError
-        if `condition` is not satisfied
-    """
-
-    if not condition:
-        logger.error("ValueError: " + message)
-        raise ValueError(message)
-
-
-def raise_if(
-    condition: bool,
-    message: str = "",
-    logger: logging.Logger = get_logger("main_logger"),
-):
-    """
-    Checks provided boolean condition and raises a ValueError if it evaluates to True.
-    It logs the error to the provided logger before raising it.
-
-    Parameters
-    ----------
-    condition
-        The boolean condition to be checked.
-    message
-        The message of the ValueError.
-    logger
-        The logger instance to log the error message if 'condition' is True.
-
-    Raises
-    ------
-    ValueError
-        if `condition` is satisfied
-    """
-    raise_if_not(not condition, message, logger)
-
-
-def raise_log(
-    exception: Exception, logger: logging.Logger = get_logger("main_logger")
-) -> NoReturn:
+def raise_log(exception: Exception) -> NoReturn:
     """
     Can be used to replace "raise" when throwing an exception to ensure the logging
     of the exception. After logging it, the exception is raised.
+
+    The logger is automatically resolved from the calling module's ``__name__``.
 
     Parameters
     ----------
     exception
         The exception instance to be raised.
-    logger
-        The logger instance to log the exception type and message.
 
     Raises
     ------
     Exception
         The provided exception
     """
+
+    frame = sys._getframe(1)
+    module_name = frame.f_globals.get("__name__", "darts")
+    logger = logging.getLogger(module_name)
 
     exception_type = str(type(exception)).split("'")[1]
     message = str(exception)

@@ -104,3 +104,9 @@ class TestTsUtils:
         assert get_single_series(ts) == ts
         assert get_single_series([ts]) == ts
         assert get_single_series([ts, ts]) == ts
+
+
+class TestSeriesTypeInputValidation:
+    def test_add_non_int(self):
+        with pytest.raises(ValueError, match="must be of type `int`"):
+            SeriesType.SINGLE + "1"

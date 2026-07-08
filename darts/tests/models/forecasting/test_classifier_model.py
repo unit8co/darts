@@ -18,7 +18,6 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import Tags
 
-from darts.logging import get_logger
 from darts.models import (
     CatBoostClassifierModel,
     LightGBMClassifierModel,
@@ -40,8 +39,6 @@ from darts.utils.multioutput import (
     get_multioutput_estimator_cls,
 )
 from darts.utils.utils import ModelType
-
-logger = get_logger(__name__)
 
 
 def process_model_list(classifiers):

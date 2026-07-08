@@ -388,6 +388,25 @@ class TestTimeSeriesWindowTransform:
             # unauhtorized treat_na=bfill with forecasting_safe=True
             self.target.window_transform(window_transformations, treat_na="bfill")
 
+    @pytest.mark.parametrize(
+        "treat_na,expected_vals",
+        [
+            (None, [np.nan, 0.70710678, 0.70710678, 0.70710678]),
+            ("dropna", [0.70710678, 0.70710678, 0.70710678]),
+            (0.0, [0.0, 0.70710678, 0.70710678, 0.70710678]),
+            ("bfill", [0.70710678, 0.70710678, 0.70710678, 0.70710678]),
+        ],
+    )
+    def test_treat_na_with_function_producing_nan(self, treat_na, expected_vals):
+        """treat_na must handle NaN introduced by functions like std(ddof=1)
+        even when min_periods is satisfied."""
+        series = TimeSeries.from_values(np.array([0, 1, 2, 3]))
+        params = {"function": "std", "mode": "rolling", "window": 2}
+        result = series.window_transform(
+            params, treat_na=treat_na, forecasting_safe=False
+        )
+        np.testing.assert_allclose(result.values().flatten(), expected_vals, atol=1e-6)
+
     def test_tranformed_ts_index(self):
         # DateTimeIndex
         transformed_series = self.target.window_transform({"function": "sum"})

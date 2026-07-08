@@ -3390,3 +3390,19 @@ class TestSimpleStatistics:
         new_ts = ts.quantile(q=qs)
         assert new_ts == q_ts
         assert new_ts.dtype == dtype
+
+
+class TestTimeSeriesInputValidation:
+    ts = constant_timeseries(value=1, length=10)
+
+    def test_slice_n_points_after_non_positive(self):
+        with pytest.raises(ValueError, match="n should be a positive integer"):
+            self.ts.slice_n_points_after(self.ts.start_time(), n=0)
+        with pytest.raises(ValueError, match="n should be a positive integer"):
+            self.ts.slice_n_points_after(self.ts.start_time(), n=-1)
+
+    def test_slice_n_points_before_non_positive(self):
+        with pytest.raises(ValueError, match="n should be a positive integer"):
+            self.ts.slice_n_points_before(self.ts.end_time(), n=0)
+        with pytest.raises(ValueError, match="n should be a positive integer"):
+            self.ts.slice_n_points_before(self.ts.end_time(), n=-1)

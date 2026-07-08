@@ -10,7 +10,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from darts.logging import get_logger, raise_if_not, raise_log
+from darts.logging import raise_log
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
@@ -18,9 +18,6 @@ from darts.models.forecasting.pl_forecasting_module import (
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
-
-logger = get_logger(__name__)
-
 
 ACTIVATIONS = [
     "ReLU",
@@ -157,9 +154,8 @@ class _Block(nn.Module):
         self.dropout = dropout
         self.batch_norm = batch_norm
 
-        raise_if_not(
-            activation in ACTIVATIONS, f"'{activation}' is not in {ACTIVATIONS}"
-        )
+        if activation not in ACTIVATIONS:
+            raise_log(ValueError(f"'{activation}' is not in {ACTIVATIONS}."))
         self.activation = getattr(nn, activation)()
 
         # fully connected stack before fork
@@ -203,11 +199,9 @@ class _Block(nn.Module):
                 expansion_coefficient_dim, input_chunk_length
             )
             self.forecast_g = _TrendGenerator(expansion_coefficient_dim, target_length)
-        elif g_type == _GType.SEASONALITY:
+        else:  # _GType.SEASONALITY
             self.backcast_g = _SeasonalityGenerator(input_chunk_length)
             self.forecast_g = _SeasonalityGenerator(target_length)
-        else:
-            raise_log(ValueError("g_type not supported"), logger)
 
     def forward(self, x):
         batch_size = x.shape[0]
@@ -497,7 +491,7 @@ class _NBEATSModule(PLForecastingModule):
 
     @io_processor
     def forward(self, x_in: PLModuleInput):
-        x, _, _ = x_in
+        x, _, _, _ = x_in
 
         # if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts
         # we reshape into x1, y1, a1, x2, y2, a2... etc
@@ -800,12 +794,13 @@ class NBEATSModel(PastCovariatesTorchModel):
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
-        raise_if_not(
-            isinstance(layer_widths, int) or len(layer_widths) == num_stacks,
-            "Please pass an integer or a list of integers with length `num_stacks`"
-            "as value for the `layer_widths` argument.",
-            logger,
-        )
+        if not (isinstance(layer_widths, int) or len(layer_widths) == num_stacks):
+            raise_log(
+                ValueError(
+                    "Please pass an integer or a list of integers with length `num_stacks`"
+                    "as value for the `layer_widths` argument."
+                ),
+            )
 
         self.generic_architecture = generic_architecture
         self.num_stacks = num_stacks

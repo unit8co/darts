@@ -62,6 +62,7 @@ from darts.utils.data.torch_datasets.inference_dataset import (
 )
 from darts.utils.data.torch_datasets.training_dataset import (
     SequentialTorchTrainingDataset,
+    TorchTrainingDataset,
 )
 from darts.utils.likelihood_models.torch import (
     CauchyLikelihood,
@@ -3128,3 +3129,205 @@ class TestTorchForecastingModelFineTuning:
         model.fit(self.series)
         for _, p in model.model.named_parameters():
             assert p.requires_grad is True
+
+
+class TestTorchForecastingModelInputValidation:
+    times = pd.date_range("20130101", "20130410")
+    series = TimeSeries.from_series(pd.Series(range(100), index=times))
+
+    def test_checkpoint_exists_no_force_reset(self, tmpdir_fn):
+        model = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            n_epochs=1,
+            model_name="test_ckpt",
+            work_dir=tmpdir_fn,
+            save_checkpoints=True,
+            force_reset=True,
+            **tfm_kwargs,
+        )
+        model.fit(self.series, epochs=1)
+        with pytest.raises(ValueError, match="Some model data already exists"):
+            DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                n_epochs=1,
+                model_name="test_ckpt",
+                work_dir=tmpdir_fn,
+                save_checkpoints=True,
+                force_reset=False,
+                **tfm_kwargs,
+            )
+
+    def test_predict_from_dataset_invalid_roll_size(self):
+        model = DLinearModel(
+            input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs_dev
+        )
+        model.fit(self.series)
+        ds = model._build_inference_dataset(
+            n=2,
+            series=[self.series],
+            past_covariates=None,
+            future_covariates=None,
+        )
+        with pytest.raises(ValueError, match="roll_size"):
+            model.predict_from_dataset(n=2, dataset=ds, roll_size=0)
+        with pytest.raises(ValueError, match="roll_size"):
+            model.predict_from_dataset(n=2, dataset=ds, roll_size=3)
+
+    def test_predict_from_dataset_num_samples_zero(self):
+        model = DLinearModel(
+            input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs_dev
+        )
+        model.fit(self.series)
+        ds = model._build_inference_dataset(
+            n=2,
+            series=[self.series],
+            past_covariates=None,
+            future_covariates=None,
+        )
+        with pytest.raises(ValueError, match="num_samples.*must be a positive"):
+            model.predict_from_dataset(n=2, dataset=ds, num_samples=0)
+
+    def test_load_from_checkpoint_missing_init_file(self, tmpdir_fn):
+        os.makedirs(
+            os.path.join(tmpdir_fn, ".darts", "checkpoints", "missing_model"),
+            exist_ok=True,
+        )
+        os.makedirs(
+            os.path.join(tmpdir_fn, ".darts", "runs", "missing_model"), exist_ok=True
+        )
+        with pytest.raises(ValueError, match="Could not find base model save file"):
+            DLinearModel.load_from_checkpoint(
+                model_name="missing_model", work_dir=tmpdir_fn
+            )
+
+    def test_load_weights_from_checkpoint_skip_checks_and_load_encoders(self):
+        model = DLinearModel(
+            input_chunk_length=4, output_chunk_length=1, n_epochs=1, **tfm_kwargs_dev
+        )
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            model.load_weights_from_checkpoint(skip_checks=True, load_encoders=True)
+
+    def test_load_weights_missing_ckpt(self, tmpdir_fn):
+        model = DLinearModel(
+            input_chunk_length=4, output_chunk_length=1, n_epochs=1, **tfm_kwargs_dev
+        )
+        model.fit(self.series)
+        with pytest.raises(ValueError, match="Could not find PyTorch LightningModule"):
+            model.load_weights(os.path.join(tmpdir_fn, "nonexistent_model"))
+
+    def test_train_series_too_short(self):
+        model = DLinearModel(
+            input_chunk_length=50, output_chunk_length=50, n_epochs=1, **tfm_kwargs
+        )
+        short_series = tg.linear_timeseries(length=10)
+        with pytest.raises(ValueError):
+            model.fit(short_series)
+
+    def test_fit_from_dataset_train_too_short(self):
+        class EmptyDataset(TorchTrainingDataset):
+            def __len__(self):
+                return 0
+
+            def __getitem__(self, idx):
+                raise IndexError
+
+        model = DLinearModel(
+            input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs
+        )
+        with pytest.raises(ValueError, match="too short"):
+            model.fit_from_dataset(EmptyDataset())
+
+    def test_fit_from_dataset_val_too_short(self):
+        class EmptyDataset(TorchTrainingDataset):
+            def __len__(self):
+                return 0
+
+            def __getitem__(self, idx):
+                raise IndexError
+
+        model = DLinearModel(
+            input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs
+        )
+        train_ds = SequentialTorchTrainingDataset(
+            self.series,
+            input_chunk_length=4,
+            output_chunk_length=2,
+        )
+        with pytest.raises(ValueError, match="too short"):
+            model.fit_from_dataset(train_ds, val_dataset=EmptyDataset())
+
+    def test_fit_from_dataset_sample_tuple_length_mismatch(self):
+        class WrongTupleLenDataset(TorchTrainingDataset):
+            """Returns tuples of wrong length (8 instead of 7)."""
+
+            def __init__(self, real_ds):
+                super().__init__()
+                self._ds = real_ds
+
+            def __len__(self):
+                return len(self._ds)
+
+            def __getitem__(self, idx):
+                return self._ds[idx] + (np.zeros(1),)
+
+        model = DLinearModel(
+            input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs
+        )
+        model.fit(self.series)
+        real_ds = SequentialTorchTrainingDataset(
+            self.series, input_chunk_length=4, output_chunk_length=2
+        )
+        with pytest.raises(ValueError, match="size of the training set samples"):
+            model.fit_from_dataset(WrongTupleLenDataset(real_ds))
+
+    def test_fit_from_dataset_sample_dim_mismatch(self):
+        model = DLinearModel(
+            input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs
+        )
+        model.fit(self.series)
+        multi_series = self.series.stack(self.series)
+        ds_multi = SequentialTorchTrainingDataset(
+            multi_series,
+            input_chunk_length=4,
+            output_chunk_length=2,
+        )
+        with pytest.raises(ValueError, match="dimensionality of the series"):
+            model.fit_from_dataset(ds_multi)
+
+    def test_predict_likelihood_parameters_n_too_large(self):
+        model = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=2,
+            likelihood=GaussianLikelihood(),
+            n_epochs=1,
+            **tfm_kwargs_dev,
+        )
+        model.fit(self.series)
+        with pytest.raises(ValueError, match="output_chunk_length"):
+            model.predict(n=5, predict_likelihood_parameters=True)
+
+    def test_missing_pl_module_params(self):
+        model = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            n_epochs=1,
+            likelihood=QuantileRegression([0.1, 0.5, 0.9]),
+            **tfm_kwargs_dev,
+        )
+        model.fit(self.series)
+        with pytest.raises(
+            ValueError,
+            match="`n` must be smaller than or equal to `output_chunk_length`",
+        ):
+            model.predict_from_dataset(
+                dataset=SequentialTorchInferenceDataset(
+                    self.series,
+                    n=2,
+                    input_chunk_length=4,
+                    output_chunk_length=1,
+                ),
+                n=2,
+                predict_likelihood_parameters=True,
+            )

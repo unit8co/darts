@@ -27,11 +27,9 @@ from sklearn.metrics import (
 )
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.typing import TimeSeriesLike
 from darts.utils.ts_utils import series2seq
-
-logger = get_logger(__name__)
 
 
 def eval_metric_from_scores(
@@ -189,7 +187,6 @@ def _eval_metric(
     if metric not in metrics_exp:
         raise_log(
             ValueError(f"Argument `metric` must be one of {metrics_exp}"),
-            logger=logger,
         )
 
     if metric == "AUC_ROC":
@@ -232,7 +229,6 @@ def _eval_metric(
                     f"`{name}`. There must be one window value for each series. "
                     f"Found length {len(window)}, expected {len(anomalies)}."
                 ),
-                logger=logger,
             )
 
     sol = []
@@ -257,7 +253,6 @@ def _eval_metric(
                     f"The two time series `{pred_name}` and `{name}` "
                     f"must have at least a partially overlapping time index."
                 ),
-                logger=logger,
             )
 
         if not pred_is_binary:  # `pred_series` is an anomaly score
@@ -268,7 +263,6 @@ def _eval_metric(
                     ValueError(
                         f"`{name}` does not contain anomalies. {metric} cannot be computed."
                     ),
-                    logger=logger,
                 )
             if nr_anomalies_per_component.max() == len(s_anomalies_vals):
                 add_txt = (
@@ -281,7 +275,6 @@ def _eval_metric(
                         f"`{name}` only contains anomalies. {metric} cannot be computed."
                         + add_txt
                     ),
-                    logger=logger,
                 )
 
         # TODO: could we vectorize this?
@@ -368,7 +361,6 @@ def show_anomalies_from_scores(
     elif metric is not None:
         raise_log(
             ValueError("`anomalies` must be given in order to calculate a metric."),
-            logger=logger,
         )
 
     pred_scores = series2seq(pred_scores)
@@ -386,7 +378,6 @@ def show_anomalies_from_scores(
                         f"number of anomaly score given as input, found "
                         f"{len(names_of_scorers)} and expected {len(pred_scores)}."
                     ),
-                    logger=logger,
                 )
 
         window = [window] if isinstance(window, int) else window
@@ -396,7 +387,6 @@ def show_anomalies_from_scores(
                     "Parameter `window` must be a positive integer, "
                     "or a sequence of positive integers."
                 ),
-                logger=logger,
             )
         window = window if len(window) > 1 else window * len(pred_scores)
         if len(window) != len(pred_scores):
@@ -407,7 +397,6 @@ def show_anomalies_from_scores(
                     f"value for each series. Found length {len(window)}, "
                     f"and expected {len(pred_scores)}."
                 ),
-                logger=logger,
             )
 
         if not all([w < len(s) for (w, s) in zip(window, pred_scores)]):
@@ -417,7 +406,6 @@ def show_anomalies_from_scores(
                     "with value(s) smaller than the length of the corresponding series "
                     "in `pred_scores`."
                 ),
-                logger=logger,
             )
 
         nbr_plots += len(set(window))
@@ -518,7 +506,6 @@ def _assert_binary(series: TimeSeries, name: str):
     if not np.array_equal(vals, vals.astype(bool)):
         raise_log(
             ValueError(f"Input series `{name}` must have binary values only."),
-            logger=logger,
         )
 
 
@@ -529,7 +516,6 @@ def _assert_timeseries(series: TimeSeries, name: str = "series"):
             ValueError(
                 f"all series in `{name}` must be `TimeSeries`. Received {type(series)}."
             ),
-            logger=logger,
         )
 
 
@@ -564,7 +550,6 @@ def _sanity_check_two_series(
                 f"The series from `{name_series_1}` and `{name_series_2}` must have the "
                 f"same number of components, found {series_1.width} and {series_2.width}."
             ),
-            logger=logger,
         )
 
 
@@ -592,7 +577,6 @@ def _max_pooling(series: TimeSeries, window: int) -> TimeSeries:
             ValueError(
                 f"Parameter `window` must be strictly greater than 0, found size {window}."
             ),
-            logger=logger,
         )
     if window >= len(series):
         raise_log(
@@ -600,7 +584,6 @@ def _max_pooling(series: TimeSeries, window: int) -> TimeSeries:
                 f"Parameter `window` must be smaller than the length of the "
                 f"input series, found window size {window}, and max size {len(series)}."
             ),
-            logger=logger,
         )
 
     if window == 1:
@@ -633,7 +616,6 @@ def _assert_same_length(
                 f"`{name_series_1}`, found length {len(list_series_2)} and "
                 f"expected {len(list_series_1)}."
             ),
-            logger=logger,
         )
 
 
@@ -718,34 +700,29 @@ def _check_input(
             err_txt = f"`{name}` must be a sequence of `TimeSeries` of length `{num_series_expected}`."
         raise_log(
             ValueError(err_txt),
-            logger=logger,
         )
     for s in series:
         if not isinstance(s, TimeSeries):
             raise_log(
                 ValueError(f"all series in `{name}` must be of type `TimeSeries`."),
-                logger=logger,
             )
         if check_deterministic and not s.is_deterministic:
             raise_log(
                 ValueError(
                     f"all series in `{name}` must be deterministic (number of samples=1)."
                 ),
-                logger=logger,
             )
         if check_binary:
             _assert_binary(s, name=name)
         if check_multivariate and s.width <= 1:
             raise_log(
                 ValueError(f"all series in `{name}` must be multivariate (width>1)."),
-                logger=logger,
             )
         if width_expected is not None and s.width != width_expected:
             raise_log(
                 ValueError(
                     f"all series in `{name}` must have `{width_expected}` component(s) (width={width_expected})."
                 ),
-                logger=logger,
             )
         if extra_checks is not None:
             extra_checks(s)
@@ -759,7 +736,6 @@ def _assert_fit_called(fit_called: bool, name: str):
             ValueError(
                 f"The `{name}` has not been fitted yet. Call `{name}.fit()` first."
             ),
-            logger=logger,
         )
 
 

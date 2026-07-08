@@ -27,11 +27,9 @@ from darts.ad.utils import (
     _check_input,
     eval_metric_from_binary_prediction,
 )
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.typing import TimeSeriesLike
 from darts.utils.ts_utils import series2seq
-
-logger = get_logger(__name__)
 
 
 class Detector(ABC):
@@ -215,7 +213,6 @@ class _BoundedDetectorMixin(ABC):
                 ValueError(
                     f"`{lower_bound_name} and `{upper_bound_name}` cannot both be `None`."
                 ),
-                logger=logger,
             )
 
         def _prep_boundaries(boundaries) -> list[float | None]:
@@ -237,7 +234,6 @@ class _BoundedDetectorMixin(ABC):
         ]):
             raise_log(
                 ValueError("All provided upper and lower bounds values are None."),
-                logger=logger,
             )
 
         # match the lengths of the boundaries
@@ -256,7 +252,6 @@ class _BoundedDetectorMixin(ABC):
                     f"`{lower_bound_name}`: n={len(lower_bound)} and "
                     f"`{upper_bound_name}`: n={len(upper_bound)}."
                 ),
-                logger=logger,
             )
         if not all([
             lb is None or ub is None or lb <= ub
@@ -267,7 +262,6 @@ class _BoundedDetectorMixin(ABC):
                     f"All values in `{lower_bound_name}` must be lower or equal"
                     f"to their corresponding value in `{upper_bound_name}`."
                 ),
-                logger=logger,
             )
         return lower_bound, upper_bound
 

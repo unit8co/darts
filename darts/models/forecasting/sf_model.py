@@ -9,7 +9,7 @@ import numpy as np
 import statsforecast.models as sf_models
 
 from darts import TimeSeries, concatenate
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models import LinearRegressionModel
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
@@ -17,8 +17,6 @@ from darts.models.forecasting.forecasting_model import (
 from darts.utils.likelihood_models.statsforecast import QuantilePrediction
 from darts.utils.timeseries_generation import _build_forecast_series
 from darts.utils.utils import random_method
-
-logger = get_logger(__name__)
 
 
 @runtime_checkable
@@ -159,7 +157,6 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
                         f"Could not find a StatsForecast model class named `{model}` "
                         f"in `statsforecast.models`."
                     ),
-                    logger,
                 )
             model = model_class(**model_kwargs)
         elif isinstance(model, type) and issubclass(model, sf_models._TS):
@@ -169,7 +166,6 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
                 ValueError(
                     "`model` must be a valid StatsForecast model name (str), class or instance."
                 ),
-                logger,
             )
 
         self.model: _SFModel = model

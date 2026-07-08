@@ -27,10 +27,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from darts.logging import get_logger
 from darts.utils.torch import MonteCarloDropout
-
-logger = get_logger(__name__)
 
 HiddenState = tuple[torch.Tensor, torch.Tensor] | torch.Tensor
 

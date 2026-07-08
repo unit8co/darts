@@ -14,14 +14,11 @@ import numpy as np
 from nfoursid.kalman import Kalman
 
 from darts import TimeSeries
-from darts.logging import get_logger
 from darts.models.filtering.kalman_filter import KalmanFilter
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
 from darts.utils.utils import random_method
-
-logger = get_logger(__name__)
 
 
 class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):

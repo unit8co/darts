@@ -8,11 +8,9 @@ from enum import Enum
 import numpy as np
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.utils.ts_utils import series2seq
 from darts.utils.utils import n_steps_between
-
-logger = get_logger(__name__)
 
 # supported built-in sample weight generators for regression and torch models
 SUPPORTED_SAMPLE_WEIGHT = {"linear", "exponential"}
@@ -59,7 +57,6 @@ def _get_matching_index(ts_target: TimeSeries, ts_covariate: TimeSeries, idx: in
                 "The dataset contains some target/covariates series pair that have incompatible "
                 'time axes (not the same "freq") and thus cannot be matched'
             ),
-            logger=logger,
         )
 
     freq = ts_target.freq
@@ -76,7 +73,6 @@ def _process_sample_weight(sample_weight, target_series):
     if target_series is None:
         raise_log(
             ValueError("Must supply target `series` when using `sample_weight`."),
-            logger=logger,
         )
 
     # get sample weights
@@ -87,7 +83,6 @@ def _process_sample_weight(sample_weight, target_series):
                     f"Invalid `sample_weight` value: `'{sample_weight}'`. "
                     f"If a string, must be one of: {SUPPORTED_SAMPLE_WEIGHT}."
                 ),
-                logger=logger,
             )
         # create global time weights based on the longest target series
         max_len = max(len(target_i) for target_i in target_series)
@@ -115,6 +110,5 @@ def _process_sample_weight(sample_weight, target_series):
                 "The provided sequence of target `series` must have the same length as "
                 "the provided sequence of `sample_weight`."
             ),
-            logger=logger,
         )
     return sample_weight

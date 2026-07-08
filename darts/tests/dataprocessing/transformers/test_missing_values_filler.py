@@ -52,3 +52,13 @@ class TestMissingValuesFiller:
             self.const_series.static_covariates.values
             == transformed.static_covariates.values
         )
+
+
+class TestMissingValuesFillerInputValidation:
+    def test_fill_invalid_type(self):
+        with pytest.raises(ValueError, match="should either be a string or a float"):
+            MissingValuesFiller(fill=None)
+
+    def test_fill_invalid_string(self):
+        with pytest.raises(ValueError, match="can only be set to 'auto'"):
+            MissingValuesFiller(fill="mean")

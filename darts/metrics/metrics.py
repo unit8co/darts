@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 from darts.dataprocessing import dtw
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.metrics.utils import (
     METRIC_OUTPUT_TYPE,
     SMPL_AX,
@@ -34,8 +34,6 @@ from darts.typing import TimeSeriesLike
 
 _NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
 _NP_TRAPEZOID_FN = np.trapezoid if _NP_2_OR_ABOVE else np.trapz
-
-logger = get_logger(__name__)
 
 
 @multi_ts_support
@@ -1615,7 +1613,6 @@ def ape(
             ValueError(
                 "`actual_series` must be strictly positive to compute the MAPE."
             ),
-            logger=logger,
         )
     return 100.0 * np.abs((y_true - y_pred) / y_true)
 
@@ -2121,7 +2118,6 @@ def ope(
             ValueError(
                 "The series of actual value cannot sum to zero when computing OPE."
             ),
-            logger=logger,
         )
     return np.abs((y_true_sum - y_pred_sum) / y_true_sum) * 100.0
 
@@ -2232,7 +2228,6 @@ def arre(
                 "The difference between the max and min values must "
                 "be strictly positive to compute the MARRE."
             ),
-            logger=logger,
         )
     true_range = y_max - y_min
     return 100.0 * np.abs((y_true - y_pred) / true_range)
@@ -2880,7 +2875,6 @@ def qr(
             ValueError(
                 "quantile risk (qr) should only be computed for stochastic predicted TimeSeries."
             ),
-            logger=logger,
         )
 
     z_true, z_hat = _get_values_or_raise(
@@ -3202,7 +3196,6 @@ def crps(
             ValueError(
                 "`pred_series` must be a stochastic (contain multiple predicted samples)."
             ),
-            logger=logger,
         )
     y_true, y_pred = _get_values_or_raise(
         actual_series,

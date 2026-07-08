@@ -38,9 +38,7 @@ from typing import Literal
 import torch
 from torch import nn
 
-from darts.logging import get_logger, raise_log
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
 
 
 class _Patch(nn.Module):
@@ -139,13 +137,11 @@ class _ResidualBlock(nn.Module):
         if self.use_layer_norm:
             raise_log(
                 ValueError("Layer norm should not be used in ResidualBlock."),
-                logger,
             )
 
         if not act_fn_name == "relu":
             raise_log(
                 ValueError("ReLU should be used in ResidualBlock"),
-                logger,
             )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -528,7 +524,6 @@ class _MLP(nn.Module):
         if dense_act_fn != "relu":
             raise_log(
                 ValueError("ReLU should be used in ResidualBlock"),
-                logger,
             )
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
@@ -563,7 +558,6 @@ class _FeedForward(nn.Module):
         if is_gated_act:
             raise_log(
                 ValueError("Gated activations are unsupported in FeedForward"),
-                logger,
             )
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:

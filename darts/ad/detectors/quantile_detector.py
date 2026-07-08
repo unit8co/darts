@@ -14,9 +14,7 @@ import numpy as np
 from darts import TimeSeries
 from darts.ad.detectors.detectors import FittableDetector, _BoundedDetectorMixin
 from darts.ad.detectors.threshold_detector import ThresholdDetector
-from darts.logging import get_logger, raise_log
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
 
 
 class QuantileDetector(FittableDetector, _BoundedDetectorMixin):
@@ -64,7 +62,6 @@ class QuantileDetector(FittableDetector, _BoundedDetectorMixin):
             if not all([x is None or 0 <= x <= 1 for x in q]):
                 raise_log(
                     ValueError("All quantiles must be between 0 and 1, or None."),
-                    logger=logger,
                 )
         self.low_quantile = low_quantile
         self.high_quantile = high_quantile
@@ -80,7 +77,6 @@ class QuantileDetector(FittableDetector, _BoundedDetectorMixin):
                     "of values given for `high_quantile` or/and `low_quantile`. Found number of "
                     f"components equal to {series[0].width} and expected {len(self.low_quantile)}."
                 ),
-                logger=logger,
             )
 
         # otherwise, make them the right length

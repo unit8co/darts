@@ -17,10 +17,8 @@ from sklearn.utils.validation import (
     validate_data,
 )
 
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.utils.utils import ModelType
-
-logger = get_logger(__name__)
 
 
 class MultiOutputMixin:
@@ -75,7 +73,6 @@ class MultiOutputMixin:
         if not hasattr(self.estimator, "fit"):
             raise_log(
                 ValueError("The base estimator should implement a fit method"),
-                logger=logger,
             )
         y = validate_data(self.estimator, X="no_validation", y=y, multi_output=True)
 
@@ -87,20 +84,17 @@ class MultiOutputMixin:
                 ValueError(
                     "`y` must have at least two dimensions for multi-output but has only one."
                 ),
-                logger=logger,
             )
         if sample_weight is not None and (
             sample_weight.ndim == 1 or sample_weight.shape[1] != y.shape[1]
         ):
             raise_log(
                 ValueError("`sample_weight` must have the same dimensions as `y`."),
-                logger=logger,
             )
 
         if sample_weight is not None and not self.supports_sample_weight:
             raise_log(
                 ValueError("Underlying estimator does not support sample weights."),
-                logger=logger,
             )
 
         if (

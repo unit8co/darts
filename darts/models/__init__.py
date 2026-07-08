@@ -64,6 +64,9 @@ if TYPE_CHECKING:
     from darts.models.forecasting.linear_regression_model import (
         LinearRegressionModel as LinearRegressionModel,
     )
+    from darts.models.forecasting.multivariate_model import (
+        MultivariateModel as MultivariateModel,
+    )
     from darts.models.forecasting.naive_ensemble_model import (
         NaiveEnsembleModel as NaiveEnsembleModel,
     )
@@ -142,6 +145,10 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     "LinearRegressionModel": ("darts.models.forecasting.linear_regression_model", None),
     "RandomForest": ("darts.models.forecasting.random_forest", None),
     "RandomForestModel": ("darts.models.forecasting.random_forest", None),
+    "MultivariateModel": (
+        "darts.models.forecasting.multivariate_model",
+        None,
+    ),
     "RegressionEnsembleModel": (
         "darts.models.forecasting.regression_ensemble_model",
         None,

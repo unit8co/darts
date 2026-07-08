@@ -46,9 +46,7 @@ from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from typing import Any
 
-from darts.logging import get_logger, raise_log
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
 
 # Darts color palette used for both matplotlib and plotly plotting
 _DARTS_COLORS = [
@@ -153,13 +151,13 @@ class _OptionsManager:
     def _validate_positive_int(value: Any):
         """Validator for positive integers."""
         if not isinstance(value, int) or value <= 0:
-            raise_log(ValueError("Value must be a positive integer"), logger)
+            raise_log(ValueError("Value must be a positive integer"))
 
     @staticmethod
     def _validate_bool(value: Any):
         """Validator for boolean values."""
         if not isinstance(value, bool):
-            raise_log(ValueError("Value must be a boolean"), logger)
+            raise_log(ValueError("Value must be a boolean"))
 
     def _on_plotting_style_change(self, value: bool) -> None:
         """Callback for when plotting.use_darts_style changes."""
@@ -264,7 +262,6 @@ class _OptionsManager:
         if not pattern:
             raise_log(
                 ValueError("Pattern must be non-empty"),
-                logger,
             )
 
         if pattern == "all":
@@ -288,11 +285,10 @@ class _OptionsManager:
                         ". "
                         "Give a specific option."
                     ),
-                    logger,
                 )
             return matches
 
-        raise_log(ValueError(f"No option found matching pattern: '{pattern}'"), logger)
+        raise_log(ValueError(f"No option found matching pattern: '{pattern}'"))
 
     def get_option(self, pattern: str) -> Any:
         """Get the value of an option."""
@@ -331,7 +327,6 @@ class _OptionsManager:
                 ValueError(
                     "option_context requires an even number of arguments (option-value pairs)"
                 ),
-                logger,
             )
 
         # Store original values

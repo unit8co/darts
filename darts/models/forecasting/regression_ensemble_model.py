@@ -123,7 +123,6 @@ class RegressionEnsembleModel(EnsembleModel):
                 ValueError(
                     "`forecasting_models` must be a non-empty list of forecasting models."
                 ),
-                logger,
             )
 
         shifts = [model.output_chunk_shift for model in forecasting_models]
@@ -142,7 +141,6 @@ class RegressionEnsembleModel(EnsembleModel):
                     ValueError(
                         "`train_using_historical_forecasts` must be `True` when base models use `output_chunk_shift>0`."
                     ),
-                    logger,
                 )
 
             output_chunk_length = min([
@@ -178,7 +176,6 @@ class RegressionEnsembleModel(EnsembleModel):
                 ValueError(
                     "Cannot use `regression_model` that was created with `multi_models = False`."
                 ),
-                logger,
             )
         if regression_model.output_chunk_shift != output_chunk_shift:
             raise_log(
@@ -188,7 +185,6 @@ class RegressionEnsembleModel(EnsembleModel):
                     f"Observed `output_chunk_shift`: `{regression_model.output_chunk_shift}`, "
                     f"expected: {output_chunk_shift}."
                 ),
-                logger,
             )
         if regression_train_n_points > 0 and (
             regression_model.output_chunk_length
@@ -202,7 +198,6 @@ class RegressionEnsembleModel(EnsembleModel):
                     f"`>={regression_model.output_chunk_length + regression_model.min_train_samples - 1}`, given by "
                     f"`(regression_model.output_chunk_length + regression_model.min_train_samples - 1)`."
                 ),
-                logger,
             )
 
         if output_chunk_shift > 0 and (
@@ -215,7 +210,6 @@ class RegressionEnsembleModel(EnsembleModel):
                     f"Observed `output_chunk_length`: `{regression_model.output_chunk_length}`, "
                     f"expected: {output_chunk_length}."
                 ),
-                logger,
             )
 
         # check lags of the regression model
@@ -224,7 +218,6 @@ class RegressionEnsembleModel(EnsembleModel):
                 ValueError(
                     "`lags` and `lags_past_covariates` of `regression_model` must be `None`."
                 ),
-                logger,
             )
         min_lag, max_lag = 0, regression_model.output_chunk_length - 1
         # adjust model lags by `output_chunk_shift` to get original lags
@@ -238,7 +231,6 @@ class RegressionEnsembleModel(EnsembleModel):
                     f"where the upper bound is given by `(regression_model.output_chunk_length-1)`. "
                     f"Received lags: {lags_observed}."
                 ),
-                logger,
             )
 
         super().__init__(
@@ -257,7 +249,6 @@ class RegressionEnsembleModel(EnsembleModel):
                     "`train_using_historical_forecasts=True` is only available when all "
                     "`forecasting_models` are global models."
                 ),
-                logger,
             )
 
         self.train_using_historical_forecasts = train_using_historical_forecasts
@@ -334,7 +325,6 @@ class RegressionEnsembleModel(EnsembleModel):
                             f"to generate all required historical forecasts for the series "
                             f"at index {idx}"
                         ),
-                        logger,
                     )
 
                 # concatenate the stridden predictions

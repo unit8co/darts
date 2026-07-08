@@ -61,12 +61,10 @@ class HuggingFaceConnector:
             if not local_dir_path.exists():
                 raise_log(
                     ValueError(f"`local_dir` directory `{local_dir}` does not exist."),
-                    logger,
                 )
             if not local_dir_path.is_dir():
                 raise_log(
                     ValueError(f"`local_dir` path `{local_dir}` is not a directory."),
-                    logger,
                 )
             local_dir = local_dir_path
 
@@ -167,7 +165,6 @@ class HuggingFaceConnector:
             elif not path.is_file():
                 raise_log(
                     ValueError(f"Path {path} is not a file"),
-                    logger,
                 )
             else:
                 return path

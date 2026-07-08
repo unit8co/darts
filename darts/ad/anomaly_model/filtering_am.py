@@ -19,11 +19,9 @@ else:
 from darts import TimeSeries
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.filtering.filtering_model import FilteringModel
 from darts.typing import TimeSeriesLike
-
-logger = get_logger(__name__)
 
 
 class FilteringAnomalyModel(AnomalyModel):
@@ -57,7 +55,6 @@ class FilteringAnomalyModel(AnomalyModel):
         if not isinstance(model, FilteringModel):
             raise_log(
                 ValueError("`model` must be a Darts `FilteringModel`."),
-                logger=logger,
             )
         super().__init__(model=model, scorer=scorer)
 
@@ -268,7 +265,6 @@ class FilteringAnomalyModel(AnomalyModel):
                         f"Filter model {self.model.__class__.__name__} can only be fitted "
                         f"on a single time series, but multiple are provided."
                     ),
-                    logger=logger,
                 )
             self.model.fit(series[0], **model_fit_kwargs)
         else:

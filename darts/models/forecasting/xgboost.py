@@ -21,7 +21,7 @@ For detailed examples and tutorials, see:
 import numpy as np
 import xgboost as xgb
 
-from darts.logging import get_logger, raise_if_not
+from darts.logging import raise_log
 from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
@@ -36,8 +36,6 @@ from darts.utils.likelihood_models.sklearn import (
     _get_likelihood,
 )
 
-logger = get_logger(__name__)
-
 
 def xgb_quantile_loss(labels: np.ndarray, preds: np.ndarray, quantile: float):
     """Custom loss function for XGBoost to compute quantile loss gradient.
@@ -46,7 +44,8 @@ def xgb_quantile_loss(labels: np.ndarray, preds: np.ndarray, quantile: float):
 
     This computes the gradient of the pinball loss between predictions and target labels.
     """
-    raise_if_not(0 <= quantile <= 1, "Quantile must be between 0 and 1.", logger)
+    if not 0 <= quantile <= 1:
+        raise_log(ValueError("Quantile must be between 0 and 1."))
 
     errors = preds - labels
     left_mask = errors < 0

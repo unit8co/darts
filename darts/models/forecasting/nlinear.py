@@ -6,7 +6,7 @@ N-Linear
 import torch
 import torch.nn as nn
 
-from darts.logging import raise_if
+from darts.logging import raise_log
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
@@ -110,11 +110,11 @@ class _NLinearModule(PLForecastingModule):
     def forward(self, x_in: PLModuleInput):
         """
         x_in
-            comes as tuple `(x, x_future, x_static)` where `x` is the past target, past covariates and
+            comes as tuple `(x, x_future, x_static, future_target)` where `x` is the past target, past covariates and
             historic future covariate chunk and `x_future` is the (non-historic) future chunk.
             Input dimensions are `(n_samples, n_time_steps, n_variables)`
         """
-        x, x_future, x_static = x_in  # x: (batch, in_len, in_dim)
+        x, x_future, x_static, _ = x_in  # x: (batch, in_len, in_dim)
         # we clone `x`, to avoid value mutation from normalization when performing auto-regression
         x = x.clone()
         batch, _, _ = x.shape
@@ -437,23 +437,21 @@ class NLinearModel(MixedCovariatesTorchModel):
         self.normalize = normalize
         self._considers_static_covariates = use_static_covariates
 
-        raise_if(
+        if (
             "likelihood" in self.model_params
             and self.model_params["likelihood"] is not None
-            and self.normalize,
-            "normalize = True cannot be used with probabilistic NLinearModel",
-        )
+            and self.normalize
+        ):
+            raise_log(
+                ValueError(
+                    "normalize = True cannot be used with probabilistic NLinearModel."
+                ),
+            )
 
     def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
         # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
         (past_target, past_covariates, _, future_covariates, static_covariates, _) = (
             train_sample
-        )
-        raise_if(
-            self.shared_weights
-            and (past_covariates is not None or future_covariates is not None),
-            "Covariates have been provided, but the model has been built with `shared_weights=True`."
-            + "Please set `shared_weights=False` to use covariates.",
         )
 
         input_dim = past_target.shape[1] + sum(

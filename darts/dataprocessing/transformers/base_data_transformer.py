@@ -200,7 +200,7 @@ class BaseDataTransformer(ABC):
             New verbosity status
         """
         if not isinstance(value, bool):
-            raise_log(ValueError("Verbosity status must be a boolean."), logger=logger)
+            raise_log(ValueError("Verbosity status must be a boolean."))
 
         self._verbose = value
 
@@ -213,7 +213,7 @@ class BaseDataTransformer(ABC):
             New n_jobs value.  Set to `-1` for using all the available cores.
         """
         if not isinstance(value, int):
-            raise_log(ValueError("n_jobs must be an integer"), logger=logger)
+            raise_log(ValueError("n_jobs must be an integer"))
         self._n_jobs = value
 
     @classmethod
@@ -451,7 +451,6 @@ class BaseDataTransformer(ABC):
                         f"but only {len(self._fixed_params[key])} {key} values "
                         f"were specified upon initialising {self.name}."
                     ),
-                    logger=logger,
                 )
             elif n_timeseries_ < len(self._fixed_params[key]):
                 logger.warning(
@@ -482,7 +481,6 @@ class BaseDataTransformer(ABC):
                 ValueError(
                     "Cannot pass `columns` and `component_mask` at the same time."
                 ),
-                logger=logger,
             )
         if columns is None:
             return component_mask
@@ -494,7 +492,6 @@ class BaseDataTransformer(ABC):
                     f"`columns` do not exist in the `TimeSeries` components: "
                     f"{series.columns}"
                 ),
-                logger=logger,
             )
         return component_mask
 
@@ -543,7 +540,6 @@ class BaseDataTransformer(ABC):
                 ValueError(
                     f"`component_mask` must be a boolean `np.ndarray`, not a {type(component_mask)}."
                 ),
-                logger=logger,
             )
 
         out = []
@@ -553,7 +549,6 @@ class BaseDataTransformer(ABC):
                     ValueError(
                         "mismatch between number of components in `series` and length of `component_mask`"
                     ),
-                    logger=logger,
                 )
             if return_ts:
                 out_ = series_[series_.columns[component_mask].tolist()]
@@ -598,7 +593,6 @@ class BaseDataTransformer(ABC):
                 ValueError(
                     "If `component_mask` is given, must be a boolean np.ndarray`"
                 ),
-                logger=logger,
             )
 
         sequence_type_in = get_series_seq_type(series)
@@ -614,7 +608,6 @@ class BaseDataTransformer(ABC):
                     ValueError(
                         "mismatch between number of components in `series` and length of `component_mask`"
                     ),
-                    logger=logger,
                 )
             if isinstance(vals_, TimeSeries):
                 # remove timepoints not present in transformed data (returns a copy)
@@ -706,7 +699,6 @@ class BaseDataTransformer(ABC):
                     ValueError(
                         "Must specify either `n_timesteps`, `n_samples`, or `series`."
                     ),
-                    logger=logger,
                 )
         n_components = vals.shape[-1]
         if n_timesteps is not None:

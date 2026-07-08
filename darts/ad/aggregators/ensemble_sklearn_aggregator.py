@@ -10,7 +10,7 @@ from sklearn.ensemble import BaseEnsemble
 
 from darts import TimeSeries
 from darts.ad.aggregators.aggregators import FittableAggregator
-from darts.logging import raise_if_not
+from darts.logging import raise_log
 
 
 class EnsembleSklearnAggregator(FittableAggregator):
@@ -25,11 +25,13 @@ class EnsembleSklearnAggregator(FittableAggregator):
         model
             The sklearn ensemble model.
         """
-        raise_if_not(
-            isinstance(model, BaseEnsemble),
-            f"Scorer is expecting a model of type BaseEnsemble (from sklearn ensemble), \
-            found type {type(model)}.",
-        )
+        if not isinstance(model, BaseEnsemble):
+            raise_log(
+                ValueError(
+                    f"Scorer is expecting a model of type BaseEnsemble (from sklearn ensemble), "
+                    f"found type {type(model)}."
+                ),
+            )
 
         self.model = model
         super().__init__()

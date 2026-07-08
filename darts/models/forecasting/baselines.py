@@ -8,10 +8,7 @@ A collection of simple benchmark models for single uni- and multivariate series.
 import numpy as np
 
 from darts import TimeSeries
-from darts.logging import get_logger
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
-
-logger = get_logger(__name__)
 
 
 class NaiveMean(LocalForecastingModel):

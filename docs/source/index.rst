@@ -513,6 +513,12 @@ Our regression models are designed to predict continuous numerical values, makin
      - ✅ ✅
      - 🔴
      - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
+   * - `MultivariateModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.multivariate_model.html#darts.models.forecasting.multivariate_model.MultivariateModel>`_
+     - ✅ ✅
+     - 🔴 ✅ 🔴
+     - ✅ ✅
+     - 🔴
+     -
    * - **Global Baseline Models** (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_)
      -
      -

@@ -7,7 +7,6 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
-from darts.logging import get_logger
 from darts.models import (
     ARIMA,
     ExponentialSmoothing,
@@ -26,8 +25,6 @@ if TORCH_AVAILABLE:
     from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 else:
     TorchForecastingModel = None
-
-logger = get_logger(__name__)
 
 if TORCH_AVAILABLE:
     from darts.models import DLinearModel, NBEATSModel, RNNModel, TCNModel

@@ -68,8 +68,9 @@ TorchInferenceBatch = tuple[
 ]
 
 # The useful batch features are
-# (past target, past cov, historic future cov, future cov, static cov)
+# (past target, past cov, historic future cov, future cov, static cov, future target)
 TorchBatch = tuple[
+    torch.Tensor | None,
     torch.Tensor | None,
     torch.Tensor | None,
     torch.Tensor | None,
@@ -78,5 +79,7 @@ TorchBatch = tuple[
 ]
 
 # the final module input is a tuple of three tensors where the past features concatenated
-# (past features (past target + past cov + historic future cov), future cov, static cov)
-PLModuleInput = tuple[torch.Tensor, torch.Tensor | None, torch.Tensor | None]
+# (past features (past target + past cov + historic future cov), future cov, static cov, future target)
+PLModuleInput = tuple[
+    torch.Tensor, torch.Tensor | None, torch.Tensor | None, torch.Tensor | None
+]

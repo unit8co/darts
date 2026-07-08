@@ -29,7 +29,7 @@ import pandas as pd
 from darts import TimeSeries, metrics
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import BaseDataTransformer
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.metrics.utils import METRIC_TYPE
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.typing import TimeSeriesLike
@@ -57,8 +57,6 @@ if TORCH_AVAILABLE:
     from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 else:
     TorchForecastingModel = None
-
-logger = get_logger(__name__)
 
 
 class ConformalModel(GlobalForecastingModel, ABC):
@@ -137,18 +135,17 @@ class ConformalModel(GlobalForecastingModel, ABC):
         if not isinstance(model, GlobalForecastingModel) or not model._fit_called:
             raise_log(
                 ValueError("`model` must be a pre-trained `GlobalForecastingModel`."),
-                logger=logger,
             )
         _check_quantiles(quantiles)
 
         if cal_length is not None and cal_length < 1:
             raise_log(
-                ValueError("`cal_length` must be `>=1` or `None`."), logger=logger
+                ValueError("`cal_length` must be `>=1` or `None`."),
             )
         if cal_stride < 1:
-            raise_log(ValueError("`cal_stride` must be `>=1`."), logger=logger)
+            raise_log(ValueError("`cal_stride` must be `>=1`."))
         if cal_num_samples < 1:
-            raise_log(ValueError("`cal_num_samples` must be `>=1`."), logger=logger)
+            raise_log(ValueError("`cal_num_samples` must be `>=1`."))
 
         super().__init__(add_encoders=None)
 
@@ -1208,7 +1205,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
                         f"Expected to generate at least `{min_n_cal}` calibration forecasts with known residuals "
                         f"before the first conformal forecast, but could only generate `{len(res)}`."
                     ),
-                    logger=logger,
                 )
 
             # adjust first index based on `start`
@@ -1812,7 +1808,6 @@ class ConformalQRModel(ConformalModel):
                     "`model` must support probabilistic forecasting. Consider using a `likelihood` at "
                     "forecasting model creation, or use another conformal model."
                 ),
-                logger=logger,
             )
         super().__init__(
             model=model,
