@@ -7,12 +7,13 @@ import copy
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from functools import wraps
-from typing import Any, Optional, Union
+from typing import Any
 
 import numpy as np
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
+from darts.typing import TimeSeriesLike
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
 
@@ -62,8 +63,10 @@ class BaseDataTransformer(ABC):
         name: str = "BaseDataTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
-        parallel_params: Union[bool, Sequence[str]] = False,
+        parallel_params: bool | Sequence[str] = False,
         mask_components: bool = True,
+        columns: str | list[str] | None = None,
+        uses_insample: bool = False,
     ):
         """Abstract class for data transformers.
 
@@ -124,6 +127,17 @@ class BaseDataTransformer(ABC):
             'unmasked' in the returned `TimeSeries`. If `False`, then `component_mask` (if provided) will
             be passed as a keyword argument, but won't automatically be applied to the input timeseries.
             See `apply_component_mask` for further details.
+        columns
+            Optionally, a string or list of strings specifying the names of the components (columns)
+            to transform. If specified, only these components will be transformed, and the remaining
+            components will be kept untouched. If `None`, all components are transformed. Note that
+            if `columns` is provided, the `mask_components` attribute must be set to `True`.
+        uses_insample
+            Whether the transformer requires the in-sample (historic) series during inverse transformation.
+            If `True`, `inverse_transform` will use the ``insample`` argument to pass the transformed
+            historic series to `ts_inverse_transform`. This is needed when inverse transforming a partial
+            series (e.g. a forecast) requires information from earlier times (e.g. for
+            :class:`~darts.dataprocessing.transformers.diff.Diff`).
 
         Example
         --------
@@ -131,55 +145,30 @@ class BaseDataTransformer(ABC):
         >>> from darts.utils.timeseries_generation import linear_timeseries
         >>>
         >>> class SimpleTransform(BaseDataTransformer):
+        >>>     def __init__(self, a):
+        >>>         self._a = a
+        >>>         super().__init__()
         >>>
-        >>>         def __init__(self, a):
-        >>>             self._a = a
-        >>>             super().__init__()
-        >>>
-        >>>         @staticmethod
-        >>>         def ts_transform(series, params, **kwargs):
-        >>>             a = params['fixed']['_a']
-        >>>             b = kwargs.pop('b')
-        >>>             return a*series + b
+        >>>     @staticmethod
+        >>>     def ts_transform(series, params, **kwargs):
+        >>>         a = params['fixed']['_a']
+        >>>         b = kwargs.pop('b')
+        >>>         return a*series + b
         >>>
         >>> series = linear_timeseries(length=5)
-        >>> print(series)
-        <TimeSeries (DataArray) (time: 5, component: 1, sample: 1)>
-        array([[[0.  ]],
-
-            [[0.25]],
-
-            [[0.5 ]],
-
-            [[0.75]],
-
-            [[1.  ]]])
-        Coordinates:
-        * time       (time) datetime64[ns] 2000-01-01 2000-01-02 ... 2000-01-05
-        * component  (component) object 'linear'
-        Dimensions without coordinates: sample
-        Attributes:
-            static_covariates:  None
-            hierarchy:          None
+        >>> print(series.values())
+        [[0.  ]
+         [0.25]
+         [0.5 ]
+         [0.75]
+         [1.  ]]
         >>> series = SimpleTransform(a=2).transform(series, b=3)
-        >>> print(series)
-        <TimeSeries (DataArray) (time: 5, component: 1, sample: 1)>
-        array([[[3. ]],
-
-            [[3.5]],
-
-            [[4. ]],
-
-            [[4.5]],
-
-            [[5. ]]])
-        Coordinates:
-        * time       (time) datetime64[ns] 2000-01-01 2000-01-02 ... 2000-01-05
-        * component  (component) object 'linear'
-        Dimensions without coordinates: sample
-        Attributes:
-            static_covariates:  None
-            hierarchy:          None
+        >>> print(series.values())
+        [[3. ]
+         [3.5]
+         [4. ]
+         [4.5]
+         [5. ]]
         """
         # Assume `super().__init__` called at *very end* of
         # child-most class's `__init__`, so `vars(self)` contains
@@ -192,10 +181,12 @@ class BaseDataTransformer(ABC):
         elif not parallel_params:
             parallel_params = tuple()
         self._parallel_params = parallel_params
-        self._mask_components = mask_components
         self._name = name
         self._verbose = verbose
         self._n_jobs = n_jobs
+        self._mask_components = mask_components
+        self._columns = [columns] if isinstance(columns, str) else columns
+        self._uses_insample = uses_insample
 
     def set_verbose(self, value: bool):
         """Set the verbosity status.
@@ -209,7 +200,7 @@ class BaseDataTransformer(ABC):
             New verbosity status
         """
         if not isinstance(value, bool):
-            raise_log(ValueError("Verbosity status must be a boolean."), logger=logger)
+            raise_log(ValueError("Verbosity status must be a boolean."))
 
         self._verbose = value
 
@@ -222,7 +213,7 @@ class BaseDataTransformer(ABC):
             New n_jobs value.  Set to `-1` for using all the available cores.
         """
         if not isinstance(value, int):
-            raise_log(ValueError("n_jobs must be an integer"), logger=logger)
+            raise_log(ValueError("n_jobs must be an integer"))
         self._n_jobs = value
 
     @classmethod
@@ -243,15 +234,16 @@ class BaseDataTransformer(ABC):
         should then return a transformed ``TimeSeries`` object.
 
         The `params` dictionary *can* contain up to two keys:
-            1. `params['fixed']` stores the fixed parameters of the transformation (i.e. attributed
-            defined in the `__init__` method of the child-most class *before* `super().__init__` is called);
-            `params['fixed']` is a dictionary itself, whose keys are the names of the fixed parameter
-            attributes. For example, if `_my_fixed_param` is defined as an attribute in the child-most
-            class, then this fixed parameter value can be accessed through `params['fixed']['_my_fixed_param']`.
-            2. If the transform inherits from the :class:`.FittableDataTransformer` class, then `params['fitted']`
-            will store the fitted parameters of the transformation; the fitted parameters are simply the output(s)
-            returned by the `ts_fit` function, whatever those output(s) may be. See :class:`.FittableDataTransformer`
-            for further details about fitted parameters.
+
+        - `params['fixed']` stores the fixed parameters of the transformation (i.e. attributed
+          defined in the `__init__` method of the child-most class *before* `super().__init__` is called);
+          `params['fixed']` is a dictionary itself, whose keys are the names of the fixed parameter
+          attributes. For example, if `_my_fixed_param` is defined as an attribute in the child-most
+          class, then this fixed parameter value can be accessed through `params['fixed']['_my_fixed_param']`.
+        - If the transform inherits from the :class:`.FittableDataTransformer` class, then `params['fitted']`
+          will store the fitted parameters of the transformation; the fitted parameters are simply the output(s)
+          returned by the `ts_fit` function, whatever those output(s) may be. See :class:`.FittableDataTransformer`
+          for further details about fitted parameters.
 
         Any positional/keyword argument supplied to the `transform` method are passed as positional/keyword arguments
         to `ts_transform`; hence, `ts_transform` should also accept `*args` and/or `**kwargs` if positional/keyword
@@ -261,16 +253,17 @@ class BaseDataTransformer(ABC):
 
         The `BaseDataTransformer` class includes some helper methods which may prove useful when implementing a
         `ts_transform` function:
-            1. The `apply_component_mask` and `unapply_component_mask` methods, which apply and 'unapply'
-            `component_mask`s to a `TimeSeries` respectively; these methods are automatically called in `transform`
-            if the `mask_component` attribute of `BaseDataTransformer` is set to `True`, but you may want to manually
-            call them if you set `mask_components` to `False` and wish to manually specify how `component_mask`s are
-            applied to a `TimeSeries`.
-            2. The `stack_samples` method, which stacks all the samples in a `TimeSeries` along
-            the component axis, so that the `TimeSeries` goes from shape `(n_timesteps, n_components, n_samples)` to
-            shape `(n_timesteps, n_components * n_samples)`. This stacking is useful if a pointwise transform is being
-            implemented (i.e. transforming the value at time `t` depends only on the value of the series at that
-            time `t`). Once transformed, the stacked `TimeSeries` can be 'unstacked' using the `unstack_samples` method.
+
+        - The `apply_component_mask` and `unapply_component_mask` methods, which apply and 'unapply'
+          `component_mask`s to a `TimeSeries` respectively; these methods are automatically called in `transform`
+          if the `mask_component` attribute of `BaseDataTransformer` is set to `True`, but you may want to manually
+          call them if you set `mask_components` to `False` and wish to manually specify how `component_mask`s are
+          applied to a `TimeSeries`.
+        - The `stack_samples` method, which stacks all the samples in a `TimeSeries` along
+          the component axis, so that the `TimeSeries` goes from shape `(n_timesteps, n_components, n_samples)` to
+          shape `(n_timesteps, n_components * n_samples)`. This stacking is useful if a pointwise transform is being
+          implemented (i.e. transforming the value at time `t` depends only on the value of the series at that
+          time `t`). Once transformed, the stacked `TimeSeries` can be 'unstacked' using the `unstack_samples` method.
 
         Parameters
         ----------
@@ -301,12 +294,12 @@ class BaseDataTransformer(ABC):
 
     def transform(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeriesLike,
         *args,
-        component_mask: Optional[np.array] = None,
-        series_idx: Optional[Union[int, Sequence[int]]] = None,
+        component_mask: np.ndarray | None = None,
+        series_idx: int | Sequence[int] | None = None,
         **kwargs,
-    ) -> Union[TimeSeries, list[TimeSeries]]:
+    ) -> TimeSeries | list[TimeSeries]:
         """Transforms a (sequence of) of series by calling the user-implemeneted `ts_transform` method.
 
         In case a ``Sequence[TimeSeries]`` is passed as input data, this function takes care of
@@ -323,7 +316,7 @@ class BaseDataTransformer(ABC):
             (sequence of) series to be transformed.
         args
             Additional positional arguments for each :func:`ts_transform()` method call
-        component_mask : Optional[np.ndarray] = None
+        component_mask
             Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies which
             components of the underlying `series` the transform should consider. If the `mask_components`
             attribute was set to `True` when instantiating `BaseDataTransformer`, then the component mask
@@ -337,7 +330,7 @@ class BaseDataTransformer(ABC):
 
         Returns
         -------
-        Union[TimeSeries, List[TimeSeries]]
+        TimeSeriesLike
             Transformed data.
 
         Notes
@@ -357,6 +350,9 @@ class BaseDataTransformer(ABC):
         If `mask_components` was set to `False` when instantiating `BaseDataTransformer`, then any provided
         `component_masks` will be passed as a keyword argument `ts_transform`; the user can then manually specify
         how the `component_mask` should be applied to each series.
+
+        Alternatively, if the `columns` parameter was specified when instantiating the transformer,
+        the `component_mask` is automatically generated to target only the specified column names.
         """
 
         desc = f"Transform ({self._name})"
@@ -387,6 +383,14 @@ class BaseDataTransformer(ABC):
             verbose=self._verbose,
             desc=desc,
             total=len(data),
+        )
+
+        # This assumes all TimeSeries in the Sequence have the exact same
+        # component names and ordering.
+        component_mask = BaseDataTransformer._generate_component_mask(
+            series=data[0],
+            component_mask=component_mask,
+            columns=self._columns,
         )
 
         # apply & unapply component masking to the transform method
@@ -447,7 +451,6 @@ class BaseDataTransformer(ABC):
                         f"but only {len(self._fixed_params[key])} {key} values "
                         f"were specified upon initialising {self.name}."
                     ),
-                    logger=logger,
                 )
             elif n_timeseries_ < len(self._fixed_params[key]):
                 logger.warning(
@@ -459,7 +462,7 @@ class BaseDataTransformer(ABC):
         return None
 
     @staticmethod
-    def _process_series_idx(series_idx: Union[int, Sequence[int]]) -> Sequence[int]:
+    def _process_series_idx(series_idx: int | Sequence[int]) -> Sequence[int]:
         """Convert the `series_idx` to a Sequence[int].
 
         Note: the validity of the entries in series_idx is checked in _get_params().
@@ -467,11 +470,37 @@ class BaseDataTransformer(ABC):
         return [series_idx] if isinstance(series_idx, int) else series_idx
 
     @staticmethod
+    def _generate_component_mask(
+        series: TimeSeries,
+        component_mask: np.ndarray | None,
+        columns: list[str] | None,
+    ) -> np.ndarray | None:
+        """Returns the existing `component_mask` or generates a new component mask based on `columns`."""
+        if columns is not None and component_mask is not None:
+            raise_log(
+                ValueError(
+                    "Cannot pass `columns` and `component_mask` at the same time."
+                ),
+            )
+        if columns is None:
+            return component_mask
+        component_mask = series.columns.isin(columns)
+        if component_mask.sum() != len(columns):
+            raise_log(
+                ValueError(
+                    f"Columns {set(columns) - set(series.columns)} specified in "
+                    f"`columns` do not exist in the `TimeSeries` components: "
+                    f"{series.columns}"
+                ),
+            )
+        return component_mask
+
+    @staticmethod
     def apply_component_mask(
         series: TimeSeries,
-        component_mask: Optional[np.ndarray] = None,
+        component_mask: np.ndarray | None = None,
         return_ts: bool = False,
-    ) -> Union[TimeSeries, Sequence[TimeSeries], np.ndarray, Sequence[np.ndarray]]:
+    ) -> TimeSeriesLike | np.ndarray | Sequence[np.ndarray]:
         """
         Extracts components specified by `component_mask` from `series`
 
@@ -511,7 +540,6 @@ class BaseDataTransformer(ABC):
                 ValueError(
                     f"`component_mask` must be a boolean `np.ndarray`, not a {type(component_mask)}."
                 ),
-                logger=logger,
             )
 
         out = []
@@ -521,7 +549,6 @@ class BaseDataTransformer(ABC):
                     ValueError(
                         "mismatch between number of components in `series` and length of `component_mask`"
                     ),
-                    logger=logger,
                 )
             if return_ts:
                 out_ = series_[series_.columns[component_mask].tolist()]
@@ -532,10 +559,10 @@ class BaseDataTransformer(ABC):
 
     @staticmethod
     def unapply_component_mask(
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        vals: Union[np.ndarray, Sequence[np.ndarray], TimeSeries, Sequence[TimeSeries]],
-        component_mask: Optional[np.ndarray] = None,
-    ) -> Union[np.ndarray, Sequence[np.ndarray], TimeSeries, Sequence[TimeSeries]]:
+        series: TimeSeriesLike,
+        vals: np.ndarray | Sequence[np.ndarray] | TimeSeriesLike,
+        component_mask: np.ndarray | None = None,
+    ) -> np.ndarray | Sequence[np.ndarray] | TimeSeriesLike:
         """
         Adds back components previously removed by `component_mask` in `apply_component_mask` method.
 
@@ -566,7 +593,6 @@ class BaseDataTransformer(ABC):
                 ValueError(
                     "If `component_mask` is given, must be a boolean np.ndarray`"
                 ),
-                logger=logger,
             )
 
         sequence_type_in = get_series_seq_type(series)
@@ -582,7 +608,6 @@ class BaseDataTransformer(ABC):
                     ValueError(
                         "mismatch between number of components in `series` and length of `component_mask`"
                     ),
-                    logger=logger,
                 )
             if isinstance(vals_, TimeSeries):
                 # remove timepoints not present in transformed data (returns a copy)
@@ -598,7 +623,7 @@ class BaseDataTransformer(ABC):
         return out[0] if called_with_single_series else out
 
     @staticmethod
-    def stack_samples(vals: Union[np.ndarray, TimeSeries]) -> np.ndarray:
+    def stack_samples(vals: np.ndarray | TimeSeries) -> np.ndarray:
         """
         Creates an array of shape `(n_timesteps * n_samples, n_components)` from
         either a `TimeSeries` or the `array_values` of a `TimeSeries`.
@@ -637,9 +662,9 @@ class BaseDataTransformer(ABC):
     @staticmethod
     def unstack_samples(
         vals: np.ndarray,
-        n_timesteps: Optional[int] = None,
-        n_samples: Optional[int] = None,
-        series: Optional[TimeSeries] = None,
+        n_timesteps: int | None = None,
+        n_samples: int | None = None,
+        series: TimeSeries | None = None,
     ) -> np.ndarray:
         """
         Reshapes the 2D array returned by `stack_samples` back into an array of shape
@@ -674,7 +699,6 @@ class BaseDataTransformer(ABC):
                     ValueError(
                         "Must specify either `n_timesteps`, `n_samples`, or `series`."
                     ),
-                    logger=logger,
                 )
         n_components = vals.shape[-1]
         if n_timesteps is not None:

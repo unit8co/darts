@@ -11,20 +11,15 @@ The wrappers come with all capabilities of Darts' `SKLearn*Model`.
 
 For detailed examples and tutorials, see:
 
-* `SKLearn-Like Regression Model Examples <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`_
-* `SKLearn-Like Classification Model Examples <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`_
+* `SKLearn-Like Regression Model Examples <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`__
+* `SKLearn-Like Classification Model Examples <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`__
 
 To enable LightGBM support in Darts, follow the detailed install instructions for LightGBM in the INSTALL:
 https://github.com/unit8co/darts/blob/master/INSTALL.md
 """
 
-from collections.abc import Sequence
-from typing import Optional, Union
-
 import lightgbm as lgb
 
-from darts import TimeSeries
-from darts.logging import get_logger
 from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
@@ -32,29 +27,28 @@ from darts.models.forecasting.sklearn_model import (
     _ClassifierMixin,
     _QuantileModelContainer,
 )
+from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import QuantileRegression, _get_likelihood
-
-logger = get_logger(__name__)
 
 
 class LightGBMModel(SKLearnModelWithCategoricalFeatures):
     def __init__(
         self,
-        lags: Optional[LAGS_TYPE] = None,
-        lags_past_covariates: Optional[LAGS_TYPE] = None,
-        lags_future_covariates: Optional[FUTURE_LAGS_TYPE] = None,
+        lags: LAGS_TYPE | None = None,
+        lags_past_covariates: LAGS_TYPE | None = None,
+        lags_future_covariates: FUTURE_LAGS_TYPE | None = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
-        add_encoders: Optional[dict] = None,
-        likelihood: Optional[str] = None,
-        quantiles: Optional[list[float]] = None,
-        random_state: Optional[int] = None,
-        multi_models: Optional[bool] = True,
+        add_encoders: dict | None = None,
+        likelihood: str | None = None,
+        quantiles: list[float] | None = None,
+        random_state: int | None = None,
+        multi_models: bool | None = True,
         use_static_covariates: bool = True,
-        categorical_past_covariates: Optional[Union[str, list[str]]] = None,
-        categorical_future_covariates: Optional[Union[str, list[str]]] = None,
-        categorical_static_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_past_covariates: str | list[str] | None = None,
+        categorical_future_covariates: str | list[str] | None = None,
+        categorical_static_covariates: str | list[str] | None = None,
         **kwargs,
     ):
         """LGBM Model
@@ -132,17 +126,23 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             Can be set to `quantile` or `poisson`. If set, the model will be probabilistic, allowing sampling at
             prediction time. This will overwrite any `objective` parameter.
         quantiles
-            Fit the model to these quantiles if the `likelihood` is set to `quantile`.
+            Fit the model to these quantiles if the ``likelihood`` is set to ``"quantile"``.
+            Default is ``None`` and will use :class:`~darts.utils.likelihood_models.sklearn.QuantileRegression`'s
+            default quantiles.
         random_state
             Controls the randomness for reproducible forecasting.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model
-            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
-            `output_chunk_length - n` for each step `n`). Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -152,7 +152,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
             as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that are specified as
             categorical must be integer-encoded. For more information on how LightGBM handles categorical
             features, visit: `Categorical feature support documentation
-            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`_.
+            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`__.
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
             treated as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that
@@ -186,13 +186,13 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1006.85376674],
-               [1006.83998586],
-               [1006.63884831],
-               [1006.57201255],
-               [1006.52290556],
-               [1006.39550065]])
+        >>> print(pred.values())
+        [[1006.85376674]
+         [1006.83998586]
+         [1006.63884831]
+         [1006.57201255]
+         [1006.52290556]
+         [1006.39550065]]
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
@@ -226,10 +226,10 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
 
     def _set_likelihood(
         self,
-        likelihood: Optional[str],
+        likelihood: str | None,
         output_chunk_length: int,
         multi_models: bool,
-        quantiles: Optional[list[float]] = None,
+        quantiles: list[float] | None = None,
     ):
         self._likelihood = _get_likelihood(
             likelihood=likelihood,
@@ -247,19 +247,18 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
 
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        max_samples_per_ts: Optional[int] = None,
-        n_jobs_multioutput_wrapper: Optional[int] = None,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-        val_sample_weight: Optional[
-            Union[TimeSeries, Sequence[TimeSeries], str]
-        ] = None,
-        verbose: Optional[bool] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        val_series: TimeSeriesLike | None = None,
+        val_past_covariates: TimeSeriesLike | None = None,
+        val_future_covariates: TimeSeriesLike | None = None,
+        max_samples_per_ts: int | None = None,
+        n_jobs_multioutput_wrapper: int | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
+        val_sample_weight: TimeSeriesLike | str | None = None,
+        stride: int = 1,
+        verbose: bool | None = None,
         **kwargs,
     ):
         """
@@ -277,7 +276,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
             TimeSeries or Sequence[TimeSeries] object containing the target values for evaluation dataset
         val_past_covariates
             Optionally, a series or sequence of series specifying past-observed covariates for evaluation dataset
-        val_future_covariates : Union[TimeSeries, Sequence[TimeSeries]]
+        val_future_covariates
             Optionally, a series or sequence of series specifying future-known covariates for evaluation dataset
         max_samples_per_ts
             This is an integer upper bound on the number of tuples that can be produced
@@ -301,9 +300,13 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         val_sample_weight
             Same as for `sample_weight` but for the evaluation dataset.
+        stride
+            The number of time steps between consecutive samples, applied starting from the end of the series. The same
+            stride will be applied to both the training and evaluation set (if supplied and supported). This should be
+            used with caution as it might introduce bias in the forecasts.
         verbose
             Optionally, set the fit verbosity. Not effective for all models.
-         **kwargs
+        **kwargs
             Additional kwargs passed to `lightgbm.LGBRegressor.fit()`
         """
         verbose = None
@@ -325,6 +328,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
                     n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
                     sample_weight=sample_weight,
                     val_sample_weight=val_sample_weight,
+                    stride=stride,
                     verbose=verbose,
                     **kwargs,
                 )
@@ -343,6 +347,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
             n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
             sample_weight=sample_weight,
             val_sample_weight=val_sample_weight,
+            stride=stride,
             verbose=verbose,
             **kwargs,
         )
@@ -353,11 +358,11 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
         return True
 
     @property
-    def val_set_params(self) -> tuple[Optional[str], Optional[str]]:
+    def val_set_params(self) -> tuple[str | None, str | None]:
         return "eval_set", "eval_sample_weight"
 
     @property
-    def _categorical_fit_param(self) -> Optional[str]:
+    def _categorical_fit_param(self) -> str | None:
         """
         Returns the name of the categorical features parameter from model's `fit` method .
         """
@@ -367,19 +372,19 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
 class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
     def __init__(
         self,
-        lags: Union[int, list] = None,
-        lags_past_covariates: Union[int, list[int]] = None,
-        lags_future_covariates: Union[tuple[int, int], list[int]] = None,
+        lags: int | list | None = None,
+        lags_past_covariates: int | list[int] | None = None,
+        lags_future_covariates: tuple[int, int] | list[int] | None = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
-        add_encoders: Optional[dict] = None,
-        likelihood: Optional[str] = LikelihoodType.ClassProbability.value,
-        random_state: Optional[int] = None,
-        multi_models: Optional[bool] = True,
+        add_encoders: dict | None = None,
+        likelihood: str | None = LikelihoodType.ClassProbability.value,
+        random_state: int | None = None,
+        multi_models: bool | None = True,
         use_static_covariates: bool = True,
-        categorical_past_covariates: Optional[Union[str, list[str]]] = None,
-        categorical_future_covariates: Optional[Union[str, list[str]]] = None,
-        categorical_static_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_past_covariates: str | list[str] | None = None,
+        categorical_future_covariates: str | list[str] | None = None,
+        categorical_static_covariates: str | list[str] | None = None,
         **kwargs,
     ):
         """LGBM Model for classification forecasting
@@ -458,6 +463,10 @@ class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             'classprobability' or ``None``. If set to 'classprobability', setting `predict_likelihood_parameters`
             in `predict()` will forecast class probabilities.
@@ -465,9 +474,9 @@ class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
         random_state
             Controls the randomness for reproducible forecasting.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model
-            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
-            `output_chunk_length - n` for each step `n`). Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -477,7 +486,7 @@ class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
             as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that are specified as
             categorical must be integer-encoded. For more information on how LightGBM handles categorical
             features, visit: `Categorical feature support documentation
-            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`_.
+            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`__.
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
             treated as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that
@@ -512,13 +521,13 @@ class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[0.],
-               [0.],
-               [0.],
-               [1.],
-               [1.],
-               [0.]])
+        >>> print(pred.values())
+        [[0.]
+         [0.]
+         [0.]
+         [1.]
+         [1.]
+         [0.]]
         """
         # likelihood always set to ClassProbability as it's the only supported classifiaction likelihood
         # this allow users to predict class probabilities,
@@ -546,10 +555,10 @@ class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
 
     def _set_likelihood(
         self,
-        likelihood: Optional[str],
+        likelihood: str | None,
         output_chunk_length: int,
         multi_models: bool,
-        quantiles: Optional[list[float]] = None,
+        quantiles: list[float] | None = None,
     ):
         """
         Check and set the likelihood.

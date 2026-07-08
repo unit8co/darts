@@ -8,14 +8,12 @@ some covariate series lags in order to obtain a forecast.
 See [1]_ for a reference around random forests.
 
 The implementations is wrapped around `RandomForestRegressor
-<https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`_.
+<https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`__.
 
 References
 ----------
 .. [1] https://en.wikipedia.org/wiki/Random_forest
 """
-
-from typing import Optional
 
 from sklearn.ensemble import RandomForestRegressor
 
@@ -32,17 +30,17 @@ logger = get_logger(__name__)
 class RandomForestModel(SKLearnModel):
     def __init__(
         self,
-        lags: Optional[LAGS_TYPE] = None,
-        lags_past_covariates: Optional[LAGS_TYPE] = None,
-        lags_future_covariates: Optional[FUTURE_LAGS_TYPE] = None,
+        lags: LAGS_TYPE | None = None,
+        lags_past_covariates: LAGS_TYPE | None = None,
+        lags_future_covariates: FUTURE_LAGS_TYPE | None = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
-        add_encoders: Optional[dict] = None,
-        n_estimators: Optional[int] = 100,
-        max_depth: Optional[int] = None,
-        multi_models: Optional[bool] = True,
+        add_encoders: dict | None = None,
+        n_estimators: int | None = 100,
+        max_depth: int | None = None,
+        multi_models: bool | None = True,
         use_static_covariates: bool = True,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
         **kwargs,
     ):
         """Random Forest Model
@@ -120,15 +118,19 @@ class RandomForestModel(SKLearnModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         n_estimators : int
             The number of trees in the forest.
         max_depth : int
             The maximum depth of the tree. If None, then nodes are expanded until all leaves are pure or until all
             leaves contain less than min_samples_split samples.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model
-            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
-            `output_chunk_length - n` for each step `n`). Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -160,13 +162,13 @@ class RandomForestModel(SKLearnModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1006.29805],
-               [1006.23675],
-               [1006.17325],
-               [1006.10295],
-               [1006.06505],
-               [1006.05465]])
+        >>> print(pred.values())
+        [[1006.29805]
+         [1006.23675]
+         [1006.17325]
+         [1006.10295]
+         [1006.06505]
+         [1006.05465]]
         """
         self.n_estimators = n_estimators
         self.max_depth = max_depth
@@ -192,17 +194,17 @@ class RandomForestModel(SKLearnModel):
 class RandomForest(RandomForestModel):
     def __init__(
         self,
-        lags: Optional[LAGS_TYPE] = None,
-        lags_past_covariates: Optional[LAGS_TYPE] = None,
-        lags_future_covariates: Optional[FUTURE_LAGS_TYPE] = None,
+        lags: LAGS_TYPE | None = None,
+        lags_past_covariates: LAGS_TYPE | None = None,
+        lags_future_covariates: FUTURE_LAGS_TYPE | None = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
-        add_encoders: Optional[dict] = None,
-        n_estimators: Optional[int] = 100,
-        max_depth: Optional[int] = None,
-        multi_models: Optional[bool] = True,
+        add_encoders: dict | None = None,
+        n_estimators: int | None = 100,
+        max_depth: int | None = None,
+        multi_models: bool | None = True,
         use_static_covariates: bool = True,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
         **kwargs,
     ):
         """Random Forest Model
@@ -289,9 +291,9 @@ class RandomForest(RandomForestModel):
             The maximum depth of the tree. If None, then nodes are expanded until all leaves are pure or until all
             leaves contain less than min_samples_split samples.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model
-            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
-            `output_chunk_length - n` for each step `n`). Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -323,13 +325,13 @@ class RandomForest(RandomForestModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1006.29805],
-               [1006.23675],
-               [1006.17325],
-               [1006.10295],
-               [1006.06505],
-               [1006.05465]])
+        >>> print(pred.values())
+        [[1006.29805]
+         [1006.23675]
+         [1006.17325]
+         [1006.10295]
+         [1006.06505]
+         [1006.05465]]
         """
 
         raise_deprecation_warning(

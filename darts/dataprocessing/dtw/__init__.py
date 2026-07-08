@@ -1,6 +1,9 @@
 """
 Dynamic Time Warping (DTW)
 --------------------------
+
+Tools for computing Dynamic Time Warping alignment between time series, including cost matrices,
+alignment algorithms, and windowing constraints (Sakoe-Chiba, Itakura).
 """
 
 from darts.dataprocessing.dtw.cost_matrix import CostMatrix

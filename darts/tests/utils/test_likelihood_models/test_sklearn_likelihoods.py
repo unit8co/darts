@@ -2,6 +2,7 @@ from itertools import combinations
 
 from darts.utils.likelihood_models.sklearn import (
     GaussianLikelihood,
+    MultiQuantileRegression,
     PoissonLikelihood,
     QuantileRegression,
 )
@@ -11,6 +12,10 @@ likelihood_models_equal = {
     "quantile": [
         QuantileRegression(n_outputs=1, quantiles=[0.1, 0.5, 0.9]),
         QuantileRegression(n_outputs=12, quantiles=[0.1, 0.5, 0.9]),
+    ],
+    "multiquantile": [
+        MultiQuantileRegression(n_outputs=1, quantiles=[0.2, 0.5, 0.8]),
+        MultiQuantileRegression(n_outputs=12, quantiles=[0.2, 0.5, 0.8]),
     ],
     "gaussian": [
         GaussianLikelihood(n_outputs=1),
@@ -26,6 +31,10 @@ likelihood_models_unequal = {
     "quantile": [
         QuantileRegression(n_outputs=1, quantiles=[0.2, 0.5, 0.8]),
         QuantileRegression(n_outputs=1, quantiles=[0.1, 0.5, 0.9]),
+    ],
+    "multiquantile": [
+        MultiQuantileRegression(n_outputs=1, quantiles=[0.2, 0.5, 0.8]),
+        MultiQuantileRegression(n_outputs=1, quantiles=[0.1, 0.5, 0.9]),
     ],
 }
 

@@ -5,7 +5,6 @@ Kalman Filter
 
 from abc import ABC
 from copy import deepcopy
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -13,12 +12,12 @@ from nfoursid.kalman import Kalman
 from nfoursid.nfoursid import NFourSID
 
 from darts import TimeSeries
-from darts.logging import raise_if, raise_if_not
+from darts.logging import raise_log
 from darts.models.filtering.filtering_model import FilteringModel
 
 
 class KalmanFilter(FilteringModel, ABC):
-    def __init__(self, dim_x: int = 1, kf: Optional[Kalman] = None):
+    def __init__(self, dim_x: int = 1, kf: Kalman | None = None):
         """
         This model implements a Kalman filter over a time series.
 
@@ -75,21 +74,21 @@ class KalmanFilter(FilteringModel, ABC):
     def fit(
         self,
         series: TimeSeries,
-        covariates: Optional[TimeSeries] = None,
-        num_block_rows: Optional[int] = None,
+        covariates: TimeSeries | None = None,
+        num_block_rows: int | None = None,
     ) -> "KalmanFilter":
         """
         Initializes the Kalman filter using the N4SID algorithm.
 
         Parameters
         ----------
-        series : TimeSeries
+        series
             The series of outputs (observations) used to infer the underlying state space model.
             This must be a deterministic series (containing one sample).
-        covariates : Optional[TimeSeries]
+        covariates
             An optional series of inputs (control signal) that will also be used to infer the underlying state space
             model. This must be a deterministic series (containing one sample).
-        num_block_rows : Optional[int]
+        num_block_rows
             The number of block rows to use in the block Hankel matrices used in the N4SID algorithm.
             See the documentation of nfoursid.nfoursid.NFourSID for more information.
             If not provided, the dimensionality of the state space model will be used, with a maximum of 10.
@@ -102,10 +101,12 @@ class KalmanFilter(FilteringModel, ABC):
         if covariates is not None:
             self._expect_covariates = True
             covariates = covariates.slice_intersect(series)
-            raise_if_not(
-                series.has_same_time_as(covariates),
-                "The number of timesteps in the series and the covariates must match.",
-            )
+            if not series.has_same_time_as(covariates):
+                raise_log(
+                    ValueError(
+                        "The number of timesteps in the series and the covariates must match."
+                    ),
+                )
 
         # TODO: Handle multiple timeseries. Needs reimplementation of NFourSID?
         self.dim_y = series.width
@@ -142,7 +143,7 @@ class KalmanFilter(FilteringModel, ABC):
     def filter(
         self,
         series: TimeSeries,
-        covariates: Optional[TimeSeries] = None,
+        covariates: TimeSeries | None = None,
         num_samples: int = 1,
     ) -> TimeSeries:
         """
@@ -150,13 +151,13 @@ class KalmanFilter(FilteringModel, ABC):
 
         Parameters
         ----------
-        series : TimeSeries
+        series
             The series of outputs (observations) used to infer the underlying outputs according to the specified Kalman
             process. This must be a deterministic series (containing one sample).
-        covariates : Optional[TimeSeries]
+        covariates
             An optional series of inputs (control signal), necessary if the Kalman filter was initialized with
             covariates. This must be a deterministic series (containing one sample).
-        num_samples : int, default: 1
+        num_samples
             The number of samples to generate from the inferred distribution of the output z. If this is set to 1, the
             output is a `TimeSeries` containing a single sample using the mean of the distribution.
 
@@ -167,39 +168,49 @@ class KalmanFilter(FilteringModel, ABC):
         """
         super().filter(series)
 
-        raise_if(
-            self.kf is None,
-            "The Kalman filter has not been fitted yet. Call `fit()` first "
-            "or provide Kalman filter in constructor.",
-        )
+        if self.kf is None:
+            raise_log(
+                ValueError(
+                    "The Kalman filter has not been fitted yet. Call `fit()` first "
+                    "or provide Kalman filter in constructor."
+                ),
+            )
 
-        raise_if_not(
-            series.width == self.dim_y,
-            "The provided TimeSeries dimensionality does not match "
-            "the output dimensionality of the Kalman filter.",
-        )
+        if series.width != self.dim_y:
+            raise_log(
+                ValueError(
+                    "The provided TimeSeries dimensionality does not match "
+                    "the output dimensionality of the Kalman filter."
+                ),
+            )
 
-        raise_if(
-            covariates is not None and not self._expect_covariates,
-            "Covariates were provided, but the Kalman filter was not fitted with covariates.",
-        )
+        if covariates is not None and not self._expect_covariates:
+            raise_log(
+                ValueError(
+                    "Covariates were provided, but the Kalman filter was not fitted with covariates."
+                ),
+            )
 
         if self._expect_covariates:
-            raise_if(
-                covariates is None,
-                "The Kalman filter was fitted with covariates, but these were not provided.",
-            )
+            if covariates is None:
+                raise_log(
+                    ValueError(
+                        "The Kalman filter was fitted with covariates, but these were not provided."
+                    ),
+                )
 
-            raise_if_not(
-                covariates.is_deterministic,
-                "The covariates must be deterministic (observations).",
-            )
+            if not covariates.is_deterministic:
+                raise_log(
+                    ValueError("The covariates must be deterministic (observations)."),
+                )
 
             covariates = covariates.slice_intersect(series)
-            raise_if_not(
-                series.has_same_time_as(covariates),
-                "The number of timesteps in the series and the covariates must match.",
-            )
+            if not series.has_same_time_as(covariates):
+                raise_log(
+                    ValueError(
+                        "The number of timesteps in the series and the covariates must match."
+                    ),
+                )
 
         kf = deepcopy(self.kf)
 

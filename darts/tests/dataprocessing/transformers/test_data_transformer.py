@@ -1,8 +1,17 @@
+import itertools
+
 import numpy as np
+import pytest
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from darts import TimeSeries
-from darts.dataprocessing.transformers import Scaler
+from darts import TimeSeries, concatenate
+from darts.dataprocessing.transformers import (
+    BoxCox,
+    Diff,
+    InvertibleMapper,
+    MissingValuesFiller,
+    Scaler,
+)
 from darts.utils import timeseries_generation as tg
 from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 
@@ -113,16 +122,25 @@ class TestDataTransformer:
             np.array([0.0] * ss.width),
         )
 
-    def test_component_mask_transformation(self):
-        scaler = Scaler(MinMaxScaler())
+    @pytest.mark.parametrize("mask_components", [True, False])
+    def test_component_mask_transformation_scaler(self, mask_components):
+        component_mask = np.array([True, False, True])
+
         # shape = (10, 3, 2)
         vals = np.array([np.arange(6).reshape(3, 2)] * 10)
 
         # scalers should only consider True columns
-        component_mask = np.array([True, False, True])
-
         s = TimeSeries.from_values(vals)
-        ss = scaler.fit_transform(s, component_mask=component_mask)
+
+        if mask_components:
+            kwargs = dict()
+            tf_kwargs = dict(component_mask=component_mask)
+        else:
+            kwargs = dict(columns=s.columns[component_mask])
+            tf_kwargs = dict()
+
+        scaler = Scaler(MinMaxScaler(), **kwargs)
+        ss = scaler.fit_transform(s, **tf_kwargs)
         ss_vals = ss.all_values(copy=False)
 
         # test non-masked columns
@@ -131,7 +149,7 @@ class TestDataTransformer:
         assert round(abs(ss_vals[:, [0, 2], :].max() - 1.0), 7) == 0
         assert round(abs(ss_vals[:, [0, 2], :].min() - 0.0), 7) == 0
 
-        ssi = scaler.inverse_transform(ss, component_mask=component_mask)
+        ssi = scaler.inverse_transform(ss, **tf_kwargs)
 
         # Test inverse transform
         np.testing.assert_allclose(s.all_values(), ssi.all_values())
@@ -153,3 +171,76 @@ class TestDataTransformer:
             Scaler(global_fit=True).fit([sine_series, lin_series])._fitted_params[0]
         )
         assert local_fitted_scaler.get_params() == global_fitted_scaler.get_params()
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [True, False],
+            [
+                (BoxCox, dict()),
+                (Diff, dict(dropna=False)),
+                (
+                    InvertibleMapper,
+                    dict(
+                        fn=lambda x: x + 1.0,
+                        inverse_fn=lambda x: x - 1.0,
+                    ),
+                ),
+                (MissingValuesFiller, dict()),
+                (Scaler, dict()),
+            ],
+        ),
+    )
+    def test_component_mask_transformation_all(self, config):
+        mask_components, (tf_cls, kwargs) = config
+        component_mask = np.array([True, False, True])
+
+        # shape = (10, 3, 2)
+        s = concatenate(
+            [
+                sine_timeseries(
+                    length=20,
+                    value_y_offset=2 + idx,
+                )
+                for idx in range(3)
+            ],
+            axis=1,
+        )
+        vals = s.all_values(copy=False)
+
+        if issubclass(tf_cls, MissingValuesFiller):
+            vals[1:2] = np.nan
+
+        if mask_components:
+            tf_kwargs = dict(component_mask=component_mask)
+        else:
+            kwargs = dict(columns=s.columns[component_mask], **kwargs)
+            tf_kwargs = dict()
+
+        transformer = tf_cls(**kwargs)
+        if hasattr(transformer, "fit"):
+            transformer.fit(s, **tf_kwargs)
+
+        ss = transformer.transform(s, **tf_kwargs)
+        ss_vals = ss.all_values(copy=False)
+
+        # test non-masked columns
+        np.testing.assert_array_equal(
+            ss_vals[:, ~component_mask],
+            vals[:, ~component_mask],
+        )
+
+        # test masked columns
+        with pytest.raises(AssertionError):
+            np.testing.assert_array_equal(
+                ss_vals[:, component_mask],
+                vals[:, component_mask],
+            )
+
+        if not hasattr(transformer, "inverse_transform"):
+            return
+
+        ssi = transformer.inverse_transform(ss, **tf_kwargs)
+
+        # Test inverse transform
+        np.testing.assert_array_almost_equal(s.all_values(), ssi.all_values())

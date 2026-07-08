@@ -1,23 +1,21 @@
-{%- macro automodule(modname, options) -%}
-.. automodule:: {{ modname }}
-{%- endmacro %}
+{{ pkgname }}
+{{ '=' * (pkgname|length) }}
 
-{%- macro toctree(docnames, maxdepth) -%}
-    .. toctree::
-        :maxdepth: {{ maxdepth }}
-{% for docname in docnames %}
-        {{ docname }}
+.. currentmodule:: {{ pkgname }}
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+{% for docname in subpackages %}
+   {{ docname }}
 {%- endfor %}
-{%- endmacro %}
+{% for docname in submodules %}
+   {{ docname }}
+{%- endfor %}
 
-
-{{ automodule(pkgname, automodule_options) }}
-
-    .. toctree::
-        :maxdepth: 1
-        {% for docname in subpackages %}
-        {{ docname }}
-        {%- endfor %}
-        {% for docname in submodules %}
-        {{ docname }}
-        {%- endfor %}
+{% for docname in subpackages %}
+- :doc:`{{ docname }} <{{ docname }}>`
+{%- endfor %}
+{% for docname in submodules %}
+- :doc:`{{ docname }} <{{ docname }}>`
+{%- endfor %}

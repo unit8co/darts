@@ -10,13 +10,12 @@ A collection of simple benchmark models working with univariate, multivariate, s
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
-from typing import Callable, Optional, Union
+from collections.abc import Callable, Sequence
 
 import torch
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
@@ -25,13 +24,12 @@ from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
     TorchForecastingModel,
 )
+from darts.typing import TimeSeriesLike
 from darts.utils.data import (
     SequentialTorchTrainingDataset,
     TorchTrainingDataset,
 )
-from darts.utils.data.torch_datasets.utils import TorchTrainingSample
-
-logger = get_logger(__name__)
+from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 
 
 def _extract_targets(batch: tuple[torch.Tensor], n_targets: int):
@@ -40,7 +38,7 @@ def _extract_targets(batch: tuple[torch.Tensor], n_targets: int):
     Parameters
     ----------
     batch
-        The input batch tuple for the forward method. Has elements `(x_past, x_future, x_static)`.
+        The input batch tuple for the forward method. Has elements `(x_past, x_future, x_static, future_target)`.
     n_targets
         The number of target components to extract.
     """
@@ -72,16 +70,14 @@ class _GlobalNaiveModule(PLForecastingModule, ABC):
         super().__init__(*args, **kwargs)
 
     @io_processor
-    def forward(
-        self, x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
-    ) -> torch.Tensor:
+    def forward(self, x_in: PLModuleInput) -> torch.Tensor:
         """Naive model forward pass.
 
         Parameters
         ----------
         x_in
-            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
-            is the output/future chunk. Input dimensions are `(batch_size, time_steps, components)`
+            comes as tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
+            `x_future` is the output/future chunk. Input dimensions are `(batch_size, time_steps, components)`
 
         Returns
         -------
@@ -152,9 +148,9 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
 
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         *args,
         **kwargs,
     ) -> TorchForecastingModel:
@@ -187,8 +183,8 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
     @staticmethod
     def load_from_checkpoint(
         model_name: str,
-        work_dir: str = None,
-        file_name: str = None,
+        work_dir: str | None = None,
+        file_name: str | None = None,
         best: bool = True,
         **kwargs,
     ) -> "TorchForecastingModel":
@@ -196,14 +192,13 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
             NotImplementedError(
                 "GlobalNaiveModels do not support loading from checkpoint since they are never trained."
             ),
-            logger=logger,
         )
 
     def load_weights_from_checkpoint(
         self,
-        model_name: str = None,
-        work_dir: str = None,
-        file_name: str = None,
+        model_name: str | None = None,
+        work_dir: str | None = None,
+        file_name: str | None = None,
         best: bool = True,
         strict: bool = True,
         load_encoders: bool = True,
@@ -214,7 +209,6 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
             NotImplementedError(
                 "GlobalNaiveModels do not support weights loading since they do not have any weights/parameters."
             ),
-            logger=logger,
         )
 
     def _verify_predict_sample(self, predict_sample: tuple):
@@ -242,10 +236,10 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
     def _build_train_dataset(
         self,
         series: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        sample_weight: Optional[Sequence[TimeSeries]],
-        max_samples_per_ts: Optional[int],
+        past_covariates: Sequence[TimeSeries] | None,
+        future_covariates: Sequence[TimeSeries] | None,
+        sample_weight: Sequence[TimeSeries] | None,
+        max_samples_per_ts: int | None,
         stride: int = 1,
     ) -> TorchTrainingDataset:
         return SequentialTorchTrainingDataset(
@@ -295,7 +289,7 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        agg_fn: Union[str, Callable[[torch.Tensor, int], torch.Tensor]] = "mean",
+        agg_fn: str | Callable[[torch.Tensor, int], torch.Tensor] = "mean",
         **kwargs,
     ):
         """Global Naive Aggregate Model.
@@ -408,12 +402,10 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
                         "When `agg_fn` is a string, must be the name of a PyTorch function that "
                         "can be imported directly from `torch`. E.g., `'mean'` for `torch.mean`"
                     ),
-                    logger=logger,
                 )
         if not isinstance(agg_fn, Callable):
             raise_log(
                 ValueError("`agg_fn` must be a string or callable."),
-                logger=logger,
             )
 
         # check that `agg_fn` returns the expected output
@@ -434,7 +426,6 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
                     f"`agg_fn` sanity check raised the following error: ({err}) Read the parameter "
                     f"description to properly define the aggregation function."
                 ),
-                logger=logger,
             )
         self.agg_fn = agg_fn
 

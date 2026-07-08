@@ -10,7 +10,7 @@ scorer(s) to compute anomaly scores by comparing how actuals deviate from the mo
 #     - put start default value to its minimal value (wait for the release of historical_forecast)
 import sys
 from collections.abc import Sequence
-from typing import Literal, Optional, Union
+from typing import Literal
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -22,17 +22,16 @@ import pandas as pd
 from darts import TimeSeries
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-
-logger = get_logger(__name__)
+from darts.typing import TimeSeriesLike
 
 
 class ForecastingAnomalyModel(AnomalyModel):
     def __init__(
         self,
         model: GlobalForecastingModel,
-        scorer: Union[AnomalyScorer, Sequence[AnomalyScorer]],
+        scorer: AnomalyScorer | Sequence[AnomalyScorer],
     ):
         """Forecasting-based Anomaly Detection Model
 
@@ -60,19 +59,18 @@ class ForecastingAnomalyModel(AnomalyModel):
         if not isinstance(model, GlobalForecastingModel):
             raise_log(
                 ValueError("`model` must be a Darts `GlobalForecastingModel`."),
-                logger=logger,
             )
         self.model = model
         super().__init__(model=model, scorer=scorer)
 
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         allow_model_training: bool = False,
         forecast_horizon: int = 1,
-        start: Union[pd.Timestamp, float, int] = None,
+        start: pd.Timestamp | float | int | None = None,
         start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
         verbose: bool = False,
@@ -154,18 +152,18 @@ class ForecastingAnomalyModel(AnomalyModel):
 
     def score(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         forecast_horizon: int = 1,
-        start: Union[pd.Timestamp, float, int] = None,
+        start: pd.Timestamp | float | int | None = None,
         start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
         enable_optimization: bool = True,
         return_model_prediction: bool = False,
-    ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
+    ) -> TimeSeriesLike | Sequence[Sequence[TimeSeries]]:
         """Compute anomaly score(s) for the given series.
 
         Predicts the given target time series with the forecasting model, and applies the scorer(s)
@@ -242,10 +240,10 @@ class ForecastingAnomalyModel(AnomalyModel):
     def predict_series(
         self,
         series: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]] = None,
-        future_covariates: Optional[Sequence[TimeSeries]] = None,
+        past_covariates: Sequence[TimeSeries] | None = None,
+        future_covariates: Sequence[TimeSeries] | None = None,
         forecast_horizon: int = 1,
-        start: Union[pd.Timestamp, float, int] = None,
+        start: pd.Timestamp | float | int | None = None,
         start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
         verbose: bool = False,
@@ -307,7 +305,6 @@ class ForecastingAnomalyModel(AnomalyModel):
                 ValueError(
                     f"Forecasting `model` {self.model} has not been trained yet. Call `fit()` before."
                 ),
-                logger=logger,
             )
         return self.model.historical_forecasts(
             series,
@@ -327,24 +324,24 @@ class ForecastingAnomalyModel(AnomalyModel):
 
     def eval_metric(
         self,
-        anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        anomalies: TimeSeriesLike,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         forecast_horizon: int = 1,
-        start: Union[pd.Timestamp, float, int] = None,
+        start: pd.Timestamp | float | int | None = None,
         start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
         enable_optimization: bool = True,
         metric: Literal["AUC_ROC", "AUC_PR"] = "AUC_ROC",
-    ) -> Union[
-        dict[str, float],
-        dict[str, Sequence[float]],
-        Sequence[dict[str, float]],
-        Sequence[dict[str, Sequence[float]]],
-    ]:
+    ) -> (
+        dict[str, float]
+        | dict[str, Sequence[float]]
+        | Sequence[dict[str, float]]
+        | Sequence[dict[str, Sequence[float]]]
+    ):
         """Compute the accuracy of the anomaly scores computed by the model.
 
         Predicts the `series` with the forecasting model, and applies the scorer(s) on the predicted time series
@@ -427,19 +424,19 @@ class ForecastingAnomalyModel(AnomalyModel):
     def show_anomalies(
         self,
         series: TimeSeries,
-        past_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        past_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
         forecast_horizon: int = 1,
-        start: Union[pd.Timestamp, float, int] = None,
+        start: pd.Timestamp | float | int | None = None,
         start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
         enable_optimization: bool = True,
-        anomalies: TimeSeries = None,
-        names_of_scorers: Union[str, Sequence[str]] = None,
-        title: str = None,
-        metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,
+        anomalies: TimeSeries | None = None,
+        names_of_scorers: str | Sequence[str] | None = None,
+        title: str | None = None,
+        metric: Literal["AUC_ROC", "AUC_PR"] | None = None,
         component_wise: bool = False,
         **score_kwargs,
     ):
@@ -537,11 +534,11 @@ class ForecastingAnomalyModel(AnomalyModel):
     def _fit_core(
         self,
         series: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]] = None,
-        future_covariates: Optional[Sequence[TimeSeries]] = None,
+        past_covariates: Sequence[TimeSeries] | None = None,
+        future_covariates: Sequence[TimeSeries] | None = None,
         allow_model_training: bool = False,
         forecast_horizon: int = 1,
-        start: Union[pd.Timestamp, float, int] = 0.5,
+        start: pd.Timestamp | float | int = 0.5,
         start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
         verbose: bool = False,
@@ -565,7 +562,6 @@ class ForecastingAnomalyModel(AnomalyModel):
                     f"must have already been trained. Either train it before or set `allow_model_training=True` "
                     f"(model will trained from scratch on the provided series)."
                 ),
-                logger=logger,
             )
 
         # generate the historical_forecast() prediction of the model on the train set

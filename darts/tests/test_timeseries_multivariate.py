@@ -9,7 +9,8 @@ from darts.tests.conftest import POLARS_AVAILABLE
 from darts.tests.test_timeseries import (
     helper_test_append,
     helper_test_append_values,
-    helper_test_drop,
+    helper_test_drop_after,
+    helper_test_drop_before,
     helper_test_intersect,
     helper_test_prepend,
     helper_test_prepend_values,
@@ -17,7 +18,6 @@ from darts.tests.test_timeseries import (
     helper_test_slice,
     helper_test_split,
 )
-from darts.utils.utils import freqs
 
 if POLARS_AVAILABLE:
     import polars as pl
@@ -129,7 +129,10 @@ class TestTimeSeriesMultivariate:
         helper_test_split(self.series1)
 
     def test_drop(self):
-        helper_test_drop(self.series1)
+        helper_test_drop_after(self.series1, keep_point=False)
+        helper_test_drop_after(self.series1, keep_point=True)
+        helper_test_drop_before(self.series1, keep_point=False)
+        helper_test_drop_before(self.series1, keep_point=True)
 
     @pytest.mark.parametrize(
         "config", itertools.product(["D", "2D", 1, 2], [False, True])
@@ -272,9 +275,7 @@ class TestTimeSeriesMultivariate:
         assert seriesA.width == 3
 
         # testing hourly time series
-        times = pd.date_range(
-            start=pd.Timestamp("20201224"), periods=50, freq=freqs["h"]
-        )
+        times = pd.date_range(start=pd.Timestamp("20201224"), periods=50, freq="h")
         seriesB = TimeSeries.from_times_and_values(times, range(len(times)))
         seriesB = seriesB.add_holidays("US")
         last_column = seriesB.to_dataframe().iloc[:, seriesB.width - 1]

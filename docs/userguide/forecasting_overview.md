@@ -86,6 +86,10 @@ during fit and predict stage can have multiple dimensions. The model will then i
 
 Here is an example, using a `KalmanForecaster` to forecast a single multivariate series made of 2 components:
 ```python
+# use darts plotting style
+from darts import set_option
+set_option("plotting.use_darts_style", True)
+
 import darts.utils.timeseries_generation as tg
 from darts.models import KalmanForecaster
 import matplotlib.pyplot as plt
@@ -127,7 +131,7 @@ from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 supports_multi_ts = issubclass(SKLearnModel, GlobalForecastingModel)
 ```
 
-[This article](https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844) provides more explanations about training models on multiple series.
+[This article on multi-series forecasting](https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844) provides more explanations about training models on multiple series.
 
 ## Support for Covariates
 
@@ -149,7 +153,7 @@ Models supporting past (resp. future) covariates are indicated with a "✅" unde
 
 To know more about covariates, please refer to the [covariates section of the user guide](https://unit8co.github.io/darts/userguide/covariates.html).
 
-In addition, you can have a look at [this article](https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993) for some examples of how to use past and future covariates.
+In addition, you can have a look at [this article on covariates](https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993) for some examples of how to use past and future covariates.
 
 ## Probabilistic forecasts
 
@@ -277,6 +281,16 @@ pred.plot(label='forecast')
 ![TCN quantile regression](./images/probabilistic/example_mc_dropout.png)
 
 Monte Carlo Dropout can be combined with other likelihood estimation in Darts, which can be interpreted as a way to capture both epistemic and aleatoric uncertainty.
+
+In that case, train the model with the desired `likelihood` (e.g. `QuantileRegression(...)`) so the model learns to predict the parameters of an aleatoric distribution, and at prediction time set:
+
+- `mc_dropout=True`,
+- `num_samples >> 1` (e.g. `500`),
+- `predict_likelihood_parameters=False`.
+
+Each Monte Carlo dropout pass yields one set of distribution parameters; Darts then draws one sample from that distribution per pass, so the resulting `num_samples` predictions reflect both epistemic uncertainty (different dropout masks) and aleatoric uncertainty (sampling from the predicted likelihood). You can then compute marginal quantiles, mean, std, etc. from those samples.
+
+> Note: `mc_dropout=True` and `predict_likelihood_parameters=True` should not be combined. `predict_likelihood_parameters=True` is designed for use with `num_samples=1` to get the model's best estimate of the distribution parameters.
 
 
 ### Probabilistic regression models

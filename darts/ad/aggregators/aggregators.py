@@ -1,5 +1,6 @@
 """
-Anomaly aggregators base classes
+Base Aggregator
+---------------
 """
 
 # TODO:
@@ -9,22 +10,19 @@ Anomaly aggregators base classes
 #     - decision tree
 # - create show_all_combined (info about correlation, and from what path did
 #   the anomaly alarm came from)
-import sys
 
-import numpy as np
+import sys
+from typing import Literal
 
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Optional, Union
+
+import numpy as np
 
 from darts import TimeSeries
 from darts.ad.utils import (
@@ -33,16 +31,15 @@ from darts.ad.utils import (
     eval_metric_from_binary_prediction,
     series2seq,
 )
-from darts.logging import get_logger, raise_log
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
+from darts.typing import TimeSeriesLike
 
 
 class Aggregator(ABC):
     """Base class for Aggregators."""
 
     def __init__(self):
-        self.width_trained_on: Optional[int] = None
+        self.width_trained_on: int | None = None
 
     @abstractmethod
     def __str__(self):
@@ -69,9 +66,9 @@ class Aggregator(ABC):
 
     def predict(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeriesLike,
         name: str = "series",
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    ) -> TimeSeriesLike:
         """Aggregates the (sequence of) multivariate binary series given as
         input into a (sequence of) univariate binary series.
 
@@ -101,11 +98,11 @@ class Aggregator(ABC):
 
     def eval_metric(
         self,
-        anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        anomalies: TimeSeriesLike,
+        series: TimeSeriesLike,
         window: int = 1,
         metric: Literal["recall", "precision", "f1", "accuracy"] = "recall",
-    ) -> Union[float, Sequence[float]]:
+    ) -> float | Sequence[float]:
         """Aggregates the (sequence of) multivariate series given as input into one (sequence of)
         series and evaluates the results against the ground truth anomaly labels.
 
@@ -126,7 +123,7 @@ class Aggregator(ABC):
 
         Returns
         -------
-        Union[float, Sequence[float]]
+        float | Sequence[float]
             (Sequence of) score for the (sequence of) series.
         """
         pred_anomalies = self.predict(series)
@@ -160,8 +157,8 @@ class FittableAggregator(Aggregator):
 
     def fit(
         self,
-        anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        anomalies: TimeSeriesLike,
+        series: TimeSeriesLike,
     ) -> Self:
         """Fit the aggregators on the (sequence of) multivariate binary anomaly series.
 
@@ -198,7 +195,6 @@ class FittableAggregator(Aggregator):
                 ValueError(
                     "`anomalies` and `series` must contain the same number of series."
                 ),
-                logger=logger,
             )
         anomalies_vals, series_vals = [], []
         for anom, pred_anom in zip(anomalies, series):
@@ -210,8 +206,8 @@ class FittableAggregator(Aggregator):
 
     def predict(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: TimeSeriesLike,
         name: str = "series",
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    ) -> TimeSeriesLike:
         _assert_fit_called(self._fit_called, name="Aggregator")
         return super().predict(series=series, name=name)

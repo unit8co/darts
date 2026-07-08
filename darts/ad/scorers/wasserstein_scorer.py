@@ -1,10 +1,10 @@
 """
 Wasserstein Scorer
------
+------------------
 
 Wasserstein Scorer (distance function defined between probability distributions) [1]_.
 The implementations is wrapped around `scipy.stats
-<https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wasserstein_distance.html>`_.
+<https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wasserstein_distance.html>`__.
 
 References
 ----------

@@ -3,31 +3,26 @@ AutoMFLES
 ---------
 """
 
-from typing import Optional
-
 from statsforecast.models import AutoMFLES as SFAutoMFLES
 
-from darts.logging import get_logger
 from darts.models.forecasting.sf_model import StatsForecastModel
-
-logger = get_logger(__name__)
 
 
 class AutoMFLES(StatsForecastModel):
     def __init__(
         self,
         *args,
-        add_encoders: Optional[dict] = None,
-        quantiles: Optional[list[float]] = None,
-        random_state: Optional[int] = None,
+        add_encoders: dict | None = None,
+        quantiles: list[float] | None = None,
+        random_state: int | None = None,
         **kwargs,
     ):
-        """Auto-MFLES based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
+        """Auto-MFLES based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`__.
 
         Automatically selects the best MFLES model from all feasible combinations of the parameters
         `seasonality_weights`, `smoother`, `ma`, and `seasonal_period`. Selection is made using the sMAPE metric by
         default. We refer to the `StatsForecast documentation
-        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#automfles>`_ for the exhaustive documentation
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#automfles>`__ for the exhaustive documentation
         of the arguments.
 
         In addition to univariate deterministic forecasting, it comes with additional support:
@@ -102,13 +97,13 @@ class AutoMFLES(StatsForecastModel):
         >>> model = AutoMFLES(season_length=12, test_size=12)
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[466.03298745],
-               [450.76192105],
-               [517.6342497 ],
-               [511.62988828],
-               [520.15305998],
-               [593.38690019]])
+        >>> print(pred.values())
+        [[466.03298745]
+         [450.76192105]
+         [517.6342497 ]
+         [511.62988828]
+         [520.15305998]
+         [593.38690019]]
         """
         super().__init__(
             model=SFAutoMFLES(*args, **kwargs),

@@ -1,17 +1,17 @@
+"""
+Data Utils
+----------
+"""
+
 from enum import Enum
-from typing import Union
 
 import numpy as np
-import pandas as pd
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.utils.ts_utils import series2seq
+from darts.utils.utils import n_steps_between
 
-logger = get_logger(__name__)
-
-# Those freqs can be used to divide Time deltas (the others can't):
-DIVISIBLE_FREQS = {"D", "h", "H", "T", "min", "s", "S", "L", "ms", "U", "us", "N", "ns"}
 # supported built-in sample weight generators for regression and torch models
 SUPPORTED_SAMPLE_WEIGHT = {"linear", "exponential"}
 
@@ -57,33 +57,13 @@ def _get_matching_index(ts_target: TimeSeries, ts_covariate: TimeSeries, idx: in
                 "The dataset contains some target/covariates series pair that have incompatible "
                 'time axes (not the same "freq") and thus cannot be matched'
             ),
-            logger=logger,
         )
 
     freq = ts_target.freq
 
-    return idx + _index_diff(
-        self=ts_target.end_time(), other=ts_covariate.end_time(), freq=freq
+    return idx + n_steps_between(
+        start=ts_target.end_time(), end=ts_covariate.end_time(), freq=freq
     )
-
-
-def _index_diff(
-    self: Union[pd.Timestamp, int], other: Union[pd.Timestamp, int], freq: pd.offsets
-):
-    """Returns the difference between two indexes `other` and `self` (`other` - `self`) of frequency `freq`."""
-    if isinstance(freq, int):
-        return int(other - self)
-
-    elif freq.freqstr in DIVISIBLE_FREQS:
-        return int((other - self) / freq)
-
-    # /!\ THIS IS TAKING LINEAR TIME IN THE LENGTH OF THE SERIES
-    # it won't scale if the end of target and covariates are far apart and the freq is not in DIVISIBLE_FREQS
-    # (Not sure there's a way around it for exotic freqs)
-    if other >= self:
-        return -1 + len(pd.date_range(start=self, end=other, freq=freq))
-    else:
-        return 1 - len(pd.date_range(start=other, end=self, freq=freq))
 
 
 def _process_sample_weight(sample_weight, target_series):
@@ -93,7 +73,6 @@ def _process_sample_weight(sample_weight, target_series):
     if target_series is None:
         raise_log(
             ValueError("Must supply target `series` when using `sample_weight`."),
-            logger=logger,
         )
 
     # get sample weights
@@ -104,7 +83,6 @@ def _process_sample_weight(sample_weight, target_series):
                     f"Invalid `sample_weight` value: `'{sample_weight}'`. "
                     f"If a string, must be one of: {SUPPORTED_SAMPLE_WEIGHT}."
                 ),
-                logger=logger,
             )
         # create global time weights based on the longest target series
         max_len = max(len(target_i) for target_i in target_series)
@@ -132,6 +110,5 @@ def _process_sample_weight(sample_weight, target_series):
                 "The provided sequence of target `series` must have the same length as "
                 "the provided sequence of `sample_weight`."
             ),
-            logger=logger,
         )
     return sample_weight

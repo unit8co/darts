@@ -1,36 +1,52 @@
+"""
+Explainability Utils
+--------------------
+"""
+
 from collections.abc import Sequence
-from typing import Optional, Union
+from typing import Literal
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.typing import TimeSeriesLike
 from darts.utils.statistics import stationarity_tests
 from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
 
+_INPUT_TYPE = Literal["background", "foreground"]
+
 
 def process_input(
+    n: int,
     model: ForecastingModel,
-    input_type: str,
-    series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    fallback_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    fallback_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    fallback_future_covariates: Optional[
-        Union[TimeSeries, Sequence[TimeSeries]]
-    ] = None,
+    input_type: _INPUT_TYPE,
+    series: TimeSeriesLike | None = None,
+    past_covariates: TimeSeriesLike | None = None,
+    future_covariates: TimeSeriesLike | None = None,
+    fallback_series: TimeSeriesLike | None = None,
+    fallback_past_covariates: TimeSeriesLike | None = None,
+    fallback_future_covariates: TimeSeriesLike | None = None,
     check_component_names: bool = False,
     requires_input: bool = True,
     requires_covariates_encoding: bool = False,
     test_stationarity: bool = False,
-):
+) -> tuple[
+    Sequence[TimeSeries],
+    Sequence[TimeSeries] | None,
+    Sequence[TimeSeries] | None,
+    Sequence[str],
+    Sequence[str],
+    Sequence[str] | None,
+    Sequence[str] | None,
+    Sequence[str] | None,
+]:
     """Helper function to process and check either of the background or foreground series input to
     `_ForecastingModelExplainer`.
 
-    If no input was provided (`series`, `past/future_covariates`), the fallback will be used for downstream tasks.
-    Will raise an error if both input and fallback are not available.
+    If no input was provided (`series`, `past_covariates`, `future_covariates`), the fallback will be used for
+    downstream tasks. Will raise an error if both input and fallback are not available.
 
     The fallback is dependent on the input type ("background" or "foreground"):
     - for background `input_type`: fallback are the series saved in fitted forecasting model
@@ -38,6 +54,8 @@ def process_input(
 
     Parameters
     ----------
+    n
+        The forecast horizon (``output_chunk_length``) that the model was trained to predict.
     model
         any `ForecastingModel`.
     input_type
@@ -57,8 +75,8 @@ def process_input(
         Optionally, one or a sequence of future covariates `TimeSeries` to fall back to in case `future_covariates` was
         not provided.
     check_component_names
-        Whether to enforce that, in the case of multiple time series, all series of the same type (target or
-        *_covariates) must have the same component names.
+        Whether to enforce that, in the case of multiple time series, all series of the same type (target `series` or
+        `past_covariates`, `future_covariates`) must have the same component names.
     requires_input
         Whether the input is required. If `True`, raises an error if no input was provided.
     requires_covariates_encoding
@@ -67,14 +85,6 @@ def process_input(
     test_stationarity
         Whether to raise a warning if not all components from the target `series` are stationary.
     """
-    if input_type not in ["background", "foreground"]:
-        raise_log(
-            ValueError(
-                f"Unknown `input_type='{input_type}'`. Must be one of ['background', 'foreground']."
-            ),
-            logger,
-        )
-
     # if any input is given, treat it as if the input was required
     if (
         series is not None
@@ -87,12 +97,13 @@ def process_input(
     # - for background input type: fallback are the series saved in fitted forecasting model
     # - for foreground input type: fallback are the background series from `_ForecastingModelExplainer`
     if series is None:
-        raise_if(
-            (past_covariates is not None) or (future_covariates is not None),
-            f"Supplied {input_type} past or future covariates but no {input_type} series. Please also provide "
-            f"`{input_type}_series`.",
-            logger,
-        )
+        if (past_covariates is not None) or (future_covariates is not None):
+            raise_log(
+                ValueError(
+                    f"Supplied {input_type} past or future covariates but no {input_type} series. Please also provide "
+                    f"`{input_type}_series`."
+                ),
+            )
         if requires_input and fallback_series is None:
             error_msg = (
                 "`model` was fit on multiple time series."
@@ -100,8 +111,7 @@ def process_input(
                 else "no `background_series` was provided at `Explainer` creation"
             )
             raise_log(
-                ValueError(f"`{input_type}_series` must be provided {error_msg}"),
-                logger,
+                ValueError(f"`{input_type}_series` must be provided when {error_msg}")
             )
         series = fallback_series
         past_covariates = fallback_past_covariates
@@ -110,7 +120,8 @@ def process_input(
     # if `requires_covariates_encoding=False`)
     else:
         if model.encoders.encoding_available:
-            past_covariates, future_covariates = model.generate_fit_encodings(
+            past_covariates, future_covariates = model.generate_fit_predict_encodings(
+                n=n,
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
@@ -131,6 +142,9 @@ def process_input(
         future_covariates=future_covariates,
     )
 
+    if not model.uses_static_covariates:
+        static_covariates_components = None
+
     _check_valid_input(
         model,
         input_type,
@@ -144,6 +158,14 @@ def process_input(
         requires_input=requires_input,
         test_stationarity=test_stationarity,
     )
+
+    likelihood = model.likelihood
+    if likelihood is not None:
+        target_components_likelihood = likelihood.component_names(
+            components=target_components
+        )
+    else:
+        target_components_likelihood = target_components
 
     # make sure to remove any encodings from covariates if downstream tasks require covariates without encodings
     if not requires_covariates_encoding and model.encoders.encoding_available:
@@ -174,6 +196,7 @@ def process_input(
         past_covariates,
         future_covariates,
         target_components,
+        target_components_likelihood,
         static_covariates_components,
         past_covariates_components,
         future_covariates_components,
@@ -181,10 +204,10 @@ def process_input(
 
 
 def process_horizons_and_targets(
-    horizons: Optional[Union[int, Sequence[int]]] = None,
-    fallback_horizon: Optional[int] = None,
-    target_components: Optional[Union[str, Sequence[str]]] = None,
-    fallback_target_components: Optional[Sequence[str]] = None,
+    horizons: int | Sequence[int] | None = None,
+    fallback_horizon: int | None = None,
+    target_components: str | Sequence[str] | None = None,
+    fallback_target_components: Sequence[str] | None = None,
     check_component_names: bool = False,
 ) -> tuple[Sequence[int], Sequence[str]]:
     """Processes the input horizons and target component names.
@@ -212,13 +235,14 @@ def process_horizons_and_targets(
                 for target_name in target_components
                 if target_name not in fallback_target_components
             ]
-            raise_if(
-                len(invalid_components) > 0,
-                "Invalid `target_components`. The following components are not in the components of the "
-                f"`background_series`: {invalid_components}. Provide some valid components from: "
-                f"{fallback_target_components}.",
-                logger,
-            )
+            if len(invalid_components) > 0:
+                raise_log(
+                    ValueError(
+                        "Invalid `target_components`. The following components are not in the components of the "
+                        f"`background_series`: {invalid_components}. Provide some valid components from: "
+                        f"{fallback_target_components}."
+                    ),
+                )
     else:
         target_components = fallback_target_components
 
@@ -227,11 +251,14 @@ def process_horizons_and_targets(
             horizons = [horizons]
 
         if fallback_horizon is not None:
-            raise_if(
-                max(horizons) > fallback_horizon,
-                "At least one of the `horizons` is larger than `output_chunk_length`.",
-            )
-        raise_if(min(horizons) < 1, "All `horizons` must be `>=1`.")
+            if max(horizons) > fallback_horizon:
+                raise_log(
+                    ValueError(
+                        "At least one of the `horizons` is larger than `output_chunk_length`."
+                    ),
+                )
+        if min(horizons) < 1:
+            raise_log(ValueError("All `horizons` must be `>=1`."))
     else:
         horizons = range(1, fallback_horizon + 1)
 
@@ -240,10 +267,10 @@ def process_horizons_and_targets(
 
 def get_component_names(
     series: Sequence[TimeSeries],
-    past_covariates: Optional[Sequence[TimeSeries]] = None,
-    future_covariates: Optional[Sequence[TimeSeries]] = None,
+    past_covariates: Sequence[TimeSeries] | None = None,
+    future_covariates: Sequence[TimeSeries] | None = None,
     idx: int = 0,
-) -> tuple[list[str], Optional[list[str]], Optional[list[str]], Optional[list[str]]]:
+) -> tuple[list[str], list[str] | None, list[str] | None, list[str] | None]:
     """Extract and return the components of target series, static covariate, past and future covariates series.
 
     Parameters
@@ -284,57 +311,50 @@ def get_component_names(
 
 def _check_valid_input(
     model,
-    input_type: str,
+    input_type: _INPUT_TYPE,
     series: Sequence[TimeSeries],
-    past_covariates: Optional[Sequence[TimeSeries]],
-    future_covariates: Optional[Sequence[TimeSeries]],
-    target_components: Optional[list[str]],
-    past_covariates_components: Optional[list[str]],
-    future_covariates_components: Optional[list[str]],
+    past_covariates: Sequence[TimeSeries] | None,
+    future_covariates: Sequence[TimeSeries] | None,
+    target_components: list[str] | None,
+    past_covariates_components: list[str] | None,
+    future_covariates_components: list[str] | None,
     check_component_names: bool = False,
     requires_input: bool = False,
     test_stationarity: bool = False,
 ):
     """Checks that the input is valid"""
     if test_stationarity and series is not None:
-        if not _test_stationarity(series):
-            logger.warning(
-                "At least one component of the target series is not stationary. "
-                "Beware of wrong interpretation of the chosen explainability."
+        _test_stationarity(series)
+
+    if past_covariates is not None:
+        if len(series) != len(past_covariates):
+            raise_log(
+                ValueError(
+                    f"The number of {input_type} series and past covariates must be the same."
+                ),
             )
 
-    if input_type not in ["background", "foreground"]:
-        raise_log(
-            ValueError(
-                f"Unknown `input_type='{input_type}'`. Must be one of ['background', 'foreground']."
-            ),
-            logger,
-        )
-    if past_covariates is not None:
-        raise_if_not(
-            len(series) == len(past_covariates),
-            f"The number of {input_type} series and past covariates must be the same.",
-            logger,
-        )
-
     if future_covariates is not None:
-        raise_if_not(
-            len(series) == len(future_covariates),
-            f"The number of {input_type} series and future covariates must be the same.",
-            logger,
-        )
+        if len(series) != len(future_covariates):
+            raise_log(
+                ValueError(
+                    f"The number of {input_type} series and future covariates must be the same."
+                ),
+            )
 
     if requires_input:
-        raise_if(
-            model.uses_past_covariates and past_covariates is None,
-            f"A {input_type} past covariates is not provided, but the model requires past covariates.",
-            logger,
-        )
-        raise_if(
-            model.uses_future_covariates and future_covariates is None,
-            f"A {input_type} future covariates is not provided, but the model requires future covariates.",
-            logger,
-        )
+        if model.uses_past_covariates and past_covariates is None:
+            raise_log(
+                ValueError(
+                    f"A {input_type} past covariates is not provided, but the model requires past covariates."
+                ),
+            )
+        if model.uses_future_covariates and future_covariates is None:
+            raise_log(
+                ValueError(
+                    f"A {input_type} future covariates is not provided, but the model requires future covariates."
+                ),
+            )
 
     if not check_component_names:
         return
@@ -342,24 +362,33 @@ def _check_valid_input(
     # ensure we have the same names between TimeSeries (if list of). Important to ensure homogeneity
     # for explained features.
     for idx in range(len(series)):
-        raise_if_not(
-            all([
-                series[idx].columns.to_list() == target_components,
-                (
-                    past_covariates[idx].columns.to_list() == past_covariates_components
-                    if past_covariates is not None
-                    else True
+        if not all([
+            series[idx].columns.to_list() == target_components,
+            (
+                past_covariates[idx].columns.to_list() == past_covariates_components
+                if past_covariates is not None
+                else True
+            ),
+            (
+                future_covariates[idx].columns.to_list() == future_covariates_components
+                if future_covariates is not None
+                else True
+            ),
+        ]):
+            raise_log(
+                ValueError(
+                    "Columns names must be identical between TimeSeries list components (multi-TimeSeries)."
                 ),
-                (
-                    future_covariates[idx].columns.to_list()
-                    == future_covariates_components
-                    if future_covariates is not None
-                    else True
-                ),
-            ]),
-            "Columns names must be identical between TimeSeries list components (multi-TimeSeries).",
-        )
+            )
 
 
-def _test_stationarity(series: Union[TimeSeries, Sequence[TimeSeries]]):
-    return all([(stationarity_tests(bs[c]) for c in bs.components) for bs in series])
+def _test_stationarity(series: Sequence[TimeSeries]) -> bool:
+    for i, bs in enumerate(series):
+        for c in bs.components:
+            if not stationarity_tests(bs[c]):
+                logger.warning(
+                    f"At least component '{c}' of target series at index {i} is not stationary. "
+                    f"Beware of wrong interpretation of the chosen explainability."
+                )
+                return False
+    return True

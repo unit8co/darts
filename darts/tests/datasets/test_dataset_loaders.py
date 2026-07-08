@@ -6,7 +6,6 @@ import pytest
 
 from darts import TimeSeries
 from darts.datasets import (
-    _DEFAULT_PATH,
     AirPassengersDataset,
     AusBeerDataset,
     AustralianTourismDataset,
@@ -41,6 +40,7 @@ from darts.datasets.dataset_loaders import (
     DatasetLoaderMetadata,
     DatasetLoadingException,
 )
+from darts.datasets.datasets import _DEFAULT_PATH
 
 _DEFAULT_PATH_TEST = _DEFAULT_PATH + "/tests"
 
@@ -193,3 +193,9 @@ class TestDatasetLoader:
             ms = dataset()._to_multi_series(ts)
             assert len(ms) == 5
             assert len(ms[0]) == len(ts.index)
+
+
+class TestDatasetInputValidation:
+    def test_uber_invalid_sample_freq(self):
+        with pytest.raises(ValueError, match="sample_freq must be one of"):
+            UberTLCDataset(sample_freq="weekly")

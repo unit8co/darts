@@ -116,16 +116,19 @@ class TestTCNModel:
                     input_tensor = torch.zeros(
                         [1, input_chunk_length, 1], dtype=torch.float64
                     )
-                    zero_output = model.model.forward((input_tensor, None, None))[
+                    zero_output = model.model.forward((input_tensor, None, None, None))[
                         0, -1, 0
                     ]
 
                     # test for full coverage
                     for i in range(input_chunk_length):
                         input_tensor[0, i, 0] = 1
-                        curr_output = model.model.forward((input_tensor, None, None))[
-                            0, -1, 0
-                        ]
+                        curr_output = model.model.forward((
+                            input_tensor,
+                            None,
+                            None,
+                            None,
+                        ))[0, -1, 0]
                         assert zero_output != curr_output
                         input_tensor[0, i, 0] = 0
 
@@ -164,9 +167,12 @@ class TestTCNModel:
                     input_tensor = torch.zeros(
                         [1, input_chunk_length, 1], dtype=torch.float64
                     )
-                    zero_output = model_2.model.forward((input_tensor, None, None))[
-                        0, -1, 0
-                    ]
+                    zero_output = model_2.model.forward((
+                        input_tensor,
+                        None,
+                        None,
+                        None,
+                    ))[0, -1, 0]
 
                     # test for incomplete coverage
                     uncovered_input_found = False
@@ -174,9 +180,12 @@ class TestTCNModel:
                         continue
                     for i in range(input_chunk_length):
                         input_tensor[0, i, 0] = 1
-                        curr_output = model_2.model.forward((input_tensor, None, None))[
-                            0, -1, 0
-                        ]
+                        curr_output = model_2.model.forward((
+                            input_tensor,
+                            None,
+                            None,
+                            None,
+                        ))[0, -1, 0]
                         if zero_output == curr_output:
                             uncovered_input_found = True
                             break
@@ -200,3 +209,25 @@ class TestTCNModel:
     def test_pred_length(self):
         series = tg.linear_timeseries(length=100)
         self.helper_test_pred_length(TCNModel, series)
+
+
+class TestTCNModelInputValidation:
+    def test_kernel_size_exceeds_input_length(self):
+        with pytest.raises(ValueError, match="kernel size must be strictly smaller"):
+            TCNModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                kernel_size=5,
+                n_epochs=1,
+                **tfm_kwargs,
+            )
+
+    def test_output_length_exceeds_input_length(self):
+        with pytest.raises(ValueError, match="output length must be strictly smaller"):
+            TCNModel(
+                input_chunk_length=4,
+                output_chunk_length=5,
+                kernel_size=2,
+                n_epochs=1,
+                **tfm_kwargs,
+            )

@@ -1,5 +1,6 @@
 """
-Filtering Model Base Class
+Base Filter
+-----------
 
 Filtering models all have a `filter(series)` function, which
 returns a `TimeSeries` that is a filtered version of `series`.
@@ -8,9 +9,7 @@ returns a `TimeSeries` that is a filtered version of `series`.
 from abc import ABC, abstractmethod
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if_not
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
 
 
 class FilteringModel(ABC):
@@ -37,7 +36,7 @@ class FilteringModel(ABC):
         TimeSeries
             A time series containing the filtered values.
         """
-        raise_if_not(
-            series.is_deterministic,
-            "The input series must be deterministic (observations).",
-        )
+        if not series.is_deterministic:
+            raise_log(
+                ValueError("The input series must be deterministic (observations)."),
+            )

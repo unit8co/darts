@@ -3,13 +3,13 @@ StatsForecastModel
 ------------------
 """
 
-from typing import Optional
+from typing import Protocol, runtime_checkable
 
 import numpy as np
-from statsforecast.models import _TS
+import statsforecast.models as sf_models
 
 from darts import TimeSeries, concatenate
-from darts.logging import get_logger
+from darts.logging import raise_log
 from darts.models import LinearRegressionModel
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
@@ -18,22 +18,38 @@ from darts.utils.likelihood_models.statsforecast import QuantilePrediction
 from darts.utils.timeseries_generation import _build_forecast_series
 from darts.utils.utils import random_method
 
-logger = get_logger(__name__)
+
+@runtime_checkable
+class _SFModel(Protocol):
+    """This serves as a protocol for expected StatsForecast model API."""
+
+    uses_exog: bool
+
+    def __init__(*args, **kwargs): ...
+
+    def fit(self, *args, **kwargs): ...
+
+    def predict(self, *args, **kwargs) -> dict: ...
+
+    def forecast(self, *args, **kwargs) -> dict: ...
+
+    def forward(self, *args, **kwargs) -> dict: ...
 
 
 class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
     @random_method
     def __init__(
         self,
-        model: _TS,
-        add_encoders: Optional[dict] = None,
-        quantiles: Optional[list[float]] = None,
-        random_state: Optional[int] = None,
+        model: str | type[sf_models._TS] | sf_models._TS = "AutoARIMA",
+        model_kwargs: dict | None = None,
+        add_encoders: dict | None = None,
+        quantiles: list[float] | None = None,
+        random_state: int | None = None,
     ):
         """StatsForecast Model.
 
         Can be used to fit any `StatsForecast` base model. For more information on available models, see the
-        `StatsForecast package <https://nixtlaverse.nixtla.io/statsforecast/index.html>`_.
+        `StatsForecast package <https://nixtlaverse.nixtla.io/statsforecast/index.html>`__.
 
         In addition to univariate deterministic forecasting, our `StatsForecastModel` comes with additional support:
 
@@ -44,7 +60,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
           - It adds future covariates support by first regressing the series against the future covariates using a
             :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` model and then running the
             StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by
-            `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`_.
+            `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`__.
 
         - **Probabilstic forecasting:** Some base models might require setting `prediction_intervals` at `model`
           creation to support probabilistic forecasting. To generate probabilistic forecasts, you can set the following
@@ -72,7 +88,13 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         Parameters
         ----------
         model
-            Any StatsForecast model.
+            Name, class, or instance of the StatsForecast base model to be used from ``statsforecast.models``, e.g.,
+            ``"AutoARIMA"``, ``AutoARIMA``, or ``AutoARIMA()``. See all `StatsForecast models
+            <https://nixtlaverse.nixtla.io/statsforecast/src/core/models_intro.html>`__ here.
+        model_kwargs
+            A dictionary of model parameters to initialize the StatsForecast base model. The expected
+            parameters depend on the base model used. Only effective when `model` is a string or class.
+            Default: ``None``.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -108,38 +130,56 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         >>> from darts.datasets import AirPassengersDataset
         >>> from darts.models import StatsForecastModel
         >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
-        >>> from statsforecast.models import AutoARIMA
         >>> series = AirPassengersDataset().load()
         >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
         >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
         >>> # define AutoARIMA parameters
-        >>> model = StatsForecastModel(model=AutoARIMA(season_length=12))
+        >>> model = StatsForecastModel(model="AutoARIMA", model_kwargs={"season_length": 12})
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[445.4276575 ],
-               [420.04912881],
-               [448.7142377 ],
-               [491.23406559],
-               [502.67834069],
-               [566.04774778]])
+        >>> print(pred.values())
+        [[445.4276575 ]
+         [420.04912881]
+         [448.7142377 ]
+         [491.23406559]
+         [502.67834069]
+         [566.04774778]]
         """
-        if not isinstance(model, _TS):
-            raise ValueError(
-                "`model` must be a StatsForecast model imported from `statsforecast.models`."
+        model_kwargs = model_kwargs or {}
+        if isinstance(model, sf_models._TS):
+            pass
+        elif isinstance(model, str):
+            try:
+                model_class = getattr(sf_models, model)
+            except AttributeError:
+                raise_log(
+                    ValueError(
+                        f"Could not find a StatsForecast model class named `{model}` "
+                        f"in `statsforecast.models`."
+                    ),
+                )
+            model = model_class(**model_kwargs)
+        elif isinstance(model, type) and issubclass(model, sf_models._TS):
+            model = model(**model_kwargs)
+        else:
+            raise_log(
+                ValueError(
+                    "`model` must be a valid StatsForecast model name (str), class or instance."
+                ),
             )
+
         self.model: _SFModel = model
         self._likelihood = QuantilePrediction(quantiles=quantiles)
 
         # future covariates support can be added through the use of a linear model
-        self._linreg: Optional[LinearRegressionModel] = None
+        self._linreg: LinearRegressionModel | None = None
         super().__init__(add_encoders=add_encoders)
 
     def _fit(
         self,
         series: TimeSeries,
-        future_covariates: Optional[TimeSeries] = None,
-        verbose: Optional[bool] = None,
+        future_covariates: TimeSeries | None = None,
+        verbose: bool | None = None,
     ):
         super()._fit(series, future_covariates, verbose=verbose)
         self._assert_univariate(series)
@@ -173,13 +213,13 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
     def _predict(
         self,
         n: int,
-        series: Optional[TimeSeries] = None,
-        historic_future_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: TimeSeries | None = None,
+        historic_future_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ) -> TimeSeries:
         super()._predict(
             n=n,
@@ -264,10 +304,10 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
     def _estimator_predict(
         self,
         n: int,
-        series: Optional[TimeSeries],
-        historic_future_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
-        levels: Optional[list[float]],
+        series: TimeSeries | None,
+        historic_future_covariates: TimeSeries | None,
+        future_covariates: TimeSeries | None,
+        levels: list[float] | None,
     ) -> np.ndarray:
         """
         Computes the model output.
@@ -379,21 +419,9 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         return self._supports_native_transferable_series
 
 
-class _SFModel(_TS):
-    """This serves as a protocol for expected StatsForecast model API."""
-
-    def fit(self, *args, **kwargs): ...
-
-    def predict(self, *args, **kwargs) -> dict: ...
-
-    def forecast(self, *args, **kwargs) -> dict: ...
-
-    def forward(self, *args, **kwargs) -> dict: ...
-
-
 def _unpack_sf_dict(
     forecast_dict: dict,
-    levels: Optional[list[float]],
+    levels: list[float] | None,
 ) -> np.ndarray:
     """Unpack the dictionary that is returned by the StatsForecast 'predict()' method.
 

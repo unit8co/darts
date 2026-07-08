@@ -10,7 +10,7 @@ It can be added to a ``TimeSeries`` using e.g., the :meth:`TimeSeries.with_hiera
 """
 
 from collections.abc import Mapping
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -19,14 +19,12 @@ from darts.dataprocessing.transformers import (
     BaseDataTransformer,
     FittableDataTransformer,
 )
-from darts.logging import get_logger, raise_if_not
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
 
 
 def _get_summation_matrix(series: TimeSeries):
     """
-    Returns the matrix S for a series, as defined `here <https://otexts.com/fpp3/reconciliation.html>`_.
+    Returns the matrix S for a series, as defined `here <https://otexts.com/fpp3/reconciliation.html>`__.
 
     The dimension of the matrix is `(n, m)`, where `n` is the number of components and `m` the number
     of base components (components that are not the sum of any other components).
@@ -37,11 +35,12 @@ def _get_summation_matrix(series: TimeSeries):
     dictionary mapping each (non top-level) component to its parent(s) in the aggregation.
     """
 
-    raise_if_not(
-        series.has_hierarchy,
-        "The provided series must have a hierarchy defined for reconciliation to be performed.",
-        logger=logger,
-    )
+    if not series.has_hierarchy:
+        raise_log(
+            ValueError(
+                "The provided series must have a hierarchy defined for reconciliation to be performed."
+            ),
+        )
     hierarchy = series.hierarchy
     components_seq = list(series.components)
     leaves_seq = series.bottom_level_components
@@ -87,7 +86,7 @@ def _reconcile_from_S_and_G(
 
 class BottomUpReconciliator(BaseDataTransformer):
     """
-    Performs bottom up reconciliation, as defined `here <https://otexts.com/fpp3/reconciliation.html>`_.
+    Performs bottom up reconciliation, as defined `here <https://otexts.com/fpp3/reconciliation.html>`__.
     """
 
     @staticmethod
@@ -112,7 +111,7 @@ class BottomUpReconciliator(BaseDataTransformer):
 
 class TopDownReconciliator(FittableDataTransformer):
     """
-    Performs top down reconciliation, as defined `here <https://otexts.com/fpp3/reconciliation.html>`_.
+    Performs top down reconciliation, as defined `here <https://otexts.com/fpp3/reconciliation.html>`__.
 
     This estimator computes the proportions (of the base components w.r.t. the top component)
     based on the TimeSeries provided to the method :meth:`fit()`. If the historical series
@@ -192,14 +191,12 @@ class MinTReconciliator(FittableDataTransformer):
         References
         ----------
         .. [1] `Optimal forecast reconciliation for hierarchical and grouped time series through
-                trace minimization <https://robjhyndman.com/papers/MinT.pdf>`_
+                trace minimization <https://robjhyndman.com/papers/MinT.pdf>`__
         .. [2] https://otexts.com/fpp3/reconciliation.html#the-mint-optimal-reconciliation-approach
         """
         known_methods = ["ols", "wls", "wls_var", "wls_struct", "wls_val", "mint_cov"]
-        raise_if_not(
-            method in known_methods,
-            f"The method must be one of {known_methods}",
-        )
+        if method not in known_methods:
+            raise_log(ValueError(f"The method must be one of {known_methods}."))
         # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self.method = method
         super().__init__()
@@ -221,15 +218,17 @@ class MinTReconciliator(FittableDataTransformer):
 
     @staticmethod
     def _assert_deterministic(series: TimeSeries):
-        raise_if_not(
-            series.is_deterministic,
-            "When used with method wls_var or mint_cov, the MinT reconciliator "
-            + "has to be fit on a deterministic series "
-            + "containing residuals. This series is stochastic.",
-        )
+        if not series.is_deterministic:
+            raise_log(
+                ValueError(
+                    "When used with method wls_var or mint_cov, the MinT reconciliator "
+                    + "has to be fit on a deterministic series "
+                    + "containing residuals. This series is stochastic."
+                ),
+            )
 
     @staticmethod
-    def get_matrices(series: Optional[TimeSeries], method: str):
+    def get_matrices(series: TimeSeries | None, method: str):
         """Returns the G matrix given a specified reconciliation method."""
         S = _get_summation_matrix(series)
         if method == "ols":
@@ -255,7 +254,7 @@ class MinTReconciliator(FittableDataTransformer):
                 series.values(copy=False).T
             )  # + 1e-3 * np.eye(len(series.components))
         else:
-            raise_if_not(False, f"Unknown method: {method}")
+            raise_log(ValueError(f"Unknown method: {method}."))
 
         Wh_inv = np.linalg.inv(Wh)
         G = np.linalg.inv(S.T @ Wh_inv @ S) @ S.T @ Wh_inv

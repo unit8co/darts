@@ -1,5 +1,9 @@
+"""
+Multi-Output Models for SKLearnModel
+------------------------------------
+"""
+
 import inspect
-from typing import Optional
 
 from sklearn.base import is_classifier
 from sklearn.multioutput import MultiOutputClassifier as sk_MultiOutputClassifier
@@ -13,10 +17,8 @@ from sklearn.utils.validation import (
     validate_data,
 )
 
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.utils.utils import ModelType
-
-logger = get_logger(__name__)
 
 
 class MultiOutputMixin:
@@ -28,9 +30,9 @@ class MultiOutputMixin:
     def __init__(
         self,
         estimator,
-        eval_set_name: Optional[str] = None,
-        eval_weight_name: Optional[str] = None,
-        output_chunk_length: Optional[int] = None,
+        eval_set_name: str | None = None,
+        eval_weight_name: str | None = None,
+        output_chunk_length: int | None = None,
         **kwargs,
     ):
         super().__init__(estimator=estimator, **kwargs)
@@ -71,7 +73,6 @@ class MultiOutputMixin:
         if not hasattr(self.estimator, "fit"):
             raise_log(
                 ValueError("The base estimator should implement a fit method"),
-                logger=logger,
             )
         y = validate_data(self.estimator, X="no_validation", y=y, multi_output=True)
 
@@ -83,20 +84,17 @@ class MultiOutputMixin:
                 ValueError(
                     "`y` must have at least two dimensions for multi-output but has only one."
                 ),
-                logger=logger,
             )
         if sample_weight is not None and (
             sample_weight.ndim == 1 or sample_weight.shape[1] != y.shape[1]
         ):
             raise_log(
                 ValueError("`sample_weight` must have the same dimensions as `y`."),
-                logger=logger,
             )
 
         if sample_weight is not None and not self.supports_sample_weight:
             raise_log(
                 ValueError("Underlying estimator does not support sample weights."),
-                logger=logger,
             )
 
         if (
@@ -145,7 +143,7 @@ class MultiOutputMixin:
 
 class MultiOutputRegressor(MultiOutputMixin, sk_MultiOutputRegressor):
     """
-    :class:`sklearn.utils.multioutput.MultiOutputClassifier` with a modified ``fit()`` method that also slices
+    :class:`sklearn.utils.multioutput.MultiOutputRegressor` with a modified ``fit()`` method that also slices
     validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.
     """
 

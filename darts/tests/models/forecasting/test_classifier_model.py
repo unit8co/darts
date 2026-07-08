@@ -18,7 +18,6 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import Tags
 
-from darts.logging import get_logger
 from darts.models import (
     CatBoostClassifierModel,
     LightGBMClassifierModel,
@@ -40,8 +39,6 @@ from darts.utils.multioutput import (
     get_multioutput_estimator_cls,
 )
 from darts.utils.utils import ModelType
-
-logger = get_logger(__name__)
 
 
 def process_model_list(classifiers):
@@ -668,7 +665,7 @@ class TestClassifierModel:
             assert str(err.value).endswith("Expected: [0 1 2], got [0. 2. 3.]")
 
         # Single label
-        if issubclass(clf, (SVC, GaussianProcessClassifier)) or isinstance(
+        if issubclass(clf, SVC | GaussianProcessClassifier) or isinstance(
             model.model, LogisticRegression
         ):
             # Model specific error message
@@ -1308,7 +1305,8 @@ class TestProbabilisticClassifierModels:
             labels_c.append(labels_component2)
 
         for idx, (preds, probas, labels) in enumerate(zip(preds_c, probas_c, labels_c)):
-            pred_probas = pd.value_counts(preds.flatten(), normalize=True).to_dict()
+            pred_series = pd.Series(preds.flatten())
+            pred_probas = pred_series.value_counts(normalize=True).to_dict()
             pred_probas = [pred_probas[label] for label in labels]
             rmse = np.mean((pred_probas - probas) ** 2) ** 0.5
             assert rmse < model_rmse

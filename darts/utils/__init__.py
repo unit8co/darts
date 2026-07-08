@@ -1,6 +1,8 @@
 """
 Utils
 -----
+
+Utility functions and helper classes for various operations in Darts.
 """
 
 from darts.utils.utils import (

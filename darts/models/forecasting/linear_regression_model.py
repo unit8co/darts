@@ -6,13 +6,9 @@ A forecasting model using a linear regression of some of the target series' lags
 covariate series lags in order to obtain a forecast.
 """
 
-from collections.abc import Sequence
-from typing import Optional, Union
-
 from scipy.optimize import linprog
 from sklearn.linear_model import LinearRegression, PoissonRegressor, QuantileRegressor
 
-from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
@@ -20,6 +16,7 @@ from darts.models.forecasting.sklearn_model import (
     SKLearnModel,
     _QuantileModelContainer,
 )
+from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
@@ -32,16 +29,16 @@ logger = get_logger(__name__)
 class LinearRegressionModel(SKLearnModel):
     def __init__(
         self,
-        lags: Optional[LAGS_TYPE] = None,
-        lags_past_covariates: Optional[LAGS_TYPE] = None,
-        lags_future_covariates: Optional[FUTURE_LAGS_TYPE] = None,
+        lags: LAGS_TYPE | None = None,
+        lags_past_covariates: LAGS_TYPE | None = None,
+        lags_future_covariates: FUTURE_LAGS_TYPE | None = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
-        add_encoders: Optional[dict] = None,
-        likelihood: Optional[str] = None,
-        quantiles: Optional[list[float]] = None,
-        random_state: Optional[int] = None,
-        multi_models: Optional[bool] = True,
+        add_encoders: dict | None = None,
+        likelihood: str | None = None,
+        quantiles: list[float] | None = None,
+        random_state: int | None = None,
+        multi_models: bool | None = True,
         use_static_covariates: bool = True,
         **kwargs,
     ):
@@ -120,18 +117,24 @@ class LinearRegressionModel(SKLearnModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             Can be set to `quantile` or `poisson`. If set, the model will be probabilistic, allowing sampling at
             prediction time. If set to `quantile`, the `sklearn.linear_model.QuantileRegressor` is used. Similarly, if
             set to `poisson`, the `sklearn.linear_model.PoissonRegressor` is used.
         quantiles
-            Fit the model to these quantiles if the `likelihood` is set to `quantile`.
+            Fit the model to these quantiles if the ``likelihood`` is set to ``"quantile"``.
+            Default is ``None`` and will use :class:`~darts.utils.likelihood_models.sklearn.QuantileRegression`'s
+            default quantiles.
         random_state
             Controls the randomness for reproducible forecasting.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model
-            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
-            `output_chunk_length - n` for each step `n`). Default: True.
+            If ``True``, a separate model will be trained for each future lag to predict. If ``False``, a single model
+            is trained to predict all the steps in ``output_chunk_length`` (features lags are shifted back by
+            ``output_chunk_length - n`` for each step `n`). Default: ``True``.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -164,13 +167,13 @@ class LinearRegressionModel(SKLearnModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1005.72085839],
-               [1005.6548696 ],
-               [1005.65403772],
-               [1005.6846175 ],
-               [1005.75753605],
-               [1005.81830675]])
+        >>> print(pred.values())
+        [[1005.72085839]
+         [1005.6548696 ]
+         [1005.65403772]
+         [1005.6846175 ]
+         [1005.75753605]
+         [1005.81830675]]
         """
         self.kwargs = kwargs
 
@@ -204,13 +207,13 @@ class LinearRegressionModel(SKLearnModel):
 
     def fit(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        max_samples_per_ts: Optional[int] = None,
-        n_jobs_multioutput_wrapper: Optional[int] = None,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-        verbose: Optional[bool] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        max_samples_per_ts: int | None = None,
+        n_jobs_multioutput_wrapper: int | None = None,
+        sample_weight: TimeSeriesLike | str | None = None,
+        verbose: bool | None = None,
         **kwargs,
     ):
         likelihood = self.likelihood

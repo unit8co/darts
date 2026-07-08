@@ -4,159 +4,197 @@ on:
   workflow_dispatch:
     inputs:
         bump_type:
-          description: "Bump type (#major, #minor, #patch)"
+          description: "Bump type"
           required: true
+          type: choice
+          options:
+            - patch
+            - minor
+            - major
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump_version.outputs.current-version }}
     steps:
-      - name: "1. Clone repository"
-        uses: actions/checkout@v4
+      - name: "Clone repository"
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.RELEASE_WORKFLOW_TOKEN_NEW_FINE_GRAINED }}
           fetch-depth: '1'
 
-      - name: "2. Set up Python 3.10"
-        uses: actions/setup-python@v5
+      - name: "Set up Python 3.11"
+        uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
-      - name: "Setup Pip"
-        run: |
-          python -m pip install --upgrade pip
+      - name: "Install uv"
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          version: "0.11.7"
+          python-version: '3.11'
 
       - name: "Install release dependencies"
         run: |
-          pip install -q -r requirements/release.txt
+          uv sync --group release
 
-      - name: "Determine next version"
-        uses: hrzn/github-tag-action@master
-        id: bump_dry
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DRY_RUN: true
-          BUMP_TYPE: ${{ github.event.inputs.bump_type}}
-
-      - name: "Bump version"
-        run: |
-          bump2version --new-version ${{ steps.bump_dry.outputs.new_tag }} patch
-
-      - name: "Commit new version"
-        uses: stefanzweifel/git-auto-commit-action@v4.1.6
+      - name: "Bump version, commit, and tag"
+        id: bump_version
+        uses: callowayproject/bump-my-version@1.3.0
         with:
-          commit_message: Release ${{ steps.bump_dry.outputs.new_tag }}
-          branch: master
-          push_options: --force
-          commit_user_name: Unit8 Bot
-          commit_user_email: info@unit8.co
+          args: ${{ github.event.inputs.bump_type }}
+          github-token: ${{ secrets.RELEASE_WORKFLOW_TOKEN_NEW_FINE_GRAINED }}
 
-      - name: "Publish new tag"
-        uses: hrzn/github-tag-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CUSTOM_TAG: ${{steps.bump_dry.outputs.new_tag}}
+      - name: "Check version bump"
+        if: steps.bump_version.outputs.bumped == 'true'
+        run: |
+          echo "Version was bumped from ${{ steps.bump_version.outputs.previous-version }} to ${{ steps.bump_version.outputs.current-version }}!"
 
-      - name: "10. Create new release"
+      - name: "Create new release"
         id: create_release
         uses: actions/create-release@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.bump_dry.outputs.new_tag }}
-          release_name: Darts ${{steps.bump_dry.outputs.part}} ${{ steps.bump_dry.outputs.new_tag }}
+          tag_name: ${{ steps.bump_version.outputs.current-version }}
+          release_name: Darts ${{ github.event.inputs.bump_type }} ${{ steps.bump_version.outputs.current-version }}
           draft: false
           body_path: .github/RELEASE_TEMPLATE/release_body.md
+
+  build-package:
+    needs: [release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Clone repository at release tag"
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.release.outputs.version }}
+
+      - name: "Set up Python 3.11"
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: "Install uv"
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          version: "0.11.7"
+          python-version: '3.11'
+
+      - name: "Build package"
+        run: uv build
+
+      - name: "Upload dists as artifacts"
+        uses: actions/upload-artifact@v7
+        with:
+          name: dists
+          path: dist/
+
+  publish-pypi:
+    needs: [build-package]
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: "Download dists"
+        uses: actions/download-artifact@v8
+        with:
+          name: dists
+          path: dist/
+
+      - name: "Publish to PyPI"
+        uses: pypa/gh-action-pypi-publish@release/v1
 
   deploy-docker:
     needs: [release]
     runs-on: ubuntu-latest
     steps:
-      - name: "1. Clone repository"
-        uses: actions/checkout@v4
-
-      - name: "2. Determine current version"
-        uses: hrzn/github-tag-action@master
-        id: bump_dry
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DRY_RUN: true
-          BUMP_TYPE: ${{ github.event.inputs.bump_type}}
+      - name: "Clone repository at release tag"
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.release.outputs.version }}
 
       - name: "Set up QEMU"
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: "Set up Docker Buildx"
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: "Login to Docker Hub"
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: "Build and push"
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           push: true
-          tags: unit8/darts:${{ steps.bump_dry.outputs.tag }}, unit8/darts:latest
+          tags: unit8/darts:${{ needs.release.outputs.version }}, unit8/darts:latest
 
-  deploy-docs:
+  build-docs:
     runs-on: ubuntu-latest
     needs: [release]
     steps:
       - name: "Clone repository"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: "Set up Python 3.10"
-        uses: actions/setup-python@v5
+      - name: "Set up Python 3.11"
+        uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
-      # use `uv` to retrieve the latest dependency versions
-      - name: "Compile Dependency Versions"
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          uv pip compile requirements/dev-all.txt > requirements-latest.txt
-
-      # only restore cache but do not upload
-      - name: "Restore cached python environment"
-        uses: actions/cache/restore@v4
-        id: pythonenv-cache
+      - name: "Install uv"
+        uses: astral-sh/setup-uv@v8.1.0
         with:
-          path: ${{ env.pythonLocation }}
-          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('requirements/*.txt', 'requirements-latest.txt') }}
+          version: "0.11.7"
+          enable-cache: true
+          python-version: '3.11'
 
       - name: "Install pandoc"
         run: |
           sudo apt-get install -y pandoc
 
-      - name: "Setup Pip"
-        run: |
-          python -m pip install --upgrade pip
-
       - name: "Install Dependencies"
         run: |
-          # install latest dependencies (potentially updating cached dependencies)
-          pip install -U -r requirements/dev-all.txt
+          # Testing against latest compatible versions
+          uv sync --group dev-all --group torch-cpu
 
       - name: "Install libomp (for LightGBM)"
         run: |
           chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
-      - name: "Install Darts Locally"
-        run: |
-          pip install . --no-deps
-
       - name: "Build docs"
         run: |
-          make --directory ./docs build-all-docs
+          uv run make --directory ./docs build-all-docs
 
-      - name: "Publish documentation to gh-pages"
-        uses: s0/git-publish-subdir-action@v2.2.0
-        env:
-          REPO: self
-          BRANCH: gh-pages
-          FOLDER: docs/build/html
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Optimize cache for CI"
+        run: |
+          # Remove pre-built wheels but keep source-built wheels
+          # This reduces cache size while retaining expensive-to-rebuild packages
+          uv cache prune --ci
+
+      - name: "Upload documentation as artifact"
+        uses: actions/upload-pages-artifact@v5.0.0
+        with:
+          path: docs/build/html
+
+  deploy-docs:
+    needs: [build-docs]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+    steps:
+      - name: "Deploy to GitHub Pages"
+        id: deployment
+        uses: actions/deploy-pages@v5.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}

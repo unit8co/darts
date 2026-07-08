@@ -31,7 +31,7 @@ class ModuleValid2(CustomRNNModule):
 
     def forward(self, x_in, h=None):
         x = self.linear(x_in[0])
-        return x.view(len(x), -1, self.target_size, self.nr_params)
+        return x.view(len(x), -1, self.target_size, self.nr_params), h
 
 
 class TestRNNModel:
@@ -111,7 +111,7 @@ class TestRNNModel:
             **tfm_kwargs,
         )
         model3.fit(self.series)
-        preds3 = model2.predict(n=3)
+        preds3 = model3.predict(n=3)
         assert preds3.all_values().shape == preds2.all_values().shape
         assert preds3.time_index.equals(preds2.time_index)
 

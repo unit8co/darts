@@ -5,14 +5,13 @@ Temporal Convolutional Network
 
 import math
 from collections.abc import Sequence
-from typing import Optional
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if_not
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
@@ -138,7 +137,7 @@ class _TCNModule(PLForecastingModule):
         input_size: int,
         kernel_size: int,
         num_filters: int,
-        num_layers: Optional[int],
+        num_layers: int | None,
         dilation_base: int,
         weight_norm: bool,
         target_size: int,
@@ -239,7 +238,7 @@ class _TCNModule(PLForecastingModule):
 
     @io_processor
     def forward(self, x_in: PLModuleInput):
-        x, _, _ = x_in
+        x, _, _, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
         x = x.transpose(1, 2)
@@ -267,7 +266,7 @@ class TCNModel(PastCovariatesTorchModel):
         output_chunk_shift: int = 0,
         kernel_size: int = 3,
         num_filters: int = 3,
-        num_layers: Optional[int] = None,
+        num_layers: int | None = None,
         dilation_base: int = 2,
         weight_norm: bool = False,
         dropout: float = 0.2,
@@ -339,7 +338,9 @@ class TCNModel(PastCovariatesTorchModel):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
-            It is only applied to the features of the target series and not the covariates.
+            It is only applied to the features of the target series and not the covariates. If ``True``,
+            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
+            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -347,7 +348,7 @@ class TCNModel(PastCovariatesTorchModel):
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
-            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            of the name is formatted with the local date and time, while PID is the process ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
@@ -400,7 +401,7 @@ class TCNModel(PastCovariatesTorchModel):
             checkpointing, tensorboard logging, setting the torch device and more.
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
             supported kwargs. Default: ``None``.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
@@ -409,7 +410,7 @@ class TCNModel(PastCovariatesTorchModel):
 
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
-            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUs.
 
             For more info, see here:
             https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
@@ -420,7 +421,7 @@ class TCNModel(PastCovariatesTorchModel):
             The model will stop training early if the validation loss `val_loss` does not improve beyond
             specifications. For more information on callbacks, visit:
             `PyTorch Lightning Callbacks
-            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
 
             .. highlight:: python
             .. code-block:: python
@@ -444,6 +445,18 @@ class TCNModel(PastCovariatesTorchModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         References
         ----------
@@ -468,29 +481,31 @@ class TCNModel(PastCovariatesTorchModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[-80.48476824],
-               [-80.47896667],
-               [-41.77135603],
-               [-41.76158729],
-               [-41.76854107],
-               [-41.78166819]])
+        >>> print(pred.values())
+        [[-80.48476824]
+         [-80.47896667]
+         [-41.77135603]
+         [-41.76158729]
+         [-41.76854107]
+         [-41.78166819]]
 
         .. note::
-            `DeepTCN example notebook <https://unit8co.github.io/darts/examples/09-DeepTCN-examples.html>`_ presents
+            `DeepTCN example notebook <https://unit8co.github.io/darts/examples/09-DeepTCN-examples.html>`__ presents
             techniques that can be used to improve the forecasts quality compared to this simple usage example.
         """
 
-        raise_if_not(
-            kernel_size < input_chunk_length,
-            "The kernel size must be strictly smaller than the input length.",
-            logger,
-        )
-        raise_if_not(
-            output_chunk_length < input_chunk_length,
-            "The output length must be strictly smaller than the input length",
-            logger,
-        )
+        if kernel_size >= input_chunk_length:
+            raise_log(
+                ValueError(
+                    "The kernel size must be strictly smaller than the input length."
+                ),
+            )
+        if output_chunk_length >= input_chunk_length:
+            raise_log(
+                ValueError(
+                    "The output length must be strictly smaller than the input length."
+                ),
+            )
 
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
@@ -530,10 +545,10 @@ class TCNModel(PastCovariatesTorchModel):
     def _build_train_dataset(
         self,
         series: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        sample_weight: Optional[Sequence[TimeSeries]],
-        max_samples_per_ts: Optional[int],
+        past_covariates: Sequence[TimeSeries] | None,
+        future_covariates: Sequence[TimeSeries] | None,
+        sample_weight: Sequence[TimeSeries] | str | None,
+        max_samples_per_ts: int | None,
         stride: int = 1,
     ) -> TorchTrainingDataset:
         return ShiftedTorchTrainingDataset(

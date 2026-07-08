@@ -4,6 +4,7 @@ import math
 from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 
+import narwhals as nw
 import numpy as np
 import pandas as pd
 import pytest
@@ -17,7 +18,7 @@ from darts.utils.likelihood_models.base import (
     quantile_names,
 )
 from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
-from darts.utils.utils import expand_arr, freqs, generate_index
+from darts.utils.utils import expand_arr, generate_index
 
 TEST_BACKENDS = ["pandas"]
 
@@ -174,6 +175,48 @@ class TestTimeSeries:
         assert ts_pl_df_2.equals(pl_df)
         assert ts_pl_df_2.dtypes == pl_df.dtypes
 
+    @pytest.mark.parametrize(
+        "backend,date_type",
+        itertools.product(
+            ["pandas"] + (["polars"] if POLARS_AVAILABLE else []),
+            ["str", "date", "datetime"],
+        ),
+    )
+    def test_creation_from_dataframe_with_dates(self, backend, date_type):
+        # month start freq in Date (not Datetime) resolution
+        data = {
+            "time": ["2000-01-01", "2000-02-01", "2000-03-01"],
+            "values": [1.0, 2.0, 3.0],
+        }
+        if backend == "pandas":
+            df = pd.DataFrame(data)
+            if date_type != "str":
+                # pandas only supports datetime
+                df["time"] = pd.to_datetime(df["time"])
+        else:
+            df = pl.DataFrame(data)
+            if date_type != "str":
+                # we must first convert to Date before optional Datetime
+                df = df.cast({"time": pl.Date})
+                if date_type == "datetime":
+                    df = df.cast({"time": pl.Datetime})
+
+        # internally, Darts converts any temporal dtype into Datetime
+        ts = TimeSeries.from_dataframe(df, time_col="time")
+        assert ts.time_index.equals(
+            pd.DatetimeIndex(
+                data["time"], name="time", freq="MS", dtype=ts.time_index.dtype
+            )
+        )
+        np.testing.assert_array_equal(
+            ts.values(), np.array(data["values"])[:, np.newaxis]
+        )
+
+        # writing back to DataFrame always gives Datetime
+        df_inv = ts.to_dataframe(time_as_index=False, backend=backend)
+        df_inv_nw = nw.from_native(df_inv)
+        assert isinstance(df_inv_nw.get_column("time").dtype, nw.Datetime)
+
     def test_integer_range_indexing(self):
         # sanity checks for the integer-indexed series
         range_indexed_data = np.random.randn(
@@ -315,6 +358,7 @@ class TestTimeSeries:
             isinstance(ts_from_int_idx.time_index, pd.RangeIndex)
             and ts_from_int_idx.freq == 1
         )
+        assert ts_from_int_idx.freq_str == "1"
         assert ts_from_int_idx.time_index.equals(ts_from_range_idx.time_index)
 
         for step in [2, 3]:
@@ -519,7 +563,10 @@ class TestTimeSeries:
         helper_test_split(self.series1)
 
     def test_drop(self):
-        helper_test_drop(self.series1)
+        helper_test_drop_after(self.series1, keep_point=False)
+        helper_test_drop_after(self.series1, keep_point=True)
+        helper_test_drop_before(self.series1, keep_point=False)
+        helper_test_drop_before(self.series1, keep_point=True)
 
     @pytest.mark.parametrize(
         "config", itertools.product(["D", "2D", 1, 2], [False, True])
@@ -530,13 +577,115 @@ class TestTimeSeries:
         freq, mixed_freq = config
         helper_test_intersect(freq, mixed_freq, is_univariate=True)
 
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [
+                (False, 1, 1, 1),  # integer step
+                (False, 1, 2, 2),
+                (False, 3, 4, 12),
+                (False, "h", "h", "h"),  # same freq base (with fixed period)
+                (False, "h", "2h", "2h"),
+                (False, "3h", "4h", "12h"),
+                (False, "D", "D", "D"),  # same freq base (with fixed period)
+                (False, "D", "2D", "2D"),
+                (False, "3D", "4D", "12D"),
+                (False, "W-MON", "W-MON", "W-MON"),  # same freq base (no fixed period)
+                (False, "W-MON", "2W-MON", "2W-MON"),
+                (False, "3W-MON", "4W-MON", "12W-MON"),
+                (
+                    False,
+                    "h",
+                    "D",
+                    "24h",
+                ),  # mixed bases but with fixed period (returns multiple of first freq)
+                (False, "D", "24h", "D"),
+                (False, "3h", "D", "24h"),
+                (False, "3h", "33min", "33h"),
+                (False, "33min", "3h", "1980min"),
+                (
+                    False,
+                    "D1h",
+                    "4h",
+                    "100h",
+                ),  # "D1h" gets converted to "25h" -> result in "100h"
+                (False, "4h", "D1h", "100h"),
+                (
+                    False,
+                    "W-MON",
+                    "7D",
+                    "W-MON",
+                ),  # otherwise, raises with at least one non-fixed freq
+                (True, "h", "MS", "MS"),
+                (True, "B", "1h", "B"),
+            ],
+            [1, 2, 3],
+        ),
+    )
+    def test_intersect_more_freqs(self, config):
+        """Tests slice intersection between two series with datetime or range index with identical and
+        mixed frequencies."""
+
+        (will_raise, freq, other, expected), n_intersection = config
+        # generate the intersecting indices
+        if isinstance(freq, int):
+            start = 0
+            end = start + (n_intersection - 1) * expected
+            index_freq = pd.RangeIndex(start=start, stop=end + 1, step=freq)
+            index_other = pd.RangeIndex(start=start, stop=end + 1, step=other)
+        else:
+            freq_expected = pd.tseries.frequencies.to_offset(expected)
+            # apply trick to resample a timestamp to the desired frequency
+            start = (
+                pd.Series(index=[pd.Timestamp("2000-01-01")])
+                .resample(freq_expected)
+                .mean()
+                .index[0]
+            )
+            end = start + (n_intersection - 1) * freq_expected
+            index_freq = pd.date_range(start=start, end=end, freq=freq)
+            index_other = pd.date_range(start=start, end=end, freq=other)
+
+        # pandas can natively infer the frequency with at least 3 entries
+        intersection_working = index_freq.intersection(index_other)[:n_intersection]
+        assert len(intersection_working) == n_intersection
+
+        # generate the actual indices that span over this time frame
+        index_freq = generate_index(
+            start=intersection_working[0], end=intersection_working[-1], freq=freq
+        )
+        index_other = generate_index(
+            start=intersection_working[0], end=intersection_working[-1], freq=other
+        )
+        ts_freq = TimeSeries.from_times_and_values(
+            times=index_freq,
+            values=np.arange(len(index_freq)),
+        )
+        ts_other = TimeSeries.from_times_and_values(
+            times=index_other,
+            values=np.arange(len(index_other)),
+        )
+        if will_raise and n_intersection == 2:
+            with pytest.raises(ValueError, match=""):
+                _ = ts_freq.slice_intersect(ts_other)
+        else:
+            ts_intersection = ts_freq.slice_intersect(ts_other)
+            assert len(ts_intersection) == n_intersection
+            if n_intersection == 3 and expected == "24h":
+                assert ts_intersection.freq == "D"
+            elif n_intersection == 1:
+                # pandas wrongly picks the left frequency, instead of the least common multiple
+                assert ts_intersection.freq == freq
+            else:
+                assert ts_intersection.freq == expected
+
     def test_shift(self):
         helper_test_shift(self.series1)
 
     def test_append(self):
         helper_test_append(self.series1)
         # Check `append` deals with `RangeIndex` series correctly:
-        series_1 = linear_timeseries(start=1, length=5, freq=2, column_name=freqs["YE"])
+        series_1 = linear_timeseries(start=1, length=5, freq=2, column_name="YE")
         series_2 = linear_timeseries(start=11, length=2, freq=2, column_name="B")
         appended = series_1.append(series_2)
         expected_vals = np.concatenate(
@@ -657,7 +806,7 @@ class TestTimeSeries:
     def test_prepend(self):
         helper_test_prepend(self.series1)
         # Check `prepend` deals with `RangeIndex` series correctly:
-        series_1 = linear_timeseries(start=1, length=5, freq=2, column_name=freqs["YE"])
+        series_1 = linear_timeseries(start=1, length=5, freq=2, column_name="YE")
         series_2 = linear_timeseries(start=11, length=2, freq=2, column_name="B")
         prepended = series_2.prepend(series_1)
         expected_vals = np.concatenate(
@@ -1154,51 +1303,51 @@ class TestTimeSeries:
             "C",
             "D",
             "W",
-            freqs["ME"],
-            freqs["SME"],
-            freqs["BME"],
-            freqs["CBME"],
+            "ME",
+            "SME",
+            "BME",
+            "CBME",
             "MS",
             "SMS",
             "BMS",
             "CBMS",
-            freqs["QE"],
-            freqs["BQE"],
+            "QE",
+            "BQE",
             "QS",
             "BQS",
-            freqs["YE"],
-            freqs["BYE"],
-            freqs["YS"],
+            "YE",
+            "BYE",
             "YS",
-            freqs["BYS"],
+            "YS",
             "BYS",
-            freqs["bh"],
-            freqs["h"],
-            freqs["min"],
-            freqs["s"],
-            freqs["ms"],
-            freqs["us"],
-            freqs["ns"],
+            "BYS",
+            "bh",
+            "h",
+            "min",
+            "s",
+            "ms",
+            "us",
+            "ns",
         ]
         # fill_missing_dates will find multiple inferred frequencies (i.e. for 'B' it finds {'B', 'D'}) -> good
         offset_aliases_raise = [
             "B",
             "C",
-            freqs["SME"],
-            freqs["BME"],
-            freqs["CBME"],
+            "SME",
+            "BME",
+            "CBME",
             "SMS",
             "BMS",
             "CBMS",
-            freqs["BQE"],
-            freqs["BYE"],
-            freqs["BYS"],
+            "BQE",
+            "BYE",
             "BYS",
-            freqs["bh"],
+            "BYS",
+            "bh",
             "BQS",
         ]
         # frequency cannot be inferred for these types (finds '15D' instead of 'SM')
-        offset_not_supported = [freqs["SME"], "SMS"]
+        offset_not_supported = ["SME", "SMS"]
 
         ts_length = 25
         for offset_alias in offset_aliases:
@@ -1281,8 +1430,8 @@ class TestTimeSeries:
 
         # up-sample with pad
         # one value per hour -> same value for the whole day
-        resampled_timeseries = timeseries.resample(freqs["h"])
-        assert resampled_timeseries.freq_str == freqs["h"]
+        resampled_timeseries = timeseries.resample("h")
+        assert resampled_timeseries.freq_str == "h"
         # day 1: -> 0
         assert resampled_timeseries.to_series().at[pd.Timestamp("20130101020000")] == 0
         # day 2: -> 1
@@ -1476,12 +1625,12 @@ class TestTimeSeries:
 
         # using offset to avoid nan in the first value
         times = pd.date_range(
-            start=pd.Timestamp("20200101233000"), periods=10, freq="15" + freqs["min"]
+            start=pd.Timestamp("20200101233000"), periods=10, freq="15min"
         )
         pd_series = pd.Series(range(10), index=times)
         timeseries = TimeSeries.from_series(pd_series)
         resampled_timeseries = timeseries.resample(
-            freq="1" + freqs["h"], offset=pd.Timedelta("30" + freqs["min"])
+            freq="1h", offset=pd.Timedelta("30min")
         )
         assert resampled_timeseries.to_series().at[pd.Timestamp("20200101233000")] == 0
 
@@ -1531,7 +1680,7 @@ class TestTimeSeries:
             pd.date_range("20130101", "20130105"),
             range(5),
             fill_missing_dates=False,
-            freq=freqs["ME"],
+            freq="ME",
         )
         assert seriesA.freq == "D"
         # test successful instantiation of TimeSeries with length 2
@@ -1630,15 +1779,10 @@ class TestTimeSeries:
         df_01 = series.to_dataframe()
         df_012 = series.to_dataframe()
 
-        PANDAS_210 = pd.__version__ >= "2.1.0"
-        select_map = "map"
-        if not PANDAS_210:
-            select_map = "applymap"
-
-        df_0[["0"]] = getattr(df_0[["0"]], select_map)(fn)
-        df_2[["2"]] = getattr(df_2[["2"]], select_map)(fn)
-        df_01[["0", "1"]] = getattr(df_01[["0", "1"]], select_map)(fn)
-        df_012 = getattr(df_012, select_map)(fn)
+        df_0[["0"]] = df_0[["0"]].map(fn)
+        df_2[["2"]] = df_2[["2"]].map(fn)
+        df_01[["0", "1"]] = df_01[["0", "1"]].map(fn)
+        df_012 = df_012.map(fn)
 
         series_0 = TimeSeries.from_dataframe(df_0, freq="D")
         series_2 = TimeSeries.from_dataframe(df_2, freq="D")
@@ -1667,7 +1811,7 @@ class TestTimeSeries:
         zeroes = zeroes.with_columns_renamed("constant", "linear")
 
         def function(ts, x):
-            return x - ts.month
+            return x - ts.month.values.reshape(-1, 1, 1)
 
         new_series = series.map(function)
         assert new_series == zeroes
@@ -1692,10 +1836,24 @@ class TestTimeSeries:
         with pytest.raises(ValueError):
             series.map(ufunc_add)
 
+    def test_map_fn_not_callable(self):
+        series = linear_timeseries(length=3)
+        with pytest.raises(TypeError) as exc:
+            series.map(fn=1)
+        assert str(exc.value) == "fn must be a callable"
+
+    def test_map_fn_wrong_output_shape(self):
+        series = linear_timeseries(length=3)
+        with pytest.raises(ValueError) as exc:
+            series.map(fn=lambda x: np.concatenate([x] * 2, axis=1))
+        assert str(exc.value) == (
+            "fn must return an array of shape `(3, 1, 1)`. Received shape `(3, 2, 1)`"
+        )
+
     def test_gaps(self):
         times1 = pd.date_range("20130101", "20130110")
-        times2 = pd.date_range("20120101", "20210301", freq=freqs["QE"])
-        times3 = pd.date_range("20120101", "20210301", freq=freqs["YS"])
+        times2 = pd.date_range("20120101", "20210301", freq="QE")
+        times3 = pd.date_range("20120101", "20210301", freq="YS")
         times4 = pd.date_range("20120101", "20210301", freq="2MS")
 
         pd_series1 = pd.Series(
@@ -1889,7 +2047,7 @@ class TestTimeSeries:
         schema_actual = ts.schema(copy=True)
 
         for k, v_exp in schema_expected.items():
-            if isinstance(v_exp, (pd.DataFrame, pd.Index)):
+            if isinstance(v_exp, pd.DataFrame | pd.Index):
                 assert schema_actual[k].equals(v_exp)
             else:
                 assert schema_actual[k] == v_exp
@@ -2114,17 +2272,54 @@ def helper_test_split(test_series: TimeSeries):
     assert seriesP.start_time() > split_date
 
 
-def helper_test_drop(test_series: TimeSeries):
-    seriesA = test_series.drop_after(pd.Timestamp("20130105"))
-    assert seriesA.end_time() == pd.Timestamp("20130105") - test_series.freq
-    assert np.all(seriesA.time_index < pd.Timestamp("20130105"))
+def helper_test_drop_after(test_series: TimeSeries, keep_point: bool):
+    # drop step is part of index
+    series = test_series.drop_after(pd.Timestamp("20130105"), keep_point=keep_point)
+    expected_end = (
+        pd.Timestamp("20130105") - (1 if not keep_point else 0) * test_series.freq
+    )
+    assert series.end_time() == expected_end
+    assert np.all(series.time_index <= expected_end)
+    assert series.freq == test_series.freq
 
-    seriesB = test_series.drop_before(pd.Timestamp("20130105"))
-    assert seriesB.start_time() == pd.Timestamp("20130105") + test_series.freq
-    assert np.all(seriesB.time_index > pd.Timestamp("20130105"))
+    # drop step is not part of index and before "20130105";
+    series = test_series.drop_after(
+        pd.Timestamp("20130104 12:00:00"), keep_point=keep_point
+    )
+    assert series.end_time() == pd.Timestamp("20130105") - test_series.freq
+    assert np.all(series.time_index < pd.Timestamp("20130105"))
+    assert series.freq == test_series.freq
 
-    assert test_series.freq_str == seriesA.freq_str
-    assert test_series.freq_str == seriesB.freq_str
+    # drop step is not part of index and after "20130105"
+    series = test_series.drop_after(
+        pd.Timestamp("20130105 12:00:00"), keep_point=keep_point
+    )
+    assert series.end_time() == pd.Timestamp("20130105")
+    assert np.all(series.time_index <= pd.Timestamp("20130105"))
+    assert series.freq == test_series.freq
+
+
+def helper_test_drop_before(test_series: TimeSeries, keep_point: bool):
+    # drop step is part of index
+    series = test_series.drop_before(pd.Timestamp("20130105"), keep_point=keep_point)
+    expected_end = (
+        pd.Timestamp("20130105") + (1 if not keep_point else 0) * test_series.freq
+    )
+    assert series.start_time() == expected_end
+    assert np.all(series.time_index >= expected_end)
+    assert series.freq == test_series.freq
+
+    # drop step is not part of index and after "20130105"
+    series = test_series.drop_before(pd.Timestamp("20130105 12:00:00"), keep_point=True)
+    assert series.start_time() == pd.Timestamp("20130105") + test_series.freq
+    assert np.all(series.time_index > pd.Timestamp("20130105"))
+    assert series.freq == test_series.freq
+
+    # drop step is not part of index and before "20130105"
+    series = test_series.drop_before(pd.Timestamp("20130104 12:00:00"), keep_point=True)
+    assert series.start_time() == pd.Timestamp("20130105")
+    assert np.all(series.time_index >= pd.Timestamp("20130105"))
+    assert series.freq == test_series.freq
 
 
 def helper_test_intersect(freq, is_mixed_freq: bool, is_univariate: bool):
@@ -2139,11 +2334,16 @@ def helper_test_intersect(freq, is_mixed_freq: bool, is_univariate: bool):
         freq_other = freq * 2
         n_steps = 21
     else:  # 2 or "2D"
-        freq_other = freq / 2
+        # For pandas 3.0: division of offsets is not supported, so we use .n for the multiplier
+        freq_other = type(freq)(n=freq.n // 2) if hasattr(freq, "n") else freq / 2
         n_steps = 11
     freq_other = int(freq_other) if isinstance(freq_other, float) else freq_other
     # if freq_other has a higher freq, we expect the slice to have the higher freq
-    freq_expected = freq if freq > freq_other else freq_other
+    # For pandas 3.0: comparison of offsets is not supported, use .nanos for comparison
+    if hasattr(freq, "nanos") and hasattr(freq_other, "nanos"):
+        freq_expected = max(freq, freq_other, key=lambda x: x.nanos)
+    else:
+        freq_expected = freq if freq > freq_other else freq_other
     idx = generate_index(start=start, freq=freq, length=n_steps)
     end = idx[-1]
 
@@ -2272,13 +2472,11 @@ def helper_test_shift(test_series: TimeSeries):
     )
 
     with pytest.raises(Exception):
-        test_series.shift(1e6)
+        test_series.shift(1e9)
 
-    seriesM = TimeSeries(
-        pd.date_range("20130101", "20130601", freq=freqs["ME"]), range(5)
-    )
+    seriesM = TimeSeries(pd.date_range("20130101", "20130601", freq="ME"), range(5))
     with pytest.raises(OverflowError):
-        seriesM.shift(1e4)
+        seriesM.shift(1e7)
 
     seriesD = TimeSeries(pd.date_range("20130101", "20130101"), range(1), freq="D")
     seriesE = seriesD.shift(1)
@@ -2954,7 +3152,7 @@ class TestTimeSeriesFromDataFrame:
             df=self.pd_to_backend(df, backend), time_col="Time"
         )
 
-        assert ts.time_index.dtype == "datetime64[ns]"
+        assert str(ts.time_index.dtype) in ("datetime64[ns]", "datetime64[us]")
         assert ts.time_index.name == "Time"
 
     @pytest.mark.parametrize("backend", TEST_BACKENDS)
@@ -2969,7 +3167,7 @@ class TestTimeSeriesFromDataFrame:
             df=self.pd_to_backend(df, backend), time_col="Time"
         )
 
-        assert ts.time_index.dtype == "datetime64[ns]"
+        assert str(ts.time_index.dtype) in ("datetime64[ns]", "datetime64[us]")
         assert ts.time_index.name == "Time"
 
     @pytest.mark.parametrize("backend", TEST_BACKENDS)
@@ -2998,7 +3196,7 @@ class TestTimeSeriesFromDataFrame:
         assert ts.time_index.tz is None
 
         time_range_H = pd.date_range(
-            start="20200518", end="20200521", freq=freqs["h"], tz="CET"
+            start="20200518", end="20200521", freq="h", tz="CET"
         )
         values = np.random.uniform(low=-10, high=10, size=len(time_range_H))
 
@@ -3028,7 +3226,7 @@ class TestTimeSeriesFromDataFrame:
         assert ts.time_index.tz is None
 
         time_range_H = pd.date_range(
-            start="20200518", end="20200521", freq=freqs["h"], tz="CET"
+            start="20200518", end="20200521", freq="h", tz="CET"
         )
         values = np.random.uniform(low=-10, high=10, size=len(time_range_H))
         series = pd.Series(data=values, index=time_range_H)
@@ -3158,23 +3356,28 @@ class TestSimpleStatistics:
                 new_ts._values, np.median(self.values, axis=axis, keepdims=True)
             ).all()
 
-    def test_quantile(self):
+    @pytest.mark.parametrize("dtype", ["float64", "float32"])
+    def test_quantile(self, dtype):
         qs = [0.01, 0.1, 0.5, 0.95]
+
+        ts = self.ts.astype(dtype)
+        values = self.values.astype(dtype)
 
         q_ts = []
         for q in qs:
-            new_ts = self.ts.quantile(q=q)
+            new_ts = ts.quantile(q=q)
+            assert new_ts.dtype == dtype
 
             # check component names
             q_comps = likelihood_component_names(
-                components=self.ts.components, parameter_names=quantile_names([q])
+                components=ts.components, parameter_names=quantile_names([q])
             )
             assert new_ts.components.tolist() == q_comps
 
             # check values
             assert np.isclose(
                 new_ts.values(),
-                np.quantile(self.values, q=q, axis=2),
+                np.quantile(values, q=q, axis=2),
             ).all()
             q_ts.append((new_ts[q_comps[0]], new_ts[q_comps[1]]))
 
@@ -3184,4 +3387,22 @@ class TestSimpleStatistics:
         q_ts = concatenate([q_ts_0, q_ts_1], axis=1)
 
         # computing all quantiles at once must be identical
-        assert self.ts.quantile(q=qs) == q_ts
+        new_ts = ts.quantile(q=qs)
+        assert new_ts == q_ts
+        assert new_ts.dtype == dtype
+
+
+class TestTimeSeriesInputValidation:
+    ts = constant_timeseries(value=1, length=10)
+
+    def test_slice_n_points_after_non_positive(self):
+        with pytest.raises(ValueError, match="n should be a positive integer"):
+            self.ts.slice_n_points_after(self.ts.start_time(), n=0)
+        with pytest.raises(ValueError, match="n should be a positive integer"):
+            self.ts.slice_n_points_after(self.ts.start_time(), n=-1)
+
+    def test_slice_n_points_before_non_positive(self):
+        with pytest.raises(ValueError, match="n should be a positive integer"):
+            self.ts.slice_n_points_before(self.ts.end_time(), n=0)
+        with pytest.raises(ValueError, match="n should be a positive integer"):
+            self.ts.slice_n_points_before(self.ts.end_time(), n=-1)

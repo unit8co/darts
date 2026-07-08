@@ -3,8 +3,6 @@ Time-series Dense Encoder (TiDE)
 --------------------------------
 """
 
-from typing import Optional
-
 import torch
 import torch.nn as nn
 
@@ -77,8 +75,8 @@ class _TideModule(PLForecastingModule):
         temporal_width_future: int,
         use_layer_norm: bool,
         dropout: float,
-        temporal_hidden_size_past: Optional[int] = None,
-        temporal_hidden_size_future: Optional[int] = None,
+        temporal_hidden_size_past: int | None = None,
+        temporal_hidden_size_future: int | None = None,
         **kwargs,
     ):
         """Pytorch module implementing the TiDE architecture.
@@ -124,8 +122,8 @@ class _TideModule(PLForecastingModule):
         Inputs
         ------
         x
-            Tuple of Tensors `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and
-            `x_future`is the output/future chunk. Input dimensions are `(batch_size, time_steps, components)`
+            Tuple of Tensors `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
+            `x_future` is the output/future chunk. Input dimensions are `(batch_size, time_steps, components)`
         Outputs
         -------
         y
@@ -267,8 +265,8 @@ class _TideModule(PLForecastingModule):
         Parameters
         ----------
         x_in
-            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
-            is the output/future chunk. Input dimensions are `(batch_size, time_steps, components)`
+            comes as tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
+            `x_future` is the output/future chunk. Input dimensions are `(batch_size, time_steps, components)`
         Returns
         -------
         torch.Tensor
@@ -278,7 +276,7 @@ class _TideModule(PLForecastingModule):
         # x has shape (batch_size, input_chunk_length, input_dim)
         # x_future_covariates has shape (batch_size, input_chunk_length, future_cov_dim)
         # x_static_covariates has shape (batch_size, static_cov_dim)
-        x, x_future_covariates, x_static_covariates = x_in
+        x, x_future_covariates, x_static_covariates, _ = x_in
 
         x_lookback = x[:, :, : self.output_dim]
 
@@ -377,8 +375,8 @@ class TiDEModel(MixedCovariatesTorchModel):
         hidden_size: int = 128,
         temporal_width_past: int = 4,
         temporal_width_future: int = 4,
-        temporal_hidden_size_past: int = None,
-        temporal_hidden_size_future: int = None,
+        temporal_hidden_size_past: int | None = None,
+        temporal_hidden_size_future: int | None = None,
         temporal_decoder_hidden: int = 32,
         use_layer_norm: bool = False,
         dropout: float = 0.1,
@@ -480,7 +478,9 @@ class TiDEModel(MixedCovariatesTorchModel):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
-            It is only applied to the features of the target series and not the covariates.
+            It is only applied to the features of the target series and not the covariates. If ``True``,
+            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
+            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -488,7 +488,7 @@ class TiDEModel(MixedCovariatesTorchModel):
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
-            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            of the name is formatted with the local date and time, while PID is the process ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
@@ -541,7 +541,7 @@ class TiDEModel(MixedCovariatesTorchModel):
             checkpointing, tensorboard logging, setting the torch device and more.
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
             supported kwargs. Default: ``None``.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
@@ -549,7 +549,7 @@ class TiDEModel(MixedCovariatesTorchModel):
 
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
-            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUs.
 
             For more info, see here:
             https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
@@ -560,7 +560,7 @@ class TiDEModel(MixedCovariatesTorchModel):
             The model will stop training early if the validation loss `val_loss` does not improve beyond
             specifications. For more information on callbacks, visit:
             `PyTorch Lightning Callbacks
-            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
 
             .. highlight:: python
             .. code-block:: python
@@ -584,6 +584,18 @@ class TiDEModel(MixedCovariatesTorchModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         References
         ----------
@@ -610,16 +622,16 @@ class TiDEModel(MixedCovariatesTorchModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1008.1667634 ],
-               [ 997.08337201],
-               [1017.72035839],
-               [1005.10790392],
-               [ 998.90537286],
-               [1005.91534452]])
+        >>> print(pred.values())
+        [[1008.1667634 ]
+         [ 997.08337201]
+         [1017.72035839]
+         [1005.10790392]
+         [ 998.90537286]
+         [1005.91534452]]
 
         .. note::
-            `TiDE example notebook <https://unit8co.github.io/darts/examples/18-TiDE-examples.html>`_ presents
+            `TiDE example notebook <https://unit8co.github.io/darts/examples/18-TiDE-examples.html>`__ presents
             techniques that can be used to improve the forecasts quality compared to this simple usage example.
         """
         if temporal_width_past < 0 or temporal_width_future < 0:
@@ -627,7 +639,6 @@ class TiDEModel(MixedCovariatesTorchModel):
                 ValueError(
                     "`temporal_width_past` and `temporal_width_future` must be >= 0."
                 ),
-                logger=logger,
             )
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 

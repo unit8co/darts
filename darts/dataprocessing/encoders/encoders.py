@@ -156,9 +156,9 @@ TorchForecastingModel (this is only meant to illustrate many features at once).
 ..
 """
 
+import contextlib
 import copy
-from collections.abc import Sequence
-from typing import Callable, Optional, Union
+from collections.abc import Callable, Sequence
 
 import numpy as np
 import pandas as pd
@@ -171,17 +171,18 @@ from darts.dataprocessing.encoders.encoder_base import (
     PastCovariatesIndexGenerator,
     SequentialEncoderTransformer,
     SingleEncoder,
-    SupportedIndex,
     _EncoderMethod,
 )
 from darts.dataprocessing.transformers import FittableDataTransformer
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_log
 from darts.timeseries import DIMS
+from darts.typing import TimeIndex, TimeSeriesLike, TimeZone
 from darts.utils.timeseries_generation import datetime_attribute_timeseries
 from darts.utils.ts_utils import seq2series, series2seq
 from darts.utils.utils import generate_index
 
-SupportedTimeSeries = Union[TimeSeries, Sequence[TimeSeries]]
+SupportedTimeSeries = TimeSeriesLike
+
 logger = get_logger(__name__)
 
 ENCODER_KEYS = ["cyclic", "datetime_attribute", "position", "custom"]
@@ -203,7 +204,7 @@ class CyclicTemporalEncoder(SingleEncoder):
         self,
         index_generator: CovariatesIndexGenerator,
         attribute: str,
-        tz: Optional[str] = None,
+        tz: TimeZone = None,
     ):
         """
         Cyclic index encoding for `TimeSeries` that have a time index of type `pd.DatetimeIndex`.
@@ -221,14 +222,16 @@ class CyclicTemporalEncoder(SingleEncoder):
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
         """
         super().__init__(index_generator)
         self.attribute = attribute
         self.tz = tz
 
     def _encode(
-        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
+        self, index: TimeIndex, target_end: pd.Timestamp, dtype: np.dtype
     ) -> TimeSeries:
         """applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`."""
         super()._encode(index, target_end, dtype)
@@ -268,10 +271,10 @@ class PastCyclicEncoder(CyclicTemporalEncoder):
     def __init__(
         self,
         attribute: str,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[list[int]] = None,
-        tz: Optional[str] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
+        tz: TimeZone = None,
     ):
         """
         Parameters
@@ -298,7 +301,9 @@ class PastCyclicEncoder(CyclicTemporalEncoder):
             Only required for :class:`SKLearnModel`.
             Corresponds to the lag values from parameter `lags_past_covariates` of :class:`SKLearnModel`.
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
         """
         super().__init__(
             index_generator=PastCovariatesIndexGenerator(
@@ -317,10 +322,10 @@ class FutureCyclicEncoder(CyclicTemporalEncoder):
     def __init__(
         self,
         attribute: str,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[list[int]] = None,
-        tz: Optional[str] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
+        tz: TimeZone = None,
     ):
         """
         Parameters
@@ -347,7 +352,9 @@ class FutureCyclicEncoder(CyclicTemporalEncoder):
             Only required for :class:`SKLearnModel`.
             Corresponds to the lag values from parameter `lags_future_covariates` from :class:`SKLearnModel`.
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
         """
         super().__init__(
             index_generator=FutureCovariatesIndexGenerator(
@@ -369,7 +376,7 @@ class DatetimeAttributeEncoder(SingleEncoder):
         self,
         index_generator: CovariatesIndexGenerator,
         attribute: str,
-        tz: Optional[str] = None,
+        tz: TimeZone = None,
     ):
         """
         Parameters
@@ -385,14 +392,16 @@ class DatetimeAttributeEncoder(SingleEncoder):
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
         """
         super().__init__(index_generator)
         self.attribute = attribute
         self.tz = tz
 
     def _encode(
-        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
+        self, index: TimeIndex, target_end: pd.Timestamp, dtype: np.dtype
     ) -> TimeSeries:
         """Encode `index` as a scalar."""
         super()._encode(index, target_end, dtype)
@@ -428,10 +437,10 @@ class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
     def __init__(
         self,
         attribute: str,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[list[int]] = None,
-        tz: Optional[str] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
+        tz: TimeZone = None,
     ):
         """
         Parameters
@@ -458,7 +467,9 @@ class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
             Only required for :class:`SKLearnModel`.
             Corresponds to the lag values from parameter `lags_past_covariates` of :class:`SKLearnModel`.
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
         """
         super().__init__(
             index_generator=PastCovariatesIndexGenerator(
@@ -477,10 +488,10 @@ class FutureDatetimeAttributeEncoder(DatetimeAttributeEncoder):
     def __init__(
         self,
         attribute: str,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[list[int]] = None,
-        tz: Optional[str] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
+        tz: TimeZone = None,
     ):
         """
         Parameters
@@ -507,7 +518,9 @@ class FutureDatetimeAttributeEncoder(DatetimeAttributeEncoder):
             Only required for :class:`SKLearnModel`.
             Corresponds to the lag values from parameter `lags_future_covariates` from :class:`SKLearnModel`.
         tz
-            Optionally, a time zone to convert the time index to before computing the attributes.
+            Optionally, a time zone to convert the time index before computing attributes.
+            Supports any type handled by pandas
+            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
         """
         super().__init__(
             index_generator=FutureCovariatesIndexGenerator(
@@ -536,18 +549,19 @@ class IntegerIndexEncoder(SingleEncoder):
             Currently only 'relative' is supported. The generated encoded values will range from (-inf, inf) and the
             target series end time will be used as a reference to evaluate the relative index positions.
         """
-        raise_if_not(
-            isinstance(attribute, str) and attribute in INTEGER_INDEX_ATTRIBUTES,
-            f"Encountered invalid encoder argument `{attribute}` for encoder `position`. "
-            f'Attribute must be `"relative"`.',
-            logger,
-        )
+        if not (isinstance(attribute, str) and attribute in INTEGER_INDEX_ATTRIBUTES):
+            raise_log(
+                ValueError(
+                    f"Encountered invalid encoder argument `{attribute}` for encoder `position`. "
+                    f'Attribute must be `"relative"`.'
+                ),
+            )
         super().__init__(index_generator)
 
         self.attribute = attribute
 
     def _encode(
-        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
+        self, index: TimeIndex, target_end: pd.Timestamp, dtype: np.dtype
     ) -> TimeSeries:
         """Adds integer index value (position) to the provided `index`.
         For attribute=='relative', the reference point/index is the prediction/forecast index of the target series.
@@ -607,9 +621,9 @@ class PastIntegerIndexEncoder(IntegerIndexEncoder):
     def __init__(
         self,
         attribute: str,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[list[int]] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
         **kwargs,
     ):
         """
@@ -651,9 +665,9 @@ class FutureIntegerIndexEncoder(IntegerIndexEncoder):
     def __init__(
         self,
         attribute: str,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[list[int]] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
         **kwargs,
     ):
         """
@@ -701,39 +715,75 @@ class CallableIndexEncoder(SingleEncoder):
             `generate_inference_idx()`. Used to generate the index for encoders.
         attribute
             A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
-            and returns a np.ndarray of shape `(len(index),)`.
-            An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
-            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.RangeIndex:
+            and returns a `np.ndarray` of shape `(len(index),)` or `(len(index), n_output_components)`.
+            Examples for a correct `attribute` for `index` of type `pd.DatetimeIndex`:
+            ``attribute = lambda index: (index.year - 1950) / 50``
+            ``attribute = lambda index: np.stack([index.year, index.month], axis=1)``
+            And for `pd.RangeIndex`:
             ``attribute = lambda index: (index - 1950) / 50``
         """
-        raise_if_not(
-            callable(attribute),
-            f"Encountered invalid encoder argument `{attribute}` for encoder `callable`. "
-            f"Attribute must be a callable that returns a `np.ndarray`.",
-            logger,
-        )
+        if not callable(attribute):
+            raise_log(
+                ValueError(
+                    f"Encountered invalid encoder argument `{attribute}` for encoder `callable`. "
+                    f"Attribute must be a callable that returns a `np.ndarray`."
+                ),
+            )
 
         super().__init__(index_generator)
 
         self.attribute = attribute
+        self._n_components = self._detect_n_components(attribute)
+
+    @staticmethod
+    def _detect_n_components(attribute: Callable) -> int:
+        """Test the callable with sample `pd.DatetimeIndex` and `pd.RangeIndex` to determine
+        the number of output components.
+        """
+        n_components = None
+
+        for idx in (
+            pd.date_range("2000-01-01", periods=2, freq="D"),
+            pd.RangeIndex(2),
+        ):
+            with contextlib.suppress(Exception):
+                encoded = np.asarray(attribute(idx))
+                n_components = 1 if encoded.ndim == 1 else encoded.shape[1]
+                break
+
+        if n_components is None:
+            raise_log(
+                ValueError(
+                    "Encountered invalid encoder argument for encoder `callable`. "
+                    "Attribute must be a callable that accepts a `pd.DatetimeIndex` "
+                    "or `pd.RangeIndex` and returns an array-like of shape "
+                    "`(len(index),)` or `(len(index), n_output_components)`."
+                ),
+            )
+        return n_components
 
     def _encode(
-        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
+        self, index: TimeIndex, target_end: pd.Timestamp, dtype: np.dtype
     ) -> TimeSeries:
-        """Apply the user-defined callable to encode the index"""
+        """Apply the user-defined callable to encode the index."""
         super()._encode(index, target_end, dtype)
 
+        values = np.array(self.attribute(index), dtype=dtype)
+        components = [
+            self.base_component_name + ("custom" if i == 0 else f"custom_{i}")
+            for i in range(self.encoding_n_components)
+        ]
         return TimeSeries(
             times=index,
-            values=self.attribute(index).astype(np.dtype(dtype)),
-            components=[self.base_component_name + "custom"],
+            values=values,
+            components=components,
             copy=False,
         )
 
     @property
     def accept_transformer(self) -> list[bool]:
         """`CallableIndexEncoder` accepts transformations."""
-        return [True]
+        return [True] * self.encoding_n_components
 
     @property
     def requires_fit(self) -> bool:
@@ -745,7 +795,7 @@ class CallableIndexEncoder(SingleEncoder):
 
     @property
     def encoding_n_components(self) -> int:
-        return 1
+        return self._n_components
 
 
 class PastCallableIndexEncoder(CallableIndexEncoder):
@@ -756,9 +806,9 @@ class PastCallableIndexEncoder(CallableIndexEncoder):
     def __init__(
         self,
         attribute: Callable,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[list[int]] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
         **kwargs,
     ):
         """
@@ -766,10 +816,15 @@ class PastCallableIndexEncoder(CallableIndexEncoder):
         ----------
         attribute
             A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
-            and returns a np.ndarray of shape `(len(index),)`.
+            and returns a `np.ndarray` of shape `(len(index),)` or `(len(index), n_output_components)`.
             An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
-            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.RangeIndex:
-            ``attribute = lambda index: (index - 1950) / 50``
+
+            - ``attribute = lambda index: (index.year - 1950) / 50`` or
+            - ``attribute = lambda index: np.stack([index.year, index.month], axis=1)``,
+
+            And for pd.RangeIndex:
+
+            - ``attribute = lambda index: (index - 1950) / 50``
         input_chunk_length
             Optionally, the number of input target time steps per chunk. Only required for
             :class:`TorchForecastingModel`, and :class:`SKLearnModel`.
@@ -803,9 +858,9 @@ class FutureCallableIndexEncoder(CallableIndexEncoder):
     def __init__(
         self,
         attribute: Callable,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[list[int]] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_covariates: list[int] | None = None,
         **kwargs,
     ):
         """
@@ -813,10 +868,15 @@ class FutureCallableIndexEncoder(CallableIndexEncoder):
         ----------
         attribute
             A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
-            and returns a np.ndarray of shape `(len(index),)`.
+            and returns a `np.ndarray` of shape `(len(index),)` or `(len(index), n_output_components)`.
             An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
-            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.RangeIndex:
-            ``attribute = lambda index: (index - 1950) / 50``
+
+            - ``attribute = lambda index: (index.year - 1950) / 50`` or
+            - ``attribute = lambda index: np.stack([index.year, index.month], axis=1)``,
+
+            And for pd.RangeIndex:
+
+            - ``attribute = lambda index: (index - 1950) / 50``
         input_chunk_length
             Optionally, the number of input target time steps per chunk. Only required for
             :class:`TorchForecastingModel`, and :class:`SKLearnModel`.
@@ -851,10 +911,10 @@ class SequentialEncoder(Encoder):
     def __init__(
         self,
         add_encoders: dict,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
-        lags_past_covariates: Optional[list[int]] = None,
-        lags_future_covariates: Optional[list[int]] = None,
+        input_chunk_length: int | None = None,
+        output_chunk_length: int | None = None,
+        lags_past_covariates: list[int] | None = None,
+        lags_future_covariates: list[int] | None = None,
         takes_past_covariates: bool = False,
         takes_future_covariates: bool = False,
     ) -> None:
@@ -961,8 +1021,8 @@ class SequentialEncoder(Encoder):
         self._future_components: pd.Index = pd.Index([])
 
         # transformer
-        self._past_transformer: Optional[SequentialEncoderTransformer] = None
-        self._future_transformer: Optional[SequentialEncoderTransformer] = None
+        self._past_transformer: SequentialEncoderTransformer | None = None
+        self._future_transformer: SequentialEncoderTransformer | None = None
 
         # setup encoders and transformer
         self._setup_encoders(self.params)
@@ -971,13 +1031,11 @@ class SequentialEncoder(Encoder):
     def encode_train(
         self,
         target: SupportedTimeSeries,
-        past_covariates: Optional[SupportedTimeSeries] = None,
-        future_covariates: Optional[SupportedTimeSeries] = None,
+        past_covariates: SupportedTimeSeries | None = None,
+        future_covariates: SupportedTimeSeries | None = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> tuple[
-        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
-    ]:
+    ) -> tuple[TimeSeriesLike, TimeSeriesLike]:
         """Returns encoded index for all past and/or future covariates for training.
         Which covariates are generated depends on the parameters used at model creation.
 
@@ -1009,7 +1067,7 @@ class SequentialEncoder(Encoder):
             creation and build your encodings covariates manually for lazy loading.
         """
         if not self.fit_called:
-            if not isinstance(target, (TimeSeries, list)):
+            if not isinstance(target, TimeSeries | list):
                 logger.warning(
                     "Fitting was called with `add_encoders` and suspicion of lazy loading. "
                     "The encodings/covariates are generated pre-train for all individual targets and "
@@ -1034,13 +1092,11 @@ class SequentialEncoder(Encoder):
         self,
         n: int,
         target: SupportedTimeSeries,
-        past_covariates: Optional[SupportedTimeSeries] = None,
-        future_covariates: Optional[SupportedTimeSeries] = None,
+        past_covariates: SupportedTimeSeries | None = None,
+        future_covariates: SupportedTimeSeries | None = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> tuple[
-        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
-    ]:
+    ) -> tuple[TimeSeriesLike, TimeSeriesLike]:
         """Returns encoded index for all past and/or future covariates for inference/prediction.
         Which covariates are generated depends on the parameters used at model creation.
 
@@ -1066,12 +1122,14 @@ class SequentialEncoder(Encoder):
             If input {x}_covariates is None and no {x}_encoders are given, will return `None`
             for the {x}_covariates.
         """
-        raise_if(
-            not self.fit_called and self.requires_fit,
-            f"`{self.__class__.__name__}` contains encoders or transformers which must be trained before inference. "
-            "Call method `encode_train()` before `encode_inference()`.",
-            logger=logger,
-        )
+        if not self.fit_called and self.requires_fit:
+            raise_log(
+                ValueError(
+                    f"`{self.__class__.__name__}` contains encoders or transformers which must "
+                    f"be trained before inference. Call method `encode_train()` before "
+                    f"`encode_inference()`."
+                ),
+            )
         return self._launch_encoder(
             target=target,
             past_covariates=past_covariates,
@@ -1086,13 +1144,11 @@ class SequentialEncoder(Encoder):
         self,
         n: int,
         target: SupportedTimeSeries,
-        past_covariates: Optional[SupportedTimeSeries] = None,
-        future_covariates: Optional[SupportedTimeSeries] = None,
+        past_covariates: SupportedTimeSeries | None = None,
+        future_covariates: SupportedTimeSeries | None = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> tuple[
-        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
-    ]:
+    ) -> tuple[TimeSeriesLike, TimeSeriesLike]:
         """Returns encoded index for all past and/or future covariates for training and inference/prediction.
         Which covariates are generated depends on the parameters used at model creation.
 
@@ -1119,7 +1175,7 @@ class SequentialEncoder(Encoder):
             for the {x}_covariates.
         """
         if not self.fit_called:
-            if not isinstance(target, (TimeSeries, list)):
+            if not isinstance(target, TimeSeries | list):
                 logger.warning(
                     "Fitting was called with `add_encoders` and suspicion of lazy loading. "
                     "The encodings/covariates are generated pre-train for all individual targets and "
@@ -1146,7 +1202,7 @@ class SequentialEncoder(Encoder):
         past_covariates: SupportedTimeSeries,
         future_covariates: SupportedTimeSeries,
         encoder_method: _EncoderMethod,
-        n: Optional[int] = None,
+        n: int | None = None,
         encode_past: bool = True,
         encode_future: bool = True,
     ) -> tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
@@ -1195,12 +1251,12 @@ class SequentialEncoder(Encoder):
     def _encode_sequence(
         self,
         encoders: Sequence[SingleEncoder],
-        transformer: Optional[SequentialEncoderTransformer],
+        transformer: SequentialEncoderTransformer | None,
         target: Sequence[TimeSeries],
-        covariates: Optional[SupportedTimeSeries],
+        covariates: SupportedTimeSeries | None,
         covariates_type: str,
         encoder_method: _EncoderMethod,
-        n: Optional[int] = None,
+        n: int | None = None,
     ) -> list[TimeSeries]:
         """Sequentially encodes the index of all input target/covariates TimeSeries with the corresponding
         `encoder_method`.
@@ -1428,12 +1484,13 @@ class SequentialEncoder(Encoder):
             for enc in params
             if enc not in ENCODER_KEYS + TZ_KEYS + TRANSFORMER_KEYS
         ]
-        raise_if(
-            len(invalid_encoders) > 0,
-            f"Encountered invalid encoder types `{invalid_encoders}` in `add_encoders` parameter at model "
-            f"creation. Supported encoder types are: `{ENCODER_KEYS + TRANSFORMER_KEYS}`.",
-            logger,
-        )
+        if len(invalid_encoders) > 0:
+            raise_log(
+                ValueError(
+                    f"Encountered invalid encoder types `{invalid_encoders}` in `add_encoders` parameter at model "
+                    f"creation. Supported encoder types are: `{ENCODER_KEYS + TRANSFORMER_KEYS}`."
+                ),
+            )
 
         encoders = {enc: params[enc] for enc in ENCODER_KEYS if params.get(enc, None)}
 
@@ -1444,12 +1501,13 @@ class SequentialEncoder(Encoder):
                 t_type for t_type in t_types.keys() if t_type not in VALID_TIME_PARAMS
             ]
 
-        raise_if(
-            len(invalid_time_params) > 0,
-            f"Encountered invalid temporal types `{invalid_time_params}` in `add_encoders` parameter at model "
-            f"creation. Supported temporal types are: `{VALID_TIME_PARAMS}`.",
-            logger,
-        )
+        if len(invalid_time_params) > 0:
+            raise_log(
+                ValueError(
+                    f"Encountered invalid temporal types `{invalid_time_params}` in `add_encoders` parameter at model "
+                    f"creation. Supported temporal types are: `{VALID_TIME_PARAMS}`."
+                ),
+            )
 
         # check that encoders are not lambda functions (not pickable)
         lambda_func_encoders = set()
@@ -1457,13 +1515,14 @@ class SequentialEncoder(Encoder):
         past_encoders, future_encoders = list(), list()
         for enc, enc_params in encoders.items():
             for enc_time, enc_attr in enc_params.items():
-                raise_if_not(
-                    isinstance(enc_attr, VALID_ENCODER_DTYPES),
-                    f"Encountered value `{enc_attr}` of invalid type `{type(enc_attr)}` for encoder "
-                    f"`{enc}` in `add_encoders` at model creation. Supported data types are: "
-                    f"`{VALID_ENCODER_DTYPES}`.",
-                    logger,
-                )
+                if not isinstance(enc_attr, VALID_ENCODER_DTYPES):
+                    raise_log(
+                        ValueError(
+                            f"Encountered value `{enc_attr}` of invalid type `{type(enc_attr)}` for encoder "
+                            f"`{enc}` in `add_encoders` at model creation. Supported data types are: "
+                            f"`{VALID_ENCODER_DTYPES}`."
+                        ),
+                    )
                 attrs = [enc_attr] if isinstance(enc_attr, str) else enc_attr
                 for attr in attrs:
                     encoder_id = "_".join([enc, enc_time])
@@ -1475,14 +1534,15 @@ class SequentialEncoder(Encoder):
                     if isinstance(attr, Callable) and attr.__name__ == "<lambda>":
                         lambda_func_encoders.add(enc)
 
-        raise_if(
-            len(lambda_func_encoders) > 0,
-            f"Encountered lambda function in the following `add_encoders` entries : {lambda_func_encoders} "
-            f"at model creation. "
-            f"In order to prevent issues when saving the model, these encoders must be converted to "
-            f"named functions.",
-            logger,
-        )
+        if len(lambda_func_encoders) > 0:
+            raise_log(
+                ValueError(
+                    f"Encountered lambda function in the following `add_encoders` entries : {lambda_func_encoders} "
+                    f"at model creation. "
+                    f"In order to prevent issues when saving the model, these encoders must be converted to "
+                    f"named functions."
+                ),
+            )
 
         for temp_enc, takes_temp, temp in [
             (past_encoders, self.takes_past_covariates, "past"),
@@ -1500,7 +1560,7 @@ class SequentialEncoder(Encoder):
 
     def _process_input_transformer(
         self, params: dict
-    ) -> tuple[Optional[FittableDataTransformer], list, list]:
+    ) -> tuple[FittableDataTransformer | None, list, list]:
         """Processes input params used at model creation and returns tuple of one transformer object and two masks
         that specify which past / future encoders accept being transformed.
 
@@ -1517,13 +1577,14 @@ class SequentialEncoder(Encoder):
         if transformer is None:
             return None, [], []
 
-        raise_if_not(
-            isinstance(transformer, VALID_TRANSFORMER_DTYPES),
-            f"Encountered `{TRANSFORMER_KEYS[0]}` of invalid type `{type(transformer)}` "
-            f"in `add_encoders` at model creation. Transformer must be an instance of "
-            f"`{VALID_TRANSFORMER_DTYPES}`.",
-            logger,
-        )
+        if not isinstance(transformer, VALID_TRANSFORMER_DTYPES):
+            raise_log(
+                ValueError(
+                    f"Encountered `{TRANSFORMER_KEYS[0]}` of invalid type `{type(transformer)}` "
+                    f"in `add_encoders` at model creation. Transformer must be an instance of "
+                    f"`{VALID_TRANSFORMER_DTYPES}`."
+                ),
+            )
 
         transform_past_mask = [
             transform
@@ -1538,7 +1599,7 @@ class SequentialEncoder(Encoder):
         return transformer, transform_past_mask, transform_future_mask
 
     @staticmethod
-    def _process_timezone(params: dict) -> Optional[str]:
+    def _process_timezone(params: dict) -> str | None:
         """Processes input params used at model creation for time zone specification, and returns the time zone.
 
         Parameters

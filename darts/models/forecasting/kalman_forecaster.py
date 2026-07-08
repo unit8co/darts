@@ -10,20 +10,15 @@ to obtain forecasts.
 This implementation accepts an optional control signal (future covariates).
 """
 
-from typing import Optional
-
 import numpy as np
 from nfoursid.kalman import Kalman
 
 from darts import TimeSeries
-from darts.logging import get_logger
 from darts.models.filtering.kalman_filter import KalmanFilter
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
 from darts.utils.utils import random_method
-
-logger = get_logger(__name__)
 
 
 class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
@@ -31,9 +26,9 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
     def __init__(
         self,
         dim_x: int = 1,
-        kf: Optional[Kalman] = None,
-        add_encoders: Optional[dict] = None,
-        random_state: Optional[int] = None,
+        kf: Kalman | None = None,
+        add_encoders: dict | None = None,
+        random_state: int | None = None,
     ):
         """Kalman filter Forecaster
 
@@ -97,16 +92,16 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         >>> model = KalmanForecaster(dim_x=12)
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[474.40680728],
-               [440.51801726],
-               [461.94512461],
-               [494.42090089],
-               [528.6436328 ],
-               [590.30647185]])
+        >>> print(pred.values())
+        [[474.40680728]
+         [440.51801726]
+         [461.94512461]
+         [494.42090089]
+         [528.6436328 ]
+         [590.30647185]]
 
         .. note::
-            `Kalman example notebook <https://unit8co.github.io/darts/examples/10-Kalman-filter-examples.html>`_
+            `Kalman example notebook <https://unit8co.github.io/darts/examples/10-Kalman-filter-examples.html>`__
             presents techniques that can be used to improve the forecasts quality compared to this simple usage
             example.
         """
@@ -118,8 +113,8 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
     def _fit(
         self,
         series: TimeSeries,
-        future_covariates: Optional[TimeSeries] = None,
-        verbose: Optional[bool] = None,
+        future_covariates: TimeSeries | None = None,
+        verbose: bool | None = None,
     ):
         super()._fit(series, future_covariates, verbose=verbose)
         if self.kf is None:
@@ -130,13 +125,13 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
     def predict(
         self,
         n: int,
-        series: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
-        verbose: Optional[bool] = None,
+        verbose: bool | None = None,
         show_warnings: bool = True,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
         **kwargs,
     ) -> TimeSeries:
         # we override `predict()` to pass a non-None `series`, so that historic_future_covariates
@@ -156,13 +151,13 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
     def _predict(
         self,
         n: int,
-        series: Optional[TimeSeries] = None,
-        historic_future_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: TimeSeries | None = None,
+        historic_future_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ) -> TimeSeries:
         super()._predict(
             n=n,

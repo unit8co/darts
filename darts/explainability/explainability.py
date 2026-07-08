@@ -1,20 +1,18 @@
 """
-Forecasting Model Explainer Base Class
+Base Forecasting Model Explainer
+--------------------------------
 
 A `_ForecastingModelExplainer` takes a fitted forecasting model as input and generates explanations for it.
 """
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Optional, Union
 
-from darts import TimeSeries
 from darts.explainability.explainability_result import _ExplainabilityResult
 from darts.explainability.utils import process_horizons_and_targets, process_input
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
-
-logger = get_logger(__name__)
+from darts.typing import TimeSeriesLike
 
 MIN_BACKGROUND_SAMPLE = 10
 
@@ -24,13 +22,9 @@ class _ForecastingModelExplainer(ABC):
     def __init__(
         self,
         model: ForecastingModel,
-        background_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        background_past_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        background_future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
+        background_series: TimeSeriesLike | None = None,
+        background_past_covariates: TimeSeriesLike | None = None,
+        background_future_covariates: TimeSeriesLike | None = None,
         requires_background: bool = False,
         requires_covariates_encoding: bool = False,
         check_component_names: bool = False,
@@ -70,16 +64,17 @@ class _ForecastingModelExplainer(ABC):
         test_stationarity
             Whether to raise a warning if not all `background_series` are stationary.
         """
+        if not isinstance(model, ForecastingModel):
+            raise_log(ValueError("`model` must be a Darts `ForecastingModel` object."))
         if not model._fit_called:
             raise_log(
                 ValueError(
                     f"The model must be fitted before instantiating a {self.__class__.__name__}."
                 ),
-                logger,
             )
         self.model = model
         # default forecasting horizon
-        self.n: Optional[int] = getattr(self.model, "output_chunk_length", None)
+        self.n: int = self.model.output_chunk_length or 1
 
         # check background input validity and process it
         (
@@ -87,10 +82,12 @@ class _ForecastingModelExplainer(ABC):
             self.background_past_covariates,
             self.background_future_covariates,
             self.target_components,
+            self.target_components_likelihood,
             self.static_covariates_components,
             self.past_covariates_components,
             self.future_covariates_components,
         ) = process_input(
+            n=self.n,
             model=model,
             input_type="background",
             series=background_series,
@@ -112,15 +109,11 @@ class _ForecastingModelExplainer(ABC):
     @abstractmethod
     def explain(
         self,
-        foreground_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        foreground_past_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        foreground_future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        horizons: Optional[Sequence[int]] = None,
-        target_components: Optional[Sequence[str]] = None,
+        foreground_series: TimeSeriesLike | None = None,
+        foreground_past_covariates: TimeSeriesLike | None = None,
+        foreground_future_covariates: TimeSeriesLike | None = None,
+        horizons: Sequence[int] | None = None,
+        target_components: Sequence[str] | None = None,
     ) -> _ExplainabilityResult:
         """
         Explains a foreground time series, and returns a :class:`_ExplainabilityResult
@@ -151,15 +144,12 @@ class _ForecastingModelExplainer(ABC):
 
     def _process_foreground(
         self,
-        foreground_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        foreground_past_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        foreground_future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
+        foreground_series: TimeSeriesLike | None = None,
+        foreground_past_covariates: TimeSeriesLike | None = None,
+        foreground_future_covariates: TimeSeriesLike | None = None,
     ):
         return process_input(
+            n=self.n,
             model=self.model,
             input_type="foreground",
             series=foreground_series,
@@ -176,13 +166,13 @@ class _ForecastingModelExplainer(ABC):
 
     def _process_horizons_and_targets(
         self,
-        horizons: Optional[Union[int, Sequence[int]]],
-        target_components: Optional[Union[str, Sequence[str]]],
+        horizons: int | Sequence[int] | None,
+        target_components: str | Sequence[str] | None,
     ) -> tuple[Sequence[int], Sequence[str]]:
         return process_horizons_and_targets(
             horizons=horizons,
             fallback_horizon=self.n,
             target_components=target_components,
-            fallback_target_components=self.target_components,
+            fallback_target_components=self.target_components_likelihood,
             check_component_names=self.check_component_names,
         )

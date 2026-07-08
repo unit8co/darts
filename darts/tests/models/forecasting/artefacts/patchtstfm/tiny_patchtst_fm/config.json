@@ -1,0 +1,30 @@
+{
+  "architectures": [
+    "PatchTSTFMForPrediction"
+  ],
+  "context_length": 128,
+  "d_model": 32,
+  "d_patch": 16,
+  "dtype": "float32",
+  "model_type": "patchtst_fm",
+  "n_head": 4,
+  "n_layer": 2,
+  "n_patch": 8,
+  "norm_first": true,
+  "num_quantile": 9,
+  "prediction_length": 16,
+  "pretrain_mask_cont": 2,
+  "pretrain_mask_ratio": 0.4,
+  "quantile_levels": [
+    0.1,
+    0.2,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.7,
+    0.8,
+    0.9
+  ],
+  "transformers_version": "4.57.6"
+}

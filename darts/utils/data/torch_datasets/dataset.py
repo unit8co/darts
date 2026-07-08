@@ -1,15 +1,14 @@
 """
-Dataset Base Class
+Base Torch Dataset
 ------------------
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Union
 
 from torch.utils.data import Dataset
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.utils.data.torch_datasets.utils import (
     TorchInferenceDatasetOutput,
     TorchTrainingDatasetOutput,
@@ -19,9 +18,7 @@ from darts.utils.data.utils import (
     FeatureType,
 )
 
-logger = get_logger(__name__)
-
-_SampleIndexType = dict[FeatureType, tuple[Optional[int], Optional[int]]]
+_SampleIndexType = dict[FeatureType, tuple[int | None, int | None]]
 
 
 class TorchDataset(ABC, Dataset):
@@ -41,7 +38,7 @@ class TorchDataset(ABC, Dataset):
     @abstractmethod
     def __getitem__(
         self, idx: int
-    ) -> Union[TorchTrainingDatasetOutput, TorchInferenceDatasetOutput]:
+    ) -> TorchTrainingDatasetOutput | TorchInferenceDatasetOutput:
         """Returns a sample drawn from this dataset."""
 
     def _memory_indexer(
@@ -52,10 +49,10 @@ class TorchDataset(ABC, Dataset):
         input_chunk_length: int,
         output_chunk_length: int,
         end_of_output_idx: int,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
-        sample_weight: Optional[TimeSeries],
-        n: Optional[int],
+        past_covariates: TimeSeries | None,
+        future_covariates: TimeSeries | None,
+        sample_weight: TimeSeries | None,
+        n: int | None,
     ) -> _SampleIndexType:
         """Returns dict with feature names and (start, end) index ranges.
 
@@ -160,7 +157,6 @@ class TorchDataset(ABC, Dataset):
                                 f"Invalid `{main_feat_type.value}`; could not find values in index "
                                 f"range: {start_time} - {end_time}."
                             ),
-                            logger=logger,
                         )
 
                     # inference: more verbose error including forecast horizon;
@@ -173,7 +169,6 @@ class TorchDataset(ABC, Dataset):
                                 f"`{main_feat_type.value}` must start at or before time step `{start_time}`, "
                                 f"whereas now the start is at time step `{feat.start_time()}`."
                             ),
-                            logger=logger,
                         )
                     else:
                         forecast_info = (
@@ -188,7 +183,6 @@ class TorchDataset(ABC, Dataset):
                                 f"`{forecast_info}` the `{main_feat_type.value}` must end at or after time step "
                                 f"`{end_time}`, whereas now the end is at time step `{feat.end_time()}`."
                             ),
-                            logger=logger,
                         )
 
                 # extract the index position (index) from the start index

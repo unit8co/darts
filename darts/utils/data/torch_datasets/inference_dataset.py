@@ -8,20 +8,16 @@ Inference Datasets
 
 import bisect
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
-from typing import Optional, Union
 
 import numpy as np
 
-from darts import TimeSeries
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
+from darts.typing import TimeSeriesLike
 from darts.utils.data.torch_datasets.dataset import TorchDataset
 from darts.utils.data.torch_datasets.utils import TorchInferenceDatasetOutput
 from darts.utils.data.utils import FeatureType
 from darts.utils.historical_forecasts.utils import _process_predict_start_points_bounds
 from darts.utils.ts_utils import series2seq
-
-logger = get_logger(__name__)
 
 
 class TorchInferenceDataset(TorchDataset, ABC):
@@ -61,12 +57,12 @@ class TorchInferenceDataset(TorchDataset, ABC):
 class SequentialTorchInferenceDataset(TorchInferenceDataset):
     def __init__(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         n: int = 1,
         stride: int = 0,
-        bounds: Optional[np.ndarray] = None,
+        bounds: np.ndarray | None = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
@@ -159,7 +155,6 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
                         f"The sequence of `{name}` must have the same length as "
                         f"the sequence of target `series`."
                     ),
-                    logger=logger,
                 )
 
         if (bounds is not None and stride == 0) or (bounds is None and stride > 0):
@@ -167,7 +162,6 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
                 ValueError(
                     "Must supply either both `stride` and `bounds`, or none of them."
                 ),
-                logger=logger,
             )
 
         if output_chunk_shift and n > output_chunk_length:
@@ -176,7 +170,6 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
                     "Cannot perform auto-regression `(n > output_chunk_length)` with a model that uses a "
                     "shifted output chunk `(output_chunk_shift > 0)`."
                 ),
-                logger=logger,
             )
 
         self.series = series
@@ -243,7 +236,6 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
                     f"the model input for prediction . Expected min length: `{self.input_chunk_length}`, "
                     f"received length `{len(series)}` (at series sequence idx `{series_idx}`)."
                 ),
-                logger=logger,
             )
 
         # load covariates

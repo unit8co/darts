@@ -1,3 +1,7 @@
 [run]
 source=darts
-omit=darts/tests/*
+omit =
+    darts/tests/*
+    darts/models/components/timesfm2p5_submodels.py
+    darts/models/components/patchtst_fm_submodels.py
+    darts/utils/callbacks.py

@@ -6,7 +6,7 @@ N-Linear
 import torch
 import torch.nn as nn
 
-from darts.logging import raise_if
+from darts.logging import raise_log
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
@@ -110,11 +110,11 @@ class _NLinearModule(PLForecastingModule):
     def forward(self, x_in: PLModuleInput):
         """
         x_in
-            comes as tuple `(x, x_future, x_static)` where `x` is the past target, past covariates and
+            comes as tuple `(x, x_future, x_static, future_target)` where `x` is the past target, past covariates and
             historic future covariate chunk and `x_future` is the (non-historic) future chunk.
             Input dimensions are `(n_samples, n_time_steps, n_variables)`
         """
-        x, x_future, x_static = x_in  # x: (batch, in_len, in_dim)
+        x, x_future, x_static, _ = x_in  # x: (batch, in_len, in_dim)
         # we clone `x`, to avoid value mutation from normalization when performing auto-regression
         x = x.clone()
         batch, _, _ = x.shape
@@ -273,7 +273,9 @@ class NLinearModel(MixedCovariatesTorchModel):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
-            It is only applied to the features of the target series and not the covariates.
+            It is only applied to the features of the target series and not the covariates. If ``True``,
+            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
+            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -281,7 +283,7 @@ class NLinearModel(MixedCovariatesTorchModel):
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
-            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            of the name is formatted with the local date and time, while PID is the process ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
@@ -334,25 +336,26 @@ class NLinearModel(MixedCovariatesTorchModel):
             checkpointing, tensorboard logging, setting the torch device and more.
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
             supported kwargs. Default: ``None``.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
             dict:
 
-                - ``{"accelerator": "cpu"}`` for CPU,
-                - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
-                - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+            - ``{"accelerator": "cpu"}`` for CPU,
+            - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUs.
 
-                For more info, see here:
-                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
-                https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus
+            For more info, see here:
+            https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
+            https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus
+
             With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
             :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
             The model will stop training early if the validation loss `val_loss` does not improve beyond
             specifications. For more information on callbacks, visit:
             `PyTorch Lightning Callbacks
-            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
 
             .. highlight:: python
             .. code-block:: python
@@ -376,6 +379,18 @@ class NLinearModel(MixedCovariatesTorchModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         References
         ----------
@@ -404,13 +419,13 @@ class NLinearModel(MixedCovariatesTorchModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[429.56117169],
-               [428.93264096],
-               [428.35210616],
-               [428.13154426],
-               [427.98781641],
-               [428.00325481]])
+        >>> print(pred.values())
+        [[429.56117169]
+         [428.93264096]
+         [428.35210616]
+         [428.13154426]
+         [427.98781641]
+         [428.00325481]]
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
@@ -422,23 +437,21 @@ class NLinearModel(MixedCovariatesTorchModel):
         self.normalize = normalize
         self._considers_static_covariates = use_static_covariates
 
-        raise_if(
+        if (
             "likelihood" in self.model_params
             and self.model_params["likelihood"] is not None
-            and self.normalize,
-            "normalize = True cannot be used with probabilistic NLinearModel",
-        )
+            and self.normalize
+        ):
+            raise_log(
+                ValueError(
+                    "normalize = True cannot be used with probabilistic NLinearModel."
+                ),
+            )
 
     def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
         # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
         (past_target, past_covariates, _, future_covariates, static_covariates, _) = (
             train_sample
-        )
-        raise_if(
-            self.shared_weights
-            and (past_covariates is not None or future_covariates is not None),
-            "Covariates have been provided, but the model has been built with `shared_weights=True`."
-            + "Please set `shared_weights=False` to use covariates.",
         )
 
         input_dim = past_target.shape[1] + sum(

@@ -1,24 +1,21 @@
 """
-Likelihoods for `SKLearnModel`
-------------------------------
+Likelihoods for SKLearnModel
+----------------------------
 """
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Optional
 
 import numpy as np
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.utils.likelihood_models.base import (
     Likelihood,
     LikelihoodType,
     quantile_names,
 )
 from darts.utils.utils import _check_quantiles
-
-logger = get_logger(__name__)
 
 
 class SKLearnLikelihood(Likelihood, ABC):
@@ -253,10 +250,12 @@ class PoissonLikelihood(SKLearnLikelihood):
 
 
 class QuantileRegression(SKLearnLikelihood):
+    _LIKELIHOOD_TYPE = LikelihoodType.Quantile
+
     def __init__(
         self,
         n_outputs: int,
-        quantiles: Optional[list[float]] = None,
+        quantiles: list[float] | None = None,
     ):
         """
         Quantile Regression [1]_.
@@ -292,7 +291,7 @@ class QuantileRegression(SKLearnLikelihood):
         self._median_idx = quantiles.index(0.5)
 
         super().__init__(
-            likelihood_type=LikelihoodType.Quantile,
+            likelihood_type=self._LIKELIHOOD_TYPE,
             parameter_names=quantile_names(self.quantiles),
             n_outputs=n_outputs,
         )
@@ -391,6 +390,69 @@ class QuantileRegression(SKLearnLikelihood):
         )
 
 
+class MultiQuantileRegression(QuantileRegression):
+    _LIKELIHOOD_TYPE = LikelihoodType.MultiQuantile
+
+    def __init__(
+        self,
+        n_outputs: int,
+        quantiles: list[float] | None = None,
+    ):
+        """
+        Multi-output Quantile Regression [1]_.
+
+        This is an extension of :class:`QuantileRegression` for scikit-learn models that natively supports
+        multi-quantile prediction (e.g. CatBoost).
+
+        Parameters
+        ----------
+        n_outputs
+            The number of predicted outputs per model call. ``1`` if ``multi_models=False``, otherwise
+            ``output_chunk_length``.
+        quantiles
+            A list of quantiles. Default: ``[0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99]``.
+
+        References
+        ----------
+        .. [1] https://en.wikipedia.org/wiki/Quantile_regression
+        """
+        super().__init__(n_outputs=n_outputs, quantiles=quantiles)
+
+        if len(self.quantiles) == 1:
+            raise_log(
+                ValueError(
+                    "'multiquantile' likelihood only supports multiple quantiles. "
+                    "For example `quantiles=[0.05, 0.50, 0.95]`."
+                ),
+            )
+
+    def _estimator_predict(
+        self,
+        model,
+        x: np.ndarray,
+        **kwargs,
+    ) -> np.ndarray:
+        # `x` is of shape (n_series * n_samples, n_regression_features)
+        k = x.shape[0]
+
+        # using CatBoost's native multi-quantile support
+        output: np.ndarray = model.model.predict(x, **kwargs)
+
+        # `output` has two shapes depending on whether `MultiOutputRegressor` is used or not:
+        if output.ndim <= 2:
+            # Case 1: univariate & output_chunk_length == 1, shape is (n_series * n_samples, n_quantiles)
+            # -> (n_series * n_samples, 1, 1, n_quantiles)
+            output = output.reshape(k, 1, 1, -1)
+        else:
+            # Case 2: otherwise, shape is (n_quantiles, n_series * n_samples, n_components * output_chunk_length)
+            # -> (n_quantiles, n_series * n_samples, output_chunk_length, n_components)
+            output = output.reshape(output.shape[0], k, self._n_outputs, -1)
+            # -> (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
+            output = output.transpose(1, 2, 3, 0)
+
+        return output
+
+
 class ClassProbabilityLikelihood(SKLearnLikelihood):
     def __init__(self, n_outputs: int):
         """
@@ -408,8 +470,8 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
             n_outputs=n_outputs,
             parameter_names=[],
         )
-        self._index_first_param_per_component: Optional[np.ndarray] = None
-        self._classes: Optional[list[np.ndarray]] = None
+        self._index_first_param_per_component: np.ndarray | None = None
+        self._classes: list[np.ndarray] | None = None
 
     def fit(self, model):
         """
@@ -425,7 +487,6 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
                 ValueError(
                     "The model must have a `class_labels` attribute to fit the likelihood."
                 ),
-                logger,
             )
 
         self._classes = model.class_labels
@@ -454,8 +515,8 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
 
     def component_names(
         self,
-        series: Optional[TimeSeries] = None,
-        components: Optional[Sequence] = None,
+        series: TimeSeries | None = None,
+        components: Sequence | None = None,
     ) -> list[str]:
         """Generates names for the parameters of the Likelihood."""
         if self._index_first_param_per_component is None:
@@ -463,7 +524,6 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
         if (series is not None) == (components is not None):
             raise_log(
                 ValueError("Only one of `series` or `components` must be specified."),
-                logger=logger,
             )
         if series is not None:
             components = series.components
@@ -608,11 +668,11 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
 
 
 def _get_likelihood(
-    likelihood: Optional[str],
+    likelihood: str | None,
     n_outputs: int,
     available_likelihoods: list[LikelihoodType],
-    quantiles: Optional[list[float]] = None,
-) -> Optional[SKLearnLikelihood]:
+    quantiles: list[float] | None = None,
+) -> SKLearnLikelihood | None:
     """Get the `Likelihood` object for `SKLearnModel`.
 
     Parameters
@@ -641,7 +701,6 @@ def _get_likelihood(
             ValueError(
                 f"Invalid `likelihood='{likelihood}'`. Must be one of {available_likelihoods}"
             ),
-            logger=logger,
         )
 
     if likelihood == LikelihoodType.Gaussian.value:
@@ -650,10 +709,11 @@ def _get_likelihood(
         return PoissonLikelihood(n_outputs=n_outputs)
     elif likelihood == LikelihoodType.Quantile.value:
         return QuantileRegression(n_outputs=n_outputs, quantiles=quantiles)
+    elif likelihood == LikelihoodType.MultiQuantile.value:
+        return MultiQuantileRegression(n_outputs=n_outputs, quantiles=quantiles)
     elif likelihood == LikelihoodType.ClassProbability.value:
         return ClassProbabilityLikelihood(n_outputs=n_outputs)
     else:
         raise_log(
             ValueError("Unknown `likelihood='{likelihood}'`."),
-            logger=logger,
         )

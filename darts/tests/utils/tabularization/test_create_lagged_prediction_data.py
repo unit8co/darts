@@ -2,7 +2,6 @@ import itertools
 import warnings
 from collections.abc import Sequence
 from itertools import product
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -10,9 +9,10 @@ import pytest
 
 from darts import TimeSeries
 from darts import concatenate as darts_concatenate
-from darts.logging import get_logger, raise_if_not, raise_log
+from darts.logging import raise_log
 from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.timeseries_generation import linear_timeseries
+from darts.utils.utils import n_steps_between
 
 
 class TestCreateLaggedPredictionData:
@@ -60,10 +60,10 @@ class TestCreateLaggedPredictionData:
         target: TimeSeries,
         past: TimeSeries,
         future: TimeSeries,
-        lags: Optional[int],
-        lags_past: Optional[int],
-        lags_future: Optional[int],
-        max_samples_per_ts: Optional[int],
+        lags: int | None,
+        lags_past: int | None,
+        lags_future: int | None,
+        max_samples_per_ts: int | None,
     ) -> pd.Index:
         """
         Helper function that returns the times shared by all of the specified series that can be used
@@ -224,12 +224,12 @@ class TestCreateLaggedPredictionData:
                 f"Caused by `future_covariates_lags = {future_covariates_lags}`."
             )
             error = ValueError(error_msg)
-            raise_log(error, get_logger(__name__))
+            raise_log(error)
         return times
 
     @staticmethod
     def construct_X_block(
-        series: TimeSeries, feature_times: pd.Index, lags: Optional[Sequence[int]]
+        series: TimeSeries, feature_times: pd.Index, lags: Sequence[int] | None
     ) -> np.array:
         """
         Helper function that creates the lagged features 'block' of a specific
@@ -283,7 +283,9 @@ class TestCreateLaggedPredictionData:
                         start=series_times[0], end=feature_times[-1], freq=series.freq
                     )
             elif add_to_start:
-                num_prepended = (series_times[0] - feature_times[0]) // series.freq
+                num_prepended = n_steps_between(
+                    start=feature_times[0], end=series_times[0], freq=series.freq
+                )
                 if is_range_idx:
                     # `+ 1` since `stop` index is exclusive:
                     series_times = pd.RangeIndex(
@@ -308,10 +310,12 @@ class TestCreateLaggedPredictionData:
                     idx_to_get = time_idx + lag
                     # Account for prepended values:
                     idx_to_get -= num_prepended
-                    raise_if_not(
-                        idx_to_get >= 0,
-                        f"Unexpected case encountered: `time_idx + lag - num_prepended = {idx_to_get} < 0`.",
-                    )
+                    if idx_to_get < 0:
+                        raise_log(
+                            ValueError(
+                                f"Unexpected case encountered: `time_idx + lag - num_prepended = {idx_to_get} < 0`."
+                            ),
+                        )
                     # Extract all components at this lagged time:
                     X_row.append(array_vals[idx_to_get, :].reshape(-1))
                 # Concatenate together all lagged values into a single row:

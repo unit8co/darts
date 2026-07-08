@@ -1,6 +1,5 @@
 import copy
 from collections.abc import Sequence
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -29,12 +28,10 @@ from darts.dataprocessing.encoders.encoders import (
     IntegerIndexEncoder,
 )
 from darts.dataprocessing.transformers import Scaler
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.tests.conftest import TORCH_AVAILABLE
 from darts.utils import timeseries_generation as tg
-from darts.utils.utils import freqs, generate_index
-
-logger = get_logger(__name__)
+from darts.utils.utils import generate_index
 
 if TORCH_AVAILABLE:
     from darts.models import TFTModel
@@ -355,7 +352,7 @@ class TestEncoder:
                 requires_fit = False
             else:
                 attr, comps_expected, requires_fit = None, None, False
-                raise_log(ValueError("unknown encoder class"), logger=logger)
+                raise_log(ValueError("unknown encoder class"))
 
             enc = enc_cls(
                 input_chunk_length=input_chunk_length,
@@ -896,9 +893,19 @@ class TestEncoder:
             and (fc2.univariate_values() == np.arange(3, 10)).all()
         )
 
+        encoder_params = {"position": {"past": ["invalid"]}}
+        with pytest.raises(ValueError, match='Attribute must be `"relative"`.'):
+            _ = SequentialEncoder(
+                add_encoders=encoder_params,
+                input_chunk_length=input_chunk_length,
+                output_chunk_length=output_chunk_length,
+                takes_past_covariates=True,
+                takes_future_covariates=True,
+            )
+
     def test_callable_encoder(self):
         """Test `CallableIndexEncoder`"""
-        ts = tg.linear_timeseries(length=24, freq=freqs["YE"])
+        ts = tg.linear_timeseries(length=24, freq="YE")
         ts_copy = ts.copy()
 
         input_chunk_length = 12
@@ -958,6 +965,84 @@ class TestEncoder:
         # check that the input series is not modified
         assert ts == ts_copy
 
+        encoder_params = {"custom": {"past": ["invalid"]}}
+        with pytest.raises(ValueError, match="Attribute must be a callable"):
+            _ = SequentialEncoder(
+                add_encoders=encoder_params,
+                input_chunk_length=input_chunk_length,
+                output_chunk_length=output_chunk_length,
+                takes_past_covariates=True,
+                takes_future_covariates=True,
+            )
+
+    def test_callable_encoder_multi_component_output(self):
+        """Test `CallableIndexEncoder` with a callable returning multiple components."""
+        ts = tg.linear_timeseries(length=24, freq="YE")
+
+        input_chunk_length = 12
+        output_chunk_length = 6
+
+        def index_year_and_shifted(index):
+            return np.stack([index.year, index.year - 1], axis=1)
+
+        def invalid_callable(index):
+            return index.year[0]
+
+        # ===> test callable index encoder with multi component output <===
+        # test invalid callable at encoder creation
+        with pytest.raises(
+            ValueError, match="Attribute must be a callable that accepts"
+        ):
+            _ = PastCallableIndexEncoder(
+                attribute=invalid_callable,
+                input_chunk_length=input_chunk_length,
+                output_chunk_length=output_chunk_length,
+            )
+
+        # test valid multi component callable
+        encoder_params = {
+            "custom": {
+                "past": [index_year_and_shifted],
+                "future": [index_year_and_shifted],
+            }
+        }
+        encs = SequentialEncoder(
+            add_encoders=encoder_params,
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            takes_past_covariates=True,
+            takes_future_covariates=True,
+        )
+
+        # train set
+        pc, fc = encs.encode_train(ts)
+        # past covariates
+        np.testing.assert_array_equal(
+            ts[:-output_chunk_length].time_index.year.values,
+            pc.values()[:, 0],
+        )
+        np.testing.assert_array_equal(
+            ts[:-output_chunk_length].time_index.year.values - 1,
+            pc.values()[:, 1],
+        )
+        # future covariates
+        np.testing.assert_array_equal(ts.time_index.year.values, fc.values()[:, 0])
+        np.testing.assert_array_equal(
+            ts.time_index.year.values - 1,
+            fc.values()[:, 1],
+        )
+        # verify number and names of components
+        assert pc.n_components == 2
+        assert list(pc.components) == [
+            "darts_enc_pc_cus_custom",
+            "darts_enc_pc_cus_custom_1",
+        ]
+        assert fc.n_components == 2
+        assert list(fc.components) == [
+            "darts_enc_fc_cus_custom",
+            "darts_enc_fc_cus_custom_1",
+        ]
+
     def test_transformer_single_series(self):
         def test_routine_cyclic(past_covs):
             for curve in ["sin", "cos"]:
@@ -984,7 +1069,7 @@ class TestEncoder:
             start_value=1,
             end_value=2,
             length=60,
-            freq=freqs["min"],
+            freq="min",
             column_name="cov_in",
         )
         ts1_copy = ts1.copy()
@@ -1043,7 +1128,7 @@ class TestEncoder:
             start_value=1,
             end_value=3,
             length=80,
-            freq=freqs["min"],
+            freq="min",
             column_name="cov_in",
         )
         pc3, fc3 = encs.encode_inference(n=60, target=ts1, future_covariates=fc_inf)
@@ -1072,7 +1157,7 @@ class TestEncoder:
 
     def test_transformer_multi_series(self):
         ts1 = tg.linear_timeseries(
-            start_value=1, end_value=2, length=21, freq=freqs["min"], column_name="cov"
+            start_value=1, end_value=2, length=21, freq="min", column_name="cov"
         )
         ts2 = tg.linear_timeseries(
             start=None,
@@ -1080,7 +1165,7 @@ class TestEncoder:
             start_value=1.5,
             end_value=2,
             length=11,
-            freq=freqs["min"],
+            freq="min",
             column_name="cov",
         )
         ts1_inf = ts1.drop_before(ts2.start_time() - ts1.freq)
@@ -1195,6 +1280,20 @@ class TestEncoder:
                     assert abs(cov[cov_name].values(copy=False).max() - 2.5) < 10e-9
                 else:
                     assert abs(cov[cov_name].values(copy=False).max() - 1.0) < 10e-9
+
+    def test_transformer_invalid(self):
+        encoder_params = {
+            "datetime_attribute": {"past": ["month"]},
+            "transformer": "invalid",
+        }
+        with pytest.raises(ValueError, match="Transformer must be an instance of"):
+            _ = SequentialEncoder(
+                add_encoders=encoder_params,
+                input_chunk_length=11,
+                output_chunk_length=6,
+                takes_past_covariates=True,
+                takes_future_covariates=True,
+            )
 
     def helper_test_cyclic_encoder(
         self,
@@ -1311,7 +1410,7 @@ class TestEncoder:
         self,
         encoder: SingleEncoder,
         target: Sequence[TimeSeries],
-        covariates: Sequence[Optional[TimeSeries]],
+        covariates: Sequence[TimeSeries | None],
         result: Sequence[TimeSeries],
         merge_covariates: bool = True,
     ):
@@ -1345,7 +1444,7 @@ class TestEncoder:
         encoder: SingleEncoder,
         n: int,
         target: Sequence[TimeSeries],
-        covariates: Sequence[Optional[TimeSeries]],
+        covariates: Sequence[TimeSeries | None],
         result: Sequence[TimeSeries],
         merge_covariates: bool = True,
     ):

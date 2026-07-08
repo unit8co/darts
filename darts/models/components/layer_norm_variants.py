@@ -1,4 +1,7 @@
 """
+Layer Norm Variants
+-------------------
+
 MIT License
 
 Copyright (c) 2020 Phil Wang
@@ -27,7 +30,7 @@ import torch.nn as nn
 
 
 class RMSNorm(nn.Module):
-    """An alternate to layer normalization, without mean centering and the learned bias [1]
+    """An alternate to layer normalization, without mean centering and the learned bias [1]_
 
     References
     ----------
@@ -58,7 +61,7 @@ class LayerNorm(nn.LayerNorm):
 
 class RINorm(nn.Module):
     def __init__(self, input_dim: int, eps=1e-5, affine=True):
-        """Reversible Instance Normalization based on [1]
+        """Reversible Instance Normalization based on [1]_
 
         Parameters
         ----------
@@ -84,7 +87,7 @@ class RINorm(nn.Module):
             self.affine_weight = nn.Parameter(torch.ones(self.input_dim))
             self.affine_bias = nn.Parameter(torch.zeros(self.input_dim))
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         # at the beginning of `PLForecastingModule.forward()`, `x` has shape
         # (batch_size, input_chunk_length, n_targets).
         # select all dimensions except batch and input_dim (0, -1)
@@ -96,17 +99,33 @@ class RINorm(nn.Module):
             torch.var(x, dim=calc_dims, keepdim=True, unbiased=False) + self.eps
         ).detach()
 
+        return self.transform(x)
+
+    def transform(self, x: torch.Tensor) -> torch.Tensor:
+        """Normalize ``x`` using statistics previously computed by :meth:`forward`.
+
+        Unlike :meth:`forward`, this does **not** recompute ``mean`` and ``stdev``
+        from ``x``; it reuses the values stored during the last :meth:`forward` call.
+        This is useful for normalizing auxiliary inputs (e.g. teacher-forcing
+        targets) that should share the same normalization statistics as the
+        primary input.
+
+        Parameters
+        ----------
+        x
+            Tensor with the same last dimension as the original input to
+            :meth:`forward`. Shape: ``(batch_size, seq_len, input_dim)``.
+        """
         x = x - self.mean
         x = x / self.stdev
         if self.affine:
             x = x * self.affine_weight
             x = x + self.affine_bias
-
         return x
 
-    def inverse(self, x: torch.Tensor):
+    def inverse(self, x: torch.Tensor) -> torch.Tensor:
         # x is assumed to be the output of PLForecastingModule.forward(), and has shape
-        # (batch_size, output_chunk_length, n_targets, nr_params). we ha
+        # (batch_size, output_chunk_length, n_targets, nr_params).
         if self.affine:
             x = x - self.affine_bias.view(self.affine_bias.shape + (1,))
             x = x / (

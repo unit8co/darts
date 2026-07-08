@@ -5,6 +5,7 @@ import logging
 import math
 from copy import deepcopy
 from itertools import product
+from typing import Any
 from unittest.mock import patch
 
 import numpy as np
@@ -19,7 +20,6 @@ from darts.dataprocessing.encoders import (
     FutureCyclicEncoder,
     PastDatetimeAttributeEncoder,
 )
-from darts.logging import get_logger
 from darts.metrics import mae, rmse
 from darts.models import (
     CatBoostModel,
@@ -39,11 +39,12 @@ from darts.tests.conftest import (
 )
 from darts.utils import timeseries_generation as tg
 from darts.utils.likelihood_models.base import Likelihood, LikelihoodType
-from darts.utils.likelihood_models.sklearn import _get_likelihood
+from darts.utils.likelihood_models.sklearn import (
+    MultiQuantileRegression,
+    _get_likelihood,
+)
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import generate_index
-
-logger = get_logger(__name__)
 
 
 def train_test_split(series, split_ts):
@@ -163,20 +164,20 @@ def partialclass(cls, *args, **kwargs):
     return NewCls
 
 
-xgb_test_params = {
+xgb_test_params: dict[str, Any] = {
     "n_estimators": 1,
     "max_depth": 1,
     "max_leaves": 1,
     "random_state": 42,
 }
-lgbm_test_params = {
+lgbm_test_params: dict[str, Any] = {
     "n_estimators": 1,
     "max_depth": 1,
     "num_leaves": 2,
     "verbosity": -1,
     "random_state": 42,
 }
-cb_test_params = {
+cb_test_params: dict[str, Any] = {
     "iterations": 1,
     "depth": 1,
     "verbose": -1,
@@ -303,6 +304,12 @@ class TestSKLearnModels:
             quantiles=[0.05, 0.5, 0.95],
             **cb_test_params,
         )
+        MultiQuantileCatBoostModel = partialclass(
+            CatBoostModel,
+            likelihood="multiquantile",
+            quantiles=[0.05, 0.5, 0.95],
+            **cb_test_params,
+        )
         PoissonCatBoostModel = partialclass(
             CatBoostModel,
             likelihood="poisson",
@@ -316,24 +323,28 @@ class TestSKLearnModels:
         models += [
             RegularCatBoostModel,
             QuantileCatBoostModel,
+            MultiQuantileCatBoostModel,
             PoissonCatBoostModel,
             NormalCatBoostModel,
         ]
         univariate_accuracies += [
             0.75,  # CatBoostModel
             0.75,  # QuantileCatBoostModel
+            0.75,  # MultiQuantileCatBoostModel
             0.9,  # PoissonCatBoostModel
             0.75,  # NormalCatBoostModel
         ]
         multivariate_accuracies += [
             0.75,  # CatBoostModel
             0.75,  # QuantileCatBoostModel
+            0.75,  # MultiQuantileCatBoostModel
             0.86,  # PoissonCatBoostModel
             0.75,  # NormalCatBoostModel
         ]
         multivariate_multiseries_accuracies += [
             0.75,  # CatBoostModel
             0.75,  # QuantileCatBoostModel
+            0.75,  # MultiQuantileCatBoostModel
             1.2,  # PoissonCatBoostModel
             0.75,  # NormalCatBoostModel
         ]
@@ -1297,6 +1308,71 @@ class TestSKLearnModels:
         model = model_cls(lags=None, lags_past_covariates=5, multi_models=mode)
         assert model.min_train_series_length == 0 + 1 + 0 + add_min_samples
 
+    @pytest.mark.parametrize("multi_models", [True, False])
+    def test_predict_target_too_short(self, multi_models):
+        """Test too short target series for prediction."""
+        lags = [-3, -1]
+        ocl = 5
+        model = LinearRegressionModel(
+            lags=lags,
+            output_chunk_length=ocl,
+            multi_models=multi_models,
+        )
+
+        series = tg.linear_timeseries(length=model.min_train_series_length)
+        model.fit(series)
+
+        min_prediction_steps = abs(min(lags))
+        if not multi_models:
+            min_prediction_steps += ocl - 1
+
+        series = series[:min_prediction_steps]
+
+        # series too short
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict(n=ocl, series=series[:-1])
+        assert str(exc.value).startswith("The `series` is not long enough.")
+
+        # series long enough
+        _ = model.predict(n=ocl, series=series)
+
+    @pytest.mark.parametrize("config", product([True, False], ["past", "future"]))
+    def test_predict_covs_too_short(self, config):
+        """Test too short covariates for prediction."""
+        multi_models, use_covs = config
+        lags = [-3, -1]
+        ocl = 5
+        kwargs = {f"lags_{use_covs}_covariates": lags}
+        model = LinearRegressionModel(
+            lags=None,
+            output_chunk_length=ocl,
+            multi_models=multi_models,
+            **kwargs,
+        )
+
+        min_train_steps = abs(min(lags)) + ocl + 1
+        series = tg.linear_timeseries(length=min_train_steps)
+        fit_kwargs = {f"{use_covs}_covariates": series}
+        model.fit(series, **fit_kwargs)
+
+        min_prediction_steps = abs(min(lags))
+        if not multi_models:
+            min_prediction_steps += ocl - 1
+
+        series = series[:min_prediction_steps]
+        pred_kwargs = {f"{use_covs}_covariates": series[:-1]}
+
+        # covs too short
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict(n=ocl, series=series, **pred_kwargs)
+        assert str(exc.value).startswith(
+            f"The `{use_covs}_covariates` are not long enough."
+        )
+
+        # series long enough
+        pred_kwargs = {f"{use_covs}_covariates": series}
+        _ = model.predict(n=ocl, series=series, **pred_kwargs)
+
     @pytest.mark.parametrize("mode", [True, False])
     def test_historical_forecast(self, mode):
         model = self.models[1](lags=5, multi_models=mode)
@@ -1662,7 +1738,7 @@ class TestSKLearnModels:
                 tg.linear_timeseries(length=100, column_name="linear"),
             )
 
-        m = model_cls(
+        m: SKLearnModel = model_cls(
             lags=lags,
             output_chunk_length=ocl,
             multi_models=multi_models,
@@ -1672,6 +1748,7 @@ class TestSKLearnModels:
         )
         m.fit(ts)
 
+        assert m._model_container is not None
         assert len(m._model_container) == len(quantiles)
         assert sorted(list(m._model_container.keys())) == sorted(quantiles)
         for quantile_container in m._model_container.values():
@@ -1694,6 +1771,7 @@ class TestSKLearnModels:
             num_samples=1,
             predict_likelihood_parameters=True,
         )
+        assert isinstance(pred, TimeSeries)
         for j in range(ts.width):
             for i in range(ocl):
                 if multi_models:
@@ -1703,11 +1781,95 @@ class TestSKLearnModels:
                 dummy_feats = np.expand_dims(dummy_feats.flatten(), 0)
                 for q in quantiles:
                     sub_model = m.get_estimator(horizon=i, target_dim=j, quantile=q)
+                    assert sub_model is not None
                     pred_sub_model = sub_model.predict(dummy_feats)[0]
                     assert (
                         pred_sub_model
                         == pred[f"{ts.components[j]}_q{q:.3f}"].values()[i][0]
                     )
+
+    @pytest.mark.skipif(
+        not XGB_AVAILABLE and not CB_AVAILABLE,
+        reason="XGBoost or CatBoost required for this test",
+    )
+    @pytest.mark.parametrize(
+        "model_cls,model_kwargs",
+        (
+            ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
+            + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
+        ),
+    )
+    @pytest.mark.parametrize("multi_models", [True, False])
+    @pytest.mark.parametrize("multi_components", [True, False])
+    def test_get_estimator_multiquantile(
+        self,
+        model_cls: type[SKLearnModel],
+        model_kwargs: dict[str, Any],
+        multi_models: bool,
+        multi_components: bool,
+        caplog,
+    ):
+        """Check estimator getter when using quantile value"""
+        ocl = 3
+        lags = 3
+        quantiles = [0.01, 0.5, 0.99]
+        ts = tg.sine_timeseries(length=100, column_name="sine")
+        if multi_components:
+            ts = ts.stack(
+                tg.linear_timeseries(length=100, column_name="linear"),
+            )
+
+        model = model_cls(
+            lags=lags,
+            output_chunk_length=ocl,
+            multi_models=multi_models,
+            likelihood="multiquantile",
+            quantiles=quantiles,
+            **model_kwargs,
+        )
+        model.fit(ts)
+
+        # model container only used with `QuantileRegression` (not multi-quantile)
+        assert model._model_container is None
+        if multi_models:
+            # one sub-model per component, per horizon
+            assert len(model.model.estimators_) == ocl * ts.width
+        elif multi_components:
+            # one sub-model per component
+            assert len(model.model.estimators_) == ts.width
+        else:
+            # only one sub-model per quantile (one component, one predicted horizon)
+            assert not isinstance(model.model, MultiOutputRegressor)
+            assert not hasattr(model.model, "estimators_")
+
+        with caplog.at_level(logging.WARNING):
+            _ = model.get_estimator(horizon=0, target_dim=0, quantile=0.5)
+            assert "the same estimator forecasts all quantiles jointly" in caplog.text
+
+        # check that retrieve sub-models prediction match the "wrapper" model predictions
+        pred_input = ts[-lags:] if multi_models else ts[-lags - ocl + 1 :]
+        pred = model.predict(
+            n=ocl,
+            series=pred_input,
+            num_samples=1,
+            predict_likelihood_parameters=True,
+        )
+        assert isinstance(pred, TimeSeries)
+        for j in range(ts.width):
+            pred_j = pred.values()[:, j * len(quantiles) : (j + 1) * len(quantiles)]
+            for i in range(ocl):
+                if multi_models:
+                    dummy_feats = pred_input.values()[:lags]
+                else:
+                    dummy_feats = pred_input.values()[i : i + lags]
+                dummy_feats = np.expand_dims(dummy_feats.flatten(), 0)
+                # CatBoost with "Multiquantile" loss does not use a model container but directly
+                # implements multi-quantile support in the main model
+                sub_model = model.get_estimator(horizon=i, target_dim=j)
+                assert sub_model is not None
+                # the sub-model prediction is in shape (1, n_quantiles)
+                pred_sub_model = sub_model.predict(dummy_feats)[0]
+                np.testing.assert_array_equal(pred_sub_model, pred_j[i])
 
     def test_get_estimator_exceptions(self, caplog):
         """Check that all the corner-cases are properly covered by the method"""
@@ -2915,7 +3077,7 @@ class TestSKLearnModels:
         lags, shift = config
         ocl = 7
         series = tg.gaussian_timeseries(
-            length=28, start=pd.Timestamp("2000-01-01"), freq="d"
+            length=28, start=pd.Timestamp("2000-01-01"), freq="D"
         )
 
         model_target_only = LinearRegressionModel(
@@ -3048,8 +3210,9 @@ class TestSKLearnModels:
         For last_points_only `True` and `False`."""
         ocl = 7
         series = tg.linear_timeseries(
-            length=28, start=pd.Timestamp("2000-01-01"), freq="d"
-        ).with_static_covariates(pd.Series([1.0]))
+            length=28, start=pd.Timestamp("2000-01-01"), freq="D"
+        ).with_static_covariates(pd.Series([1.0, 2.0, 3.0]))
+        static_covs = series.static_covariates.copy(deep=True)
 
         model = LinearRegressionModel(
             lags=None,
@@ -3079,6 +3242,8 @@ class TestSKLearnModels:
 
         for p1, p2 in zip(preds1, preds2):
             np.testing.assert_array_almost_equal(p1.values(), p2.values())
+            assert p1.static_covariates.equals(static_covs)
+            assert p2.static_covariates.equals(static_covs)
 
     @pytest.mark.parametrize(
         "config",
@@ -3965,6 +4130,153 @@ class TestSKLearnModels:
             future_cov = [future_cov, future_cov] if future_cov else None
         return series, past_cov, future_cov
 
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            ([
+                (LinearRegressionModel, {}),
+                (
+                    LinearRegressionModel,
+                    {"lags": {"sine": 2, "default_lags": 1}},
+                ),
+            ]),
+            [True, False],  # multi_models
+            [True, False],  # last_points_only
+            [True, False],  # multivariate
+            [
+                1,
+                2,
+                4,
+                5,
+            ],  # forecast_horizon
+            [
+                1,
+                2,
+                3,
+            ],  # output_chunk_length
+            [1, 2],  # stride
+            [0, 1, 2],  # start
+        ),
+    )
+    def test_optimized_historical_forecasts(self, config):
+        """This test ensures that the optimized historical_forecasts method produces the same output as
+        the non-optimized version. It runs the historical_forecasts method twice, once with optimization
+        disabled and once with it enabled, and compares the results."""
+        (
+            (model_cls, model_kwargs),
+            multi_models,
+            last_points_only,
+            is_multivariate,
+            forecast_horizon,
+            output_chunk_length,
+            stride,
+            start,
+        ) = config
+
+        random_state = 42
+        model_kwargs = dict(model_kwargs)  # make a copy
+        if "lags" not in model_kwargs:
+            model_kwargs["lags"] = 2
+        model_kwargs["multi_models"] = multi_models
+        model_kwargs["output_chunk_length"] = output_chunk_length
+
+        model = model_cls(
+            lags_past_covariates=2,
+            lags_future_covariates=[-2, -1, 0],
+            **model_kwargs,
+        )
+
+        series = tg.sine_timeseries(length=10).with_static_covariates(
+            pd.DataFrame({"static_cov": [1]})
+        )
+        past_cov = series + 2
+        future_cov = series + 3
+        if is_multivariate:
+            series = series.stack(series + 1.0)
+
+        model.fit(
+            series[:8], past_covariates=past_cov[:8], future_covariates=future_cov[:8]
+        )
+
+        hfc_non_optimized = model.historical_forecasts(
+            series=series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
+            retrain=False,
+            forecast_horizon=forecast_horizon,
+            start=start,
+            last_points_only=last_points_only,
+            enable_optimization=False,
+            num_samples=1,
+            stride=stride,
+            random_state=random_state,
+        )
+
+        hfc_optimized = model.historical_forecasts(
+            series=series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
+            forecast_horizon=forecast_horizon,
+            retrain=False,
+            start=start,
+            enable_optimization=True,
+            last_points_only=last_points_only,
+            num_samples=1,
+            random_state=random_state,
+            stride=stride,
+        )
+
+        assert len(hfc_non_optimized) == len(hfc_optimized)
+        if not last_points_only:
+            [
+                hfc_non_optimized[i].time_index.equals(hfc_optimized[i].time_index)
+                for i in range(len(hfc_non_optimized))
+            ]
+            [
+                np.testing.assert_array_almost_equal(
+                    hfc_non_optimized[i].values(), hfc_optimized[i].values()
+                )
+                for i in range(len(hfc_non_optimized))
+            ]
+        else:
+            hfc_non_optimized.time_index.equals(hfc_optimized.time_index)
+            np.testing.assert_array_almost_equal(
+                hfc_non_optimized.values(), hfc_optimized.values()
+            )
+
+    @pytest.mark.parametrize("retrain", [True, False])
+    def test_historical_forecasts_single_model(self, retrain):
+        """Tests that hfc for single models can start at the correct minimum time index as with `predict()` directly."""
+        lags = [-3, -1]
+        ocl = 5
+        model = LinearRegressionModel(
+            lags=lags,
+            output_chunk_length=ocl,
+            multi_models=False,
+        )
+
+        series = tg.linear_timeseries(length=model.min_train_series_length)
+        model.fit(series)
+
+        # we want to generate only a single forecast, without retraining, we have to shorten the series
+        if not retrain:
+            series = series[: abs(min(lags)) + ocl - 1]
+            with pytest.raises(ValueError) as exc:
+                _ = model.predict(n=ocl, series=series[:-1])
+            assert str(exc.value).startswith("The `series` is not long enough.")
+
+        start_time_pred = model.predict(n=ocl, series=series).start_time()
+        for horizon_shift in [-1, 0, 1]:
+            hfc = model.historical_forecasts(
+                forecast_horizon=ocl + horizon_shift,
+                series=series,
+                overlap_end=True,
+                last_points_only=False,
+                retrain=retrain,
+            )
+            assert len(hfc) == 1
+            assert hfc[0].start_time() == start_time_pred
+
 
 class TestProbabilisticSKLearnModels:
     models_cls_kwargs_errs = [
@@ -4006,6 +4318,17 @@ class TestProbabilisticSKLearnModels:
                 {
                     "lags": 2,
                     "likelihood": "quantile",
+                    "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
+                    "multi_models": True,
+                    **xgb_test_params,
+                },
+                0.4,
+            ),
+            (
+                XGBModel,
+                {
+                    "lags": 2,
+                    "likelihood": "multiquantile",
                     "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
                     "multi_models": True,
                     **xgb_test_params,
@@ -4074,6 +4397,27 @@ class TestProbabilisticSKLearnModels:
                 CatBoostModel,
                 {
                     "lags": 2,
+                    "likelihood": "multiquantile",
+                    "multi_models": True,
+                    **cb_test_params,
+                },
+                0.05,
+            ),
+            (
+                CatBoostModel,
+                {
+                    "lags": 2,
+                    "likelihood": "multiquantile",
+                    "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
+                    "multi_models": True,
+                    **cb_test_params,
+                },
+                0.05,
+            ),
+            (
+                CatBoostModel,
+                {
+                    "lags": 2,
                     "likelihood": "poisson",
                     "multi_models": True,
                     **cb_test_params,
@@ -4131,6 +4475,44 @@ class TestProbabilisticSKLearnModels:
             str(exc.value)
             == "Invalid `likelihood='does_not_exist'`. Must be one of ['gaussian', 'poisson', 'quantile']"
         )
+
+    @pytest.mark.skipif(
+        not XGB_AVAILABLE and not CB_AVAILABLE,
+        reason="XGBoost or CatBoost required for this test",
+    )
+    @pytest.mark.parametrize(
+        "model_cls,model_kwargs",
+        (
+            ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
+            + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
+        ),
+    )
+    def test_model_construction_multiquantile(
+        self,
+        model_cls,
+        model_kwargs,
+    ):
+        with pytest.raises(
+            ValueError,
+            match="'multiquantile' likelihood only supports multiple quantiles.",
+        ):
+            _ = model_cls(
+                lags=2,
+                likelihood="multiquantile",
+                quantiles=[0.5],
+                **model_kwargs,
+            )
+
+        model = model_cls(
+            lags=2,
+            likelihood="multiquantile",
+            quantiles=[0.1, 0.3, 0.5, 0.7, 0.9],
+            **model_kwargs,
+        )
+        likelihood = model.likelihood
+        assert isinstance(likelihood, MultiQuantileRegression)
+        assert likelihood.type == LikelihoodType.MultiQuantile
+        assert likelihood.quantiles == [0.1, 0.3, 0.5, 0.7, 0.9]
 
     @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))
     def test_fit_predict_determinism(self, config):
@@ -4278,3 +4660,54 @@ class TestProbabilisticSKLearnModels:
         _ = model.predict(n=ocl, num_samples=1, predict_likelihood_parameters=True)
         # sampled
         _ = model.predict(n=ocl, num_samples=10, predict_likelihood_parameters=False)
+
+
+class TestSKLearnModelInputValidation:
+    def test_invalid_output_chunk_length(self):
+        with pytest.raises(ValueError, match="output_chunk_length must be an integer"):
+            LinearRegressionModel(lags=1, output_chunk_length=0)
+        with pytest.raises(ValueError, match="output_chunk_length must be an integer"):
+            LinearRegressionModel(lags=1, output_chunk_length=-1)
+
+    def test_model_without_fit_method(self):
+        class NoFit:
+            def predict(self, X):
+                pass
+
+        with pytest.raises(ValueError, match="must have a fit"):
+            RegressionModel(lags=1, model=NoFit())
+
+    def test_model_without_predict_method(self):
+        class NoPred:
+            def fit(self, X, y):
+                pass
+
+        with pytest.raises(ValueError, match="must have a predict"):
+            RegressionModel(lags=1, model=NoPred())
+
+    def test_lags_future_covariates_tuple_zero_zero(self):
+        with pytest.raises(ValueError, match="cannot be \\(0, 0\\)"):
+            LinearRegressionModel(lags=1, lags_future_covariates=(0, 0))
+
+    def test_lags_future_covariates_list_non_int(self):
+        with pytest.raises(ValueError, match="list must contain only integers"):
+            LinearRegressionModel(lags=1, lags_future_covariates=[True])
+        with pytest.raises(ValueError, match="list must contain only integers"):
+            LinearRegressionModel(lags=1, lags_future_covariates=[1.5])
+
+    def test_fit_component_lags_mismatch(self):
+        ts = TimeSeries.from_values(np.random.rand(100, 2), columns=["a", "b"])
+        model = LinearRegressionModel(
+            lags={"wrong_col": [-1]},
+        )
+        with pytest.raises(ValueError):
+            model.fit(ts)
+
+    @pytest.mark.skipif(not XGB_AVAILABLE, reason="xgboost required")
+    def test_xgb_quantile_loss_invalid_quantile(self):
+        from darts.models.forecasting.xgboost import xgb_quantile_loss
+
+        labels = np.array([1.0, 2.0, 3.0])
+        preds = np.array([1.1, 2.1, 3.1])
+        with pytest.raises(ValueError, match="Quantile must be between 0 and 1"):
+            xgb_quantile_loss(labels, preds, quantile=1.5)

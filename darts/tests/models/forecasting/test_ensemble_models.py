@@ -7,7 +7,6 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
-from darts.logging import get_logger
 from darts.models import (
     ARIMA,
     ExponentialSmoothing,
@@ -26,8 +25,6 @@ if TORCH_AVAILABLE:
     from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 else:
     TorchForecastingModel = None
-
-logger = get_logger(__name__)
 
 if TORCH_AVAILABLE:
     from darts.models import DLinearModel, NBEATSModel, RNNModel, TCNModel
@@ -71,23 +68,28 @@ class TestEnsembleModels:
         global_model.fit(self.series1)
 
         # local and global trained
-        with pytest.raises(ValueError):
+        expteced_msg = "Using pre-trained models is only supported if all models are of type `GlobalForecastingModel`"
+        with pytest.raises(ValueError, match=expteced_msg):
             NaiveEnsembleModel([local_model, global_model])
 
         # local untrained, global trained
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=expteced_msg):
             NaiveEnsembleModel([local_model.untrained_model(), global_model])
 
         # local trained, global untrained
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=expteced_msg):
             NaiveEnsembleModel([local_model, global_model.untrained_model()])
 
         # global trained, global untrained
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="there is a mixture of fitted and unfitted models."
+        ):
             NaiveEnsembleModel([global_model, global_model.untrained_model()])
 
         # both global trained, retrain = True
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="some `forecasting_models` were already fitted."
+        ):
             # models need to be explicitly reset before retraining them
             NaiveEnsembleModel(
                 [global_model, global_model], train_forecasting_models=True
@@ -96,8 +98,11 @@ class TestEnsembleModels:
             [global_model.untrained_model(), global_model.untrained_model()],
             train_forecasting_models=True,
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="The model must be fit before calling predict()"
+        ):
             model_ens_retrain.predict(1, series=self.series1)
+
         model_ens_retrain.fit(self.series1)
         model_ens_retrain.predict(1, series=self.series1)
 
@@ -106,6 +111,19 @@ class TestEnsembleModels:
             [global_model, global_model], train_forecasting_models=False
         )
         model_ens_no_retrain.predict(1, series=self.series1)
+
+        # global untrained, global untrained, retrain = False
+        with pytest.raises(
+            ValueError,
+            match=(
+                "`train_forecasting_models=False` is supported only if all "
+                "the `forecasting_models` are already trained `GlobalForecastingModels`"
+            ),
+        ):
+            NaiveEnsembleModel(
+                [global_model.untrained_model(), global_model.untrained_model()],
+                train_forecasting_models=False,
+            )
 
     def test_extreme_lag_inference(self):
         ensemble = NaiveEnsembleModel([NaiveDrift()])
@@ -924,3 +942,35 @@ class TestEnsembleModels:
             NaiveSeasonal(1),
             ARIMA(),
         ]).supports_multivariate
+
+    def test_predict_lkl_params_naive_ensemble(self):
+        quantiles = [0.05, 0.50, 0.95]
+        # different likelihoods are not supported for likelihood parameter predictions
+        model = NaiveEnsembleModel([
+            LinearRegressionModel(
+                lags=[-1], likelihood="quantile", quantiles=quantiles
+            ),
+            LinearRegressionModel(lags=[-1], likelihood="poisson"),
+        ])
+        model.fit(self.series1)
+        with pytest.raises(
+            ValueError,
+            match=(
+                "`predict_likelihood_parameters=True` is only supported for "
+                "probabilistic models fitted with a likelihood."
+            ),
+        ):
+            _ = model.predict(n=1, predict_likelihood_parameters=True)
+
+        # with the same likelihoods it is supported
+        model = NaiveEnsembleModel([
+            LinearRegressionModel(
+                lags=[-1], likelihood="quantile", quantiles=quantiles
+            ),
+            LinearRegressionModel(
+                lags=[-1], likelihood="quantile", quantiles=quantiles
+            ),
+        ])
+        model.fit(self.series1)
+        pred = model.predict(n=1, predict_likelihood_parameters=True)
+        assert pred.shape == (1, self.series1.n_components * len(quantiles), 1)

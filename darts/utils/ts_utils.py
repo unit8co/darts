@@ -1,22 +1,15 @@
 """
-Additional util functions
--------------------------
+Additional TimeSeries related util functions
+--------------------------------------------
 """
 
 from collections.abc import Sequence
 from enum import Enum
 from functools import total_ordering
-from typing import Optional, Union
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
-
-try:
-    from IPython import get_ipython
-except ModuleNotFoundError:
-    get_ipython = None
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
+from darts.typing import TimeSeriesLike
 
 _SEQ_TYPE_NAMES = {
     0: "`TimeSeries`",
@@ -36,7 +29,7 @@ class SeriesType(Enum):
 
     def _check_member(self, other):
         if self.__class__ is not other.__class__:
-            raise_log(ValueError("`other` must be a `SeriesType` enum."), logger=logger)
+            raise_log(ValueError("`other` must be a `SeriesType` enum."))
 
     def __eq__(self, other):
         self._check_member(other)
@@ -48,11 +41,11 @@ class SeriesType(Enum):
 
     def __add__(self, other: int):
         if not isinstance(other, int):
-            raise_log(ValueError("`other` must be of type `int`."), logger=logger)
+            raise_log(ValueError("`other` must be of type `int`."))
         new_val = self.value + other
         if new_val > 2:
             raise_log(
-                ValueError("Cannot go higher than `SeriesType.SEQ_SEQ`."), logger=logger
+                ValueError("Cannot go higher than `SeriesType.SEQ_SEQ`."),
             )
         return SeriesType(new_val)
 
@@ -61,12 +54,10 @@ class SeriesType(Enum):
 
 
 def series2seq(
-    ts: Optional[
-        Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
-    ],
+    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None,
     seq_type_out: SeriesType = SeriesType.SEQ,
     nested: bool = False,
-) -> Optional[Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]]:
+) -> TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None:
     """If possible, converts `ts` into the desired sequence type `seq_type_out`. Otherwise, returns the
     original `ts`.
 
@@ -97,7 +88,6 @@ def series2seq(
             ValueError(
                 f"Invalid parameter `seq_type_out={seq_type_out}`. Must be one of `(0, 1, 2)`"
             ),
-            logger=logger,
         )
 
     seq_type_in = get_series_seq_type(ts)
@@ -147,8 +137,8 @@ def series2seq(
 
 
 def seq2series(
-    ts: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
-) -> Optional[TimeSeries]:
+    ts: TimeSeriesLike | None,
+) -> TimeSeries | None:
     """If `ts` is a Sequence with only a single series, return the single series as TimeSeries.
 
     Parameters
@@ -165,10 +155,8 @@ def seq2series(
 
 
 def get_single_series(
-    ts: Optional[
-        Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
-    ],
-) -> Optional[TimeSeries]:
+    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None,
+) -> TimeSeries | None:
     """Returns a single (first) TimeSeries or `None` from `ts`. Returns `ts` if  `ts` is a TimeSeries, `ts[0]` if
     `ts` is a `Sequence[TimeSeries]`, and `ts[0][0]` if `ts` is a `Sequence[Sequence[TimeSeries]]`.
     Otherwise, returns `None`.
@@ -195,7 +183,7 @@ def get_single_series(
 
 
 def get_series_seq_type(
-    ts: Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]],
+    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]],
 ) -> SeriesType:
     """Returns the sequence type of `ts`.
 
@@ -229,7 +217,6 @@ def get_series_seq_type(
                         "input series must be of type `TimeSeries`, `Sequence[TimeSeries]`, or "
                         "`Sequence[Sequence[TimeSeries]]`."
                     ),
-                    logger=logger,
                 )
         except Exception as err:
             raise_log(
@@ -237,7 +224,6 @@ def get_series_seq_type(
                     "input series must be of type `TimeSeries`, `Sequence[TimeSeries]`, or "
                     f"`Sequence[Sequence[TimeSeries]]`. Raised: `{type(err).__name__}('{str(err)}')`"
                 ),
-                logger=logger,
             )
 
 
@@ -268,7 +254,7 @@ def retain_period_common_to_all(series: list[TimeSeries]) -> list[TimeSeries]:
 
     if last_first >= first_last:
         raise_log(
-            ValueError("The provided time series must have nonzero overlap"), logger
+            ValueError("The provided time series must have nonzero overlap"),
         )
 
     return list(map(lambda s: s.slice(last_first, first_last), series))

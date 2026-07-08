@@ -4,12 +4,12 @@ Transformer Model
 """
 
 import math
-from typing import Optional, Union
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import raise_log
 from darts.models.components import glu_variants, layer_norm_variants
 from darts.models.components.glu_variants import GLU_FFN
 from darts.models.components.transformer import (
@@ -23,9 +23,6 @@ from darts.models.forecasting.pl_forecasting_module import (
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
-
-logger = get_logger(__name__)
-
 
 BUILT_IN = ["relu", "gelu"]
 FFN = GLU_FFN + BUILT_IN
@@ -113,8 +110,8 @@ class _PositionalEncoding(nn.Module):
         pe = pe.unsqueeze(0).transpose(0, 1)
         self.register_buffer("pe", pe)
 
-    def forward(self, x):
-        x = x + self.pe[: x.size(0), :]
+    def forward(self, x, start_pos: int = 0):
+        x = x + self.pe[start_pos : start_pos + x.size(0)]
         return self.dropout(x)
 
 
@@ -131,9 +128,9 @@ class _TransformerModule(PLForecastingModule):
         dim_feedforward: int,
         dropout: float,
         activation: str,
-        norm_type: Union[str, nn.Module, None] = None,
-        custom_encoder: Optional[nn.Module] = None,
-        custom_decoder: Optional[nn.Module] = None,
+        norm_type: str | nn.Module | None = None,
+        custom_encoder: nn.Module | None = None,
+        custom_decoder: nn.Module | None = None,
         **kwargs,
     ):
         """PyTorch module implementing a Transformer to be used in `TransformerModel`.
@@ -143,7 +140,7 @@ class _TransformerModule(PLForecastingModule):
         Parameters
         ----------
         input_size
-            The dimensionality of the TimeSeries instances that will be fed to the the fit and predict functions.
+            The dimensionality of the TimeSeries instances that will be fed to the fit and predict functions.
         output_size
             The dimensionality of the output time series.
         nr_params
@@ -188,11 +185,13 @@ class _TransformerModule(PLForecastingModule):
         self.input_size = input_size
         self.target_size = output_size
         self.nr_params = nr_params
-        self.target_length = self.output_chunk_length
+        self.target_length = (
+            self.output_chunk_length if self.output_chunk_length is not None else 0
+        )
 
         self.encoder = nn.Linear(input_size, d_model)
         self.positional_encoding = _PositionalEncoding(
-            d_model, dropout, self.input_chunk_length
+            d_model, dropout, max(self.input_chunk_length, self.target_length + 1)
         )
 
         if isinstance(norm_type, str):
@@ -205,14 +204,16 @@ class _TransformerModule(PLForecastingModule):
         else:
             self.layer_norm = norm_type
 
-        raise_if_not(activation in FFN, f"'{activation}' is not in {FFN}")
+        if activation not in FFN:
+            raise_log(ValueError(f"'{activation}' is not in {FFN}."))
         if activation in GLU_FFN:
-            raise_if(
-                custom_encoder is not None or custom_decoder is not None,
-                "Cannot use `custom_encoder` or `custom_decoder` along with an `activation` from "
-                f"{GLU_FFN}",
-                logger=logger,
-            )
+            if custom_encoder is not None or custom_decoder is not None:
+                raise_log(
+                    ValueError(
+                        "Cannot use `custom_encoder` or `custom_decoder` along with an `activation` from "
+                        f"{GLU_FFN}."
+                    ),
+                )
             # use glu variant feed-forward layers
             ffn_cls = getattr(glu_variants, activation)
 
@@ -282,47 +283,74 @@ class _TransformerModule(PLForecastingModule):
             custom_decoder=custom_decoder,
         )
 
-        self.decoder = nn.Linear(
-            d_model, self.target_length * self.target_size * self.nr_params
-        )
-
-    def _create_transformer_inputs(self, data):
-        # '_TimeSeriesSequentialDataset' stores time series in the
-        # (batch_size, input_chunk_length, input_size) format. PyTorch's nn.Transformer
-        # module needs it the (input_chunk_length, batch_size, input_size) format.
-        # Therefore, the first two dimensions need to be swapped.
-        src = data.permute(1, 0, 2)
-        tgt = src[-1:, :, :]
-
-        return src, tgt
+        self.decoder = nn.Linear(d_model, self.target_size * self.nr_params)
 
     @io_processor
     def forward(self, x_in: PLModuleInput):
-        data, _, _ = x_in
-        # Here we create 'src' and 'tgt', the inputs for the encoder and decoder
-        # side of the Transformer architecture
-        src, tgt = self._create_transformer_inputs(data)
+        """Forward pass with teacher forcing (training) or autoregressive decoding (inference).
 
-        # "math.sqrt(self.input_size)" is a normalization factor
-        # see section 3.2.1 in 'Attention is All you Need' by Vaswani et al. (2017)
-        src = self.encoder(src) * math.sqrt(self.input_size)
-        src = self.positional_encoding(src)
+        Parameters
+        ----------
+        x_in
+            ``PLModuleInput`` tuple of ``(x_past, x_future, x_static, future_target)``, where ``x_past``
+            has shape ``(batch_size, input_chunk_length, input_size)``.
+        """
+        # PyTorch's nn.Transformer needs (seq_len, batch_size, features)
+        src = x_in[0].permute(1, 0, 2)
+        pad_size = (0, self.input_size - self.target_size)
+        start_token = src[-1:, :, :]
 
-        tgt = self.encoder(tgt) * math.sqrt(self.input_size)
-        tgt = self.positional_encoding(tgt)
+        # Ground-truth future target values for teacher forcing during training.
+        # Shape: ``(batch_size, output_chunk_length, target_size)``.
+        # ``None`` during validation and inference.
+        future_target = x_in[-1]
 
-        x = self.transformer(src=src, tgt=tgt)
-        out = self.decoder(x)
+        # encoder
+        memory = self.transformer.encoder(self._embed(src))
 
-        # Here we change the data format
-        # from (1, batch_size, output_chunk_length * output_size)
-        # to (batch_size, output_chunk_length, output_size, nr_params)
-        predictions = out[0, :, :]
-        predictions = predictions.view(
-            -1, self.target_length, self.target_size, self.nr_params
+        # decoder
+        if future_target is not None:
+            # training: use teacher forcing where ground-truth future targets are fed to the decoder
+            if self.rin is not None:
+                # with RIN, io_processor only normalized past targets; apply the same to future targets
+                future_target = self.rin.transform(future_target)
+            tgt = F.pad(future_target.permute(1, 0, 2), pad_size)
+            tgt = torch.cat([start_token, tgt], dim=0)
+            return self._decode(memory, self._embed(tgt))[:, :-1, :, :]
+
+        # autoregressive: build up tgt embeddings and extend by one token per step
+        tgt_emb = self._embed(start_token)
+        predictions = []
+        for t in range(self.target_length):
+            pred = self._decode(memory, tgt_emb)[:, -1, :, :]
+            predictions.append(pred)
+            next_token = F.pad(pred.mean(dim=2).unsqueeze(0), pad_size)
+            tgt_emb = torch.cat(
+                [tgt_emb, self._embed(next_token, start_pos=t + 1)], dim=0
+            )
+        return torch.stack(predictions, dim=1)
+
+    def _embed(self, x: torch.Tensor, start_pos: int = 0) -> torch.Tensor:
+        """Project to d_model and add positional encoding starting at ``pos``."""
+        x = self.encoder(x)
+        return self.positional_encoding(x, start_pos=start_pos)
+
+    def _decode(self, memory: torch.Tensor, tgt_emb: torch.Tensor) -> torch.Tensor:
+        """Run transformer decoder with causal mask and reshape to ``(batch, seq_len, target_size, nr_params)``."""
+        seq_len = tgt_emb.shape[0]
+        # square subsequent mask
+        tgt_mask = torch.triu(
+            input=torch.full(
+                size=(seq_len, seq_len),
+                fill_value=torch.finfo(tgt_emb.dtype).min,  # -inf
+                dtype=memory.dtype,
+                device=memory.device,
+            ),
+            diagonal=1,
         )
-
-        return predictions
+        x = self.transformer.decoder(tgt=tgt_emb, memory=memory, tgt_mask=tgt_mask)
+        out = self.decoder(x).permute(1, 0, 2)
+        return out.view(-1, seq_len, self.target_size, self.nr_params)
 
 
 class TransformerModel(PastCovariatesTorchModel):
@@ -338,9 +366,9 @@ class TransformerModel(PastCovariatesTorchModel):
         dim_feedforward: int = 512,
         dropout: float = 0.1,
         activation: str = "relu",
-        norm_type: Union[str, nn.Module, None] = None,
-        custom_encoder: Optional[nn.Module] = None,
-        custom_decoder: Optional[nn.Module] = None,
+        norm_type: str | nn.Module | None = None,
+        custom_encoder: nn.Module | None = None,
+        custom_decoder: nn.Module | None = None,
         **kwargs,
     ):
         """Transformer model
@@ -352,7 +380,7 @@ class TransformerModel(PastCovariatesTorchModel):
         The multi-head attention mechanism is highly parallelizable, which makes the transformer architecture
         very suitable to be trained with GPUs.
 
-        The transformer architecture implemented here is based on [1]_.
+        The transformer architecture implemented here is based on [1]_ and uses teacher forcing [4]_.
 
         This model supports past covariates (known for `input_chunk_length` points before prediction time).
 
@@ -389,7 +417,7 @@ class TransformerModel(PastCovariatesTorchModel):
             Fraction of neurons affected by Dropout (default=0.1).
         activation
             The activation function of encoder/decoder intermediate layer, (default='relu').
-            can be one of the glu variant's FeedForward Network (FFN)[2]. A feedforward network is a
+            can be one of the glu variant's FeedForward Network (FFN) [2]_. A feedforward network is a
             fully-connected layer with an activation. The glu variant's FeedForward Network are a series
             of FFNs designed to work better with Transformer based models. ["GLU", "Bilinear", "ReGLU", "GEGLU",
             "SwiGLU", "ReLU", "GELU"] or one the pytorch internal activations ["relu", "gelu"]
@@ -397,9 +425,9 @@ class TransformerModel(PastCovariatesTorchModel):
             The type of LayerNorm variant to use.  Default: ``None``. Available options are
             ["LayerNorm", "RMSNorm", "LayerNormNoBias"], or provide a custom nn.Module.
         custom_encoder
-            A custom user-provided encoder module for the transformer (default=None).
+            A custom user-provided encoder module for the transformer. Default: ``None``.
         custom_decoder
-            A custom user-provided decoder module for the transformer (default=None).
+            A custom user-provided decoder module for the transformer. Default: ``None``.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -427,7 +455,9 @@ class TransformerModel(PastCovariatesTorchModel):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [3]_.
-            It is only applied to the features of the target series and not the covariates.
+            It is only applied to the features of the target series and not the covariates. If ``True``,
+            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
+            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -435,7 +465,7 @@ class TransformerModel(PastCovariatesTorchModel):
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
-            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            of the name is formatted with the local date and time, while PID is the process ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
@@ -488,7 +518,7 @@ class TransformerModel(PastCovariatesTorchModel):
             checkpointing, tensorboard logging, setting the torch device and more.
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
             supported kwargs. Default: ``None``.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
@@ -496,7 +526,7 @@ class TransformerModel(PastCovariatesTorchModel):
 
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
-            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUs.
 
             For more info, see here:
             https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
@@ -507,7 +537,7 @@ class TransformerModel(PastCovariatesTorchModel):
             The model will stop training early if the validation loss `val_loss` does not improve beyond
             specifications. For more information on callbacks, visit:
             `PyTorch Lightning Callbacks
-            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
 
             .. highlight:: python
             .. code-block:: python
@@ -531,26 +561,28 @@ class TransformerModel(PastCovariatesTorchModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         References
         ----------
         .. [1] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser,
-        and Illia Polosukhin, "Attention Is All You Need", 2017. In Advances in Neural Information Processing Systems,
-        pages 6000-6010. https://arxiv.org/abs/1706.03762.
+               and Illia Polosukhin, "Attention Is All You Need", 2017. In Advances in Neural Information Processing
+               Systems, pages 6000-6010. https://arxiv.org/abs/1706.03762.
         .. [2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
         .. [3] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
                 Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
-
-        Notes
-        -----
-        Disclaimer:
-        This current implementation is fully functional and can already produce some good predictions. However,
-        it is still limited in how it uses the Transformer architecture because the `tgt` input of
-        `torch.nn.Transformer` is not utilized to its full extent. Currently, we simply pass the last value of the
-        `src` input to `tgt`. To get closer to the way the Transformer is usually used in language models, we
-        should allow the model to consume its own output as part of the `tgt` argument, such that when predicting
-        sequences of values, the input to the `tgt` argument would grow as outputs of the transformer model would be
-        added to it. Of course, the training of the model would have to be adapted accordingly.
+        .. [4] Teacher Forcing PyTorch tutorial: https://github.com/pytorch/examples/tree/main/word_language_model
 
         Examples
         --------
@@ -568,18 +600,19 @@ class TransformerModel(PastCovariatesTorchModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[5.40498034],
-               [5.36561899],
-               [5.80616883],
-               [6.48695488],
-               [7.63158655],
-               [5.65417736]])
+        >>> print(pred.values())
+        [[5.40498034]
+         [5.36561899]
+         [5.80616883]
+         [6.48695488]
+         [7.63158655]
+         [5.65417736]]
 
         .. note::
-            `Transformer example notebook <https://unit8co.github.io/darts/examples/06-Transformer-examples.html>`_
+            `Transformer example notebook <https://unit8co.github.io/darts/examples/06-Transformer-examples.html>`__
             presents techniques that can be used to improve the forecasts quality compared to this simple usage
             example.
+        ..
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
@@ -597,7 +630,7 @@ class TransformerModel(PastCovariatesTorchModel):
         self.custom_encoder = custom_encoder
         self.custom_decoder = custom_decoder
 
-    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> _TransformerModule:
         # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
         (past_target, past_covariates, _, _, _, _) = train_sample
         input_dim = past_target.shape[1] + (

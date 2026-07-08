@@ -9,12 +9,10 @@ Training Datasets
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
 from math import ceil
-from typing import Optional, Union
 
-from darts import TimeSeries
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
+from darts.typing import TimeSeriesLike
 from darts.utils.data.torch_datasets.dataset import TorchDataset
 from darts.utils.data.torch_datasets.utils import TorchTrainingDatasetOutput
 from darts.utils.data.utils import (
@@ -22,8 +20,6 @@ from darts.utils.data.utils import (
     _process_sample_weight,
 )
 from darts.utils.ts_utils import series2seq
-
-logger = get_logger(__name__)
 
 
 class TorchTrainingDataset(TorchDataset, ABC):
@@ -59,16 +55,16 @@ class TorchTrainingDataset(TorchDataset, ABC):
 class ShiftedTorchTrainingDataset(TorchTrainingDataset):
     def __init__(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         shift: int = 1,
         stride: int = 1,
-        max_samples_per_ts: Optional[int] = None,
+        max_samples_per_ts: int | None = None,
         use_static_covariates: bool = True,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        sample_weight: TimeSeriesLike | str | None = None,
     ):
         """Shifted Training Dataset
 
@@ -143,7 +139,6 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         if not (isinstance(stride, int) and stride > 0):
             raise_log(
                 ValueError("`stride` must be a positive integer greater than 0."),
-                logger=logger,
             )
 
         # setup target and sequence
@@ -165,24 +160,28 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
                         f"The sequence of `{name}` must have the same length as "
                         f"the sequence of target `series`."
                     ),
-                    logger=logger,
                 )
 
         size_of_both_chunks = max(input_chunk_length, shift + output_chunk_length)
 
-        # setup samples
-        if max_samples_per_ts is None:
-            # read all time series to get the maximum size
-            max_samples_per_ts = max(len(ts) for ts in series) - size_of_both_chunks + 1
-            if max_samples_per_ts <= 0:
-                raise_log(
-                    ValueError(
-                        f"The input `series` are too short to extract even a single sample. "
-                        f"Expected min length: `{size_of_both_chunks}`, received max length: "
-                        f"`{max_samples_per_ts + size_of_both_chunks - 1}`."
-                    )
+        # compute the maximum available samples over all series
+        max_available_indices = max(len(ts) for ts in series) - size_of_both_chunks + 1
+        max_available_samples = ceil(max_available_indices / stride)
+
+        if max_available_indices <= 0:
+            raise_log(
+                ValueError(
+                    f"The input `series` are too short to extract even a single sample. "
+                    f"Expected min length: `{size_of_both_chunks}`, received max length: "
+                    f"`{max(len(ts) for ts in series)}`."
                 )
-            max_samples_per_ts = ceil(max_samples_per_ts / stride)
+            )
+
+        if max_samples_per_ts is None:
+            max_samples_per_ts = max_available_samples
+        else:
+            # upper bound maximum available samples by max_samples_per_ts
+            max_samples_per_ts = min(max_samples_per_ts, max_available_samples)
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
@@ -237,7 +236,6 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
                         f"either be `1` or match the number of target series components "
                         f"`{series.n_components}` (at series sequence idx `{series_idx}`)."
                     ),
-                    logger=logger,
                 )
 
         # get start and end indices (positions) of all feature types for the current sample
@@ -315,7 +313,6 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
                     f"even a single example. Expected min length: `{self.size_of_both_chunks}`, "
                     f"received length `{len(series)}` (at series sequence idx `{series_idx}`)."
                 ),
-                logger=logger,
             )
 
         # determine the index at the end of the output chunk
@@ -331,16 +328,16 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
 class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
     def __init__(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         stride: int = 1,
-        max_samples_per_ts: Optional[int] = None,
+        max_samples_per_ts: int | None = None,
         use_static_covariates: bool = True,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        sample_weight: TimeSeriesLike | str | None = None,
     ):
         """Sequential Training Dataset
 
@@ -428,16 +425,16 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
 class HorizonBasedTorchTrainingDataset(SequentialTorchTrainingDataset):
     def __init__(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
         output_chunk_length: int = 12,
         output_chunk_shift: int = 0,
         stride: int = 1,
         lh: tuple[int, int] = (1, 3),
         lookback: int = 3,
         use_static_covariates: bool = True,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        sample_weight: TimeSeriesLike | str | None = None,
     ) -> None:
         """Horizon Based Training Dataset
 
@@ -521,7 +518,6 @@ class HorizonBasedTorchTrainingDataset(SequentialTorchTrainingDataset):
                     f"Invalid `lh={lh}`. `lh` must be a tuple `(min_lh, max_lh)`, "
                     f"with `1 <= min_lh <= max_lh`."
                 ),
-                logger=logger,
             )
         max_samples_per_ts = (max_lh - min_lh) * output_chunk_length + 1
         max_samples_per_ts = ceil(max_samples_per_ts / stride)
@@ -552,7 +548,6 @@ class HorizonBasedTorchTrainingDataset(SequentialTorchTrainingDataset):
                     f"even a single example. Expected min length: `{min_length}`, received "
                     f"length `{len(series)}` (at series sequence idx `{series_idx}`)."
                 ),
-                logger=logger,
             )
 
         # determine the index lh_idx of the forecasting point (the last point of the input series, before the target)

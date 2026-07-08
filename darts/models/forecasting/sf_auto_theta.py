@@ -3,8 +3,6 @@ AutoTheta
 ---------
 """
 
-from typing import Optional
-
 from statsforecast.models import AutoTheta as SFAutoTheta
 
 from darts.models.forecasting.sf_model import StatsForecastModel
@@ -14,16 +12,16 @@ class AutoTheta(StatsForecastModel):
     def __init__(
         self,
         *args,
-        add_encoders: Optional[dict] = None,
-        quantiles: Optional[list[float]] = None,
-        random_state: Optional[int] = None,
+        add_encoders: dict | None = None,
+        quantiles: list[float] | None = None,
+        random_state: int | None = None,
         **kwargs,
     ):
-        """Auto-Theta based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
+        """Auto-Theta based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`__.
 
         Automatically selects the best Theta model using an information criterion.
         We refer to the `StatsForecast documentation
-        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autotheta>`_ for the exhaustive documentation
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autotheta>`__ for the exhaustive documentation
         of the arguments.
 
         In addition to univariate deterministic forecasting, it comes with additional support:
@@ -32,7 +30,7 @@ class AutoTheta(StatsForecastModel):
           Darts adds support by first regressing the series against the future covariates using a
           :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` model and then running the
           StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by
-          `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`_.
+          `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`__.
 
         - **Probabilstic forecasting:** To generate probabilistic forecasts, you can set the following
           parameters when calling :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:
@@ -102,13 +100,13 @@ class AutoTheta(StatsForecastModel):
         >>> model = AutoTheta(season_length=12)
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[438.05257224],
-               [428.93751019],
-               [465.20881177],
-               [461.73768912],
-               [467.59232404],
-               [509.82574683]])
+        >>> print(pred.values())
+        [[438.05257224]
+         [428.93751019]
+         [465.20881177]
+         [461.73768912]
+         [467.59232404]
+         [509.82574683]]
         """
         super().__init__(
             model=SFAutoTheta(*args, **kwargs),

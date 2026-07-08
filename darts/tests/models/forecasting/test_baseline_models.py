@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 from darts import TimeSeries
-from darts.logging import get_logger
 from darts.models import NaiveDrift, NaiveMean, NaiveMovingAverage, NaiveSeasonal
 from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
@@ -12,9 +11,6 @@ from darts.models.forecasting.forecasting_model import (
 )
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
-
-logger = get_logger(__name__)
-
 
 icl = 5
 local_models = [

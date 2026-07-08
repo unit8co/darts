@@ -1,9 +1,14 @@
+"""
+Metric Utils
+------------
+"""
+
 import inspect
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from enum import Enum
 from functools import wraps
 from inspect import signature
-from typing import Any, Callable, Optional, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -61,7 +66,7 @@ class _LabelReduction(Enum):
 # the `actual_series` and `pred_series` parameters, and not having other ``Sequence`` as args (since these decorators
 # don't "unpack" parameters different from `actual_series` and `pred_series`). In those cases, the new metric must take
 # care of dealing with Sequence[TimeSeries] and multivariate TimeSeries on its own (See mase() implementation).
-METRIC_OUTPUT_TYPE = Union[float, list[float], np.ndarray, list[np.ndarray]]
+METRIC_OUTPUT_TYPE = float | list[float] | np.ndarray | list[np.ndarray]
 METRIC_TYPE = Callable[
     ...,
     METRIC_OUTPUT_TYPE,
@@ -98,7 +103,6 @@ def interval_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                 ValueError(
                     f"`{_PARAM_Q_INTERVAL}` must be a tuple (float, float) or a sequence of tuples (float, float)."
                 ),
-                logger=logger,
             )
         if not np.all(q_interval[:, 1] - q_interval[:, 0] > 0):
             raise_log(
@@ -106,7 +110,6 @@ def interval_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                     f"all intervals in `{_PARAM_Q_INTERVAL}` must be tuples of (lower q, upper q) with "
                     f"`lower q > upper q`. Received `{_PARAM_Q_INTERVAL}={q_interval}`"
                 ),
-                logger=logger,
             )
         kwargs[_PARAM_Q_INTERVAL] = q_interval
         kwargs[_PARAM_Q] = np.sort(np.unique(q_interval))
@@ -143,7 +146,6 @@ def classification_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                             f"Invalid `{_PARAM_LABEL_REDUCTION}` value: `{label_reduction}`. "
                             f"Must be one of `{list(_LabelReduction._value2member_map_)}`."
                         ),
-                        logger=logger,
                     )
                 kwargs[_PARAM_LABEL_REDUCTION] = _LabelReduction(label_reduction)
 
@@ -181,6 +183,7 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         params = signature(func).parameters
         n_jobs = kwargs.pop("n_jobs", params["n_jobs"].default)
         verbose = kwargs.pop("verbose", params["verbose"].default)
+        name = kwargs.pop("name", params["name"].default)
 
         # sanity check reduction functions
         _ = _get_reduction(
@@ -215,7 +218,6 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                     f"Mismatch between number of series in `actual_series` (n={len(actual_series)}) and "
                     f"`pred_series` (n={len(pred_series)})."
                 ),
-                logger=logger,
             )
         num_series_in_args = int("actual_series" not in kwargs) + int(
             "pred_series" not in kwargs
@@ -240,7 +242,6 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                         f"Mismatch between number of series in `actual_series` (n={len(actual_series)}) and "
                         f"`insample` series (n={len(insample)})."
                     ),
-                    logger=logger,
                 )
             input_series += (insample,)
             num_series_in_args += int("insample" not in kwargs)
@@ -267,14 +268,12 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                             f"`{_PARAM_Q}` must be of type `float`, or a sequence of increasing order with unique "
                             f"values only. Received `{_PARAM_Q}={q}`."
                         ),
-                        logger=logger,
                     )
                 if not np.all(q >= 0.0) & np.all(q <= 1.0):
                     raise_log(
                         ValueError(
                             f"All `{_PARAM_Q}` values must be in the range `(>=0,<=1)`. Received `{_PARAM_Q}={q}`."
                         ),
-                        logger=logger,
                     )
                 kwargs[_PARAM_Q] = (q, q_comp_names)
 
@@ -282,7 +281,7 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             iterable=zip(*input_series),
             verbose=verbose,
             total=len(actual_series),
-            desc=f"metric `{func.__name__}()`",
+            desc=f"metric `{name or func.__name__}`",
         )
 
         # `vals` is a list of series metrics of length `len(actual_series)`. Each metric has shape
@@ -354,7 +353,6 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                         f"Mismatch between number of components in `actual_series` "
                         f"(n={actual_series.width}) and `insample` (n={insample.width}."
                     ),
-                    logger=logger,
                 )
             input_series += (insample,)
             num_series_in_args += 1
@@ -374,7 +372,6 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                         "or 3 dimensions (n times, n components, n quantiles or n labels)  "
                         "for time dependent metrics (e.g. `ae()`, ...)"
                     ),
-                    logger=logger,
                 )
 
         if n_dims == 2:
@@ -426,7 +423,6 @@ def _regression_handling(actual_series, pred_series, params, kwargs):
                     f"Mismatch between number of components in `actual_series` "
                     f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
                 ),
-                logger=logger,
             )
         # compute median for stochastic predictions
         if pred_series.is_stochastic:
@@ -436,11 +432,10 @@ def _regression_handling(actual_series, pred_series, params, kwargs):
         if not isinstance(q, tuple) or not len(q) == 2:
             raise_log(
                 ValueError(
-                    f"`{_PARAM_Q}` must be of tuple of `(np.ndarray, Optional[pd.Index])` "
+                    f"`{_PARAM_Q}` must be of tuple of `(np.ndarray, pd.Index | None)` "
                     "where the (quantile values, optional quantile component names). "
                     f"Received `{_PARAM_Q}={q}`."
                 ),
-                logger=logger,
             )
         q, q_comp_names = q
         if not pred_series.is_stochastic:
@@ -461,7 +456,6 @@ def _regression_handling(actual_series, pred_series, params, kwargs):
                         f"quantiles as columns / components. Either pass a probabilistic `pred_series` or "
                         f"a series containing the expected quantile components: {q_comp_names.tolist()} "
                     ),
-                    logger=logger,
                 )
 
     if _PARAM_Q in params:
@@ -492,7 +486,6 @@ def _classification_handling(actual_series, pred_series):
                     f"Original components: {actual_series.components}, predicted components: "
                     f"{pred_series.components}."
                 ),
-                logger=logger,
             )
 
 
@@ -500,7 +493,7 @@ def _get_values(
     vals: np.ndarray,
     vals_components: pd.Index,
     actual_components: pd.Index,
-    q: Optional[tuple[Sequence[float], Union[Optional[pd.Index]]]] = None,
+    q: tuple[Sequence[float], pd.Index | None] | None = None,
     is_classification: bool = False,
 ) -> np.ndarray:
     """
@@ -544,7 +537,8 @@ def _get_values(
             # we extract the relevant quantile components with shape (times, components * quantiles)
             vals = vals[:, vals_components.get_indexer(q_names)]
             # rearrange into (times, components, quantiles)
-            vals = vals.reshape((len(vals), len(actual_components), -1))
+            n_quantiles = vals.shape[1] // len(actual_components)
+            vals = vals.reshape((len(vals), len(actual_components), n_quantiles))
         return vals
 
     # probabilistic input
@@ -558,7 +552,7 @@ def _get_values_or_raise(
     actual_series: TimeSeries,
     pred_series: TimeSeries,
     intersect: bool,
-    q: Optional[tuple[Sequence[float], Union[Optional[pd.Index]]]] = None,
+    q: tuple[Sequence[float], pd.Index | None] | None = None,
     remove_nan_union: bool = False,
     is_insample: bool = False,
     is_classification: bool = False,
@@ -635,7 +629,6 @@ def _get_values_or_raise(
                     "The `insample` series must start before the `pred_series` and "
                     "extend at least until one time step before the start of `pred_series`."
                 ),
-                logger=logger,
             )
         end = end or None
         vals_actual_common = actual_series.all_values(copy=make_copy)[:end]
@@ -662,7 +655,7 @@ def _get_values_or_raise(
 def _get_quantile_intervals(
     vals: np.ndarray,
     q: tuple[Sequence[float], Any],
-    q_interval: np.ndarray = None,
+    q_interval: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Returns the lower and upper bound values from `vals` for all quantile intervals in `q_interval`.
 
@@ -768,7 +761,6 @@ def _get_wrapped_metric(
     if not 2 <= n_wrappers <= 3:
         raise_log(
             NotImplementedError("Only 2-3 wrappers are currently supported"),
-            logger=logger,
         )
     if n_wrappers == 2:
         return func.__wrapped__.__wrapped__
@@ -778,7 +770,7 @@ def _get_wrapped_metric(
 
 def _get_reduction(
     kwargs, params, red_name, axis, sanity_check: bool = True
-) -> Optional[Callable[..., np.ndarray]]:
+) -> Callable[..., np.ndarray] | None:
     """Returns the reduction function either from user kwargs or metric default.
     Optionally performs sanity checks for presence of `axis` parameter, and correct output type and
     reduced shape."""
@@ -796,7 +788,6 @@ def _get_reduction(
                 ValueError(
                     f"Invalid `{red_name}` function: Must have a parameter called `axis`."
                 ),
-                logger=logger,
             )
         # verify `red_fn` reduces to array with correct shape
         shape_in = (2, 1) if axis == 0 else (1, 2)
@@ -808,7 +799,6 @@ def _get_reduction(
                     f"Invalid `{red_name}` function output type: Expected type "
                     f"`np.ndarray`, received type=`{type(out)}`."
                 ),
-                logger=logger,
             )
         shape_invalid = out.shape != (1,)
         if shape_invalid:
@@ -819,7 +809,6 @@ def _get_reduction(
                     f"However, the function reduced a test array of shape `{shape_in}` to "
                     f"`{out.shape}`."
                 ),
-                logger=logger,
             )
     return red_fn
 
@@ -834,7 +823,6 @@ def _get_error_scale(
     if not isinstance(m, int):
         raise_log(
             ValueError(f"Seasonality `m` must be of type `int`, received `m={m}`"),
-            logger=logger,
         )
 
     # `x_t` are the true `y` values before the start of `y_pred`
@@ -853,12 +841,81 @@ def _get_error_scale(
             ValueError(
                 f"unknown `metric={metric}`. Must be one of ('mae', 'mse', 'rmse')."
             ),
-            logger=logger,
         )
 
-    if np.isclose(scale, 0.0).any():
-        raise_log(ValueError("cannot use MASE with periodical signals"), logger=logger)
     return scale
+
+
+def _safe_scaled_divide(
+    errors: np.ndarray,
+    scale: np.ndarray,
+    zero_division: str = "warn",
+) -> np.ndarray:
+    """Divides ``errors`` by ``scale``, handling zero-scale entries gracefully.
+
+    When ``zero_division`` is ``"warn"`` (default), the behavior depends on
+    whether the *numerator* is also zero:
+
+    * **Case 1** – scale ≈ 0, errors ≠ 0 (non-zero / zero): the scaled error
+      is undefined, so the result is ``np.nan``.
+    * **Case 2** – scale ≈ 0, errors ≈ 0 (zero / zero): the model is on par
+      with the naive baseline, so the result is ``1.0``.
+
+    .. note::
+       Returning ``1.0`` for the 0/0 case assumes "model matches naive baseline"
+       since we cannot distinguish whether the model trivially *is* the seasonal
+       naive or made a non-trivial prediction that happens to match. For practical
+       purposes ``1.0`` is the right default.
+
+    Parameters
+    ----------
+    errors
+        Numerator array of shape ``(t, c)`` or ``(c,)``.
+    scale
+        Denominator array of shape ``(c,)``.
+    zero_division
+        Controls behavior when ``scale`` is (near) zero.
+
+        * ``"warn"`` (default) – applies the defaults described above
+          (``np.nan`` for case 1, ``1.0`` for case 2) and emits a ``UserWarning``.
+        * ``"raise"`` – raises a ``ValueError`` (the legacy behavior).
+
+    Returns
+    -------
+    np.ndarray
+        The result of ``errors / scale``, with zero-scale entries replaced.
+    """
+    if zero_division not in ["warn", "raise"]:
+        raise_log(
+            ValueError(
+                f"`zero_division` must be 'warn' or 'raise'. Received {zero_division}."
+            ),
+        )
+
+    zero_mask = np.isclose(scale, 0.0)
+    if not zero_mask.any():
+        return errors / scale
+
+    # --- legacy behavior: raise on zero scale ---
+    if zero_division == "raise":
+        raise_log(
+            ValueError("Cannot use scaled metric with periodical signals."),
+        )
+
+    # Determine the fill value for zero-scale entries in a single pass.
+    # For numeric zero_division: use that value everywhere.
+    # For "warn": Case 1 (non-zero / zero) → nan, Case 2 (0 / 0) → 1.0.
+    fill = np.where(np.isclose(errors, 0.0), 1.0, np.nan)
+
+    # Single-pass: where scale ≈ 0 use fill, otherwise normal division
+    result = np.where(zero_mask, fill, errors / np.where(zero_mask, 1.0, scale))
+
+    logger.warning(
+        "The error scale (denominator) is zero for some components. "
+        "Those entries are set to NaN (when numerator is non-zero) or "
+        "1.0 (when numerator is also zero, i.e. on par with naive)."
+    )
+    return result
 
 
 def _unique_labels(y_true: np.ndarray, y_pred: np.ndarray) -> list[np.ndarray]:
@@ -874,26 +931,26 @@ def _unique_labels(y_true: np.ndarray, y_pred: np.ndarray) -> list[np.ndarray]:
 def _confusion_matrix(
     y_true: np.ndarray,
     y_pred: np.ndarray,
-    labels: Optional[np.ndarray] = None,
+    labels: np.ndarray | None = None,
     compute_multilabel: bool = True,
-) -> tuple[np.ndarray, Optional[np.ndarray]]:
+) -> tuple[np.ndarray, np.ndarray | None]:
     """Computes a confusion matrix using numpy for two np.arrays `y_true` and `y_pred`.
 
     Parameters
     ----------
-    y_true : np.ndarray
+    y_true
         The true labels.
-    y_pred : np.ndarray
+    y_pred
         The predicted labels.
-    labels : Optional[np.ndarray]
+    labels
         The labels to consider for the confusion matrix. If `None`, will use unique labels from `y_true` and `y_pred`.
-    compute_multilabel : bool
+    compute_multilabel
         Whether to compute a multilabel confusion matrix. If `True`, will return a component- and label-specific
         confusion matrix.
 
     Returns
     -------
-    tuple[np.ndarray, Optional[np.ndarray]]
+    tuple[np.ndarray, np.ndarray | None]
         The confusion matrix and optionally the multilabel confusion matrix.
     """
     n_comps = y_true.shape[COMP_AX]
@@ -973,21 +1030,21 @@ def _compute_score(
     y_pred,
     score_func: Callable,
     label_reduction: _LabelReduction,
-    labels: Optional[np.ndarray] = None,
+    labels: np.ndarray | None = None,
 ) -> np.ndarray:
     """Computes a score on the confusion matrix of two np.arrays `y_true` and `y_pred`.
 
     Parameters
     ----------
-    y_true : np.ndarray
+    y_true
         The true labels.
-    y_pred : np.ndarray
+    y_pred
         The predicted labels.
-    score_func : Callable
+    score_func
         The function to compute the score from the confusion matrix.
-    label_reduction : Optional[str]
+    label_reduction
         The label reduction method to apply. Can be one of `None`, `"micro"`, `"macro"`, or `"weighted"`.
-    labels : Optional[np.ndarray]
+    labels
         The labels to consider for the confusion matrix. If `None`, will use unique labels from `y_true` and `y_pred`.
 
     Returns
@@ -1029,3 +1086,25 @@ def _compute_score(
         # micro f1 score: score_func(sum(x))
         scores = scores.reshape((-1, 1))
     return scores
+
+
+def _get_tolerance_levels(
+    min_tolerance: float,
+    max_tolerance: float,
+    step: float,
+):
+    """Computes normalized tolerance levels."""
+    if not (0.0 <= min_tolerance < max_tolerance <= 1.0):
+        raise_log(
+            ValueError(
+                "min_tolerance must be >= 0, max_tolerance must be <= 1, and min_tolerance < max_tolerance."
+            ),
+        )
+    if step <= 0 or step > (max_tolerance - min_tolerance):
+        raise_log(
+            ValueError(
+                "step must be positive and not larger than (max_tolerance - min_tolerance)."
+            ),
+        )
+    num_steps = int(round((max_tolerance - min_tolerance) / step)) + 1
+    return np.linspace(min_tolerance, max_tolerance, num_steps)
