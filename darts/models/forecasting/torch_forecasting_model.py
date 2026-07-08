@@ -93,6 +93,9 @@ TFM_ATTRS_NO_PICKLE = {"model": None, "trainer": None}
 
 logger = get_logger(__name__)
 
+# lightning 2.6.0 introduced `weights_only` loading to API
+_PL_2_6_OR_ABOVE = tuple(int(el) for el in pl.__version__.split(".")[:2]) >= (2, 6)
+
 
 def _get_checkpoint_folder(work_dir, model_name):
     return os.path.join(work_dir, model_name, CHECKPOINTS_FOLDER)
@@ -1461,11 +1464,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             ckpt_callback = None
 
         if self._requires_training:
+            weights_only_kwargs = dict()
+            if ckpt_path is not None and _PL_2_6_OR_ABOVE:
+                weights_only_kwargs["weights_only"] = False
+
             trainer.fit(
                 model,
                 train_dataloaders=train_loader,
                 val_dataloaders=val_loader,
                 ckpt_path=ckpt_path,
+                **weights_only_kwargs,
             )
             if load_best:
                 best_model_path = ckpt_callback.best_model_path
@@ -2302,7 +2310,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         the model twice. Instead, we recover the module class with the module path and class name stored
         in the TFM object. With the recovered module class, we can load the checkpoint.
         """
-        pl_module_cls = getattr(sys.modules[self._module_path], self._module_name)
+        pl_module_cls: PLForecastingModule = getattr(
+            sys.modules[self._module_path], self._module_name
+        )
+        if _PL_2_6_OR_ABOVE:
+            kwargs.setdefault("weights_only", False)
         return pl_module_cls.load_from_checkpoint(file_path, **kwargs)
 
     def load_weights_from_checkpoint(
