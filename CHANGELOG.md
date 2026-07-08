@@ -52,7 +52,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 - Fixed several bugs in `ShapExplainer` including mismatched SHAP method enum values, feature naming conventions, and inconsistent instance count in `explain()`. [#3049](https://github.com/unit8co/darts/pull/3049) by [Zhihao Dai](https://github.com/daidahao).
-- Fixed an issue in `TFTModel` where training under mixed precision resulted in float16 overflow. [#3087](https://github.com/unit8co/darts/pull/3087) by [Robert Ruidisch](https://github.com/robrui).
+- Fixed an issue in `TFTModel` where training under mixed precision resulted in float16 overflow. [#3087](https://github.com/unit8co/darts/pull/3087) by [Robert Ruidisch](https://github.com/robrui) and [Luca Rodiga](https://github.com/LucaRo29).
 - Fixed a bug in `TimeSeries.quantile()` where the output dtype did not match the input series dtype for dtypes `float32` or `float16`. Now the dtype is correctly propagated. [#3124](https://github.com/unit8co/darts/pull/3124) by [Dennis Bader](https://github.com/dennisbader)
 
 ### For developers of the library:
