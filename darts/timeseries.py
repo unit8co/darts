@@ -1064,14 +1064,6 @@ class TimeSeries:
             tuple(group_): idx for idx, group_ in enumerate(unique_groups)
         }
 
-        # build progress bar for iterator
-        iterator = _build_tqdm_iterator(
-            groups,
-            verbose=verbose,
-            total=len(unique_groups),
-            desc="Creating TimeSeries",
-        )
-
         def from_group(static_cov_vals, group):
             static_cov_vals = (
                 (static_cov_vals,)
@@ -1121,13 +1113,82 @@ class TimeSeries:
                 ),
             )
 
-        series_groups = _parallel_apply(
-            iterator,
-            from_group,
-            n_jobs,
-            fn_args=dict(),
-            fn_kwargs=dict(),
-        )
+        from joblib import effective_n_jobs
+
+        n_groups = len(unique_groups)
+        effective_jobs = effective_n_jobs(n_jobs)
+
+        if effective_jobs == 1:
+            # Sequential: process groups one by one with progress bar
+            iterator = _build_tqdm_iterator(
+                groups,
+                verbose=verbose,
+                total=n_groups,
+                desc="Creating TimeSeries",
+            )
+            series_groups = [from_group(*item) for item in iterator]
+        else:
+            # Parallel: split the DataFrame into chunks by group membership
+            # and send each chunk to a worker. This reduces serialization
+            # overhead compared to sending many small DataFrames individually
+            # (see #2645).
+            n_chunks = min(effective_jobs, n_groups)
+            group_chunks = np.array_split(unique_groups, n_chunks)
+
+            # Build a mapping from group key -> chunk index for single-pass
+            # partitioning of the DataFrame
+            group_col = group_cols[0] if len(group_cols) == 1 else group_cols
+            group_to_chunk = {}
+            for chunk_idx, grp_chunk in enumerate(group_chunks):
+                for row in grp_chunk:
+                    key = row[0] if len(group_cols) == 1 else tuple(row)
+                    group_to_chunk[key] = chunk_idx
+
+            # Single-pass partition: assign each row to a chunk based on its
+            # group key, then split the DataFrame
+            if len(group_cols) == 1:
+                col_vals = df[group_cols[0]].to_list()
+                chunk_ids = [group_to_chunk[v] for v in col_vals]
+            else:
+                # Multi-column: build composite key per row
+                col_arrays = [df[c].to_list() for c in group_cols]
+                chunk_ids = [
+                    group_to_chunk[
+                        tuple(col_arrays[ci][ri] for ci in range(len(group_cols)))
+                    ]
+                    for ri in range(len(col_arrays[0]))
+                ]
+
+            chunk_id_col = "__chunk_id__"
+            native_backend = df.__native_namespace__()
+            df_with_chunk = df.with_columns(
+                nw.new_series(chunk_id_col, chunk_ids, nw.Int32, backend=native_backend)
+            )
+            chunk_dfs = [
+                df_with_chunk.filter(nw.col(chunk_id_col) == i).drop(chunk_id_col)
+                for i in range(n_chunks)
+            ]
+
+            def _process_chunk(chunk_df):
+                """Process a chunk of the DataFrame sequentially."""
+                chunk_groups = chunk_df.group_by(group_col)
+                return [from_group(*item) for item in chunk_groups]
+
+            iterator = _build_tqdm_iterator(
+                iter([(chunk_df,) for chunk_df in chunk_dfs]),
+                verbose=verbose,
+                total=n_chunks,
+                desc="Creating TimeSeries",
+            )
+            nested_results = _parallel_apply(
+                iterator,
+                _process_chunk,
+                n_jobs,
+                fn_args=dict(),
+                fn_kwargs=dict(),
+            )
+            # Flatten the list of lists
+            series_groups = [item for sublist in nested_results for item in sublist]
 
         # re-order series to get reproducible results
         series = [None] * len(sorted_group_idx)
