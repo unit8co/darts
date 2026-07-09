@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- 🚀 Added method `TorchForecastingModel.scale_batch_size()` to find the largest possible batch size for training or prediction with torch-based models. [#2905](https://github.com/unit8co/darts/pull/2905) by [Zhihao Dai](https://github.com/daidahao) and [Dennis Bader](https://github.com/dennisbader).
 - 🔴 Improved `TransformerModel` with proper encoder-decoder transformer architecture using teacher forcing during training and autoregressive inference, aligning the implementation with [Vaswani et al., 2017](https://arxiv.org/abs/1706.03762). Previously trained checkpoints are incompatible and must be retrained. [#1915](https://github.com/unit8co/darts/pull/1915) by [Jan Fidor](https://github.com/JanFidor) and [Dennis Bader](https://github.com/dennisbader).
 - Added a `CITATION.cff` file with the recommended citation metadata for Darts. [#3147](https://github.com/unit8co/darts/pull/3147) by [Zhihao Dai](https://github.com/daidahao).
 - Added `MultivariateModel` that adds multivariate forecasting support to any base local `ForecastingModel` by fitting one model per component. This is bypassed if the base model already supports multivariate forecasting. [#1917](https://github.com/unit8co/darts/pull/1917) by [Jan Fidor](https://github.com/JanFidor) and [Dennis Bader](https://github.com/dennisbader).
