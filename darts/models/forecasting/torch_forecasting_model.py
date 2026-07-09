@@ -73,7 +73,13 @@ from darts.utils.historical_forecasts.optimized_historical_forecasts_torch impor
 from darts.utils.likelihood_models.torch import TorchLikelihood
 from darts.utils.timeseries_generation import _build_forecast_series_from_schema
 from darts.utils.torch import random_method
-from darts.utils.ts_utils import get_single_series, seq2series, series2seq
+from darts.utils.ts_utils import (
+    SeriesType,
+    get_series_seq_type,
+    get_single_series,
+    seq2series,
+    series2seq,
+)
 from darts.utils.utils import _build_tqdm_iterator, _parallel_apply
 
 DEFAULT_DARTS_FOLDER = "darts_logs"
@@ -1624,14 +1630,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         init_val: int = 2,
         max_trials: int = 25,
         method: Literal["fit", "predict"] = "fit",
+        update_model: bool = True,
         **method_kwargs,
     ):
         """Find the largest possible batch size for training or prediction.
 
         A wrapper around PyTorch Lightning's `Tuner.scale_batch_size()`. Performs a batch size scaling test to
-        find the largest batch size to use for training or prediction. The batch size in the model would be updated
-        after this call. For more information on PyTorch Lightning's Tuner check out
+        find the largest batch size to use for training or prediction. For more information on PyTorch Lightning's
+        Tuner check out
         `this link <https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.tuner.tuning.Tuner.html>`_.
+
+        .. note::
+            By default, the model's batch size is automatically updated with the value found by the Tuner.
+            You can control this behavior with the ``update_model`` parameter.
 
         Example using a :class:`NBEATSModel`:
 
@@ -1640,6 +1651,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                 from darts.datasets import AirPassengersDataset
                 from darts.models import NBEATSModel
+
                 series = AirPassengersDataset().load().astype("float32")
                 train, val = series[:-18], series[-18:]
                 model = NBEATSModel(12, 6, random_state=42)
@@ -1656,25 +1668,24 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         series
-            A series or sequence of series serving as target (i.e. what the model will be trained to forecast)
+            A series or sequence of series serving as the target passed to ``method``.
         past_covariates
-            Optionally, a series or sequence of series specifying past-observed covariates
+            Optionally, a series or sequence of series specifying past-observed covariates passed to ``method``.
         future_covariates
-            Optionally, a series or sequence of series specifying future-known covariates
+            Optionally, a series or sequence of series specifying future-known covariates passed to ``method``.
         trainer
-            Optionally, a custom PyTorch-Lightning Trainer object to perform training. Using a custom ``trainer`` will
-            override Darts' default trainer.
+            Optionally, a custom PyTorch-Lightning Trainer object to perform training or prediction. Using a custom
+            ``trainer`` will override Darts' default trainer.
         verbose
-            Whether to print the progress. Ignored if there is a `ProgressBar` callback in
-            `pl_trainer_kwargs`.
+            Whether to print the progress. Ignored if there is a ``ProgressBar`` callback in ``pl_trainer_kwargs``.
         dataloader_kwargs
             Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instances. For more
             information on `DataLoader`, check out `this link
-            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
-            By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`__.
+            By default, Darts configures parameters ``(batch_size, shuffle, drop_last, collate_fn, pin_memory)``
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         mode
-            Search strategy to update batch size after each trial, either 'power' or 'binsearch'.
+            Search strategy to update batch size after each trial, either ``'power'`` or ``'binsearch'``.
         steps_per_trial
             Number of steps to take per trial.
         init_val
@@ -1682,40 +1693,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         max_trials
             Maximum number of batch size trials to run.
         method
-            Whether to scale the batch size for training (``"fit"``) or prediction (``"predict"``).
-            Default: ``"fit"``.
+            Whether to scale the batch size for training (``"fit"``) or prediction (``"predict"``). Default: ``"fit"``.
+        update_model
+            Whether to update the model's ``batch_size`` attribute with the value found by the tuner.
+            Default: ``True``.
         **method_kwargs
             Additional keyword arguments forwarded to the setup method corresponding to ``method``:
 
-            - When ``method="fit"``, these are forwarded to :func:`fit()` (and eventually to
-              ``_setup_for_fit_from_dataset``). Supported kwargs include ``val_series``,
-              ``val_past_covariates``, ``val_future_covariates``, ``sample_weight``, ``val_sample_weight``,
-              ``epochs``, and ``max_samples_per_ts``.
-            - When ``method="predict"``, these are forwarded to :func:`predict()` (and eventually to
-              ``_setup_for_predict``). Supported kwargs include ``n`` (required), ``roll_size``,
-              ``num_samples``, ``mc_dropout``, and ``predict_likelihood_parameters``.
+            - When ``method="fit"``, these are forwarded to :func:`fit()`.
+            - When ``method="predict"``, these are forwarded to :func:`predict()`.
 
         Returns
         -------
         batch_size
             The optimal batch size found by the tuner.
-
-        Examples
-        --------
-        >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.models import NBEATSModel
-        >>>>
-        >>> series = AirPassengersDataset().load().astype("f")
-        >>> train, val = series[:-18], series[-18:]
-        >>> model = NBEATSModel(12, 6, random_state=42)
-        >>> # run the batch size tuner for training
-        >>> model.scale_batch_size(series=train, val_series=val)
-        >>> # train the model with the suggested batch size
-        >>> model.fit(train, val_series=val, epochs=1)
-        >>> # run the batch size tuner for prediction
-        >>> model.scale_batch_size(series=train, method="predict", n=6)
-        >>> # predict with the suggested batch size
-        >>> model.predict(n=6, series=train)
         """
         if method == "fit":
             _, params = self._setup_for_fit_from_dataset(
@@ -1764,10 +1755,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 "Batch size scaling did not find a solution. "
                 f"Default batch size {self.batch_size} is kept."
             )
-        else:
-            logger.info(f"Batch size set to {batch_size}.")
+            batch_size = self.batch_size
+        elif update_model:
             self.batch_size = batch_size
-        return self.batch_size
+        return batch_size
 
     @random_method
     def predict(
@@ -1868,8 +1859,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             One or several time series containing the forecasts of ``series``, or the forecast of the training series
             if ``series`` is not specified and the model has been trained on a single series.
         """
-        called_with_single_series = isinstance(
-            series if series is not None else self.training_series, TimeSeries
+        called_with_single_series = (
+            get_series_seq_type(series if series is not None else self.training_series)
+            == SeriesType.SINGLE
         )
 
         params = self._setup_for_predict_from_dataset(

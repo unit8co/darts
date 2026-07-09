@@ -183,7 +183,7 @@ def get_single_series(
 
 
 def get_series_seq_type(
-    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]],
+    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None,
 ) -> SeriesType:
     """Returns the sequence type of `ts`.
 
