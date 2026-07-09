@@ -13,6 +13,7 @@ import itertools
 import logging
 import math
 import os
+import pickle
 from typing import Any
 from unittest.mock import patch
 
@@ -1346,6 +1347,55 @@ class TestTorchForecastingModel:
         loading_model.load_weights(ckpt_path)
         loading_model.fit(ts_float32)
         assert loading_model.model._dtype == torch.float32  # type: ignore
+
+    def test_verify_dtypes_matching_dtype_no_warning(self, caplog):
+        """`_verify_dtypes` must not warn when the current and expected dtypes are
+        value-equal, even if they are distinct object instances.
+
+        Reloading a model from a checkpoint yields a `train_sample` whose numpy
+        dtype is a freshly unpickled object. That object is value-equal to the
+        dtype of the inference sample but is not the *same* object, so an identity
+        check (`is not`) spuriously reported a data-type mismatch and warned even
+        though both dtypes were e.g. float32. See GH #3156.
+        """
+        model = DLinearModel(
+            input_chunk_length=4, output_chunk_length=1, n_epochs=1, **tfm_kwargs
+        )
+        model.fit(self.series.astype("float32"))
+
+        # emulate a checkpoint-reloaded train_sample: a value-equal but
+        # identity-distinct float32 dtype (what pickle round-tripping produces).
+        reloaded_dtype = pickle.loads(pickle.dumps(np.dtype(np.float32)))
+        assert reloaded_dtype == np.dtype(np.float32)
+        assert reloaded_dtype is not np.dtype(np.float32)
+        model.train_sample = (np.zeros((1, 1), dtype=reloaded_dtype),) + tuple(
+            model.train_sample[1:]
+        )
+
+        # an inference sample whose (single) array is a fresh float32 dtype
+        sample = (np.zeros((1, 1), dtype=np.float32),)
+
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            model._verify_dtypes(sample)
+        assert "different data type" not in caplog.text
+
+    def test_verify_dtypes_mismatched_dtype_warns(self, caplog):
+        """`_verify_dtypes` must still warn on a genuine dtype mismatch."""
+        model = DLinearModel(
+            input_chunk_length=4, output_chunk_length=1, n_epochs=1, **tfm_kwargs
+        )
+        model.fit(self.series.astype("float32"))
+        model.train_sample = (np.zeros((1, 1), dtype=np.float32),) + tuple(
+            model.train_sample[1:]
+        )
+
+        sample = (np.zeros((1, 1), dtype=np.float64),)
+
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            model._verify_dtypes(sample)
+        assert "different data type" in caplog.text
 
     def test_multi_steps_pipeline(self, tmpdir_fn):
         ts_training, ts_val = self.series.split_before(75)
