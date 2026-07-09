@@ -1,8 +1,6 @@
 import pytest
 
 from darts.tests.conftest import NF_AVAILABLE, TORCH_AVAILABLE
-from darts.utils.data import TorchInferenceDataset
-from darts.utils.data.torch_datasets._data_module import TorchDataModule
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -60,8 +58,10 @@ from darts.models import (
 from darts.models.components.layer_norm_variants import RINorm
 from darts.models.forecasting.global_baseline_models import _GlobalNaiveModel
 from darts.tests.conftest import tfm_kwargs, tfm_kwargs_dev
+from darts.utils.data.torch_datasets._data_module import TorchDataModule
 from darts.utils.data.torch_datasets.inference_dataset import (
     SequentialTorchInferenceDataset,
+    TorchInferenceDataset,
 )
 from darts.utils.data.torch_datasets.training_dataset import (
     SequentialTorchTrainingDataset,
