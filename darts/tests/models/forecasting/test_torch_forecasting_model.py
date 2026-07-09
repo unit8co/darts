@@ -2,7 +2,7 @@ import pytest
 
 from darts.tests.conftest import NF_AVAILABLE, TORCH_AVAILABLE
 from darts.utils.data import TorchInferenceDataset
-from darts.utils.data.torch_datasets.data_module import TorchDataModule
+from darts.utils.data.torch_datasets._data_module import TorchDataModule
 
 if not TORCH_AVAILABLE:
     pytest.skip(
