@@ -37,11 +37,9 @@ import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import torch
-from pytorch_lightning import LightningDataModule
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import ProgressBar
 from pytorch_lightning.tuner import Tuner
-from torch.utils.data import DataLoader
 
 from darts import TimeSeries
 from darts.dataprocessing.encoders import SequentialEncoder
@@ -58,6 +56,7 @@ from darts.utils.data import (
     TorchInferenceDataset,
     TorchTrainingDataset,
 )
+from darts.utils.data.torch_datasets.data_module import TorchDataModule
 from darts.utils.data.torch_datasets.utils import (
     TorchBatch,
     TorchInferenceDatasetOutput,
@@ -123,70 +122,6 @@ def _get_checkpoint_fname(work_dir, model_name, best=False):
 
     file_name = max(checklist, key=os.path.getctime)
     return os.path.basename(file_name)
-
-
-class _CustomDataModule(LightningDataModule):
-    def __init__(
-        self,
-        train_dataset: TorchTrainingDataset,
-        val_dataset: TorchTrainingDataset | None,
-        batch_size: int,
-        collate_fn: Callable,
-        dataloader_kwargs: dict[str, Any] | None,
-    ):
-        """Custom LightningDataModule to handle train and val dataloaders.
-
-        Parameters
-        ----------
-        train_dataset
-            Dataset for training.
-        val_dataset
-            Dataset for validation.
-        batch_size
-            Number of time series (input and output sequences) used in each training pass.
-        collate_fn
-            Function to collate samples into a batch.
-        dataloader_kwargs
-            Additional keyword arguments for DataLoader.
-        """
-        super().__init__()
-        self.train_dataset = train_dataset
-        self.val_dataset = val_dataset
-        if dataloader_kwargs is None:
-            dataloader_kwargs = dict()
-        self.batch_size = dataloader_kwargs.pop("batch_size", batch_size)
-        self.shuffle = dataloader_kwargs.pop("shuffle", True)
-
-        # setting drop_last to False makes the model see each sample at least once, and guarantee the presence of at
-        # least one batch no matter the chosen batch size
-        self.dataloader_kwargs = dict(
-            {
-                "pin_memory": True,
-                "drop_last": False,
-                "collate_fn": collate_fn,
-            },
-            **dataloader_kwargs,
-        )
-
-    def train_dataloader(self):
-        """Train dataloader."""
-        return DataLoader(
-            self.train_dataset,
-            batch_size=self.batch_size,
-            shuffle=self.shuffle,
-            **self.dataloader_kwargs,
-        )
-
-    def val_dataloader(self):
-        """Validation dataloader."""
-        if self.val_dataset is None:
-            return []
-        return DataLoader(
-            self.val_dataset,
-            batch_size=self.batch_size,
-            shuffle=False,
-            **self.dataloader_kwargs,
-        )
 
 
 class TorchForecastingModel(GlobalForecastingModel, ABC):
@@ -353,7 +288,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.output_dim: int | None = None
 
         self.n_epochs = n_epochs
-        self.batch_size = batch_size
+        self.batch_size: int = batch_size
 
         # get model name and work dir
         if model_name is None:
@@ -1324,7 +1259,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs: int = 0,
         dataloader_kwargs: dict[str, Any] | None = None,
         load_best: bool = False,
-    ) -> tuple[pl.Trainer, PLForecastingModule, LightningDataModule, bool]:
+    ) -> tuple[pl.Trainer, PLForecastingModule, TorchDataModule, bool]:
         """This method acts on `TorchTrainingDataset` inputs. It performs sanity checks, and sets up / returns the
         trainer, model, and datamodule required for training the model with `_train()`.
         """
@@ -1438,7 +1373,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 )
 
         # setup datamodule
-        datamodule = _CustomDataModule(
+        datamodule = TorchDataModule(
             train_dataset=train_dataset,
             val_dataset=val_dataset,
             batch_size=self.batch_size,
@@ -1464,7 +1399,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self,
         trainer: pl.Trainer,
         model: PLForecastingModule,
-        datamodule: LightningDataModule,
+        datamodule: TorchDataModule,
         load_best: bool = False,
     ) -> None:
         """
@@ -1676,31 +1611,26 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             update_attr=False,
         )
 
-    @random_method
     def scale_batch_size(
         self,
         series: TimeSeriesLike,
         past_covariates: TimeSeriesLike | None = None,
         future_covariates: TimeSeriesLike | None = None,
-        val_series: TimeSeriesLike | None = None,
-        val_past_covariates: TimeSeriesLike | None = None,
-        val_future_covariates: TimeSeriesLike | None = None,
-        sample_weight: TimeSeriesLike | str | None = None,
-        val_sample_weight: TimeSeriesLike | str | None = None,
         trainer: pl.Trainer | None = None,
         verbose: bool | None = None,
-        epochs: int = 0,
-        max_samples_per_ts: int | None = None,
         dataloader_kwargs: dict[str, Any] | None = None,
         mode: str = "power",
         steps_per_trial: int = 3,
         init_val: int = 2,
         max_trials: int = 25,
+        method: Literal["fit", "predict"] = "fit",
+        **method_kwargs,
     ):
-        """
+        """Find the largest possible batch size for training or prediction.
+
         A wrapper around PyTorch Lightning's `Tuner.scale_batch_size()`. Performs a batch size scaling test to
-        find the largest batch size to use for training. The batch size in the model would be updated after this
-        call. For more information on PyTorch Lightning's Tuner check out
+        find the largest batch size to use for training or prediction. The batch size in the model would be updated
+        after this call. For more information on PyTorch Lightning's Tuner check out
         `this link <https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.tuner.tuning.Tuner.html>`_.
 
         Example using a :class:`NBEATSModel`:
@@ -1710,14 +1640,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                 from darts.datasets import AirPassengersDataset
                 from darts.models import NBEATSModel
-
                 series = AirPassengersDataset().load().astype("float32")
                 train, val = series[:-18], series[-18:]
                 model = NBEATSModel(12, 6, random_state=42)
-                # run the batch size tuner
+                # run the batch size tuner for training
                 model.scale_batch_size(series=train, val_series=val)
                 # train the model with the suggested batch size
                 model.fit(train, val_series=val, epochs=1)
+                # run the batch size tuner for prediction
+                model.scale_batch_size(series=train, method="predict", n=6)
+                # predict with the suggested batch size
+                model.predict(n=6, series=train)
             ..
 
         Parameters
@@ -1728,43 +1661,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, a series or sequence of series specifying past-observed covariates
         future_covariates
             Optionally, a series or sequence of series specifying future-known covariates
-        val_series
-            Optionally, one or a sequence of validation target series, which will be used to compute the validation
-            loss throughout training and keep track of the best performing models.
-        val_past_covariates
-            Optionally, the past covariates corresponding to the validation series (must match ``covariates``)
-        val_future_covariates
-            Optionally, the future covariates corresponding to the validation series (must match ``covariates``)
-        sample_weight
-            Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
-            per label (each step in `output_chunk_length`), and per component.
-            If a series or sequence of series, then those weights are used. If the weight series only have a single
-            component / column, then the weights are applied globally to all components in `series`. Otherwise, for
-            component-specific weights, the number of components must match those of `series`.
-            If a string, then the weights are generated using built-in weighting functions. The available options are
-            `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
-            computed globally based on the length of the longest series in `series`. Then for each series, the weights
-            are extracted from the end of the global weights. This gives a common time weighting across all series.
-        val_sample_weight
-            Same as for `sample_weight` but for the evaluation dataset.
         trainer
             Optionally, a custom PyTorch-Lightning Trainer object to perform training. Using a custom ``trainer`` will
             override Darts' default trainer.
         verbose
             Whether to print the progress. Ignored if there is a `ProgressBar` callback in
             `pl_trainer_kwargs`.
-        epochs
-            If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
-            was provided to the model constructor.
-        max_samples_per_ts
-            Optionally, a maximum number of samples to use per time series. Models are trained in a supervised fashion
-            by constructing slices of (input, output) examples. On long time series, this can result in unnecessarily
-            large number of training samples. This parameter upper-bounds the number of training samples per time
-            series (taking only the most recent samples in each series). Leaving to None does not apply any
-            upper bound.
         dataloader_kwargs
-            Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instances for the
-            training and validation datasets. For more information on `DataLoader`, check out `this link
+            Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instances. For more
+            information on `DataLoader`, check out `this link
             <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
             By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
@@ -1776,28 +1681,73 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Initial batch size to try.
         max_trials
             Maximum number of batch size trials to run.
+        method
+            Whether to scale the batch size for training (``"fit"``) or prediction (``"predict"``).
+            Default: ``"fit"``.
+        **method_kwargs
+            Additional keyword arguments forwarded to the setup method corresponding to ``method``:
+
+            - When ``method="fit"``, these are forwarded to :func:`fit()` (and eventually to
+              ``_setup_for_fit_from_dataset``). Supported kwargs include ``val_series``,
+              ``val_past_covariates``, ``val_future_covariates``, ``sample_weight``, ``val_sample_weight``,
+              ``epochs``, and ``max_samples_per_ts``.
+            - When ``method="predict"``, these are forwarded to :func:`predict()` (and eventually to
+              ``_setup_for_predict``). Supported kwargs include ``n`` (required), ``roll_size``,
+              ``num_samples``, ``mc_dropout``, and ``predict_likelihood_parameters``.
 
         Returns
         -------
         batch_size
             The optimal batch size found by the tuner.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import NBEATSModel
+        >>>>
+        >>> series = AirPassengersDataset().load().astype("f")
+        >>> train, val = series[:-18], series[-18:]
+        >>> model = NBEATSModel(12, 6, random_state=42)
+        >>> # run the batch size tuner for training
+        >>> model.scale_batch_size(series=train, val_series=val)
+        >>> # train the model with the suggested batch size
+        >>> model.fit(train, val_series=val, epochs=1)
+        >>> # run the batch size tuner for prediction
+        >>> model.scale_batch_size(series=train, method="predict", n=6)
+        >>> # predict with the suggested batch size
+        >>> model.predict(n=6, series=train)
         """
-        _, params = self._setup_for_fit_from_dataset(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            sample_weight=sample_weight,
-            val_series=val_series,
-            val_past_covariates=val_past_covariates,
-            val_future_covariates=val_future_covariates,
-            val_sample_weight=val_sample_weight,
-            trainer=trainer,
-            verbose=verbose,
-            epochs=epochs,
-            max_samples_per_ts=max_samples_per_ts,
-            dataloader_kwargs=dataloader_kwargs,
-        )
-        trainer, model, datamodule, _ = self._setup_for_train(*params)
+        if method == "fit":
+            _, params = self._setup_for_fit_from_dataset(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                trainer=trainer,
+                verbose=verbose,
+                dataloader_kwargs=dataloader_kwargs,
+                **method_kwargs,
+            )
+            trainer, model, datamodule, _ = self._setup_for_train(*params)
+        elif method == "predict":
+            if "n" not in method_kwargs:
+                raise_log(
+                    ValueError("`n` is required when `method='predict'`."),
+                )
+            params = self._setup_for_predict_from_dataset(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                trainer=trainer,
+                verbose=verbose,
+                dataloader_kwargs=dataloader_kwargs,
+                **method_kwargs,
+            )
+            trainer, model, datamodule, *_ = self._setup_for_predict(*params)
+        else:
+            raise_log(
+                ValueError(f"Invalid `method` '{method}'. Must be 'fit' or 'predict'."),
+            )
+
         batch_size = Tuner(trainer).scale_batch_size(
             model=model,
             datamodule=datamodule,
@@ -1806,7 +1756,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             init_val=init_val,
             max_trials=max_trials,
             batch_arg_name="batch_size",
+            method=method,
         )
+
         if batch_size is None:
             logger.warning(
                 "Batch size scaling did not find a solution. "
@@ -1916,6 +1868,67 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             One or several time series containing the forecasts of ``series``, or the forecast of the training series
             if ``series`` is not specified and the model has been trained on a single series.
         """
+        called_with_single_series = isinstance(
+            series if series is not None else self.training_series, TimeSeries
+        )
+
+        params = self._setup_for_predict_from_dataset(
+            n=n,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            trainer=trainer,
+            batch_size=batch_size,
+            verbose=verbose,
+            n_jobs=n_jobs,
+            roll_size=roll_size,
+            num_samples=num_samples,
+            dataloader_kwargs=dataloader_kwargs,
+            mc_dropout=mc_dropout,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            show_warnings=show_warnings,
+            random_state=random_state,
+        )
+        predictions = self.predict_from_dataset(*params)
+
+        return predictions[0] if called_with_single_series else predictions
+
+    def _setup_for_predict_from_dataset(
+        self,
+        n: int,
+        series: TimeSeriesLike | None = None,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        trainer: pl.Trainer | None = None,
+        batch_size: int | None = None,
+        verbose: bool | None = None,
+        n_jobs: int = 1,
+        roll_size: int | None = None,
+        num_samples: int = 1,
+        dataloader_kwargs: dict[str, Any] | None = None,
+        mc_dropout: bool = False,
+        predict_likelihood_parameters: bool = False,
+        show_warnings: bool = True,
+        values_only: bool = False,
+        random_state: int | None = None,
+    ) -> tuple[
+        int,
+        TorchInferenceDataset,
+        pl.Trainer | None,
+        int | None,
+        bool | None,
+        int,
+        int | None,
+        int,
+        dict[str, Any] | None,
+        bool,
+        bool,
+        bool,
+        int | None,
+    ]:
+        """This method acts on ``TimeSeries`` inputs. It performs sanity checks, and sets up / returns the dataset
+        and additional inputs required for prediction with ``predict_from_dataset()``.
+        """
         if series is None:
             if self.training_series is None:
                 raise_log(
@@ -1928,9 +1941,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 )
             series = self.training_series
 
-        called_with_single_series = isinstance(series, TimeSeries)
-
-        # guarantee that all inputs are either list of TimeSeries or None
         series = series2seq(series)
 
         if past_covariates is None and self.past_covariate_series is not None:
@@ -1946,9 +1956,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if self.uses_static_covariates:
             self._verify_static_covariates(get_single_series(series).static_covariates)
 
-        # encoders are set when calling fit(), but not when calling fit_from_dataset()
-        # when covariates are loaded from model, they already contain the encodings: this is not a problem as the
-        # encoders regenerate the encodings
         if self.encoders is not None and self.encoders.encoding_available:
             past_covariates, future_covariates = self.generate_predict_encodings(
                 n=n,
@@ -1957,10 +1964,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 future_covariates=future_covariates,
             )
         super().predict(
-            n,
-            series,
-            past_covariates,
-            future_covariates,
+            n=n,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
             verbose=verbose,
@@ -1975,23 +1982,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             stride=0,
             bounds=None,
         )
-
-        predictions = self.predict_from_dataset(
-            n=n,
-            dataset=dataset,
-            trainer=trainer,
-            verbose=verbose,
-            batch_size=batch_size,
-            n_jobs=n_jobs,
-            roll_size=roll_size,
-            num_samples=num_samples,
-            dataloader_kwargs=dataloader_kwargs,
-            mc_dropout=mc_dropout,
-            predict_likelihood_parameters=predict_likelihood_parameters,
-            random_state=random_state,
+        return (
+            n,
+            dataset,
+            trainer,
+            batch_size,
+            verbose,
+            n_jobs,
+            roll_size,
+            num_samples,
+            dataloader_kwargs,
+            mc_dropout,
+            predict_likelihood_parameters,
+            values_only,
+            random_state,
         )
-
-        return predictions[0] if called_with_single_series else predictions
 
     @random_method
     def predict_from_dataset(
@@ -2073,7 +2078,51 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Sequence[TimeSeries]
             Returns one or more forecasts for time series.
         """
+        return self._predict(
+            *self._setup_for_predict(
+                n=n,
+                dataset=dataset,
+                trainer=trainer,
+                batch_size=batch_size,
+                verbose=verbose,
+                n_jobs=n_jobs,
+                roll_size=roll_size,
+                num_samples=num_samples,
+                dataloader_kwargs=dataloader_kwargs,
+                mc_dropout=mc_dropout,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+                random_state=random_state,
+                values_only=values_only,
+            ),
+        )
 
+    def _setup_for_predict(
+        self,
+        n: int,
+        dataset: TorchInferenceDataset,
+        trainer: pl.Trainer | None = None,
+        batch_size: int | None = None,
+        verbose: bool | None = None,
+        n_jobs: int = 1,
+        roll_size: int | None = None,
+        num_samples: int = 1,
+        dataloader_kwargs: dict[str, Any] | None = None,
+        mc_dropout: bool = False,
+        predict_likelihood_parameters: bool = False,
+        random_state: int | None = None,
+        values_only: bool = False,
+    ) -> tuple[
+        pl.Trainer,
+        PLForecastingModule,
+        TorchDataModule,
+        int,
+        bool | None,
+        bool,
+        bool,
+    ]:
+        """Validates inputs, configures the model's predict parameters, and sets up / returns the
+        trainer, model, datamodule and additional inputs required for prediction with `_predict()`.
+        """
         # we need to call super's super's method directly, because GlobalForecastingModel expects series:
         ForecastingModel.predict(self, n, num_samples)
 
@@ -2108,10 +2157,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             raise_log(ValueError("`num_samples` must be a positive integer."))
 
         # iterate through batches to produce predictions
-        batch_size = batch_size or self.batch_size
+        batch_size: int = batch_size or self.batch_size
 
         # set prediction parameters
-        self.model.set_predict_parameters(
+        model: PLForecastingModule = self.model
+        model.set_predict_parameters(
             n=n,
             num_samples=num_samples,
             roll_size=roll_size,
@@ -2120,29 +2170,42 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             mc_dropout=mc_dropout,
         )
 
-        dataloader_kwargs = dict(
-            {
-                "batch_size": batch_size,
-                "pin_memory": True,
-                "drop_last": False,
-                "collate_fn": self._batch_collate_fn,
-            },
-            **(dataloader_kwargs or {}),
-            **{"shuffle": False},
-        )
-
-        pred_loader = DataLoader(
-            dataset,
-            **dataloader_kwargs,
+        # setup datamodule; shuffle is forced to False for prediction
+        datamodule = TorchDataModule(
+            predict_dataset=dataset,
+            batch_size=batch_size,
+            collate_fn=self._batch_collate_fn,
+            dataloader_kwargs=dataloader_kwargs,
         )
 
         # set up trainer. use user supplied trainer or create a new trainer from scratch
-        self.trainer = self._setup_trainer(
-            trainer=trainer, model=self.model, verbose=verbose, epochs=self.n_epochs
+        trainer = self._setup_trainer(
+            trainer=trainer, model=model, verbose=verbose, epochs=self.n_epochs
+        )
+        self.trainer = trainer
+        return (
+            trainer,
+            model,
+            datamodule,
+            n_jobs,
+            verbose,
+            values_only,
+            predict_likelihood_parameters,
         )
 
+    def _predict(
+        self,
+        trainer: pl.Trainer,
+        model: PLForecastingModule,
+        datamodule: TorchDataModule,
+        n_jobs: int = 1,
+        verbose: bool | None = None,
+        values_only: bool = False,
+        predict_likelihood_parameters: bool = False,
+    ) -> Sequence[TimeSeries]:
+        """Performs the actual prediction using a configured trainer and datamodule."""
         # prediction output comes as list of batch tuples
-        out = self.trainer.predict(model=self.model, dataloaders=pred_loader)
+        out = trainer.predict(model=model, datamodule=datamodule)
         # each batch tuple has elements (prediction np.ndarray, series schema, prediction start time)
         predictions, series_schemas, pred_starts = [], [], []
 
