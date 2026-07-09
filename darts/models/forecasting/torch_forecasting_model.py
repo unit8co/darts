@@ -1066,7 +1066,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             future_covariates=seq2series(future_covariates),
             verbose=verbose,
         )
-        return self.fit_from_dataset(*params)
+        return self.fit_from_dataset(**params)
 
     def _setup_for_fit_from_dataset(
         self,
@@ -1091,15 +1091,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Sequence[TimeSeries] | None,
             Sequence[TimeSeries] | None,
         ],
-        tuple[
-            TorchTrainingDataset,
-            TorchTrainingDataset | None,
-            pl.Trainer | None,
-            bool | None,
-            int,
-            dict[str, Any] | None,
-            bool,
-        ],
+        dict[str, Any],
     ]:
         """This method acts on `TimeSeries` inputs. It performs sanity checks, and sets up / returns the datasets and
         additional inputs required for training the model with `fit_from_dataset()`.
@@ -1174,14 +1166,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         logger.info(f"Train dataset contains {len(train_dataset)} samples.")
 
         series_input = (series, past_covariates, future_covariates)
-        fit_from_ds_params = (
-            train_dataset,
-            val_dataset,
-            trainer,
-            verbose,
-            epochs,
-            dataloader_kwargs,
-            load_best,
+        fit_from_ds_params: dict[str, Any] = dict(
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            trainer=trainer,
+            verbose=verbose,
+            epochs=epochs,
+            dataloader_kwargs=dataloader_kwargs,
+            load_best=load_best,
         )
         return series_input, fit_from_ds_params
 
@@ -1244,7 +1236,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Fitted model.
         """
         self._train(
-            *self._setup_for_train(
+            **self._setup_for_train(
                 train_dataset=train_dataset,
                 val_dataset=val_dataset,
                 trainer=trainer,
@@ -1265,7 +1257,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs: int = 0,
         dataloader_kwargs: dict[str, Any] | None = None,
         load_best: bool = False,
-    ) -> tuple[pl.Trainer, PLForecastingModule, TorchDataModule, bool]:
+    ) -> dict[str, Any]:
         """This method acts on `TorchTrainingDataset` inputs. It performs sanity checks, and sets up / returns the
         trainer, model, and datamodule required for training the model with `_train()`.
         """
@@ -1399,7 +1391,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 f"discouraged. Consider model `{self.__class__.__name__}.load_weights()` to load the weights for "
                 f"fine-tuning."
             )
-        return trainer, model, datamodule, load_best
+
+        train_params: dict[str, Any] = dict(
+            trainer=trainer,
+            model=model,
+            datamodule=datamodule,
+            load_best=load_best,
+        )
+        return train_params
 
     def _train(
         self,
@@ -1604,10 +1603,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             max_samples_per_ts=max_samples_per_ts,
             dataloader_kwargs=dataloader_kwargs,
         )
-        trainer, model, datamodule, _ = self._setup_for_train(*params)
-        return Tuner(trainer).lr_find(
-            model,
-            datamodule=datamodule,
+        params = self._setup_for_train(**params)
+        return Tuner(params["trainer"]).lr_find(
+            model=params["model"],
+            datamodule=params["datamodule"],
             method="fit",
             min_lr=min_lr,
             max_lr=max_lr,
@@ -1718,7 +1717,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 dataloader_kwargs=dataloader_kwargs,
                 **method_kwargs,
             )
-            trainer, model, datamodule, _ = self._setup_for_train(*params)
+            params = self._setup_for_train(**params)
         elif method == "predict":
             if "n" not in method_kwargs:
                 raise_log(
@@ -1733,11 +1732,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 dataloader_kwargs=dataloader_kwargs,
                 **method_kwargs,
             )
-            trainer, model, datamodule, *_ = self._setup_for_predict(*params)
+            params = self._setup_for_predict(**params)
         else:
             raise_log(
                 ValueError(f"Invalid `method` '{method}'. Must be 'fit' or 'predict'."),
             )
+
+        trainer = params["trainer"]
+        model = params["model"]
+        datamodule = params["datamodule"]
 
         batch_size = Tuner(trainer).scale_batch_size(
             model=model,
@@ -1881,7 +1884,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             show_warnings=show_warnings,
             random_state=random_state,
         )
-        predictions = self.predict_from_dataset(*params)
+        predictions = self.predict_from_dataset(**params)
 
         return predictions[0] if called_with_single_series else predictions
 
@@ -1901,23 +1904,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         mc_dropout: bool = False,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
-        values_only: bool = False,
         random_state: int | None = None,
-    ) -> tuple[
-        int,
-        TorchInferenceDataset,
-        pl.Trainer | None,
-        int | None,
-        bool | None,
-        int,
-        int | None,
-        int,
-        dict[str, Any] | None,
-        bool,
-        bool,
-        bool,
-        int | None,
-    ]:
+    ) -> dict[str, Any]:
         """This method acts on ``TimeSeries`` inputs. It performs sanity checks, and sets up / returns the dataset
         and additional inputs required for prediction with ``predict_from_dataset()``.
         """
@@ -1933,6 +1921,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 )
             series = self.training_series
 
+        # guarantee that all inputs are either list of TimeSeries or None
         series = series2seq(series)
 
         if past_covariates is None and self.past_covariate_series is not None:
@@ -1948,6 +1937,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if self.uses_static_covariates:
             self._verify_static_covariates(get_single_series(series).static_covariates)
 
+        # encoders are set when calling fit(), but not when calling fit_from_dataset()
+        # when covariates are loaded from model, they already contain the encodings: this is not a problem as the
+        # encoders regenerate the encodings
         if self.encoders is not None and self.encoders.encoding_available:
             past_covariates, future_covariates = self.generate_predict_encodings(
                 n=n,
@@ -1956,10 +1948,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 future_covariates=future_covariates,
             )
         super().predict(
-            n=n,
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
+            n,
+            series,
+            past_covariates,
+            future_covariates,
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
             verbose=verbose,
@@ -1974,21 +1966,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             stride=0,
             bounds=None,
         )
-        return (
-            n,
-            dataset,
-            trainer,
-            batch_size,
-            verbose,
-            n_jobs,
-            roll_size,
-            num_samples,
-            dataloader_kwargs,
-            mc_dropout,
-            predict_likelihood_parameters,
-            values_only,
-            random_state,
+        predict_from_ds_params: dict[str, Any] = dict(
+            n=n,
+            dataset=dataset,
+            trainer=trainer,
+            verbose=verbose,
+            batch_size=batch_size,
+            n_jobs=n_jobs,
+            roll_size=roll_size,
+            num_samples=num_samples,
+            dataloader_kwargs=dataloader_kwargs,
+            mc_dropout=mc_dropout,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
         )
+        return predict_from_ds_params
 
     @random_method
     def predict_from_dataset(
@@ -2071,7 +2063,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Returns one or more forecasts for time series.
         """
         return self._predict(
-            *self._setup_for_predict(
+            **self._setup_for_predict(
                 n=n,
                 dataset=dataset,
                 trainer=trainer,
@@ -2103,15 +2095,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         predict_likelihood_parameters: bool = False,
         random_state: int | None = None,
         values_only: bool = False,
-    ) -> tuple[
-        pl.Trainer,
-        PLForecastingModule,
-        TorchDataModule,
-        int,
-        bool | None,
-        bool,
-        bool,
-    ]:
+    ) -> dict[str, Any]:
         """Validates inputs, configures the model's predict parameters, and sets up / returns the
         trainer, model, datamodule and additional inputs required for prediction with `_predict()`.
         """
@@ -2175,15 +2159,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             trainer=trainer, model=model, verbose=verbose, epochs=self.n_epochs
         )
         self.trainer = trainer
-        return (
-            trainer,
-            model,
-            datamodule,
-            n_jobs,
-            verbose,
-            values_only,
-            predict_likelihood_parameters,
+        predict_params: dict[str, Any] = dict(
+            trainer=trainer,
+            model=model,
+            datamodule=datamodule,
+            n_jobs=n_jobs,
+            verbose=verbose,
+            values_only=values_only,
+            predict_likelihood_parameters=predict_likelihood_parameters,
         )
+        return predict_params
 
     def _predict(
         self,

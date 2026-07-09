@@ -2491,9 +2491,9 @@ class TestTorchForecastingModel:
                 val_series=self.series[: icl + ocl + 2],
                 stride=stride,
             )
-            input_args = fit_patch.call_args.args
-            train_set = input_args[0]
-            val_set = input_args[1]
+            input_args = fit_patch.call_args.kwargs
+            train_set = input_args["train_dataset"]
+            val_set = input_args["val_dataset"]
             assert len(train_set) == len(val_set) == math.ceil(3 / stride)
             assert train_set.stride == val_set.stride == stride
 
