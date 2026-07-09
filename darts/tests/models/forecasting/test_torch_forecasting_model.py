@@ -1,6 +1,8 @@
 import pytest
 
 from darts.tests.conftest import NF_AVAILABLE, TORCH_AVAILABLE
+from darts.utils.data import TorchInferenceDataset
+from darts.utils.data.torch_datasets._data_module import TorchDataModule
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -21,6 +23,7 @@ import pandas as pd
 import pytest
 import pytorch_lightning as pl
 import torch
+from pytorch_lightning import LightningDataModule
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from pytorch_lightning.loggers.logger import DummyLogger
 from pytorch_lightning.tuner.lr_finder import _LRFinder
@@ -1769,13 +1772,15 @@ class TestTorchForecastingModel:
 
         with patch("pytorch_lightning.Trainer.fit") as fit_patch:
             model.fit(train_series, val_series=val_series)
-            assert "train_dataloaders" in fit_patch.call_args.kwargs
-            assert "val_dataloaders" in fit_patch.call_args.kwargs
 
-            train_dl = fit_patch.call_args.kwargs["train_dataloaders"]
+            datamodule = fit_patch.call_args.kwargs["datamodule"]
+            assert isinstance(datamodule, TorchDataModule)
+            train_dl = datamodule.train_dataloader()
             assert isinstance(train_dl, DataLoader)
-            val_dl = fit_patch.call_args.kwargs["val_dataloaders"]
+            assert isinstance(train_dl.dataset, TorchTrainingDataset)
+            val_dl = datamodule.val_dataloader()
             assert isinstance(val_dl, DataLoader)
+            assert isinstance(val_dl.dataset, TorchTrainingDataset)
 
             dl_defaults = {
                 "batch_size": model.batch_size,
@@ -1794,27 +1799,46 @@ class TestTorchForecastingModel:
             # check that overwriting the dataloader kwargs works
             dl_custom = dict(dl_defaults, **{"batch_size": 50, "drop_last": True})
             model.fit(train_series, val_series=val_series, dataloader_kwargs=dl_custom)
-            train_dl = fit_patch.call_args.kwargs["train_dataloaders"]
-            val_dl = fit_patch.call_args.kwargs["val_dataloaders"]
+
+            datamodule = fit_patch.call_args.kwargs["datamodule"]
+            train_dl = datamodule.train_dataloader()
+            val_dl = datamodule.val_dataloader()
             assert all([getattr(train_dl, k) == v for k, v in dl_custom.items()])
             assert all([getattr(val_dl, k) == v for k, v in dl_custom.items()])
+
+            # no prediction data loader
+            assert datamodule.predict_dataloader() == []
 
         with patch("pytorch_lightning.Trainer.predict") as pred_patch:
             # calling predict with the patch will raise an error, but we only need to
             # check the dataloader setup
             with pytest.raises(Exception):
                 model.predict(n=1)
-            assert "dataloaders" in pred_patch.call_args.kwargs
-            pred_dl = pred_patch.call_args.kwargs["dataloaders"]
+            assert "datamodule" in pred_patch.call_args.kwargs
+            datamodule = pred_patch.call_args.kwargs["datamodule"]
+            assert isinstance(datamodule, TorchDataModule)
+            pred_dl = datamodule.predict_dataloader()
             assert isinstance(pred_dl, DataLoader)
+            assert isinstance(pred_dl.dataset, TorchInferenceDataset)
+
+            dl_defaults = {
+                "batch_size": model.batch_size,
+                "pin_memory": True,
+                "drop_last": False,
+                "collate_fn": model._batch_collate_fn,
+            }
             assert all([getattr(pred_dl, k) == v for k, v in dl_defaults.items()])
             # shuffle=False gives sequential sampler
-            assert isinstance(val_dl.sampler, SequentialSampler)
+            assert isinstance(pred_dl.sampler, SequentialSampler)
+
+            # no train or validation data loaders
+            assert datamodule.train_dataloader() == []
+            assert datamodule.val_dataloader() == []
 
             # check that overwriting the dataloader kwargs works
             with pytest.raises(Exception):
                 model.predict(n=1, dataloader_kwargs=dl_custom)
-            pred_dl = pred_patch.call_args.kwargs["dataloaders"]
+            pred_dl = pred_patch.call_args.kwargs["datamodule"].predict_dataloader()
             assert all([getattr(pred_dl, k) == v for k, v in dl_custom.items()])
 
     def test_dataloader_kwargs_fit_predict(self):
@@ -1916,8 +1940,11 @@ class TestTorchForecastingModel:
         # fit called only once
         assert fit_patch.call_count == 1
 
-        train_ds = fit_patch.call_args[1]["train_dataloaders"].dataset
-        val_dl = fit_patch.call_args[1]["val_dataloaders"]
+        datamodule = fit_patch.call_args.kwargs["datamodule"]
+        assert isinstance(datamodule, LightningDataModule)
+
+        train_ds = datamodule.train_dataloader().dataset
+        val_dl = datamodule.val_dataloader()
         assert val_dl is not None
         val_ds = val_dl.dataset
 
@@ -2464,9 +2491,9 @@ class TestTorchForecastingModel:
                 val_series=self.series[: icl + ocl + 2],
                 stride=stride,
             )
-            input_args = fit_patch.call_args.args
-            train_set = input_args[0]
-            val_set = input_args[1]
+            input_args = fit_patch.call_args.kwargs
+            train_set = input_args["train_dataset"]
+            val_set = input_args["val_dataset"]
             assert len(train_set) == len(val_set) == math.ceil(3 / stride)
             assert train_set.stride == val_set.stride == stride
 
@@ -3331,3 +3358,181 @@ class TestTorchForecastingModelInputValidation:
                 n=2,
                 predict_likelihood_parameters=True,
             )
+
+
+class TestBatchSizeScaler:
+    icl = 1
+    ocl = 1
+    model_kwargs: dict[str, Any] = {
+        "input_chunk_length": icl,
+        "output_chunk_length": ocl,
+        "n_epochs": 1,
+        "random_state": 42,
+        **tfm_kwargs,
+    }
+    n_samples = 64
+    train_series = tg.sine_timeseries(length=n_samples + ocl)
+    val_series = tg.sine_timeseries(length=icl + ocl)
+    batch_size_kwargs = {"steps_per_trial": 1, "init_val": 32}
+
+    def test_scale_batch_size(self):
+        model = DLinearModel(**self.model_kwargs)
+        assert model.batch_size == 32
+        # find the largest batch size (the dataset is too small to reach OOM, so we expect it to use all available
+        # samples in one batch); we trust the lightning Tuner to work properly
+        res = model.scale_batch_size(
+            series=self.train_series,
+            val_series=self.val_series,
+            **self.batch_size_kwargs,
+        )
+
+        # verify results and that the model uses the new batch size
+        assert res == self.n_samples
+        assert res == model.batch_size
+
+        # verify that batch size finder bypassed the `fit` logic
+        assert model.model is None
+        assert not model._fit_called
+        # cannot predict with an untrained model
+        with pytest.raises(ValueError):
+            model.predict(n=3, series=self.train_series)
+
+        # check that batch size could indeed fit in the memory
+        model.fit(self.train_series, val_series=self.val_series)
+        assert model.batch_size == res
+        assert model.epochs_trained == 1
+
+        # check that results are reproducible
+        model = DLinearModel(**self.model_kwargs)
+        res2 = model.scale_batch_size(
+            series=self.train_series,
+            val_series=self.val_series,
+            **self.batch_size_kwargs,
+        )
+        assert res == res2
+
+    @pytest.mark.parametrize("prediction_mode", ["regular", "autoreg", "lkl_params"])
+    def test_scale_batch_size_predict(self, prediction_mode):
+        model_kwargs = copy.deepcopy(self.model_kwargs)
+
+        pred_kwargs = {"n": self.ocl, "predict_likelihood_parameters": False}
+        n_comps_expected = 1
+        if prediction_mode == "lkl_params":
+            model_kwargs["likelihood"] = QuantileRegression([0.1, 0.5, 0.9])
+            pred_kwargs["predict_likelihood_parameters"] = True
+            n_comps_expected = 3
+        elif prediction_mode == "autoreg":
+            pred_kwargs["n"] = self.ocl * 2
+
+        series = [tg.sine_timeseries(length=self.icl + self.ocl)] * self.n_samples
+
+        # first train a model so we can predict
+        model = DLinearModel(**model_kwargs)
+
+        model.fit(series)
+        assert model.epochs_trained == 1
+
+        # find the largest batch size (the dataset is too small to reach OOM, so we expect it to use all available
+        # samples in one batch); we trust the lightning Tuner to work properly
+        res = model.scale_batch_size(
+            series=series,
+            method="predict",
+            **self.batch_size_kwargs,
+            **pred_kwargs,
+        )
+
+        # verify results and that the model uses the new batch size
+        assert res == self.n_samples
+        assert res == model.batch_size
+
+        # check that batch size could indeed be used for prediction
+        preds = model.predict(
+            series=series,
+            **pred_kwargs,
+        )
+        assert len(preds) == self.n_samples
+        assert all(len(pred) == pred_kwargs["n"] for pred in preds)
+        assert all(
+            pred.shape == (pred_kwargs["n"], n_comps_expected, 1) for pred in preds
+        )
+
+        # check that results are reproducible
+        model2 = DLinearModel(**model_kwargs)
+        model2.fit(series)
+        res2 = model2.scale_batch_size(
+            series=series, method="predict", **self.batch_size_kwargs, **pred_kwargs
+        )
+        assert res == res2
+
+    def test_scale_batch_size_predict_requires_n(self):
+        model = DLinearModel(**self.model_kwargs)
+        model.fit(self.train_series[:3])
+        with pytest.raises(ValueError, match="`n` is required"):
+            model.scale_batch_size(series=self.train_series, method="predict")
+
+    def test_scale_batch_size_invalid_method(self):
+        model = DLinearModel(**self.model_kwargs)
+        with pytest.raises(ValueError, match="Invalid `method`"):
+            model.scale_batch_size(series=self.train_series, method="invalid")
+
+    @pytest.mark.parametrize("probabilistic", [True, False])
+    def test_scale_batch_size_no_updates_pre_fitting(self, probabilistic):
+        model_kwargs = copy.deepcopy(self.model_kwargs)
+        pred_kwargs = {"num_samples": 1}
+        if probabilistic:
+            model_kwargs["likelihood"] = QuantileRegression([0.1, 0.5, 0.9])
+            pred_kwargs["num_samples"] = 10
+
+        model = DLinearModel(**model_kwargs, batch_size=self.n_samples)
+
+        # train for 1 epoch with default batch size
+        series = self.train_series
+        model.fit(series, epochs=5)
+        preds = model.predict(n=3, series=series, **pred_kwargs)
+
+        # find the largest batch size, should not change the model weights
+        model = DLinearModel(**model_kwargs)
+        assert model.batch_size == 32
+        res = model.scale_batch_size(series=series)
+        assert model.model is None
+        assert res == self.n_samples
+        assert model.batch_size == res
+        model.fit(series, epochs=5)
+
+        # verify that weights have not changed after batch size scaling
+        preds_after = model.predict(n=3, series=series, **pred_kwargs)
+        assert isinstance(preds, TimeSeries) and isinstance(preds_after, TimeSeries)
+        assert np.isclose(preds.values(), preds_after.values()).all()
+
+    @pytest.mark.parametrize("probabilistic", [True, False])
+    def test_scale_batch_size_no_updates_post_fitting(self, probabilistic):
+        model_kwargs = copy.deepcopy(self.model_kwargs)
+        pred_kwargs = {"num_samples": 1}
+        if probabilistic:
+            model_kwargs["likelihood"] = QuantileRegression([0.1, 0.5, 0.9])
+            pred_kwargs["num_samples"] = 10
+        model = DLinearModel(**model_kwargs)
+
+        # train for 1 epoch with default batch size
+        series = self.train_series[:5]
+        model.fit(series)
+        assert model.epochs_trained == 1
+        # store the predictions after 1 epoch
+        preds = model.predict(n=3, series=series, **pred_kwargs)
+
+        if probabilistic:
+            # probabilistic models advance the internal random state for every predict() call;
+            # we have to train a fresh model to get to the same random state downstream
+            model = DLinearModel(**model_kwargs)
+            model.fit(series)
+
+        # find the largest batch size, should not change the model weights
+        res = model.scale_batch_size(series=series)
+        # verify that batch size is set
+        assert isinstance(res, int)
+        assert res == model.batch_size
+
+        # verify that weights have not changed after batch size scaling
+        preds_after = model.predict(n=3, series=series, **pred_kwargs)
+        assert isinstance(preds, TimeSeries) and isinstance(preds_after, TimeSeries)
+        assert np.isclose(preds.values(), preds_after.values()).all()
