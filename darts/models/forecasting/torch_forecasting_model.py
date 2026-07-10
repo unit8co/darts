@@ -836,7 +836,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 else None
             )
             current_dtype = observed_dtypes.pop()
-            if current_dtype is not expected_dtype:
+            if current_dtype != expected_dtype:
                 logger.warning(
                     f"Dataset output has a different data type than the dataset the model was trained on; "
                     f"current data type: {current_dtype}, expected data type: {expected_dtype}. "

@@ -1,8 +1,6 @@
 import pytest
 
 from darts.tests.conftest import NF_AVAILABLE, TORCH_AVAILABLE
-from darts.utils.data import TorchInferenceDataset
-from darts.utils.data.torch_datasets._data_module import TorchDataModule
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -60,8 +58,10 @@ from darts.models import (
 from darts.models.components.layer_norm_variants import RINorm
 from darts.models.forecasting.global_baseline_models import _GlobalNaiveModel
 from darts.tests.conftest import tfm_kwargs, tfm_kwargs_dev
+from darts.utils.data.torch_datasets._data_module import TorchDataModule
 from darts.utils.data.torch_datasets.inference_dataset import (
     SequentialTorchInferenceDataset,
+    TorchInferenceDataset,
 )
 from darts.utils.data.torch_datasets.training_dataset import (
     SequentialTorchTrainingDataset,
@@ -1349,6 +1349,36 @@ class TestTorchForecastingModel:
         loading_model.load_weights(ckpt_path)
         loading_model.fit(ts_float32)
         assert loading_model.model._dtype == torch.float32  # type: ignore
+
+    def test_verify_dtypes_after_loading(self, tmpdir_fn, caplog):
+        """Check that dtype warnings work also with loaded models"""
+        model = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            n_epochs=1,
+            save_checkpoints=True,
+            force_reset=True,
+            model_name="test_model",
+            work_dir=tmpdir_fn,
+            **tfm_kwargs,
+        )
+        series = self.series.astype("float32")
+        model.fit(series, val_series=series)
+        model_loaded = model.load_from_checkpoint(
+            model_name=model.model_name,
+            work_dir=tmpdir_fn,
+        )
+
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            _ = model_loaded.predict(n=1)
+        assert "different data type" not in caplog.text
+
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            with pytest.raises(Exception):
+                _ = model_loaded.predict(n=1, series=self.series.astype("float64"))
+        assert "different data type" in caplog.text
 
     def test_multi_steps_pipeline(self, tmpdir_fn):
         ts_training, ts_val = self.series.split_before(75)

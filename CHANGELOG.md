@@ -24,6 +24,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 - Fixed an issue where calling `TorchForecastingModel.fit()` (for models that do not actually have to be trained) required input series to also cover the `output_chunk_length` time frame, even though the model never trains on future targets in that mode. Now input series only need to satisfy the prediction/inference input chunk length requirements. This affects all foundation models without fine-tuning, as well as global naive models. [#3154](https://github.com/unit8co/darts/pull/3154) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug in the `TorchForecastingModel.predict()` which emitted an invalid "different data type" warning for correct input data types after loading a model from a checkpoint. [#3158](https://github.com/unit8co/darts/pull/3158) by [Mohit Arvind Khakharia](https://github.com/Mohit-Ak).
 - Fixed a bug in `TimeSeries.window_transform()` where `treat_na` (`"dropna"`, scalar, `"bfill"`) did not handle NaN values introduced by functions that produce NaN even when `min_periods` is satisfied (e.g., `std` with `ddof=1` on a single value). [#3151](https://github.com/unit8co/darts/pull/3151) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
