@@ -3514,43 +3514,79 @@ def _scale_batch_size_memory(
 
     profiling_sizes: list[int] = []
     peak_mems: list[int] = []
-    for i, bs in enumerate(candidate_sizes):
-        # Once we have >= 2 points, check whether the *next* size is
-        # predicted to exceed the budget.  If so, stop early to avoid a
-        # likely OOM during profiling.
+    for bs in candidate_sizes:
+        # --- Pre-trial guard: avoid profiling sizes beyond what we'd
+        # ever recommend.  This is critical because memory monitors
+        # (especially MPS/CPU) can underreport, so comparing predicted
+        # memory against the budget is not reliable.  Instead, we check
+        # whether the next candidate exceeds the *predicted optimal
+        # batch size* -- if so, profiling it is pointless and risky. ---
         if len(profiling_sizes) >= 2:
             _base, _slope = _least_squares_fit(profiling_sizes, peak_mems)
             if _slope > 0:
-                predicted_mem = _base + _slope * bs
-                if predicted_mem > memory_budget:
+                predicted_optimal = int((memory_budget * 0.95 - _base) / _slope)
+                if bs > predicted_optimal:
                     logger.info(
-                        f"Predicted memory for batch_size={bs} "
-                        f"({predicted_mem / (1024**2):.1f} MB) exceeds budget "
-                        f"({memory_budget / (1024**2):.1f} MB). "
-                        f"Stopping profiling early after {len(profiling_sizes)} points."
+                        f"Current estimate predicts optimal "
+                        f"batch_size={predicted_optimal}; next candidate "
+                        f"{bs} exceeds that. Stopping profiling early "
+                        f"after {len(profiling_sizes)} points."
                     )
                     break
+        elif len(profiling_sizes) == 1 and peak_mems[0] > 0:
+            # With 1 point, assume linear: mem ~ peak[0]/bs[0] * bs.
+            # Predict the optimal under that assumption.
+            per_sample_est = peak_mems[0] / profiling_sizes[0]
+            predicted_optimal = int(memory_budget * 0.95 / per_sample_est)
+            if bs > predicted_optimal:
+                logger.info(
+                    f"Single-point estimate predicts optimal "
+                    f"batch_size~={predicted_optimal}; next candidate "
+                    f"{bs} exceeds that. Stopping profiling early "
+                    f"after 1 point."
+                )
+                break
 
-        peak = _profile_batch_size(
-            model_self,
-            model,
-            datamodule,
-            method,
-            steps_per_trial,
-            bs,
-            monitor,
-            device_type,
-            garbage_collection_fn,
-        )
+        # --- Run profiling trial, catching memory errors ---
+        try:
+            peak = _profile_batch_size(
+                model_self,
+                model,
+                datamodule,
+                method,
+                steps_per_trial,
+                bs,
+                monitor,
+                device_type,
+                garbage_collection_fn,
+            )
+        except RuntimeError as exc:
+            if is_memory_error_fn(exc):
+                garbage_collection_fn(device_type)
+                logger.info(
+                    f"Profiling trial OOM at batch_size={bs}. "
+                    f"Using {len(profiling_sizes)} successful profiling "
+                    f"point(s) collected so far."
+                )
+                break
+            raise
+
         profiling_sizes.append(bs)
         peak_mems.append(peak)
 
     if len(profiling_sizes) < 2 or all(m == peak_mems[0] for m in peak_mems):
+        if len(profiling_sizes) == 1 and peak_mems[0] <= memory_budget:
+            return profiling_sizes[0]
         logger.warning(
             "Memory profiling did not yield measurable differences across "
-            f"batch sizes {profiling_sizes}. Returning the largest profiled size."
+            f"batch sizes {profiling_sizes}. Returning the largest profiled "
+            f"size that fits in memory."
         )
-        return profiling_sizes[-1]
+        # Return the largest profiled size that fits in the budget
+        for bs, mem in reversed(list(zip(profiling_sizes, peak_mems))):
+            if mem <= memory_budget:
+                return bs
+        return profiling_sizes[0]
 
     base_mem, per_sample_mem = _least_squares_fit(profiling_sizes, peak_mems)
 
