@@ -1638,22 +1638,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         max_trials: int = 25,
         method: Literal["fit", "predict"] = "fit",
         update_model: bool = True,
-        memory_budget: int | float | str | None = None,
         **method_kwargs,
     ):
         """Find the largest possible batch size for training or prediction.
 
         Performs a batch size scaling test to find the largest batch size that
-        fits in device memory.  Three search strategies are available:
+        fits in device memory.  Two search strategies are available:
 
         - ``"power"`` (default): doubles the batch size until an OOM error
           occurs, then halves once and returns.
         - ``"binsearch"``: same initial doubling, followed by a binary search
           between the last successful and the first failing batch size.
-        - ``"memory"``: profiles actual device memory usage with two small
-          trial runs, extrapolates the per-sample memory cost, and computes
-          the optimal batch size for a given ``memory_budget``.  Works on
-          all device backends (CUDA, MPS, XPU, CPU).
 
         .. note::
             By default, the model's batch size is automatically updated with
@@ -1702,24 +1697,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         mode
             Search strategy to update batch size after each trial:
-            ``'power'``, ``'binsearch'``, or ``'memory'``.
+            ``'power'`` or ``'binsearch'``.
         steps_per_trial
             Number of steps to take per trial.
         init_val
             Initial batch size to try.
         max_trials
-            Maximum number of batch size trials to run (used by ``'power'``
-            and ``'binsearch'`` modes).
+            Maximum number of batch size trials to run.
         method
             Whether to scale the batch size for training (``"fit"``) or prediction (``"predict"``). Default: ``"fit"``.
         update_model
             Whether to update the model's ``batch_size`` attribute with the value found by the scaler.
             Default: ``True``.
-        memory_budget
-            Memory budget for the ``'memory'`` mode.  Accepts an ``int``
-            (bytes), ``float`` (bytes), or a human-readable string such as
-            ``"8GB"`` or ``"4096MB"``.  When ``None`` (default), the budget
-            defaults to 90 % of total device memory.  Ignored by other modes.
         **method_kwargs
             Additional keyword arguments forwarded to the setup method corresponding to ``method``:
 
@@ -1731,14 +1720,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         batch_size
             The optimal batch size found by the scaler.
         """
-        from darts.utils.torch import (
-            MemoryMonitor,
-            garbage_collection,
-            is_memory_error,
-            parse_memory_budget,
-        )
+        from darts.utils.torch import garbage_collection, is_memory_error
 
-        valid_modes = ("power", "binsearch", "memory")
+        valid_modes = ("power", "binsearch")
         if mode not in valid_modes:
             raise_log(
                 ValueError(f"Invalid `mode` '{mode}'. Must be one of {valid_modes}."),
@@ -1797,41 +1781,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
             return self.batch_size
 
-        if mode in ("power", "binsearch"):
-            batch_size = _scale_batch_size_oom(
-                model_self=self,
-                model=model,
-                datamodule=datamodule,
-                method=method,
-                mode=mode,
-                steps_per_trial=steps_per_trial,
-                init_val=init_val,
-                max_trials=max_trials,
-                dataset_size=dataset_size,
-                device_type=device_type,
-                is_memory_error_fn=is_memory_error,
-                garbage_collection_fn=garbage_collection,
-            )
-        else:
-            budget_bytes = (
-                parse_memory_budget(memory_budget)
-                if memory_budget is not None
-                else None
-            )
-            batch_size = _scale_batch_size_memory(
-                model_self=self,
-                model=model,
-                datamodule=datamodule,
-                method=method,
-                steps_per_trial=steps_per_trial,
-                init_val=init_val,
-                dataset_size=dataset_size,
-                device_type=device_type,
-                memory_budget=budget_bytes,
-                monitor_cls=MemoryMonitor,
-                is_memory_error_fn=is_memory_error,
-                garbage_collection_fn=garbage_collection,
-            )
+        batch_size = _scale_batch_size_oom(
+            model_self=self,
+            model=model,
+            datamodule=datamodule,
+            method=method,
+            mode=mode,
+            steps_per_trial=steps_per_trial,
+            init_val=init_val,
+            max_trials=max_trials,
+            dataset_size=dataset_size,
+            device_type=device_type,
+            is_memory_error_fn=is_memory_error,
+            garbage_collection_fn=garbage_collection,
+        )
 
         if batch_size is None:
             logger.warning(
@@ -3398,256 +3361,6 @@ def _run_binsearch_scaling(
                 raise
 
     return new_size
-
-
-def _profile_batch_size(
-    model_self: "TorchForecastingModel",
-    model: PLForecastingModule,
-    datamodule: TorchDataModule,
-    method: str,
-    steps_per_trial: int,
-    batch_size: int,
-    monitor,
-    device_type: str,
-    garbage_collection_fn,
-) -> int:
-    """Run a single profiling trial and return peak memory usage in bytes."""
-    garbage_collection_fn(device_type)
-    monitor.empty_cache()
-    monitor.reset_peak_memory()
-    _run_batch_trial(model_self, model, datamodule, method, steps_per_trial, batch_size)
-    return monitor.get_peak_memory()
-
-
-def _generate_profiling_sizes(
-    init_val: int,
-    dataset_size: int | None,
-    n_points: int = 5,
-) -> list[int]:
-    """Generate geometrically-spaced batch sizes for memory profiling.
-
-    Produces up to ``n_points`` distinct batch sizes starting from
-    ``init_val`` with a 2x growth factor, clamped to ``dataset_size``.
-    """
-    sizes = []
-    bs = init_val
-    for _ in range(n_points):
-        if dataset_size is not None:
-            bs = min(bs, dataset_size)
-        if bs not in sizes:
-            sizes.append(bs)
-        if dataset_size is not None and bs >= dataset_size:
-            break
-        bs *= 2
-    return sizes
-
-
-def _least_squares_fit(
-    batch_sizes: list[int],
-    peak_mems: list[int],
-) -> tuple[float, float]:
-    """Ordinary least-squares fit of ``mem = base + per_sample * batch_size``.
-
-    Returns ``(base, per_sample)``.  Uses the normal-equation closed form
-    so we don't need numpy/scipy.
-    """
-    n = len(batch_sizes)
-    sum_x = sum(batch_sizes)
-    sum_y = sum(peak_mems)
-    sum_xx = sum(x * x for x in batch_sizes)
-    sum_xy = sum(x * y for x, y in zip(batch_sizes, peak_mems))
-
-    denom = n * sum_xx - sum_x * sum_x
-    if denom == 0:
-        return float(sum_y) / n, 0.0
-
-    per_sample = (n * sum_xy - sum_x * sum_y) / denom
-    base = (sum_y - per_sample * sum_x) / n
-    return base, per_sample
-
-
-def _scale_batch_size_memory(
-    model_self: "TorchForecastingModel",
-    model: PLForecastingModule,
-    datamodule: TorchDataModule,
-    method: str,
-    steps_per_trial: int,
-    init_val: int,
-    dataset_size: int | None,
-    device_type: str,
-    memory_budget: int | None,
-    monitor_cls,
-    is_memory_error_fn,
-    garbage_collection_fn,
-) -> int:
-    """Memory-budget-based batch size scaling.
-
-    Profiles memory usage at multiple geometrically-spaced batch sizes,
-    fits a linear model ``mem = base + per_sample * batch_size`` via
-    least-squares regression, and solves for the largest batch size that
-    fits within ``memory_budget``.  A safety margin of 5 % is applied to
-    account for non-linear overhead that the linear model cannot capture.
-    """
-    import math
-
-    device = torch.device(device_type)
-    monitor = monitor_cls(device)
-
-    if memory_budget is None:
-        total = monitor.get_total_memory()
-        if total <= 0:
-            raise_log(
-                ValueError(
-                    "Could not determine total device memory. "
-                    "Please provide `memory_budget` explicitly."
-                ),
-            )
-        memory_budget = int(total * 0.9)
-        logger.info(
-            f"No memory_budget specified. Using 90% of device memory: "
-            f"{memory_budget / (1024**3):.2f} GB"
-        )
-
-    candidate_sizes = _generate_profiling_sizes(init_val, dataset_size)
-    if len(candidate_sizes) < 2:
-        return candidate_sizes[0]
-
-    profiling_sizes: list[int] = []
-    peak_mems: list[int] = []
-    for bs in candidate_sizes:
-        # --- Pre-trial guard: avoid profiling sizes beyond what we'd
-        # ever recommend.  This is critical because memory monitors
-        # (especially MPS/CPU) can underreport, so comparing predicted
-        # memory against the budget is not reliable.  Instead, we check
-        # whether the next candidate exceeds the *predicted optimal
-        # batch size* -- if so, profiling it is pointless and risky. ---
-        if len(profiling_sizes) >= 2:
-            _base, _slope = _least_squares_fit(profiling_sizes, peak_mems)
-            if _slope > 0:
-                predicted_optimal = int((memory_budget * 0.95 - _base) / _slope)
-                if bs > predicted_optimal:
-                    logger.info(
-                        f"Current estimate predicts optimal "
-                        f"batch_size={predicted_optimal}; next candidate "
-                        f"{bs} exceeds that. Stopping profiling early "
-                        f"after {len(profiling_sizes)} points."
-                    )
-                    break
-        elif len(profiling_sizes) == 1 and peak_mems[0] > 0:
-            # With 1 point, assume linear: mem ~ peak[0]/bs[0] * bs.
-            # Predict the optimal under that assumption.
-            per_sample_est = peak_mems[0] / profiling_sizes[0]
-            predicted_optimal = int(memory_budget * 0.95 / per_sample_est)
-            if bs > predicted_optimal:
-                logger.info(
-                    f"Single-point estimate predicts optimal "
-                    f"batch_size~={predicted_optimal}; next candidate "
-                    f"{bs} exceeds that. Stopping profiling early "
-                    f"after 1 point."
-                )
-                break
-
-        # --- Run profiling trial, catching memory errors ---
-        try:
-            peak = _profile_batch_size(
-                model_self,
-                model,
-                datamodule,
-                method,
-                steps_per_trial,
-                bs,
-                monitor,
-                device_type,
-                garbage_collection_fn,
-            )
-        except RuntimeError as exc:
-            if is_memory_error_fn(exc):
-                garbage_collection_fn(device_type)
-                logger.info(
-                    f"Profiling trial OOM at batch_size={bs}. "
-                    f"Using {len(profiling_sizes)} successful profiling "
-                    f"point(s) collected so far."
-                )
-                break
-            raise
-
-        profiling_sizes.append(bs)
-        peak_mems.append(peak)
-
-    if len(profiling_sizes) < 2 or all(m == peak_mems[0] for m in peak_mems):
-        if len(profiling_sizes) == 1 and peak_mems[0] <= memory_budget:
-            return profiling_sizes[0]
-        logger.warning(
-            "Memory profiling did not yield measurable differences across "
-            f"batch sizes {profiling_sizes}. Returning the largest profiled "
-            f"size that fits in memory."
-        )
-        # Return the largest profiled size that fits in the budget
-        for bs, mem in reversed(list(zip(profiling_sizes, peak_mems))):
-            if mem <= memory_budget:
-                return bs
-        return profiling_sizes[0]
-
-    base_mem, per_sample_mem = _least_squares_fit(profiling_sizes, peak_mems)
-
-    if per_sample_mem <= 0:
-        logger.warning(
-            "Least-squares fit yielded non-positive per-sample memory "
-            f"({per_sample_mem:.1f} bytes). Returning the largest profiled size."
-        )
-        return profiling_sizes[-1]
-
-    safety_margin = 0.95
-    effective_budget = memory_budget * safety_margin
-
-    optimal = int(math.floor((effective_budget - base_mem) / per_sample_mem))
-    optimal = max(1, optimal)
-    if dataset_size is not None:
-        optimal = min(optimal, dataset_size)
-
-    logger.info(
-        f"Memory profiling ({len(profiling_sizes)} points: {profiling_sizes}): "
-        f"base={base_mem / (1024**2):.1f} MB, "
-        f"per_sample={per_sample_mem / (1024**2):.2f} MB, "
-        f"budget={memory_budget / (1024**3):.2f} GB "
-        f"(with {(1 - safety_margin) * 100:.0f}% safety margin) -> "
-        f"optimal batch_size={optimal}"
-    )
-
-    # --- Verification trial ---
-    garbage_collection_fn(device_type)
-    monitor.empty_cache()
-    try:
-        _run_batch_trial(
-            model_self,
-            model,
-            datamodule,
-            method,
-            steps_per_trial,
-            optimal,
-        )
-        return optimal
-    except RuntimeError as exception:
-        if is_memory_error_fn(exception):
-            garbage_collection_fn(device_type)
-            logger.warning(
-                f"Verification trial failed at batch_size={optimal}. "
-                f"Falling back to binary search between {init_val} and {optimal}."
-            )
-            return _run_binsearch_scaling(
-                model_self=model_self,
-                model=model,
-                datamodule=datamodule,
-                method=method,
-                steps_per_trial=steps_per_trial,
-                init_val=init_val,
-                max_trials=15,
-                dataset_size=dataset_size,
-                device_type=device_type,
-                is_memory_error_fn=is_memory_error_fn,
-                garbage_collection_fn=garbage_collection_fn,
-            )
-        raise
 
 
 """

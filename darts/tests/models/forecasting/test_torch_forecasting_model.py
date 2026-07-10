@@ -3578,20 +3578,6 @@ class TestBatchSizeScaler:
         assert isinstance(preds, TimeSeries) and isinstance(preds_after, TimeSeries)
         assert np.isclose(preds.values(), preds_after.values()).all()
 
-    def test_scale_batch_size_memory_mode(self):
-        model = DLinearModel(**self.model_kwargs)
-        # test memory mode with an explicit budget (large enough for the tiny dataset)
-        res = model.scale_batch_size(
-            series=self.train_series,
-            mode="memory",
-            memory_budget="2GB",
-            init_val=2,
-            steps_per_trial=1,
-        )
-        assert isinstance(res, int)
-        assert res >= 1
-        assert res == model.batch_size
-
     def test_is_memory_error(self):
         from darts.utils.torch import is_memory_error
 
@@ -3622,26 +3608,3 @@ class TestBatchSizeScaler:
         # torch.cuda.OutOfMemoryError if available
         if hasattr(torch.cuda, "OutOfMemoryError"):
             assert is_memory_error(torch.cuda.OutOfMemoryError("OOM"))
-
-    def test_parse_memory_budget(self):
-        from darts.utils.torch import parse_memory_budget
-
-        assert parse_memory_budget(1024) == 1024
-        assert parse_memory_budget(1024.5) == 1024
-        assert parse_memory_budget("1024") == 1024
-        assert parse_memory_budget("1KB") == 1024
-        assert parse_memory_budget("1MB") == 1024**2
-        assert parse_memory_budget("1GB") == 1024**3
-        assert parse_memory_budget("0.5GB") == 1024**3 // 2
-        assert parse_memory_budget("8GB") == 8 * 1024**3
-
-    def test_memory_monitor_cpu(self):
-        from darts.utils.torch import MemoryMonitor
-
-        monitor = MemoryMonitor(torch.device("cpu"))
-        total = monitor.get_total_memory()
-        assert total > 0
-
-        monitor.reset_peak_memory()
-        peak = monitor.get_peak_memory()
-        assert isinstance(peak, int)
