@@ -3400,6 +3400,72 @@ def _run_binsearch_scaling(
     return new_size
 
 
+def _profile_batch_size(
+    model_self: "TorchForecastingModel",
+    model: PLForecastingModule,
+    datamodule: TorchDataModule,
+    method: str,
+    steps_per_trial: int,
+    batch_size: int,
+    monitor,
+    device_type: str,
+    garbage_collection_fn,
+) -> int:
+    """Run a single profiling trial and return peak memory usage in bytes."""
+    garbage_collection_fn(device_type)
+    monitor.empty_cache()
+    monitor.reset_peak_memory()
+    _run_batch_trial(model_self, model, datamodule, method, steps_per_trial, batch_size)
+    return monitor.get_peak_memory()
+
+
+def _generate_profiling_sizes(
+    init_val: int,
+    dataset_size: int | None,
+    n_points: int = 5,
+) -> list[int]:
+    """Generate geometrically-spaced batch sizes for memory profiling.
+
+    Produces up to ``n_points`` distinct batch sizes starting from
+    ``init_val`` with a 2x growth factor, clamped to ``dataset_size``.
+    """
+    sizes = []
+    bs = init_val
+    for _ in range(n_points):
+        if dataset_size is not None:
+            bs = min(bs, dataset_size)
+        if bs not in sizes:
+            sizes.append(bs)
+        if dataset_size is not None and bs >= dataset_size:
+            break
+        bs *= 2
+    return sizes
+
+
+def _least_squares_fit(
+    batch_sizes: list[int],
+    peak_mems: list[int],
+) -> tuple[float, float]:
+    """Ordinary least-squares fit of ``mem = base + per_sample * batch_size``.
+
+    Returns ``(base, per_sample)``.  Uses the normal-equation closed form
+    so we don't need numpy/scipy.
+    """
+    n = len(batch_sizes)
+    sum_x = sum(batch_sizes)
+    sum_y = sum(peak_mems)
+    sum_xx = sum(x * x for x in batch_sizes)
+    sum_xy = sum(x * y for x, y in zip(batch_sizes, peak_mems))
+
+    denom = n * sum_xx - sum_x * sum_x
+    if denom == 0:
+        return float(sum_y) / n, 0.0
+
+    per_sample = (n * sum_xy - sum_x * sum_y) / denom
+    base = (sum_y - per_sample * sum_x) / n
+    return base, per_sample
+
+
 def _scale_batch_size_memory(
     model_self: "TorchForecastingModel",
     model: PLForecastingModule,
@@ -3416,9 +3482,11 @@ def _scale_batch_size_memory(
 ) -> int:
     """Memory-budget-based batch size scaling.
 
-    Profiles memory usage at two batch sizes, fits a linear model
-    ``mem = base + per_sample * batch_size``, and solves for the largest
-    batch size that fits within ``memory_budget``.
+    Profiles memory usage at multiple geometrically-spaced batch sizes,
+    fits a linear model ``mem = base + per_sample * batch_size`` via
+    least-squares regression, and solves for the largest batch size that
+    fits within ``memory_budget``.  A safety margin of 5 % is applied to
+    account for non-linear overhead that the linear model cannot capture.
     """
     import math
 
@@ -3440,57 +3508,73 @@ def _scale_batch_size_memory(
             f"{memory_budget / (1024**3):.2f} GB"
         )
 
-    b1 = init_val
-    b2 = init_val * 2
+    candidate_sizes = _generate_profiling_sizes(init_val, dataset_size)
+    if len(candidate_sizes) < 2:
+        return candidate_sizes[0]
 
-    if dataset_size is not None:
-        b1 = min(b1, dataset_size)
-        b2 = min(b2, dataset_size)
-    if b1 == b2:
-        return b1
+    profiling_sizes: list[int] = []
+    peak_mems: list[int] = []
+    for i, bs in enumerate(candidate_sizes):
+        # Once we have >= 2 points, check whether the *next* size is
+        # predicted to exceed the budget.  If so, stop early to avoid a
+        # likely OOM during profiling.
+        if len(profiling_sizes) >= 2:
+            _base, _slope = _least_squares_fit(profiling_sizes, peak_mems)
+            if _slope > 0:
+                predicted_mem = _base + _slope * bs
+                if predicted_mem > memory_budget:
+                    logger.info(
+                        f"Predicted memory for batch_size={bs} "
+                        f"({predicted_mem / (1024**2):.1f} MB) exceeds budget "
+                        f"({memory_budget / (1024**2):.1f} MB). "
+                        f"Stopping profiling early after {len(profiling_sizes)} points."
+                    )
+                    break
 
-    # --- Profile batch_size = b1 ---
-    garbage_collection_fn(device_type)
-    monitor.empty_cache()
-    monitor.reset_peak_memory()
-    _run_batch_trial(model_self, model, datamodule, method, steps_per_trial, b1)
-    peak_mem_1 = monitor.get_peak_memory()
-
-    # --- Profile batch_size = b2 ---
-    garbage_collection_fn(device_type)
-    monitor.empty_cache()
-    monitor.reset_peak_memory()
-    _run_batch_trial(model_self, model, datamodule, method, steps_per_trial, b2)
-    peak_mem_2 = monitor.get_peak_memory()
-
-    delta_b = b2 - b1
-    if delta_b <= 0 or peak_mem_2 <= peak_mem_1:
-        logger.warning(
-            "Memory profiling did not yield a measurable difference "
-            f"between batch sizes {b1} and {b2}. "
-            "Falling back to the larger profiled batch size."
+        peak = _profile_batch_size(
+            model_self,
+            model,
+            datamodule,
+            method,
+            steps_per_trial,
+            bs,
+            monitor,
+            device_type,
+            garbage_collection_fn,
         )
-        return b2
+        profiling_sizes.append(bs)
+        peak_mems.append(peak)
 
-    per_sample_mem = (peak_mem_2 - peak_mem_1) / delta_b
-    base_mem = peak_mem_1 - per_sample_mem * b1
+    if len(profiling_sizes) < 2 or all(m == peak_mems[0] for m in peak_mems):
+        logger.warning(
+            "Memory profiling did not yield measurable differences across "
+            f"batch sizes {profiling_sizes}. Returning the largest profiled size."
+        )
+        return profiling_sizes[-1]
+
+    base_mem, per_sample_mem = _least_squares_fit(profiling_sizes, peak_mems)
 
     if per_sample_mem <= 0:
         logger.warning(
-            "Computed per-sample memory is non-positive. "
-            "Falling back to the larger profiled batch size."
+            "Least-squares fit yielded non-positive per-sample memory "
+            f"({per_sample_mem:.1f} bytes). Returning the largest profiled size."
         )
-        return b2
+        return profiling_sizes[-1]
 
-    optimal = int(math.floor((memory_budget - base_mem) / per_sample_mem))
+    safety_margin = 0.95
+    effective_budget = memory_budget * safety_margin
+
+    optimal = int(math.floor((effective_budget - base_mem) / per_sample_mem))
     optimal = max(1, optimal)
     if dataset_size is not None:
         optimal = min(optimal, dataset_size)
 
     logger.info(
-        f"Memory profiling: base={base_mem / (1024**2):.1f} MB, "
+        f"Memory profiling ({len(profiling_sizes)} points: {profiling_sizes}): "
+        f"base={base_mem / (1024**2):.1f} MB, "
         f"per_sample={per_sample_mem / (1024**2):.2f} MB, "
-        f"budget={memory_budget / (1024**3):.2f} GB -> "
+        f"budget={memory_budget / (1024**3):.2f} GB "
+        f"(with {(1 - safety_margin) * 100:.0f}% safety margin) -> "
         f"optimal batch_size={optimal}"
     )
 
@@ -3512,7 +3596,7 @@ def _scale_batch_size_memory(
             garbage_collection_fn(device_type)
             logger.warning(
                 f"Verification trial failed at batch_size={optimal}. "
-                f"Falling back to binary search between {b1} and {optimal}."
+                f"Falling back to binary search between {init_val} and {optimal}."
             )
             return _run_binsearch_scaling(
                 model_self=model_self,
@@ -3520,7 +3604,7 @@ def _scale_batch_size_memory(
                 datamodule=datamodule,
                 method=method,
                 steps_per_trial=steps_per_trial,
-                init_val=b1,
+                init_val=init_val,
                 max_trials=15,
                 dataset_size=dataset_size,
                 device_type=device_type,
