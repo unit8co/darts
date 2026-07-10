@@ -118,6 +118,21 @@ _MEMORY_ERROR_PATTERNS = [
 ]
 
 
+def _is_single_memory_error(exception: BaseException) -> bool:
+    """Check a single exception (no chain walking) for memory-related messages."""
+    if hasattr(torch.cuda, "OutOfMemoryError") and isinstance(
+        exception, torch.cuda.OutOfMemoryError
+    ):
+        return True
+
+    if isinstance(exception, RuntimeError):
+        msg = str(exception)
+        if any(p.search(msg) for p in _MEMORY_ERROR_PATTERNS):
+            return True
+
+    return False
+
+
 def is_memory_error(exception: BaseException) -> bool:
     """Check whether an exception is related to device/CPU memory exhaustion.
 
@@ -126,16 +141,21 @@ def is_memory_error(exception: BaseException) -> bool:
     buffer-size errors raised by kernels such as
     ``nn.functional.scaled_dot_product_attention`` and generic allocation
     failures across all backends (CUDA, MPS, XPU, CPU).
-    """
-    if hasattr(torch.cuda, "OutOfMemoryError") and isinstance(
-        exception, torch.cuda.OutOfMemoryError
-    ):
-        return True
 
-    if not isinstance(exception, RuntimeError):
-        return False
-    msg = str(exception)
-    return any(p.search(msg) for p in _MEMORY_ERROR_PATTERNS)
+    Walks the full exception chain (``__cause__`` and ``__context__``) so that
+    memory errors wrapped by PyTorch Lightning, ``ProcessRaisedException``, or
+    other re-raise wrappers are still detected.
+    """
+    seen: set[int] = set()
+    current: BaseException | None = exception
+    while current is not None and id(current) not in seen:
+        if _is_single_memory_error(current):
+            return True
+        seen.add(id(current))
+        current = (
+            current.__cause__ if current.__cause__ is not None else current.__context__
+        )
+    return False
 
 
 # ---------------------------------------------------------------------------

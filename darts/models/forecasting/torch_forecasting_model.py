@@ -3279,7 +3279,7 @@ def _run_power_scaling(
                 f"Batch size {last_successful_size} succeeded, "
                 f"trying batch size {new_size}"
             )
-        except RuntimeError as exception:
+        except Exception as exception:
             if is_memory_error_fn(exception):
                 garbage_collection_fn(device_type)
                 new_size = max(1, new_size // 2)
@@ -3348,7 +3348,7 @@ def _run_binsearch_scaling(
                 f"Batch size {last_successful_size} succeeded, "
                 f"trying batch size {new_size}"
             )
-        except RuntimeError as exception:
+        except Exception as exception:
             if is_memory_error_fn(exception):
                 garbage_collection_fn(device_type)
                 high = new_size

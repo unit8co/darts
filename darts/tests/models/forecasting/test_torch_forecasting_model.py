@@ -3608,3 +3608,28 @@ class TestBatchSizeScaler:
         # torch.cuda.OutOfMemoryError if available
         if hasattr(torch.cuda, "OutOfMemoryError"):
             assert is_memory_error(torch.cuda.OutOfMemoryError("OOM"))
+
+        # chained exceptions: memory RuntimeError wrapped in a non-RuntimeError
+        wrapper = Exception("subprocess failed")
+        wrapper.__cause__ = RuntimeError("Invalid buffer size: 11.32 GiB")
+        assert is_memory_error(wrapper)
+
+        # chained via __context__ (implicit chaining)
+        wrapper2 = Exception("training loop error")
+        wrapper2.__context__ = RuntimeError(
+            "CUDA out of memory. Tried to allocate 4 GiB"
+        )
+        assert is_memory_error(wrapper2)
+
+        # deeply nested chain
+        inner = RuntimeError("Allocation on device failed")
+        mid = RuntimeError("forward pass error")
+        mid.__cause__ = inner
+        outer = Exception("ProcessRaisedException")
+        outer.__cause__ = mid
+        assert is_memory_error(outer)
+
+        # chained non-memory errors should still not match
+        wrapper3 = Exception("something went wrong")
+        wrapper3.__cause__ = RuntimeError("some other error")
+        assert not is_memory_error(wrapper3)
