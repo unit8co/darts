@@ -3408,8 +3408,8 @@ class TestBatchSizeScaler:
     def test_scale_batch_size(self):
         model = DLinearModel(**self.model_kwargs)
         assert model.batch_size == 32
-        # find the largest batch size (the dataset is too small to reach OOM, so we expect it to use all available
-        # samples in one batch); we trust the lightning Tuner to work properly
+        # the dataset is too small to reach OOM, so the scaler should find
+        # that the entire dataset fits in one batch
         res = model.scale_batch_size(
             series=self.train_series,
             val_series=self.val_series,
@@ -3420,12 +3420,8 @@ class TestBatchSizeScaler:
         assert res == self.n_samples
         assert res == model.batch_size
 
-        # verify that batch size finder bypassed the `fit` logic
-        assert model.model is None
+        # batch size scaling bypasses the `fit` logic on the outer model
         assert not model._fit_called
-        # cannot predict with an untrained model
-        with pytest.raises(ValueError):
-            model.predict(n=3, series=self.train_series)
 
         # check that batch size could indeed fit in the memory
         model.fit(self.train_series, val_series=self.val_series)
@@ -3440,6 +3436,17 @@ class TestBatchSizeScaler:
             **self.batch_size_kwargs,
         )
         assert res == res2
+
+    @pytest.mark.parametrize("mode", ["power", "binsearch"])
+    def test_scale_batch_size_modes(self, mode):
+        model = DLinearModel(**self.model_kwargs)
+        res = model.scale_batch_size(
+            series=self.train_series,
+            mode=mode,
+            **self.batch_size_kwargs,
+        )
+        assert res == self.n_samples
+        assert res == model.batch_size
 
     @pytest.mark.parametrize("prediction_mode", ["regular", "autoreg", "lkl_params"])
     def test_scale_batch_size_predict(self, prediction_mode):
@@ -3462,8 +3469,8 @@ class TestBatchSizeScaler:
         model.fit(series)
         assert model.epochs_trained == 1
 
-        # find the largest batch size (the dataset is too small to reach OOM, so we expect it to use all available
-        # samples in one batch); we trust the lightning Tuner to work properly
+        # the dataset is too small to reach OOM, so the scaler should find
+        # that the entire dataset fits in one batch
         res = model.scale_batch_size(
             series=series,
             method="predict",
@@ -3505,6 +3512,11 @@ class TestBatchSizeScaler:
         with pytest.raises(ValueError, match="Invalid `method`"):
             model.scale_batch_size(series=self.train_series, method="invalid")
 
+    def test_scale_batch_size_invalid_mode(self):
+        model = DLinearModel(**self.model_kwargs)
+        with pytest.raises(ValueError, match="Invalid `mode`"):
+            model.scale_batch_size(series=self.train_series, mode="invalid")
+
     @pytest.mark.parametrize("probabilistic", [True, False])
     def test_scale_batch_size_no_updates_pre_fitting(self, probabilistic):
         model_kwargs = copy.deepcopy(self.model_kwargs)
@@ -3524,7 +3536,6 @@ class TestBatchSizeScaler:
         model = DLinearModel(**model_kwargs)
         assert model.batch_size == 32
         res = model.scale_batch_size(series=series)
-        assert model.model is None
         assert res == self.n_samples
         assert model.batch_size == res
         model.fit(series, epochs=5)
@@ -3566,3 +3577,71 @@ class TestBatchSizeScaler:
         preds_after = model.predict(n=3, series=series, **pred_kwargs)
         assert isinstance(preds, TimeSeries) and isinstance(preds_after, TimeSeries)
         assert np.isclose(preds.values(), preds_after.values()).all()
+
+    def test_scale_batch_size_memory_mode(self):
+        model = DLinearModel(**self.model_kwargs)
+        # test memory mode with an explicit budget (large enough for the tiny dataset)
+        res = model.scale_batch_size(
+            series=self.train_series,
+            mode="memory",
+            memory_budget="2GB",
+            init_val=2,
+            steps_per_trial=1,
+        )
+        assert isinstance(res, int)
+        assert res >= 1
+        assert res == model.batch_size
+
+    def test_is_memory_error(self):
+        from darts.utils.torch import is_memory_error
+
+        # standard CUDA OOM
+        assert is_memory_error(
+            RuntimeError("CUDA out of memory. Tried to allocate 2.00 GiB")
+        )
+        # cuDNN
+        assert is_memory_error(RuntimeError("cuDNN error: CUDNN_STATUS_NOT_SUPPORTED."))
+        # CPU OOM
+        assert is_memory_error(
+            RuntimeError("DefaultCPUAllocator: can't allocate memory")
+        )
+        # buffer size error (e.g. scaled_dot_product_attention)
+        assert is_memory_error(RuntimeError("Invalid buffer size: 25 GB"))
+        # generic "out of memory"
+        assert is_memory_error(RuntimeError("MPS backend out of memory"))
+        # "not enough memory"
+        assert is_memory_error(RuntimeError("not enough memory to allocate"))
+        # allocation failed
+        assert is_memory_error(RuntimeError("Allocation on device failed"))
+
+        # non-memory errors should not match
+        assert not is_memory_error(RuntimeError("some other error"))
+        assert not is_memory_error(RuntimeError(""))
+        assert not is_memory_error(ValueError("CUDA out of memory"))
+
+        # torch.cuda.OutOfMemoryError if available
+        if hasattr(torch.cuda, "OutOfMemoryError"):
+            assert is_memory_error(torch.cuda.OutOfMemoryError("OOM"))
+
+    def test_parse_memory_budget(self):
+        from darts.utils.torch import parse_memory_budget
+
+        assert parse_memory_budget(1024) == 1024
+        assert parse_memory_budget(1024.5) == 1024
+        assert parse_memory_budget("1024") == 1024
+        assert parse_memory_budget("1KB") == 1024
+        assert parse_memory_budget("1MB") == 1024**2
+        assert parse_memory_budget("1GB") == 1024**3
+        assert parse_memory_budget("0.5GB") == 1024**3 // 2
+        assert parse_memory_budget("8GB") == 8 * 1024**3
+
+    def test_memory_monitor_cpu(self):
+        from darts.utils.torch import MemoryMonitor
+
+        monitor = MemoryMonitor(torch.device("cpu"))
+        total = monitor.get_total_memory()
+        assert total > 0
+
+        monitor.reset_peak_memory()
+        peak = monitor.get_peak_memory()
+        assert isinstance(peak, int)

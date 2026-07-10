@@ -39,7 +39,6 @@ import pytorch_lightning as pl
 import torch
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import ProgressBar
-from pytorch_lightning.tuner import Tuner
 
 from darts import TimeSeries
 from darts.dataprocessing.encoders import SequentialEncoder
@@ -1604,6 +1603,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             dataloader_kwargs=dataloader_kwargs,
         )
         params = self._setup_for_train(**params)
+        from pytorch_lightning.tuner import Tuner
+
         return Tuner(params["trainer"]).lr_find(
             model=params["model"],
             datamodule=params["datamodule"],
@@ -1630,18 +1631,27 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         max_trials: int = 25,
         method: Literal["fit", "predict"] = "fit",
         update_model: bool = True,
+        memory_budget: int | float | str | None = None,
         **method_kwargs,
     ):
         """Find the largest possible batch size for training or prediction.
 
-        A wrapper around PyTorch Lightning's `Tuner.scale_batch_size()`. Performs a batch size scaling test to
-        find the largest batch size to use for training or prediction. For more information on PyTorch Lightning's
-        Tuner check out
-        `this link <https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.tuner.tuning.Tuner.html>`_.
+        Performs a batch size scaling test to find the largest batch size that
+        fits in device memory.  Three search strategies are available:
+
+        - ``"power"`` (default): doubles the batch size until an OOM error
+          occurs, then halves once and returns.
+        - ``"binsearch"``: same initial doubling, followed by a binary search
+          between the last successful and the first failing batch size.
+        - ``"memory"``: profiles actual device memory usage with two small
+          trial runs, extrapolates the per-sample memory cost, and computes
+          the optimal batch size for a given ``memory_budget``.  Works on
+          all device backends (CUDA, MPS, XPU, CPU).
 
         .. note::
-            By default, the model's batch size is automatically updated with the value found by the Tuner.
-            You can control this behavior with the ``update_model`` parameter.
+            By default, the model's batch size is automatically updated with
+            the value found by the scaler.  You can control this behavior with
+            the ``update_model`` parameter.
 
         Example using a :class:`NBEATSModel`:
 
@@ -1654,11 +1664,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 series = AirPassengersDataset().load().astype("float32")
                 train, val = series[:-18], series[-18:]
                 model = NBEATSModel(12, 6, random_state=42)
-                # run the batch size tuner for training
+                # run the batch size scaler for training
                 model.scale_batch_size(series=train, val_series=val)
                 # train the model with the suggested batch size
                 model.fit(train, val_series=val, epochs=1)
-                # run the batch size tuner for prediction
+                # run the batch size scaler for prediction
                 model.scale_batch_size(series=train, method="predict", n=6)
                 # predict with the suggested batch size
                 model.predict(n=6, series=train)
@@ -1684,18 +1694,25 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             By default, Darts configures parameters ``(batch_size, shuffle, drop_last, collate_fn, pin_memory)``
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         mode
-            Search strategy to update batch size after each trial, either ``'power'`` or ``'binsearch'``.
+            Search strategy to update batch size after each trial:
+            ``'power'``, ``'binsearch'``, or ``'memory'``.
         steps_per_trial
             Number of steps to take per trial.
         init_val
             Initial batch size to try.
         max_trials
-            Maximum number of batch size trials to run.
+            Maximum number of batch size trials to run (used by ``'power'``
+            and ``'binsearch'`` modes).
         method
             Whether to scale the batch size for training (``"fit"``) or prediction (``"predict"``). Default: ``"fit"``.
         update_model
-            Whether to update the model's ``batch_size`` attribute with the value found by the tuner.
+            Whether to update the model's ``batch_size`` attribute with the value found by the scaler.
             Default: ``True``.
+        memory_budget
+            Memory budget for the ``'memory'`` mode.  Accepts an ``int``
+            (bytes), ``float`` (bytes), or a human-readable string such as
+            ``"8GB"`` or ``"4096MB"``.  When ``None`` (default), the budget
+            defaults to 90 % of total device memory.  Ignored by other modes.
         **method_kwargs
             Additional keyword arguments forwarded to the setup method corresponding to ``method``:
 
@@ -1705,8 +1722,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Returns
         -------
         batch_size
-            The optimal batch size found by the tuner.
+            The optimal batch size found by the scaler.
         """
+        from darts.utils.torch import (
+            MemoryMonitor,
+            garbage_collection,
+            is_memory_error,
+            parse_memory_budget,
+        )
+
+        valid_modes = ("power", "binsearch", "memory")
+        if mode not in valid_modes:
+            raise_log(
+                ValueError(f"Invalid `mode` '{mode}'. Must be one of {valid_modes}."),
+            )
+
         if method == "fit":
             _, params = self._setup_for_fit_from_dataset(
                 series=series,
@@ -1738,20 +1768,63 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 ValueError(f"Invalid `method` '{method}'. Must be 'fit' or 'predict'."),
             )
 
-        trainer = params["trainer"]
-        model = params["model"]
-        datamodule = params["datamodule"]
+        pl_trainer: pl.Trainer = params["trainer"]
+        model: PLForecastingModule = params["model"]
+        datamodule: TorchDataModule = params["datamodule"]
 
-        batch_size = Tuner(trainer).scale_batch_size(
-            model=model,
-            datamodule=datamodule,
-            mode=mode,
-            steps_per_trial=steps_per_trial,
-            init_val=init_val,
-            max_trials=max_trials,
-            batch_arg_name="batch_size",
-            method=method,
+        # Determine device type from the trainer's accelerator
+        device_type = _get_device_type(pl_trainer)
+
+        # Get the dataset to determine its length for clamping
+        dataset = (
+            datamodule.train_dataset if method == "fit" else datamodule.predict_dataset
         )
+        dataset_size = len(dataset) if dataset is not None else None
+
+        # If the current batch_size already covers the entire dataset,
+        # there is nothing to optimize -- return it immediately.
+        if dataset_size is not None and self.batch_size >= dataset_size:
+            logger.info(
+                f"Current batch_size ({self.batch_size}) already covers the "
+                f"entire dataset ({dataset_size} samples). Skipping scaling."
+            )
+            return self.batch_size
+
+        if mode in ("power", "binsearch"):
+            batch_size = _scale_batch_size_oom(
+                model_self=self,
+                model=model,
+                datamodule=datamodule,
+                method=method,
+                mode=mode,
+                steps_per_trial=steps_per_trial,
+                init_val=init_val,
+                max_trials=max_trials,
+                dataset_size=dataset_size,
+                device_type=device_type,
+                is_memory_error_fn=is_memory_error,
+                garbage_collection_fn=garbage_collection,
+            )
+        else:
+            budget_bytes = (
+                parse_memory_budget(memory_budget)
+                if memory_budget is not None
+                else None
+            )
+            batch_size = _scale_batch_size_memory(
+                model_self=self,
+                model=model,
+                datamodule=datamodule,
+                method=method,
+                steps_per_trial=steps_per_trial,
+                init_val=init_val,
+                dataset_size=dataset_size,
+                device_type=device_type,
+                memory_budget=budget_bytes,
+                monitor_cls=MemoryMonitor,
+                is_memory_error_fn=is_memory_error,
+                garbage_collection_fn=garbage_collection,
+            )
 
         if batch_size is None:
             logger.warning(
@@ -3050,6 +3123,389 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 def _raise_if_wrong_type(obj, exp_type, msg="expected type {}, got: {}"):
     if not isinstance(obj, exp_type):
         raise_log(ValueError(msg.format(exp_type, type(obj))))
+
+
+# ---------------------------------------------------------------------------
+# Batch size scaling helpers (module-level)
+# ---------------------------------------------------------------------------
+
+
+def _get_device_type(trainer: pl.Trainer) -> str:
+    """Infer the device type string from a Trainer's accelerator."""
+    acc = trainer.accelerator
+    cls_name = type(acc).__name__.lower()
+    if "cuda" in cls_name or "gpu" in cls_name:
+        return "cuda"
+    if "mps" in cls_name:
+        return "mps"
+    if "xpu" in cls_name:
+        return "xpu"
+    if "cpu" in cls_name:
+        return "cpu"
+    return "cpu"
+
+
+def _run_batch_trial(
+    model_self: "TorchForecastingModel",
+    model: PLForecastingModule,
+    datamodule: TorchDataModule,
+    method: str,
+    steps: int,
+    batch_size: int,
+) -> None:
+    """Run a single batch-size trial for *steps* steps.
+
+    Creates a minimal Trainer scoped to the trial so that ``steps_per_trial``
+    is correctly applied for **both** fit and predict modes (fixing the PL bug
+    where predict mode ignores ``steps_per_trial``).
+
+    Uses a deep copy of the model so that the original model's state (weights,
+    PL internal counters, trainer reference, etc.) is never modified.
+    Saves and restores the global PyTorch RNG state so that trial runs do not
+    affect downstream random number generation (e.g. probabilistic predictions).
+    """
+    from copy import deepcopy
+
+    trial_model = deepcopy(model)
+
+    datamodule.batch_size = batch_size
+    trial_model.batch_size = batch_size
+
+    # Save global RNG states so trial runs don't affect the caller
+    cpu_rng_state = torch.random.get_rng_state()
+    cuda_rng_states = {}
+    if torch.cuda.is_available():
+        for i in range(torch.cuda.device_count()):
+            cuda_rng_states[i] = torch.cuda.get_rng_state(i)
+
+    trainer_kwargs: dict[str, Any] = {
+        k: v for k, v in model_self.trainer_params.items()
+    }
+    trainer_kwargs.pop("callbacks", None)
+    trainer_kwargs["enable_progress_bar"] = False
+    trainer_kwargs["enable_model_summary"] = False
+    trainer_kwargs["logger"] = False
+
+    try:
+        if method == "fit":
+            trainer_kwargs["max_epochs"] = 1
+            trainer_kwargs["max_steps"] = steps
+            trainer_kwargs["limit_val_batches"] = 0
+            trial_trainer = pl.Trainer(callbacks=[], **trainer_kwargs)
+            trial_trainer.fit(model=trial_model, datamodule=datamodule)
+        else:
+            trainer_kwargs["max_epochs"] = 1
+            trainer_kwargs["limit_predict_batches"] = steps
+            trial_trainer = pl.Trainer(callbacks=[], **trainer_kwargs)
+            trial_trainer.predict(model=trial_model, datamodule=datamodule)
+    finally:
+        # Restore global RNG states
+        torch.random.set_rng_state(cpu_rng_state)
+        for device_id, state in cuda_rng_states.items():
+            torch.cuda.set_rng_state(state, device_id)
+
+
+def _scale_batch_size_oom(
+    model_self: "TorchForecastingModel",
+    model: PLForecastingModule,
+    datamodule: TorchDataModule,
+    method: str,
+    mode: str,
+    steps_per_trial: int,
+    init_val: int,
+    max_trials: int,
+    dataset_size: int | None,
+    device_type: str,
+    is_memory_error_fn,
+    garbage_collection_fn,
+) -> int:
+    """OOM-based batch size scaling (``power`` and ``binsearch`` modes)."""
+    if mode == "power":
+        return _run_power_scaling(
+            model_self=model_self,
+            model=model,
+            datamodule=datamodule,
+            method=method,
+            steps_per_trial=steps_per_trial,
+            init_val=init_val,
+            max_trials=max_trials,
+            dataset_size=dataset_size,
+            device_type=device_type,
+            is_memory_error_fn=is_memory_error_fn,
+            garbage_collection_fn=garbage_collection_fn,
+        )
+    else:
+        return _run_binsearch_scaling(
+            model_self=model_self,
+            model=model,
+            datamodule=datamodule,
+            method=method,
+            steps_per_trial=steps_per_trial,
+            init_val=init_val,
+            max_trials=max_trials,
+            dataset_size=dataset_size,
+            device_type=device_type,
+            is_memory_error_fn=is_memory_error_fn,
+            garbage_collection_fn=garbage_collection_fn,
+        )
+
+
+def _run_power_scaling(
+    model_self: "TorchForecastingModel",
+    model: PLForecastingModule,
+    datamodule: TorchDataModule,
+    method: str,
+    steps_per_trial: int,
+    init_val: int,
+    max_trials: int,
+    dataset_size: int | None,
+    device_type: str,
+    is_memory_error_fn,
+    garbage_collection_fn,
+) -> int:
+    """Keep doubling the batch size until an OOM error, then halve once."""
+    new_size = init_val
+    any_success = False
+    last_successful_size = new_size
+
+    for i in range(max_trials):
+        garbage_collection_fn(device_type)
+
+        try:
+            _run_batch_trial(
+                model_self,
+                model,
+                datamodule,
+                method,
+                steps_per_trial,
+                new_size,
+            )
+            last_successful_size = new_size
+            any_success = True
+
+            if dataset_size is not None and new_size >= dataset_size:
+                break
+
+            if i + 1 >= max_trials:
+                break
+
+            new_size *= 2
+            logger.info(
+                f"Batch size {last_successful_size} succeeded, "
+                f"trying batch size {new_size}"
+            )
+        except RuntimeError as exception:
+            if is_memory_error_fn(exception):
+                garbage_collection_fn(device_type)
+                new_size = max(1, new_size // 2)
+                logger.info(
+                    f"Batch size {last_successful_size * 2 if any_success else init_val} failed, "
+                    f"using batch size {new_size}"
+                )
+                if any_success:
+                    break
+            else:
+                raise
+
+    return new_size
+
+
+def _run_binsearch_scaling(
+    model_self: "TorchForecastingModel",
+    model: PLForecastingModule,
+    datamodule: TorchDataModule,
+    method: str,
+    steps_per_trial: int,
+    init_val: int,
+    max_trials: int,
+    dataset_size: int | None,
+    device_type: str,
+    is_memory_error_fn,
+    garbage_collection_fn,
+) -> int:
+    """Double until OOM, then binary search for the optimal batch size."""
+    new_size = init_val
+    low = 1
+    high = None
+    count = 0
+    last_successful_size = new_size
+
+    while True:
+        garbage_collection_fn(device_type)
+
+        try:
+            _run_batch_trial(
+                model_self,
+                model,
+                datamodule,
+                method,
+                steps_per_trial,
+                new_size,
+            )
+            last_successful_size = new_size
+            count += 1
+
+            if dataset_size is not None and new_size >= dataset_size:
+                break
+
+            if count >= max_trials:
+                break
+
+            low = new_size
+            if high is not None:
+                if high - low <= 1:
+                    break
+                new_size = (high + low) // 2
+            else:
+                new_size *= 2
+
+            logger.info(
+                f"Batch size {last_successful_size} succeeded, "
+                f"trying batch size {new_size}"
+            )
+        except RuntimeError as exception:
+            if is_memory_error_fn(exception):
+                garbage_collection_fn(device_type)
+                high = new_size
+                midval = (high + low) // 2
+                new_size = midval
+                logger.info(f"Batch size {high} failed, trying batch size {new_size}")
+                if high - low <= 1:
+                    break
+            else:
+                raise
+
+    return new_size
+
+
+def _scale_batch_size_memory(
+    model_self: "TorchForecastingModel",
+    model: PLForecastingModule,
+    datamodule: TorchDataModule,
+    method: str,
+    steps_per_trial: int,
+    init_val: int,
+    dataset_size: int | None,
+    device_type: str,
+    memory_budget: int | None,
+    monitor_cls,
+    is_memory_error_fn,
+    garbage_collection_fn,
+) -> int:
+    """Memory-budget-based batch size scaling.
+
+    Profiles memory usage at two batch sizes, fits a linear model
+    ``mem = base + per_sample * batch_size``, and solves for the largest
+    batch size that fits within ``memory_budget``.
+    """
+    import math
+
+    device = torch.device(device_type)
+    monitor = monitor_cls(device)
+
+    if memory_budget is None:
+        total = monitor.get_total_memory()
+        if total <= 0:
+            raise_log(
+                ValueError(
+                    "Could not determine total device memory. "
+                    "Please provide `memory_budget` explicitly."
+                ),
+            )
+        memory_budget = int(total * 0.9)
+        logger.info(
+            f"No memory_budget specified. Using 90% of device memory: "
+            f"{memory_budget / (1024**3):.2f} GB"
+        )
+
+    b1 = init_val
+    b2 = init_val * 2
+
+    if dataset_size is not None:
+        b1 = min(b1, dataset_size)
+        b2 = min(b2, dataset_size)
+    if b1 == b2:
+        return b1
+
+    # --- Profile batch_size = b1 ---
+    garbage_collection_fn(device_type)
+    monitor.empty_cache()
+    monitor.reset_peak_memory()
+    _run_batch_trial(model_self, model, datamodule, method, steps_per_trial, b1)
+    peak_mem_1 = monitor.get_peak_memory()
+
+    # --- Profile batch_size = b2 ---
+    garbage_collection_fn(device_type)
+    monitor.empty_cache()
+    monitor.reset_peak_memory()
+    _run_batch_trial(model_self, model, datamodule, method, steps_per_trial, b2)
+    peak_mem_2 = monitor.get_peak_memory()
+
+    delta_b = b2 - b1
+    if delta_b <= 0 or peak_mem_2 <= peak_mem_1:
+        logger.warning(
+            "Memory profiling did not yield a measurable difference "
+            f"between batch sizes {b1} and {b2}. "
+            "Falling back to the larger profiled batch size."
+        )
+        return b2
+
+    per_sample_mem = (peak_mem_2 - peak_mem_1) / delta_b
+    base_mem = peak_mem_1 - per_sample_mem * b1
+
+    if per_sample_mem <= 0:
+        logger.warning(
+            "Computed per-sample memory is non-positive. "
+            "Falling back to the larger profiled batch size."
+        )
+        return b2
+
+    optimal = int(math.floor((memory_budget - base_mem) / per_sample_mem))
+    optimal = max(1, optimal)
+    if dataset_size is not None:
+        optimal = min(optimal, dataset_size)
+
+    logger.info(
+        f"Memory profiling: base={base_mem / (1024**2):.1f} MB, "
+        f"per_sample={per_sample_mem / (1024**2):.2f} MB, "
+        f"budget={memory_budget / (1024**3):.2f} GB -> "
+        f"optimal batch_size={optimal}"
+    )
+
+    # --- Verification trial ---
+    garbage_collection_fn(device_type)
+    monitor.empty_cache()
+    try:
+        _run_batch_trial(
+            model_self,
+            model,
+            datamodule,
+            method,
+            steps_per_trial,
+            optimal,
+        )
+        return optimal
+    except RuntimeError as exception:
+        if is_memory_error_fn(exception):
+            garbage_collection_fn(device_type)
+            logger.warning(
+                f"Verification trial failed at batch_size={optimal}. "
+                f"Falling back to binary search between {b1} and {optimal}."
+            )
+            return _run_binsearch_scaling(
+                model_self=model_self,
+                model=model,
+                datamodule=datamodule,
+                method=method,
+                steps_per_trial=steps_per_trial,
+                init_val=b1,
+                max_trials=15,
+                dataset_size=dataset_size,
+                device_type=device_type,
+                is_memory_error_fn=is_memory_error_fn,
+                garbage_collection_fn=garbage_collection_fn,
+            )
+        raise
 
 
 """
