@@ -11,6 +11,11 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- 🚀 Improvements to `FoundationModel` : [#3154](https://github.com/unit8co/darts/pull/3154) by [Dennis Bader](https://github.com/dennisbader).
+  - Added variable input chunk length support to all foundation models. `input_chunk_length` can now be a `(min_length, max_length)` tuple, allowing the model to accept target series of different lengths in a single call and automatically use the maximum available history per series (left-padded with NaN up to `max_length`). This removes the need to manually pre-pad time series or create models with updated `input_chunk_length` before prediction or fine-tuning.
+  - `load_weights()` now allows loading weights from a checkpoint saved with different `input_chunk_length`, `output_chunk_length`, or `output_chunk_shift`. This simplifies model storage, as now the same model can be loaded for different task-specific input / output window configurations.
+- Improvements to PyTorch datasets: [#3154](https://github.com/unit8co/darts/pull/3154) by [Dennis Bader](https://github.com/dennisbader).
+  - Added variable input chunk length support to all PyTorch datasets via the `(min_length, max_length)` tuple for `input_chunk_length`, enabling left-NaN-padded samples for shorter series.
 - 🚀 Added method `TorchForecastingModel.scale_batch_size()` to find the largest possible batch size for training or prediction with torch-based models. [#2905](https://github.com/unit8co/darts/pull/2905) by [Zhihao Dai](https://github.com/daidahao) and [Dennis Bader](https://github.com/dennisbader).
 - 🔴 Improved `TransformerModel` with proper encoder-decoder transformer architecture using teacher forcing during training and autoregressive inference, aligning the implementation with [Vaswani et al., 2017](https://arxiv.org/abs/1706.03762). Previously trained checkpoints are incompatible and must be retrained. [#1915](https://github.com/unit8co/darts/pull/1915) by [Jan Fidor](https://github.com/JanFidor) and [Dennis Bader](https://github.com/dennisbader).
 - Added a `CITATION.cff` file with the recommended citation metadata for Darts. [#3147](https://github.com/unit8co/darts/pull/3147) by [Zhihao Dai](https://github.com/daidahao).
@@ -18,6 +23,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed an issue where calling `TorchForecastingModel.fit()` (for models that do not actually have to be trained) required input series to also cover the `output_chunk_length` time frame, even though the model never trains on future targets in that mode. Now input series only need to satisfy the prediction/inference input chunk length requirements. This affects all foundation models without fine-tuning, as well as global naive models. [#3154](https://github.com/unit8co/darts/pull/3154) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug in the `TorchForecastingModel.predict()` which emitted an invalid "different data type" warning for correct input data types after loading a model from a checkpoint. [#3158](https://github.com/unit8co/darts/pull/3158) by [Mohit Arvind Khakharia](https://github.com/Mohit-Ak).
 - Fixed a bug in `TimeSeries.window_transform()` where `treat_na` (`"dropna"`, scalar, `"bfill"`) did not handle NaN values introduced by functions that produce NaN even when `min_periods` is satisfied (e.g., `std` with `ddof=1` on a single value). [#3151](https://github.com/unit8co/darts/pull/3151) by [Dennis Bader](https://github.com/dennisbader).
 

@@ -262,7 +262,7 @@ class TestTorchForecastingModel:
 
         # check that model object file was created
         assert os.path.exists(no_training_ckpt_path)
-        # check that the PyTorch Ligthning ckpt does not exist
+        # check that the PyTorch Lightning ckpt does not exist
         assert not os.path.exists(no_training_ckpt_path + ".ckpt")
         # informative exception about `fit()` not called
         with pytest.raises(ValueError) as err:

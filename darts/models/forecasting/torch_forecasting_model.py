@@ -609,13 +609,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         Models can override this method to return a custom `TorchTrainingDataset`.
         """
+        if self._requires_training:
+            ocl = self.output_chunk_length
+            ocs = self.output_chunk_shift
+        else:
+            ocl = 0
+            ocs = 0
+
         return SequentialTorchTrainingDataset(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
-            output_chunk_shift=self.output_chunk_shift,
+            input_chunk_length=(self.min_input_chunk_length, self.input_chunk_length),
+            output_chunk_length=ocl,
+            output_chunk_shift=ocs,
             stride=stride,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
@@ -641,7 +648,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             n=n,
             stride=stride,
             bounds=bounds,
-            input_chunk_length=self.input_chunk_length,
+            input_chunk_length=(self.min_input_chunk_length, self.input_chunk_length),
             output_chunk_length=self.output_chunk_length,
             output_chunk_shift=self.output_chunk_shift,
             use_static_covariates=self.uses_static_covariates,
@@ -2304,7 +2311,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @property
     def _target_window_lengths(self) -> tuple[int, int]:
         return (
-            self.input_chunk_length,
+            self.min_input_chunk_length,
             self.output_chunk_length + self.output_chunk_shift,
         )
 
@@ -2368,7 +2375,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ----------
         path
             Path under which to save the model at its current state. Please avoid path starting with "last-" or
-            "best-" to avoid collision with Pytorch-Ligthning checkpoints. If no path is specified, the model
+            "best-" to avoid collision with Pytorch-Lightning checkpoints. If no path is specified, the model
             is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pt"``.
             E.g., ``"RNNModel_2020-01-01_12_00_00.pt"``.
         clean
@@ -2826,6 +2833,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @property
+    def min_input_chunk_length(self) -> int:
+        """The minimum input chunk length supported by the model.
+
+        For models that support variable input chunk lengths, this returns the
+        lower bound. For standard models, this equals ``input_chunk_length``.
+        """
+        return self.input_chunk_length
+
+    @property
     def output_chunk_length(self) -> int:
         return (
             self.model.output_chunk_length
@@ -2864,7 +2880,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @property
     def _requires_training(self) -> bool:
-        """Whether the model should be trained when calling a `fit*` method."""
         # no training if fine-tuning is explicitly disabled
         if self.enable_finetuning is False:
             return False
@@ -2995,7 +3010,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             new_add_encoders: dict = copy.deepcopy(tfm_save.add_encoders)
             new_encoders: SequentialEncoder = copy.deepcopy(tfm_save.encoders)
         else:
-            if len(tfm_save.add_encoders) > 0 and self.add_encoders is None:
+            if tfm_save.add_encoders and self.add_encoders is None:
                 raise_log(
                     ValueError(
                         f"Model was created without encoders and encoders were not loaded, "
@@ -3042,15 +3057,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         return new_encoders, new_add_encoders
 
-    def _check_ckpt_parameters(self, tfm_save):
-        """
-        Check that the positional parameters used to instantiate the new model loading the weights match those
-        of the saved model, to return meaningful messages in case of discrepancies.
-        """
-        # parameters unrelated to the weights shape
-        skipped_params = list(
-            inspect.signature(TorchForecastingModel.__init__).parameters.keys()
-        ) + [
+    @property
+    def _ckpt_skipped_params(self) -> list[str]:
+        """Model parameters that are unrelated to the weight shapes and can differ between the current model
+        and a loaded checkpoint."""
+        return [
             "loss_fn",
             "torch_metrics",
             "optimizer_cls",
@@ -3059,6 +3070,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "lr_scheduler_kwargs",
             "output_chunk_shift",
         ]
+
+    def _check_ckpt_parameters(self, tfm_save):
+        """
+        Check that the positional parameters used to instantiate the new model loading the weights match those
+        of the saved model, to return meaningful messages in case of discrepancies.
+        """
+        # parameters unrelated to the weights shape
+        skipped_params = (
+            list(inspect.signature(TorchForecastingModel.__init__).parameters.keys())
+            + self._ckpt_skipped_params
+        )
         # model_params can be missing some kwargs
         params_to_check = set(tfm_save.model_params.keys()).union(
             self.model_params.keys()
@@ -3541,9 +3563,9 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         int,
     ]:
         return (
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             -1,
             None,
             None,
@@ -3573,7 +3595,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         int,
     ]:
         return (
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             None,
             None,
@@ -3605,11 +3627,11 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         int,
     ]:
         return (
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             None,
             None,
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
         )
@@ -3637,11 +3659,11 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         int,
     ]:
         return (
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             -1,
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
         )
@@ -3669,9 +3691,9 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         int,
     ]:
         return (
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
-            -self.input_chunk_length,
+            -self.min_input_chunk_length,
             -1,
             self.output_chunk_shift,
             self.output_chunk_length - 1 + self.output_chunk_shift,

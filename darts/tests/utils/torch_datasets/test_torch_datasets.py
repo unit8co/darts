@@ -5,9 +5,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts import TimeSeries
+from darts import TimeSeries, concatenate
 from darts.tests.conftest import TORCH_AVAILABLE
-from darts.utils.timeseries_generation import gaussian_timeseries
+from darts.utils.timeseries_generation import gaussian_timeseries, linear_timeseries
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -2597,3 +2597,143 @@ class TestDataset:
         )
         cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
         assert _get_matching_index(target, cov, idx=15) == 5
+
+
+def generate_series(n_variables: int, length: int, prefix: str):
+    return concatenate(
+        [
+            linear_timeseries(
+                length=length, dtype=np.float32, column_name=f"{prefix}_{i}"
+            )
+            for i in range(n_variables)
+        ],
+        axis=1,
+    )
+
+
+class TestVariableICLDataset:
+    def test_dataset_padding_training(self):
+        """Training dataset should NaN-pad past features for short series."""
+        icl, ocl, min_icl = 14, 6, 2
+        # use a series long enough that rightmost sample has no padding
+        series = generate_series(n_variables=1, length=25, prefix="T")
+
+        ds = SequentialTorchTrainingDataset(
+            series=series,
+            input_chunk_length=(min_icl, icl),
+            output_chunk_length=ocl,
+        )
+        # min_size = 6 + 2 = 8, n_samples = 25 - 8 + 1 = 18
+        assert len(ds) == 18
+
+        # rightmost sample (idx 0): past_start = 25 - 6 - 14 = 5, no padding
+        pt, pc, hfc, fc, sc, sw, ft = ds[0]
+        assert pt.shape == (icl, 1)
+        assert ft.shape == (ocl, 1)
+        assert not np.isnan(pt).any()
+
+        # leftmost sample (idx 17): past_start = 8 - 6 - 14 = -12, pad_len = 12
+        pt, pc, hfc, fc, sc, sw, ft = ds[17]
+        assert pt.shape == (icl, 1)
+        assert ft.shape == (ocl, 1)
+        pad_len = np.isnan(pt[:, 0]).sum()
+        assert pad_len == 12
+        assert not np.isnan(pt[pad_len:]).any()
+        assert not np.isnan(ft).any()
+
+    def test_dataset_padding_inference(self):
+        """Inference dataset should NaN-pad past target for short series."""
+        icl, ocl, min_icl = 14, 6, 2
+        series = generate_series(n_variables=1, length=5, prefix="T")
+
+        ds = SequentialTorchInferenceDataset(
+            series=series,
+            input_chunk_length=(min_icl, icl),
+            output_chunk_length=ocl,
+            n=ocl,
+        )
+        assert len(ds) == 1
+
+        pt, pc, fpc, hfc, fc, sc, schema, pred_start = ds[0]
+        assert pt.shape == (icl, 1)
+        # first (icl - len(series)) = 9 values should be NaN
+        pad_len = icl - len(series)
+        assert np.isnan(pt[:pad_len]).all()
+        assert not np.isnan(pt[pad_len:]).any()
+
+    def test_dataset_no_padding_without_variable_icl(self):
+        """With a fixed input chunk length, datasets should not left-pad."""
+        icl, ocl = 14, 6
+        series = generate_series(n_variables=1, length=25, prefix="T")
+
+        ds_default = SequentialTorchTrainingDataset(
+            series=series,
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+        )
+        ds_explicit = SequentialTorchTrainingDataset(
+            series=series,
+            input_chunk_length=(icl, icl),
+            output_chunk_length=ocl,
+        )
+        assert len(ds_default) == len(ds_explicit)
+
+        # no NaN padding in any sample
+        for i in range(len(ds_default)):
+            pt_d, *_ = ds_default[i]
+            pt_e, *_ = ds_explicit[i]
+            assert not np.isnan(pt_d).any()
+            np.testing.assert_array_equal(pt_d, pt_e)
+
+    def test_dataset_sample_uniqueness(self):
+        """Each distinct sample index for a series must have a unique output window."""
+        icl, ocl, min_icl = 10, 4, 2
+        series = generate_series(n_variables=1, length=15, prefix="T")
+
+        ds = SequentialTorchTrainingDataset(
+            series=series,
+            input_chunk_length=(min_icl, icl),
+            output_chunk_length=ocl,
+        )
+        # min_size = (10 + 4) - (10 - 2) = 6, n_samples = 15 - 6 + 1 = 10
+        assert len(ds) == 10
+
+        # each sample should produce a different future_target window
+        ft_windows = []
+        for i in range(len(ds)):
+            _, _, _, _, _, _, ft = ds[i]
+            ft_windows.append(tuple(ft[:, 0].tolist()))
+        assert len(set(ft_windows)) == len(ds)
+
+    def test_dataset_padding_with_covariates(self):
+        """NaN-padding should apply to past covariates and historic future covariates."""
+        icl, ocl, min_icl = 14, 6, 2
+        series = generate_series(n_variables=1, length=25, prefix="T")
+        past_cov = generate_series(n_variables=2, length=25, prefix="PC")
+        future_cov = generate_series(n_variables=3, length=50, prefix="FC")
+
+        ds = SequentialTorchTrainingDataset(
+            series=series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
+            input_chunk_length=(min_icl, icl),
+            output_chunk_length=ocl,
+        )
+
+        # leftmost sample (most padding)
+        pt, pc, hfc, fc, sc, sw, ft = ds[len(ds) - 1]
+
+        assert pt.shape == (icl, 1)
+        assert pc.shape == (icl, 2)
+        assert hfc.shape == (icl, 3)
+        assert fc.shape == (ocl, 3)
+
+        # padding lengths must match across all past features
+        pt_pad = np.isnan(pt[:, 0]).sum()
+        pc_pad = np.isnan(pc[:, 0]).sum()
+        hfc_pad = np.isnan(hfc[:, 0]).sum()
+        assert pt_pad == pc_pad == hfc_pad
+        assert pt_pad == 12
+
+        # future covariates in the output chunk are never padded
+        assert not np.isnan(fc).any()
