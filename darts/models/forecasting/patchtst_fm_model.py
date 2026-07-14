@@ -282,12 +282,21 @@ class _PatchTSTFMModule(PLForecastingModule):
             dim=1,
         )
         # `pad_mask`: (B * C, CONT)
+        # only treat leading NaNs (from variable input chunk length padding) and not
+        # actual NaNs as padding for attention masking
+        has_nan = nan_mask.any()
+        if has_nan:
+            leading_nan_mask = nan_mask & ((~nan_mask).cumsum(dim=1) == 0)
+        else:
+            leading_nan_mask = nan_mask
+
         pad_mask = torch.cat(
             [
                 torch.ones(effective_batch, left_pad, device=context.device),
+                leading_nan_mask.float(),
                 torch.zeros(
                     effective_batch,
-                    past_length + forecast_length,
+                    forecast_length,
                     device=context.device,
                 ),
             ],
