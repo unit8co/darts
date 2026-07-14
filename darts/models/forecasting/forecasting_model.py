@@ -491,6 +491,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
 
     @property
+    def _requires_training(self):
+        """Whether the model is trained when calling a `fit*` method."""
+        return True
+
+    @property
     @abstractmethod
     def extreme_lags(
         self,

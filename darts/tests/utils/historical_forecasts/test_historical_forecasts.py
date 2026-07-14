@@ -2104,8 +2104,9 @@ class TestHistoricalforecast:
         )
 
         # with the required time spans we expect to get `n_fcs` forecasts
-        if not retrain:
-            # with retrain=False, we can start `output_chunk_length + min train samples` steps earlier
+        if not retrain or not model._requires_training:
+            # with retrain=False or models that don't require training (global naive models, foundation models without
+            # fine-tuning), we can start `output_chunk_length + min train samples` steps earlier
             add_fcs = model.extreme_lags[1] + model.min_train_samples
         else:
             add_fcs = 0

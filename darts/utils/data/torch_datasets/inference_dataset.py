@@ -14,7 +14,11 @@ import numpy as np
 from darts.logging import raise_log
 from darts.typing import TimeSeriesLike
 from darts.utils.data.torch_datasets.dataset import TorchDataset
-from darts.utils.data.torch_datasets.utils import TorchInferenceDatasetOutput
+from darts.utils.data.torch_datasets.utils import (
+    InputChunkLength,
+    TorchInferenceDatasetOutput,
+    _parse_input_chunk_length,
+)
 from darts.utils.data.utils import FeatureType
 from darts.utils.historical_forecasts.utils import _process_predict_start_points_bounds
 from darts.utils.ts_utils import series2seq
@@ -63,7 +67,7 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
         n: int = 1,
         stride: int = 0,
         bounds: np.ndarray | None = None,
-        input_chunk_length: int = 12,
+        input_chunk_length: InputChunkLength = 12,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         use_static_covariates: bool = True,
@@ -126,6 +130,8 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
             If provided, `stride` must be `>=1`.
         input_chunk_length
             The length of the lookback / past window the model takes as input.
+            An integer denotes a fixed input window. A ``(min_length, max_length)`` tuple
+            enables variable-length inputs with left-padding up to ``max_length``.
         output_chunk_length
             The length of the lookahead / future window that the model emits as output (for the target) and takes as
             input (for future covariates).
@@ -135,6 +141,8 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
             Whether to use/include static covariate data from the target `series`.
         """
         super().__init__()
+
+        min_icl, max_icl = _parse_input_chunk_length(input_chunk_length)
 
         # setup target and sequence
         series = series2seq(series)
@@ -181,7 +189,8 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
         self.uses_static_covariates_covariates = static_covariates is not None
 
         self.n = n
-        self.input_chunk_length = input_chunk_length
+        self.input_chunk_length = max_icl
+        self.min_input_chunk_length = min_icl
         self.output_chunk_length = output_chunk_length
         self.output_chunk_shift = output_chunk_shift
         self.use_static_covariates = use_static_covariates
@@ -229,11 +238,12 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
         )
 
         series = self.series[series_idx]
-        if len(series) < self.input_chunk_length:
+        if len(series) < self.min_input_chunk_length:
             raise_log(
                 ValueError(
                     f"The dataset contains target `series` that are too short to extract "
-                    f"the model input for prediction . Expected min length: `{self.input_chunk_length}`, "
+                    f"the model input for prediction. Expected min length: "
+                    f"`{self.min_input_chunk_length}`, "
                     f"received length `{len(series)}` (at series sequence idx `{series_idx}`)."
                 ),
             )
@@ -259,10 +269,11 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
             n=self.n,
         )
 
-        series_vals = series.random_component_values(copy=False)
-        # extract past target series
+        # extract past target series (NaN-padded when pt_start < 0)
+        vals = series.random_component_values(copy=False)
         start, end = idx_bounds[FeatureType.PAST_TARGET]
-        pt = series_vals[start:end]
+        pad_len = abs(start) if start is not None and start < 0 else 0
+        pt = self._extract_values(vals, start, end, pad_len=pad_len)
 
         # extract prediction start
         start, _ = idx_bounds[FeatureType.FUTURE_TARGET]
@@ -281,22 +292,25 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
             # past part of past covariates
             start, end = idx_bounds[FeatureType.PAST_COVARIATES]
             vals = past_covariates.random_component_values(copy=False)
-            pc = vals[start:end]
+            pc = self._extract_values(vals, start, end, pad_len=pad_len)
 
             # future part of past covariates (`None` if not performing auto-regression)
             fpc_start, fpc_end = idx_bounds[FeatureType.FUTURE_PAST_COVARIATES]
-            fpc = vals[fpc_start:fpc_end] if fpc_start is not None else None
+            if fpc_start is not None:
+                fpc = self._extract_values(vals, fpc_start, fpc_end)
+            else:
+                fpc = None
 
         # extract future covariates
         if self.uses_future_covariates:
+            # historic part of future covariates
+            start, end = idx_bounds[FeatureType.HISTORIC_FUTURE_COVARIATES]
+            vals = future_covariates.random_component_values(copy=False)
+            hfc = self._extract_values(vals, start, end, pad_len=pad_len)
+
             # future part of future covariates
             start, end = idx_bounds[FeatureType.FUTURE_COVARIATES]
-            vals = future_covariates.random_component_values(copy=False)
-            fc = vals[start:end]
-
-            # historic part of future covariates
-            hfc_start, hfc_end = idx_bounds[FeatureType.HISTORIC_FUTURE_COVARIATES]
-            hfc = vals[hfc_start:hfc_end]
+            fc = self._extract_values(vals, start, end)
 
         # extract static covariates
         if self.uses_static_covariates_covariates:

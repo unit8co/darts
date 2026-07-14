@@ -185,7 +185,7 @@ release = [
     "ipython-genutils==0.2.0",
     "ipywidgets==8.1.8",
     "jinja2==3.1.6",
-    "jupyterlab==4.5.7",
+    "jupyterlab==4.5.9",
     "lxml-html-clean==0.4.4",
     "myst-parser==5.0.0; python_version >= '3.11'",
     "myst-parser==4.0.1; python_version < '3.11'",

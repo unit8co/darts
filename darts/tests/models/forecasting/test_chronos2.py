@@ -16,6 +16,11 @@ if not TORCH_AVAILABLE:
 from darts import TimeSeries, concatenate
 from darts.datasets import ElectricityConsumptionZurichDataset
 from darts.models import Chronos2Model
+from darts.tests.models.forecasting.foundation_test_utils import (
+    CHRONOS2_TINY_DIR,
+    CHRONOS2_TINY_MAX_CONTEXT_LENGTH,
+    CHRONOS2_TINY_MAX_PREDICTION_LENGTH,
+)
 from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
 from darts.utils.timeseries_generation import (
     gaussian_timeseries,
@@ -83,11 +88,9 @@ class TestChronos2Model:
     max_prediction_length = 1024
 
     # ---- Dummy Tests ---- #
-    dummy_local_dir = (
-        Path(__file__).parent / "artefacts" / "chronos2" / "tiny_chronos2"
-    ).absolute()
-    dummy_max_context_length = 21
-    dummy_max_prediction_length = 77
+    dummy_local_dir = CHRONOS2_TINY_DIR
+    dummy_max_context_length = CHRONOS2_TINY_MAX_CONTEXT_LENGTH
+    dummy_max_prediction_length = CHRONOS2_TINY_MAX_PREDICTION_LENGTH
     series = linear_timeseries(length=200, dtype=np.float32, column_name="A")
     past_cov = linear_timeseries(length=200, dtype=np.float32, column_name="B")
     future_cov = linear_timeseries(length=300, dtype=np.float32, column_name="C")

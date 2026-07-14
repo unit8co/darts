@@ -34,7 +34,12 @@ from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
 )
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    InputChunkLength,
+    PLModuleInput,
+    TorchTrainingSample,
+    _parse_input_chunk_length,
+)
 from darts.utils.likelihood_models.torch import QuantileRegression
 
 
@@ -277,12 +282,21 @@ class _PatchTSTFMModule(PLForecastingModule):
             dim=1,
         )
         # `pad_mask`: (B * C, CONT)
+        # only treat leading NaNs (from variable input chunk length padding) and not
+        # actual NaNs as padding for attention masking
+        has_nan = nan_mask.any()
+        if has_nan:
+            leading_nan_mask = nan_mask & ((~nan_mask).cumsum(dim=1) == 0)
+        else:
+            leading_nan_mask = nan_mask
+
         pad_mask = torch.cat(
             [
                 torch.ones(effective_batch, left_pad, device=context.device),
+                leading_nan_mask.float(),
                 torch.zeros(
                     effective_batch,
-                    past_length + forecast_length,
+                    forecast_length,
                     device=context.device,
                 ),
             ],
@@ -351,7 +365,7 @@ class _PatchTSTFMModule(PLForecastingModule):
 class PatchTSTFMModel(FoundationModel):
     def __init__(
         self,
-        input_chunk_length: int,
+        input_chunk_length: InputChunkLength,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
         likelihood: QuantileRegression | None = None,
@@ -402,7 +416,9 @@ class PatchTSTFMModel(FoundationModel):
         input_chunk_length
             Number of time steps in the past to take as a model input (per chunk). Applies to the target
             series, and past and/or future covariates (if the model supports it).
-            For PatchTST-FM, `input_chunk_length + output_chunk_length + output_chunk_shift` must be `<=8192`.
+            Can be either an ``int`` for a fixed input window, or a ``(min_length, max_length)`` tuple to enable
+            variable-length inputs for inference and fine-tuning.
+            For PatchTST-FM, ``max_length + output_chunk_length + output_chunk_shift`` must be ``<=8192``.
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
@@ -635,13 +651,11 @@ class PatchTSTFMModel(FoundationModel):
 
         # validate input_chunk_length + output_chunk_length + output_chunk_shift <= context_length
         context_length = config["context_length"]
-        if (
-            input_chunk_length + output_chunk_length + output_chunk_shift
-            > context_length
-        ):
+        _, max_icl = _parse_input_chunk_length(input_chunk_length)
+        if max_icl + output_chunk_length + output_chunk_shift > context_length:
             raise_log(
                 ValueError(
-                    f"`input_chunk_length` {input_chunk_length} plus `output_chunk_length` {output_chunk_length} "
+                    f"`input_chunk_length` {max_icl} plus `output_chunk_length` {output_chunk_length} "
                     f"plus `output_chunk_shift` {output_chunk_shift} cannot be greater than model's maximum "
                     f"context_length {context_length}"
                 ),
