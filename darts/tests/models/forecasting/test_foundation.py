@@ -576,16 +576,22 @@ class TestVariableInputChunkLength:
                 timesfm2p5_tiny_context,
                 id="TimesFM2p5",
             ),
-            pytest.param(
-                TiRexModel,
-                {"accept_license": True},
-                lambda: patch(
-                    TIREX_LOAD_MODEL_PATCH_TARGET,
-                    return_value=TiRexStub(),
+        ]
+        + (
+            [
+                pytest.param(
+                    TiRexModel,
+                    {"accept_license": True},
+                    lambda: patch(
+                        TIREX_LOAD_MODEL_PATCH_TARGET,
+                        return_value=TiRexStub(),
+                    ),
+                    id="TiRex",
                 ),
-                id="TiRex",
-            ),
-        ],
+            ]
+            if TIREX_AVAILABLE
+            else []
+        ),
     )
     @pytest.mark.parametrize("series_length", [16, 14, 8, 1])
     def test_variable_icl_fit_predict(
@@ -844,17 +850,23 @@ class TestVariableInputChunkLength:
                 True,
                 id="TimesFM2p5",
             ),
-            pytest.param(
-                TiRexModel,
-                {"accept_license": True},
-                lambda: patch(
-                    TIREX_LOAD_MODEL_PATCH_TARGET,
-                    return_value=TiRexStub(),
+        ]
+        + (
+            [
+                pytest.param(
+                    TiRexModel,
+                    {"accept_license": True},
+                    lambda: patch(
+                        TIREX_LOAD_MODEL_PATCH_TARGET,
+                        return_value=TiRexStub(),
+                    ),
+                    False,
+                    id="TiRex",
                 ),
-                False,
-                id="TiRex",
-            ),
-        ],
+            ]
+            if TIREX_AVAILABLE
+            else []
+        ),
     )
     def test_variable_icl_save_load(
         self, model_cls, extra_kwargs, mock_ctx_factory, supports_ckpt, tmp_path
@@ -963,16 +975,22 @@ class TestVariableInputChunkLength:
                 timesfm2p5_tiny_context,
                 id="TimesFM2p5",
             ),
-            pytest.param(
-                TiRexModel,
-                {"accept_license": True},
-                lambda: patch(
-                    TIREX_LOAD_MODEL_PATCH_TARGET,
-                    return_value=TiRexStub(),
+        ]
+        + (
+            [
+                pytest.param(
+                    TiRexModel,
+                    {"accept_license": True},
+                    lambda: patch(
+                        TIREX_LOAD_MODEL_PATCH_TARGET,
+                        return_value=TiRexStub(),
+                    ),
+                    id="TiRex",
                 ),
-                id="TiRex",
-            ),
-        ],
+            ]
+            if TIREX_AVAILABLE
+            else []
+        ),
     )
     def test_variable_icl_matches_fixed_icl(
         self, model_cls, extra_kwargs, mock_ctx_factory
@@ -1057,16 +1075,22 @@ class TestVariableInputChunkLength:
                 timesfm2p5_tiny_context,
                 id="TimesFM2p5",
             ),
-            pytest.param(
-                TiRexModel,
-                {"accept_license": True},
-                lambda: patch(
-                    TIREX_LOAD_MODEL_PATCH_TARGET,
-                    return_value=TiRexStub(),
-                ),
-                id="TiRex",
-            ),
-        ],
+        ]
+        + (
+            [
+                pytest.param(
+                    TiRexModel,
+                    {"accept_license": True},
+                    lambda: patch(
+                        TIREX_LOAD_MODEL_PATCH_TARGET,
+                        return_value=TiRexStub(),
+                    ),
+                    id="TiRex",
+                )
+            ]
+            if TIREX_AVAILABLE
+            else []
+        ),
     )
     def test_load_weights_different_chunk_params(
         self, model_cls, extra_kwargs, mock_ctx_factory, tmp_path
