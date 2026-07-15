@@ -29,6 +29,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Dependencies**
 
+- Removed the upper version cap on `pytorch-lightning<2.5.3`. [#3161](https://github.com/unit8co/darts/pull/3161) by [Dennis Bader](https://github.com/dennisbader).
+
 ### For developers of the library:
 
 - Simplified internal error handling: removed `raise_if` and `raise_if_not` in favor of `raise_log`, and made `raise_log` automatically resolve the caller's logger (no longer requires passing `logger` explicitly). [#3126](https://github.com/unit8co/darts/pull/3126) by [Dennis Bader](https://github.com/dennisbader).
