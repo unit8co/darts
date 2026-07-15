@@ -110,8 +110,10 @@ class _LearnedPositionalEmbedding(nn.Module):
             )
         self.kind = kind
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        positions = torch.arange(x.size(-2), device=x.device).unsqueeze(0)
+    def forward(self, x: torch.Tensor, offset: int = 0) -> torch.Tensor:
+        positions = torch.arange(
+            offset, offset + x.size(-2), device=x.device
+        ).unsqueeze(0)
         pe = self.embedding(positions)
         if x.ndim == 4:
             pe = pe.unsqueeze(1)

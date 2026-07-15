@@ -96,11 +96,11 @@ class _PatchTSTFMBackbone(nn.Module):
         -------
         quantile_predictions
             Raw (normalised-space) quantile predictions, shape
-            ``(B, context_length, num_quantile)``.
+            ``(B, input_length, num_quantile)``.
         loss_mask
-            Float mask for loss computation, shape ``(B, context_length)``.
+            Float mask for loss computation, shape ``(B, input_length)``.
         normed_target
-            Instance-normalised target, shape ``(B, context_length)``.
+            Instance-normalised target, shape ``(B, input_length)``.
         """
         x = inputs
         pad_mask = pad_mask.bool()
@@ -108,22 +108,27 @@ class _PatchTSTFMBackbone(nn.Module):
         miss_mask = miss_mask.bool()
 
         B, T = x.shape
+        n_patch = T // self.d_patch
+        pos_offset = self.n_patch - n_patch
         ts_mask = pred_mask | pad_mask | miss_mask
 
         x_target = self.norm_fn.fit_transform(x, mask=ts_mask)
         x_input = torch.where(ts_mask, torch.zeros_like(x_target), x_target)
 
-        x_patch = x_input.reshape(B, self.n_patch, self.d_patch)
-        mask_patch = ts_mask.reshape(B, self.n_patch, self.d_patch)
+        x_patch = x_input.reshape(B, n_patch, self.d_patch)
+        mask_patch = ts_mask.reshape(B, n_patch, self.d_patch)
         pad_patch_mask = (
-            pad_mask.reshape(B, self.n_patch, self.d_patch).float().mean(dim=-1).gt(0.9)
+            pad_mask.reshape(B, n_patch, self.d_patch).float().mean(dim=-1).gt(0.9)
         )
 
         q_pred = self.decode(
-            x=x_patch, mask=mask_patch.float(), t_pad_mask=pad_patch_mask
+            x=x_patch,
+            mask=mask_patch.float(),
+            t_pad_mask=pad_patch_mask,
+            pos_offset=pos_offset,
         )
 
-        # q_pred: (B, num_quantile, n_patch, d_patch) -> (B, context_length, num_quantile)
+        # q_pred: (B, num_quantile, n_patch, d_patch) -> (B, input_length, num_quantile)
         q_pred = q_pred.permute(0, 2, 3, 1)
         B, N, D, Q = q_pred.shape
         q_pred = q_pred.reshape(B, N * D, Q)
@@ -134,13 +139,14 @@ class _PatchTSTFMBackbone(nn.Module):
         x: torch.Tensor,
         mask: torch.Tensor,
         t_pad_mask: torch.Tensor,
+        pos_offset: int = 0,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Decode patches through transformer and quantile head."""
         B, N, D = x.shape
         x = self.in_layer(torch.cat([x, 1 - mask], dim=-1))
         pad_attn_mask = _make_attn_mask(t_pad_mask, t_pad_mask).unsqueeze(1)
 
-        x = self.pos_embed(x)
+        x = self.pos_embed(x, offset=pos_offset)
         for block in self.blocks:
             x = block(x, pad_attn_mask)
         x = self.out_layer(x)
@@ -246,7 +252,6 @@ class _PatchTSTFMModule(PLForecastingModule):
         # B: batch size
         # L: input chunk length
         # T: output chunk length
-        # CONT = 8192: context length
         # W = 99: quantiles
         # C: target components
         # N: likelihood quantiles (user-specified)
@@ -268,11 +273,14 @@ class _PatchTSTFMModule(PLForecastingModule):
         nan_mask = torch.isnan(context)
         context = torch.where(nan_mask, context_mean.expand_as(context), context)
 
-        # Build the full context window
-        left_pad = self.context_length - (past_length + forecast_length)
-        # pad context to the left with mean values: (B * C, CONT - L - T)
+        # Pad only to the nearest multiple of d_patch (not the full context_length).
+        # The backbone uses right-aligned positional embeddings to maintain equivalence
+        # with the pre-trained model.
+        left_pad = (-(past_length + forecast_length)) % self.d_patch
+
         pad_values = context_mean.expand(effective_batch, left_pad)
-        # `full_input`: (B * C, CONT)
+        # `full_input`: (B * C, total_length),
+        # where `total_length`: left_pad + past_length + forecast_length
         full_input = torch.cat(
             [
                 pad_values,
@@ -281,7 +289,7 @@ class _PatchTSTFMModule(PLForecastingModule):
             ],
             dim=1,
         )
-        # `pad_mask`: (B * C, CONT)
+        # `pad_mask`: (B * C, total_length)
         # only treat leading NaNs (from variable input chunk length padding) and not
         # actual NaNs as padding for attention masking
         has_nan = nan_mask.any()
@@ -302,7 +310,7 @@ class _PatchTSTFMModule(PLForecastingModule):
             ],
             dim=1,
         )
-        # `pred_mask`: (B * C, CONT)
+        # `pred_mask`: (B * C, total_length)
         pred_mask = torch.cat(
             [
                 torch.zeros(
@@ -312,7 +320,7 @@ class _PatchTSTFMModule(PLForecastingModule):
             ],
             dim=1,
         )
-        # `miss_mask`: (B * C, CONT)
+        # `miss_mask`: (B * C, total_length)
         miss_mask = torch.cat(
             [
                 torch.zeros(effective_batch, left_pad, device=context.device),
@@ -323,17 +331,17 @@ class _PatchTSTFMModule(PLForecastingModule):
         )
 
         # forward pass through backbone
-        # `q_pred`: (B * C, CONT, W)  -- raw normalised-space quantile predictions
+        # `q_pred`: (B * C, total_length, W)  -- raw normalised-space quantile predictions
         q_pred = self.backbone(full_input, pred_mask, miss_mask, pad_mask)
 
-        # inverse normalization: (B * C, CONT, W) -> (B * C, W, CONT)
+        # inverse normalization: (B * C, total_length, W) -> (B * C, W, total_length)
         q_out = q_pred.permute(0, 2, 1)
         q_out = self.backbone.norm_fn.inverse_transform(q_out)
 
         # extract forecast region
         # `q_forecast`: (B * C, W, T)
         forecast_start = left_pad + past_length + output_chunk_shift
-        forecast_end = forecast_start + forecast_length
+        forecast_end = forecast_start + output_chunk_length
         q_forecast = q_out[:, :, forecast_start:forecast_end]
 
         # -> (B, C, W, T)
