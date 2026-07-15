@@ -115,12 +115,15 @@ class _DartsCheckpointIO(TorchCheckpointIO):
     """
 
     def load_checkpoint(self, path, map_location=None, weights_only=None, **kwargs):
-        if weights_only is None:
-            weights_only = False
+        weights_only_kwargs = dict()
+        if _PL_2_6_OR_ABOVE:
+            weights_only_kwargs["weights_only"] = (
+                False if weights_only is None else weights_only
+            )
         return super().load_checkpoint(
             path,
             map_location=map_location,
-            weights_only=weights_only,
+            **weights_only_kwargs,
             **kwargs,
         )
 
