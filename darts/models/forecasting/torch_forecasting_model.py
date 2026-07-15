@@ -37,6 +37,7 @@ import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import torch
+from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import ProgressBar
 from pytorch_lightning.tuner import Tuner
@@ -101,6 +102,27 @@ logger = get_logger(__name__)
 
 # lightning 2.6.0 introduced `weights_only` loading to API
 _PL_2_6_OR_ABOVE = tuple(int(el) for el in pl.__version__.split(".")[:2]) >= (2, 6)
+
+
+class _DartsCheckpointIO(TorchCheckpointIO):
+    """Custom CheckpointIO that defaults ``weights_only`` to ``False``.
+
+    PyTorch >= 2.6 changed ``torch.load`` to default to ``weights_only=True``.
+    Darts checkpoints contain non-tensor objects (optimizer state, hparams, etc.)
+    that require full unpickling. By injecting this plugin into the Trainer, all
+    internal checkpoint loading paths (resume training, Tuner, etc.) automatically
+    use ``weights_only=False`` without having to patch each call site.
+    """
+
+    def load_checkpoint(self, path, map_location=None, weights_only=None, **kwargs):
+        if weights_only is None:
+            weights_only = False
+        return super().load_checkpoint(
+            path,
+            map_location=map_location,
+            weights_only=weights_only,
+            **kwargs,
+        )
 
 
 def _get_checkpoint_folder(work_dir, model_name):
@@ -589,8 +611,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # prevent lightning from adding callbacks to the callbacks list in `self.trainer_params`
         callbacks = trainer_params_copy.pop("callbacks", None)
+
+        # ensure internal checkpoint loading (e.g. resuming training, Tuner) uses
+        # weights_only=False so that non-tensor objects (optimizer state, hparams, etc.)
+        # can be deserialized (PyTorch >= 2.6 defaults to weights_only=True)
+        plugins = list(trainer_params_copy.pop("plugins", None) or [])
+        has_checkpoint_io = any(isinstance(p, TorchCheckpointIO) for p in plugins)
+        if not has_checkpoint_io:
+            plugins.append(_DartsCheckpointIO())
+
         return pl.Trainer(
             callbacks=[cb for cb in callbacks] if callbacks is not None else callbacks,
+            plugins=plugins,
             **trainer_params_copy,
         )
 
