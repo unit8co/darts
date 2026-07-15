@@ -1685,9 +1685,16 @@ class TestTorchForecastingModel:
     @pytest.mark.slow
     def test_lr_find(self):
         train_series, val_series = self.series[:-40], self.series[-40:]
-        model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
+        model_kwargs = {
+            "input_chunk_length": 12,
+            "output_chunk_length": 1,
+            "random_state": 42,
+            "n_epochs": 50,
+            **tfm_kwargs,
+        }
+        model = DLinearModel(**model_kwargs)
         # find the learning rate
-        res = model.lr_find(series=train_series, val_series=val_series, epochs=50)
+        res = model.lr_find(series=train_series, val_series=val_series)
         assert isinstance(res, _LRFinder)
         assert res.suggestion() is not None
         # verify that learning rate finder bypasses the `fit` logic
@@ -1698,8 +1705,8 @@ class TestTorchForecastingModel:
             model.predict(n=3, series=self.series)
 
         # check that results are reproducible
-        model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
-        res2 = model.lr_find(series=train_series, val_series=val_series, epochs=50)
+        model = DLinearModel(**model_kwargs)
+        res2 = model.lr_find(series=train_series, val_series=val_series)
         assert res.suggestion() == res2.suggestion()
 
         # check that suggested learning rate is better than the worst
@@ -1707,16 +1714,9 @@ class TestTorchForecastingModel:
         lr_suggested = res.suggestion()
         scores = {}
         for lr, lr_name in zip([lr_worst, lr_suggested], ["worst", "suggested"]):
-            model = RNNModel(
-                12,
-                "RNN",
-                10,
-                10,
-                n_epochs=10,
-                random_state=42,
-                optimizer_cls=torch.optim.Adam,
+            model = DLinearModel(
                 optimizer_kwargs={"lr": lr},
-                **tfm_kwargs,
+                **model_kwargs,
             )
             model.fit(train_series)
             scores[lr_name] = mape(

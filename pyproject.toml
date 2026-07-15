@@ -58,7 +58,7 @@ Repository = "https://github.com/unit8co/darts"
 # Main feature sets - pip installable with: pip install "darts[torch]"
 torch = [
     "torch>=2.0.0",
-    "pytorch-lightning>=2.0.0,<2.5.3",
+    "pytorch-lightning>=2.0.0",
     "tensorboardx>=2.1",
     "huggingface-hub>=0.35.3",
     "safetensors>=0.6.2",
