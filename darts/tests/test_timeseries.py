@@ -847,6 +847,66 @@ class TestTimeSeries:
         assert series_1.prepend(series_prepend).dtype == dt_source
         assert series_1.append(series_append).dtype == dt_source
 
+    def test_append_invalid_inputs(self):
+        series = linear_timeseries(length=1)
+        other_valid = linear_timeseries(length=1, start=series.end_time() + series.freq)
+
+        with pytest.raises(ValueError, match=r"must start one \(time\) step after"):
+            series.append(other_valid.shift(1))
+
+        with pytest.raises(ValueError, match="same number of components"):
+            series.append(other_valid.stack(other_valid))
+
+        with pytest.raises(ValueError, match="same number of samples"):
+            series.append(
+                other_valid.with_values(
+                    np.concatenate([other_valid.all_values()] * 2, axis=2)
+                )
+            )
+
+        with pytest.raises(ValueError, match="same type of time index"):
+            series.append(linear_timeseries(length=1, start=0))
+
+        with pytest.raises(ValueError, match="must have the same frequency"):
+            series.append(
+                linear_timeseries(
+                    start=series.end_time() + series.freq,
+                    length=1,
+                    freq=2 * series.freq,
+                )
+            )
+
+    def test_prepend_invalid_inputs(self):
+        series = linear_timeseries(length=1)
+        other_valid = linear_timeseries(
+            length=1, start=None, end=series.start_time() - series.freq
+        )
+
+        with pytest.raises(ValueError, match=r"must end one \(time\) step before"):
+            series.prepend(other_valid.shift(1))
+
+        with pytest.raises(ValueError, match="same number of components"):
+            series.prepend(other_valid.stack(other_valid))
+
+        with pytest.raises(ValueError, match="same number of samples"):
+            series.prepend(
+                other_valid.with_values(
+                    np.concatenate([other_valid.all_values()] * 2, axis=2)
+                )
+            )
+
+        with pytest.raises(ValueError, match="same type of time index"):
+            series.prepend(linear_timeseries(length=1, start=0))
+
+        with pytest.raises(ValueError, match="must have the same frequency"):
+            series.prepend(
+                linear_timeseries(
+                    start=series.end_time() + series.freq,
+                    length=1,
+                    freq=2 * series.freq,
+                )
+            )
+
     @pytest.mark.parametrize(
         "dt_source,dt_vals",
         itertools.product(["float32", "float64"], ["float64", "float32"]),
