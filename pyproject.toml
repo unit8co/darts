@@ -186,7 +186,7 @@ release = [
     "ipywidgets==8.1.8",
     "jinja2==3.1.6",
     "jupyterlab==4.5.9",
-    "lxml-html-clean==0.4.4",
+    "lxml-html-clean==0.4.5",
     "myst-parser==5.0.0; python_version >= '3.11'",
     "myst-parser==4.0.1; python_version < '3.11'",
     "nbsphinx==0.9.7",
