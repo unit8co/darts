@@ -2899,6 +2899,7 @@ class TimeSeries:
         if (self._values[0, :, :] == 0).any():
             raise_log(ValueError("Cannot rescale with first value `0`."))
         coef = value_at_first_step / self._values[:1]
+        coef = _maybe_cast_array_dtype(coef, self.dtype)
         return self.__class__(
             times=self._time_index,
             values=self._values * coef,
@@ -3088,13 +3089,8 @@ class TimeSeries:
                         "Appended TimeSeries must start one (time) step after current one."
                     ),
                 )
-
-        values_self = self._values
-        values_other = other._values
-        if values_other.dtype != values_self.dtype:
-            values_other = values_other.astype(values_self.dtype)
-
-        values = np.concatenate((values_self, values_other), axis=0)
+        values_other = _maybe_cast_array_dtype(other._values, self.dtype)
+        values = np.concatenate((self._values, values_other), axis=0)
         times = self._time_index.append(other._time_index)
         return self.__class__(
             times=times,
@@ -3192,12 +3188,8 @@ class TimeSeries:
                     ),
                 )
 
-        values_self = self._values
-        values_other = other._values
-        if values_other.dtype != values_self.dtype:
-            values_other = values_other.astype(values_self.dtype)
-
-        values = np.concatenate((values_other, values_self), axis=0)
+        values_other = _maybe_cast_array_dtype(other._values, self.dtype)
+        values = np.concatenate((values_other, self._values), axis=0)
         times = other._time_index.append(self._time_index)
         return self.__class__(
             times=times,
@@ -3303,9 +3295,7 @@ class TimeSeries:
                     f"Received: {values.shape[1]}, expected: {self.shape[1]}"
                 ),
             )
-        if values.dtype != self.dtype:
-            values = values.astype(self.dtype)
-
+        values = _maybe_cast_array_dtype(values, self.dtype)
         return self.__class__(
             times=times,
             values=values,
@@ -3339,9 +3329,7 @@ class TimeSeries:
                     f"Received: {values.shape[:2]}, expected: {self.shape[:2]}"
                 ),
             )
-        if values.dtype != self.dtype:
-            values = values.astype(self.dtype)
-
+        values = _maybe_cast_array_dtype(values, self.dtype)
         return self.__class__(
             times=self._time_index,
             values=values,
@@ -3865,6 +3853,7 @@ class TimeSeries:
                 )
             )
 
+        values = _maybe_cast_array_dtype(values, self.dtype)
         return self.__class__(
             times=self._time_index,
             values=values,
@@ -4336,11 +4325,15 @@ class TimeSeries:
                     for k, v in self.hierarchy.items()
                 }
 
+        resulting_transformations = resulting_transformations.values.reshape(
+            len(new_index), -1, n_samples
+        )
+        resulting_transformations = _maybe_cast_array_dtype(
+            resulting_transformations, self.dtype
+        )
         transformed_time_series = TimeSeries(
             times=new_index,
-            values=resulting_transformations.values.reshape(
-                len(new_index), -1, n_samples
-            ),
+            values=resulting_transformations,
             components=new_columns,
             static_covariates=self.static_covariates,
             hierarchy=new_hierarchy,
@@ -6012,7 +6005,10 @@ def concatenate(
     hierarchy = series[0].hierarchy
     metadata = None if drop_metadata else series[0].metadata
 
+    dtype_source = vals[0].dtype
     vals = np.concatenate(vals, axis=axis)
+    vals = _maybe_cast_array_dtype(vals, dtype_source)
+
     if axis == 0:
         # time
         if not (component_axis_equal and sample_axis_equal):
@@ -6273,3 +6269,9 @@ def _clean_components(components: pd.Index) -> pd.Index:
 def _is_xarray(obj) -> bool:
     """Check if *obj* is an xarray type without importing xarray."""
     return type(obj).__module__.startswith("xarray")
+
+
+def _maybe_cast_array_dtype(vals: np.ndarray, dtype):
+    if vals.dtype != dtype:
+        vals = vals.astype(dtype)
+    return vals

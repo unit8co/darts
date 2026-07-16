@@ -556,6 +556,18 @@ class TestTimeSeries:
         seriesD = self.series2.rescale_with_value(1e20)
         assert self.series2 * 0.2e20 == seriesD
 
+    @pytest.mark.parametrize(
+        "dt_source,dt_vals",
+        itertools.product(["float32", "float64"], ["float64", "float32"]),
+    )
+    def test_rescale_dtype_conversion(self, dt_source, dt_vals):
+        series_1 = linear_timeseries(
+            start_value=1, start=2, length=5, freq=2, column_name="YE"
+        ).astype(dt_source)
+        vals = np.array(2, dtype=dt_vals)
+
+        assert series_1.rescale_with_value(vals).dtype == dt_source
+
     def test_slice(self):
         helper_test_slice(self.series1)
 
@@ -818,13 +830,13 @@ class TestTimeSeries:
         assert prepended.components.equals(series_2.components)
 
     @pytest.mark.parametrize(
-        "dt_sorce,dt_vals",
+        "dt_source,dt_vals",
         itertools.product(["float32", "float64"], ["float64", "float32"]),
     )
-    def test_append_prepend_dtype_conversion(self, dt_sorce, dt_vals):
+    def test_append_prepend_dtype_conversion(self, dt_source, dt_vals):
         series_1 = linear_timeseries(
             start=2, length=5, freq=2, column_name="YE"
-        ).astype(dt_sorce)
+        ).astype(dt_source)
         series_prepend = linear_timeseries(
             start=0, length=1, freq=2, column_name="YE"
         ).astype(dt_vals)
@@ -832,21 +844,21 @@ class TestTimeSeries:
             start=12, length=1, freq=2, column_name="YE"
         ).astype(dt_vals)
 
-        assert series_1.prepend(series_prepend).dtype == dt_sorce
-        assert series_1.append(series_append).dtype == dt_sorce
+        assert series_1.prepend(series_prepend).dtype == dt_source
+        assert series_1.append(series_append).dtype == dt_source
 
     @pytest.mark.parametrize(
-        "dt_sorce,dt_vals",
+        "dt_source,dt_vals",
         itertools.product(["float32", "float64"], ["float64", "float32"]),
     )
-    def test_append_prepend_values_dtype_conversion(self, dt_sorce, dt_vals):
+    def test_append_prepend_values_dtype_conversion(self, dt_source, dt_vals):
         series_1 = linear_timeseries(
             start=1, length=5, freq=2, column_name="YE"
-        ).astype(dt_sorce)
+        ).astype(dt_source)
         vals = np.array([[1]], dtype=dt_vals)
 
-        assert series_1.prepend_values(vals).dtype == dt_sorce
-        assert series_1.append_values(vals).dtype == dt_sorce
+        assert series_1.prepend_values(vals).dtype == dt_source
+        assert series_1.append_values(vals).dtype == dt_source
 
     @pytest.mark.parametrize(
         "config",
@@ -894,18 +906,18 @@ class TestTimeSeries:
         )
 
     @pytest.mark.parametrize(
-        "dt_sorce,dt_vals",
+        "dt_source,dt_vals",
         itertools.product(["float32", "float64"], ["float64", "float32"]),
     )
-    def test_with_values_dtype_conversion(self, dt_sorce, dt_vals):
+    def test_with_values_dtype_conversion(self, dt_source, dt_vals):
         series_1 = linear_timeseries(
             start=2, length=5, freq=2, column_name="YE"
-        ).astype(dt_sorce)
+        ).astype(dt_source)
         vals = series_1.all_values(copy=True).astype(dt_vals)
 
-        assert series_1.with_values(vals).dtype == dt_sorce
+        assert series_1.with_values(vals).dtype == dt_source
         assert (
-            series_1.with_times_and_values(series_1.time_index, vals).dtype == dt_sorce
+            series_1.with_times_and_values(series_1.time_index, vals).dtype == dt_source
         )
 
     def test_cumsum(self):
@@ -1051,6 +1063,22 @@ class TestTimeSeries:
         assert seriesA * arrayB == seriesMul
         assert seriesA / arrayB == seriesDiv
         assert seriesA**arrayB == seriesPow
+
+    @pytest.mark.parametrize(
+        "dt_source,dt_vals",
+        itertools.product(["float32", "float64"], ["float64", "float32"]),
+    )
+    def test_ops_dtype_conversion(self, dt_source, dt_vals):
+        series = linear_timeseries(
+            start_value=1, start=2, length=5, freq=2, column_name="YE"
+        ).astype(dt_source)
+        vals = series.all_values(copy=True).astype(dt_vals)
+
+        assert (series + vals).dtype == dt_source
+        assert (series - vals).dtype == dt_source
+        assert (series * vals).dtype == dt_source
+        assert (series / vals).dtype == dt_source
+        assert (series**vals).dtype == dt_source
 
     def test_getitem_datetime_index(self):
         series_short: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))
@@ -2823,6 +2851,21 @@ class TestTimeSeriesConcatenate:
         assert pd.Timestamp("2000-01-01") == result_ts.start_time()
         assert pd.Timestamp("2000-01-20") == result_ts.end_time()
         assert "D" == result_ts.freq
+
+    @pytest.mark.parametrize(
+        "dt_source,dt_vals",
+        itertools.product(["float32", "float64"], ["float64", "float32"]),
+    )
+    def test_concatenate_dtype_conversion(self, dt_source, dt_vals):
+        series_1 = linear_timeseries(
+            start=2, length=5, freq=2, column_name="YE"
+        ).astype(dt_source)
+        series_2 = linear_timeseries(
+            start=12, length=1, freq=2, column_name="YE"
+        ).astype(dt_vals)
+
+        assert series_1.concatenate(series_2).dtype == dt_source
+        assert concatenate([series_1, series_2]).dtype == dt_source
 
 
 class TestTimeSeriesHierarchy:
