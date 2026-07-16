@@ -15,7 +15,11 @@ from darts.dataprocessing.transformers import (
     InvertibleDataTransformer,
 )
 from darts.logging import raise_log
-from darts.timeseries import DEFAULT_GLOBAL_STATIC_COV_NAME, _finite_rows_boundaries
+from darts.timeseries import (
+    DEFAULT_GLOBAL_STATIC_COV_NAME,
+    _finite_rows_boundaries,
+    _maybe_cast_array_dtype,
+)
 from darts.typing import TimeIndex, TimeSeriesLike
 from darts.utils.utils import generate_index
 
@@ -489,7 +493,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         )
         return TimeSeries(
             times=time_index,
-            values=arr,
+            values=_maybe_cast_array_dtype(arr, series.dtype),
             components=cols,
             static_covariates=static_covariates,
             metadata=series.metadata,
