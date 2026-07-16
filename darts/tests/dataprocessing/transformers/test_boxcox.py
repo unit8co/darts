@@ -19,11 +19,11 @@ class TestBoxCox:
         boxcox = BoxCox(lmbda=0.3)
 
         boxcox.fit(self.multi_series)
-        assert boxcox._fitted_params == [[0.3, 0.3]]
+        np.testing.assert_equal(boxcox._fitted_params, [[0.3, 0.3]])
 
         boxcox = BoxCox(lmbda=[0.3, 0.4])
         boxcox.fit(self.multi_series)
-        assert boxcox._fitted_params == [[0.3, 0.4]]
+        np.testing.assert_equal(boxcox._fitted_params, [[0.3, 0.4]])
 
         with pytest.raises(ValueError):
             boxcox = BoxCox(lmbda=[0.2, 0.4, 0.5])
