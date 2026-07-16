@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added support for `start="end"` in `historical_forecasts()`, which generates a single forecast per input series starting one step after the end of each series (future-only forecasting). This is also available through `backtest()`, `residuals()`, and `gridsearch()`. [#XXXX](https://github.com/unit8co/darts/pull/XXXX) by [Dennis Bader](https://github.com/dennisbader).
 - 🚀 Improvements to `FoundationModel` : [#3154](https://github.com/unit8co/darts/pull/3154) by [Dennis Bader](https://github.com/dennisbader).
   - Added variable input chunk length support to all foundation models. `input_chunk_length` can now be a `(min_length, max_length)` tuple, allowing the model to accept target series of different lengths in a single call and automatically use the maximum available history per series (left-padded with NaN up to `max_length`). This removes the need to manually pre-pad time series or create models with updated `input_chunk_length` before prediction or fine-tuning.
   - `load_weights()` now allows loading weights from a checkpoint saved with different `input_chunk_length`, `output_chunk_length`, or `output_chunk_shift`. This simplifies model storage, as now the same model can be loaded for different task-specific input / output window configurations.

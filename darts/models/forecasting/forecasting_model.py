@@ -674,7 +674,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | float | int | None = None,
+        start: pd.Timestamp | float | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -757,12 +757,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             (``output_chunk_length + output_chunk_shift`` for global models and ``0`` for local models).
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
-            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            ``float``, ``int``, ``pandas.Timestamp``, ``'end'``, and ``None``.
             If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
             If an ``int``, it is either the index position of the first prediction point for `series` with a
             `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
             the index position with `start_format="position"`.
             If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If the string ``'end'``, generates a single forecast per series starting one step after the end of each
+            series (future-only forecasting). The model uses the entire series as input. Forecasts will extend beyond
+            the series end regardless of the ``overlap_end`` parameter value.
             If ``None``, the first prediction point will automatically be set to:
 
             - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
@@ -778,7 +781,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
               (default behavior with ``None``) and start at the first trainable/predictable point.
         start_format
-            Defines the `start` format.
+            Defines the `start` format. Ignored when ``start='end'``.
             If set to ``'position'``, `start` corresponds to the index position of the first predicted point and can
             range from `(-len(series), len(series) - 1)`.
             If set to ``'value'``, `start` corresponds to the index value/label of the first predicted point. Will raise
@@ -1255,7 +1258,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | float | int | None = None,
+        start: pd.Timestamp | float | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -1327,12 +1330,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             (``output_chunk_length + output_chunk_shift`` for global models and ``0`` for local models).
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
-            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            ``float``, ``int``, ``pandas.Timestamp``, ``'end'``, and ``None``.
             If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
             If an ``int``, it is either the index position of the first prediction point for `series` with a
             `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
             the index position with `start_format="position"`.
             If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If the string ``'end'``, generates a single forecast per series starting one step after the end of each
+            series (future-only forecasting). The model uses the entire series as input. Forecasts will extend beyond
+            the series end regardless of the ``overlap_end`` parameter value.
             If ``None``, the first prediction point will automatically be set to:
 
             - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
@@ -1351,7 +1357,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
               also shifted by `output_chunk_shift` points into the future.
 
         start_format
-            Defines the `start` format.
+            Defines the `start` format. Ignored when ``start='end'``.
             If set to ``'position'``, `start` corresponds to the index position of the first predicted point and can
             range from `(-len(series), len(series) - 1)`.
             If set to ``'value'``, `start` corresponds to the index value/label of the first predicted point. Will raise
@@ -1630,7 +1636,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         future_covariates: TimeSeries | None = None,
         forecast_horizon: int | None = None,
         stride: int = 1,
-        start: pd.Timestamp | float | int | None = None,
+        start: pd.Timestamp | float | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         last_points_only: bool = False,
         show_warnings: bool = True,
@@ -2011,7 +2017,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | float | int | None = None,
+        start: pd.Timestamp | float | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -2092,12 +2098,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             (``output_chunk_length + output_chunk_shift`` for global models and ``0`` for local models).
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
-            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            ``float``, ``int``, ``pandas.Timestamp``, ``'end'``, and ``None``.
             If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
             If an ``int``, it is either the index position of the first prediction point for `series` with a
             `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
             the index position with `start_format="position"`.
             If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If the string ``'end'``, generates a single forecast per series starting one step after the end of each
+            series (future-only forecasting). The model uses the entire series as input. Forecasts will extend beyond
+            the series end regardless of the ``overlap_end`` parameter value.
             If ``None``, the first prediction point will automatically be set to:
 
             - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
@@ -2840,7 +2849,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates: Sequence[TimeSeries] | None = None,
         future_covariates: Sequence[TimeSeries] | None = None,
         num_samples: int = 1,
-        start: pd.Timestamp | float | int | None = None,
+        start: pd.Timestamp | float | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
         stride: int = 1,

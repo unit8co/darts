@@ -1023,7 +1023,7 @@ class TestHistoricalforecast:
         with pytest.raises(TypeError) as msg:
             model.historical_forecasts(rangeidx_step1, start=[0.1])
         assert str(msg.value).startswith(
-            "`start` must be either `float`, `int`, `pd.Timestamp` or `None`."
+            "`start` must be either `float`, `int`, `pd.Timestamp`, `'end'` or `None`."
         )
 
         # label_index (timestamp) with range index series
@@ -1183,6 +1183,102 @@ class TestHistoricalforecast:
         assert str(msg.value).startswith(
             "`start` position `10` is out of bounds for series of length 10"
         )
+
+    @pytest.mark.parametrize(
+        "config",
+        list(
+            itertools.product(
+                [True, False],  # retrain
+                [True, False],  # last_points_only
+            )
+        ),
+    )
+    def test_historical_forecasts_start_end(self, config):
+        """Test start='end' generates a single forecast per series starting one step after series end."""
+        retrain, last_points_only = config
+        model = LinearRegressionModel(lags=2)
+        ts_dt = tg.linear_timeseries(
+            length=20, start=pd.Timestamp("2000-01-01"), freq="D"
+        )
+        ts_ri = tg.linear_timeseries(length=20, start=0, freq=1)
+
+        if not retrain:
+            model.fit(ts_dt)
+
+        for ts in [ts_dt, ts_ri]:
+            preds = model.historical_forecasts(
+                ts,
+                start="end",
+                retrain=retrain,
+                last_points_only=last_points_only,
+            )
+            if last_points_only:
+                assert isinstance(preds, TimeSeries)
+                assert len(preds) == 1
+                assert preds.start_time() == ts.end_time() + ts.freq
+            else:
+                assert isinstance(preds, list)
+                assert len(preds) == 1
+                assert preds[0].start_time() == ts.end_time() + ts.freq
+
+    def test_historical_forecasts_start_end_multiple_series(self):
+        """Test start='end' with multiple series."""
+        model = LinearRegressionModel(lags=2)
+        ts1 = tg.linear_timeseries(
+            length=15, start=pd.Timestamp("2000-01-01"), freq="D"
+        )
+        ts2 = tg.linear_timeseries(
+            length=20, start=pd.Timestamp("2001-01-01"), freq="D"
+        )
+
+        preds = model.historical_forecasts(
+            [ts1, ts2],
+            start="end",
+            retrain=True,
+            last_points_only=True,
+        )
+        assert len(preds) == 2
+        for pred, ts in zip(preds, [ts1, ts2]):
+            assert isinstance(pred, TimeSeries)
+            assert len(pred) == 1
+            assert pred.start_time() == ts.end_time() + ts.freq
+
+    def test_historical_forecasts_start_end_invalid_string(self):
+        """Test that invalid string values for start raise ValueError."""
+        model = LinearRegressionModel(lags=2)
+        ts = tg.linear_timeseries(length=20)
+        with pytest.raises(ValueError, match=r"`start` string value must be 'end'"):
+            model.historical_forecasts(ts, start="invalid")
+
+    def test_historical_forecasts_start_end_forecast_horizon(self):
+        """Test start='end' with different forecast horizons."""
+        model = LinearRegressionModel(lags=2)
+        ts = tg.linear_timeseries(length=20, start=pd.Timestamp("2000-01-01"), freq="D")
+
+        for fh in [1, 3, 5]:
+            preds = model.historical_forecasts(
+                ts,
+                start="end",
+                forecast_horizon=fh,
+                retrain=True,
+                last_points_only=False,
+            )
+            assert len(preds) == 1
+            assert len(preds[0]) == fh
+            assert preds[0].start_time() == ts.end_time() + ts.freq
+
+    def test_historical_forecasts_start_end_overlap_end_ignored(self):
+        """Test that overlap_end parameter is ignored when start='end'."""
+        model = LinearRegressionModel(lags=2)
+        ts = tg.linear_timeseries(length=20, start=pd.Timestamp("2000-01-01"), freq="D")
+
+        preds_oe_true = model.historical_forecasts(
+            ts, start="end", overlap_end=True, retrain=True
+        )
+        preds_oe_false = model.historical_forecasts(
+            ts, start="end", overlap_end=False, retrain=True
+        )
+        assert preds_oe_true == preds_oe_false
 
     @pytest.mark.parametrize(
         "config",
