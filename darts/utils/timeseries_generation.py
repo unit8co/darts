@@ -881,7 +881,8 @@ def _build_forecast_series_from_schema(
         static_covariates = schema[STATIC_COV_TAG]
         hierarchy = schema[HIERARCHY_TAG]
 
-    values = _maybe_cast_array_dtype(values, schema["dtype"])
+    # only torch models use this helper, we do not cast the data type to the input series' type
+    # since we support custom model precision
     return TimeSeries(
         times=time_index,
         values=values,
