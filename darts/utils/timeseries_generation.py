@@ -18,6 +18,7 @@ from darts.timeseries import (
     STATIC_COV_TAG,
     TIME_AX,
     TimeSeries,
+    _maybe_cast_array_dtype,
 )
 from darts.typing import TimeIndex, TimeZone
 from darts.utils.utils import generate_index
@@ -814,6 +815,7 @@ def _build_forecast_series(
         if isinstance(points_preds, np.ndarray)
         else np.stack(points_preds, axis=2)
     )
+    values = _maybe_cast_array_dtype(values, input_series.dtype)
     return TimeSeries(
         times=time_index,
         values=values,
@@ -880,6 +882,7 @@ def _build_forecast_series_from_schema(
         static_covariates = schema[STATIC_COV_TAG]
         hierarchy = schema[HIERARCHY_TAG]
 
+    values = _maybe_cast_array_dtype(values, schema["dtype"])
     return TimeSeries(
         times=time_index,
         values=values,

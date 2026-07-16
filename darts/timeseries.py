@@ -1937,6 +1937,7 @@ class TimeSeries:
         - "static_covariates": the static covariates
         - "hierarchy": the hierarchy
         - "metadata": the metadata
+        - "dtype": the data type
         """
         schema = {
             "time_freq": self._freq,
@@ -1945,6 +1946,7 @@ class TimeSeries:
             STATIC_COV_TAG: self.static_covariates,
             HIERARCHY_TAG: self.hierarchy,
             METADATA_TAG: self.metadata,
+            "dtype": str(self.dtype),
         }
         if copy:
             schema = {k: deepcopy(v) for k, v in schema.items()}
