@@ -14,7 +14,7 @@ from nfoursid.nfoursid import NFourSID
 from darts import TimeSeries
 from darts.logging import raise_log
 from darts.models.filtering.filtering_model import FilteringModel
-from darts.timeseries import _maybe_cast_array_dtype
+from darts.utils.utils import _maybe_cast_array_dtype
 
 
 class KalmanFilter(FilteringModel, ABC):

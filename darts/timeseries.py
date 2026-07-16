@@ -73,6 +73,7 @@ from darts.utils._formatting import (
 )
 from darts.utils.utils import (
     SUPPORTED_RESAMPLE_METHODS,
+    _maybe_cast_array_dtype,
     dataframe_col_to_time_index,
     expand_arr,
     generate_index,
@@ -6271,9 +6272,3 @@ def _clean_components(components: pd.Index) -> pd.Index:
 def _is_xarray(obj) -> bool:
     """Check if *obj* is an xarray type without importing xarray."""
     return type(obj).__module__.startswith("xarray")
-
-
-def _maybe_cast_array_dtype(vals: np.ndarray, dtype):
-    if vals.dtype != dtype:
-        vals = vals.astype(dtype)
-    return vals

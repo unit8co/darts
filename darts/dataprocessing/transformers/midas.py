@@ -18,10 +18,9 @@ from darts.logging import raise_log
 from darts.timeseries import (
     DEFAULT_GLOBAL_STATIC_COV_NAME,
     _finite_rows_boundaries,
-    _maybe_cast_array_dtype,
 )
 from darts.typing import TimeIndex, TimeSeriesLike
-from darts.utils.utils import generate_index
+from darts.utils.utils import _maybe_cast_array_dtype, generate_index
 
 
 class MIDAS(FittableDataTransformer, InvertibleDataTransformer):

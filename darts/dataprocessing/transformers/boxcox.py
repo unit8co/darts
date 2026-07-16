@@ -19,8 +19,8 @@ from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
 from darts.logging import raise_log
-from darts.timeseries import _maybe_cast_array_dtype
 from darts.typing import TimeSeriesLike
+from darts.utils.utils import _maybe_cast_array_dtype
 
 
 class BoxCox(FittableDataTransformer, InvertibleDataTransformer):

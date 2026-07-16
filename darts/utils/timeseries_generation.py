@@ -18,10 +18,9 @@ from darts.timeseries import (
     STATIC_COV_TAG,
     TIME_AX,
     TimeSeries,
-    _maybe_cast_array_dtype,
 )
 from darts.typing import TimeIndex, TimeZone
-from darts.utils.utils import generate_index
+from darts.utils.utils import _maybe_cast_array_dtype, generate_index
 
 ONE_INDEXED_FREQS = {
     "day",

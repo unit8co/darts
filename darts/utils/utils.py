@@ -818,3 +818,10 @@ def dataframe_col_to_time_index(
     if not time_index.name:
         time_index.name = time_col
     return time_index
+
+
+def _maybe_cast_array_dtype(vals: np.ndarray, dtype):
+    """Cast an array to `dtype` if it does not yet have the correct data type."""
+    if vals.dtype != dtype:
+        vals = vals.astype(dtype)
+    return vals
