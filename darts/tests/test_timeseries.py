@@ -815,7 +815,38 @@ class TestTimeSeries:
         expected_idx = pd.RangeIndex(start=1, stop=15, step=2)
         assert np.allclose(prepended.all_values(), expected_vals)
         assert prepended.time_index.equals(expected_idx)
-        assert prepended.components.equals(series_1.components)
+        assert prepended.components.equals(series_2.components)
+
+    @pytest.mark.parametrize(
+        "dt_sorce,dt_vals",
+        itertools.product(["float32", "float64"], ["float64", "float32"]),
+    )
+    def test_append_prepend_dtype_conversion(self, dt_sorce, dt_vals):
+        series_1 = linear_timeseries(
+            start=2, length=5, freq=2, column_name="YE"
+        ).astype(dt_sorce)
+        series_prepend = linear_timeseries(
+            start=0, length=1, freq=2, column_name="YE"
+        ).astype(dt_vals)
+        series_append = linear_timeseries(
+            start=12, length=1, freq=2, column_name="YE"
+        ).astype(dt_vals)
+
+        assert series_1.prepend(series_prepend).dtype == dt_sorce
+        assert series_1.append(series_append).dtype == dt_sorce
+
+    @pytest.mark.parametrize(
+        "dt_sorce,dt_vals",
+        itertools.product(["float32", "float64"], ["float64", "float32"]),
+    )
+    def test_append_prepend_values_dtype_conversion(self, dt_sorce, dt_vals):
+        series_1 = linear_timeseries(
+            start=1, length=5, freq=2, column_name="YE"
+        ).astype(dt_sorce)
+        vals = np.array([[1]], dtype=dt_vals)
+
+        assert series_1.prepend_values(vals).dtype == dt_sorce
+        assert series_1.append_values(vals).dtype == dt_sorce
 
     @pytest.mark.parametrize(
         "config",

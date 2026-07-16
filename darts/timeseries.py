@@ -3088,7 +3088,13 @@ class TimeSeries:
                         "Appended TimeSeries must start one (time) step after current one."
                     ),
                 )
-        values = np.concatenate((self._values, other._values), axis=0)
+
+        values_self = self._values
+        values_other = other._values
+        if values_other.dtype != values_self.dtype:
+            values_other = values_other.astype(values_self.dtype)
+
+        values = np.concatenate((values_self, values_other), axis=0)
         times = self._time_index.append(other._time_index)
         return self.__class__(
             times=times,
@@ -3162,13 +3168,43 @@ class TimeSeries:
         TimeSeries.concatenate : concatenate another series along a given axis.
         TimeSeries.append : append another series along the time axis.
         """
-        if not isinstance(other, self.__class__):
+        if other.has_datetime_index != self.has_datetime_index:
             raise_log(
                 ValueError(
-                    f"`other` to prepend must be a {self.__class__.__name__} object."
+                    "Both series must have the same type of time index (either DatetimeIndex or RangeIndex)."
                 ),
             )
-        return other.append(self)
+        if other.freq != self.freq:
+            raise_log(ValueError("Both series must have the same frequency."))
+        if other.n_components != self.n_components:
+            raise_log(
+                ValueError("Both series must have the same number of components."),
+            )
+        if other.n_samples != self.n_samples:
+            raise_log(
+                ValueError("Both series must have the same number of samples."),
+            )
+        if len(self) > 0 and len(other) > 0:
+            if other.end_time() != self.start_time() - self.freq:
+                raise_log(
+                    ValueError(
+                        "Prepended TimeSeries must end one (time) step before current one."
+                    ),
+                )
+
+        values_self = self._values
+        values_other = other._values
+        if values_other.dtype != values_self.dtype:
+            values_other = values_other.astype(values_self.dtype)
+
+        values = np.concatenate((values_other, values_self), axis=0)
+        times = other._time_index.append(self._time_index)
+        return self.__class__(
+            times=times,
+            values=values,
+            components=self.components,
+            **self._attrs,
+        )
 
     def prepend_values(self, values: np.ndarray) -> Self:
         """Return a new series with `values` prepended to this series along the time axis (added to the beginning).
