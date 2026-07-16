@@ -1190,20 +1190,20 @@ class TestHistoricalforecast:
             itertools.product(
                 [True, False],  # retrain
                 [True, False],  # last_points_only
+                [1, 2],  # forecast_horizon
             )
         ),
     )
     def test_historical_forecasts_start_end(self, config):
         """Test start='end' generates a single forecast per series starting one step after series end."""
-        retrain, last_points_only = config
+        retrain, last_points_only, forecast_horizon = config
         model = LinearRegressionModel(lags=2)
         ts_dt = tg.linear_timeseries(
             length=20, start=pd.Timestamp("2000-01-01"), freq="D"
         )
         ts_ri = tg.linear_timeseries(length=20, start=0, freq=1)
 
-        if not retrain:
-            model.fit(ts_dt)
+        model.fit(ts_dt)
 
         for ts in [ts_dt, ts_ri]:
             preds = model.historical_forecasts(
@@ -1211,37 +1211,83 @@ class TestHistoricalforecast:
                 start="end",
                 retrain=retrain,
                 last_points_only=last_points_only,
+                forecast_horizon=forecast_horizon,
             )
-            if last_points_only:
-                assert isinstance(preds, TimeSeries)
-                assert len(preds) == 1
-                assert preds.start_time() == ts.end_time() + ts.freq
-            else:
-                assert isinstance(preds, list)
-                assert len(preds) == 1
-                assert preds[0].start_time() == ts.end_time() + ts.freq
 
-    def test_historical_forecasts_start_end_multiple_series(self):
+            if retrain:
+                model.fit(ts)
+
+            preds_direct = model.predict(n=forecast_horizon, series=ts)
+            if last_points_only:
+                preds_direct = preds_direct[-1:]
+            else:
+                preds = preds[0]
+
+            assert preds == preds_direct
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            [
+                (NaiveSeasonal, {"K": 2}),
+                (LinearRegressionModel, {"lags": 2}),
+            ]
+            + (
+                [
+                    (
+                        GlobalNaiveSeasonal,
+                        {
+                            "input_chunk_length": 2,
+                            "output_chunk_length": 1,
+                            **tfm_kwargs,
+                        },
+                    )
+                ]
+                if TORCH_AVAILABLE
+                else []
+            ),
+            [True, False],
+            [True, False],
+        ),
+    )
+    def test_historical_forecasts_start_end_multiple_series_global(self, config):
         """Test start='end' with multiple series."""
-        model = LinearRegressionModel(lags=2)
-        ts1 = tg.linear_timeseries(
-            length=15, start=pd.Timestamp("2000-01-01"), freq="D"
-        )
-        ts2 = tg.linear_timeseries(
-            length=20, start=pd.Timestamp("2001-01-01"), freq="D"
-        )
+        (model_cls, model_kwargs), retrain, apply_globally = config
+        model = model_cls(**model_kwargs)
+        ts1 = tg.sine_timeseries(length=12, start=pd.Timestamp("2000-01-01"), freq="MS")
+        ts2 = tg.sine_timeseries(length=25, start=pd.Timestamp("1999-01-01"), freq="MS")
+
+        is_global = isinstance(model, GlobalForecastingModel)
+        retrain = retrain if is_global else True
+
+        if apply_globally:
+            train_ts = slice_intersect([ts1, ts2])
+        else:
+            train_ts = [ts1, ts2]
+
+        if not retrain:
+            model.fit(train_ts)
 
         preds = model.historical_forecasts(
             [ts1, ts2],
             start="end",
-            retrain=True,
+            retrain=retrain,
             last_points_only=True,
+            enable_optimization=True,
+            apply_globally=apply_globally,
         )
-        assert len(preds) == 2
-        for pred, ts in zip(preds, [ts1, ts2]):
-            assert isinstance(pred, TimeSeries)
-            assert len(pred) == 1
-            assert pred.start_time() == ts.end_time() + ts.freq
+
+        preds_direct = []
+        for ts in train_ts:
+            if retrain:
+                if not apply_globally or not is_global:
+                    model = model.untrained_model().fit(ts)
+                else:
+                    model = model.untrained_model().fit(train_ts)
+
+            pred_kwargs = {"series": ts} if is_global else {}
+            preds_direct.append(model.predict(n=1, **pred_kwargs))
+        assert preds == preds_direct
 
     def test_historical_forecasts_start_end_invalid_string(self):
         """Test that invalid string values for start raise ValueError."""
@@ -1249,23 +1295,6 @@ class TestHistoricalforecast:
         ts = tg.linear_timeseries(length=20)
         with pytest.raises(ValueError, match=r"`start` string value must be 'end'"):
             model.historical_forecasts(ts, start="invalid")
-
-    def test_historical_forecasts_start_end_forecast_horizon(self):
-        """Test start='end' with different forecast horizons."""
-        model = LinearRegressionModel(lags=2)
-        ts = tg.linear_timeseries(length=20, start=pd.Timestamp("2000-01-01"), freq="D")
-
-        for fh in [1, 3, 5]:
-            preds = model.historical_forecasts(
-                ts,
-                start="end",
-                forecast_horizon=fh,
-                retrain=True,
-                last_points_only=False,
-            )
-            assert len(preds) == 1
-            assert len(preds[0]) == fh
-            assert preds[0].start_time() == ts.end_time() + ts.freq
 
     def test_historical_forecasts_start_end_overlap_end_ignored(self):
         """Test that overlap_end parameter is ignored when start='end'."""
