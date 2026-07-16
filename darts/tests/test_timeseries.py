@@ -893,6 +893,21 @@ class TestTimeSeries:
             values=np.random.rand(len(vals)), **kwargs
         )
 
+    @pytest.mark.parametrize(
+        "dt_sorce,dt_vals",
+        itertools.product(["float32", "float64"], ["float64", "float32"]),
+    )
+    def test_with_values_dtype_conversion(self, dt_sorce, dt_vals):
+        series_1 = linear_timeseries(
+            start=2, length=5, freq=2, column_name="YE"
+        ).astype(dt_sorce)
+        vals = series_1.all_values(copy=True).astype(dt_vals)
+
+        assert series_1.with_values(vals).dtype == dt_sorce
+        assert (
+            series_1.with_times_and_values(series_1.time_index, vals).dtype == dt_sorce
+        )
+
     def test_cumsum(self):
         cumsum_expected = TimeSeries.from_dataframe(
             self.series1.to_dataframe().cumsum()

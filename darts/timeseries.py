@@ -3303,6 +3303,9 @@ class TimeSeries:
                     f"Received: {values.shape[1]}, expected: {self.shape[1]}"
                 ),
             )
+        if values.dtype != self.dtype:
+            values = values.astype(self.dtype)
+
         return self.__class__(
             times=times,
             values=values,
@@ -3336,6 +3339,9 @@ class TimeSeries:
                     f"Received: {values.shape[:2]}, expected: {self.shape[:2]}"
                 ),
             )
+        if values.dtype != self.dtype:
+            values = values.astype(self.dtype)
+
         return self.__class__(
             times=self._time_index,
             values=values,
