@@ -727,8 +727,6 @@ def _get_historical_forecasts_setup(
     int | None,
     int,
 ]:
-    start_is_end = start == "end"
-
     # get the first and last historical forecast start points for either (re)training or (zero shot) prediction
     # mode; models that don't require training (e.g. global naive models, foundation models without fine-tuning)
     # use prediction-mode extreme lags even when retrain is set
@@ -737,7 +735,7 @@ def _get_historical_forecasts_setup(
         model=model,
         series=series,
         forecast_horizon=forecast_horizon,
-        overlap_end=overlap_end if not start_is_end else True,
+        overlap_end=True if start == "end" else overlap_end,
         past_covariates=past_covariates,
         future_covariates=future_covariates,
         is_training=is_training,
@@ -782,34 +780,16 @@ def _get_historical_forecasts_setup(
         show_warnings=show_warnings,
     )
 
-    if start_is_end:
-        # start="end": single forecast one step after the series end
-        desired_pred_time = series.end_time() + series.freq
-        if (
-            desired_pred_time < historical_forecasts_time_index[0]
-            or desired_pred_time > historical_forecasts_time_index[1]
-        ):
-            raise_log(
-                ValueError(
-                    f"Cannot generate a forecast with `start='end'` for series at index: {series_idx}. "
-                    f"The prediction start point one step after the series end "
-                    f"(`{desired_pred_time}`) is outside the forecastable time range "
-                    f"`({historical_forecasts_time_index[0]}, {historical_forecasts_time_index[1]})`. "
-                    f"Please check that the `series` and `*_covariates` are long enough."
-                ),
-            )
-        historical_forecasts_time_index = (desired_pred_time, desired_pred_time)
-    else:
-        # based on `forecast_horizon` and `overlap_end`, historical_forecasts_time_index is shortened
-        historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
-            series=series,
-            series_idx=series_idx,
-            historical_forecasts_time_index=historical_forecasts_time_index,
-            start=start,
-            start_format=start_format,
-            stride=stride,
-            show_warnings=show_warnings,
-        )
+    # based on `start`, historical_forecasts_time_index is shortened
+    historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
+        series=series,
+        series_idx=series_idx,
+        historical_forecasts_time_index=historical_forecasts_time_index,
+        start=start,
+        start_format=start_format,
+        stride=stride,
+        show_warnings=show_warnings,
+    )
 
     # adjust the start of the series depending on whether we train (at some point), or predict only
     # must be performed after the operation on historical_forecasts_time_index
@@ -1031,44 +1011,62 @@ def _adjust_historical_forecasts_time_index(
     """
     Shrink the beginning and end of the historical forecasts time index based on the value of `start`.
     """
-    # retrieve actual start
-    # when applicable, shift the start of the forecastable index based on `start`
-    if start is not None:
-        # find valid start position relative to the hfc start time, otherwise raise an error
-        start_idx, start_idx_orig = _get_start_index(
-            series=series,
-            series_idx=series_idx,
-            start=start,
-            start_format=start_format,
-            stride=stride,
-            historical_forecasts_time_index=historical_forecasts_time_index,
-        )
-        start_time = series._time_index[start_idx]
+    if start is None:
+        return historical_forecasts_time_index
 
-        if start_idx != start_idx_orig and show_warnings:
-            if start_idx_orig >= 0:
-                start_time_orig = series._time_index[start_idx_orig]
-            else:
-                start_time_orig = series.start_time() + start_idx_orig * series.freq
-
-            if start_format == "position" or (
-                not isinstance(start, pd.Timestamp) and series._has_datetime_index
-            ):
-                start_value_msg = (
-                    f"position `{start}` corresponding to time `{start_time_orig}`"
-                )
-            else:
-                start_value_msg = f"time `{start_time_orig}`"
-            logger.warning(
-                f"`start` {start_value_msg} is before the first predictable/trainable historical "
-                f"forecasting point for series at index: {series_idx}. Using the first historical forecasting "
-                f"point `{start_time}` that lies a round-multiple of `stride={stride}` "
-                f"ahead of `start`. To hide these warnings, set `show_warnings=False`."
+    if start == "end":
+        desired_pred_time = series.end_time() + series.freq
+        if (
+            desired_pred_time < historical_forecasts_time_index[0]
+            or desired_pred_time > historical_forecasts_time_index[1]
+        ):
+            raise_log(
+                ValueError(
+                    f"Cannot generate a forecast with `start='end'` for series at index: {series_idx}. "
+                    f"The prediction start point one step after the series end "
+                    f"(`{desired_pred_time}`) is outside the forecastable time range "
+                    f"`({historical_forecasts_time_index[0]}, {historical_forecasts_time_index[1]})`. "
+                    f"Please check that the `series` and `*_covariates` are long enough."
+                ),
             )
-        historical_forecasts_time_index = (
-            max(historical_forecasts_time_index[0], start_time),
-            historical_forecasts_time_index[1],
+        return (desired_pred_time, desired_pred_time)
+
+    # retrieve actual start
+    # find valid start position relative to the hfc start time, otherwise raise an error
+    start_idx, start_idx_orig = _get_start_index(
+        series=series,
+        series_idx=series_idx,
+        start=start,
+        start_format=start_format,
+        stride=stride,
+        historical_forecasts_time_index=historical_forecasts_time_index,
+    )
+    start_time = series._time_index[start_idx]
+
+    if start_idx != start_idx_orig and show_warnings:
+        if start_idx_orig >= 0:
+            start_time_orig = series._time_index[start_idx_orig]
+        else:
+            start_time_orig = series.start_time() + start_idx_orig * series.freq
+
+        if start_format == "position" or (
+            not isinstance(start, pd.Timestamp) and series._has_datetime_index
+        ):
+            start_value_msg = (
+                f"position `{start}` corresponding to time `{start_time_orig}`"
+            )
+        else:
+            start_value_msg = f"time `{start_time_orig}`"
+        logger.warning(
+            f"`start` {start_value_msg} is before the first predictable/trainable historical "
+            f"forecasting point for series at index: {series_idx}. Using the first historical forecasting "
+            f"point `{start_time}` that lies a round-multiple of `stride={stride}` "
+            f"ahead of `start`. To hide these warnings, set `show_warnings=False`."
         )
+    historical_forecasts_time_index = (
+        max(historical_forecasts_time_index[0], start_time),
+        historical_forecasts_time_index[1],
+    )
     return historical_forecasts_time_index
 
 
