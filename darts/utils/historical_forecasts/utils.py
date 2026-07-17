@@ -1543,7 +1543,7 @@ def _process_historical_forecast_for_backtest(
     | Sequence[TimeSeries]
     | Sequence[Sequence[TimeSeries]],
     last_points_only: bool,
-):
+) -> tuple[Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """Checks that the `historical_forecasts` have the correct format based on the input `series` and
     `last_points_only`. If all checks have passed, it converts `series` and `historical_forecasts` format into a
     multiple series case with `last_points_only=False`.
@@ -1607,19 +1607,28 @@ def _extend_series_for_overlap_end(
 
     Assumes the input meets the multiple `series` case with `last_points_only=False` (e.g. the output of
     `darts.utils.historical_forecasts.utils_process_historical_forecast_for_backtest()`).
+
+    Notes
+    -----
+    Most forecasts do not end after their target series. We therefore compare end times first and
+    only call the more expensive `n_steps_between()` / `append_values()` when an extension is needed.
+    If nothing needs extending, the original `series` sequence is returned as-is.
     """
-    series_extended = []
-    append_vals = [np.nan] * series[0].n_components
-    for series_, hfcs_ in zip(series, historical_forecasts):
-        # find number of missing target time steps based on the last forecast
-        missing_steps = n_steps_between(
-            hfcs_[-1].end_time(), series[0].end_time(), freq=series[0].freq
+    series_extended = None
+    for i, (series_, hfcs_) in enumerate(zip(series, historical_forecasts)):
+        fc_end = hfcs_[-1].end_time()
+        series_end = series_.end_time()
+        # cheap rejection of the common case before n_steps_between()
+        if fc_end <= series_end:
+            if series_extended is not None:
+                series_extended.append(series_)
+            continue
+
+        missing_steps = n_steps_between(fc_end, series_end, freq=series_.freq)
+        if series_extended is None:
+            # defer list allocation until at least one series must be extended
+            series_extended = list(series[:i])
+        series_extended.append(
+            series_.append_values(np.full((missing_steps,) + series_.shape[1:], np.nan))
         )
-        # extend the target if it is too short
-        if missing_steps > 0:
-            series_extended.append(
-                series_.append_values(np.array([append_vals] * missing_steps))
-            )
-        else:
-            series_extended.append(series_)
-    return series_extended
+    return series if series_extended is None else series_extended

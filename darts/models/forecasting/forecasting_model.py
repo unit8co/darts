@@ -1496,6 +1496,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if len(metric_kwargs) != len(metric):
             metric_kwargs = [metric_kwargs[0] for _ in range(len(metric))]
 
+        hfc_precomputed = historical_forecasts is not None
         historical_forecasts = historical_forecasts or self.historical_forecasts(
             series=series,
             past_covariates=past_covariates,
@@ -1529,6 +1530,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             historical_forecasts=historical_forecasts,
             last_points_only=last_points_only,
         )
+
+        # when pre-computed historical forecasts are supplied, extend each series with NaN
+        # where any forecast goes beyond the series end, so that per-time-step metrics
+        # produce arrays of consistent shape across all forecasts
+        if hfc_precomputed or overlap_end:
+            series = _extend_series_for_overlap_end(
+                series=series, historical_forecasts=historical_forecasts
+            )
 
         # we have multiple forecasts per series: rearrange forecasts to call each metric only once;
         # flatten historical forecasts, get matching target series index, remember cumulative target lengths
@@ -2267,12 +2276,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             historical_forecasts=historical_forecasts,
             last_points_only=last_points_only,
         )
-
-        # optionally, add nans to end of series to get residuals of same shape for each forecast
-        if overlap_end:
-            series = _extend_series_for_overlap_end(
-                series=series, historical_forecasts=historical_forecasts
-            )
 
         residuals = self.backtest(
             series=series,
