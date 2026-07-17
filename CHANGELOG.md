@@ -5,29 +5,45 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.45.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.46.0...master)
 
 ### For users of the library:
 
 **Improved**
 
-- 🚀 Improvements to `FoundationModel` : [#3154](https://github.com/unit8co/darts/pull/3154) by [Dennis Bader](https://github.com/dennisbader).
-  - Added variable input chunk length support to all foundation models. `input_chunk_length` can now be a `(min_length, max_length)` tuple, allowing the model to accept target series of different lengths in a single call and automatically use the maximum available history per series (left-padded with NaN up to `max_length`). This removes the need to manually pre-pad time series or create models with updated `input_chunk_length` before prediction or fine-tuning.
-  - `load_weights()` now allows loading weights from a checkpoint saved with different `input_chunk_length`, `output_chunk_length`, or `output_chunk_shift`. This simplifies model storage, as now the same model can be loaded for different task-specific input / output window configurations.
-- Improvements to PyTorch datasets: [#3154](https://github.com/unit8co/darts/pull/3154) by [Dennis Bader](https://github.com/dennisbader).
+**Fixed**
+
+**Dependencies**
+
+### For developers of the library:
+
+## [0.46.0](https://github.com/unit8co/darts/tree/0.46.0) (2026-07-17)
+
+### For users of the library:
+
+**Improved**
+
+- Improvements to `FoundationModel` :
+  - 🚀 Added variable input chunk length support to all foundation models. `input_chunk_length` can now be a `(min_length, max_length)` tuple, allowing the model to accept target series of different lengths in a single call and automatically use the maximum available history per series (left-padded with NaN up to `max_length`). This removes the need to manually pre-pad time series or create models with updated `input_chunk_length` before prediction or fine-tuning. [#3154](https://github.com/unit8co/darts/pull/3154) by [Dennis Bader](https://github.com/dennisbader).
+  - `load_weights()` now allows loading weights from a checkpoint saved with different `input_chunk_length`, `output_chunk_length`, or `output_chunk_shift`. This simplifies model storage, as now the same model can be loaded for different task-specific input / output window configurations.  [#3154](https://github.com/unit8co/darts/pull/3154) by [Dennis Bader](https://github.com/dennisbader).
+  - Improved `PatchTSTFMModel` inference efficiency by padding inputs only to the nearest patch boundary instead of the full 8192 context length, using right-aligned positional embeddings. This yields up to ~4000x reduction in attention cost for short inputs while producing numerically identical results. [#3162](https://github.com/unit8co/darts/pull/3162) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to `TorchForecastingModel` :
+  - Added method `scale_batch_size()` to find the largest possible batch size for training or prediction with torch-based models. [#2905](https://github.com/unit8co/darts/pull/2905) by [Zhihao Dai](https://github.com/daidahao) and [Dennis Bader](https://github.com/dennisbader).
+  - 🔴 Improved `TransformerModel` with proper encoder-decoder transformer architecture using teacher forcing during training and autoregressive inference, aligning the implementation with [Vaswani et al., 2017](https://arxiv.org/abs/1706.03762). Previously trained checkpoints are incompatible and must be retrained. [#1915](https://github.com/unit8co/darts/pull/1915) by [Jan Fidor](https://github.com/JanFidor) and [Dennis Bader](https://github.com/dennisbader).
+- Improvements to PyTorch Datasets: [#3154](https://github.com/unit8co/darts/pull/3154) by [Dennis Bader](https://github.com/dennisbader).
   - Added variable input chunk length support to all PyTorch datasets via the `(min_length, max_length)` tuple for `input_chunk_length`, enabling left-NaN-padded samples for shorter series.
-- 🚀 Added support for `start="end"` to `ForecastingModel.historical_forecasts()`, which generates a single forecast per input series starting one step after the end of each series (future-only forecasting). This provides a unified API for producing forecasts across single and multiple series for all models, including local models that don't natively support multi-series in `predict()`. The new `start` value is also available through `backtest()` and `residuals()`. [#3165](https://github.com/unit8co/darts/pull/3165) by [Dennis Bader](https://github.com/dennisbader).
-- 🚀 Added method `TorchForecastingModel.scale_batch_size()` to find the largest possible batch size for training or prediction with torch-based models. [#2905](https://github.com/unit8co/darts/pull/2905) by [Zhihao Dai](https://github.com/daidahao) and [Dennis Bader](https://github.com/dennisbader).
-- Improved `PatchTSTFMModel` inference efficiency by padding inputs only to the nearest patch boundary instead of the full 8192 context length, using right-aligned positional embeddings. This yields up to ~4000x reduction in attention cost for short inputs while producing numerically identical results. [#3162](https://github.com/unit8co/darts/pull/3162) by [Dennis Bader](https://github.com/dennisbader).
-- 🔴 Improved `TransformerModel` with proper encoder-decoder transformer architecture using teacher forcing during training and autoregressive inference, aligning the implementation with [Vaswani et al., 2017](https://arxiv.org/abs/1706.03762). Previously trained checkpoints are incompatible and must be retrained. [#1915](https://github.com/unit8co/darts/pull/1915) by [Jan Fidor](https://github.com/JanFidor) and [Dennis Bader](https://github.com/dennisbader).
-- Added a `CITATION.cff` file with the recommended citation metadata for Darts. [#3147](https://github.com/unit8co/darts/pull/3147) by [Zhihao Dai](https://github.com/daidahao).
-- Added `MultivariateModel` that adds multivariate forecasting support to any base local `ForecastingModel` by fitting one model per component. This is bypassed if the base model already supports multivariate forecasting. [#1917](https://github.com/unit8co/darts/pull/1917) by [Jan Fidor](https://github.com/JanFidor) and [Dennis Bader](https://github.com/dennisbader).
-- `TimeSeries.start_time()` and `end_time()` are now cached upon first retrieval, avoiding repeated pandas index access. This significantly speeds up operations that query time boundaries repeatedly. [#3165](https://github.com/unit8co/darts/pull/3165) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to forecasting models:
+  - 🚀 Added support for `start="end"` to `ForecastingModel.historical_forecasts()`, which generates a single forecast per input series starting one step after the end of each series (future-only forecasting). This provides a unified API for producing forecasts across single and multiple series for all models, including local models that don't natively support multi-series in `predict()`. The new `start` value is also available through `backtest()` and `residuals()`. [#3165](https://github.com/unit8co/darts/pull/3165) by [Dennis Bader](https://github.com/dennisbader).
+  - Added `MultivariateModel` that adds multivariate forecasting support to any base local `ForecastingModel` by fitting one model per component. This is bypassed if the base model already supports multivariate forecasting. [#1917](https://github.com/unit8co/darts/pull/1917) by [Jan Fidor](https://github.com/JanFidor) and [Dennis Bader](https://github.com/dennisbader).
+- Improvements to `TimeSeries` :
+  - `start_time()` and `end_time()` are now cached upon first retrieval, avoiding repeated pandas index access. This significantly speeds up operations that query time boundaries repeatedly. [#3165](https://github.com/unit8co/darts/pull/3165) by [Dennis Bader](https://github.com/dennisbader).
+- Other improvements:
+  - Added a `CITATION.cff` file with the recommended citation metadata for Darts. [#3147](https://github.com/unit8co/darts/pull/3147) by [Zhihao Dai](https://github.com/daidahao).
 
 **Fixed**
 
 - Fixed an issue where calling `TorchForecastingModel.fit()` (for models that do not actually have to be trained) required input series to also cover the `output_chunk_length` time frame, even though the model never trains on future targets in that mode. Now input series only need to satisfy the prediction/inference input chunk length requirements. This affects all foundation models without fine-tuning, as well as global naive models. [#3154](https://github.com/unit8co/darts/pull/3154) by [Dennis Bader](https://github.com/dennisbader).
-- Fixed a bug in the `TorchForecastingModel.predict()` which emitted an invalid "different data type" warning for correct input data types after loading a model from a checkpoint. [#3158](https://github.com/unit8co/darts/pull/3158) by [Mohit Arvind Khakharia](https://github.com/Mohit-Ak).
+- Fixed a bug in `TorchForecastingModel.predict()` which emitted an invalid "different data type" warning for correct input data types after loading a model from a checkpoint. [#3158](https://github.com/unit8co/darts/pull/3158) by [Mohit Arvind Khakharia](https://github.com/Mohit-Ak).
 - Fixed a bug in `TimeSeries.window_transform()` where `treat_na` (`"dropna"`, scalar, `"bfill"`) did not handle NaN values introduced by functions that produce NaN even when `min_periods` is satisfied (e.g., `std` with `ddof=1` on a single value). [#3151](https://github.com/unit8co/darts/pull/3151) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed dtype preservation across `ForecastingModel` forecast methods, `TimeSeries` operations (`append`, `prepend`, `prepend_values`, `with_values`, `rescale`, `window_transform`, `concatenate`) and data transformers (`BoxCox`, `MIDAS`, `BottomUpReconciliator`, `TopDownReconciliator`) that could silently upcast values to `float64`. [#3163](https://github.com/unit8co/darts/pull/3163) by [Dennis Bader](https://github.com/dennisbader).
 
@@ -38,7 +54,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For developers of the library:
 
 - Simplified internal error handling: removed `raise_if` and `raise_if_not` in favor of `raise_log`, and made `raise_log` automatically resolve the caller's logger (no longer requires passing `logger` explicitly). [#3126](https://github.com/unit8co/darts/pull/3126) by [Dennis Bader](https://github.com/dennisbader).
-- Moved TFT submodels from `darts.models.forecasting` to `darts.models.components` for better organization. [#3146](https://github.com/unit8co/darts/pull/3146) by [Zhihao Dai](https://github.com/daidahao).
+- Moved `TFTModel` submodels from `darts.models.forecasting` to `darts.models.components` for better organization. [#3146](https://github.com/unit8co/darts/pull/3146) by [Zhihao Dai](https://github.com/daidahao).
 
 ## [0.45.0](https://github.com/unit8co/darts/tree/0.45.0) (2026-06-19)
 
