@@ -764,8 +764,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             the index position with `start_format="position"`.
             If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
             If the string ``'end'``, generates a single forecast per series starting one step after the end of each
-            series (future-only forecasting). The model uses the entire series as input. Forecasts will extend beyond
-            the series end regardless of the ``overlap_end`` parameter value.
+            series (future-only forecasting). Forecasts will extend beyond the series end regardless ``overlap_end``.
             If ``None``, the first prediction point will automatically be set to:
 
             - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
@@ -1337,8 +1336,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             the index position with `start_format="position"`.
             If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
             If the string ``'end'``, generates a single forecast per series starting one step after the end of each
-            series (future-only forecasting). The model uses the entire series as input. Forecasts will extend beyond
-            the series end regardless of the ``overlap_end`` parameter value.
+            series (future-only forecasting). Forecasts will extend beyond the series end regardless ``overlap_end``.
             If ``None``, the first prediction point will automatically be set to:
 
             - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
@@ -2114,8 +2112,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             the index position with `start_format="position"`.
             If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
             If the string ``'end'``, generates a single forecast per series starting one step after the end of each
-            series (future-only forecasting). The model uses the entire series as input. Forecasts will extend beyond
-            the series end regardless of the ``overlap_end`` parameter value.
+            series (future-only forecasting). Forecasts will extend beyond the series end regardless ``overlap_end``.
             If ``None``, the first prediction point will automatically be set to:
 
             - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first

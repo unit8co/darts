@@ -1980,6 +1980,11 @@ class TimeSeries:
             A timestamp containing the first time of the TimeSeries (if indexed by DatetimeIndex),
             or an integer (if indexed by RangeIndex)
         """
+        # index[0] is relatively expensive (esp. for DatetimeIndex); cache on first access.
+        start_time = getattr(self, "_start_time", None)
+        if start_time is None:
+            start_time = self._time_index[0]
+            self._start_time = start_time
         return self._time_index[0]
 
     def end_time(self) -> pd.Timestamp | int:
@@ -1991,7 +1996,12 @@ class TimeSeries:
             A timestamp containing the last time of the TimeSeries (if indexed by DatetimeIndex),
             or an integer (if indexed by RangeIndex)
         """
-        return self._time_index[-1]
+        # index[-1] is relatively expensive (esp. for DatetimeIndex); cache on first access.
+        end_time = getattr(self, "_end_time", None)
+        if end_time is None:
+            end_time = self._time_index[-1]
+            self._end_time = end_time
+        return end_time
 
     def first_value(self) -> float:
         """First value of the univariate series.

@@ -731,11 +731,12 @@ def _get_historical_forecasts_setup(
     # mode; models that don't require training (e.g. global naive models, foundation models without fine-tuning)
     # use prediction-mode extreme lags even when retrain is set
     is_training = bool(retrain) and model._requires_training
+    overlap_end = True if start == "end" else overlap_end
     historical_forecasts_time_index = _get_maximum_historical_forecastable_time_index(
         model=model,
         series=series,
         forecast_horizon=forecast_horizon,
-        overlap_end=True if start == "end" else overlap_end,
+        overlap_end=overlap_end,
         past_covariates=past_covariates,
         future_covariates=future_covariates,
         is_training=is_training,
@@ -1610,9 +1611,9 @@ def _extend_series_for_overlap_end(
 
     Notes
     -----
-    Most forecasts do not end after their target series. We therefore compare end times first and
-    only call the more expensive `n_steps_between()` / `append_values()` when an extension is needed.
-    If nothing needs extending, the original `series` sequence is returned as-is.
+    Most forecasts do not end after their target series. We therefore compare end times first and only call the
+    more expensive `n_steps_between()` / `append_values()` when an extension is needed. If nothing needs extending,
+    the original `series` sequence is returned as-is.
     """
     series_extended = None
     for i, (series_, hfcs_) in enumerate(zip(series, historical_forecasts)):
