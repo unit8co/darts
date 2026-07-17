@@ -1637,6 +1637,27 @@ class TestBacktesting:
             assert bt.shape == shape_expected
             np.testing.assert_array_almost_equal(bt, bt_expected)
 
+    def test_backtest_extend_series_mixed_overlap_end(self):
+        """Extending series for overlap_end must keep non-extended series intact
+        when only some historical forecasts go beyond their series end."""
+        s1 = lt(length=10, start=pd.Timestamp("2000-01-01"), freq="D")
+        s2 = lt(length=10, start=pd.Timestamp("2000-01-01"), freq="D")
+        # first series: forecast beyond the end -> requires NaN extension
+        hfc1 = lt(length=3, start=s1.end_time() + s1.freq, freq="D")
+        # second series: forecast fully inside -> kept as-is after extension starts
+        hfc2 = s2[:3]
+
+        bt = NaiveDrift().backtest(
+            series=[s1, s2],
+            historical_forecasts=[[hfc1], [hfc2]],
+            last_points_only=False,
+            metric=metrics.mae,
+            reduction=None,
+        )
+        assert len(bt) == 2
+        assert np.all(np.isnan(bt[0]))
+        np.testing.assert_array_almost_equal(bt[1], np.array([0.0]))
+
     @pytest.mark.parametrize(
         "config",
         itertools.product(

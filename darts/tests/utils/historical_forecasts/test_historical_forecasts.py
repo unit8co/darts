@@ -1309,6 +1309,24 @@ class TestHistoricalforecast:
         )
         assert preds_oe_true == preds_oe_false
 
+    def test_historical_forecasts_start_end_outside_forecastable_range(self):
+        """start='end' raises when the next time step is outside the forecastable range."""
+        ts = tg.linear_timeseries(length=20, start=pd.Timestamp("2000-01-01"), freq="D")
+        # future covariates end with the series, so predicting one step after the end
+        # is not possible without longer covariates
+        fut_cov = tg.linear_timeseries(
+            length=20, start=pd.Timestamp("2000-01-01"), freq="D"
+        )
+        model = LinearRegressionModel(lags=2, lags_future_covariates=[0])
+        model.fit(ts, future_covariates=fut_cov)
+
+        with pytest.raises(
+            ValueError, match=r"Cannot generate a forecast with `start='end'`"
+        ):
+            model.historical_forecasts(
+                ts, future_covariates=fut_cov, start="end", retrain=False
+            )
+
     @pytest.mark.parametrize(
         "config",
         list(
@@ -3694,6 +3712,37 @@ class TestHistoricalforecast:
                 stride=0,
             )
         assert str(err.value) == "`stride` must be a positive integer."
+
+        # invalid `start_format`
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=self.ts_pass_train,
+                start=0.5,
+                start_format="invalid",
+            )
+        assert str(err.value).startswith(
+            "`start_format` must be one of ['position', 'value']. Received 'invalid'."
+        )
+
+        # `data_transformers` must be a dict
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=self.ts_pass_train,
+                data_transformers=Scaler(),
+            )
+        assert str(err.value) == (
+            "`data_transformers` must be either `None` or a dictionary."
+        )
+
+        # `data_transformers` keys must be supported
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=self.ts_pass_train,
+                data_transformers={"invalid_key": Scaler()},
+            )
+        assert str(err.value).startswith(
+            "The keys supported by `data_transformers` are"
+        )
 
         # `start_format="position"` but `start` is not `int`
         with pytest.raises(ValueError) as err:

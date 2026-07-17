@@ -128,7 +128,7 @@ def _general_checks_start(
     if start_format not in ["position", "value"]:
         raise_log(
             ValueError(
-                f"`start_format` must be on of ['position', 'value']. Received '{start_format}'."
+                f"`start_format` must be one of ['position', 'value']. Received '{start_format}'."
             )
         )
     if start_format == "position" and not isinstance(start, int | np.int64):
@@ -271,7 +271,7 @@ def _general_checks_data_transformers(series: Sequence[TimeSeries], n: SimpleNam
     # check the type
     if not isinstance(data_transformers, dict):
         raise_log(
-            ValueError("`data_transformers` should either `None` or a dictionary.")
+            ValueError("`data_transformers` must be either `None` or a dictionary.")
         )
     # check the keys
     supported_keys = {"series", "past_covariates", "future_covariates"}
