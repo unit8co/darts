@@ -280,9 +280,7 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
         if start < len(series):
             pred_start = series._time_index[start]
         else:
-            pred_start = (
-                series._time_index[-1] + ((start + 1) - len(series)) * series.freq
-            )
+            pred_start = series.end_time() + ((start + 1) - len(series)) * series.freq
 
         # past cov, future past cov, historic future cov, future cov, static cov
         pc, fpc, hfc, fc, sc = None, None, None, None, None

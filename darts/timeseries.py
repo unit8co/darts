@@ -1709,7 +1709,7 @@ class TimeSeries:
     @property
     def duration(self) -> pd.Timedelta | int:
         """The duration of the series (as a ``pandas.Timedelta`` or `int`)."""
-        return self._time_index[-1] - self._time_index[0]
+        return self.end_time() - self.start_time()
 
     """
     Export functions
@@ -2943,11 +2943,11 @@ class TimeSeries:
             n = int(n)
 
         try:
-            self._time_index[-1] + n * self.freq
+            self.end_time() + n * self.freq
         except pd.errors.OutOfBoundsDatetime:
             raise_log(
                 OverflowError(
-                    f"the add operation between {n * self.freq} and {self.time_index[-1]} will "
+                    f"the add operation between {n * self.freq} and {self.end_time()} will "
                     "overflow"
                 ),
             )
@@ -3769,7 +3769,7 @@ class TimeSeries:
         bool
             Whether `ts` is contained within the interval of this series.
         """
-        return self.time_index[0] <= ts <= self.time_index[-1]
+        return self.start_time() <= ts <= self.end_time()
 
     def map(
         self,

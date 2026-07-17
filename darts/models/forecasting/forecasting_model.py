@@ -655,7 +655,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             return latest_possible_prediction_start
 
         # otherwise, the upper bound for the last time step of the last prediction is the end of the target series
-        return series.time_index[-forecast_horizon]
+        return series._time_index[-forecast_horizon]
 
     def _check_optimizable_historical_forecasts(
         self,

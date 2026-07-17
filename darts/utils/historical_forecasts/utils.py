@@ -176,10 +176,10 @@ def _general_checks_start(
                         ),
                     )
             else:
-                if start > series_.time_index[-1]:  # format "value" and range index
+                if start > series_.end_time():  # format "value" and range index
                     raise_log(
                         ValueError(
-                            f"`start` time `{start}` is larger than the last index `{series_.time_index[-1]}` "
+                            f"`start` time `{start}` is larger than the last index `{series_.end_time()}` "
                             f"for series at index: {idx}."
                         ),
                     )
@@ -396,7 +396,7 @@ def _general_checks_training(model, series: Sequence[TimeSeries], n: SimpleNames
         # passing dummy values to check the type of the output
         result = retrain_func(
             counter=0,
-            pred_time=get_single_series(series).time_index[-1],
+            pred_time=get_single_series(series).end_time(),
             train_series=get_single_series(series),
             past_covariates=get_single_series(n.past_covariates),
             future_covariates=get_single_series(n.future_covariates),
@@ -588,7 +588,7 @@ def _get_start_index(
     historical_forecasts_time_index
         Optionally, the historical forecast index (or the boundaries only) to use as the reference index.
     """
-    series_start, series_end = series._time_index[0], series._time_index[-1]
+    series_start, series_end = series.start_time(), series.end_time()
     has_dti = series._has_datetime_index
     # find start position relative to the series start time
     if isinstance(start, float):
