@@ -1985,7 +1985,7 @@ class TimeSeries:
         if start_time is None:
             start_time = self._time_index[0]
             self._start_time = start_time
-        return self._time_index[0]
+        return start_time
 
     def end_time(self) -> pd.Timestamp | int:
         """End time of the series.
