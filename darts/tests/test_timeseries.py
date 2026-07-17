@@ -539,6 +539,26 @@ class TestTimeSeries:
         assert self.series1.end_time() == pd.Timestamp("20130110")
         assert self.series1.duration == pd.Timedelta(days=9)
 
+    def test_is_within_range(self):
+        # datetime index: timestamp does not need to be an element of the index
+        assert self.series1.is_within_range(self.series1.start_time())
+        assert self.series1.is_within_range(self.series1.end_time())
+        assert self.series1.is_within_range(pd.Timestamp("20130105 12:00:00"))
+        assert not self.series1.is_within_range(
+            self.series1.start_time() - self.series1.freq
+        )
+        assert not self.series1.is_within_range(
+            self.series1.end_time() + self.series1.freq
+        )
+
+        # range index
+        series_ri = TimeSeries.from_values(np.arange(5.0))
+        assert series_ri.is_within_range(series_ri.start_time())
+        assert series_ri.is_within_range(series_ri.end_time())
+        assert series_ri.is_within_range(2)
+        assert not series_ri.is_within_range(series_ri.start_time() - series_ri.freq)
+        assert not series_ri.is_within_range(series_ri.end_time() + series_ri.freq)
+
     def test_rescale(self):
         with pytest.raises(ValueError) as exc:
             self.series1.rescale_with_value(1)

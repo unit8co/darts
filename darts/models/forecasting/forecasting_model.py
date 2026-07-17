@@ -643,20 +643,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             self, series, kwargs, is_conformal=is_conformal
         )
 
-    def _get_last_prediction_time(
-        self,
-        series,
-        forecast_horizon,
-        overlap_end,
-        latest_possible_prediction_start,
-    ):
-        # if `overlap_end` is True, we can use the pre-computed latest possible first prediction point
-        if overlap_end:
-            return latest_possible_prediction_start
-
-        # otherwise, the upper bound for the last time step of the last prediction is the end of the target series
-        return series._time_index[-forecast_horizon]
-
     def _check_optimizable_historical_forecasts(
         self,
         retrain: bool | int | Callable[..., bool],
