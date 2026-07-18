@@ -15,6 +15,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Dependencies**
 
+- 🔴 Moved `shap` and `pyod` (along with their transitive `numba` dependency) from core dependencies to optional extras making Darts more light-weight (saving around 150 MB in install size). Install them with `pip install "darts[shap]"` and `pip install "darts[pyod]"` respectively or read our [installation guide](https://github.com/unit8co/darts/blob/master/INSTALL.md) for more detailed instructions. `ShapExplainer` and `PyODScorer` now gracefully return a `NotImportedModule` stub when their dependencies are missing. [#3168](https://github.com/unit8co/darts/pull/3168) by [Dennis Bader](https://github.com/dennisbader).
+
 ### For developers of the library:
 
 ## [0.46.0](https://github.com/unit8co/darts/tree/0.46.0) (2026-07-17)
