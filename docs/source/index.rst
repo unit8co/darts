@@ -321,7 +321,7 @@ Features
 
 * **Forecasting Models:** A large collection of forecasting models for regression as well as classification tasks; from statistical models (such as ARIMA) to deep learning models (such as N-BEATS). See the forecasting models table below.
 
-* **Anomaly Detection:** The ``darts.ad`` module contains a collection of anomaly scorers, detectors and aggregators, which can all be combined to detect anomalies in time series. It is easy to wrap any of Darts forecasting or filtering models to build a fully fledged anomaly detection model that compares predictions with actuals. The ``PyODScorer`` makes it trivial to use PyOD detectors on time series.
+* **Anomaly Detection:** The ``darts.ad`` module contains a collection of anomaly scorers, detectors and aggregators, which can all be combined to detect anomalies in time series. It is easy to wrap any of Darts forecasting or filtering models to build a fully fledged anomaly detection model that compares predictions with actuals. The ``PyODScorer`` makes it trivial to use PyOD detectors on time series (requires ``pip install "darts[pyod]"``).
 
 * **Multivariate Support:** ``TimeSeries`` can be multivariate - i.e., contain multiple time-varying dimensions/columns instead of a single scalar value. Many models can consume and produce multivariate series.
 
@@ -343,7 +343,7 @@ Features
 
 * **Forecast Start Shifting:** All global models support training and prediction on a shifted output window. This is useful for example for Day-Ahead Market forecasts, or when the covariates (or target series) are reported with a delay.
 
-* **Explainability:** Darts has the ability to *explain* some forecasting models using SHAP values.
+* **Explainability:** Darts has the ability to *explain* some forecasting models using SHAP values (requires ``pip install "darts[shap]"``).
 
 * **Data Processing:** Tools to easily apply (and revert) common transformations on time series data (scaling, filling missing values, differencing, boxcox, ...)
 

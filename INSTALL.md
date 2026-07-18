@@ -14,6 +14,15 @@ Darts offers a modular installation system with optional dependencies. Choose th
 
 If the PyTorch installation fails on your platform, please follow the official installation guide for [PyTorch](https://pytorch.org/get-started/locally/), then try installing Darts again.
 
+### Optional extras for specific features
+
+Some features have additional dependencies that are not included in the `all` installation option. To use them, install the corresponding extras:
+
+* **SHAP Explainability** (for `ShapExplainer`): `pip install "darts[shap]"`
+* **PyOD Anomaly Detection** (for `PyODScorer`): `pip install "darts[pyod]"`
+
+You can also combine extras: `pip install "darts[all,shap,pyod]"`
+
 ### Optional dependencies for specific models
 Some models have additional dependencies that are not included in the `all` installation option. To use them, you need to install the following dependencies separately from PyPI:
 
@@ -39,6 +48,13 @@ As some models have relatively heavy dependencies, we provide four conda-forge p
 * **Core + PyTorch** (for neural network models): `conda install -c conda-forge -c pytorch u8darts-torch`
 * **Core + Prophet, LightGBM, CatBoost, XGBoost, StatsForecast** (no neural networks): `conda install -c conda-forge u8darts-notorch`
 * **All available models** (except listed below): `conda install -c conda-forge -c pytorch u8darts-all`
+
+### Optional extras for specific features
+
+Some features have additional dependencies that are not included in the `all` installation option. Install them separately with conda or pip:
+
+* **SHAP Explainability** (for `ShapExplainer`): `conda install -c conda-forge shap`
+* **PyOD Anomaly Detection** (for `PyODScorer`): `conda install -c conda-forge pyod`
 
 ### Optional dependencies for specific models
 Some models have additional dependencies that are not included in the `all` installation option. To use them, you need to install the following dependencies separately from conda-forge:
