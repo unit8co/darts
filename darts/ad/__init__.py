@@ -54,7 +54,7 @@ if TYPE_CHECKING:
     from darts.ad.scorers import PyODScorer as PyODScorer
     from darts.ad.scorers import WassersteinScorer as WassersteinScorer
 
-_LAZY_IMPORTS: dict[str, str] = {
+_LAZY_IMPORTS: dict[str, str | tuple[str, str | None]] = {
     # anomaly aggregators
     "AndAggregator": "darts.ad.aggregators",
     "EnsembleSklearnAggregator": "darts.ad.aggregators",
@@ -75,7 +75,7 @@ _LAZY_IMPORTS: dict[str, str] = {
     "LaplaceNLLScorer": "darts.ad.scorers",
     "NormScorer": "darts.ad.scorers",
     "PoissonNLLScorer": "darts.ad.scorers",
-    "PyODScorer": "darts.ad.scorers",
+    "PyODScorer": ("darts.ad.scorers", "PyOD"),
     "WassersteinScorer": "darts.ad.scorers",
 }
 

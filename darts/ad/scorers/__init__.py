@@ -67,31 +67,51 @@ Other useful functions are:
 More details can be found in the API documentation of each scorer.
 """
 
-from darts.ad.scorers.difference_scorer import DifferenceScorer
-from darts.ad.scorers.kmeans_scorer import KMeansScorer
-from darts.ad.scorers.nll_cauchy_scorer import CauchyNLLScorer
-from darts.ad.scorers.nll_exponential_scorer import ExponentialNLLScorer
-from darts.ad.scorers.nll_gamma_scorer import GammaNLLScorer
-from darts.ad.scorers.nll_gaussian_scorer import GaussianNLLScorer
-from darts.ad.scorers.nll_laplace_scorer import LaplaceNLLScorer
-from darts.ad.scorers.nll_poisson_scorer import PoissonNLLScorer
-from darts.ad.scorers.norm_scorer import NormScorer
-from darts.ad.scorers.pyod_scorer import PyODScorer
-from darts.ad.scorers.scorers import AnomalyScorer, FittableAnomalyScorer
-from darts.ad.scorers.wasserstein_scorer import WassersteinScorer
+from typing import TYPE_CHECKING
 
-__all__ = [
-    "DifferenceScorer",
-    "KMeansScorer",
-    "CauchyNLLScorer",
-    "ExponentialNLLScorer",
-    "GammaNLLScorer",
-    "GaussianNLLScorer",
-    "LaplaceNLLScorer",
-    "PoissonNLLScorer",
-    "NormScorer",
-    "PyODScorer",
-    "AnomalyScorer",
-    "FittableAnomalyScorer",
-    "WassersteinScorer",
-]
+from darts.utils._lazy import setup_lazy_imports
+
+if TYPE_CHECKING:
+    from darts.ad.scorers.difference_scorer import DifferenceScorer as DifferenceScorer
+    from darts.ad.scorers.kmeans_scorer import KMeansScorer as KMeansScorer
+    from darts.ad.scorers.nll_cauchy_scorer import CauchyNLLScorer as CauchyNLLScorer
+    from darts.ad.scorers.nll_exponential_scorer import (
+        ExponentialNLLScorer as ExponentialNLLScorer,
+    )
+    from darts.ad.scorers.nll_gamma_scorer import GammaNLLScorer as GammaNLLScorer
+    from darts.ad.scorers.nll_gaussian_scorer import (
+        GaussianNLLScorer as GaussianNLLScorer,
+    )
+    from darts.ad.scorers.nll_laplace_scorer import (
+        LaplaceNLLScorer as LaplaceNLLScorer,
+    )
+    from darts.ad.scorers.nll_poisson_scorer import (
+        PoissonNLLScorer as PoissonNLLScorer,
+    )
+    from darts.ad.scorers.norm_scorer import NormScorer as NormScorer
+    from darts.ad.scorers.pyod_scorer import PyODScorer as PyODScorer
+    from darts.ad.scorers.scorers import AnomalyScorer as AnomalyScorer
+    from darts.ad.scorers.scorers import (
+        FittableAnomalyScorer as FittableAnomalyScorer,
+    )
+    from darts.ad.scorers.wasserstein_scorer import (
+        WassersteinScorer as WassersteinScorer,
+    )
+
+_LAZY_IMPORTS: dict[str, str | tuple[str, str | None]] = {
+    "AnomalyScorer": "darts.ad.scorers.scorers",
+    "FittableAnomalyScorer": "darts.ad.scorers.scorers",
+    "DifferenceScorer": "darts.ad.scorers.difference_scorer",
+    "KMeansScorer": "darts.ad.scorers.kmeans_scorer",
+    "CauchyNLLScorer": "darts.ad.scorers.nll_cauchy_scorer",
+    "ExponentialNLLScorer": "darts.ad.scorers.nll_exponential_scorer",
+    "GammaNLLScorer": "darts.ad.scorers.nll_gamma_scorer",
+    "GaussianNLLScorer": "darts.ad.scorers.nll_gaussian_scorer",
+    "LaplaceNLLScorer": "darts.ad.scorers.nll_laplace_scorer",
+    "PoissonNLLScorer": "darts.ad.scorers.nll_poisson_scorer",
+    "NormScorer": "darts.ad.scorers.norm_scorer",
+    "PyODScorer": ("darts.ad.scorers.pyod_scorer", "PyOD"),
+    "WassersteinScorer": "darts.ad.scorers.wasserstein_scorer",
+}
+
+__all__, __getattr__, __dir__ = setup_lazy_imports(_LAZY_IMPORTS, __name__, globals())

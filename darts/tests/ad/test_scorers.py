@@ -3,7 +3,6 @@ from itertools import product
 
 import numpy as np
 import pytest
-from pyod.models.knn import KNN
 from scipy.stats import cauchy, expon, gamma, laplace, norm, poisson
 
 from darts import TimeSeries, metrics
@@ -16,14 +15,19 @@ from darts.ad.scorers import (
     KMeansScorer,
     LaplaceNLLScorer,
     PoissonNLLScorer,
-    PyODScorer,
     WassersteinScorer,
 )
 from darts.ad.scorers import DifferenceScorer as Difference
 from darts.ad.scorers import NormScorer as Norm
 from darts.ad.scorers.scorers import NLLScorer
 from darts.models import MovingAverageFilter
+from darts.tests.conftest import PYOD_AVAILABLE
 from darts.utils.timeseries_generation import linear_timeseries
+
+if PYOD_AVAILABLE:
+    from pyod.models.knn import KNN
+
+    from darts.ad.scorers import PyODScorer
 
 list_NonFittableAnomalyScorer = [
     Norm(component_wise=False),
@@ -38,7 +42,11 @@ list_NonFittableAnomalyScorer = [
 ]
 
 list_FittableAnomalyScorer = [
-    (PyODScorer, {"model": KNN(), "component_wise": False}),
+    *(
+        [(PyODScorer, {"model": KNN(), "component_wise": False})]
+        if PYOD_AVAILABLE
+        else []
+    ),
     (KMeansScorer, {"component_wise": False}),
     (WassersteinScorer, {"window_agg": False, "component_wise": False}),
 ]
@@ -1222,6 +1230,7 @@ class TestAnomalyDetectionScorer:
         assert np.abs(0.97666 - auc_roc_cwtrue[1]) < delta
         assert np.abs(0.99007 - auc_roc_cwfalse) < delta
 
+    @pytest.mark.skipif(not PYOD_AVAILABLE, reason="PyOD not installed")
     def test_PyODScorer(self):
         # Check parameters and inputs
         self.component_wise_parameter(PyODScorer, model=KNN())
@@ -1269,6 +1278,7 @@ class TestAnomalyDetectionScorer:
         with pytest.raises(ValueError):
             PyODScorer(model=MovingAverageFilter(window=10))
 
+    @pytest.mark.skipif(not PYOD_AVAILABLE, reason="PyOD not installed")
     def test_univariate_PyODScorer(self):
         # univariate test
         np.random.seed(40)
@@ -1351,6 +1361,7 @@ class TestAnomalyDetectionScorer:
         assert metric_AUC_ROC == 1.0
         assert metric_AUC_PR == 1.0
 
+    @pytest.mark.skipif(not PYOD_AVAILABLE, reason="PyOD not installed")
     def test_multivariate_window_PyODScorer(self):
         # multivariate example (with different window)
         np.random.seed(1)
@@ -1424,6 +1435,7 @@ class TestAnomalyDetectionScorer:
         assert np.abs(0.957513 - auc_roc_w2) < delta
         assert np.abs(0.88584 - auc_pr_w2) < delta
 
+    @pytest.mark.skipif(not PYOD_AVAILABLE, reason="PyOD not installed")
     def test_multivariate_componentwise_PyODScorer(self):
         # multivariate example with component wise (True and False)
         np.random.seed(1)
@@ -1619,7 +1631,10 @@ class TestAnomalyDetectionScorer:
     @pytest.mark.parametrize(
         "model,series",
         product(
-            [(KMeansScorer, {"random_state": 42}), (PyODScorer, {"model": KNN()})],
+            [
+                (KMeansScorer, {"random_state": 42}),
+                *([(PyODScorer, {"model": KNN()})] if PYOD_AVAILABLE else []),
+            ],
             [(train, test), (mts_train, mts_test)],
         ),
     )
@@ -1646,7 +1661,7 @@ class TestAnomalyDetectionScorer:
             [
                 (KMeansScorer, {"random_state": 42}),
                 (WassersteinScorer, {}),
-                (PyODScorer, {"model": KNN()}),
+                *([(PyODScorer, {"model": KNN()})] if PYOD_AVAILABLE else []),
             ],
             [(train, test), (mts_train, mts_test)],
         ),

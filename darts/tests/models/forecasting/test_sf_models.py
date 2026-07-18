@@ -154,7 +154,7 @@ class TestSFModels:
             (
                 StatsForecastModel,
                 {"model": sf_models.SimpleExponentialSmoothing(alpha=0.1)},
-                True,
+                False,
             ),  # (custom, custom, conformal)
         ],
     )

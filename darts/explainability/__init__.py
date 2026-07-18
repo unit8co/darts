@@ -35,13 +35,13 @@ if TYPE_CHECKING:
     from darts.explainability.tft_explainer import TFTExplainer as TFTExplainer
 
 _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
-    "ShapExplainabilityResult": ("darts.explainability.explainability_result", None),
+    "ShapExplainabilityResult": ("darts.explainability.explainability_result", "SHAP"),
     "ShapSingleExplainabilityResult": (
         "darts.explainability.explainability_result",
-        None,
+        "SHAP",
     ),
     "TFTExplainabilityResult": ("darts.explainability.explainability_result", None),
-    "ShapExplainer": ("darts.explainability.shap_explainer", None),
+    "ShapExplainer": ("darts.explainability.shap_explainer", "SHAP"),
     "TFTExplainer": ("darts.explainability.tft_explainer", "(Py)Torch"),
 }
 

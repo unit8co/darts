@@ -4,7 +4,6 @@ from itertools import product
 import numpy as np
 import pandas as pd
 import pytest
-from pyod.models.knn import KNN
 
 from darts import TimeSeries
 from darts.ad import (
@@ -20,13 +19,18 @@ from darts.ad import (
     LaplaceNLLScorer,
     OrAggregator,  # noqa: F401
     PoissonNLLScorer,
-    PyODScorer,
     QuantileDetector,  # noqa: F401
     ThresholdDetector,  # noqa: F401
     WassersteinScorer,
 )
 from darts.ad import DifferenceScorer as Difference
 from darts.ad import NormScorer as Norm
+from darts.tests.conftest import PYOD_AVAILABLE
+
+if PYOD_AVAILABLE:
+    from pyod.models.knn import KNN
+
+    from darts.ad import PyODScorer
 from darts.ad.utils import eval_metric_from_scores, show_anomalies_from_scores
 from darts.models import MovingAverageFilter, NaiveSeasonal, SKLearnModel
 
@@ -132,7 +136,7 @@ class TestAnomalyDetectionModel:
         "scorer,anomaly_model_config",
         product(
             [
-                PyODScorer(model=KNN()),
+                *([PyODScorer(model=KNN())] if PYOD_AVAILABLE else []),
                 KMeansScorer(),
                 WassersteinScorer(window_agg=False),
             ],
@@ -579,8 +583,14 @@ class TestAnomalyDetectionModel:
                 WassersteinScorer(window_agg=False),
                 KMeansScorer(k=5),
                 KMeansScorer(window=10, window_agg=False),
-                PyODScorer(model=KNN()),
-                PyODScorer(model=KNN(), window=10, window_agg=False),
+                *(
+                    [
+                        PyODScorer(model=KNN()),
+                        PyODScorer(model=KNN(), window=10, window_agg=False),
+                    ]
+                    if PYOD_AVAILABLE
+                    else []
+                ),
                 WassersteinScorer(window=15, window_agg=False),
             ],
         )
@@ -702,8 +712,14 @@ class TestAnomalyDetectionModel:
                 WassersteinScorer(window_agg=False),
                 KMeansScorer(),
                 KMeansScorer(window=10, window_agg=False),
-                PyODScorer(model=KNN()),
-                PyODScorer(model=KNN(), window=10, window_agg=False),
+                *(
+                    [
+                        PyODScorer(model=KNN()),
+                        PyODScorer(model=KNN(), window=10, window_agg=False),
+                    ]
+                    if PYOD_AVAILABLE
+                    else []
+                ),
                 WassersteinScorer(window=15, window_agg=False),
             ],
         )
@@ -826,8 +842,14 @@ class TestAnomalyDetectionModel:
                 WassersteinScorer(window_agg=False),
                 KMeansScorer(k=4),
                 KMeansScorer(k=7, window=10, window_agg=False),
-                PyODScorer(model=KNN()),
-                PyODScorer(model=KNN(), window=10, window_agg=False),
+                *(
+                    [
+                        PyODScorer(model=KNN()),
+                        PyODScorer(model=KNN(), window=10, window_agg=False),
+                    ]
+                    if PYOD_AVAILABLE
+                    else []
+                ),
                 WassersteinScorer(window=15, window_agg=False),
             ],
         )
@@ -972,8 +994,14 @@ class TestAnomalyDetectionModel:
                 WassersteinScorer(window=12, window_agg=False),
                 KMeansScorer(),
                 KMeansScorer(window=5, window_agg=False),
-                PyODScorer(model=KNN()),
-                PyODScorer(model=KNN(), window=5, window_agg=False),
+                *(
+                    [
+                        PyODScorer(model=KNN()),
+                        PyODScorer(model=KNN(), window=5, window_agg=False),
+                    ]
+                    if PYOD_AVAILABLE
+                    else []
+                ),
             ],
         )
         anomaly_model.fit(mts_series_train)
@@ -1057,9 +1085,15 @@ class TestAnomalyDetectionModel:
                 WassersteinScorer(window=12, component_wise=True, window_agg=False),
                 KMeansScorer(component_wise=True),
                 KMeansScorer(window=5, component_wise=True, window_agg=False),
-                PyODScorer(model=KNN(), component_wise=True),
-                PyODScorer(
-                    model=KNN(), window=5, component_wise=True, window_agg=False
+                *(
+                    [
+                        PyODScorer(model=KNN(), component_wise=True),
+                        PyODScorer(
+                            model=KNN(), window=5, component_wise=True, window_agg=False
+                        ),
+                    ]
+                    if PYOD_AVAILABLE
+                    else []
                 ),
             ],
         )
@@ -1201,8 +1235,14 @@ class TestAnomalyDetectionModel:
                 WassersteinScorer(window=20, window_agg=False),
                 KMeansScorer(),
                 KMeansScorer(window=20, window_agg=False),
-                PyODScorer(model=KNN()),
-                PyODScorer(model=KNN(), window=10, window_agg=False),
+                *(
+                    [
+                        PyODScorer(model=KNN()),
+                        PyODScorer(model=KNN(), window=10, window_agg=False),
+                    ]
+                    if PYOD_AVAILABLE
+                    else []
+                ),
             ],
         )
         anomaly_model.fit(mts_series_train, allow_model_training=True, start=0.1)
@@ -1286,9 +1326,18 @@ class TestAnomalyDetectionModel:
                 WassersteinScorer(window=20, component_wise=True, window_agg=False),
                 KMeansScorer(component_wise=True),
                 KMeansScorer(window=20, component_wise=True, window_agg=False),
-                PyODScorer(model=KNN(), component_wise=True),
-                PyODScorer(
-                    model=KNN(), window=10, component_wise=True, window_agg=False
+                *(
+                    [
+                        PyODScorer(model=KNN(), component_wise=True),
+                        PyODScorer(
+                            model=KNN(),
+                            window=10,
+                            component_wise=True,
+                            window_agg=False,
+                        ),
+                    ]
+                    if PYOD_AVAILABLE
+                    else []
                 ),
             ],
         )

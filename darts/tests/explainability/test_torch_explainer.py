@@ -6,16 +6,28 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
-import shap
 from sklearn.datasets import make_regression
 
-from darts.tests.conftest import NF_AVAILABLE, TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.conftest import (
+    NF_AVAILABLE,
+    SHAP_AVAILABLE,
+    TORCH_AVAILABLE,
+    tfm_kwargs,
+)
 
 if not TORCH_AVAILABLE:
     pytest.skip(
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+
+if not SHAP_AVAILABLE:
+    pytest.skip(
+        f"SHAP not available. {__name__} tests will be skipped.",
+        allow_module_level=True,
+    )
+
+import shap
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
