@@ -15,6 +15,7 @@ class AutoARIMA(StatsForecastModel):
         add_encoders: dict | None = None,
         quantiles: list[float] | None = None,
         random_state: int | None = None,
+        minimum_length: int | None = None,
         **kwargs,
     ):
         """Auto-ARIMA based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`__.
@@ -81,6 +82,10 @@ class AutoARIMA(StatsForecastModel):
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
         random_state
             Controls the randomness for reproducible forecasting.
+        minimum_length
+            Optionally, override the minimum required training series length (default ``10``
+            for StatsForecast models). Set a smaller positive integer to fit on shorter series
+            (the underlying model may still raise if too short). Default: ``None``.
         kwargs
             Keyword arguments for ``statsforecasts.models.AutoARIMA``.
 
@@ -109,4 +114,5 @@ class AutoARIMA(StatsForecastModel):
             quantiles=quantiles,
             add_encoders=add_encoders,
             random_state=random_state,
+            minimum_length=minimum_length,
         )

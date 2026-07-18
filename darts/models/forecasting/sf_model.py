@@ -45,6 +45,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         add_encoders: dict | None = None,
         quantiles: list[float] | None = None,
         random_state: int | None = None,
+        minimum_length: int | None = None,
     ):
         """StatsForecast Model.
 
@@ -124,6 +125,12 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
         random_state
             Controls the randomness for reproducible forecasting.
+        minimum_length
+            Optionally, override the minimum required training series length. Darts sets a conservative
+            default (``10``) for StatsForecast models because the exact minimum cannot be inferred from the
+            third-party model. Set this to a smaller positive integer to fit on shorter series (the
+            underlying StatsForecast model may still raise if the series is too short for it). Default: ``None``
+            (keeps the default requirement).
 
         Examples
         --------
@@ -173,7 +180,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
 
         # future covariates support can be added through the use of a linear model
         self._linreg: LinearRegressionModel | None = None
-        super().__init__(add_encoders=add_encoders)
+        super().__init__(add_encoders=add_encoders, minimum_length=minimum_length)
 
     def _fit(
         self,
@@ -392,7 +399,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
 
     @property
     def _target_window_lengths(self) -> tuple[int, int]:
-        return 10, 0
+        return self._min_train_input_length(10), 0
 
     @property
     def _supports_range_index(self) -> bool:
