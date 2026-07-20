@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added `project_after_n_blocks` hyperparameter to `TSMixerModel`, allowing some or all of the backbone to operate in the lookback rather than forecasted time space [#2555](https://github.com/unit8co/darts/pull/2555) by [Eric Schibli](https://github.com/eschibli)
+
 **Fixed**
 
 **Dependencies**

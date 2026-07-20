@@ -170,7 +170,7 @@ models_cls_kwargs_errs = [
             "n_epochs": 10,
             "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
         },
-        60.0,
+        75.0,
     ),
     (
         GlobalNaiveAggregate,

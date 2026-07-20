@@ -362,3 +362,39 @@ class TestTSMixerModel:
         output.mean().backward()
 
         assert input_tensor.grad is not None
+
+    @pytest.mark.parametrize("project_after_n_blocks", [-1, 0, 1, 2, 3])
+    def test_project_after_n_blocks(self, project_after_n_blocks):
+        ts = tg.sine_timeseries(length=36, freq="h")
+        input_len = 12
+        output_len = 6
+
+        expect_exception = project_after_n_blocks == -1 or project_after_n_blocks == 3
+
+        if expect_exception:
+            with pytest.raises(ValueError):
+                model = TSMixerModel(
+                    input_chunk_length=input_len,
+                    output_chunk_length=output_len,
+                    n_epochs=1,
+                    project_after_n_blocks=project_after_n_blocks,
+                    **tfm_kwargs,
+                )
+                model.fit(ts)
+
+        else:
+            model = TSMixerModel(
+                input_chunk_length=input_len,
+                output_chunk_length=output_len,
+                n_epochs=1,
+                project_after_n_blocks=project_after_n_blocks,
+                # Cover case of projecting future covs back to input dims
+                add_encoders={"cyclic": {"future": "hour"}},
+                **tfm_kwargs,
+            )
+            model.fit(ts)
+            model.predict(n=output_len, series=ts)
+
+            # Assert that the encoder and decoder mixers have the expected number of blocks
+            assert len(model.model.decoder_mixer) == 2 - project_after_n_blocks
+            assert len(model.model.encoder_mixer) == project_after_n_blocks
