@@ -399,7 +399,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | int | None = None,
+        start: pd.Timestamp | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -466,11 +466,14 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Currently ignored by conformal models.
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
-            ``int``, ``pandas.Timestamp``, and ``None``.
+            ``int``, ``pandas.Timestamp``, ``'end'``, and ``None``.
             If an ``int``, it is either the index position of the first prediction point for `series` with a
             `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
             the index position with `start_format="position"`.
             If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If the string ``'end'``, generates a single forecast per series starting one step after the end of each
+            series (future-only forecasting). The model uses the entire series as input. Forecasts will extend beyond
+            the series end regardless of the ``overlap_end`` parameter value.
             If ``None``, the first prediction point will automatically be set to:
 
             - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
@@ -485,7 +488,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
             (default behavior with ``None``) and start at the first trainable/predictable point.
         start_format
-            Defines the `start` format.
+            Defines the `start` format. Ignored when ``start='end'``.
             If set to ``'position'``, `start` corresponds to the index position of the first predicted point and can
             range from `(-len(series), len(series) - 1)`.
             If set to ``'value'``, `start` corresponds to the index value/label of the first predicted point. Will raise
@@ -636,7 +639,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | int | None = None,
+        start: pd.Timestamp | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -869,7 +872,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | int | None = None,
+        start: pd.Timestamp | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,

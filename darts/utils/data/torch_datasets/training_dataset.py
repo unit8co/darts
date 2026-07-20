@@ -14,7 +14,11 @@ from math import ceil
 from darts.logging import raise_log
 from darts.typing import TimeSeriesLike
 from darts.utils.data.torch_datasets.dataset import TorchDataset
-from darts.utils.data.torch_datasets.utils import TorchTrainingDatasetOutput
+from darts.utils.data.torch_datasets.utils import (
+    InputChunkLength,
+    TorchTrainingDatasetOutput,
+    _parse_input_chunk_length,
+)
 from darts.utils.data.utils import (
     FeatureType,
     _process_sample_weight,
@@ -58,7 +62,7 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         series: TimeSeriesLike,
         past_covariates: TimeSeriesLike | None = None,
         future_covariates: TimeSeriesLike | None = None,
-        input_chunk_length: int = 12,
+        input_chunk_length: InputChunkLength = 12,
         output_chunk_length: int = 1,
         shift: int = 1,
         stride: int = 1,
@@ -94,7 +98,10 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
 
         .. note::
             Each series in the provided sequence must have a minimum length of
-            `max(input_chunk_length, shift + output_chunk_length)`.
+            `max(input_chunk_length, shift + output_chunk_length)` when
+            ``input_chunk_length`` is an integer, or
+            `max(min_input_chunk_length, shift + output_chunk_length)` when
+            ``input_chunk_length`` is a ``(min_length, max_length)`` tuple.
 
         Parameters
         ----------
@@ -106,6 +113,8 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
             Optionally, one or a sequence of `TimeSeries` containing future-known covariates.
         input_chunk_length
             The length of the lookback / past window the model takes as input.
+            An integer denotes a fixed input window. A ``(min_length, max_length)`` tuple
+            enables variable-length inputs with left-padding up to ``max_length``.
         output_chunk_length
             The length of the lookahead / future window that the model emits as output (for the target) and takes as
             input (for future covariates).
@@ -136,6 +145,8 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         """
         super().__init__()
 
+        min_icl, max_icl = _parse_input_chunk_length(input_chunk_length)
+
         if not (isinstance(stride, int) and stride > 0):
             raise_log(
                 ValueError("`stride` must be a positive integer greater than 0."),
@@ -162,7 +173,9 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
                     ),
                 )
 
-        size_of_both_chunks = max(input_chunk_length, shift + output_chunk_length)
+        size_of_both_chunks = max(max_icl, shift + output_chunk_length)
+        if min_icl < max_icl:
+            size_of_both_chunks -= max_icl - min_icl
 
         # compute the maximum available samples over all series
         max_available_indices = max(len(ts) for ts in series) - size_of_both_chunks + 1
@@ -183,7 +196,8 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
             # upper bound maximum available samples by max_samples_per_ts
             max_samples_per_ts = min(max_samples_per_ts, max_available_samples)
 
-        self.input_chunk_length = input_chunk_length
+        self.input_chunk_length = max_icl
+        self.min_input_chunk_length = min_icl
         self.output_chunk_length = output_chunk_length
         self.size_of_both_chunks = size_of_both_chunks
         self.shift = shift
@@ -252,14 +266,15 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
             n=None,
         )
 
-        series_vals = series.random_component_values(copy=False)
-        # extract past target series
+        # extract past target series (NaN-padded when past_start < 0)
         start, end = idx_bounds[FeatureType.PAST_TARGET]
-        pt = series_vals[start:end]
+        vals = series.random_component_values(copy=False)
+        pad_len = abs(start) if start is not None and start < 0 else 0
+        pt = self._extract_values(vals, start, end, pad_len=pad_len)
 
         # extract future target series
         start, end = idx_bounds[FeatureType.FUTURE_TARGET]
-        ft = series_vals[start:end]
+        ft = self._extract_values(vals, start, end)
 
         # past cov, historic future cov, future cov, static cov, sample weight
         pc, hfc, fc, sc, sw = None, None, None, None, None
@@ -267,23 +282,25 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         # extract past covariates
         if self.uses_past_covariates:
             start, end = idx_bounds[FeatureType.PAST_COVARIATES]
-            pc = past_covariates.random_component_values(copy=False)[start:end]
+            vals = past_covariates.random_component_values(copy=False)
+            pc = self._extract_values(vals, start, end, pad_len=pad_len)
 
         # extract future covariates
         if self.uses_future_covariates:
+            # historic part of future covariates
+            start, end = idx_bounds[FeatureType.HISTORIC_FUTURE_COVARIATES]
+            vals = future_covariates.random_component_values(copy=False)
+            hfc = self._extract_values(vals, start, end, pad_len=pad_len)
+
             # future part of future covariates
             start, end = idx_bounds[FeatureType.FUTURE_COVARIATES]
-            vals = future_covariates.random_component_values(copy=False)
-            fc = vals[start:end]
-
-            # historic part of future covariates
-            hfc_start, hfc_end = idx_bounds[FeatureType.HISTORIC_FUTURE_COVARIATES]
-            hfc = vals[hfc_start:hfc_end]
+            fc = self._extract_values(vals, start, end)
 
         # extract sample weights
         if self.sample_weight is not None:
             start, end = idx_bounds[FeatureType.SAMPLE_WEIGHT]
-            sw = sample_weight.random_component_values(copy=False)[start:end]
+            vals = sample_weight.random_component_values(copy=False)
+            sw = self._extract_values(vals, start, end)
 
         # extract static covariates
         if self.uses_static_covariates_covariates:
@@ -331,7 +348,7 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
         series: TimeSeriesLike,
         past_covariates: TimeSeriesLike | None = None,
         future_covariates: TimeSeriesLike | None = None,
-        input_chunk_length: int = 12,
+        input_chunk_length: InputChunkLength = 12,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         stride: int = 1,
@@ -367,7 +384,10 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
 
         .. note::
             Each series in the provided sequence must have a minimum length of
-            `input_chunk_length + output_chunk_shift + output_chunk_length`.
+            `max_input_chunk_length + output_chunk_shift + output_chunk_length` when
+            ``input_chunk_length`` is an integer, or
+            `min_input_chunk_length + output_chunk_shift + output_chunk_length`
+            when ``input_chunk_length`` is a ``(min_length, max_length)`` tuple.
 
         Parameters
         ----------
@@ -379,6 +399,8 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
             Optionally, one or a sequence of `TimeSeries` containing future-known covariates.
         input_chunk_length
             The length of the lookback / past window the model takes as input.
+            An integer denotes a fixed input window. A ``(min_length, max_length)`` tuple
+            enables variable-length inputs with left-padding up to ``max_length``.
         output_chunk_length
             The length of the lookahead / future window that the model emits as output (for the target) and takes as
             input (for future covariates).
@@ -407,7 +429,8 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         """
-        shift = input_chunk_length + output_chunk_shift
+        _, max_icl = _parse_input_chunk_length(input_chunk_length)
+        shift = max_icl + output_chunk_shift
         super().__init__(
             series=series,
             past_covariates=past_covariates,

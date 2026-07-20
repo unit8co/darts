@@ -244,3 +244,16 @@ class TestDataTransformer:
 
         # Test inverse transform
         np.testing.assert_array_almost_equal(s.all_values(), ssi.all_values())
+
+    @pytest.mark.parametrize(
+        "dt_source",
+        ["float32", "float64"],
+    )
+    def test_scaler_dtype_conversion(self, dt_source):
+        series = self.series1.astype(dt_source)
+
+        transformer = Scaler().fit(series)
+        transformed = transformer.transform(series)
+        inversed = transformer.inverse_transform(transformed)
+        assert transformed.dtype == dt_source
+        assert inversed.dtype == dt_source

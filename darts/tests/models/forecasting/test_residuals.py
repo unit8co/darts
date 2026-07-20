@@ -882,3 +882,42 @@ class TestResiduals:
             f"Computing a metric with quantile(s) "
             f"`q={'[0.99]' if not is_interval_metric else '[0.05 0.99]'}` is only supported"
         )
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product([True, False], [True, False]),
+    )
+    def test_residuals_start_end(self, config):
+        """residuals with start='end' returns NaN residuals since forecasts are beyond the series end."""
+        multi_series, last_points_only = config
+        ts = lt(length=20)
+        model = LinearRegressionModel(lags=2)
+
+        series = [ts, ts + 1] if multi_series else ts
+        res = model.residuals(
+            series=series,
+            start="end",
+            retrain=True,
+            last_points_only=last_points_only,
+        )
+        if multi_series:
+            assert isinstance(res, list)
+            assert len(res) == 2
+            for r in res:
+                if last_points_only:
+                    assert isinstance(r, TimeSeries)
+                    assert len(r) == 1
+                    assert np.all(np.isnan(r.all_values()))
+                else:
+                    assert isinstance(r, list) and len(r) == 1
+                    assert len(r[0]) == 1
+                    assert np.all(np.isnan(r[0].all_values()))
+        else:
+            if last_points_only:
+                assert isinstance(res, TimeSeries)
+                assert len(res) == 1
+                assert np.all(np.isnan(res.all_values()))
+            else:
+                assert isinstance(res, list) and len(res) == 1
+                assert len(res[0]) == 1
+                assert np.all(np.isnan(res[0].all_values()))
