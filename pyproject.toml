@@ -37,13 +37,19 @@ dependencies = [
     "nfoursid>=1.0.0",
     "numpy>=1.26.0",
     "pandas>=2.2.0",
+    "pyod>=0.9.5",
     "requests>=2.22.0",
     "scikit-learn>=1.6.0",
     "scipy>=1.3.2",
+    "shap>=0.40.0",
     "statsmodels>=0.14.0",
     "tqdm>=4.60.0",
     "typing-extensions>=4.0.0",
     "xarray>=0.17.0",
+    "numba<0.63; sys_platform == 'darwin' and platform_machine == 'x86_64'",  # numba 0.63+ dropped macOS x86_64 wheels, see numba/numba#10187
+    "numba; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+    "llvmlite<0.46; sys_platform == 'darwin' and platform_machine == 'x86_64'",  # llvmlite 0.46+ dropped macOS x86_64 wheels, see numba/numba#10187
+    "llvmlite; sys_platform != 'darwin' or platform_machine != 'x86_64'",
 ]
 
 [project.urls]
@@ -67,16 +73,6 @@ notorch = [
     "prophet>=1.1.1",
     "statsforecast>=1.4",
     "xgboost>=2.1.4",
-]
-shap = [
-    "shap>=0.40.0",
-    "numba>=0.63.0; sys_platform != 'darwin' or platform_machine != 'x86_64'",
-    "numba<0.63; sys_platform == 'darwin' and platform_machine == 'x86_64'",
-]
-pyod = [
-    "pyod>=0.9.5",
-    "numba>=0.63.0; sys_platform != 'darwin' or platform_machine != 'x86_64'",
-    "numba<0.63; sys_platform == 'darwin' and platform_machine == 'x86_64'",
 ]
 all = ["darts[torch,notorch]"]
 
@@ -212,7 +208,7 @@ dev-all = [
     {include-group = "dev"},
     {include-group = "optional"},
     {include-group = "release"},
-    "darts[all,shap,pyod]",
+    "darts[all]",
 ]
 
 [tool.bumpversion]

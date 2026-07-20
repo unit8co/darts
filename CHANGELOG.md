@@ -15,7 +15,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Dependencies**
 
-- 🔴 Moved `shap` and `pyod` (along with their transitive `numba` dependency) from core dependencies to optional extras making Darts more light-weight (saving around 150 MB in install size). Install them with `pip install "darts[shap]"` and `pip install "darts[pyod]"` respectively or read our [installation guide](https://github.com/unit8co/darts/blob/master/INSTALL.md) for more detailed instructions. `ShapExplainer` and `PyODScorer` now gracefully return a `NotImportedModule` stub when their dependencies are missing. [#3168](https://github.com/unit8co/darts/pull/3168) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed uv resolution issues on macOS due to numba and llmvlite having dropped macOS x86_64 wheels. [#3168](https://github.com/unit8co/darts/pull/3168) by [Dennis Bader](https://github.com/dennisbader).
 
 ### For developers of the library:
 

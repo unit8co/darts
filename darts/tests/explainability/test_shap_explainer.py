@@ -6,17 +6,8 @@ from datetime import date, timedelta
 import numpy as np
 import pandas as pd
 import pytest
-import sklearn
-
-from darts.tests.conftest import SHAP_AVAILABLE
-
-if not SHAP_AVAILABLE:
-    pytest.skip(
-        f"SHAP not available. {__name__} tests will be skipped.",
-        allow_module_level=True,
-    )
-
 import shap
+import sklearn
 from dateutil.relativedelta import relativedelta
 from numpy.testing import assert_array_equal
 from sklearn.base import BaseEstimator, RegressorMixin

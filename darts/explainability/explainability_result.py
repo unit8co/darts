@@ -18,18 +18,14 @@ Contains the explainability results obtained from :func:`_ForecastingModelExplai
   explainability results.
 """
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import pandas as pd
+import shap
 
 from darts import TimeSeries
 from darts.logging import raise_log
-
-if TYPE_CHECKING:
-    import shap
 
 
 class _ExplainabilityResult(ABC):

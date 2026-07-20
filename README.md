@@ -163,7 +163,7 @@ series.plot()
   detectors and aggregators, which can all be combined to detect anomalies in time series.
   It is easy to wrap any of Darts forecasting or filtering models to build
   a fully fledged anomaly detection model that compares predictions with actuals.
-  The `PyODScorer` makes it trivial to use PyOD detectors on time series (requires `pip install "darts[pyod]"`).
+  The `PyODScorer` makes it trivial to use PyOD detectors on time series.
 
 * **Multivariate Support:** `TimeSeries` can be multivariate - i.e., contain multiple time-varying
   dimensions/columns instead of a single scalar value. Many models can consume and produce multivariate series.
@@ -198,7 +198,7 @@ series.plot()
   This is useful for example for Day-Ahead Market forecasts, or when the covariates (or target series) are reported
   with a delay.
 
-* **Explainability:** Darts can *explain* all sklearn-like and torch forecasting models using SHAP values (requires `pip install "darts[shap]"`).
+* **Explainability:** Darts has the ability to *explain* some forecasting models using SHAP values.
 
 * **Data Processing:** Tools to easily apply (and revert) common transformations on
   time series data (scaling, filling missing values, differencing, boxcox, ...)
