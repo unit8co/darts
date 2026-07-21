@@ -51,7 +51,6 @@ class TestTFTModel:
             output_chunk_length=1,
         )
         with pytest.raises(ValueError, match="TFTModel requires future covariates"):
-            model = TFTModel(input_chunk_length=1, output_chunk_length=1, **tfm_kwargs)
             model.fit_from_dataset(dataset)
 
         # should work with cyclic encoding for time index

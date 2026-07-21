@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Calling `TFTModel.fit_from_dataset()` on a dataset that does not have future covariates now raises an informative exception. [#3149](https://github.com/unit8co/darts/pull/3149) by [YOON KIWOONG](https://github.com/kiwoongyoon).
+
 **Fixed**
 
 **Dependencies**
