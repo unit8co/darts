@@ -80,7 +80,11 @@ from mlflow.utils.requirements_utils import _get_pinned_requirement
 
 import darts
 from darts.logging import get_logger, raise_log
-from darts.metrics.utils import _LabelReduction
+from darts.metrics.utils import (
+    _LabelReduction,
+    register_metric_callback,
+    unregister_metric_callback,
+)
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.utils.ts_utils import (
     SeriesType,
@@ -424,25 +428,14 @@ def autolog(
     1. Start an MLflow run (or reuse the currently active one).
     2. Log model creation parameters (``model.model_params``).
     3. Log covariate usage information (past, future, and static covariates).
-    4. Patch all darts metric functions so that any call made inside an active
-       MLflow run automatically logs the result.  Repeated calls overwrite
-       the previous value.
+    4. Log the result of any darts metric call made inside an active MLflow
+       run. Repeated calls overwrite the previous value.
     5. For PyTorch-based models: leverage ``mlflow.pytorch.autolog()`` to
        automatically log per-epoch training and validation metrics.
     6. Log the trained model artifact at the end of training.
     7. Patch ``backtest()`` to log evaluation metrics under ``backtest_*`` keys.
     8. Patch ``historical_forecasts()`` so that its internal per-window
        ``fit()`` calls don't each spawn their own logging.
-
-    .. important::
-
-        Metric functions imported with ``from darts.metrics import <name>``
-        before ``autolog()`` is enabled will **not** log to MLflow (function
-        reference is copied out of the module before the patch is applied).
-
-        To avoid this restriction, use ``import darts.metrics as dm`` and call
-        ``dm.<metric>()`` instead (module attribute lookups are resolved at call
-        time and will always see the patched version).
 
     .. note::
 
@@ -471,8 +464,8 @@ def autolog(
     log_params
         If ``True`` (default), log model creation parameters.
     log_metrics
-        If ``True`` (default), patch all darts metric functions so that any
-        call made inside an active MLflow run is automatically logged.
+        If ``True`` (default), log the result of any darts metric call made
+        inside an active MLflow run.
     log_torch_metrics
         If ``True`` (default), enable ``mlflow.pytorch.autolog(log_models=False)``
         around PyTorch-based model training to automatically log per-epoch
@@ -508,6 +501,13 @@ def autolog(
             mlflow.pytorch.autolog(disable=True)
         except (ImportError, Exception):
             pass
+
+    # Register/unregister the metric-logging callback with darts.metrics.utils
+    # directly, rather than via mlflow's safe_patch on each darts.metrics
+    # attribute (which is import-order sensitive)
+    unregister_metric_callback(_mlflow_metric_callback)
+    if log_metrics and not disable:
+        register_metric_callback(_mlflow_metric_callback)
 
     _autolog(
         log_models=log_models,
@@ -706,30 +706,6 @@ def _autolog(
             "backtest",
             _patched_backtest,
         )
-
-    if log_metrics:
-        import darts.metrics
-
-        # TODO: To log metrics post-fitting, only patching the metric methods may not be enough.
-        # This is becuase `model.fit()` method would terminate the active MLflow run at the end of training,
-        # so any metric calls made after that would not be logged.
-        # To address this, we need to implement three things:
-        # 1. Implement a singleton `_AutologgingMetricsManager` (`mlflow.sklearn`) to maintain a mapping between fitted
-        # models and their prediction outputs.
-        # 2. Patch the `model.predict()` method to create a mapping between the model (run_id) and prediction output.
-        # 3. Patch the metric functions to find the model (run_id) from the input series, then log the metrics to
-        # the corresponding run.
-        # This way, even if the metric calls are made after `fit()` has terminated the active run, we can still log
-        # the metrics to the correct run.
-
-        # patch all metric functions to log results
-        for metric_name in darts.metrics.__all__:
-            safe_patch(
-                FLAVOR_NAME,
-                darts.metrics,
-                metric_name,
-                _make_metric_patch(metric_name),
-            )
 
 
 def get_default_pip_requirements():
@@ -1355,13 +1331,29 @@ def _log_metric_result(
         _write_per_series_csv(rows, f"{metric_name}_per_series.csv")
 
 
-def _make_metric_patch(metric_name: str) -> Callable:
-    """Create a ``safe_patch``-compatible patch function for a darts metric.
+# TODO: To log metrics post-fitting, only patching the metric methods may not be enough.
+# This is becuase `model.fit()` method would terminate the active MLflow run at the end of training,
+# so any metric calls made after that would not be logged.
+# To address this, we need to implement three things:
+# 1. Implement a singleton `_AutologgingMetricsManager` (`mlflow.sklearn`) to maintain a mapping between fitted
+# models and their prediction outputs.
+# 2. Patch the `model.predict()` method to create a mapping between the model (run_id) and prediction output.
+# 3. Patch the metric functions to find the model (run_id) from the input series, then log the metrics to
+# the corresponding run.
+# This way, even if the metric calls are made after `fit()` has terminated the active run, we can still log
+# the metrics to the correct run.
+def _mlflow_metric_callback(func, result, args, kwargs) -> None:
+    """Metric callback registered with ``darts.metrics.utils`` for autologging.
 
-    The returned patch calls the original metric and, when an active MLflow
-    run exists, infers the output axes from the metric signature and call
-    kwargs (via ``_infer_metric_axes``) and delegates to ``_log_metric_result``,
-    which logs each cell under a key built as::
+    Invoked by ``multi_ts_support`` (the outermost decorator on every darts
+    metric) after every top-level metric call, so it fires regardless of how
+    the metric was imported. It is not invoked for internal metric-to-metric
+    calls (e.g. ``rmse`` calling ``mse`` internally via ``_get_wrapped_metric``),
+    since those bypass ``multi_ts_support`` entirely.
+
+    When an active MLflow run exists, infers the output axes from the metric
+    signature and call kwargs (via ``_infer_metric_axes``) and delegates to
+    ``_log_metric_result``, which logs each cell under a key built as::
 
         {metric_name}{component}{quantile_or_label}
 
@@ -1378,67 +1370,64 @@ def _make_metric_patch(metric_name: str) -> Callable:
     to a ``per_series_metrics/`` CSV artifact instead of per-series keys.
 
     The per-timestep axis (``time_reduction=None``) is mapped to the MLflow
-    ``step``. The original return value is always forwarded unchanged.
+    ``step``.
 
     Parameters
     ----------
-    metric_name
-        The darts metric function name used as the MLflow metric key.
+    func
+        The darts metric function that was called (used for its name and
+        signature).
+    result
+        The metric's return value.
+    args
+        Positional arguments the metric was called with.
+    kwargs
+        Keyword arguments the metric was called with.
     """
+    active_run = mlflow.active_run()
+    if active_run is None:
+        return
 
-    def _patched_metric(original, *args, **kwargs):
-        result = original(*args, **kwargs)
+    # backtest() calls metric functions internally; _patched_backtest
+    # handles logging the aggregated result, so skip here to avoid
+    # generating one flat key per window (series_gen_mape_0, _1, …).
+    if getattr(_autolog_state, "in_backtest", False):
+        return
 
-        active_run = mlflow.active_run()
-        if active_run is None:
-            return result
+    if len(args) > 0:
+        series = args[0]
+    else:
+        series = kwargs.get("actual_series", None)
+    if series is None:
+        return
 
-        # backtest() calls metric functions internally; _patched_backtest
-        # handles logging the aggregated result, so skip here to avoid
-        # generating one flat key per window (series_gen_mape_0, _1, …).
-        if getattr(_autolog_state, "in_backtest", False):
-            return result
+    autologging_client = MlflowAutologgingQueueingClient()
+    run_id = active_run.info.run_id
 
-        autologging_client = MlflowAutologgingQueueingClient()
-        run_id = active_run.info.run_id
+    # the `name` kwarg overrides the metric-name token in the logged key
+    key_name = _sanitize_mlflow_key(kwargs.get("name") or func.__name__)
 
-        if len(args) > 0:
-            series = args[0]
-        else:
-            series = kwargs.get("actual_series", None)
-        if series is None:
-            return result
+    # infer output axes from the metric signature + call kwargs
+    has_time_axis, has_comp_axis, quantiles_labels = _infer_metric_axes(func, kwargs)
 
-        # the `name` kwarg overrides the metric-name token in the logged key
-        key_name = _sanitize_mlflow_key(kwargs.get("name") or metric_name)
-
-        # infer output axes from the metric signature + call kwargs
-        has_time_axis, has_comp_axis, quantiles_labels = _infer_metric_axes(
-            original, kwargs
+    # series_reduction collapses the series axis inside the metric, so the
+    # result has no leading series axis even for list input.
+    params = inspect.signature(func).parameters
+    series_reduced = False
+    if "series_reduction" in params:
+        effective_sr = kwargs.get(
+            "series_reduction", params["series_reduction"].default
         )
+        series_reduced = effective_sr is not None
 
-        # series_reduction collapses the series axis inside the metric, so the
-        # result has no leading series axis even for list input.
-        params = inspect.signature(original).parameters
-        series_reduced = False
-        if "series_reduction" in params:
-            effective_sr = kwargs.get(
-                "series_reduction", params["series_reduction"].default
-            )
-            series_reduced = effective_sr is not None
-
-        _log_metric_result(
-            autologging_client,
-            run_id,
-            key_name,
-            result,
-            series,
-            has_time_axis,
-            has_comp_axis,
-            quantiles_labels,
-            series_reduced=series_reduced,
-        )
-
-        return result
-
-    return _patched_metric
+    _log_metric_result(
+        autologging_client,
+        run_id,
+        key_name,
+        result,
+        series,
+        has_time_axis,
+        has_comp_axis,
+        quantiles_labels,
+        series_reduced=series_reduced,
+    )
