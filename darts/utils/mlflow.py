@@ -80,7 +80,6 @@ from mlflow.utils.requirements_utils import _get_pinned_requirement
 
 import darts
 from darts.logging import get_logger, raise_log
-from darts.metrics import CLASSIFICATION_METRICS
 from darts.metrics.utils import _LabelReduction
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.utils.ts_utils import (
@@ -1167,9 +1166,7 @@ def _infer_metric_axes(metric: Callable, metric_kwargs: dict) -> tuple:
         quantiles_labels = [f"_qi{lo:g}_{hi:g}" for lo, hi in intervals]
     elif "q" in params and q is not None:
         quantiles_labels = [f"_q{v:g}" for v in np.atleast_1d(np.array(q, dtype=float))]
-    elif "label_reduction" in params and getattr(metric, "__name__", "") in {
-        m.__name__ for m in CLASSIFICATION_METRICS
-    }:
+    elif "label_reduction" in params and getattr(metric, "__name__", ""):
         label_reduction = effective("label_reduction")
         if isinstance(label_reduction, _LabelReduction):
             label_reduction = label_reduction.value
