@@ -21,16 +21,26 @@ https://github.com/sktime/sktime/blob/main/sktime/utils/mlflow_sktime.py
 
 import csv
 import inspect
-import json
-import os
 import re
 import sys
 import threading
 from collections.abc import Callable
 from operator import itemgetter
+from pathlib import Path
 from typing import Any
 
-import mlflow
+from darts.logging import raise_log
+
+try:
+    import mlflow
+except ImportError:
+    raise_log(
+        ImportError(
+            "MLflow is required for `darts.utils.mlflow`. Install it with `pip"
+            " install mlflow`."
+        )
+    )
+
 import numpy as np
 import yaml
 from mlflow.entities import LoggedModel
@@ -79,6 +89,12 @@ from darts.utils.ts_utils import (
     get_single_series,
     series2seq,
 )
+from darts.utils.utils import TORCH_AVAILABLE
+
+if TORCH_AVAILABLE:
+    from darts.models.forecasting.torch_forecasting_model import (
+        TorchForecastingModel,
+    )
 
 logger = get_logger(__name__)
 
@@ -176,21 +192,20 @@ def save_model(
         raise_log(
             ValueError(
                 "Model must be an instance of darts.models.forecasting.ForecastingModel."
-            ),
-            logger,
+            )
         )
 
     _validate_env_arguments(conda_env, pip_requirements, extra_pip_requirements)
 
-    path = os.path.abspath(path)
-    _validate_and_prepare_target_save_path(path)
-    code_dir_subpath = _validate_and_copy_code_paths(code_paths, path)
+    path = Path(path).resolve()
+    _validate_and_prepare_target_save_path(str(path))
+    code_dir_subpath = _validate_and_copy_code_paths(code_paths, str(path))
 
     is_torch = _is_torch_model(model)
 
     # clean=True excludes any timeseries or callbacks from the model file
     model_file = _MODEL_FILE_TORCH if is_torch else _MODEL_FILE_STAT
-    model.save(os.path.join(path, model_file), clean=True)
+    model.save(str(path / model_file), clean=True)
 
     model_class = _get_fully_qualified_class_name(model)
 
@@ -201,7 +216,7 @@ def save_model(
         mlflow_model.signature = signature
 
     if input_example is not None:
-        _save_example(mlflow_model, input_example, path)
+        _save_example(mlflow_model, input_example, str(path))
 
     if metadata is not None:
         mlflow_model.metadata = metadata
@@ -213,7 +228,7 @@ def save_model(
         model_class=model_class,
         code=code_dir_subpath,
     )
-    mlflow_model.save(os.path.join(path, MLMODEL_FILE_NAME))
+    mlflow_model.save(str(path / MLMODEL_FILE_NAME))
 
     if pip_requirements is None:
         default_reqs = get_default_pip_requirements()
@@ -230,21 +245,21 @@ def save_model(
         else _process_conda_env(conda_env)
     )
 
-    with open(os.path.join(path, _CONDA_ENV_FILE_NAME), "w") as f:
+    with open(path / _CONDA_ENV_FILE_NAME, "w") as f:
         yaml.safe_dump(conda_env, stream=f, default_flow_style=False)
 
     if pip_constraints:
-        write_to(os.path.join(path, _CONSTRAINTS_FILE_NAME), "\n".join(pip_constraints))
+        write_to(str(path / _CONSTRAINTS_FILE_NAME), "\n".join(pip_constraints))
 
-    write_to(os.path.join(path, _REQUIREMENTS_FILE_NAME), "\n".join(pip_requirements))
-    _PythonEnv.current().to_yaml(os.path.join(path, _PYTHON_ENV_FILE_NAME))
+    write_to(str(path / _REQUIREMENTS_FILE_NAME), "\n".join(pip_requirements))
+    _PythonEnv.current().to_yaml(str(path / _PYTHON_ENV_FILE_NAME))
 
 
 def load_model(
     model_uri: str,
     dst_path: str | None = None,
     **kwargs,
-):
+) -> ForecastingModel:
     """Load a darts model from an MLflow model URI.
 
     Parameters
@@ -279,13 +294,12 @@ def load_model(
         raise_log(
             ValueError(
                 f"Cannot load model: class `{model_cls_str}` is not a subclass of `ForecastingModel`."
-            ),
-            logger,
+            )
         )
 
-    model_path = os.path.join(local_path, flavor_conf["data"])
+    model_path = Path(local_path) / flavor_conf["data"]
 
-    return model_cls.load(model_path, **kwargs)
+    return model_cls.load(str(model_path), **kwargs)
 
 
 def log_model(
@@ -480,7 +494,12 @@ def autolog(
         try:
             import mlflow.pytorch
 
-            mlflow.pytorch.autolog(log_models=False, log_datasets=False, silent=silent)
+            mlflow.pytorch.autolog(
+                log_models=False,
+                log_datasets=False,
+                checkpoint=False,
+                silent=silent,
+            )
         except ImportError:
             logger.info(
                 "mlflow.pytorch not available; skipping per-epoch metrics logging."
@@ -540,6 +559,7 @@ def _autolog(
         """Patch function for ForecastingModel.fit() autologging.
 
         Logs model parameters, class, covariates and the model itself.
+
         Parameters
         ----------
         original
@@ -553,6 +573,7 @@ def _autolog(
 
         Returns
         -------
+        ForecastingModel
             The result of calling the original fit method.
         """
         # Create a training session to track the training process and log information
@@ -730,8 +751,10 @@ def _get_model_info_tags(model: ForecastingModel) -> dict[str, Any]:
         A dictionary of MLflow run tag keys and values describing the specified model.
     """
     return {
-        "model_name": model.__class__.__name__,
-        "model_class": (model.__class__.__module__ + "." + model.__class__.__name__),
+        "model_class": model.__class__.__name__,
+        "model_reference": (
+            model.__class__.__module__ + "." + model.__class__.__name__
+        ),
         "model_likelihood": (
             model.likelihood.__class__.__name__
             if model.likelihood is not None
@@ -772,11 +795,7 @@ def _log_covariate_info(model: ForecastingModel) -> None:
         ) != len(model.static_covariates.columns)
 
     # log complete information as JSON artifact
-    with TempDir() as tmp:
-        covariates_path = tmp.path("covariates.json")
-        with open(covariates_path, "w") as f:
-            json.dump(covariate_info, f, indent=2)
-        mlflow.log_artifact(covariates_path)
+    mlflow.log_dict(covariate_info, "covariates.json")
 
 
 def _is_torch_model(model) -> bool:
@@ -792,8 +811,7 @@ def _is_torch_model(model) -> bool:
     bool
         True if the model is a `TorchForecastingModel`, False otherwise.
     """
-    method = getattr(model, "predict_from_dataset", None)
-    return callable(method)
+    return TORCH_AVAILABLE and isinstance(model, TorchForecastingModel)
 
 
 def _extract_covariate_metadata(
@@ -1284,7 +1302,7 @@ def _log_metric_result(
         c_size = (s.n_components if has_comp_axis else 1) * quantiles_num
         arr = np.asarray(r, dtype=float)
         # after stripping the C axis, the remainder is the time axis (or scalar)
-        rest, extra = divmod(arr.size, c_size)
+        n_times, extra = divmod(arr.size, c_size)
         if extra:
             logger.warning(
                 "Metric logging skipped for `%s`: result size (%d) is not "
@@ -1297,14 +1315,14 @@ def _log_metric_result(
             return
 
         if has_time_axis:
-            t_size = rest
-        elif rest != 1:
+            t_size = n_times
+        elif n_times != 1:
             logger.warning(
                 "Metric logging skipped for `%s`: expected a single value per "
                 "component/quantile after reduction, but got %d elements. "
                 "Check time_reduction and component_reduction.",
                 metric_name,
-                rest,
+                n_times,
             )
             return
         else:
