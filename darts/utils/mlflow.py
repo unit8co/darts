@@ -616,9 +616,10 @@ def _autolog(
                     model_id=model.model_id,
                 )
             except Exception:
-                logger.info(
-                    f"Failed to autolog model artifact for {type(self).__name__}.",
-                    exc_info=True,
+                raise_log(
+                    ValueError(
+                        f"Failed to autolog model artifact for {type(self).__name__}."
+                    )
                 )
 
         param_logging_ops.await_completion()
