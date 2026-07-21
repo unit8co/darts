@@ -94,7 +94,7 @@ class BottomUpReconciliator(BaseDataTransformer):
         leaves_seq = list(series.bottom_level_components)
         n, m = series.n_components, len(leaves_seq)
         leaves_indexes = {leaf: i for i, leaf in enumerate(leaves_seq)}
-        G = np.zeros((m, n))
+        G = np.zeros((m, n), dtype=series.dtype)
         for i, c in enumerate(series.components):
             if c in leaves_indexes:
                 G[leaves_indexes[c], i] = 1.0
@@ -150,7 +150,7 @@ class TopDownReconciliator(FittableDataTransformer):
         # compute proportions for each base component
         proportions = sum_base / sum_total
         top_level_index = list(series.components).index(series.top_level_component)
-        G = np.zeros((m, n))
+        G = np.zeros((m, n), dtype=series.dtype)
         G[:, top_level_index] = proportions
 
         return G

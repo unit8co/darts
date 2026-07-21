@@ -1,3 +1,4 @@
+import itertools
 from copy import deepcopy
 
 import numpy as np
@@ -18,11 +19,11 @@ class TestBoxCox:
         boxcox = BoxCox(lmbda=0.3)
 
         boxcox.fit(self.multi_series)
-        assert boxcox._fitted_params == [[0.3, 0.3]]
+        np.testing.assert_equal(boxcox._fitted_params, [[0.3, 0.3]])
 
         boxcox = BoxCox(lmbda=[0.3, 0.4])
         boxcox.fit(self.multi_series)
-        assert boxcox._fitted_params == [[0.3, 0.4]]
+        np.testing.assert_equal(boxcox._fitted_params, [[0.3, 0.4]])
 
         with pytest.raises(ValueError):
             boxcox = BoxCox(lmbda=[0.2, 0.4, 0.5])
@@ -140,6 +141,21 @@ class TestBoxCox:
             ._fitted_params
         )
         assert local_params == global_params
+
+    @pytest.mark.parametrize(
+        "dt_source, set_lmbda",
+        itertools.product(["float32", "float64"], [True, False]),
+    )
+    def test_dtype_conversion(self, dt_source, set_lmbda):
+        series = self.sine_series.astype(dt_source)
+
+        kwargs = {"lmbda": 2} if set_lmbda else dict()
+        transformer = BoxCox(**kwargs).fit(series)
+        transformed = transformer.transform(series)
+        inversed = transformer.inverse_transform(transformed)
+
+        assert transformed.dtype == dt_source
+        assert inversed.dtype == dt_source
 
 
 class TestBoxCoxInputValidation:

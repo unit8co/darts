@@ -16,6 +16,10 @@ if not TORCH_AVAILABLE:
 from darts import TimeSeries, concatenate
 from darts.datasets import ElectricityConsumptionZurichDataset
 from darts.models import PatchTSTFMModel
+from darts.tests.models.forecasting.foundation_test_utils import (
+    PATCHTST_FM_TINY_CONTEXT_LENGTH,
+    PATCHTST_FM_TINY_DIR,
+)
 from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
 from darts.utils.timeseries_generation import (
     gaussian_timeseries,
@@ -72,12 +76,8 @@ class TestPatchTSTFMModel:
     )
 
     # ---- Tiny Model ---- #
-    dummy_local_dir = (
-        Path(__file__).parent / "artefacts" / "patchtstfm" / "tiny_patchtst_fm"
-    ).absolute()
-    # tiny model: context_length=128, d_patch=16, num_quantile=9
-    # max input = context_length - output_chunk_length
-    dummy_context_length = 128
+    dummy_local_dir = PATCHTST_FM_TINY_DIR
+    dummy_context_length = PATCHTST_FM_TINY_CONTEXT_LENGTH
 
     @pytest.mark.slow
     @pytest.mark.parametrize("probabilistic", [True, False])

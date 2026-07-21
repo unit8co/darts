@@ -477,3 +477,17 @@ class TestDiff:
         startvals2 = deepcopy(diff._fitted_params)[0][0]
 
         assert not np.allclose(startvals1, startvals2)
+
+    @pytest.mark.parametrize(
+        "dt_source",
+        ["float32", "float64"],
+    )
+    def test_dtype_conversion(self, dt_source):
+        series = self.sine_series.astype(dt_source)
+
+        transformer = Diff().fit(series)
+        transformed = transformer.transform(series)
+        inversed = transformer.inverse_transform(transformed)
+
+        assert transformed.dtype == dt_source
+        assert inversed.dtype == dt_source

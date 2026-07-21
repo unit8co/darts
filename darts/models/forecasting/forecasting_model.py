@@ -514,6 +514,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
 
     @property
+    def _requires_training(self):
+        """Whether the model is trained when calling a `fit*` method."""
+        return True
+
+    @property
     @abstractmethod
     def extreme_lags(
         self,
@@ -661,20 +666,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             self, series, kwargs, is_conformal=is_conformal
         )
 
-    def _get_last_prediction_time(
-        self,
-        series,
-        forecast_horizon,
-        overlap_end,
-        latest_possible_prediction_start,
-    ):
-        # if `overlap_end` is True, we can use the pre-computed latest possible first prediction point
-        if overlap_end:
-            return latest_possible_prediction_start
-
-        # otherwise, the upper bound for the last time step of the last prediction is the end of the target series
-        return series.time_index[-forecast_horizon]
-
     def _check_optimizable_historical_forecasts(
         self,
         retrain: bool | int | Callable[..., bool],
@@ -692,7 +683,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | float | int | None = None,
+        start: pd.Timestamp | float | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -775,12 +766,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             (``output_chunk_length + output_chunk_shift`` for global models and ``0`` for local models).
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
-            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            ``float``, ``int``, ``pandas.Timestamp``, ``'end'``, and ``None``.
             If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
             If an ``int``, it is either the index position of the first prediction point for `series` with a
             `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
             the index position with `start_format="position"`.
             If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If the string ``'end'``, generates a single forecast per series starting one step after the end of each
+            series (future-only forecasting). Forecasts will extend beyond the series end regardless ``overlap_end``.
             If ``None``, the first prediction point will automatically be set to:
 
             - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
@@ -796,7 +789,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
               (default behavior with ``None``) and start at the first trainable/predictable point.
         start_format
-            Defines the `start` format.
+            Defines the `start` format. Ignored when ``start='end'``.
             If set to ``'position'``, `start` corresponds to the index position of the first predicted point and can
             range from `(-len(series), len(series) - 1)`.
             If set to ``'value'``, `start` corresponds to the index value/label of the first predicted point. Will raise
@@ -1273,7 +1266,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | float | int | None = None,
+        start: pd.Timestamp | float | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -1345,12 +1338,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             (``output_chunk_length + output_chunk_shift`` for global models and ``0`` for local models).
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
-            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            ``float``, ``int``, ``pandas.Timestamp``, ``'end'``, and ``None``.
             If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
             If an ``int``, it is either the index position of the first prediction point for `series` with a
             `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
             the index position with `start_format="position"`.
             If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If the string ``'end'``, generates a single forecast per series starting one step after the end of each
+            series (future-only forecasting). Forecasts will extend beyond the series end regardless ``overlap_end``.
             If ``None``, the first prediction point will automatically be set to:
 
             - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
@@ -1369,7 +1364,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
               also shifted by `output_chunk_shift` points into the future.
 
         start_format
-            Defines the `start` format.
+            Defines the `start` format. Ignored when ``start='end'``.
             If set to ``'position'``, `start` corresponds to the index position of the first predicted point and can
             range from `(-len(series), len(series) - 1)`.
             If set to ``'value'``, `start` corresponds to the index value/label of the first predicted point. Will raise
@@ -1508,6 +1503,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if len(metric_kwargs) != len(metric):
             metric_kwargs = [metric_kwargs[0] for _ in range(len(metric))]
 
+        hfc_precomputed = historical_forecasts is not None
         historical_forecasts = historical_forecasts or self.historical_forecasts(
             series=series,
             past_covariates=past_covariates,
@@ -1541,6 +1537,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             historical_forecasts=historical_forecasts,
             last_points_only=last_points_only,
         )
+
+        # when pre-computed historical forecasts are supplied, extend each series with NaN
+        # where any forecast goes beyond the series end, so that per-time-step metrics
+        # produce arrays of consistent shape across all forecasts
+        if hfc_precomputed or overlap_end:
+            series = _extend_series_for_overlap_end(
+                series=series, historical_forecasts=historical_forecasts
+            )
 
         # we have multiple forecasts per series: rearrange forecasts to call each metric only once;
         # flatten historical forecasts, get matching target series index, remember cumulative target lengths
@@ -1648,7 +1652,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         future_covariates: TimeSeries | None = None,
         forecast_horizon: int | None = None,
         stride: int = 1,
-        start: pd.Timestamp | float | int | None = None,
+        start: pd.Timestamp | float | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         last_points_only: bool = False,
         show_warnings: bool = True,
@@ -2029,7 +2033,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | float | int | None = None,
+        start: pd.Timestamp | float | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -2110,12 +2114,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             (``output_chunk_length + output_chunk_shift`` for global models and ``0`` for local models).
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
-            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            ``float``, ``int``, ``pandas.Timestamp``, ``'end'``, and ``None``.
             If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
             If an ``int``, it is either the index position of the first prediction point for `series` with a
             `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
             the index position with `start_format="position"`.
             If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If the string ``'end'``, generates a single forecast per series starting one step after the end of each
+            series (future-only forecasting). Forecasts will extend beyond the series end regardless ``overlap_end``.
             If ``None``, the first prediction point will automatically be set to:
 
             - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
@@ -2276,12 +2282,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             historical_forecasts=historical_forecasts,
             last_points_only=last_points_only,
         )
-
-        # optionally, add nans to end of series to get residuals of same shape for each forecast
-        if overlap_end:
-            series = _extend_series_for_overlap_end(
-                series=series, historical_forecasts=historical_forecasts
-            )
 
         residuals = self.backtest(
             series=series,
@@ -2858,7 +2858,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates: Sequence[TimeSeries] | None = None,
         future_covariates: Sequence[TimeSeries] | None = None,
         num_samples: int = 1,
-        start: pd.Timestamp | float | int | None = None,
+        start: pd.Timestamp | float | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
         stride: int = 1,

@@ -115,3 +115,20 @@ class TestMappers:
         np.testing.assert_almost_equal(
             series.all_values(copy=False), inv_tr.all_values(copy=False)
         )
+
+    @pytest.mark.parametrize(
+        "dt_source",
+        ["float32", "float64"],
+    )
+    def test_dtype_conversion(self, dt_source):
+        series = self.lin_series.astype(dt_source)
+
+        def dtype_converter(x):
+            return x.astype("float32" if dt_source == "float64" else "float64")
+
+        transformer = InvertibleMapper(dtype_converter, dtype_converter)
+        transformed = transformer.transform(series)
+        inversed = transformer.inverse_transform(transformed)
+
+        assert transformed.dtype == dt_source
+        assert inversed.dtype == dt_source

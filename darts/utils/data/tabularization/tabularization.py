@@ -1126,7 +1126,7 @@ def _create_lagged_data_by_moving_window(
         if is_target_series or series_and_lags_specified:
             # get the position of `start_time` relative to the beginning of the current series
             start_time_idx = n_steps_between(
-                end=start_time, start=series_i._time_index[0], freq=series_i.freq
+                end=start_time, start=series_i.start_time(), freq=series_i.freq
             )
         if series_and_lags_specified:
             # Windows taken between times `t - max_lag_i` and `t - min_lag_i`
@@ -1330,19 +1330,16 @@ def _create_lagged_data_by_intersecting_times(
         series_and_lags_specified = min_lag_i is not None
         is_target_series = is_training and (i == 0)
         if series_and_lags_specified or is_target_series:
+            start_i, end_i = series_i.start_time(), series_i.end_time()
             time_index_i = series_i.time_index
-            add_to_start = (not is_target_series) and (
-                time_index_i[0] > shared_times[0]
-            )
-            add_to_end = (not is_target_series) and (
-                time_index_i[-1] < shared_times[-1]
-            )
+            add_to_start = (not is_target_series) and (start_i > shared_times[0])
+            add_to_end = (not is_target_series) and (end_i < shared_times[-1])
             if add_to_start or add_to_end:
                 new_start = shared_times[0] if add_to_start else None
                 new_end = shared_times[-1] if add_to_end else None
                 num_prepended = (
                     n_steps_between(
-                        start=shared_times[0], end=time_index_i[0], freq=series_i.freq
+                        start=shared_times[0], end=start_i, freq=series_i.freq
                     )
                     if add_to_start
                     else 0
@@ -1809,12 +1806,12 @@ def get_shared_times(
 
     def intersection_func(series_or_times_1, series_or_times_2):
         times_1 = (
-            series_or_times_1.time_index
+            series_or_times_1._time_index
             if isinstance(series_or_times_1, TimeSeries)
             else series_or_times_1
         )
         times_2 = (
-            series_or_times_2.time_index
+            series_or_times_2._time_index
             if isinstance(series_or_times_2, TimeSeries)
             else series_or_times_2
         )
