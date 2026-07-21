@@ -238,7 +238,7 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         series: Sequence[TimeSeries],
         past_covariates: Sequence[TimeSeries] | None,
         future_covariates: Sequence[TimeSeries] | None,
-        sample_weight: Sequence[TimeSeries] | None,
+        sample_weight: Sequence[TimeSeries] | str | None,
         max_samples_per_ts: int | None,
         stride: int = 1,
     ) -> TorchTrainingDataset:

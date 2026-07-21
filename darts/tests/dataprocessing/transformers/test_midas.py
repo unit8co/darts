@@ -677,3 +677,17 @@ class TestMIDAS:
         assert (
             ts_monday_anchor[0].values().flatten() == ts[3:10].values().flatten()
         ).all()
+
+    @pytest.mark.parametrize(
+        "dt_source",
+        ["float32", "float64"],
+    )
+    def test_dtype_conversion(self, dt_source):
+        series = self.monthly_ts.astype(dt_source)
+
+        transformer = MIDAS(low_freq="QS").fit(series)
+        transformed = transformer.transform(series)
+        inversed = transformer.inverse_transform(transformed)
+
+        assert transformed.dtype == dt_source
+        assert inversed.dtype == dt_source

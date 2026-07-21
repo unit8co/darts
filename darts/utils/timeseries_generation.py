@@ -20,7 +20,7 @@ from darts.timeseries import (
     TimeSeries,
 )
 from darts.typing import TimeIndex, TimeZone
-from darts.utils.utils import generate_index
+from darts.utils.utils import _maybe_cast_array_dtype, generate_index
 
 ONE_INDEXED_FREQS = {
     "day",
@@ -814,6 +814,7 @@ def _build_forecast_series(
         if isinstance(points_preds, np.ndarray)
         else np.stack(points_preds, axis=2)
     )
+    values = _maybe_cast_array_dtype(values, input_series.dtype)
     return TimeSeries(
         times=time_index,
         values=values,
@@ -880,6 +881,8 @@ def _build_forecast_series_from_schema(
         static_covariates = schema[STATIC_COV_TAG]
         hierarchy = schema[HIERARCHY_TAG]
 
+    # only torch models use this helper, we do not cast the data type to the input series' type
+    # since we support custom model precision
     return TimeSeries(
         times=time_index,
         values=values,
