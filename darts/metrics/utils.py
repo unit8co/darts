@@ -8,7 +8,7 @@ from collections.abc import Callable, Sequence
 from enum import Enum
 from functools import wraps
 from inspect import signature
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -643,13 +643,17 @@ def _get_values_or_raise(
     if not remove_nan_union or is_insample:
         return vals_a, vals_b
 
-    isnan_mask = np.expand_dims(
-        np.logical_or(np.isnan(vals_a), np.isnan(vals_b)).any(axis=SMPL_AX), axis=-1
-    )
-    isnan_mask_pred = np.repeat(isnan_mask, vals_b.shape[SMPL_AX], axis=SMPL_AX)
-    return np.where(isnan_mask, np.nan, vals_a), np.where(
-        isnan_mask_pred, np.nan, vals_b
-    )
+    # fast path: most series contain no NaNs
+    nan_a, nan_b = np.isnan(vals_a), np.isnan(vals_b)
+    if not nan_a.any() and not nan_b.any():
+        return vals_a, vals_b
+
+    nan_union = nan_a | nan_b
+    if vals_b.shape[SMPL_AX] > 1:
+        isnan_mask = nan_union.any(axis=SMPL_AX, keepdims=True)
+    else:
+        isnan_mask = nan_union
+    return np.where(isnan_mask, np.nan, vals_a), np.where(isnan_mask, np.nan, vals_b)
 
 
 def _get_quantile_intervals(
@@ -846,18 +850,13 @@ def _get_error_scale(
     return scale
 
 
-def _safe_scaled_divide(
-    errors: np.ndarray,
-    scale: np.ndarray,
+def _safe_divide(
+    numerator: np.ndarray,
+    denominator: np.ndarray,
     zero_division: str = "warn",
     zero_fill: float = 1.0,
     strict_zero: bool = False,
-    error_msg: str = "Cannot use scaled metric with periodical signals.",
-    warning_msg: str = (
-        "The error scale (denominator) is zero for some components. "
-        "Those entries are set to NaN (when numerator is non-zero) or "
-        "1.0 (when numerator is also zero, i.e. on par with naive)."
-    ),
+    metric_type: Literal["scaled", "percentage"] = "scaled",
 ) -> np.ndarray:
     """Divides ``errors`` by ``scale``, handling zero-scale entries gracefully.
 
@@ -875,9 +874,9 @@ def _safe_scaled_divide(
 
     Parameters
     ----------
-    errors
+    numerator
         Numerator array. Broadcasts against ``scale``.
-    scale
+    denominator
         Denominator array. Broadcasts against ``errors``.
     zero_division
         Controls behavior when ``scale`` is (near) zero.
@@ -895,10 +894,8 @@ def _safe_scaled_divide(
         ``False`` (default), values close to zero according to ``np.isclose``
         are also handled as zero. Percentage metrics use exact zeros to avoid
         treating valid small denominators as zero.
-    error_msg
-        The message of the ``ValueError`` raised when ``zero_division="raise"``.
-    warning_msg
-        The warning logged when zero-division handling is applied.
+    metric_type
+        The metric type ('scaled', 'percentage') for logging purposes.
 
     Returns
     -------
@@ -912,28 +909,40 @@ def _safe_scaled_divide(
             ),
         )
 
-    zero_mask = scale == 0.0 if strict_zero else np.isclose(scale, 0.0)
+    zero_mask = denominator == 0.0 if strict_zero else np.isclose(denominator, 0.0)
     if not zero_mask.any():
-        return errors / scale
+        return numerator / denominator
 
     if zero_division == "raise":
-        raise_log(ValueError(error_msg))
+        raise_log(ValueError(_SAFE_DIVIDE_LOGS[metric_type]["exception"]))
 
-    numerator_zero = errors == 0.0 if strict_zero else np.isclose(errors, 0.0)
+    numerator_zero = numerator == 0.0 if strict_zero else np.isclose(numerator, 0.0)
     fill = np.where(numerator_zero, zero_fill, np.nan)
-    result = np.where(zero_mask, fill, errors / np.where(zero_mask, 1.0, scale))
+    result = np.where(
+        zero_mask, fill, numerator / np.where(zero_mask, 1.0, denominator)
+    )
 
-    logger.warning(warning_msg)
+    logger.warning(_SAFE_DIVIDE_LOGS[metric_type]["warning"].format(zero_fill))
     return result
 
 
-_PERCENTAGE_ZERO_DIVISION_ERROR = (
-    "Cannot compute metric: the denominator is zero for some entries."
-)
-_PERCENTAGE_ZERO_DIVISION_WARNING = (
-    "The metric denominator is zero for some entries. Those entries are set to "
-    "NaN when the numerator is non-zero and 0.0 when the numerator is also zero."
-)
+_SAFE_DIVIDE_LOGS = {
+    "scaled": {
+        "exception": "Cannot use scaled metric with periodical signals.",
+        "warning": (
+            "The error scale (denominator) is zero for some components. "
+            "Those entries are set to NaN (when numerator is non-zero) or "
+            "{0} (when numerator is also zero, i.e. on par with naive)."
+        ),
+    },
+    "percentage": {
+        "exception": "Cannot compute metric: the denominator is zero for some entries.",
+        "warning": (
+            "The metric denominator is zero for some entries. Those entries are set to "
+            "NaN when the numerator is non-zero and {0} when the numerator is also zero."
+        ),
+    },
+}
 
 
 def _unique_labels(y_true: np.ndarray, y_pred: np.ndarray) -> list[np.ndarray]:

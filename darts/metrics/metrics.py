@@ -13,8 +13,6 @@ import pandas as pd
 from darts.dataprocessing import dtw
 from darts.logging import raise_log
 from darts.metrics.utils import (
-    _PERCENTAGE_ZERO_DIVISION_ERROR,
-    _PERCENTAGE_ZERO_DIVISION_WARNING,
     METRIC_OUTPUT_TYPE,
     SMPL_AX,
     TIME_AX,
@@ -26,7 +24,7 @@ from darts.metrics.utils import (
     _get_values_or_raise,
     _get_wrapped_metric,
     _LabelReduction,
-    _safe_scaled_divide,
+    _safe_divide,
     classification_support,
     interval_support,
     multi_ts_support,
@@ -536,7 +534,7 @@ def ase(
         intersect,
         q=q,
     )
-    return _safe_scaled_divide(errors, error_scale, zero_division=zero_division)
+    return _safe_divide(errors, error_scale, zero_division=zero_division)
 
 
 @multi_ts_support
@@ -978,7 +976,11 @@ def sse(
         intersect,
         q=q,
     )
-    return _safe_scaled_divide(errors, error_scale, zero_division=zero_division)
+    return _safe_divide(
+        errors,
+        error_scale,
+        zero_division=zero_division,
+    )
 
 
 @multi_ts_support
@@ -1313,7 +1315,7 @@ def rmsse(
         intersect,
         q=q,
     )
-    return _safe_scaled_divide(errors, error_scale, zero_division=zero_division)
+    return _safe_divide(errors, error_scale, zero_division=zero_division)
 
 
 @multi_ts_support
@@ -1532,8 +1534,8 @@ def ape(
     .. math:: 100 \\cdot \\left| \\frac{y_t - \\hat{y}_t}{y_t} \\right|
 
     When :math:`y_t = 0` for some :math:`t` the term is undefined; the behavior is then controlled by
-    the ``zero_division`` parameter. Consider using the Absolute Scaled Error
-    (:func:`~darts.metrics.metrics.ase`) in these cases.
+    the ``zero_division`` parameter. Consider using the Absolute Scaled Error (:func:`~darts.metrics.metrics.ase`)
+    in these cases.
 
     If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
     specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
@@ -1551,11 +1553,10 @@ def ape(
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     zero_division
-        Controls behavior when the denominator :math:`y_t` is zero (i.e. ``actual_series`` is zero
-        at some time step).
+        Controls behavior when the denominator :math:`y_t` is zero (i.e. ``actual_series`` is zero at some time step).
 
-        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator
-          also zero) and ``np.nan`` otherwise, and emits a warning.
+        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator also zero) and ``np.nan``
+          otherwise, and emits a warning.
         * ``"raise"`` – raises a ``ValueError``.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
@@ -1620,14 +1621,13 @@ def ape(
         q=q,
     )
     return 100.0 * np.abs(
-        _safe_scaled_divide(
+        _safe_divide(
             y_true - y_pred,
             y_true,
             zero_division=zero_division,
             zero_fill=0.0,
             strict_zero=True,
-            error_msg=_PERCENTAGE_ZERO_DIVISION_ERROR,
-            warning_msg=_PERCENTAGE_ZERO_DIVISION_WARNING,
+            metric_type="percentage",
         )
     )
 
@@ -1674,11 +1674,10 @@ def mape(
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     zero_division
-        Controls behavior when the denominator :math:`y_t` is zero (i.e. ``actual_series`` is zero
-        at some time step).
+        Controls behavior when the denominator :math:`y_t` is zero (i.e. ``actual_series`` is zero at some time step).
 
-        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator
-          also zero) and ``np.nan`` otherwise, and emits a warning.
+        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator also zero) and ``np.nan``
+          otherwise, and emits a warning.
         * ``"raise"`` – raises a ``ValueError``.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
@@ -1780,8 +1779,8 @@ def wmape(
         Controls behavior when the denominator :math:`\\sum_{t=1}^T |y_t|` is zero (i.e. ``actual_series`` is
         all zeros for a given component).
 
-        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator
-          also zero) and ``np.nan`` otherwise, and emits a warning.
+        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator also zero) and ``np.nan``
+          otherwise, and emits a warning.
         * ``"raise"`` – raises a ``ValueError``.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
@@ -1838,21 +1837,17 @@ def wmape(
         actual_series,
         pred_series,
         intersect,
-        remove_nan_union=False,
+        remove_nan_union=True,
         q=q,
     )
-    valid = np.any(~np.isnan(y_true) & ~np.isnan(y_pred), axis=TIME_AX)
-    errors = np.nansum(np.abs(y_true - y_pred), axis=TIME_AX)
-    scale = np.nansum(np.abs(y_true), axis=TIME_AX)
 
-    return 100.0 * _safe_scaled_divide(
-        np.where(valid, errors, np.nan),
-        np.where(valid, scale, np.nan),
+    return 100.0 * _safe_divide(
+        np.nansum(np.abs(y_true - y_pred), axis=TIME_AX),
+        np.nansum(np.abs(y_true), axis=TIME_AX),
         zero_division=zero_division,
         zero_fill=0.0,
         strict_zero=True,
-        error_msg=_PERCENTAGE_ZERO_DIVISION_ERROR,
-        warning_msg=_PERCENTAGE_ZERO_DIVISION_WARNING,
+        metric_type="percentage",
     )
 
 
@@ -1965,17 +1960,13 @@ def sape(
         remove_nan_union=True,
         q=q,
     )
-    denominator = np.abs(y_true) + np.abs(y_pred)
-    return 200.0 * np.abs(
-        _safe_scaled_divide(
-            y_true - y_pred,
-            denominator,
-            zero_division=zero_division,
-            zero_fill=0.0,
-            strict_zero=True,
-            error_msg=_PERCENTAGE_ZERO_DIVISION_ERROR,
-            warning_msg=_PERCENTAGE_ZERO_DIVISION_WARNING,
-        )
+    return 200.0 * _safe_divide(
+        np.abs(y_true - y_pred),
+        np.abs(y_true) + np.abs(y_pred),
+        zero_division=zero_division,
+        zero_fill=0.0,
+        strict_zero=True,
+        metric_type="percentage",
     )
 
 
@@ -2126,8 +2117,8 @@ def ope(
     zero_division
         Controls behavior when the denominator :math:`\\sum_{t=1}^{T}{y_t}` is zero.
 
-        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator
-          also zero) and ``np.nan`` otherwise, and emits a warning.
+        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator also zero) and ``np.nan``
+          otherwise, and emits a warning.
         * ``"raise"`` – raises a ``ValueError``.
 
         Note: a negative sum is a valid denominator (e.g. financial return series). Only an exact
@@ -2190,20 +2181,15 @@ def ope(
         np.nansum(y_true, axis=TIME_AX),
         np.nansum(y_pred, axis=TIME_AX),
     )
-    valid = np.any(~np.isnan(y_true) & ~np.isnan(y_pred), axis=TIME_AX)
-    return (
-        np.abs(
-            _safe_scaled_divide(
-                np.where(valid, y_true_sum - y_pred_sum, np.nan),
-                np.where(valid, y_true_sum, np.nan),
-                zero_division=zero_division,
-                zero_fill=0.0,
-                strict_zero=True,
-                error_msg=_PERCENTAGE_ZERO_DIVISION_ERROR,
-                warning_msg=_PERCENTAGE_ZERO_DIVISION_WARNING,
-            )
+    return 100.0 * np.abs(
+        _safe_divide(
+            y_true_sum - y_pred_sum,
+            y_true_sum,
+            zero_division=zero_division,
+            zero_fill=0.0,
+            strict_zero=True,
+            metric_type="percentage",
         )
-        * 100.0
     )
 
 
@@ -2246,11 +2232,11 @@ def arre(
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     zero_division
-        Controls behavior when the denominator :math:`\\max_t{y_t} - \\min_t{y_t}` is zero (i.e.
-        ``actual_series`` is constant for a given component).
+        Controls behavior when the denominator :math:`\\max_t{y_t} - \\min_t{y_t}` is zero (i.e. ``actual_series`` is
+        constant for a given component).
 
-        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator
-          also zero) and ``np.nan`` otherwise, and emits a warning.
+        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator also zero) and ``np.nan``
+          otherwise, and emits a warning.
         * ``"raise"`` – raises a ``ValueError``.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
@@ -2315,16 +2301,14 @@ def arre(
         q=q,
     )
     y_max, y_min = np.nanmax(y_true, axis=TIME_AX), np.nanmin(y_true, axis=TIME_AX)
-    true_range = y_max - y_min
     return 100.0 * np.abs(
-        _safe_scaled_divide(
+        _safe_divide(
             y_true - y_pred,
-            true_range,
+            y_max - y_min,
             zero_division=zero_division,
             zero_fill=0.0,
             strict_zero=True,
-            error_msg=_PERCENTAGE_ZERO_DIVISION_ERROR,
-            warning_msg=_PERCENTAGE_ZERO_DIVISION_WARNING,
+            metric_type="percentage",
         )
     )
 
@@ -2368,11 +2352,11 @@ def marre(
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     zero_division
-        Controls behavior when the denominator :math:`\\max_t{y_t} - \\min_t{y_t}` is zero (i.e.
-        ``actual_series`` is constant for a given component).
+        Controls behavior when the denominator :math:`\\max_t{y_t} - \\min_t{y_t}` is zero (i.e. ``actual_series``
+        is constant for a given component).
 
-        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator
-          also zero) and ``np.nan`` otherwise, and emits a warning.
+        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator also zero) and ``np.nan``
+          otherwise, and emits a warning.
         * ``"raise"`` – raises a ``ValueError``.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
@@ -2570,8 +2554,8 @@ def coefficient_of_variation(
     zero_division
         Controls behavior when the denominator :math:`\\bar{y}` (the mean of ``actual_series``) is zero.
 
-        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator
-          also zero) and ``np.nan`` otherwise, and emits a warning.
+        * ``"warn"`` (default) – returns ``0.0`` for a perfect forecast (numerator also zero) and ``np.nan``
+          otherwise, and emits a warning.
         * ``"raise"`` – raises a ``ValueError``.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
@@ -2628,14 +2612,13 @@ def coefficient_of_variation(
         q=q,
     )
     # not calling rmse as y_true and y_pred are np.ndarray
-    return 100 * _safe_scaled_divide(
+    return 100.0 * _safe_divide(
         np.sqrt(np.nanmean((y_true - y_pred) ** 2, axis=TIME_AX)),
         np.nanmean(y_true, axis=TIME_AX),
         zero_division=zero_division,
         zero_fill=0.0,
         strict_zero=True,
-        error_msg=_PERCENTAGE_ZERO_DIVISION_ERROR,
-        warning_msg=_PERCENTAGE_ZERO_DIVISION_WARNING,
+        metric_type="percentage",
     )
 
 
