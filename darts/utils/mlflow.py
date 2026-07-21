@@ -408,7 +408,7 @@ def log_model(
 
 
 def autolog(
-    log_models: bool = True,
+    log_models: bool = False,
     log_params: bool = True,
     log_metrics: bool = True,
     log_torch_metrics: bool = True,
@@ -609,7 +609,9 @@ def _autolog(
             )
             try:
                 registered_model_name = get_autologging_config(
-                    FLAVOR_NAME, "registered_model_name", None
+                    flavor_name=FLAVOR_NAME,
+                    config_key="registered_model_name",
+                    default_value=None,
                 )
                 log_model(
                     result,
