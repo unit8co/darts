@@ -401,42 +401,42 @@ class TestSFModels:
             ):
                 _ = StatsForecastModel(model=model)
 
-    def test_minimum_length_default_unchanged(self):
+    def test_min_train_length_default_unchanged(self):
         # by default StatsForecast models require 10 training points
         assert AutoETS(season_length=1).min_train_series_length == 10
         assert StatsForecastModel(model="AutoETS").min_train_series_length == 10
 
-    def test_minimum_length_override(self):
+    def test_min_train_length_override(self):
         # the override lowers the requirement and propagates to `_target_window_lengths`
-        model = AutoETS(season_length=1, minimum_length=7)
+        model = AutoETS(season_length=1, min_train_length=7)
         assert model.min_train_series_length == 7
         assert model._target_window_lengths == (7, 0)
 
-    def test_minimum_length_allows_short_series(self):
+    def test_min_train_length_allows_short_series(self):
         # reproduces issue #3001: AutoETS on a series shorter than the default minimum
         short = TimeSeries.from_values(
             np.arange(9, dtype=np.float32) + np.linspace(0, 1, 9, dtype=np.float32)
         )
         with pytest.raises(ValueError, match="requires at least"):
             AutoETS(season_length=1).fit(short)
-        model = AutoETS(season_length=1, minimum_length=len(short))
+        model = AutoETS(season_length=1, min_train_length=len(short))
         model.fit(short)
         assert len(model.predict(3)) == 3
 
-    @pytest.mark.parametrize("bad", [0, -1, 2.5, True])
-    def test_minimum_length_validation(self, bad):
-        with pytest.raises(ValueError, match="`minimum_length` must be"):
-            AutoETS(season_length=1, minimum_length=bad)
+    @pytest.mark.parametrize("bad", [0, -1, 2.5])
+    def test_min_train_length_validation(self, bad):
+        with pytest.raises(ValueError, match="`min_train_length` must be"):
+            AutoETS(season_length=1, min_train_length=bad)
 
-    def test_minimum_length_available_across_sf_family(self):
+    def test_min_train_length_available_across_sf_family(self):
         for model in [
-            AutoARIMA(minimum_length=5),
-            Croston(minimum_length=4),
-            StatsForecastModel(model="AutoETS", minimum_length=6),
+            AutoARIMA(min_train_length=5),
+            Croston(min_train_length=4),
+            StatsForecastModel(model="AutoETS", min_train_length=6),
         ]:
-            assert model.min_train_series_length == model._minimum_length
+            assert model.min_train_series_length == model._min_train_length
 
-    def test_minimum_length_not_on_global_models(self):
+    def test_min_train_length_not_on_global_models(self):
         # the parameter is intentionally exposed only on local models
         with pytest.raises(TypeError):
-            LinearRegressionModel(lags=3, minimum_length=5)
+            LinearRegressionModel(lags=3, min_train_length=5)

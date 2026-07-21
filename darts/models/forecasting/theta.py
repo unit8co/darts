@@ -30,6 +30,7 @@ class Theta(LocalForecastingModel):
         theta: int = 2,
         seasonality_period: int | None = None,
         season_mode: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE,
+        min_train_length: int | None = None,
     ):
         """
         An implementation of the Theta method with configurable `theta` parameter. See [1]_.
@@ -53,6 +54,11 @@ class Theta(LocalForecastingModel):
             Type of seasonality.
             Either ``SeasonalityMode.MULTIPLICATIVE``, ``SeasonalityMode.ADDITIVE`` or ``SeasonalityMode.NONE``.
             Defaults to ``SeasonalityMode.MULTIPLICATIVE``.
+        min_train_length
+            Optionally, set a custom minimum required training series length for this model to allow training on
+            shorter input series. By default, Darts sets a conservative minimum length to avoid downstream issues.
+            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default
+            requirement).
 
         References
         ----------
@@ -76,7 +82,7 @@ class Theta(LocalForecastingModel):
          [545.80068173]]
         """
 
-        super().__init__()
+        super().__init__(min_train_length=min_train_length)
 
         self.model = None
         self.coef = 1
@@ -195,9 +201,9 @@ class Theta(LocalForecastingModel):
             and self.seasonality_period
             and self.seasonality_period > 1
         ):
-            return 2 * self.seasonality_period, 0
+            return self._min_train_input_length(2 * self.seasonality_period), 0
         else:
-            return 3, 0
+            return self._min_train_input_length(3), 0
 
 
 class FourTheta(LocalForecastingModel):
@@ -209,6 +215,7 @@ class FourTheta(LocalForecastingModel):
         model_mode: ModelMode = ModelMode.ADDITIVE,
         trend_mode: TrendMode = TrendMode.LINEAR,
         normalization: bool = True,
+        min_train_length: int | None = None,
     ):
         """
         An implementation of the 4Theta method with configurable `theta` parameter.
@@ -248,6 +255,11 @@ class FourTheta(LocalForecastingModel):
             Defaults to `TrendMode.LINEAR`.
         normalization
             If `True`, the data is normalized so that the mean is 1. Defaults to `True`.
+        min_train_length
+            Optionally, set a custom minimum required training series length for this model to allow training on
+            shorter input series. By default, Darts sets a conservative minimum length to avoid downstream issues.
+            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default
+            requirement).
 
         Notes
         -----
@@ -271,7 +283,7 @@ class FourTheta(LocalForecastingModel):
          [546.61463773]]
         """
 
-        super().__init__()
+        super().__init__(min_train_length=min_train_length)
 
         self.model = None
         self.drift = None
@@ -515,6 +527,6 @@ class FourTheta(LocalForecastingModel):
             and self.seasonality_period
             and self.seasonality_period > 1
         ):
-            return 2 * self.seasonality_period, 0
+            return self._min_train_input_length(2 * self.seasonality_period), 0
         else:
-            return 3, 0
+            return self._min_train_input_length(3), 0

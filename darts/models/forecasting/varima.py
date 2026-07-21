@@ -35,6 +35,7 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         trend: str | None = None,
         add_encoders: dict | None = None,
         random_state: int | None = None,
+        min_train_length: int | None = None,
     ):
         """VARIMA
 
@@ -80,6 +81,11 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
             ..
         random_state: int or None
             Controls the randomness for reproducible forecasting.
+        min_train_length
+            Optionally, set a custom minimum required training series length for this model to allow training on
+            shorter input series. By default, Darts sets a conservative minimum length to avoid downstream issues.
+            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default
+            requirement).
 
         Examples
         --------
@@ -103,7 +109,7 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
          [52.88729152, 48.01166578]
          [53.44242919, 48.00874069]]
         """
-        super().__init__(add_encoders=add_encoders)
+        super().__init__(add_encoders=add_encoders, min_train_length=min_train_length)
         self.p = p
         self.d = d
         self.q = q
@@ -274,7 +280,7 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
     @property
     def _target_window_lengths(self) -> tuple[int, int]:
-        return 30, 0
+        return self._min_train_input_length(30), 0
 
     @property
     def supports_probabilistic_prediction(self) -> bool:
