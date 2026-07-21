@@ -738,29 +738,54 @@ class TestMLflow:
             "mape should NOT be logged when log_metrics=False"
         )
 
-    def test_autolog_public_namespace_patched(self, mlflow_tracking, autolog_context):
-        """Only darts.metrics (public namespace) is patched; darts.metrics.metrics is not.
-
-        Patching only the public namespace avoids breaking internal metric-to-metric
-        calls within the implementation module (e.g. rmse calling mse internally).
+    def test_autolog_metric_any_import_path_logs(
+        self, mlflow_tracking, autolog_context
+    ):
+        """Metrics log identically regardless of which module path was used to
+        call them. The mlflow hook lives inside `multi_ts_support` (baked into
+        the function itself) rather than patching a specific module
+        attribute, and `darts.metrics.mae` and `darts.metrics.metrics.mae` are
+        the same function object.
         """
         with autolog_context(log_metrics=True):
-            # public namespace → patched: call inside a run should log
             with mlflow.start_run() as run_public:
                 dm.mae(self.ts_univariate, self.ts_univariate * 1.1)
-
-            # implementation module → NOT patched: call inside a run should not log
             with mlflow.start_run() as run_impl:
                 dmm.mae(self.ts_univariate, self.ts_univariate * 1.1)
 
-        run_data_public = mlflow.get_run(run_public.info.run_id).data
-        run_data_impl = mlflow.get_run(run_impl.info.run_id).data
-        assert "mae" in run_data_public.metrics, (
-            "darts.metrics.mae should log to MLflow (public namespace is patched)"
-        )
-        assert "mae" not in run_data_impl.metrics, (
-            "darts.metrics.metrics.mae should NOT log (implementation module is not patched)"
-        )
+        assert "mae" in mlflow.get_run(run_public.info.run_id).data.metrics
+        assert "mae" in mlflow.get_run(run_impl.info.run_id).data.metrics
+
+    def test_autolog_metric_import_order_independent(
+        self, mlflow_tracking, autolog_context
+    ):
+        """A metric imported via `from darts.metrics import <name>` *before*
+        autolog() is enabled still logs correctly, since the hook lives inside
+        the metric's own `multi_ts_support` decorator rather than patching a
+        module attribute after the fact."""
+        from darts.metrics import mae as mae_imported_before_autolog
+
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                mae_imported_before_autolog(
+                    self.ts_univariate, self.ts_univariate * 1.1
+                )
+
+        assert "mae" in mlflow.get_run(run.info.run_id).data.metrics
+
+    def test_autolog_metric_internal_composite_call_not_double_logged(
+        self, mlflow_tracking, autolog_context
+    ):
+        """rmse calls mse internally via `_get_wrapped_metric`, which bypasses
+        `multi_ts_support` entirely, so autologging must fire once (for rmse),
+        not twice (rmse and the internal mse call)."""
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                dm.rmse(self.ts_univariate, self.ts_univariate * 1.1)
+
+        metrics = mlflow.get_run(run.info.run_id).data.metrics
+        assert "rmse" in metrics
+        assert "mse" not in metrics
 
     def test_autolog_metric_per_timestep(self, mlflow_tracking, autolog_context):
         """A per-timestep metric (ae) logs one value per timestep across MLflow steps.
@@ -948,13 +973,13 @@ class TestMLflow:
             assert got[("f1_label0", i)] == pytest.approx(ref[i][0], abs=1e-5)
             assert got[("f1_label1", i)] == pytest.approx(ref[i][1], abs=1e-5)
 
-    def test_autolog_metric_size_mismatch_raises_internally(
+    def test_autolog_metric_size_mismatch_raises(
         self, mlflow_tracking, autolog_context, caplog
     ):
         """When the inferred C-axis size doesn't divide the result, logging raises
-        (logged as an error) and no metrics are written. The public metric call
-        itself doesn't crash, since MLflow's safe_patch wrapper catches exceptions
-        raised from inside a patch function."""
+        (and logs an error), propagating out of the public metric call — the
+        metric callback isn't invoked through MLflow's safe_patch, so nothing
+        catches it. No metrics are written for the failed call."""
         actual = self.ts_univariate[40:]
         # mae with component_reduction=None on a univariate series produces shape (T,),
         # which is size T — divisible by c_size=1 (1 component × 1 quantile), so we
@@ -976,11 +1001,12 @@ class TestMLflow:
         ):
             with autolog_context(log_metrics=True):
                 with mlflow.start_run() as run:
-                    with caplog.at_level(logging.WARNING, logger="darts"):
-                        dm.mae(actual, pred)
+                    with caplog.at_level(logging.ERROR, logger="darts"):
+                        with pytest.raises(ValueError, match="not divisible"):
+                            dm.mae(actual, pred)
 
         assert any("not divisible" in record.message for record in caplog.records), (
-            "Expected a 'not divisible' warning when axes don't match the result"
+            "Expected a 'not divisible' error to be logged when axes don't match"
         )
         # no metrics should have been written for the (faked) mismatched call
         run_data = mlflow.get_run(run.info.run_id).data.metrics
