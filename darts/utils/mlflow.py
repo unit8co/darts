@@ -995,12 +995,16 @@ def _log_backtest_metrics(
 
     # check the dim axes from the metric kwargs for each
     metric_axes = [_infer_metric_axes(m, kw) for m, kw in zip(metric, metric_kwargs)]
-    has_time_axis, has_comp_axis, quantiles_num, _ = metric_axes[0]
+    has_time_axis, has_comp_axis, quantiles_labels_0 = metric_axes[0]
+    quantiles_num = len(quantiles_labels_0)
 
     # Inconsistent axes across metrics (different has_time_axis, has_comp_axis, or
     # quantiles_num) means the result can't be reshaped into a single canonical array.
     # Fall back to flat integer-indexed keys for this case.
-    axes_inconsistent = any(ax[:3] != metric_axes[0][:3] for ax in metric_axes[1:])
+    axes_key = (has_time_axis, has_comp_axis, quantiles_num)
+    axes_inconsistent = any(
+        (ax[0], ax[1], len(ax[2])) != axes_key for ax in metric_axes[1:]
+    )
 
     series = backtest_args.get("series")
     forecast_horizon = backtest_args.get("forecast_horizon")
@@ -1076,7 +1080,7 @@ def _log_backtest_metrics(
 
         canonical = arr.reshape(w_size, t_size, c_size, n_metrics)
         for m, metric_name in enumerate(metric_names):
-            quantiles_labels = metric_axes[m][3]
+            quantiles_labels = metric_axes[m][2]
             for w in range(w_size):
                 for c in range(c_size):
                     # c is a flat index into the (n_components × quantiles_num) C axis:
@@ -1134,13 +1138,12 @@ def _infer_metric_axes(metric: Callable, metric_kwargs: dict) -> tuple:
     Returns
     -------
     tuple
-        ``(has_time_axis, has_comp_axis, quantiles_num, quantiles_labels)`` where
+        ``(has_time_axis, has_comp_axis, quantiles_labels)`` where
 
         - ``has_time_axis`` – ``True`` when ``time_reduction`` is ``None`` (i.e. a
           per-timestep axis is present in the output).
         - ``has_comp_axis`` – ``True`` when components are expanded (not collapsed to a scalar).
-        - ``quantiles_num`` – number of quantile/interval/label entries.
-        - ``quantiles_labels`` – one key suffix per ``quantiles_num`` entry.
+        - ``quantiles_labels`` – one key suffix per quantile/interval/label entry.
 
     Raises
     ------
@@ -1191,7 +1194,7 @@ def _infer_metric_axes(metric: Callable, metric_kwargs: dict) -> tuple:
     else:
         quantiles_labels = [""]
 
-    return (has_time_axis, has_comp_axis, len(quantiles_labels), quantiles_labels)
+    return (has_time_axis, has_comp_axis, quantiles_labels)
 
 
 def _log_metric_result(
@@ -1202,7 +1205,6 @@ def _log_metric_result(
     series,
     has_time_axis: bool,
     has_comp_axis: bool,
-    quantiles_num: int,
     quantiles_labels: list[str],
     dataset_name: str | None = None,
     series_reduced: bool = False,
@@ -1252,10 +1254,8 @@ def _log_metric_result(
         ``True`` when the result carries a per-timestep axis (``time_reduction=None``).
     has_comp_axis
         ``True`` when components are expanded (``component_reduction=None``).
-    quantiles_num
-        Number of quantile/interval/label entries.
     quantiles_labels
-        One key suffix per ``quantiles_num`` entry.
+        One key suffix per quantile/interval/label entry.
     dataset_name
         Sanitized variable name of ``actual_series`` in the caller's frame.
         Omitted from key when ``None``.
@@ -1264,6 +1264,7 @@ def _log_metric_result(
         metric, so the result has no leading series axis even for list input.
     """
     base_key = f"{dataset_name}_{metric_name}" if dataset_name else metric_name
+    quantiles_num = len(quantiles_labels)
 
     if series_reduced:
         # series_reduction aggregated across series -> single result, no series axis
@@ -1412,8 +1413,8 @@ def _make_metric_patch(metric_name: str) -> Callable:
         key_name = _sanitize_mlflow_key(kwargs.get("name") or metric_name)
 
         # infer output axes from the metric signature + call kwargs
-        has_time_axis, has_comp_axis, quantiles_num, quantiles_labels = (
-            _infer_metric_axes(original, kwargs)
+        has_time_axis, has_comp_axis, quantiles_labels = _infer_metric_axes(
+            original, kwargs
         )
 
         # series_reduction collapses the series axis inside the metric, so the
@@ -1434,7 +1435,6 @@ def _make_metric_patch(metric_name: str) -> Callable:
             series,
             has_time_axis,
             has_comp_axis,
-            quantiles_num,
             quantiles_labels,
             dataset_name=dataset_name,
             series_reduced=series_reduced,
