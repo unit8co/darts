@@ -501,18 +501,14 @@ def autolog(
                 silent=silent,
             )
         except ImportError:
-            logger.info(
-                "mlflow.pytorch not available; skipping per-epoch metrics logging."
-            )
+            pass
     elif disable:
         try:
             import mlflow.pytorch
 
             mlflow.pytorch.autolog(disable=True)
         except (ImportError, Exception):
-            logger.info(
-                "mlflow.pytorch not available; skipping per-epoch metrics logging."
-            )
+            pass
 
     _autolog(
         log_models=log_models,
@@ -933,16 +929,21 @@ def _log_backtest_metrics(
     * ``last_points_only`` – collapses all windows into one TimeSeries before scoring,
       so there is effectively only one window regardless of reduction.
 
-    When ``label_reduction=None`` is used without explicit ``labels``, the
-    unique class values are inferred from ``series`` at runtime so structured
-    per-label keys are still produced. When two metrics have incompatible axis
-    layouts (different ``time_reduction`` / ``component_reduction`` / quantile
-    count), each series result is flattened to integer-indexed keys instead.
+    When two metrics have incompatible axis layouts (different
+    ``time_reduction`` / ``component_reduction`` / quantile count), each series
+    result is flattened to integer-indexed keys instead.
 
     When more than one series is scored, the logged value is the mean over
     series for each cell, and the granular per-series breakdown is written to a
     ``per_series_metrics/backtest_per_series.csv`` artifact. For a single series
     the mean is just the value itself and no artifact is written.
+
+    Raises
+    ------
+    ValueError
+        On a shape/size mismatch between the metric result and the inferred
+        axes, or when ``label_reduction=None`` is requested without explicit
+        ``labels``.
 
     Parameters
     ----------
@@ -1000,9 +1001,6 @@ def _log_backtest_metrics(
     # Fall back to flat integer-indexed keys for this case.
     axes_inconsistent = any(ax[:3] != metric_axes[0][:3] for ax in metric_axes[1:])
 
-    # quantiles_num=None means label_reduction=None was requested with labels=None,
-    labels_unknown = quantiles_num is None
-
     series = backtest_args.get("series")
     forecast_horizon = backtest_args.get("forecast_horizon")
 
@@ -1028,23 +1026,6 @@ def _log_backtest_metrics(
                 })
             continue
 
-        # resolve label names from series data when not provided explicitly.
-        # mirrors np.unique(np.concatenate([y_true, y_pred])) inside _confusion_matrix.
-        # NOTE: importantly this checks the series for labels, not just the windows, if
-        # this is an issue, then I'd suggest falling back to flat integer-indexed keys
-        # and enforcing explicit labels.
-        if labels_unknown:
-            inferred_labels = np.unique(s.values())
-            quantiles_num = len(inferred_labels)
-            metric_axes = [
-                (
-                    has_time_axis,
-                    has_comp_axis,
-                    quantiles_num,
-                    [f"_label{x:g}" for x in inferred_labels],
-                )
-            ] + list(metric_axes[1:])
-
         comps = s.components.tolist()
         # c_size = components × quantiles/intervals/labels per component
         c_size = (s.n_components if has_comp_axis else 1) * quantiles_num
@@ -1052,30 +1033,29 @@ def _log_backtest_metrics(
         # after stripping C and M axes, rest = W*T (or W or T alone)
         rest, extra = divmod(arr.size, c_size * n_metrics)
         if extra:
-            logger.warning(
-                "Backtest metric logging skipped: result size (%d) is not "
-                "divisible by c_size * n_metrics (%d * %d = %d). "
-                "The metric output shape does not match the inferred axes.",
-                arr.size,
-                c_size,
-                n_metrics,
-                c_size * n_metrics,
+            raise_log(
+                ValueError(
+                    f"Backtest metric logging failed: result size ({arr.size}) "
+                    f"is not divisible by c_size * n_metrics ({c_size} * "
+                    f"{n_metrics} = {c_size * n_metrics}). The metric output "
+                    "shape does not match the inferred axes."
+                )
             )
-            return
 
         # both time and window axes present: backtest returns (W*T*C*M,) in C order so we can
         # recover W and T only if forecast_horizon is known (T = forecast_horizon)
         if has_time_axis and has_windows:
             if not forecast_horizon or rest % forecast_horizon:
-                logger.warning(
-                    "Backtest metric logging skipped: cannot split window/time "
-                    "axes — %d elements remain after stripping component and "
-                    "metric axes, but forecast_horizon=%r does not divide "
-                    "evenly. Pass an explicit forecast_horizon to backtest().",
-                    rest,
-                    forecast_horizon,
+                raise_log(
+                    ValueError(
+                        f"Backtest metric logging failed: cannot split "
+                        f"window/time axes — {rest} elements remain after "
+                        f"stripping component and metric axes, but "
+                        f"forecast_horizon={forecast_horizon!r} does not "
+                        "divide evenly. Pass an explicit forecast_horizon to "
+                        "backtest()."
+                    )
                 )
-                return
             t_size, w_size = forecast_horizon, rest // forecast_horizon
         elif has_time_axis:
             t_size, w_size = rest, 1
@@ -1083,13 +1063,14 @@ def _log_backtest_metrics(
             t_size, w_size = 1, rest
         else:
             if rest != 1:
-                logger.warning(
-                    "Backtest metric logging skipped: expected a single scalar "
-                    "per component/metric after reduction, but got %d elements. "
-                    "Check time_reduction and component_reduction defaults.",
-                    rest,
+                raise_log(
+                    ValueError(
+                        f"Backtest metric logging failed: expected a single "
+                        f"scalar per component/metric after reduction, but got "
+                        f"{rest} elements. Check time_reduction and "
+                        "component_reduction defaults."
+                    )
                 )
-                return
             t_size, w_size = 1, 1
 
         canonical = arr.reshape(w_size, t_size, c_size, n_metrics)
@@ -1157,11 +1138,13 @@ def _infer_metric_axes(metric: Callable, metric_kwargs: dict) -> tuple:
         - ``has_time_axis`` – ``True`` when ``time_reduction`` is ``None`` (i.e. a
           per-timestep axis is present in the output).
         - ``has_comp_axis`` – ``True`` when components are expanded (not collapsed to a scalar).
-        - ``quantiles_num`` – number of quantile/interval/label entries; ``None`` when it
-          cannot be determined (e.g. ``label_reduction=None`` without explicit
-          ``labels``), signalling the caller to fall back to flat logging.
-        - ``quantiles_labels`` – one key suffix per ``quantiles_num`` entry (empty list when
-          ``quantiles_num`` is ``None``).
+        - ``quantiles_num`` – number of quantile/interval/label entries.
+        - ``quantiles_labels`` – one key suffix per ``quantiles_num`` entry.
+
+    Raises
+    ------
+    ValueError
+        If ``label_reduction=None`` is requested without explicit ``labels``.
     """
     params = inspect.signature(metric).parameters
 
@@ -1190,9 +1173,15 @@ def _infer_metric_axes(metric: Callable, metric_kwargs: dict) -> tuple:
             label_reduction = label_reduction.value
         labels = metric_kwargs.get("labels")
         # label_reduction=None means one output per label, but without explicit
-        # labels we can't know how many — signal the caller to fall back
+        # labels we can't know how many ahead of time
         if label_reduction is None and labels is None:
-            return (has_time_axis, has_comp_axis, None, [])
+            raise_log(
+                ValueError(
+                    "`label_reduction=None` requires explicit `labels` to be "
+                    "passed for MLflow autologging (the number of output "
+                    "labels cannot be determined ahead of time otherwise)."
+                )
+            )
         quantiles_labels = (
             [f"_label{x}" for x in np.atleast_1d(labels)]
             if label_reduction is None
@@ -1212,7 +1201,7 @@ def _log_metric_result(
     series,
     has_time_axis: bool,
     has_comp_axis: bool,
-    quantiles_num: int | None,
+    quantiles_num: int,
     quantiles_labels: list[str],
     dataset_name: str | None = None,
     series_reduced: bool = False,
@@ -1242,8 +1231,11 @@ def _log_metric_result(
     ``per_series_metrics/{base_key}_per_series.csv`` artifact. For a single
     series the mean is just the value itself and no artifact is written.
 
-    On a shape/size mismatch it warns and returns (does not raise), keeping
-    autologging non-fatal.
+    Raises
+    ------
+    ValueError
+        On a shape/size mismatch between the metric result and the inferred
+        axes.
 
     Parameters
     ----------
@@ -1254,19 +1246,15 @@ def _log_metric_result(
         The metric result to log.
     series
         The ``actual_series`` argument passed to the metric (single series or
-        ``Sequence[TimeSeries]``); used for component names, series count, and
-        runtime label inference.
+        ``Sequence[TimeSeries]``); used for component names and series count.
     has_time_axis
         ``True`` when the result carries a per-timestep axis (``time_reduction=None``).
     has_comp_axis
         ``True`` when components are expanded (``component_reduction=None``).
     quantiles_num
-        Number of quantile/interval/label entries; ``None`` when it cannot be
-        determined ahead of time (``label_reduction=None`` without explicit
-        ``labels``), in which case labels are inferred from ``series`` at runtime.
+        Number of quantile/interval/label entries.
     quantiles_labels
-        One key suffix per ``quantiles_num`` entry (empty list when ``quantiles_num``
-        is ``None``).
+        One key suffix per ``quantiles_num`` entry.
     dataset_name
         Sanitized variable name of ``actual_series`` in the caller's frame.
         Omitted from key when ``None``.
@@ -1286,19 +1274,10 @@ def _log_metric_result(
             [result] if get_series_seq_type(series) == SeriesType.SINGLE else result
         )
 
-    labels_unknown = quantiles_num is None
-
     # agg maps (key, step) -> per-series values, averaged into the logged metric.
     agg: dict[tuple[str, int], list[float]] = {}
     rows: list[dict] = []
     for series_index, (s, r) in enumerate(zip(series_seq, results)):
-        # quantiles_num=None means label_reduction=None was requested without explicit labels
-        # so class labels are inferred per-series inside the loop.
-        if labels_unknown:
-            inferred_labels = np.unique(s.values())
-            quantiles_num = len(inferred_labels)
-            quantiles_labels = [f"_label{x:g}" for x in inferred_labels]
-
         comps = s.components.tolist()
         # c_size = components × quantiles/intervals/labels per component
         c_size = (s.n_components if has_comp_axis else 1) * quantiles_num
@@ -1306,27 +1285,26 @@ def _log_metric_result(
         # after stripping the C axis, the remainder is the time axis (or scalar)
         n_times, extra = divmod(arr.size, c_size)
         if extra:
-            logger.warning(
-                "Metric logging skipped for `%s`: result size (%d) is not "
-                "divisible by the inferred component/quantile size (%d). "
-                "The metric output shape does not match the inferred axes.",
-                metric_name,
-                arr.size,
-                c_size,
+            raise_log(
+                ValueError(
+                    f"Metric logging failed for `{metric_name}`: result size "
+                    f"({arr.size}) is not divisible by the inferred "
+                    f"component/quantile size ({c_size}). The metric output "
+                    "shape does not match the inferred axes."
+                )
             )
-            return
 
         if has_time_axis:
             t_size = n_times
         elif n_times != 1:
-            logger.warning(
-                "Metric logging skipped for `%s`: expected a single value per "
-                "component/quantile after reduction, but got %d elements. "
-                "Check time_reduction and component_reduction.",
-                metric_name,
-                n_times,
+            raise_log(
+                ValueError(
+                    f"Metric logging failed for `{metric_name}`: expected a "
+                    f"single value per component/quantile after reduction, "
+                    f"but got {n_times} elements. Check time_reduction and "
+                    "component_reduction."
+                )
             )
-            return
         else:
             t_size = 1
 
