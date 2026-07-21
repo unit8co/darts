@@ -124,8 +124,10 @@ _covariate_types = [
     ),
 ]
 
-# Thread-local flag set during historical_forecasts to suppress per-iteration
-# autologging in _patched_fit (which would otherwise spawn one run per iteration).
+# Thread-local flags used by _patched_fit to suppress nested/re-entrant
+# autologging: in_historical_forecasts covers historical_forecasts' internal
+# fit() calls, in_fit covers nested fit() calls (e.g. ensembles, super()),
+# so only the outermost call logs.
 _autolog_state = threading.local()
 
 
@@ -517,19 +519,25 @@ def autolog(
 
 
 def _get_forecasting_models():
-    """
+    """Find all ``ForecastingModel`` subclasses currently loaded in memory.
+
+    Traverses ``__subclasses__()``, avoiding force-importing all of the forecasting
+    models.
+
     Returns:
-        A list of (name, class) tuples for all forecasting models in the Darts library.
+        A list of (name, class) tuples for all matching classes.
     """
-    import darts.models
+    seen: set[type] = set()
+    stack = [ForecastingModel]
+    while stack:
+        current = stack.pop()
+        for sub in current.__subclasses__():
+            if sub not in seen:
+                seen.add(sub)
+                stack.append(sub)
 
-    classes = inspect.getmembers(darts.models, inspect.isclass)
-
-    classes = [
-        (name, cls) for name, cls in classes if issubclass(cls, ForecastingModel)
-    ]
-
-    return sorted(set(classes), key=itemgetter(0))
+    classes = [(cls.__name__, cls) for cls in seen]
+    return sorted(classes, key=itemgetter(0))
 
 
 @autologging_integration(FLAVOR_NAME)
@@ -575,10 +583,18 @@ def _autolog(
         if getattr(_autolog_state, "in_historical_forecasts", False):
             return original(self, *args, **kwargs)
 
+        # handle nested fit() calls
+        if getattr(_autolog_state, "in_fit", False):
+            return original(self, *args, **kwargs)
+
         # Track which model is active so metric patches can prefix their keys
         _autolog_state.current_model_name = type(self).__name__
 
-        result = original(self, *args, **kwargs)
+        _autolog_state.in_fit = True
+        try:
+            result = original(self, *args, **kwargs)
+        finally:
+            _autolog_state.in_fit = False
 
         active_run = mlflow.active_run()
         if active_run is None:
