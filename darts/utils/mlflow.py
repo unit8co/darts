@@ -50,7 +50,7 @@ from mlflow.models.utils import _save_example
 from mlflow.tracking._model_registry import DEFAULT_AWAIT_MAX_SLEEP_SECONDS
 from mlflow.tracking.artifact_utils import _download_artifact_from_uri
 from mlflow.tracking.fluent import _initialize_logged_model
-from mlflow.utils import _get_fully_qualified_class_name, _inspect_original_var_name
+from mlflow.utils import _get_fully_qualified_class_name
 from mlflow.utils.autologging_utils import (
     autologging_integration,
     get_autologging_config,
@@ -446,11 +446,9 @@ def autolog(
     .. note::
 
         Logged metric keys follow the pattern
-        ``{dataset_name}_{metric_name}{component}{quantile_or_label}``, where
-        each part is included only when the corresponding axis is present:
+        ``{metric_name}{component}{quantile_or_label}``, where each part is
+        included only when the corresponding axis is present:
 
-        * ``dataset_name`` – variable name of the first argument, captured via
-          frame inspection (omitted when not found).
         * ``metric_name`` – the metric function name, or the ``name`` keyword
           argument when provided (it overrides only this token).
         * ``component`` – the component name when ``component_reduction=None``.
@@ -1206,7 +1204,6 @@ def _log_metric_result(
     has_time_axis: bool,
     has_comp_axis: bool,
     quantiles_labels: list[str],
-    dataset_name: str | None = None,
     series_reduced: bool = False,
 ) -> None:
     """Log a metric result to the active MLflow run.
@@ -1221,7 +1218,7 @@ def _log_metric_result(
 
     The logged MLflow key follows the pattern::
 
-        {dataset_name}_{metric_name}{component}{quantile_or_label}
+        {metric_name}{component}{quantile_or_label}
 
     where each optional part is included only when the corresponding axis is
     present:
@@ -1231,7 +1228,7 @@ def _log_metric_result(
 
     When more than one series is scored, the logged value is the mean over
     series for each cell, and the granular per-series breakdown is written to a
-    ``per_series_metrics/{base_key}_per_series.csv`` artifact. For a single
+    ``per_series_metrics/{metric_name}_per_series.csv`` artifact. For a single
     series the mean is just the value itself and no artifact is written.
 
     Raises
@@ -1243,7 +1240,7 @@ def _log_metric_result(
     Parameters
     ----------
     metric_name
-        Base metric name used as the MLflow key (the metric's ``name`` keyword
+        Metric name used as the MLflow key (the metric's ``name`` keyword
         argument when provided, otherwise the metric function name).
     result
         The metric result to log.
@@ -1256,14 +1253,10 @@ def _log_metric_result(
         ``True`` when components are expanded (``component_reduction=None``).
     quantiles_labels
         One key suffix per quantile/interval/label entry.
-    dataset_name
-        Sanitized variable name of ``actual_series`` in the caller's frame.
-        Omitted from key when ``None``.
     series_reduced
         ``True`` when ``series_reduction`` collapsed the series axis inside the
         metric, so the result has no leading series axis even for list input.
     """
-    base_key = f"{dataset_name}_{metric_name}" if dataset_name else metric_name
     quantiles_num = len(quantiles_labels)
 
     if series_reduced:
@@ -1321,7 +1314,7 @@ def _log_metric_result(
                 else ""
             )
             key = _sanitize_mlflow_key(
-                base_key + comp_part + quantiles_labels[quantile_index]
+                metric_name + comp_part + quantiles_labels[quantile_index]
             )
             for t in range(t_size):
                 # MLflow step maps to the time axis when present
@@ -1346,7 +1339,7 @@ def _log_metric_result(
 
     # write the granular per-series breakdown to a CSV artifact (multi-series only)
     if len(series_seq) > 1:
-        _write_per_series_csv(rows, f"{base_key}_per_series.csv")
+        _write_per_series_csv(rows, f"{metric_name}_per_series.csv")
 
 
 def _make_metric_patch(metric_name: str) -> Callable:
@@ -1357,12 +1350,10 @@ def _make_metric_patch(metric_name: str) -> Callable:
     kwargs (via ``_infer_metric_axes``) and delegates to ``_log_metric_result``,
     which logs each cell under a key built as::
 
-        {dataset_name}_{metric_name}{component}{quantile_or_label}
+        {metric_name}{component}{quantile_or_label}
 
     where:
 
-    * ``dataset_name`` – Python variable name of the first argument in the
-      caller's frame (captured via frame inspection, omitted if not found).
     * ``metric_name`` – the metric function name, or the ``name`` keyword
       argument when provided (it overrides only this token).
     * ``component`` – ``_{component_name}`` when ``component_reduction=None``.
@@ -1405,10 +1396,6 @@ def _make_metric_patch(metric_name: str) -> Callable:
         if series is None:
             return result
 
-        # capture the variable name of actual_series for metric key
-        raw = _inspect_original_var_name(series, fallback_name=None)
-        dataset_name = _sanitize_mlflow_key(raw) if raw else None
-
         # the `name` kwarg overrides the metric-name token in the logged key
         key_name = _sanitize_mlflow_key(kwargs.get("name") or metric_name)
 
@@ -1436,7 +1423,6 @@ def _make_metric_patch(metric_name: str) -> Callable:
             has_time_axis,
             has_comp_axis,
             quantiles_labels,
-            dataset_name=dataset_name,
             series_reduced=series_reduced,
         )
 
