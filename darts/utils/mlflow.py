@@ -1,14 +1,19 @@
 """
-MLflow Integration for Darts
------------------------------
+MLflow Integration
+------------------
 
-Custom MLflow model flavor for darts forecasting models. Supports saving, loading,
-logging and autolog for any darts ``ForecastingModel`` (statistical, ML-based, and PyTorch-based)
-to MLflow.
+Custom MLflow model flavor for Darts forecasting models. Supports saving, loading,
+and logging any Darts ``ForecastingModel`` (statistical, ML-based, and PyTorch-based)
+to MLflow, as well as automatic logging (``autolog()``) of:
 
-This module is partly adapted from and inspired by the open-source
-implementation of SKtime's MLflow integration, with modifications to support
-autologging and handle Darts-specific model and covariate metadata.
+* Model creation parameters and covariate usage information.
+* The trained model artifact, after each ``fit()`` call.
+* Darts metric function calls made inside an active MLflow run.
+* ``backtest()`` evaluation metrics.
+* Per-epoch training/validation metrics for PyTorch-based models.
+
+See the `MLflow quickstart example <https://github.com/unit8co/darts/blob/master/examples/29-MLflow-quickstart.ipynb>`_
+for an end-to-end walkthrough.
 
 References:
 https://github.com/sktime/sktime/blob/main/sktime/utils/mlflow_sktime.py
@@ -410,6 +415,9 @@ def autolog(
     5. For PyTorch-based models: leverage ``mlflow.pytorch.autolog()`` to
        automatically log per-epoch training and validation metrics.
     6. Log the trained model artifact at the end of training.
+    7. Patch ``backtest()`` to log evaluation metrics under ``backtest_*`` keys.
+    8. Patch ``historical_forecasts()`` so that its internal per-window
+       ``fit()`` calls don't each spawn their own logging.
 
     .. important::
 
@@ -432,7 +440,11 @@ def autolog(
         * ``metric_name`` – the metric function name, or the ``name`` keyword
           argument when provided (it overrides only this token).
         * ``component`` – the component name when ``component_reduction=None``.
-        * ``quantile_or_label`` – e.g. ``_q0.5`` / ``_qi0.1_0.9`` / ``_label1``.
+        * ``quantile_or_label`` – e.g. ``_q0.500`` / ``_qi0.100_0.900`` / ``_label1``.
+
+        When ``series_reduction`` is set on a metric call, results are already
+        aggregated across series inside the metric itself, so the mean-over-series
+        logging described below does not apply.
 
         Per-timestep results (``time_reduction=None``) are charted across the
         MLflow ``step``. For a list of series the logged value is the mean over
@@ -889,13 +901,15 @@ def _log_backtest_metrics(
 
     * ``time_reduction`` – collapses the time axis (``T=1``).
     * ``component_reduction`` – collapses the component axis (``C=1``).
-    * ``series_reduction`` – if non-``None``, windows are already aggregated
+    * ``series_reduction`` – if other than ``None``, windows are already aggregated
       inside the metric, so ``W=1`` regardless of ``backtest.reduction``.
     * ``q`` / ``q_interval`` – expand the component axis with one entry per
       quantile / interval.
-    * ``label_reduction`` / ``labels`` – expand the component axis for
-      classification metrics.
-    * ``reduction=None`` – no aggregation across windows → one value per window.
+    * ``labels`` - expand each component with one entry per label along
+      the component axis.
+    * ``label_reduction`` – collapses the labels along the component axis.
+      value; ``labels`` only restricts which classes are scored.
+    * ``reduction=None`` – no aggregation across windows -> one value per window.
     * ``last_points_only`` – collapses all windows into one TimeSeries before scoring,
       so there is effectively only one window regardless of reduction.
 
@@ -940,7 +954,7 @@ def _log_backtest_metrics(
     ]
     n_metrics = len(metric)
 
-    # reduction=None means no aggregation across windows → one value per window.
+    # reduction=None means no aggregation across windows -> one value per window.
     # last_points_only collapses all windows into one TimeSeries before scoring,
     # so there is effectively only one window regardless of reduction.
     has_windows = backtest_args.get("reduction") is None and not backtest_args.get(
@@ -1243,7 +1257,7 @@ def _log_metric_result(
     base_key = f"{dataset_name}_{metric_name}" if dataset_name else metric_name
 
     if series_reduced:
-        # series_reduction aggregated across series → single result, no series axis
+        # series_reduction aggregated across series -> single result, no series axis
         series_seq = [get_single_series(series)]
         results = [result]
     else:
