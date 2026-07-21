@@ -417,6 +417,21 @@ class TestStaticCovariatesTransformer:
             "country": {"comp_7": "infrequent_sklearn"}
         }
 
+    @pytest.mark.parametrize(
+        "dt_source",
+        ["float32", "float64"],
+    )
+    def test_dtype_conversion(self, dt_source):
+        series = self.series1.astype(dt_source)
+
+        transformer = StaticCovariatesTransformer().fit(series)
+        transformed = transformer.transform(series)
+        inversed = transformer.inverse_transform(transformed)
+
+        assert transformed.dtype == dt_source
+        assert (transformed.static_covariates.dtypes == dt_source).all()
+        assert inversed.dtype == dt_source
+
     def helper_test_scaling(self, series, scaler, test_values):
         series_copy = series.copy()
         series_tr = scaler.fit_transform(series)

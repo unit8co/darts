@@ -684,7 +684,7 @@ class TestBacktesting:
             NaiveDrift().backtest(linear_series, start=100)
         with pytest.raises(ValueError):
             NaiveDrift().backtest(linear_series, start=1.2)
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError, match=r"`start` string value must be 'end'"):
             NaiveDrift().backtest(linear_series, start="wrong type")
         with pytest.raises(ValueError):
             NaiveDrift().backtest(linear_series, train_length=0, start=0.5)
@@ -1637,6 +1637,27 @@ class TestBacktesting:
             assert bt.shape == shape_expected
             np.testing.assert_array_almost_equal(bt, bt_expected)
 
+    def test_backtest_extend_series_mixed_overlap_end(self):
+        """Extending series for overlap_end must keep non-extended series intact
+        when only some historical forecasts go beyond their series end."""
+        s1 = lt(length=10, start=pd.Timestamp("2000-01-01"), freq="D")
+        s2 = lt(length=10, start=pd.Timestamp("2000-01-01"), freq="D")
+        # first series: forecast beyond the end -> requires NaN extension
+        hfc1 = lt(length=3, start=s1.end_time() + s1.freq, freq="D")
+        # second series: forecast fully inside -> kept as-is after extension starts
+        hfc2 = s2[:3]
+
+        bt = NaiveDrift().backtest(
+            series=[s1, s2],
+            historical_forecasts=[[hfc1], [hfc2]],
+            last_points_only=False,
+            metric=metrics.mae,
+            reduction=None,
+        )
+        assert len(bt) == 2
+        assert np.all(np.isnan(bt[0]))
+        np.testing.assert_array_almost_equal(bt[1], np.array([0.0]))
+
     @pytest.mark.parametrize(
         "config",
         itertools.product(
@@ -1736,3 +1757,77 @@ class TestBacktesting:
         # check that the predictions are different
         for bt_nw, bt_w in zip(bt_non_weighted, bt_weighted):
             assert bt_w != bt_nw
+
+    @pytest.mark.parametrize(
+        "config",
+        product([True, False], [True, False]),
+    )
+    def test_backtest_start_end(self, config):
+        """backtest with start='end' produces nan since forecasts don't overlap with the series."""
+        multi_series, last_points_only = config
+        ts = lt(length=20)
+        model = LinearRegressionModel(lags=2)
+
+        series = [ts, ts + 1] if multi_series else ts
+        bt = model.backtest(
+            series=series,
+            start="end",
+            retrain=True,
+            last_points_only=last_points_only,
+        )
+        if multi_series:
+            assert all(np.isnan(v) for v in bt)
+        else:
+            assert np.isnan(bt)
+
+    @pytest.mark.parametrize(
+        "config",
+        product([True, False], [True, False]),
+    )
+    def test_backtest_start_end_reduction_none(self, config):
+        """backtest with start='end' and reduction=None returns per-forecast nan arrays."""
+        multi_series, last_points_only = config
+        ts = lt(length=20)
+        model = LinearRegressionModel(lags=2)
+
+        series = [ts, ts + 1] if multi_series else ts
+        bt = model.backtest(
+            series=series,
+            start="end",
+            retrain=True,
+            last_points_only=last_points_only,
+            reduction=None,
+        )
+        if multi_series:
+            assert isinstance(bt, list) and len(bt) == 2
+            for bt_i in bt:
+                assert np.all(np.isnan(bt_i))
+        else:
+            assert np.all(np.isnan(bt))
+
+    @pytest.mark.parametrize("last_points_only", [True, False])
+    def test_backtest_start_end_precomputed_hfc(self, last_points_only):
+        """backtest with start='end' and pre-computed historical forecasts."""
+        ts = lt(length=20)
+        model = LinearRegressionModel(lags=2)
+
+        hfc = model.historical_forecasts(
+            ts,
+            start="end",
+            retrain=True,
+            last_points_only=last_points_only,
+        )
+        bt = model.backtest(
+            series=ts,
+            historical_forecasts=hfc,
+            last_points_only=last_points_only,
+        )
+        assert np.isnan(bt)
+
+        bt_no_red = model.backtest(
+            series=ts,
+            historical_forecasts=hfc,
+            last_points_only=last_points_only,
+            reduction=None,
+        )
+        assert np.all(np.isnan(bt_no_red))

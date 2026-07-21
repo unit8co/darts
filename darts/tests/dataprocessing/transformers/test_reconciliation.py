@@ -1,8 +1,11 @@
+import itertools
+
 import numpy as np
 import pytest
 from pandas import date_range
 
 from darts import TimeSeries, concatenate
+from darts.dataprocessing.transformers import FittableDataTransformer
 from darts.dataprocessing.transformers.reconciliation import (
     BottomUpReconciliator,
     MinTReconciliator,
@@ -212,6 +215,22 @@ class TestReconciliation:
 
         assert_ts_are_equal(ts_1_reconc, ts_2_reconc)
         assert [ts_1, ts_2] == series_input_copy
+
+    @pytest.mark.parametrize(
+        "dt_source, transformer_cls",
+        itertools.product(
+            ["float32", "float64"],
+            [TopDownReconciliator, MinTReconciliator, BottomUpReconciliator],
+        ),
+    )
+    def test_dtype_conversion(self, dt_source, transformer_cls):
+        series = self.series.astype(dt_source)
+
+        transformer = transformer_cls()
+        if isinstance(transformer, FittableDataTransformer):
+            transformer.fit(series)
+        transformed = transformer.transform(series)
+        assert transformed.dtype == dt_source
 
 
 class TestReconciliationInputValidation:

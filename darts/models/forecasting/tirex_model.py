@@ -23,6 +23,11 @@ from tirex.models.tirex import TiRexZero
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.foundation_model import FoundationModel
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
+from darts.utils.data.torch_datasets.utils import (
+    InputChunkLength,
+    PLModuleInput,
+    TorchTrainingSample,
+)
 from darts.utils.likelihood_models.torch import QuantileRegression
 
 logger = get_logger(__name__)
@@ -79,7 +84,7 @@ class _TiRexModule(PLForecastingModule):
         else:
             self._finetuning_likelihood = None
 
-    def forward(self, x_in, *args, **kwargs):
+    def forward(self, x_in: PLModuleInput, *args, **kwargs):
         """Forward pass returning quantile predictions shaped ``(batch, time, n_targets, n_quantiles)``.
 
         During training with fine-tuning enabled, all 9 pre-trained quantiles are returned
@@ -157,7 +162,7 @@ class TiRexModel(FoundationModel):
 
     def __init__(
         self,
-        input_chunk_length: int,
+        input_chunk_length: InputChunkLength,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
         accept_license: bool = False,
@@ -205,6 +210,8 @@ class TiRexModel(FoundationModel):
         input_chunk_length
             Number of time steps in the past to take as a model input (per chunk). Applies to the target
             series, and past and/or future covariates (if the model supports it).
+            Can be either an ``int`` for a fixed input window, or a ``(min_length, max_length)`` tuple to enable
+            variable-length inputs for inference and fine-tuning.
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
@@ -507,7 +514,7 @@ class TiRexModel(FoundationModel):
     def supports_future_covariates(self) -> bool:
         return False
 
-    def _create_model(self, train_sample) -> PLForecastingModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}
         # enable_finetuning is injected into pl_module_params by the base class;
         # _TiRexModule accepts it as an explicit parameter and converts dict form to bool
