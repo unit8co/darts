@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "darts"
-version = "0.46.0"
+version = "0.46.1"
 description = "A python library for easy manipulation and forecasting of time series."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -46,6 +46,10 @@ dependencies = [
     "tqdm>=4.60.0",
     "typing-extensions>=4.0.0",
     "xarray>=0.17.0",
+    "numba<0.63; sys_platform == 'darwin' and platform_machine == 'x86_64'",  # numba 0.63+ dropped macOS x86_64 wheels, see numba/numba#10187
+    "numba; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+    "llvmlite<0.46; sys_platform == 'darwin' and platform_machine == 'x86_64'",  # llvmlite 0.46+ dropped macOS x86_64 wheels, see numba/numba#10187
+    "llvmlite; sys_platform != 'darwin' or platform_machine != 'x86_64'",
 ]
 
 [project.urls]
@@ -208,7 +212,7 @@ dev-all = [
 ]
 
 [tool.bumpversion]
-current_version = "0.46.0"
+current_version = "0.46.1"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
 serialize = ["{major}.{minor}.{patch}"]
 commit = true
