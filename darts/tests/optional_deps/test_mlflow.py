@@ -25,7 +25,12 @@ if not MLFLOW_AVAILABLE:
 import mlflow
 from mlflow.utils.autologging_utils.client import MlflowAutologgingQueueingClient
 
-from darts.models import ExponentialSmoothing, LinearRegressionModel
+from darts.models import (
+    ExponentialSmoothing,
+    LinearRegressionModel,
+    NaiveSeasonal,
+    RegressionEnsembleModel,
+)
 from darts.utils.mlflow import (
     _infer_metric_axes,
     _log_backtest_metrics,
@@ -460,6 +465,38 @@ class TestMLflow:
         model_classes = set(runs["tags.model_class"])
         assert "ExponentialSmoothing" in model_classes
         assert "LinearRegressionModel" in model_classes
+
+    def test_autolog_ensemble_model_fit_logs_once(
+        self, mlflow_tracking, autolog_context
+    ):
+        """Fitting a composite/ensemble model must log exactly one model artifact
+        for the outer model, not one per sub-model too.
+
+        RegressionEnsembleModel.fit() internally calls fit() on each of its
+        forecasting_models. Since every ForecastingModel subclass is patched
+        independently, an unguarded patch would re-trigger autologging for each
+        inner fit() call as well as the outer one.
+        """
+        model = RegressionEnsembleModel(
+            forecasting_models=[
+                NaiveSeasonal(K=12),
+                LinearRegressionModel(lags=12),
+            ],
+            regression_train_n_points=12,
+        )
+
+        with autolog_context(log_models=True):
+            with mlflow.start_run() as run:
+                model.fit(self.ts_univariate)
+
+        logged_models = mlflow_tracking.search_logged_models(
+            experiment_ids=[run.info.experiment_id]
+        )
+        assert len(logged_models) == 1, (
+            f"Expected exactly one logged model, got {len(logged_models)}: "
+            f"{[m.name for m in logged_models]}"
+        )
+        assert logged_models[0].name == "RegressionEnsembleModel"
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_autolog_torch_model_multiple_fits(self, mlflow_tracking, autolog_context):
