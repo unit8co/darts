@@ -250,7 +250,7 @@ class TestMLflow:
 
             # verify the run has expected content
             last_run = runs.iloc[0]
-            assert last_run["tags.model_name"] == "ExponentialSmoothing"
+            assert last_run["tags.model_class"] == "ExponentialSmoothing"
             assert last_run["tags.mlflow.runName"] is not None
 
         # after context exits, autolog should be disabled
@@ -274,7 +274,7 @@ class TestMLflow:
 
             last_run = runs.iloc[0]
             assert last_run["params.seasonal_periods"] == "12"
-            assert last_run["tags.model_name"] == "ExponentialSmoothing"
+            assert last_run["tags.model_class"] == "ExponentialSmoothing"
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_autolog_torch_metrics(self, mlflow_tracking, autolog_context):
@@ -294,7 +294,7 @@ class TestMLflow:
             assert len(runs) == 1, "Expected exactly one run"
             last_run = runs.iloc[0]
             last_run_id = last_run["run_id"]
-            assert last_run["tags.model_name"] == "NBEATSModel"
+            assert last_run["tags.model_class"] == "NBEATSModel"
 
             client = mlflow.tracking.MlflowClient()
 
@@ -345,7 +345,7 @@ class TestMLflow:
             runs = mlflow.search_runs()
             assert len(runs) == 1
             run_id = runs.iloc[0]["run_id"]
-            assert runs.iloc[0]["tags.model_name"] == "NBEATSModel"
+            assert runs.iloc[0]["tags.model_class"] == "NBEATSModel"
 
             client = mlflow.tracking.MlflowClient()
             assert_metric(client.get_metric_history(run_id, "train_loss"), "train_loss")
@@ -457,7 +457,7 @@ class TestMLflow:
         assert len(runs) == 2, "Expected two separate runs for two fits"
 
         # verify different model classes logged
-        model_classes = set(runs["tags.model_name"])
+        model_classes = set(runs["tags.model_class"])
         assert "ExponentialSmoothing" in model_classes
         assert "LinearRegressionModel" in model_classes
 
@@ -483,7 +483,7 @@ class TestMLflow:
         assert len(runs) == 2, "Expected two separate runs for two fits"
 
         for _, run in runs.iterrows():
-            assert run["tags.model_name"] in [
+            assert run["tags.model_class"] in [
                 "NBEATSModel",
                 "LinearRegressionModel",
             ]
@@ -742,9 +742,8 @@ class TestMLflow:
             with mlflow.start_run() as run:
                 ref = dm.ae(actual, pred)
 
-        # the first-arg variable name ("actual") is captured as the key prefix
         ref = np.asarray(ref, dtype=float)  # shape (n_timesteps,)
-        history = mlflow_tracking.get_metric_history(run.info.run_id, "actual_ae")
+        history = mlflow_tracking.get_metric_history(run.info.run_id, "ae")
         assert len(history) == len(ref), "Expected one step per timestep"
         steps = sorted(m.step for m in history)
         assert steps == list(range(len(ref)))
@@ -765,14 +764,9 @@ class TestMLflow:
             with mlflow.start_run() as run:
                 ref = dm.mql(actual, pred, q=[0.1, 0.5, 0.9])
 
-        # the first-arg variable name ("actual") is captured as the key prefix
         ref = np.asarray(ref, dtype=float)  # shape (n_quantiles,)
         m = mlflow.get_run(run.info.run_id).data.metrics
-        for i, key in enumerate((
-            "actual_mql_q0_1",
-            "actual_mql_q0_5",
-            "actual_mql_q0_9",
-        )):
+        for i, key in enumerate(("mql_q0_1", "mql_q0_5", "mql_q0_9")):
             assert key in m, f"Expected quantile key {key}"
             assert m[key] == pytest.approx(ref[i], abs=1e-5)
 
@@ -790,10 +784,9 @@ class TestMLflow:
             with mlflow.start_run() as run:
                 ref = dm.miw(actual, pred, q_interval=(0.1, 0.9))
 
-        # the first-arg variable name ("actual") is captured as the key prefix
         m = mlflow.get_run(run.info.run_id).data.metrics
-        assert "actual_miw_qi0_1_0_9" in m
-        assert m["actual_miw_qi0_1_0_9"] == pytest.approx(float(ref), abs=1e-5)
+        assert "miw_qi0_1_0_9" in m
+        assert m["miw_qi0_1_0_9"] == pytest.approx(float(ref), abs=1e-5)
 
     def test_autolog_metric_multi_series(self, mlflow_tracking, autolog_context):
         """A list of series logs the mean over series; per-series values go to a CSV."""
@@ -804,16 +797,13 @@ class TestMLflow:
             with mlflow.start_run() as run:
                 ref = dm.mae(series, pred)
 
-        # the first-arg variable name ("series") is captured as the key prefix
         ref = np.asarray(ref, dtype=float)  # shape (n_series,)
         m = mlflow.get_run(run.info.run_id).data.metrics
         # aggregate = mean over series, no per-series _s{i} keys
-        assert m["series_mae"] == pytest.approx(float(np.mean(ref)), abs=1e-5)
-        assert not any(k.startswith("series_mae_s") for k in m)
+        assert m["mae"] == pytest.approx(float(np.mean(ref)), abs=1e-5)
+        assert not any(k.startswith("mae_s") for k in m)
         # granular per-series breakdown written to a CSV artifact
-        csv_rows = self._read_per_series_csv(
-            run.info.run_id, "series_mae_per_series.csv"
-        )
+        csv_rows = self._read_per_series_csv(run.info.run_id, "mae_per_series.csv")
         by_series = {int(row["series_index"]): float(row["value"]) for row in csv_rows}
         assert by_series == pytest.approx({0: ref[0], 1: ref[1]}, abs=1e-5)
 
@@ -829,33 +819,26 @@ class TestMLflow:
             with mlflow.start_run() as run:
                 ref = dm.mae(series, pred, component_reduction=None)
 
-        # the first-arg variable name ("series") is captured as the key prefix
         ref = np.asarray(ref, dtype=float)  # shape (n_series, n_components)
         m = mlflow.get_run(run.info.run_id).data.metrics
         # aggregate per component = mean over series, no per-series _s{i} keys
-        assert m["series_mae_linear"] == pytest.approx(
-            float(ref[:, 0].mean()), abs=1e-5
-        )
-        assert m["series_mae_linear_1"] == pytest.approx(
-            float(ref[:, 1].mean()), abs=1e-5
-        )
+        assert m["mae_linear"] == pytest.approx(float(ref[:, 0].mean()), abs=1e-5)
+        assert m["mae_linear_1"] == pytest.approx(float(ref[:, 1].mean()), abs=1e-5)
         assert not any(k.endswith(("_s0", "_s1")) for k in m)
         # granular CSV: one row per (component, series)
-        csv_rows = self._read_per_series_csv(
-            run.info.run_id, "series_mae_per_series.csv"
-        )
+        csv_rows = self._read_per_series_csv(run.info.run_id, "mae_per_series.csv")
         got = {
             (row["key"], int(row["series_index"])): float(row["value"])
             for row in csv_rows
         }
-        assert got[("series_mae_linear", 0)] == pytest.approx(ref[0, 0], abs=1e-5)
-        assert got[("series_mae_linear", 1)] == pytest.approx(ref[1, 0], abs=1e-5)
-        assert got[("series_mae_linear_1", 0)] == pytest.approx(ref[0, 1], abs=1e-5)
-        assert got[("series_mae_linear_1", 1)] == pytest.approx(ref[1, 1], abs=1e-5)
+        assert got[("mae_linear", 0)] == pytest.approx(ref[0, 0], abs=1e-5)
+        assert got[("mae_linear", 1)] == pytest.approx(ref[1, 0], abs=1e-5)
+        assert got[("mae_linear_1", 0)] == pytest.approx(ref[0, 1], abs=1e-5)
+        assert got[("mae_linear_1", 1)] == pytest.approx(ref[1, 1], abs=1e-5)
 
     def test_autolog_metric_name_override(self, mlflow_tracking, autolog_context):
         """The metric `name` kwarg overrides only the metric-name token in the key,
-        keeping the dataset/backtest prefix and the quantile/axis suffixes."""
+        keeping the backtest prefix and the quantile/axis suffixes."""
         actual = self.ts_univariate
         train = self.ts_univariate[:40]
         qmodel = self._fit_qlr(train)
@@ -878,23 +861,22 @@ class TestMLflow:
                 )
 
         direct = mlflow.get_run(run_direct.info.run_id).data.metrics
-        assert "actual_custom" in direct
-        assert "actual_mae" not in direct, "default metric name should be replaced"
-        assert "target_myq_q0_5" in direct, "quantile suffix should be preserved"
+        assert "custom" in direct
+        assert "mae" not in direct, "default metric name should be replaced"
+        assert "myq_q0_5" in direct, "quantile suffix should be preserved"
 
         bt = mlflow.get_run(run_bt.info.run_id).data.metrics
         assert "backtest_custom" in bt
         assert "backtest_mae" not in bt, "default metric name should be replaced"
 
-    def test_autolog_metric_multi_series_classification_labels_inferred(
+    def test_autolog_metric_multi_series_classification_labels_explicit(
         self, mlflow_tracking, autolog_context
     ):
-        """f1 with label_reduction=None on a list of binary series infers class labels
-        per-series, logs the per-label mean over series, and writes the per-series CSV.
+        """f1 with label_reduction=None and explicit labels on a list of binary
+        series logs the per-label mean over series and writes the per-series CSV.
 
-        This exercises the labels_unknown branch inside the per-series loop so that
-        each series' own class set is inferred rather than reusing the first series'.
-        """
+        ``labels`` must be explicit (``label_reduction=None`` without it raises,
+        since the number of output labels can't be determined ahead of time)."""
         # two independent binary series (same classes, deterministic)
         binary1 = tg.constant_timeseries(value=0.0, length=50).with_values(
             np.array([0.0, 1.0] * 25, dtype=np.float32).reshape(-1, 1)
@@ -907,35 +889,35 @@ class TestMLflow:
 
         with autolog_context(log_metrics=True):
             with mlflow.start_run() as run:
-                ref = dm.f1(series, pred, label_reduction=None)
+                ref = dm.f1(series, pred, label_reduction=None, labels=[0, 1])
 
         ref = [np.asarray(r, dtype=float).flatten() for r in ref]
         m = mlflow.get_run(run.info.run_id).data.metrics
         # aggregate per label = mean over series, no per-series _s{i} keys
-        assert m["series_f1_label0"] == pytest.approx(
+        assert m["f1_label0"] == pytest.approx(
             float(np.mean([ref[0][0], ref[1][0]])), abs=1e-5
         )
-        assert m["series_f1_label1"] == pytest.approx(
+        assert m["f1_label1"] == pytest.approx(
             float(np.mean([ref[0][1], ref[1][1]])), abs=1e-5
         )
         assert not any(k.endswith(("_s0", "_s1")) for k in m)
         # granular CSV: one row per (label, series)
-        csv_rows = self._read_per_series_csv(
-            run.info.run_id, "series_f1_per_series.csv"
-        )
+        csv_rows = self._read_per_series_csv(run.info.run_id, "f1_per_series.csv")
         got = {
             (row["key"], int(row["series_index"])): float(row["value"])
             for row in csv_rows
         }
         for i in range(2):
-            assert got[("series_f1_label0", i)] == pytest.approx(ref[i][0], abs=1e-5)
-            assert got[("series_f1_label1", i)] == pytest.approx(ref[i][1], abs=1e-5)
+            assert got[("f1_label0", i)] == pytest.approx(ref[i][0], abs=1e-5)
+            assert got[("f1_label1", i)] == pytest.approx(ref[i][1], abs=1e-5)
 
-    def test_autolog_metric_size_mismatch_warns_and_skips(
+    def test_autolog_metric_size_mismatch_raises_internally(
         self, mlflow_tracking, autolog_context, caplog
     ):
-        """When the inferred C-axis size doesn't divide the result, a warning is logged
-        and no metrics are written (non-fatal — autologging must not raise)."""
+        """When the inferred C-axis size doesn't divide the result, logging raises
+        (logged as an error) and no metrics are written. The public metric call
+        itself doesn't crash, since MLflow's safe_patch wrapper catches exceptions
+        raised from inside a patch function."""
         actual = self.ts_univariate[40:]
         # mae with component_reduction=None on a univariate series produces shape (T,),
         # which is size T — divisible by c_size=1 (1 component × 1 quantile), so we
@@ -951,7 +933,7 @@ class TestMLflow:
 
         from darts.utils import mlflow as mlflow_utils
 
-        fake_axes = (False, True, 3, ["_c0", "_c1", "_c2"])
+        fake_axes = (False, True, ["_c0", "_c1", "_c2"])
         with mock.patch.object(
             mlflow_utils, "_infer_metric_axes", return_value=fake_axes
         ):
@@ -982,7 +964,7 @@ class TestMLflow:
                 dm.mae(multi, pred_multi)
 
         csv_rows = self._read_per_series_csv(
-            run_multi.info.run_id, "multi_mae_per_series.csv"
+            run_multi.info.run_id, "mae_per_series.csv"
         )
         assert list(csv_rows[0].keys()) == ["key", "series_index", "step", "value"]
         assert {int(r["series_index"]) for r in csv_rows} == {0, 1}
@@ -1210,62 +1192,47 @@ class TestMLflow:
         assert np.isnan(m["backtest_f1_label5"])
         assert np.isnan(m["backtest_f1_label10"])
 
-    def test_autolog_backtest_classification_labels_inferred(
-        self, mlflow_tracking, autolog_context
-    ):
-        """f1 with label_reduction=None and no explicit labels infers class names
-        from series values and logs structured per-label keys instead of flat
-        integer-indexed ones."""
-        # binary classification series: values are 0.0 and 1.0
-        rng = np.random.default_rng(42)
-        vals = rng.choice([0.0, 1.0], size=50).astype(np.float32).reshape(-1, 1)
-        ts_bin = tg.constant_timeseries(value=0.0, length=50).with_values(vals)
+    def test_log_backtest_metrics_unknown_labels_raises(self, mlflow_tracking):
+        """label_reduction=None without explicit labels raises rather than
+        inferring class names from the series at runtime.
 
-        model = LinearRegressionModel(lags=4)
-        model.fit(ts_bin)
+        This is tested by calling _log_backtest_metrics directly so the raise
+        is not swallowed by MLflow's safe_patch wrapper.
+        """
+        ts_bin = tg.constant_timeseries(value=0.0, length=10)
+        backtest_args = {
+            "metric": dm.f1,
+            "metric_kwargs": {"label_reduction": None},
+            "series": ts_bin,
+            "forecast_horizon": 1,
+            "reduction": np.mean,
+            "last_points_only": True,
+        }
 
-        with autolog_context(log_metrics=True):
-            with mlflow.start_run() as run:
-                model.backtest(
-                    series=ts_bin,
-                    metric=dm.f1,
-                    metric_kwargs={"label_reduction": None},
-                    retrain=False,
-                    stride=10,
+        with mlflow.start_run() as run:
+            client = MlflowAutologgingQueueingClient()
+            with pytest.raises(ValueError, match="requires explicit `labels`"):
+                _log_backtest_metrics(
+                    client, run.info.run_id, np.array([0.5]), backtest_args
                 )
 
-        m = mlflow.get_run(run.info.run_id).data.metrics
-        # unique values are 0.0 and 1.0 → keys should use actual class values
-        assert "backtest_f1_label0" in m, "Expected 'backtest_f1_label0' for class 0.0"
-        assert "backtest_f1_label1" in m, "Expected 'backtest_f1_label1' for class 1.0"
-        # no flat integer-indexed keys
-        flat_keys = [
-            k
-            for k in m
-            if k.startswith("backtest_f1_") and k[-1].isdigit() and "_label" not in k
-        ]
-        assert not flat_keys, f"Did not expect flat fallback keys: {flat_keys}"
+    def test_log_backtest_metrics_label_count_mismatch(self, mlflow_tracking):
+        """When the explicit label count does not divide the metric output size,
+        logging raises rather than silently producing incomplete metrics.
 
-    def test_log_backtest_metrics_label_count_mismatch(self, mlflow_tracking, caplog):
-        """When the inferred label count does not divide the metric output size,
-        logging is skipped with a warning rather than raising — keeping autologging
-        non-fatal for the surrounding backtest call.
-
-        This is tested by calling _log_backtest_metrics directly so the warning is
+        This is tested by calling _log_backtest_metrics directly so the raise is
         not swallowed by MLflow's safe_patch wrapper.
         """
-        # Series has 3 unique classes so np.unique(series.values()) → [0, 1, 2].
-        vals = np.array([0.0, 1.0, 2.0] * 17, dtype=np.float32)[:50].reshape(-1, 1)
-        ts_3class = tg.constant_timeseries(value=0.0, length=50).with_values(vals)
+        ts_3class = tg.constant_timeseries(value=0.0, length=50)
 
         # Simulate a backtest result with only 2 entries — as if the metric was
-        # evaluated on windows that only contained classes 0 and 1.
-        # quantiles_num will be inferred as 3 (from series) but result has 2 → mismatch.
+        # evaluated on windows that only contained 2 of the 3 explicit labels.
+        # quantiles_num is 3 (len(labels)) but result has 2 → mismatch.
         fake_result = np.array([0.8, 0.6], dtype=float)
 
         backtest_args = {
             "metric": dm.f1,
-            "metric_kwargs": {"label_reduction": None},
+            "metric_kwargs": {"label_reduction": None, "labels": [0, 1, 2]},
             "series": ts_3class,
             "forecast_horizon": 1,
             "reduction": np.mean,  # not None → has_windows=False → single window
@@ -1274,13 +1241,10 @@ class TestMLflow:
 
         with mlflow.start_run() as run:
             client = MlflowAutologgingQueueingClient()
-            with caplog.at_level(logging.WARNING):
-                # must not raise — logging is skipped on shape mismatch
+            with pytest.raises(ValueError, match="not divisible"):
                 _log_backtest_metrics(
                     client, run.info.run_id, fake_result, backtest_args
                 )
-            assert "not divisible" in caplog.text
-            client.flush(synchronous=True)
 
         assert not mlflow.get_run(run.info.run_id).data.metrics
 
@@ -1317,30 +1281,33 @@ class TestMLflow:
     ],
 )
 def test_infer_metric_axes_reductions(metric_name, metric_kwargs, expected):
-    _attr_idx = {"has_time_axis": 0, "has_comp_axis": 1, "quantiles_num": 2}
-    axes = _infer_metric_axes(getattr(dm, metric_name), metric_kwargs)
+    has_time_axis, has_comp_axis, quantiles_labels = _infer_metric_axes(
+        getattr(dm, metric_name), metric_kwargs
+    )
+    actual = {
+        "has_time_axis": has_time_axis,
+        "has_comp_axis": has_comp_axis,
+        "quantiles_num": len(quantiles_labels),
+    }
     for attr, value in expected.items():
-        assert axes[_attr_idx[attr]] == value
+        assert actual[attr] == value
 
 
 def test_infer_metric_axes_quantiles():
-    _, _, quantiles_num, quantiles_labels = _infer_metric_axes(
-        dm.mql, {"q": [0.1, 0.5, 0.9]}
-    )
-    assert quantiles_num == 3
+    _, _, quantiles_labels = _infer_metric_axes(dm.mql, {"q": [0.1, 0.5, 0.9]})
     assert quantiles_labels == ["_q0.1", "_q0.5", "_q0.9"]
 
 
 def test_infer_metric_axes_quantile_interval():
-    has_time, _, quantiles_num, quantiles_labels = _infer_metric_axes(
+    has_time, _, quantiles_labels = _infer_metric_axes(
         dm.iw, {"q_interval": (0.1, 0.9)}
     )
-    assert quantiles_num == 1
     assert quantiles_labels == ["_qi0.1_0.9"]
     assert has_time is True
 
 
-def test_infer_metric_axes_unknown_labels():
-    """label_reduction=None with no explicit labels cannot determine QL."""
-    _, _, quantiles_num, _ = _infer_metric_axes(dm.f1, {"label_reduction": None})
-    assert quantiles_num is None
+def test_infer_metric_axes_unknown_labels_raises():
+    """label_reduction=None with no explicit labels cannot determine the number
+    of output labels ahead of time, so this raises rather than falling back."""
+    with pytest.raises(ValueError, match="requires explicit `labels`"):
+        _infer_metric_axes(dm.f1, {"label_reduction": None})
