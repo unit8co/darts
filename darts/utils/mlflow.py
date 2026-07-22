@@ -865,6 +865,14 @@ def _log_backtest_metrics(
     ``_log_metric_result``). For a single series the mean is just the value
     itself and no artifact is written.
 
+    Series of different lengths are assumed to share the same end date. Any
+    axis mapping to real dates -- the window axis (``has_windows``), or the
+    per-timestep axis when ``last_points_only`` stitches windows into one
+    series -- is aligned from the end rather than the start, so a shorter
+    series lines up on its last entry instead of its first. The
+    per-horizon-step axis is left as-is, since it means "steps ahead" rather
+    than a real date.
+
     Raises
     ------
     ValueError
@@ -952,8 +960,9 @@ def _log_backtest_metrics(
     # agg maps (key, step) -> per-series values, averaged into the logged metric.
     agg: dict[tuple[str, int], list[float]] = {}
     rows: list[dict] = []
-    for series_index, (s, r) in enumerate(zip(series_seq, results)):
-        if axes_inconsistent:
+
+    if axes_inconsistent:
+        for series_index, (s, r) in enumerate(zip(series_seq, results)):
             name_prefix = metric_names[0] if len(metric_names) == 1 else "metrics"
             flat = np.asarray(r, dtype=float).flatten()
             for i, val in enumerate(flat):
@@ -966,84 +975,104 @@ def _log_backtest_metrics(
                     "step": 0,
                     "value": value,
                 })
-            continue
-
-        comps = s.components.tolist()
-        # c_size = components × quantiles/intervals/labels per component
-        c_size = (s.n_components if has_comp_axis else 1) * quantiles_num
-        arr = np.asarray(r, dtype=float)
-        # after stripping C and M axes, rest = W*T (or W or T alone)
-        rest, extra = divmod(arr.size, c_size * n_metrics)
-        if extra:
-            raise_log(
-                ValueError(
-                    f"Backtest metric logging failed: result size ({arr.size}) "
-                    f"is not divisible by c_size * n_metrics ({c_size} * "
-                    f"{n_metrics} = {c_size * n_metrics}). The metric output "
-                    "shape does not match the inferred axes."
-                )
-            )
-
-        # both time and window axes present: backtest returns (W*T*C*M,) in C order so we can
-        # recover W and T only if forecast_horizon is known (T = forecast_horizon)
-        if has_time_axis and has_windows:
-            if not forecast_horizon or rest % forecast_horizon:
+    else:
+        # first pass: reshape each series' result into a canonical (W, T, C, M)
+        # array, recording its window-axis length for the alignment pass below.
+        series_shapes = []
+        for s, r in zip(series_seq, results):
+            comps = s.components.tolist()
+            # c_size = components × quantiles/intervals/labels per component
+            c_size = (s.n_components if has_comp_axis else 1) * quantiles_num
+            arr = np.asarray(r, dtype=float)
+            # after stripping C and M axes, rest = W*T (or W or T alone)
+            rest, extra = divmod(arr.size, c_size * n_metrics)
+            if extra:
                 raise_log(
                     ValueError(
-                        f"Backtest metric logging failed: cannot split "
-                        f"window/time axes — {rest} elements remain after "
-                        f"stripping component and metric axes, but "
-                        f"forecast_horizon={forecast_horizon!r} does not "
-                        "divide evenly. Pass an explicit forecast_horizon to "
-                        "backtest()."
+                        f"Backtest metric logging failed: result size ({arr.size}) "
+                        f"is not divisible by c_size * n_metrics ({c_size} * "
+                        f"{n_metrics} = {c_size * n_metrics}). The metric output "
+                        "shape does not match the inferred axes."
                     )
                 )
-            t_size, w_size = forecast_horizon, rest // forecast_horizon
-        elif has_time_axis:
-            t_size, w_size = rest, 1
-        elif has_windows:
-            t_size, w_size = 1, rest
-        else:
-            if rest != 1:
-                raise_log(
-                    ValueError(
-                        f"Backtest metric logging failed: expected a single "
-                        f"scalar per component/metric after reduction, but got "
-                        f"{rest} elements. Check time_reduction and "
-                        "component_reduction defaults."
-                    )
-                )
-            t_size, w_size = 1, 1
 
-        canonical = arr.reshape(w_size, t_size, c_size, n_metrics)
-        for m, metric_name in enumerate(metric_names):
-            quantiles_labels = metric_axes[m][2]
-            for w in range(w_size):
-                for c in range(c_size):
-                    # c is a flat index into the (n_components × quantiles_num) C axis:
-                    # c = comp_i * quantiles_num + q_i
-                    component_index, quantile_index = divmod(c, quantiles_num)
-                    comp_part = (
-                        "_" + _sanitize_mlflow_key(comps[component_index])
-                        if has_comp_axis
-                        else ""
+            # both time and window axes present: backtest returns (W*T*C*M,) in C order so we can
+            # recover W and T only if forecast_horizon is known (T = forecast_horizon)
+            if has_time_axis and has_windows:
+                if not forecast_horizon or rest % forecast_horizon:
+                    raise_log(
+                        ValueError(
+                            f"Backtest metric logging failed: cannot split "
+                            f"window/time axes — {rest} elements remain after "
+                            f"stripping component and metric axes, but "
+                            f"forecast_horizon={forecast_horizon!r} does not "
+                            "divide evenly. Pass an explicit forecast_horizon to "
+                            "backtest()."
+                        )
                     )
-                    key = f"backtest_{metric_name}{comp_part}{quantiles_labels[quantile_index]}"
-                    if has_time_axis and has_windows:
-                        key += f"_w{w}"
-                    key = _sanitize_mlflow_key(key)
-                    for t in range(t_size):
-                        # MLflow step maps to the axis the UI should chart:
-                        # time when present, otherwise window index
-                        step = t if has_time_axis else w
-                        value = float(canonical[w, t, c, m])
-                        agg.setdefault((key, step), []).append(value)
-                        rows.append({
-                            "key": key,
-                            "series_index": series_index,
-                            "step": step,
-                            "value": value,
-                        })
+                t_size, w_size = forecast_horizon, rest // forecast_horizon
+            elif has_time_axis:
+                t_size, w_size = rest, 1
+            elif has_windows:
+                t_size, w_size = 1, rest
+            else:
+                if rest != 1:
+                    raise_log(
+                        ValueError(
+                            f"Backtest metric logging failed: expected a single "
+                            f"scalar per component/metric after reduction, but got "
+                            f"{rest} elements. Check time_reduction and "
+                            "component_reduction defaults."
+                        )
+                    )
+                t_size, w_size = 1, 1
+
+            canonical = arr.reshape(w_size, t_size, c_size, n_metrics)
+            series_shapes.append((comps, c_size, t_size, w_size, canonical))
+
+        # align the calendar-relative axes from the end
+        max_w_size = max((w_size for _, _, _, w_size, _ in series_shapes), default=0)
+        t_axis_is_calendar = has_time_axis and not has_windows and last_points_only
+        max_t_size = (
+            max((t_size for _, _, t_size, _, _ in series_shapes), default=0)
+            if t_axis_is_calendar
+            else 0
+        )
+
+        for series_index, (comps, c_size, t_size, w_size, canonical) in enumerate(
+            series_shapes
+        ):
+            w_offset = max_w_size - w_size if has_windows else 0
+            t_offset = max_t_size - t_size if t_axis_is_calendar else 0
+            for m, metric_name in enumerate(metric_names):
+                quantiles_labels = metric_axes[m][2]
+                for w in range(w_size):
+                    aligned_w = w + w_offset
+                    for c in range(c_size):
+                        # c is a flat index into the (n_components × quantiles_num) C axis:
+                        # c = comp_i * quantiles_num + q_i
+                        component_index, quantile_index = divmod(c, quantiles_num)
+                        comp_part = (
+                            "_" + _sanitize_mlflow_key(comps[component_index])
+                            if has_comp_axis
+                            else ""
+                        )
+                        key = f"backtest_{metric_name}{comp_part}{quantiles_labels[quantile_index]}"
+                        if has_time_axis and has_windows:
+                            key += f"_w{aligned_w}"
+                        key = _sanitize_mlflow_key(key)
+                        for t in range(t_size):
+                            # MLflow step maps to the axis the UI should chart:
+                            # time when present, otherwise window index
+                            step = t + t_offset if has_time_axis else aligned_w
+                            value = float(canonical[w, t, c, m])
+                            agg.setdefault((key, step), []).append(value)
+                            rows.append({
+                                "key": key,
+                                "series_index": series_index,
+                                "step": step,
+                                "value": value,
+                            })
 
     # log the mean over series for each (key, step); for a single series this is
     # just the value itself.
@@ -1170,6 +1199,10 @@ def _log_metric_result(
     ``_log_backtest_metrics``). For a single series the mean is just the value
     itself and no artifact is written.
 
+    Series of different lengths are assumed to share the same end date, so the
+    time axis is aligned from the end rather than the start: a shorter series
+    lines up on its last value instead of its first.
+
     Raises
     ------
     ValueError
@@ -1208,10 +1241,10 @@ def _log_metric_result(
             [result] if get_series_seq_type(series) == SeriesType.SINGLE else result
         )
 
-    # agg maps (key, step) -> per-series values, averaged into the logged metric.
-    agg: dict[tuple[str, int], list[float]] = {}
-    rows: list[dict] = []
-    for series_index, (s, r) in enumerate(zip(series_seq, results)):
+    # first pass: reshape each series' result into a canonical (T, C) array,
+    # recording its time-axis length for the alignment pass below.
+    series_shapes = []
+    for s, r in zip(series_seq, results):
         comps = s.components.tolist()
         # c_size = components × quantiles/intervals/labels per component
         c_size = (s.n_components if has_comp_axis else 1) * quantiles_num
@@ -1243,6 +1276,16 @@ def _log_metric_result(
             t_size = 1
 
         canonical = arr.reshape(t_size, c_size)
+        series_shapes.append((comps, c_size, t_size, canonical))
+
+    # align the time axis from the end (see docstring)
+    max_t_size = max((t_size for _, _, t_size, _ in series_shapes), default=0)
+
+    # agg maps (key, step) -> per-series values, averaged into the logged metric.
+    agg: dict[tuple[str, int], list[float]] = {}
+    rows: list[dict] = []
+    for series_index, (comps, c_size, t_size, canonical) in enumerate(series_shapes):
+        step_offset = max_t_size - t_size if has_time_axis else 0
         for c in range(c_size):
             # c is a flat index into the (n_components × quantiles_num) C axis:
             # c = comp_i * quantiles_num + q_i
@@ -1257,7 +1300,7 @@ def _log_metric_result(
             )
             for t in range(t_size):
                 # MLflow step maps to the time axis when present
-                step = t if has_time_axis else 0
+                step = t + step_offset if has_time_axis else 0
                 value = float(canonical[t, c])
                 agg.setdefault((key, step), []).append(value)
                 rows.append({
