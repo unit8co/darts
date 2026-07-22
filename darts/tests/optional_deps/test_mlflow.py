@@ -1422,7 +1422,7 @@ class TestMLflow:
 
         # Simulate a backtest result with only 2 entries — as if the metric was
         # evaluated on windows that only contained 2 of the 3 explicit labels.
-        # quantiles_num is 3 (len(labels)) but result has 2 → mismatch.
+        # axis_size is 3 (len(labels)) but result has 2 → mismatch.
         fake_result = np.array([0.8, 0.6], dtype=float)
 
         backtest_args = {
@@ -1529,34 +1529,32 @@ class TestMLflow:
 @pytest.mark.parametrize(
     "metric_name, metric_kwargs, expected",
     [
-        ("mae", {}, dict(has_time_axis=False, has_comp_axis=False, quantiles_num=1)),
-        ("ae", {}, dict(has_time_axis=True, has_comp_axis=False, quantiles_num=1)),
+        ("mae", {}, dict(has_time_axis=False, has_comp_axis=False, axis_size=1)),
+        ("ae", {}, dict(has_time_axis=True, has_comp_axis=False, axis_size=1)),
         ("mae", {"component_reduction": None}, dict(has_comp_axis=True)),
     ],
 )
 def test_infer_metric_axes_reductions(metric_name, metric_kwargs, expected):
-    has_time_axis, has_comp_axis, quantiles_labels = _infer_metric_axes(
+    has_time_axis, has_comp_axis, axis_labels = _infer_metric_axes(
         getattr(dm, metric_name), metric_kwargs
     )
     actual = {
         "has_time_axis": has_time_axis,
         "has_comp_axis": has_comp_axis,
-        "quantiles_num": len(quantiles_labels),
+        "axis_size": len(axis_labels),
     }
     for attr, value in expected.items():
         assert actual[attr] == value
 
 
 def test_infer_metric_axes_quantiles():
-    _, _, quantiles_labels = _infer_metric_axes(dm.mql, {"q": [0.1, 0.5, 0.9]})
-    assert quantiles_labels == ["_q0.100", "_q0.500", "_q0.900"]
+    _, _, axis_labels = _infer_metric_axes(dm.mql, {"q": [0.1, 0.5, 0.9]})
+    assert axis_labels == ["_q0.100", "_q0.500", "_q0.900"]
 
 
 def test_infer_metric_axes_quantile_interval():
-    has_time, _, quantiles_labels = _infer_metric_axes(
-        dm.iw, {"q_interval": (0.1, 0.9)}
-    )
-    assert quantiles_labels == ["_qi_80.000"]
+    has_time, _, axis_labels = _infer_metric_axes(dm.iw, {"q_interval": (0.1, 0.9)})
+    assert axis_labels == ["_qi_80.000"]
     assert has_time is True
 
 
