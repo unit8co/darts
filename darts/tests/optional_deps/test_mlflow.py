@@ -1,4 +1,3 @@
-import csv
 import logging
 import os
 
@@ -851,7 +850,7 @@ class TestMLflow:
         assert m["miw_qi0_1_0_9"] == pytest.approx(float(ref), abs=1e-5)
 
     def test_autolog_metric_multi_series(self, mlflow_tracking, autolog_context):
-        """A list of series logs the mean over series; per-series values go to a CSV."""
+        """A list of series logs the mean over series; per-series values go to a table."""
         series = [self.ts_univariate, self.ts_univariate * 1.2]
         pred = [s * 1.1 for s in series]
 
@@ -864,9 +863,9 @@ class TestMLflow:
         # aggregate = mean over series, no per-series _s{i} keys
         assert m["mae"] == pytest.approx(float(np.mean(ref)), abs=1e-5)
         assert not any(k.startswith("mae_s") for k in m)
-        # granular per-series breakdown written to a CSV artifact
-        csv_rows = self._read_per_series_csv(run.info.run_id, "mae_per_series.csv")
-        by_series = {int(row["series_index"]): float(row["value"]) for row in csv_rows}
+        # granular per-series breakdown written to a table artifact
+        rows = self._read_per_series_table(run.info.run_id)
+        by_series = {int(row["series_index"]): float(row["value"]) for row in rows}
         assert by_series == pytest.approx({0: ref[0], 1: ref[1]}, abs=1e-5)
 
     def test_autolog_metric_multi_series_per_component(
@@ -888,10 +887,9 @@ class TestMLflow:
         assert m["mae_linear_1"] == pytest.approx(float(ref[:, 1].mean()), abs=1e-5)
         assert not any(k.endswith(("_s0", "_s1")) for k in m)
         # granular CSV: one row per (component, series)
-        csv_rows = self._read_per_series_csv(run.info.run_id, "mae_per_series.csv")
+        rows = self._read_per_series_table(run.info.run_id)
         got = {
-            (row["key"], int(row["series_index"])): float(row["value"])
-            for row in csv_rows
+            (row["key"], int(row["series_index"])): float(row["value"]) for row in rows
         }
         assert got[("mae_linear", 0)] == pytest.approx(ref[0, 0], abs=1e-5)
         assert got[("mae_linear", 1)] == pytest.approx(ref[1, 0], abs=1e-5)
@@ -935,7 +933,7 @@ class TestMLflow:
         self, mlflow_tracking, autolog_context
     ):
         """f1 with label_reduction=None and explicit labels on a list of binary
-        series logs the per-label mean over series and writes the per-series CSV.
+        series logs the per-label mean over series and writes the per-series table.
 
         ``labels`` must be explicit (``label_reduction=None`` without it raises,
         since the number of output labels can't be determined ahead of time)."""
@@ -964,10 +962,9 @@ class TestMLflow:
         )
         assert not any(k.endswith(("_s0", "_s1")) for k in m)
         # granular CSV: one row per (label, series)
-        csv_rows = self._read_per_series_csv(run.info.run_id, "f1_per_series.csv")
+        rows = self._read_per_series_table(run.info.run_id)
         got = {
-            (row["key"], int(row["series_index"])): float(row["value"])
-            for row in csv_rows
+            (row["key"], int(row["series_index"])): float(row["value"]) for row in rows
         }
         for i in range(2):
             assert got[("f1_label0", i)] == pytest.approx(ref[i][0], abs=1e-5)
@@ -1014,10 +1011,10 @@ class TestMLflow:
             "No mae metrics should be logged when the size check fails"
         )
 
-    def test_autolog_metric_per_series_csv_schema_and_single_series_skip(
+    def test_autolog_metric_per_series_table_schema_and_single_series_skip(
         self, mlflow_tracking, autolog_context
     ):
-        """The per-series CSV has the expected schema for multi-series input, and no
+        """The per-series table has the expected schema for multi-series input, and no
         artifact is written for single-series input (mean == the value itself)."""
         # multi-series: artifact exists with the documented columns
         multi = [self.ts_univariate, self.ts_univariate * 1.2]
@@ -1026,13 +1023,11 @@ class TestMLflow:
             with mlflow.start_run() as run_multi:
                 dm.mae(multi, pred_multi)
 
-        csv_rows = self._read_per_series_csv(
-            run_multi.info.run_id, "mae_per_series.csv"
-        )
-        assert list(csv_rows[0].keys()) == ["key", "series_index", "step", "value"]
-        assert {int(r["series_index"]) for r in csv_rows} == {0, 1}
+        rows = self._read_per_series_table(run_multi.info.run_id)
+        assert list(rows[0].keys()) == ["key", "series_index", "step", "value"]
+        assert {int(r["series_index"]) for r in rows} == {0, 1}
 
-        # single-series: no per_series_metrics artifact directory should be created
+        # single-series: no per-series table artifact should be created
         single = self.ts_univariate
         pred_single = single * 1.1
         with autolog_context(log_metrics=True):
@@ -1040,8 +1035,8 @@ class TestMLflow:
                 dm.mae(single, pred_single)
 
         artifacts = mlflow_tracking.list_artifacts(run_single.info.run_id)
-        assert not any(a.path == "per_series_metrics" for a in artifacts), (
-            "Single-series input should not write a per-series CSV artifact"
+        assert not any(a.path == "metrics_per_series.json" for a in artifacts), (
+            "Single-series input should not write a per-series table artifact"
         )
 
     def test_autolog_backtest_scalar(self, mlflow_tracking, autolog_context):
@@ -1120,7 +1115,7 @@ class TestMLflow:
         )
 
     def test_autolog_backtest_multi_series(self, mlflow_tracking, autolog_context):
-        """A list of series logs the mean over series; per-series values go to a CSV."""
+        """A list of series logs the mean over series; per-series values go to a table."""
         series = [self.ts_univariate, self.ts_univariate * 1.2]
         with autolog_context(log_metrics=True):
             with mlflow.start_run() as run:
@@ -1134,9 +1129,9 @@ class TestMLflow:
             float(np.mean(ref)), abs=1e-5
         )
         assert not any(k.startswith("backtest_mae_s") for k in run_data.metrics)
-        # granular per-series breakdown written to a CSV artifact
-        csv_rows = self._read_per_series_csv(run.info.run_id, "backtest_per_series.csv")
-        by_series = {int(row["series_index"]): float(row["value"]) for row in csv_rows}
+        # granular per-series breakdown written to a table artifact
+        rows = self._read_per_series_table(run.info.run_id)
+        by_series = {int(row["series_index"]): float(row["value"]) for row in rows}
         assert by_series == pytest.approx(
             {0: float(ref[0]), 1: float(ref[1])}, abs=1e-5
         )
@@ -1312,13 +1307,12 @@ class TestMLflow:
         assert not mlflow.get_run(run.info.run_id).data.metrics
 
     @staticmethod
-    def _read_per_series_csv(run_id, filename):
-        """Download and parse a per_series_metrics CSV artifact into row dicts."""
-        local = mlflow.artifacts.download_artifacts(
-            run_id=run_id, artifact_path=f"per_series_metrics/{filename}"
+    def _read_per_series_table(run_id):
+        """Load the run's consolidated per-series metric table into row dicts."""
+        df = mlflow.load_table(
+            artifact_file="metrics_per_series.json", run_ids=[run_id]
         )
-        with open(local, newline="") as f:
-            return list(csv.DictReader(f))
+        return df.to_dict("records")
 
     def _fit_lr(self, series=None):
         """Fit and return a fresh LinearRegressionModel (no active run)."""
