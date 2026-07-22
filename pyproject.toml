@@ -70,7 +70,6 @@ notorch = [
     "statsforecast>=1.4",
     "xgboost>=2.1.4",
 ]
-mlflow = ["mlflow>=3.0"]
 all = ["darts[torch,notorch]"]
 
 [tool.uv]
