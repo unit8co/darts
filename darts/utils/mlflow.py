@@ -47,7 +47,6 @@ from mlflow.entities import LoggedModel
 from mlflow.models import Model, ModelInputExample, ModelSignature
 from mlflow.models.model import MLMODEL_FILE_NAME
 from mlflow.models.utils import _save_example
-from mlflow.tracking._model_registry import DEFAULT_AWAIT_MAX_SLEEP_SECONDS
 from mlflow.tracking.artifact_utils import _download_artifact_from_uri
 from mlflow.tracking.fluent import _initialize_logged_model
 from mlflow.utils import _get_fully_qualified_class_name
@@ -286,72 +285,25 @@ def load_model(
     return model_cls.load(str(model_path), **kwargs)
 
 
-def log_model(
-    model,
-    artifact_path: str | None = None,
-    conda_env: dict | str | None = None,
-    code_paths: list[str] | None = None,
-    registered_model_name: str | None = None,
-    signature: ModelSignature | None = None,
-    input_example: ModelInputExample | None = None,
-    await_registration_for: int = DEFAULT_AWAIT_MAX_SLEEP_SECONDS,
-    pip_requirements: list[str] | None = None,
-    extra_pip_requirements: list[str] | None = None,
-    metadata: dict[str, Any] | None = None,
-    name: str | None = None,
-    params: dict[str, Any] | None = None,
-    tags: dict[str, Any] | None = None,
-    model_type: str | None = None,
-    step: int = 0,
-    model_id: str | None = None,
-    **kwargs,
-):
-    """Log a darts model to the current MLflow run.
+def log_model(model, **kwargs):
+    """Log a darts model to the current MLflow run, using the darts MLflow flavor.
+
+    This is a thin wrapper around ``mlflow.models.Model.log()`` that supplies
+    the darts flavor for saving/loading; every other argument is forwarded
+    as-is. See the `MLflow documentation
+    <https://mlflow.org/docs/latest/api_reference/python_api/mlflow.models.html#mlflow.models.Model.log>`_
+    for the full list of accepted parameters (e.g. ``name``,
+    ``registered_model_name``, ``conda_env``, ``pip_requirements``,
+    ``metadata``, ``tags``, ...).
 
     Parameters
     ----------
     model
         A fitted darts ``ForecastingModel`` instance.
-    artifact_path
-        The run-relative artifact path under which to log the model.
-        Defaults to ``"model"``. Deprecated in favour of ``name``.
-    conda_env
-        Conda environment specification (dict or path).
-    code_paths
-        A list of local filesystem paths to Python file dependencies (or directories
-        containing file dependencies). These files are prepended to the system path
-        when the model is loaded.
-    registered_model_name
-        If provided, the model is registered in the MLflow Model Registry
-        under this name.
-    signature
-       *Unsupported, see notes.* An ``mlflow.models.ModelSignature``. Use ``mlflow.models.infer_signature()``
-        to automatically generate from example inputs.
-    input_example
-        *Unsupported, see notes.* An example model input.
-    await_registration_for
-        Number of seconds to wait for the model version to finish being created and is in ``READY`` status.
-        By default, the function waits for five minutes. Specify 0 to skip waiting.
-    pip_requirements
-        Pip requirements list.
-    extra_pip_requirements
-        A list of additional pip requirement strings to add to the model's environment,
-        in addition to the default requirements.
-    metadata
-        Optional dict of custom metadata.
-    name
-        The name for the model artifact. If provided, takes precedence over
-        ``artifact_path``.
-    params
-        Optional dictionary of parameters to log alongside the model.
-    tags
-        Optional dictionary of tags to log alongside the model.
-    model_type
-        Optional string for the model type.
-    step
-        Optional step value to log with the model's metrics. Defaults to 0.
-    model_id
-        Optional string for the model ID.
+    **kwargs
+        Forwarded to ``mlflow.models.Model.log()``. Use ``name`` to set the
+        run-relative artifact path. ``artifact_path`` parameter is deprecated
+        by MLflow and not exposed here.
 
     Returns
     -------
@@ -361,33 +313,12 @@ def log_model(
 
     Notes
     -----
-    Signature and input_example params are currently not supported, as they
-    are used to support serving and input validation in the MLflow pyfunc flavor,
-    which is not implemented for darts models. They are accepted as params for
-    simplifying potential future extensibility, and to keep in line with MLflow API
-    conventions.
+    ``signature`` and ``input_example`` are currently not supported, as they
+    are used to support serving and input validation in the MLflow pyfunc
+    flavor, which is not implemented for darts models.
     """
-
     return Model.log(
-        artifact_path=artifact_path,
-        flavor=sys.modules[__name__],
-        registered_model_name=registered_model_name,
-        model=model,
-        conda_env=conda_env,
-        code_paths=code_paths,
-        pip_requirements=pip_requirements,
-        extra_pip_requirements=extra_pip_requirements,
-        signature=signature,
-        input_example=input_example,
-        await_registration_for=await_registration_for,
-        metadata=metadata,
-        name=name,
-        params=params,
-        tags=tags,
-        model_type=model_type,
-        step=step,
-        model_id=model_id,
-        **kwargs,
+        artifact_path=None, flavor=sys.modules[__name__], model=model, **kwargs
     )
 
 
