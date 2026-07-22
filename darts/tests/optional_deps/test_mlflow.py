@@ -928,7 +928,7 @@ class TestMLflow:
 
         ref = np.asarray(ref, dtype=float)  # shape (n_quantiles,)
         m = mlflow.get_run(run.info.run_id).data.metrics
-        for i, key in enumerate(("mql_q0_1", "mql_q0_5", "mql_q0_9")):
+        for i, key in enumerate(("mql_q0_100", "mql_q0_500", "mql_q0_900")):
             assert key in m, f"Expected quantile key {key}"
             assert m[key] == pytest.approx(ref[i], abs=1e-5)
 
@@ -947,8 +947,8 @@ class TestMLflow:
                 ref = dm.miw(actual, pred, q_interval=(0.1, 0.9))
 
         m = mlflow.get_run(run.info.run_id).data.metrics
-        assert "miw_qi0_1_0_9" in m
-        assert m["miw_qi0_1_0_9"] == pytest.approx(float(ref), abs=1e-5)
+        assert "miw_qi_80_000" in m
+        assert m["miw_qi_80_000"] == pytest.approx(float(ref), abs=1e-5)
 
     def test_autolog_metric_multi_series(self, mlflow_tracking, autolog_context):
         """A list of series logs the mean over series; per-series values go to a table."""
@@ -1007,7 +1007,7 @@ class TestMLflow:
         target = self.ts_univariate[40:]
 
         with autolog_context(log_metrics=True):
-            # direct call: name replaces the metric token; suffix (_q0_5) preserved
+            # direct call: name replaces the metric token; suffix (_q0_500) preserved
             with mlflow.start_run() as run_direct:
                 dm.mae(actual, actual * 1.1, name="custom")
                 dm.mql(target, pred, q=0.5, name="myq")
@@ -1024,7 +1024,7 @@ class TestMLflow:
         direct = mlflow.get_run(run_direct.info.run_id).data.metrics
         assert "custom" in direct
         assert "mae" not in direct, "default metric name should be replaced"
-        assert "myq_q0_5" in direct, "quantile suffix should be preserved"
+        assert "myq_q0_500" in direct, "quantile suffix should be preserved"
 
         bt = mlflow.get_run(run_bt.info.run_id).data.metrics
         assert "backtest_custom" in bt
@@ -1319,7 +1319,11 @@ class TestMLflow:
                 )
 
         m = mlflow.get_run(run.info.run_id).data.metrics
-        for key in ("backtest_mql_q0_1", "backtest_mql_q0_5", "backtest_mql_q0_9"):
+        for key in (
+            "backtest_mql_q0_100",
+            "backtest_mql_q0_500",
+            "backtest_mql_q0_900",
+        ):
             assert key in m, f"Expected quantile key {key}"
             assert np.isfinite(m[key])
 
@@ -1545,14 +1549,14 @@ def test_infer_metric_axes_reductions(metric_name, metric_kwargs, expected):
 
 def test_infer_metric_axes_quantiles():
     _, _, quantiles_labels = _infer_metric_axes(dm.mql, {"q": [0.1, 0.5, 0.9]})
-    assert quantiles_labels == ["_q0.1", "_q0.5", "_q0.9"]
+    assert quantiles_labels == ["_q0.100", "_q0.500", "_q0.900"]
 
 
 def test_infer_metric_axes_quantile_interval():
     has_time, _, quantiles_labels = _infer_metric_axes(
         dm.iw, {"q_interval": (0.1, 0.9)}
     )
-    assert quantiles_labels == ["_qi0.1_0.9"]
+    assert quantiles_labels == ["_qi_80.000"]
     assert has_time is True
 
 
