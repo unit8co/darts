@@ -356,7 +356,7 @@ def autolog(
         * ``metric_name`` – the metric function name, or the ``name`` keyword
           argument when provided (it overrides only this token).
         * ``component`` – the component name when ``component_reduction=None``.
-        * ``quantile_or_label`` – e.g. ``_q0.500`` / ``_qi0.100_0.900`` / ``_label1``.
+        * ``quantile_or_label`` – e.g. ``_q0.500`` / ``_qi_80.000`` / ``_label1``.
 
         When ``series_reduction`` is set on a metric call, results are already
         aggregated across series inside the metric itself, so the mean-over-series
@@ -1133,9 +1133,11 @@ def _infer_metric_axes(metric: Callable, metric_kwargs: dict) -> tuple:
     q_interval, q = metric_kwargs.get("q_interval"), metric_kwargs.get("q")
     if "q_interval" in params and q_interval is not None:
         intervals = np.atleast_2d(np.array(q_interval, dtype=float))
-        quantiles_labels = [f"_qi{lo:g}_{hi:g}" for lo, hi in intervals]
+        quantiles_labels = [f"_qi_{100 * (hi - lo):.3f}" for lo, hi in intervals]
     elif "q" in params and q is not None:
-        quantiles_labels = [f"_q{v:g}" for v in np.atleast_1d(np.array(q, dtype=float))]
+        quantiles_labels = [
+            f"_q{v:.3f}" for v in np.atleast_1d(np.array(q, dtype=float))
+        ]
     elif "label_reduction" in params and getattr(metric, "__name__", ""):
         label_reduction = effective("label_reduction")
         if isinstance(label_reduction, _LabelReduction):
@@ -1191,7 +1193,7 @@ def _log_metric_result(
     present:
 
     * ``component`` – ``_{component_name}`` when ``has_comp_axis``.
-    * ``quantile_or_label`` – e.g. ``_q0.5`` / ``_qi0.1_0.9`` / ``_label1``.
+    * ``quantile_or_label`` – e.g. ``_q0.500`` / ``_qi_80.000`` / ``_label1``.
 
     When more than one series is scored, the logged value is the mean over
     series for each cell, and the granular per-series breakdown is appended to
@@ -1356,8 +1358,8 @@ def _mlflow_metric_callback(func, result, args, kwargs) -> None:
     * ``metric_name`` – the metric function name, or the ``name`` keyword
       argument when provided (it overrides only this token).
     * ``component`` – ``_{component_name}`` when ``component_reduction=None``.
-    * ``quantile_or_label`` – quantile/interval/label suffix (e.g. ``_q0.5``,
-      ``_qi0.1_0.9``, ``_label1``) when applicable.
+    * ``quantile_or_label`` – quantile/interval/label suffix (e.g. ``_q0.500``,
+      ``_qi_80.000``, ``_label1``) when applicable.
 
     When the input is a ``Sequence[TimeSeries]`` with more than one series, the
     logged value is the mean over series and the per-series breakdown is
