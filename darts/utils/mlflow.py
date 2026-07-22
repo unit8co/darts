@@ -19,7 +19,6 @@ References:
 https://github.com/sktime/sktime/blob/main/sktime/utils/mlflow_sktime.py
 """
 
-import csv
 import inspect
 import re
 import sys
@@ -42,6 +41,7 @@ except ImportError:
     )
 
 import numpy as np
+import pandas as pd
 import yaml
 from mlflow.entities import LoggedModel
 from mlflow.models import Model, ModelInputExample, ModelSignature
@@ -69,7 +69,7 @@ from mlflow.utils.environment import (
     _PythonEnv,
     _validate_env_arguments,
 )
-from mlflow.utils.file_utils import TempDir, write_to
+from mlflow.utils.file_utils import write_to
 from mlflow.utils.model_utils import (
     _add_code_from_conf_to_system_path,
     _get_flavor_configuration,
@@ -454,8 +454,9 @@ def autolog(
 
         Per-timestep results (``time_reduction=None``) are charted across the
         MLflow ``step``. For a list of series the logged value is the mean over
-        series and the full per-series breakdown is written to a
-        ``per_series_metrics/`` CSV artifact.
+        series, and the full per-series breakdown for every metric/backtest
+        call in the run is appended to a single ``metrics_per_series.json``
+        table artifact.
 
     Parameters
     ----------
@@ -856,14 +857,15 @@ def _sanitize_mlflow_key(name: str) -> str:
     return re.sub(r"[^\w-]", "_", name)
 
 
-def _write_per_series_csv(rows: list[dict], filename: str) -> None:
-    """Write the granular per-series metric breakdown to a CSV artifact.
+def _log_per_series_table(rows: list[dict]) -> None:
+    """Append the granular per-series metric breakdown to a single, run-wide
+    table artifact.
 
     Each row is a single metric cell for one series, with columns ``key`` (the
     aggregate MLflow key, without any series suffix), ``series_index``, ``step``
-    (the time or window index charted by MLflow), and ``value``. The file is
-    logged under the ``per_series_metrics`` artifact subdirectory of the active
-    run. Used when more than one series is scored, since the logged metric keys
+    (the time or window index charted by MLflow), and ``value``. All calls
+    within a run append to the same ``metrics_per_series.json`` artifact.
+    Used when more than one series is scored, since the logged metric keys
     only carry the mean over series.
 
     Parameters
@@ -871,20 +873,11 @@ def _write_per_series_csv(rows: list[dict], filename: str) -> None:
     rows
         One dict per metric cell with keys ``key``, ``series_index``, ``step``,
         and ``value``.
-    filename
-        Basename of the CSV file (e.g. ``series_mae_per_series.csv``).
     """
     if not rows:
         return
-    sorted_rows = sorted(rows, key=itemgetter("key", "series_index", "step"))
-    fieldnames = ["key", "series_index", "step", "value"]
-    with TempDir() as tmp:
-        path = tmp.path(filename)
-        with open(path, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(sorted_rows)
-        mlflow.log_artifact(path, artifact_path="per_series_metrics")
+    df = pd.DataFrame(rows).sort_values(["key", "series_index", "step"])
+    mlflow.log_table(data=df, artifact_file="metrics_per_series.json")
 
 
 def _log_backtest_metrics(
@@ -924,9 +917,10 @@ def _log_backtest_metrics(
     result is flattened to integer-indexed keys instead.
 
     When more than one series is scored, the logged value is the mean over
-    series for each cell, and the granular per-series breakdown is written to a
-    ``per_series_metrics/backtest_per_series.csv`` artifact. For a single series
-    the mean is just the value itself and no artifact is written.
+    series for each cell, and the granular per-series breakdown is appended to
+    the run's ``metrics_per_series.json`` table artifact (shared with
+    ``_log_metric_result``). For a single series the mean is just the value
+    itself and no artifact is written.
 
     Raises
     ------
@@ -1105,9 +1099,10 @@ def _log_backtest_metrics(
     for step, metrics in metrics_by_step.items():
         autologging_client.log_metrics(run_id=run_id, metrics=metrics, step=step)
 
-    # write the granular per-series breakdown to a CSV artifact (multi-series only)
+    # append the granular per-series breakdown to the run's table artifact
+    # (multi-series only)
     if len(series_seq) > 1:
-        _write_per_series_csv(rows, "backtest_per_series.csv")
+        _log_per_series_table(rows)
 
 
 def _infer_metric_axes(metric: Callable, metric_kwargs: dict) -> tuple:
@@ -1216,9 +1211,10 @@ def _log_metric_result(
     * ``quantile_or_label`` – e.g. ``_q0.5`` / ``_qi0.1_0.9`` / ``_label1``.
 
     When more than one series is scored, the logged value is the mean over
-    series for each cell, and the granular per-series breakdown is written to a
-    ``per_series_metrics/{metric_name}_per_series.csv`` artifact. For a single
-    series the mean is just the value itself and no artifact is written.
+    series for each cell, and the granular per-series breakdown is appended to
+    the run's ``metrics_per_series.json`` table artifact (shared with
+    ``_log_backtest_metrics``). For a single series the mean is just the value
+    itself and no artifact is written.
 
     Raises
     ------
@@ -1326,9 +1322,10 @@ def _log_metric_result(
         autologging_client.log_metrics(run_id=run_id, metrics=metrics, step=step)
     autologging_client.flush(synchronous=False).await_completion()
 
-    # write the granular per-series breakdown to a CSV artifact (multi-series only)
+    # append the granular per-series breakdown to the run's table artifact
+    # (multi-series only)
     if len(series_seq) > 1:
-        _write_per_series_csv(rows, f"{metric_name}_per_series.csv")
+        _log_per_series_table(rows)
 
 
 # TODO: To log metrics post-fitting, only patching the metric methods may not be enough.
@@ -1366,8 +1363,9 @@ def _mlflow_metric_callback(func, result, args, kwargs) -> None:
       ``_qi0.1_0.9``, ``_label1``) when applicable.
 
     When the input is a ``Sequence[TimeSeries]`` with more than one series, the
-    logged value is the mean over series and the per-series breakdown is written
-    to a ``per_series_metrics/`` CSV artifact instead of per-series keys.
+    logged value is the mean over series and the per-series breakdown is
+    appended to the run's ``metrics_per_series.json`` table artifact instead
+    of per-series keys.
 
     The per-timestep axis (``time_reduction=None``) is mapped to the MLflow
     ``step``.
