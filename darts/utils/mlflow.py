@@ -637,7 +637,7 @@ def get_default_pip_requirements():
     list[str]
         A list of pip requirement strings.
     """
-    reqs = [_get_pinned_requirement("darts[all]")]
+    reqs = [_get_pinned_requirement("darts")]
     return reqs
 
 
