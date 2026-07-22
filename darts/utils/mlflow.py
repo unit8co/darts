@@ -991,6 +991,17 @@ def _log_backtest_metrics(
 
     series = backtest_args.get("series")
     forecast_horizon = backtest_args.get("forecast_horizon")
+    historical_forecasts = backtest_args.get("historical_forecasts")
+    last_points_only = backtest_args.get("last_points_only", False)
+
+    # if last_points_only is True, has_windows will be False, so fc_hzn is not needed
+    if historical_forecasts and not last_points_only:
+        first_series_hf = (
+            historical_forecasts
+            if get_series_seq_type(series) == SeriesType.SINGLE
+            else historical_forecasts[0]
+        )
+        forecast_horizon = len(first_series_hf[0])
 
     series_seq = series2seq(series)
     results = [result] if get_series_seq_type(series) == SeriesType.SINGLE else result
