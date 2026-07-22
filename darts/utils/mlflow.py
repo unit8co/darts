@@ -327,6 +327,7 @@ def autolog(
     log_params: bool = True,
     log_metrics: bool = True,
     log_torch_metrics: bool = True,
+    agg_func: Callable = np.mean,
     disable: bool = False,
     silent: bool = False,
 ) -> None:
@@ -359,14 +360,14 @@ def autolog(
         * ``quantile_or_label`` – e.g. ``_q0.500`` / ``_qi_80.000`` / ``_label1``.
 
         When ``series_reduction`` is set on a metric call, results are already
-        aggregated across series inside the metric itself, so the mean-over-series
-        logging described below does not apply.
+        aggregated across series inside the metric itself, so the
+        cross-series aggregation described below does not apply.
 
         Per-timestep results (``time_reduction=None``) are charted across the
-        MLflow ``step``. For a list of series the logged value is the mean over
-        series, and the full per-series breakdown for every metric/backtest
-        call in the run is appended to a single ``metrics_per_series.json``
-        table artifact.
+        MLflow ``step``. For a list of series the logged value is
+        ``agg_func`` applied over series, and the full per-series breakdown
+        for every metric/backtest call in the run is appended to a single
+        ``metrics_per_series.json`` table artifact.
 
     Parameters
     ----------
@@ -381,6 +382,11 @@ def autolog(
         If ``True`` (default), enable ``mlflow.pytorch.autolog(log_models=False)``
         around PyTorch-based model training to automatically log per-epoch
         training and validation metrics. Only effective for PyTorch-based models.
+    agg_func
+        Function used to aggregate a metric's per-series values into the
+        single value logged for a list of series (e.g. ``np.mean``, the
+        default, or ``np.median``). Called as ``agg_func(values)`` on a list
+        of floats.
     disable
         If ``True``, restore the original ``fit()`` methods and stop
         autologging.
@@ -428,6 +434,7 @@ def autolog(
         log_models=log_models,
         log_params=log_params,
         log_metrics=log_metrics,
+        agg_func=agg_func,
         disable=disable,
         silent=silent,
     )
@@ -460,6 +467,7 @@ def _autolog(
     log_models: bool = True,
     log_params: bool = True,
     log_metrics: bool = True,
+    agg_func: Callable = np.mean,
     disable: bool = False,
     silent: bool = False,
 ) -> None:
@@ -595,7 +603,11 @@ def _autolog(
 
         autologging_client = MlflowAutologgingQueueingClient()
         _log_backtest_metrics(
-            autologging_client, active_run.info.run_id, result, backtest_args
+            autologging_client,
+            active_run.info.run_id,
+            result,
+            backtest_args,
+            agg_func=agg_func,
         )
         autologging_client.flush(synchronous=False).await_completion()
         return result
@@ -809,7 +821,7 @@ def _log_per_series_table(rows: list[dict]) -> None:
     (the time or window index charted by MLflow), and ``value``. All calls
     within a run append to the same ``metrics_per_series.json`` artifact.
     Used when more than one series is scored, since the logged metric keys
-    only carry the mean over series.
+    only carry the aggregate over series.
 
     Parameters
     ----------
@@ -828,6 +840,7 @@ def _log_backtest_metrics(
     run_id: str,
     result,
     backtest_args: dict,
+    agg_func: Callable = np.mean,
 ) -> None:
     """Log backtest metric result(s) to MLflow.
 
@@ -859,11 +872,11 @@ def _log_backtest_metrics(
     ``time_reduction`` / ``component_reduction`` / quantile count), each series
     result is flattened to integer-indexed keys instead.
 
-    When more than one series is scored, the logged value is the mean over
-    series for each cell, and the granular per-series breakdown is appended to
-    the run's ``metrics_per_series.json`` table artifact (shared with
-    ``_log_metric_result``). For a single series the mean is just the value
-    itself and no artifact is written.
+    When more than one series is scored, the logged value is ``agg_func``
+    applied over series for each cell, and the granular per-series breakdown
+    is appended to the run's ``metrics_per_series.json`` table artifact
+    (shared with ``_log_metric_result``). For a single series the aggregate
+    is just the value itself and no artifact is written.
 
     Series of different lengths are assumed to share the same end date, so any
     axis mapping to real dates (the window axis, or the per-timestep axis
@@ -889,6 +902,10 @@ def _log_backtest_metrics(
     backtest_args
         Bound arguments of the ``backtest()`` call (from
         ``inspect.BoundArguments.arguments`` after ``apply_defaults``).
+    agg_func
+        Function used to aggregate a metric's per-series values into the
+        single value logged for a list of series. Called as
+        ``agg_func(values)`` on a list of floats.
     """
     metric = backtest_args.get("metric")
     metric = metric if isinstance(metric, list) else [metric]
@@ -955,7 +972,7 @@ def _log_backtest_metrics(
     series_seq = series2seq(series)
     results = [result] if get_series_seq_type(series) == SeriesType.SINGLE else result
 
-    # agg maps (key, step) -> per-series values, averaged into the logged metric.
+    # agg maps (key, step) -> per-series values, aggregated into the logged metric.
     agg: dict[tuple[str, int], list[float]] = {}
     rows: list[dict] = []
 
@@ -1074,11 +1091,11 @@ def _log_backtest_metrics(
                                 "value": value,
                             })
 
-    # log the mean over series for each (key, step); for a single series this is
-    # just the value itself.
+    # aggregate across series for each (key, step); for a single series this
+    # is just the value itself.
     metrics_by_step: dict[int, dict[str, float]] = {}
     for (key, step), values in agg.items():
-        metrics_by_step.setdefault(step, {})[key] = float(np.mean(values))
+        metrics_by_step.setdefault(step, {})[key] = float(agg_func(values))
     for step, metrics in metrics_by_step.items():
         autologging_client.log_metrics(run_id=run_id, metrics=metrics, step=step)
 
@@ -1172,6 +1189,7 @@ def _log_metric_result(
     has_comp_axis: bool,
     axis_labels: list[str],
     series_reduced: bool = False,
+    agg_func: Callable = np.mean,
 ) -> None:
     """Log a metric result to the active MLflow run.
 
@@ -1193,11 +1211,11 @@ def _log_metric_result(
     * ``component`` – ``_{component_name}`` when ``has_comp_axis``.
     * ``quantile_or_label`` – e.g. ``_q0.500`` / ``_qi_80.000`` / ``_label1``.
 
-    When more than one series is scored, the logged value is the mean over
-    series for each cell, and the granular per-series breakdown is appended to
-    the run's ``metrics_per_series.json`` table artifact (shared with
-    ``_log_backtest_metrics``). For a single series the mean is just the value
-    itself and no artifact is written.
+    When more than one series is scored, the logged value is ``agg_func``
+    applied over series for each cell, and the granular per-series breakdown
+    is appended to the run's ``metrics_per_series.json`` table artifact
+    (shared with ``_log_backtest_metrics``). For a single series the
+    aggregate is just the value itself and no artifact is written.
 
     Series of different lengths are assumed to share the same end date, so the
     time axis is aligned from the end rather than the start: a shorter series
@@ -1228,6 +1246,10 @@ def _log_metric_result(
     series_reduced
         ``True`` when ``series_reduction`` collapsed the series axis inside the
         metric, so the result has no leading series axis even for list input.
+    agg_func
+        Function used to aggregate a metric's per-series values into the
+        single value logged for a list of series. Called as
+        ``agg_func(values)`` on a list of floats.
     """
     axis_size = len(axis_labels)
 
@@ -1281,7 +1303,7 @@ def _log_metric_result(
     # align the time axis from the end (see docstring)
     max_t_size = max((t_size for _, _, t_size, _ in series_shapes), default=0)
 
-    # agg maps (key, step) -> per-series values, averaged into the logged metric.
+    # agg maps (key, step) -> per-series values, aggregated into the logged metric.
     agg: dict[tuple[str, int], list[float]] = {}
     rows: list[dict] = []
     for series_index, (comps, c_size, t_size, canonical) in enumerate(series_shapes):
@@ -1308,11 +1330,11 @@ def _log_metric_result(
                     "value": value,
                 })
 
-    # log the mean over series for each (key, step); for a single series this is
-    # just the value itself.
+    # aggregate across series for each (key, step); for a single series this
+    # is just the value itself.
     metrics_by_step: dict[int, dict[str, float]] = {}
     for (key, step), values in agg.items():
-        metrics_by_step.setdefault(step, {})[key] = float(np.mean(values))
+        metrics_by_step.setdefault(step, {})[key] = float(agg_func(values))
     for step, metrics in metrics_by_step.items():
         autologging_client.log_metrics(run_id=run_id, metrics=metrics, step=step)
     autologging_client.flush(synchronous=False).await_completion()
@@ -1358,9 +1380,9 @@ def _mlflow_metric_callback(func, result, args, kwargs) -> None:
       ``_qi_80.000``, ``_label1``) when applicable.
 
     When the input is a ``Sequence[TimeSeries]`` with more than one series, the
-    logged value is the mean over series and the per-series breakdown is
-    appended to the run's ``metrics_per_series.json`` table artifact instead
-    of per-series keys.
+    logged value is ``autolog()``'s ``agg_func`` applied over series, and the
+    per-series breakdown is appended to the run's ``metrics_per_series.json``
+    table artifact instead of per-series keys.
 
     The per-timestep axis (``time_reduction=None``) is mapped to the MLflow
     ``step``.
@@ -1408,6 +1430,12 @@ def _mlflow_metric_callback(func, result, args, kwargs) -> None:
         )
         series_reduced = effective_sr is not None
 
+    # _mlflow_metric_callback is a bare registered callback, not a closure over
+    # autolog()'s call kwargs, so agg_func is read back from the autologging
+    # config store that autolog() populated.
+    agg_func = get_autologging_config(
+        flavor_name=FLAVOR_NAME, config_key="agg_func", default_value=np.mean
+    )
     _log_metric_result(
         autologging_client,
         run_id,
@@ -1418,4 +1446,5 @@ def _mlflow_metric_callback(func, result, args, kwargs) -> None:
         has_comp_axis,
         axis_labels,
         series_reduced=series_reduced,
+        agg_func=agg_func,
     )

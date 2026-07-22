@@ -969,6 +969,24 @@ class TestMLflow:
         by_series = {int(row["series_index"]): float(row["value"]) for row in rows}
         assert by_series == pytest.approx({0: ref[0], 1: ref[1]}, abs=1e-5)
 
+    def test_autolog_metric_multi_series_custom_agg_func(
+        self, mlflow_tracking, autolog_context
+    ):
+        """autolog()'s agg_func controls how per-series values are aggregated
+        into the single logged metric (default np.mean)."""
+        # 3 series with distinct, asymmetric per-series errors so median != mean
+        series = [self.ts_univariate * f for f in (1.0, 1.2, 5.0)]
+        pred = [s * 1.1 for s in series]
+
+        with autolog_context(log_metrics=True, agg_func=np.median):
+            with mlflow.start_run() as run:
+                ref = dm.mae(series, pred)
+
+        ref = np.asarray(ref, dtype=float)
+        assert float(np.median(ref)) != pytest.approx(float(np.mean(ref)), abs=1e-3)
+        m = mlflow.get_run(run.info.run_id).data.metrics
+        assert m["mae"] == pytest.approx(float(np.median(ref)), abs=1e-5)
+
     def test_autolog_metric_multi_series_per_component(
         self, mlflow_tracking, autolog_context
     ):
@@ -1236,6 +1254,30 @@ class TestMLflow:
         assert by_series == pytest.approx(
             {0: float(ref[0]), 1: float(ref[1])}, abs=1e-5
         )
+
+    def test_autolog_backtest_multi_series_custom_agg_func(self, mlflow_tracking):
+        """autolog()'s agg_func also controls the backtest() aggregation
+        (default np.mean). Calls _log_backtest_metrics directly with a
+        fabricated result so the per-series values are exact."""
+        backtest_args = {
+            "metric": dm.mae,
+            "metric_kwargs": {},
+            "series": [self.ts_univariate, self.ts_univariate, self.ts_univariate],
+            "forecast_horizon": 1,
+            "reduction": np.mean,
+            "last_points_only": True,
+        }
+        result = [1.0, 2.0, 100.0]  # asymmetric -> median != mean
+
+        with mlflow.start_run() as run:
+            client = MlflowAutologgingQueueingClient()
+            _log_backtest_metrics(
+                client, run.info.run_id, result, backtest_args, agg_func=np.median
+            )
+            client.flush(synchronous=True)
+
+        m = mlflow.get_run(run.info.run_id).data.metrics
+        assert m["backtest_mae"] == pytest.approx(2.0)
 
     def test_autolog_backtest_per_timestep_scalar(
         self, mlflow_tracking, autolog_context
