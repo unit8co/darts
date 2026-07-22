@@ -1346,12 +1346,7 @@ def _mlflow_metric_callback(func, result, args, kwargs) -> None:
     if getattr(_autolog_state, "in_backtest", False):
         return
 
-    if len(args) > 0:
-        series = args[0]
-    else:
-        series = kwargs.get("actual_series", None)
-    if series is None:
-        return
+    series = args[0] if len(args) > 0 else kwargs["actual_series"]
 
     autologging_client = MlflowAutologgingQueueingClient()
     run_id = active_run.info.run_id
