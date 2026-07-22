@@ -880,6 +880,38 @@ class TestMLflow:
         logged = [m.value for m in sorted(history, key=lambda m: m.step)]
         np.testing.assert_allclose(logged, ref, atol=1e-5)
 
+    def test_autolog_metric_aligns_time_axis_by_end_date(
+        self, mlflow_tracking, autolog_context
+    ):
+        """A shorter series' time axis aligns from the end, not the start, so
+        its steps overlap the tail of a longer series rather than the head."""
+        ts_long = self.ts_univariate  # length 50
+        ts_short = ts_long[10:]  # length 40, same end, starts 10 steps later
+
+        # distinct constant error per series, so a step's mean reveals exactly
+        # which series contributed to it
+        pred_long = ts_long + 1.0
+        pred_short = ts_short + 2.0
+
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                dm.ae([ts_long, ts_short], [pred_long, pred_short])
+
+        history = mlflow_tracking.get_metric_history(run.info.run_id, "ae")
+        by_step = {m.step: m.value for m in history}
+        assert len(by_step) == 50
+        for step in range(10):
+            assert by_step[step] == pytest.approx(1.0, abs=1e-4), step
+        for step in range(10, 50):
+            assert by_step[step] == pytest.approx(1.5, abs=1e-4), step
+
+        rows = self._read_per_series_table(run.info.run_id)
+        steps_by_series = {0: set(), 1: set()}
+        for r in rows:
+            steps_by_series[r["series_index"]].add(r["step"])
+        assert steps_by_series[0] == set(range(50))
+        assert steps_by_series[1] == set(range(10, 50))
+
     def test_autolog_metric_quantile(self, mlflow_tracking, autolog_context):
         """A quantile metric (mql) logs one key per quantile with matching values."""
         train = self.ts_univariate[:40]
@@ -1406,6 +1438,66 @@ class TestMLflow:
                 )
 
         assert not mlflow.get_run(run.info.run_id).data.metrics
+
+    def test_log_backtest_metrics_aligns_windows_by_end_date(self, mlflow_tracking):
+        """A shorter series' window axis aligns from the end, not the start,
+        so its windows overlap the tail of a longer series rather than the
+        head. Calls _log_backtest_metrics directly with a fabricated result
+        so the window counts per series are exact."""
+        backtest_args = {
+            "metric": dm.mae,
+            "metric_kwargs": {},
+            "series": [self.ts_univariate, self.ts_univariate],
+            "forecast_horizon": 1,
+            "reduction": None,
+            "last_points_only": False,
+        }
+        # series 0 has 5 windows; series 1 (shorter, later-starting) has 3
+        result = [np.array([1.0, 2.0, 3.0, 4.0, 5.0]), np.array([10.0, 20.0, 30.0])]
+
+        with mlflow.start_run() as run:
+            client = MlflowAutologgingQueueingClient()
+            _log_backtest_metrics(client, run.info.run_id, result, backtest_args)
+            client.flush(synchronous=True)
+
+        history = mlflow_tracking.get_metric_history(run.info.run_id, "backtest_mae")
+        logged = {m.step: m.value for m in history}
+        assert logged == pytest.approx({0: 1.0, 1: 2.0, 2: 6.5, 3: 12.0, 4: 17.5})
+
+        rows = self._read_per_series_table(run.info.run_id)
+        by_step = {(r["series_index"], r["step"]): r["value"] for r in rows}
+        assert by_step[(0, 0)] == pytest.approx(1.0)
+        assert by_step[(0, 4)] == pytest.approx(5.0)
+        assert by_step[(1, 2)] == pytest.approx(10.0)
+        assert by_step[(1, 4)] == pytest.approx(30.0)
+        assert (1, 0) not in by_step
+        assert (1, 1) not in by_step
+
+    def test_log_backtest_metrics_aligns_last_points_only_time_axis(
+        self, mlflow_tracking
+    ):
+        """last_points_only stitches windows into one series scored per real
+        timestep -- a separate code path from the window-axis case above that
+        needs the same end-date alignment."""
+        backtest_args = {
+            "metric": dm.ae,
+            "metric_kwargs": {},
+            "series": [self.ts_univariate, self.ts_univariate],
+            "forecast_horizon": 1,
+            "reduction": None,
+            "last_points_only": True,
+        }
+        # series 0 has 5 timesteps; series 1 (shorter, later-starting) has 3
+        result = [np.array([1.0, 2.0, 3.0, 4.0, 5.0]), np.array([10.0, 20.0, 30.0])]
+
+        with mlflow.start_run() as run:
+            client = MlflowAutologgingQueueingClient()
+            _log_backtest_metrics(client, run.info.run_id, result, backtest_args)
+            client.flush(synchronous=True)
+
+        history = mlflow_tracking.get_metric_history(run.info.run_id, "backtest_ae")
+        logged = {m.step: m.value for m in history}
+        assert logged == pytest.approx({0: 1.0, 1: 2.0, 2: 6.5, 3: 12.0, 4: 17.5})
 
     @staticmethod
     def _read_per_series_table(run_id):
