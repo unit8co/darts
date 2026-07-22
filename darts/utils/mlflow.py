@@ -107,27 +107,6 @@ FLAVOR_NAME = "darts"
 _MODEL_FILE_STAT = "model.pkl"
 _MODEL_FILE_TORCH = "model.pt"
 
-_covariate_types = [
-    (
-        "past_covariates",
-        "uses_past_covariates",
-        "past_covariate_series",
-        "components",
-    ),
-    (
-        "future_covariates",
-        "uses_future_covariates",
-        "future_covariate_series",
-        "components",
-    ),
-    (
-        "static_covariates",
-        "uses_static_covariates",
-        "static_covariates",
-        "columns",
-    ),
-]
-
 # Thread-local flags used by _patched_fit to suppress nested/re-entrant
 # autologging: in_historical_forecasts covers historical_forecasts' internal
 # fit() calls, in_fit covers nested fit() calls (e.g. ensembles, super()),
@@ -608,7 +587,13 @@ def _autolog(
         if log_params:
             # Log the parameters for model creation
             autologging_client.log_params(run_id=run_id, params=self.model_params)
-            _log_covariate_info(self)
+            fit_args = inspect.signature(original).bind(self, *args, **kwargs).arguments
+            _log_covariate_info(
+                self,
+                series=fit_args.get("series"),
+                past_covariates=fit_args.get("past_covariates"),
+                future_covariates=fit_args.get("future_covariates"),
+            )
 
         param_logging_ops = autologging_client.flush(synchronous=False)
 
@@ -755,11 +740,11 @@ def _get_model_info_tags(model: ForecastingModel) -> dict[str, Any]:
     }
 
 
-def _log_covariate_info(model: ForecastingModel) -> None:
+def _log_covariate_info(model, series, past_covariates, future_covariates) -> None:
     """Log covariate usage information to MLflow.
 
     Extracts information about past, future, and static covariates used during
-    training and logs them as tags, parameters, and a JSON artifact for easy
+    training and logs them as a JSON artifact for easy
     filtering, comparison, and documentation.
 
     Logs three types of information:
@@ -771,17 +756,42 @@ def _log_covariate_info(model: ForecastingModel) -> None:
     ----------
     model
         A fitted Darts forecasting model instance.
+    series
+        The ``series`` argument passed to ``fit()``: a single ``TimeSeries``
+        or a ``Sequence[TimeSeries]``.
+    past_covariates
+        The past covariate argument passed to ``fit()``, or
+        ``None``.
+    future_covariates
+        The future covariate covariate argument passed to ``fit()``, or
+        ``None``.
     """
-
     covariate_info = {
-        cov_key: _extract_covariate_metadata(model, uses_attr, series_attr, names_attr)
-        for cov_key, uses_attr, series_attr, names_attr in _covariate_types
+        "past_covariates": _extract_covariate_metadata(
+            model.uses_past_covariates,
+            get_single_series(past_covariates),
+            "components",
+        ),
+        "future_covariates": _extract_covariate_metadata(
+            model.uses_future_covariates,
+            get_single_series(future_covariates),
+            "components",
+        ),
     }
 
-    if model.uses_static_covariates and model.static_covariates is not None:
-        covariate_info["static_covariates"]["is_global"] = len(
-            model.static_covariates
-        ) != len(model.static_covariates.columns)
+    first_series = get_single_series(series)
+    static_covariates = (
+        first_series.static_covariates if first_series is not None else None
+    )
+    covariate_info["static_covariates"] = _extract_covariate_metadata(
+        model.uses_static_covariates, static_covariates, "columns"
+    )
+    if model.uses_static_covariates and static_covariates is not None:
+        # static covariates are global (one shared row) unless there is one row
+        # per series component, in which case they are component-specific
+        covariate_info["static_covariates"]["is_global"] = (
+            len(static_covariates) != first_series.n_components
+        )
 
     # log complete information as JSON artifact
     mlflow.log_dict(covariate_info, "covariates.json")
@@ -803,21 +813,20 @@ def _is_torch_model(model) -> bool:
     return TORCH_AVAILABLE and isinstance(model, TorchForecastingModel)
 
 
-def _extract_covariate_metadata(
-    model: ForecastingModel, uses_attr: str, series_attr: str, names_attr: str
-) -> dict:
-    """Extract metadata for a single covariate type.
+def _extract_covariate_metadata(uses: bool, single_cov, names_attr: str) -> dict:
+    """Extract metadata for a single covariate type from its (already
+    singular) value.
 
     Parameters
     ----------
-    model
-        A Darts forecasting model instance.
-    uses_attr : str
-        Model attribute name indicating covariate usage.
-    series_attr : str
-        Model attribute name for the covariate series.
+    uses
+        Whether the model uses this covariate type.
+    single_cov
+        The covariate's value for one series: a ``TimeSeries`` (past/future
+        covariates) or a static-covariates ``DataFrame``, or ``None``.
     names_attr : str
-        Series attribute name for feature names ("components" or "columns").
+        Attribute holding the feature names ("components" for a
+        ``TimeSeries``, "columns" for a static-covariates ``DataFrame``).
 
     Returns
     -------
@@ -826,11 +835,10 @@ def _extract_covariate_metadata(
     """
     info = {"used": False, "count": 0, "names": []}
 
-    if getattr(model, uses_attr, False):
+    if uses:
         info["used"] = True
-        series = getattr(model, series_attr, None)
-        if series is not None:
-            names = getattr(series, names_attr).tolist()
+        if single_cov is not None:
+            names = getattr(single_cov, names_attr).tolist()
             info["names"] = names
             info["count"] = len(names)
 
