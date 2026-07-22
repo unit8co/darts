@@ -929,13 +929,13 @@ def _log_backtest_metrics(
 
     # check the dim axes from the metric kwargs for each
     metric_axes = [_infer_metric_axes(m, kw) for m, kw in zip(metric, metric_kwargs)]
-    has_time_axis, has_comp_axis, quantiles_labels_0 = metric_axes[0]
-    quantiles_num = len(quantiles_labels_0)
+    has_time_axis, has_comp_axis, axis_labels_0 = metric_axes[0]
+    axis_size = len(axis_labels_0)
 
     # Inconsistent axes across metrics (different has_time_axis, has_comp_axis, or
-    # quantiles_num) means the result can't be reshaped into a single canonical array.
+    # axis_size) means the result can't be reshaped into a single canonical array.
     # Fall back to flat integer-indexed keys for this case.
-    axes_key = (has_time_axis, has_comp_axis, quantiles_num)
+    axes_key = (has_time_axis, has_comp_axis, axis_size)
     axes_inconsistent = any(
         (ax[0], ax[1], len(ax[2])) != axes_key for ax in metric_axes[1:]
     )
@@ -982,7 +982,7 @@ def _log_backtest_metrics(
         for s, r in zip(series_seq, results):
             comps = s.components.tolist()
             # c_size = components × quantiles/intervals/labels per component
-            c_size = (s.n_components if has_comp_axis else 1) * quantiles_num
+            c_size = (s.n_components if has_comp_axis else 1) * axis_size
             arr = np.asarray(r, dtype=float)
             # after stripping C and M axes, rest = W*T (or W or T alone)
             rest, extra = divmod(arr.size, c_size * n_metrics)
@@ -1045,19 +1045,21 @@ def _log_backtest_metrics(
             w_offset = max_w_size - w_size if has_windows else 0
             t_offset = max_t_size - t_size if t_axis_is_calendar else 0
             for m, metric_name in enumerate(metric_names):
-                quantiles_labels = metric_axes[m][2]
+                axis_labels = metric_axes[m][2]
                 for w in range(w_size):
                     aligned_w = w + w_offset
                     for c in range(c_size):
-                        # c is a flat index into the (n_components × quantiles_num) C axis:
-                        # c = comp_i * quantiles_num + q_i
-                        component_index, quantile_index = divmod(c, quantiles_num)
+                        # c is a flat index into the (n_components × axis_size) C axis:
+                        # c = comp_i * axis_size + axis_idx
+                        component_index, axis_idx = divmod(c, axis_size)
                         comp_part = (
                             "_" + _sanitize_mlflow_key(comps[component_index])
                             if has_comp_axis
                             else ""
                         )
-                        key = f"backtest_{metric_name}{comp_part}{quantiles_labels[quantile_index]}"
+                        key = (
+                            f"backtest_{metric_name}{comp_part}{axis_labels[axis_idx]}"
+                        )
                         if has_time_axis and has_windows:
                             key += f"_w{aligned_w}"
                         key = _sanitize_mlflow_key(key)
@@ -1105,12 +1107,12 @@ def _infer_metric_axes(metric: Callable, metric_kwargs: dict) -> tuple:
     Returns
     -------
     tuple
-        ``(has_time_axis, has_comp_axis, quantiles_labels)`` where
+        ``(has_time_axis, has_comp_axis, axis_labels)`` where
 
         - ``has_time_axis`` – ``True`` when ``time_reduction`` is ``None`` (i.e. a
           per-timestep axis is present in the output).
         - ``has_comp_axis`` – ``True`` when components are expanded (not collapsed to a scalar).
-        - ``quantiles_labels`` – one key suffix per quantile/interval/label entry.
+        - ``axis_labels`` – one key suffix per quantile/interval/label entry.
 
     Raises
     ------
@@ -1133,11 +1135,9 @@ def _infer_metric_axes(metric: Callable, metric_kwargs: dict) -> tuple:
     q_interval, q = metric_kwargs.get("q_interval"), metric_kwargs.get("q")
     if "q_interval" in params and q_interval is not None:
         intervals = np.atleast_2d(np.array(q_interval, dtype=float))
-        quantiles_labels = [f"_qi_{100 * (hi - lo):.3f}" for lo, hi in intervals]
+        axis_labels = [f"_qi_{100 * (hi - lo):.3f}" for lo, hi in intervals]
     elif "q" in params and q is not None:
-        quantiles_labels = [
-            f"_q{v:.3f}" for v in np.atleast_1d(np.array(q, dtype=float))
-        ]
+        axis_labels = [f"_q{v:.3f}" for v in np.atleast_1d(np.array(q, dtype=float))]
     elif "label_reduction" in params and getattr(metric, "__name__", ""):
         label_reduction = effective("label_reduction")
         if isinstance(label_reduction, _LabelReduction):
@@ -1153,15 +1153,15 @@ def _infer_metric_axes(metric: Callable, metric_kwargs: dict) -> tuple:
                     "labels cannot be determined ahead of time otherwise)."
                 )
             )
-        quantiles_labels = (
+        axis_labels = (
             [f"_label{x}" for x in np.atleast_1d(labels)]
             if label_reduction is None
             else [""]
         )
     else:
-        quantiles_labels = [""]
+        axis_labels = [""]
 
-    return (has_time_axis, has_comp_axis, quantiles_labels)
+    return (has_time_axis, has_comp_axis, axis_labels)
 
 
 def _log_metric_result(
@@ -1172,7 +1172,7 @@ def _log_metric_result(
     series,
     has_time_axis: bool,
     has_comp_axis: bool,
-    quantiles_labels: list[str],
+    axis_labels: list[str],
     series_reduced: bool = False,
 ) -> None:
     """Log a metric result to the active MLflow run.
@@ -1225,13 +1225,13 @@ def _log_metric_result(
         ``True`` when the result carries a per-timestep axis (``time_reduction=None``).
     has_comp_axis
         ``True`` when components are expanded (``component_reduction=None``).
-    quantiles_labels
+    axis_labels
         One key suffix per quantile/interval/label entry.
     series_reduced
         ``True`` when ``series_reduction`` collapsed the series axis inside the
         metric, so the result has no leading series axis even for list input.
     """
-    quantiles_num = len(quantiles_labels)
+    axis_size = len(axis_labels)
 
     if series_reduced:
         # series_reduction aggregated across series -> single result, no series axis
@@ -1249,7 +1249,7 @@ def _log_metric_result(
     for s, r in zip(series_seq, results):
         comps = s.components.tolist()
         # c_size = components × quantiles/intervals/labels per component
-        c_size = (s.n_components if has_comp_axis else 1) * quantiles_num
+        c_size = (s.n_components if has_comp_axis else 1) * axis_size
         arr = np.asarray(r, dtype=float)
         # after stripping the C axis, the remainder is the time axis (or scalar)
         n_times, extra = divmod(arr.size, c_size)
@@ -1289,17 +1289,15 @@ def _log_metric_result(
     for series_index, (comps, c_size, t_size, canonical) in enumerate(series_shapes):
         step_offset = max_t_size - t_size if has_time_axis else 0
         for c in range(c_size):
-            # c is a flat index into the (n_components × quantiles_num) C axis:
-            # c = comp_i * quantiles_num + q_i
-            component_index, quantile_index = divmod(c, quantiles_num)
+            # c is a flat index into the (n_components × axis_size) C axis:
+            # c = comp_i * axis_size + axis_idx
+            component_index, axis_idx = divmod(c, axis_size)
             comp_part = (
                 "_" + _sanitize_mlflow_key(comps[component_index])
                 if has_comp_axis
                 else ""
             )
-            key = _sanitize_mlflow_key(
-                metric_name + comp_part + quantiles_labels[quantile_index]
-            )
+            key = _sanitize_mlflow_key(metric_name + comp_part + axis_labels[axis_idx])
             for t in range(t_size):
                 # MLflow step maps to the time axis when present
                 step = t + step_offset if has_time_axis else 0
@@ -1400,7 +1398,7 @@ def _mlflow_metric_callback(func, result, args, kwargs) -> None:
     key_name = _sanitize_mlflow_key(kwargs.get("name") or func.__name__)
 
     # infer output axes from the metric signature + call kwargs
-    has_time_axis, has_comp_axis, quantiles_labels = _infer_metric_axes(func, kwargs)
+    has_time_axis, has_comp_axis, axis_labels = _infer_metric_axes(func, kwargs)
 
     # series_reduction collapses the series axis inside the metric, so the
     # result has no leading series axis even for list input.
@@ -1420,6 +1418,6 @@ def _mlflow_metric_callback(func, result, args, kwargs) -> None:
         series,
         has_time_axis,
         has_comp_axis,
-        quantiles_labels,
+        axis_labels,
         series_reduced=series_reduced,
     )
