@@ -1172,6 +1172,38 @@ class TestMLflow:
         logged = [m.value for m in sorted(history, key=lambda m: m.step)]
         np.testing.assert_allclose(logged, ref[0], atol=1e-5)
 
+    def test_autolog_backtest_historical_forecasts_horizon_inferred(
+        self, mlflow_tracking, autolog_context
+    ):
+        """When `historical_forecasts` is user-supplied, `backtest()` ignores the
+        `forecast_horizon` argument, autologging must infer the true window
+        length from the historical forecasts themselves, not from the (unused,
+        defaulted) `forecast_horizon` argument."""
+        model = self._fit_lr()
+        hf = model.historical_forecasts(
+            self.ts_univariate,
+            retrain=False,
+            stride=10,
+            forecast_horizon=4,
+            last_points_only=False,
+        )
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                # forecast_horizon is not passed (defaults to 1) and would be
+                # wrong; the real horizon (4) must come from `hf`.
+                ref = model.backtest(
+                    self.ts_univariate,
+                    historical_forecasts=hf,
+                    metric=dm.ae,
+                    reduction=None,
+                )
+
+        ref = np.asarray(ref, dtype=float)  # shape (n_windows, forecast_horizon)
+        history = mlflow_tracking.get_metric_history(run.info.run_id, "backtest_ae_w0")
+        assert len(history) == 4, "Expected one step per forecast horizon timestep"
+        logged = [m.value for m in sorted(history, key=lambda m: m.step)]
+        np.testing.assert_allclose(logged, ref[0], atol=1e-5)
+
     def test_autolog_backtest_quantile(self, mlflow_tracking, autolog_context):
         """A quantile metric (mql) logs one key per quantile."""
         with autolog_context(log_metrics=True):
