@@ -459,9 +459,13 @@ def autolog(
     """
     # Enable/disable mlflow.pytorch.autolog for per-epoch metrics on torch models.
     # This must happen outside the @autologging_integration-decorated _autolog()
-    # because the decorator short-circuits on disable=True before the function
-    # body executes, and MLflow's session manager suppresses nested autolog
-    # patches if called from within a safe_patch context.
+    # because that decorator short-circuits _autolog()'s body entirely when
+    # disable=True, so a call placed inside it would never run. Unlike
+    # mlflow.sklearn, which exposes a private, undecorated _autolog(flavor_name=...)
+    # that other flavors (e.g. xgboost) call to tag its patches under their own
+    # integration name for cleanup, mlflow.pytorch has no such hook: its autolog()
+    # hardcodes its own patches under "pytorch", so darts can't fold pytorch's
+    # patch lifecycle into its own and must call mlflow.pytorch.autolog() directly.
     if log_torch_metrics and not disable:
         try:
             import mlflow.pytorch
