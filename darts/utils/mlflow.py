@@ -865,13 +865,11 @@ def _log_backtest_metrics(
     ``_log_metric_result``). For a single series the mean is just the value
     itself and no artifact is written.
 
-    Series of different lengths are assumed to share the same end date. Any
-    axis mapping to real dates -- the window axis (``has_windows``), or the
-    per-timestep axis when ``last_points_only`` stitches windows into one
-    series -- is aligned from the end rather than the start, so a shorter
-    series lines up on its last entry instead of its first. The
-    per-horizon-step axis is left as-is, since it means "steps ahead" rather
-    than a real date.
+    Series of different lengths are assumed to share the same end date, so any
+    axis mapping to real dates (the window axis, or the per-timestep axis
+    when ``last_points_only`` stitches windows into one series) is aligned
+    from the end rather than the start. The per-horizon-step axis is left
+    as-is, since it means "steps ahead" rather than a real date.
 
     Raises
     ------
