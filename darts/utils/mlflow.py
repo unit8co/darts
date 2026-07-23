@@ -370,7 +370,9 @@ def autolog(
         MLflow ``step``. For a list of series the logged value is
         ``agg_func`` applied over series, and the full per-series breakdown
         for every metric/backtest call in the run is appended to a single
-        ``metrics_per_series.json`` table artifact.
+        ``metrics_per_series.json`` table artifact. All series scored
+        together in one call must have the same number of components;
+        component names are taken from the first series.
 
     Parameters
     ----------
@@ -882,7 +884,9 @@ def _log_backtest_metrics(
     applied over series for each cell, and the granular per-series breakdown
     is appended to the run's ``metrics_per_series.json`` table artifact
     (shared with ``_log_metric_result``). For a single series the aggregate
-    is just the value itself and no artifact is written.
+    is just the value itself and no artifact is written. All series scored
+    together must have the same number of components; names are taken from
+    the first series.
 
     Series of different lengths are assumed to share the same end date, so any
     axis mapping to real dates (the window axis, or the per-timestep axis
@@ -894,7 +898,8 @@ def _log_backtest_metrics(
     ------
     ValueError
         On a shape/size mismatch between the metric result and the inferred
-        axes, or when ``label_reduction=None`` is requested without explicit
+        axes, when series in a sequence have different numbers of components,
+        or when ``label_reduction=None`` is requested without explicit
         ``labels``.
 
     Parameters
@@ -977,13 +982,21 @@ def _log_backtest_metrics(
 
     series_seq = series2seq(series)
     results = [result] if get_series_seq_type(series) == SeriesType.SINGLE else result
+    n_components = {s.n_components for s in series_seq}
+    if len(n_components) > 1:
+        raise_log(
+            ValueError(
+                "Backtest metric logging failed: all series must have the same "
+                f"number of components, got {sorted(n_components)}."
+            )
+        )
 
     # agg maps (key, step) -> per-series values, aggregated into the logged metric.
     agg: dict[tuple[str, int], list[float]] = {}
     rows: list[dict] = []
 
     if axes_inconsistent:
-        for series_index, (s, r) in enumerate(zip(series_seq, results)):
+        for series_index, r in enumerate(results):
             name_prefix = metric_names[0] if len(metric_names) == 1 else "metrics"
             flat = np.asarray(r, dtype=float).flatten()
             for i, val in enumerate(flat):
@@ -997,13 +1010,35 @@ def _log_backtest_metrics(
                     "value": value,
                 })
     else:
+        # component names/count from the first series (all series share n_components)
+        comps = series_seq[0].components.tolist()
+        # c_size = components × quantiles/intervals/labels per component
+        c_size = (series_seq[0].n_components if has_comp_axis else 1) * axis_size
+        # base_keys[m][c]: sanitized key without the optional window suffix
+        base_keys = []
+        for m, metric_name in enumerate(metric_names):
+            axis_labels = metric_axes[m][2]
+            keys_m = []
+            for c in range(c_size):
+                # c is a flat index into the (n_components × axis_size) C axis:
+                # c = comp_i * axis_size + axis_idx
+                component_index, axis_idx = divmod(c, axis_size)
+                comp_part = (
+                    "_" + _sanitize_mlflow_key(comps[component_index])
+                    if has_comp_axis
+                    else ""
+                )
+                keys_m.append(
+                    _sanitize_mlflow_key(
+                        f"backtest_{metric_name}{comp_part}{axis_labels[axis_idx]}"
+                    )
+                )
+            base_keys.append(keys_m)
+
         # first pass: reshape each series' result into a canonical (W, T, C, M)
         # array, recording its window-axis length for the alignment pass below.
         series_shapes = []
-        for s, r in zip(series_seq, results):
-            comps = s.components.tolist()
-            # c_size = components × quantiles/intervals/labels per component
-            c_size = (s.n_components if has_comp_axis else 1) * axis_size
+        for r in results:
             arr = np.asarray(r, dtype=float)
             # after stripping C and M axes, rest = W*T (or W or T alone)
             rest, extra = divmod(arr.size, c_size * n_metrics)
@@ -1048,42 +1083,31 @@ def _log_backtest_metrics(
                     )
                 t_size, w_size = 1, 1
 
-            canonical = arr.reshape(w_size, t_size, c_size, n_metrics)
-            series_shapes.append((comps, c_size, t_size, w_size, canonical))
+            series_shapes.append((
+                t_size,
+                w_size,
+                arr.reshape(w_size, t_size, c_size, n_metrics),
+            ))
 
         # align the calendar-relative axes from the end
-        max_w_size = max((w_size for _, _, _, w_size, _ in series_shapes), default=0)
+        max_w_size = max((w_size for _, w_size, _ in series_shapes), default=0)
         t_axis_is_calendar = has_time_axis and not has_windows and last_points_only
         max_t_size = (
-            max((t_size for _, _, t_size, _, _ in series_shapes), default=0)
+            max((t_size for t_size, _, _ in series_shapes), default=0)
             if t_axis_is_calendar
             else 0
         )
 
-        for series_index, (comps, c_size, t_size, w_size, canonical) in enumerate(
-            series_shapes
-        ):
+        for series_index, (t_size, w_size, canonical) in enumerate(series_shapes):
             w_offset = max_w_size - w_size if has_windows else 0
             t_offset = max_t_size - t_size if t_axis_is_calendar else 0
-            for m, metric_name in enumerate(metric_names):
-                axis_labels = metric_axes[m][2]
+            for m in range(n_metrics):
                 for w in range(w_size):
                     aligned_w = w + w_offset
                     for c in range(c_size):
-                        # c is a flat index into the (n_components × axis_size) C axis:
-                        # c = comp_i * axis_size + axis_idx
-                        component_index, axis_idx = divmod(c, axis_size)
-                        comp_part = (
-                            "_" + _sanitize_mlflow_key(comps[component_index])
-                            if has_comp_axis
-                            else ""
-                        )
-                        key = (
-                            f"backtest_{metric_name}{comp_part}{axis_labels[axis_idx]}"
-                        )
+                        key = base_keys[m][c]
                         if has_time_axis and has_windows:
-                            key += f"_w{aligned_w}"
-                        key = _sanitize_mlflow_key(key)
+                            key = f"{key}_w{aligned_w}"
                         for t in range(t_size):
                             # MLflow step maps to the axis the UI should chart:
                             # time when present, otherwise window index
@@ -1231,7 +1255,8 @@ def _log_metric_result(
     ------
     ValueError
         On a shape/size mismatch between the metric result and the inferred
-        axes.
+        axes, or when series in a sequence have different numbers of
+        components.
 
     Parameters
     ----------
@@ -1243,6 +1268,8 @@ def _log_metric_result(
     series
         The ``actual_series`` argument passed to the metric (single series or
         ``Sequence[TimeSeries]``); used for component names and series count.
+        All series in a sequence must have the same number of components;
+        names are taken from the first series.
     has_time_axis
         ``True`` when the result carries a per-timestep axis (``time_reduction=None``).
     has_comp_axis
@@ -1268,14 +1295,36 @@ def _log_metric_result(
         results = (
             [result] if get_series_seq_type(series) == SeriesType.SINGLE else result
         )
+        n_components = {s.n_components for s in series_seq}
+        if len(n_components) > 1:
+            raise_log(
+                ValueError(
+                    f"Metric logging failed for `{metric_name}`: all series must "
+                    f"have the same number of components, got "
+                    f"{sorted(n_components)}."
+                )
+            )
+
+    # component names/count from the first series (all series share n_components)
+    comps = series_seq[0].components.tolist()
+    # c_size = components × quantiles/intervals/labels per component
+    c_size = (series_seq[0].n_components if has_comp_axis else 1) * axis_size
+    keys = []
+    for c in range(c_size):
+        # c is a flat index into the (n_components × axis_size) C axis:
+        # c = comp_i * axis_size + axis_idx
+        component_index, axis_idx = divmod(c, axis_size)
+        comp_part = (
+            "_" + _sanitize_mlflow_key(comps[component_index]) if has_comp_axis else ""
+        )
+        keys.append(
+            _sanitize_mlflow_key(metric_name + comp_part + axis_labels[axis_idx])
+        )
 
     # first pass: reshape each series' result into a canonical (T, C) array,
     # recording its time-axis length for the alignment pass below.
     series_shapes = []
-    for s, r in zip(series_seq, results):
-        comps = s.components.tolist()
-        # c_size = components × quantiles/intervals/labels per component
-        c_size = (s.n_components if has_comp_axis else 1) * axis_size
+    for r in results:
         arr = np.asarray(r, dtype=float)
         # after stripping the C axis, the remainder is the time axis (or scalar)
         n_times, extra = divmod(arr.size, c_size)
@@ -1303,27 +1352,17 @@ def _log_metric_result(
         else:
             t_size = 1
 
-        canonical = arr.reshape(t_size, c_size)
-        series_shapes.append((comps, c_size, t_size, canonical))
+        series_shapes.append((t_size, arr.reshape(t_size, c_size)))
 
     # align the time axis from the end (see docstring)
-    max_t_size = max((t_size for _, _, t_size, _ in series_shapes), default=0)
+    max_t_size = max((t_size for t_size, _ in series_shapes), default=0)
 
     # agg maps (key, step) -> per-series values, aggregated into the logged metric.
     agg: dict[tuple[str, int], list[float]] = {}
     rows: list[dict] = []
-    for series_index, (comps, c_size, t_size, canonical) in enumerate(series_shapes):
+    for series_index, (t_size, canonical) in enumerate(series_shapes):
         step_offset = max_t_size - t_size if has_time_axis else 0
-        for c in range(c_size):
-            # c is a flat index into the (n_components × axis_size) C axis:
-            # c = comp_i * axis_size + axis_idx
-            component_index, axis_idx = divmod(c, axis_size)
-            comp_part = (
-                "_" + _sanitize_mlflow_key(comps[component_index])
-                if has_comp_axis
-                else ""
-            )
-            key = _sanitize_mlflow_key(metric_name + comp_part + axis_labels[axis_idx])
+        for c, key in enumerate(keys):
             for t in range(t_size):
                 # MLflow step maps to the time axis when present
                 step = t + step_offset if has_time_axis else 0

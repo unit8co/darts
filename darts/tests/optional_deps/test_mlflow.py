@@ -1104,6 +1104,22 @@ class TestMLflow:
             assert got[("f1_label0", i)] == pytest.approx(ref[i][0], abs=1e-5)
             assert got[("f1_label1", i)] == pytest.approx(ref[i][1], abs=1e-5)
 
+    def test_autolog_metric_component_count_mismatch_raises(
+        self, mlflow_tracking, autolog_context
+    ):
+        """A list of series with different numbers of components raises rather
+        than taking component names from the first series only and silently
+        mislabeling the rest."""
+        series = [self.ts_univariate, self.ts_multivariate]
+        pred = [s * 1.1 for s in series]
+
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                with pytest.raises(ValueError, match="same number of components"):
+                    dm.mae(series, pred)
+
+        assert not mlflow.get_run(run.info.run_id).data.metrics
+
     def test_autolog_metric_size_mismatch_raises(
         self, mlflow_tracking, autolog_context, caplog
     ):
@@ -1443,6 +1459,32 @@ class TestMLflow:
         assert "backtest_f1_label10" in m
         assert np.isnan(m["backtest_f1_label5"])
         assert np.isnan(m["backtest_f1_label10"])
+
+    def test_log_backtest_metrics_component_count_mismatch_raises(
+        self, mlflow_tracking
+    ):
+        """A list of series with different numbers of components raises rather
+        than taking component names from the first series only.
+
+        Calls _log_backtest_metrics directly so the raise is not swallowed by
+        MLflow's safe_patch wrapper.
+        """
+        backtest_args = {
+            "metric": dm.mae,
+            "metric_kwargs": {},
+            "series": [self.ts_univariate, self.ts_multivariate],
+            "forecast_horizon": 1,
+            "reduction": np.mean,
+            "last_points_only": True,
+        }
+        result = [1.0, np.array([1.0, 2.0])]
+
+        with mlflow.start_run() as run:
+            client = MlflowAutologgingQueueingClient()
+            with pytest.raises(ValueError, match="same number of components"):
+                _log_backtest_metrics(client, run.info.run_id, result, backtest_args)
+
+        assert not mlflow.get_run(run.info.run_id).data.metrics
 
     def test_log_backtest_metrics_unknown_labels_raises(self, mlflow_tracking):
         """label_reduction=None without explicit labels raises rather than
