@@ -318,8 +318,15 @@ def log_model(model, **kwargs):
     are used to support serving and input validation in the MLflow pyfunc
     flavor, which is not implemented for darts models.
     """
+    # MLflow still requires "artifact_path" to be provided (it has no default),
+    # but it is deprecated in favour of "name". Accept it via kwargs for
+    # compatibility, defaulting to None so callers can use "name" alone.
+    artifact_path = kwargs.pop("artifact_path", None)
     return Model.log(
-        artifact_path=None, flavor=sys.modules[__name__], model=model, **kwargs
+        artifact_path,
+        flavor=sys.modules[__name__],
+        model=model,
+        **kwargs,
     )
 
 
