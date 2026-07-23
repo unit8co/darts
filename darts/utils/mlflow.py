@@ -370,9 +370,10 @@ def autolog(
         MLflow ``step``. For a list of series the logged value is
         ``agg_func`` applied over series, and the full per-series breakdown
         for every metric/backtest call in the run is appended to a single
-        ``metrics_per_series.json`` table artifact. All series scored
-        together in one call must have the same number of components;
-        component names are taken from the first series.
+        ``metrics_per_series.json`` table artifact. When components are
+        preserved (``component_reduction=None``), all series scored together
+        must have the same number of components; names are taken from the
+        first series.
 
     Parameters
     ----------
@@ -884,9 +885,10 @@ def _log_backtest_metrics(
     applied over series for each cell, and the granular per-series breakdown
     is appended to the run's ``metrics_per_series.json`` table artifact
     (shared with ``_log_metric_result``). For a single series the aggregate
-    is just the value itself and no artifact is written. All series scored
-    together must have the same number of components; names are taken from
-    the first series.
+    is just the value itself and no artifact is written. When components
+    are preserved (``component_reduction=None``), all series scored together
+    must have the same number of components; names are taken from the first
+    series.
 
     Series of different lengths are assumed to share the same end date, so any
     axis mapping to real dates (the window axis, or the per-timestep axis
@@ -898,9 +900,9 @@ def _log_backtest_metrics(
     ------
     ValueError
         On a shape/size mismatch between the metric result and the inferred
-        axes, when series in a sequence have different numbers of components,
-        or when ``label_reduction=None`` is requested without explicit
-        ``labels``.
+        axes, when ``component_reduction=None`` and series in a sequence have
+        different numbers of components, or when ``label_reduction=None`` is
+        requested without explicit ``labels``.
 
     Parameters
     ----------
@@ -982,14 +984,16 @@ def _log_backtest_metrics(
 
     series_seq = series2seq(series)
     results = [result] if get_series_seq_type(series) == SeriesType.SINGLE else result
-    n_components = {s.n_components for s in series_seq}
-    if len(n_components) > 1:
-        raise_log(
-            ValueError(
-                "Backtest metric logging failed: all series must have the same "
-                f"number of components, got {sorted(n_components)}."
+    # component names are only used when the metric preserves components
+    if has_comp_axis:
+        n_components = {s.n_components for s in series_seq}
+        if len(n_components) > 1:
+            raise_log(
+                ValueError(
+                    "Backtest metric logging failed: all series must have the same "
+                    f"number of components, got {sorted(n_components)}."
+                )
             )
-        )
 
     # agg maps (key, step) -> per-series values, aggregated into the logged metric.
     agg: dict[tuple[str, int], list[float]] = {}
@@ -1255,8 +1259,8 @@ def _log_metric_result(
     ------
     ValueError
         On a shape/size mismatch between the metric result and the inferred
-        axes, or when series in a sequence have different numbers of
-        components.
+        axes, or when ``has_comp_axis`` is ``True`` and series in a sequence
+        have different numbers of components.
 
     Parameters
     ----------
@@ -1268,8 +1272,8 @@ def _log_metric_result(
     series
         The ``actual_series`` argument passed to the metric (single series or
         ``Sequence[TimeSeries]``); used for component names and series count.
-        All series in a sequence must have the same number of components;
-        names are taken from the first series.
+        When ``has_comp_axis`` is ``True``, all series in a sequence must have
+        the same number of components; names are taken from the first series.
     has_time_axis
         ``True`` when the result carries a per-timestep axis (``time_reduction=None``).
     has_comp_axis
@@ -1295,15 +1299,17 @@ def _log_metric_result(
         results = (
             [result] if get_series_seq_type(series) == SeriesType.SINGLE else result
         )
-        n_components = {s.n_components for s in series_seq}
-        if len(n_components) > 1:
-            raise_log(
-                ValueError(
-                    f"Metric logging failed for `{metric_name}`: all series must "
-                    f"have the same number of components, got "
-                    f"{sorted(n_components)}."
+        # component names are only used when the metric preserves components
+        if has_comp_axis:
+            n_components = {s.n_components for s in series_seq}
+            if len(n_components) > 1:
+                raise_log(
+                    ValueError(
+                        f"Metric logging failed for `{metric_name}`: all series must "
+                        f"have the same number of components, got "
+                        f"{sorted(n_components)}."
+                    )
                 )
-            )
 
     # component names/count from the first series (all series share n_components)
     comps = series_seq[0].components.tolist()

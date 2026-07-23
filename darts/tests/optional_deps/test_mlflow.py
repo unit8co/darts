@@ -1104,19 +1104,33 @@ class TestMLflow:
             assert got[("f1_label0", i)] == pytest.approx(ref[i][0], abs=1e-5)
             assert got[("f1_label1", i)] == pytest.approx(ref[i][1], abs=1e-5)
 
+    def test_autolog_metric_component_count_mismatch_allowed_when_reduced(
+        self, mlflow_tracking, autolog_context
+    ):
+        """Default mae reduces components to scalars, so mixed component counts
+        are valid and log under a single aggregated key."""
+        series = [self.ts_univariate, self.ts_multivariate]
+        pred = [s * 1.1 for s in series]
+
+        with autolog_context(log_metrics=True):
+            with mlflow.start_run() as run:
+                ref = dm.mae(series, pred)
+
+        m = mlflow.get_run(run.info.run_id).data.metrics
+        assert m["mae"] == pytest.approx(float(np.mean(ref)), abs=1e-5)
+
     def test_autolog_metric_component_count_mismatch_raises(
         self, mlflow_tracking, autolog_context
     ):
-        """A list of series with different numbers of components raises rather
-        than taking component names from the first series only and silently
-        mislabeling the rest."""
+        """When components are preserved, mixed component counts raise rather
+        than taking names from the first series and mislabeling the rest."""
         series = [self.ts_univariate, self.ts_multivariate]
         pred = [s * 1.1 for s in series]
 
         with autolog_context(log_metrics=True):
             with mlflow.start_run() as run:
                 with pytest.raises(ValueError, match="same number of components"):
-                    dm.mae(series, pred)
+                    dm.mae(series, pred, component_reduction=None)
 
         assert not mlflow.get_run(run.info.run_id).data.metrics
 
@@ -1460,18 +1474,41 @@ class TestMLflow:
         assert np.isnan(m["backtest_f1_label5"])
         assert np.isnan(m["backtest_f1_label10"])
 
+    def test_log_backtest_metrics_component_count_mismatch_allowed_when_reduced(
+        self, mlflow_tracking
+    ):
+        """Default mae reduces components to scalars, so mixed component counts
+        aggregate normally. Calls _log_backtest_metrics directly."""
+        backtest_args = {
+            "metric": dm.mae,
+            "metric_kwargs": {},
+            "series": [self.ts_univariate, self.ts_multivariate],
+            "forecast_horizon": 1,
+            "reduction": np.mean,
+            "last_points_only": True,
+        }
+        result = [1.0, 3.0]
+
+        with mlflow.start_run() as run:
+            client = MlflowAutologgingQueueingClient()
+            _log_backtest_metrics(client, run.info.run_id, result, backtest_args)
+            client.flush(synchronous=True)
+
+        m = mlflow.get_run(run.info.run_id).data.metrics
+        assert m["backtest_mae"] == pytest.approx(2.0)
+
     def test_log_backtest_metrics_component_count_mismatch_raises(
         self, mlflow_tracking
     ):
-        """A list of series with different numbers of components raises rather
-        than taking component names from the first series only.
+        """When components are preserved, mixed component counts raise rather
+        than taking names from the first series only.
 
         Calls _log_backtest_metrics directly so the raise is not swallowed by
         MLflow's safe_patch wrapper.
         """
         backtest_args = {
             "metric": dm.mae,
-            "metric_kwargs": {},
+            "metric_kwargs": {"component_reduction": None},
             "series": [self.ts_univariate, self.ts_multivariate],
             "forecast_horizon": 1,
             "reduction": np.mean,
