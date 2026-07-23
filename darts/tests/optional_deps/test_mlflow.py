@@ -280,6 +280,21 @@ class TestMLflow:
             assert last_run["params.seasonal_periods"] == "12"
             assert last_run["tags.model_class"] == "ExponentialSmoothing"
 
+    def test_autolog_model_params_json_artifact(self, mlflow_tracking, autolog_context):
+        """The model_params.json artifact mirrors model.model_params, preserving
+        JSON-native types and falling back to str() for non-serializable values
+        (e.g. enums) instead of the flat params store's blanket stringification."""
+        with autolog_context():
+            with mlflow.start_run() as run:
+                model = ExponentialSmoothing(seasonal_periods=12)
+                model.fit(self.ts_univariate)
+
+        params = mlflow.artifacts.load_dict(
+            f"runs:/{run.info.run_id}/model_params.json"
+        )
+        assert params["seasonal_periods"] == 12
+        assert params["trend"] == str(model.model_params["trend"])
+
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_autolog_torch_metrics(self, mlflow_tracking, autolog_context):
         """Test that autolog logs training metrics for torch models"""

@@ -337,7 +337,8 @@ def autolog(
     will automatically:
 
     1. Start an MLflow run (or reuse the currently active one).
-    2. Log model creation parameters (``model.model_params``).
+    2. Log model creation parameters (``model.model_params``), both as MLflow
+       params and as a ``model_params.json`` artifact.
     3. Log covariate usage information (past, future, and static covariates).
     4. Log the result of any darts metric call made inside an active MLflow
        run. Repeated calls overwrite the previous value.
@@ -530,6 +531,7 @@ def _autolog(
         if log_params:
             # Log the parameters for model creation
             autologging_client.log_params(run_id=run_id, params=self.model_params)
+            mlflow.log_dict(self.model_params, "model_params.json")
             fit_args = inspect.signature(original).bind(self, *args, **kwargs).arguments
             _log_covariate_info(
                 self,
