@@ -7,7 +7,8 @@ and logging any Darts ``ForecastingModel`` (statistical, ML-based, and PyTorch-b
 to MLflow, as well as automatic logging (``autolog()``) of:
 
 * Model creation parameters and covariate usage information.
-* The trained model artifact, after each ``fit()`` call.
+* The trained model artifact after each ``fit()`` call when ``log_models=True``
+  (default ``False``).
 * Darts metric function calls made inside an active MLflow run.
 * ``backtest()`` evaluation metrics.
 * Per-epoch training/validation metrics for PyTorch-based models.
@@ -344,7 +345,8 @@ def autolog(
        run. Repeated calls overwrite the previous value.
     5. For PyTorch-based models: leverage ``mlflow.pytorch.autolog()`` to
        automatically log per-epoch training and validation metrics.
-    6. Log the trained model artifact at the end of training.
+    6. When ``log_models=True``: log the trained model artifact at the end of
+       training (default ``False``).
     7. Patch ``backtest()`` to log evaluation metrics under ``backtest_*`` keys.
     8. Patch ``historical_forecasts()`` so that its internal per-window
        ``fit()`` calls don't each spawn their own logging.
@@ -373,7 +375,8 @@ def autolog(
     Parameters
     ----------
     log_models
-        If ``True`` (default), log the trained model artifact after ``fit()``.
+        If ``True``, log the trained model artifact after ``fit()``. Defaults to
+        ``False``.
     log_params
         If ``True`` (default), log model creation parameters.
     log_metrics
@@ -483,7 +486,8 @@ def _autolog(
     def _patched_fit(original, self, *args, **kwargs):
         """Patch function for ForecastingModel.fit() autologging.
 
-        Logs model parameters, class, covariates and the model itself.
+        Logs model parameters, class, and covariates; optionally logs the
+        model artifact when ``log_models=True``.
 
         Parameters
         ----------
