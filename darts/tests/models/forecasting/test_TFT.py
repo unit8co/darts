@@ -18,6 +18,7 @@ from torch.nn import MSELoss
 
 from darts.models.components.tft_submodels import get_embedding_size
 from darts.models.forecasting.tft_model import TFTModel
+from darts.utils.data import SequentialTorchTrainingDataset
 from darts.utils.likelihood_models.torch import QuantileRegression
 
 
@@ -42,6 +43,15 @@ class TestTFTModel:
         model = TFTModel(input_chunk_length=1, output_chunk_length=1, **tfm_kwargs)
         with pytest.raises(ValueError):
             model.fit(ts_time_index, verbose=False)
+
+        dataset = SequentialTorchTrainingDataset(
+            series=ts_time_index,
+            future_covariates=None,
+            input_chunk_length=1,
+            output_chunk_length=1,
+        )
+        with pytest.raises(ValueError, match="TFTModel requires future covariates"):
+            model.fit_from_dataset(dataset)
 
         # should work with cyclic encoding for time index
         model = TFTModel(

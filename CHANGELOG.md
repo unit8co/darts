@@ -12,8 +12,16 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 
 - 🚀 Added new forecasting model `T0Model` : The Forecasting Company's open-weights ~100M-parameter foundation model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series as well as past and future covariates, and can output deterministic or probabilistic forecasts. It can be used zero-shot or fine-tuned (full or partial) via `enable_finetuning`. [#3142](https://github.com/unit8co/darts/pull/3142) by [Geoffrey Négiar](https://github.com/GeoffNN).
+- Calling `TFTModel.fit_from_dataset()` on a dataset that does not have future covariates now raises an informative exception. [#3149](https://github.com/unit8co/darts/pull/3149) by [YOON KIWOONG](https://github.com/kiwoongyoon).
+- 🔴 Percentage and range-based metrics (`ape`, `mape`, `sape`, `smape`, `wmape`, `ope`, `arre`, `marre`, `coefficient_of_variation`) no longer raise a hard `ValueError` when the denominator is exactly zero. A new `zero_division` parameter controls the behavior: [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
+  - `"warn"` (default) raises a warning and returns `0.0` when the numerator is also zero (typically meaning perfect forecasts) or `np.nan` otherwise
+  - `"raise"` preserves the legacy error.
 
 **Fixed**
+
+- Fixed metrics `arre` and `marre` rejecting an entire input when any component of `actual_series` is constant; the zero-range denominator is now handled element-wise, so an exact prediction yields `0.0` and only undefined entries become `np.nan`. [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
+- Fixed metric `ope` to accept an `actual_series` with a strictly negative sum (the previous `sum > 0` check rejected valid inputs such as financial return series). [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
+- Fixed metric `wmape` docstring which inaccurately claimed it raised on zeros in `actual_series`. [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
 
 **Dependencies**
 
