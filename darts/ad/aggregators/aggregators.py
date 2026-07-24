@@ -11,9 +11,6 @@ Base Aggregator
 # - create show_all_combined (info about correlation, and from what path did
 #   the anomaly alarm came from)
 
-import datetime
-import os
-import pickle
 import sys
 from typing import Literal
 
@@ -28,6 +25,7 @@ from collections.abc import Sequence
 import numpy as np
 
 from darts import TimeSeries
+from darts.ad._save_load import SaveableMixin
 from darts.ad.utils import (
     _assert_fit_called,
     _check_input,
@@ -40,69 +38,11 @@ from darts.typing import TimeSeriesLike
 logger = get_logger(__name__)
 
 
-class Aggregator(ABC):
+class Aggregator(SaveableMixin, ABC):
     """Base class for Aggregators."""
 
     def __init__(self):
         self.width_trained_on: int | None = None
-
-    def save(
-        self,
-        path: str | os.PathLike | None = None,
-        **pkl_kwargs,
-    ) -> None:
-        """
-        Saves the aggregator under a given path.
-
-        Parameters
-        ----------
-        path
-            Path under which to save the aggregator at its current state. If no path is specified, the aggregator
-            is automatically saved under ``"{ClassName}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
-        pkl_kwargs
-            Keyword arguments passed to `pickle.dump()`
-        """
-        if path is None:
-            path = f"{type(self).__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')}.pkl"
-        if isinstance(path, str | os.PathLike):
-            with open(path, "wb") as handle:
-                pickle.dump(obj=self, file=handle, **pkl_kwargs)
-        else:
-            raise_log(
-                ValueError(
-                    "Argument 'path' has to be a filepath (str or PathLike), "
-                    f"but was '{path.__class__}'."
-                ),
-                logger=logger,
-            )
-
-    @staticmethod
-    def load(path: str | os.PathLike) -> "Aggregator":
-        """
-        Loads an aggregator from a given path.
-
-        Parameters
-        ----------
-        path
-            Path from which to load the aggregator.
-        """
-        if isinstance(path, str | os.PathLike):
-            if not os.path.exists(path):
-                raise_log(
-                    FileNotFoundError(f"The file {path} doesn't exist"),
-                    logger=logger,
-                )
-            with open(path, "rb") as handle:
-                aggregator = pickle.load(file=handle)
-        else:
-            raise_log(
-                ValueError(
-                    "Argument 'path' has to be a filepath (str or PathLike), "
-                    f"but was '{path.__class__}'."
-                ),
-                logger=logger,
-            )
-        return aggregator
 
 
     @abstractmethod

@@ -8,10 +8,6 @@ Base Scorer
 #     - add option to normalize the windows for kmeans? capture only the form and not the values.
 
 import copy
-import datetime
-import io
-import os
-import pickle
 import sys
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
@@ -25,6 +21,7 @@ else:
 import numpy as np
 
 from darts import TimeSeries, metrics
+from darts.ad._save_load import SaveableMixin
 from darts.ad.utils import (
     _assert_same_length,
     _check_input,
@@ -42,7 +39,7 @@ from darts.utils.utils import _build_tqdm_iterator, _parallel_apply
 logger = get_logger(__name__)
 
 
-class AnomalyScorer(ABC):
+class AnomalyScorer(SaveableMixin, ABC):
     """Base class for all anomaly scorers"""
 
     def __init__(self, is_univariate: bool, window: int) -> None:
@@ -67,78 +64,6 @@ class AnomalyScorer(ABC):
             )
         self.window = window
         self._is_univariate = is_univariate
-
-    def save(
-        self,
-        path: str | os.PathLike | None = None,
-        **pkl_kwargs,
-    ) -> None:
-        """
-        Saves the anomaly scorer under a given path or file handle.
-
-        Example for saving and loading a :class:`KMeansScorer`:
-
-            .. highlight:: python
-            .. code-block:: python
-
-                from darts.ad.scorers import KMeansScorer
-
-                scorer = KMeansScorer(window=10, k=8)
-                scorer.fit(series)
-                scorer.save("my_scorer.pkl")
-                scorer_loaded = KMeansScorer.load("my_scorer.pkl")
-            ..
-
-        Parameters
-        ----------
-        path
-            Path under which to save the scorer at its current state. If no path is specified, the scorer
-            is automatically saved under ``"{ClassName}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
-            E.g., ``"KMeansScorer_2024-01-01_12_00_00.pkl"``.
-        pkl_kwargs
-            Keyword arguments passed to `pickle.dump()`
-        """
-        if path is None:
-            path = f"{type(self).__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')}.pkl"
-        if isinstance(path, str | os.PathLike):
-            with open(path, "wb") as handle:
-                pickle.dump(obj=self, file=handle, **pkl_kwargs)
-        else:
-            raise_log(
-                ValueError(
-                    "Argument 'path' has to be a filepath (str or PathLike), "
-                    f"but was '{path.__class__}'."
-                ),
-                logger=logger,
-            )
-
-    @staticmethod
-    def load(path: str | os.PathLike) -> "AnomalyScorer":
-        """
-        Loads an anomaly scorer from a given path.
-
-        Parameters
-        ----------
-        path
-            Path from which to load the scorer.
-        """
-        if isinstance(path, str | os.PathLike):
-            if not os.path.exists(path):
-                raise_log(
-                    FileNotFoundError(f"The file {path} doesn't exist"),
-                    logger=logger,
-                )
-            with open(path, "rb") as handle:
-                scorer = pickle.load(file=handle)
-        else:
-            raise_log(
-                ValueError(
-                    "Argument 'path' has to be a filepath (str or PathLike), "
-                    f"but was '{path.__class__}'."
-                ),
-                logger=logger,
-            )
-        return scorer
 
 
     def score_from_prediction(

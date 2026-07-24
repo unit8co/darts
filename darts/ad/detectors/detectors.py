@@ -9,9 +9,6 @@ Base Detector
 #     - add more complex detectors
 #         - create an ensemble fittable detector
 
-import datetime
-import os
-import pickle
 import sys
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
@@ -25,6 +22,7 @@ else:
 import numpy as np
 
 from darts import TimeSeries
+from darts.ad._save_load import SaveableMixin
 from darts.ad.utils import (
     _assert_fit_called,
     _check_input,
@@ -37,69 +35,11 @@ from darts.utils.ts_utils import series2seq
 logger = get_logger(__name__)
 
 
-class Detector(ABC):
+class Detector(SaveableMixin, ABC):
     """Base class for all detectors"""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.width_trained_on: int | None = None
-
-    def save(
-        self,
-        path: str | os.PathLike | None = None,
-        **pkl_kwargs,
-    ) -> None:
-        """
-        Saves the detector under a given path.
-
-        Parameters
-        ----------
-        path
-            Path under which to save the detector at its current state. If no path is specified, the detector
-            is automatically saved under ``"{ClassName}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
-        pkl_kwargs
-            Keyword arguments passed to `pickle.dump()`
-        """
-        if path is None:
-            path = f"{type(self).__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')}.pkl"
-        if isinstance(path, str | os.PathLike):
-            with open(path, "wb") as handle:
-                pickle.dump(obj=self, file=handle, **pkl_kwargs)
-        else:
-            raise_log(
-                ValueError(
-                    "Argument 'path' has to be a filepath (str or PathLike), "
-                    f"but was '{path.__class__}'."
-                ),
-                logger=logger,
-            )
-
-    @staticmethod
-    def load(path: str | os.PathLike) -> "Detector":
-        """
-        Loads a detector from a given path.
-
-        Parameters
-        ----------
-        path
-            Path from which to load the detector.
-        """
-        if isinstance(path, str | os.PathLike):
-            if not os.path.exists(path):
-                raise_log(
-                    FileNotFoundError(f"The file {path} doesn't exist"),
-                    logger=logger,
-                )
-            with open(path, "rb") as handle:
-                detector = pickle.load(file=handle)
-        else:
-            raise_log(
-                ValueError(
-                    "Argument 'path' has to be a filepath (str or PathLike), "
-                    f"but was '{path.__class__}'."
-                ),
-                logger=logger,
-            )
-        return detector
 
 
     def detect(
