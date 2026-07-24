@@ -13,12 +13,15 @@ For detailed examples and tutorials, see:
   <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__
 """
 
-from typing import Any
+import dataclasses
+import os
 
 import torch
-from t0 import T0Forecaster
+from t0 import T0Config, T0Forecaster
+from t0.data import TimeSeries
 
 from darts.logging import get_logger, raise_log
+from darts.models.components.huggingface_connector import HuggingFaceConnector
 from darts.models.forecasting.foundation_model import FoundationModel
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.utils.data.torch_datasets.utils import PLModuleInput
@@ -37,15 +40,65 @@ class _T0Module(PLForecastingModule):
 
     def __init__(
         self,
-        t0_kwargs: dict[str, Any],
+        hub_model_name: str,
+        hub_model_revision: str | None,
+        local_dir: str | os.PathLike | None,
+        all_quantiles: tuple[float, ...],
+        enable_finetuning: bool | dict = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.t0: T0Forecaster = T0Forecaster.from_pretrained(**t0_kwargs).eval()
+        # Load weights the same way as the other Darts foundation models: fetch config.json +
+        # model.safetensors through the shared HuggingFaceConnector, then rebuild the T0 model.
+        connector = HuggingFaceConnector(
+            model_name=hub_model_name,
+            model_revision=hub_model_revision,
+            local_dir=local_dir,
+        )
+        config = connector.load_config()
+        config_kwargs = {
+            field.name: config[field.name]
+            for field in dataclasses.fields(T0Config)
+            if field.name in config
+        }
+        if "quantile_levels" in config_kwargs:
+            config_kwargs["quantile_levels"] = tuple(config_kwargs["quantile_levels"])
+        self.t0: T0Forecaster = T0Forecaster.from_config(
+            T0Config(**config_kwargs)
+        ).eval()
+        connector.load_model_weights(self.t0)
         self.future_len = (self.output_chunk_length or 0) + self.output_chunk_shift
+        self._pretrained_quantiles = list(all_quantiles)
+        # bool(dict) is True for a non-empty dict; _setup_finetuning() handles the actual
+        # parameter freeze/unfreeze pattern — here we only need a flag for the forward path
+        self._enable_finetuning = bool(enable_finetuning)
+
+        # T0 predicts up to `max_horizon` steps in a single parallel-patch pass (as in pre-training).
+        # A longer horizon is not supported for training, so the loss is computed on the first
+        # `max_horizon` steps only — capped here (a no-op when the horizon already fits).
+        self._max_train_steps = max(self.t0.max_horizon - self.output_chunk_shift, 1)
+        if enable_finetuning:
+            if self.future_len > self.t0.max_horizon:
+                logger.warning(
+                    "`output_chunk_length` + `output_chunk_shift` (%d) exceeds T0's maximum "
+                    "single-pass horizon (%d), which is not supported for training; fine-tuning "
+                    "will train on the first %d step(s) only.",
+                    self.future_len,
+                    self.t0.max_horizon,
+                    self._max_train_steps,
+                )
+            # loss is computed over all pre-trained quantiles to preserve the distribution;
+            # user-specified quantiles are selected at prediction time
+            self._finetuning_likelihood = QuantileRegression(self._pretrained_quantiles)
+        else:
+            self._finetuning_likelihood = None
 
     def forward(self, x_in: PLModuleInput, *args, **kwargs):
-        """Forward pass returning quantile predictions shaped ``(batch, time, n_targets, n_quantiles)``."""
+        """Forward pass returning quantile predictions shaped ``(batch, time, n_targets, n_quantiles)``.
+
+        During training with fine-tuning enabled, all pre-trained quantiles are returned for the loss.
+        At prediction time, only user-specified quantiles are returned.
+        """
         # Dimension notation in comments below:
         #   B: batch size
         #   L: input chunk length
@@ -56,54 +109,71 @@ class _T0Module(PLForecastingModule):
         #   P: past covariate components
         #   F: future covariate components
         #   V: context variates = C + P (target + past covariates, jointly forecast)
+        #   Qp: pre-trained quantiles (returned during fine-tuning)
         #   N: likelihood quantiles (user-specified, 1 if deterministic)
 
-        # `x_past`: (B, L, C + P + F) stack of [past_target, past_covariates, historic_future_covariates];
+        # `x_past`: (B, L, C + P + F) — past target, past covariates, historic future covariates.
         # `x_future`: (B, T, F) future covariates, or None.
         x_past, x_future, _, _ = x_in
         batch_size = x_past.shape[0]
 
-        # Past covariates are forecast jointly with the target (T0 is variate-agnostic) and dropped from the
-        # output. Future covariates are the trailing columns of `x_past` (their historic part) and are passed to
-        # T0's covariate branch instead. `x_future` width gives the number of future covariates.
-        n_future_covs = x_future.shape[-1] if x_future is not None else 0
-        n_context = x_past.shape[-1] - n_future_covs
+        # Past covariates are forecast jointly with the target and dropped from the output; future
+        # covariates are conditioned on (their historic part is the trailing columns of `x_past`).
+        n_future_variates = x_future.shape[-1] if x_future is not None else 0
+        n_context_variates = x_past.shape[-1] - n_future_variates
 
         # context: (B, V, L)
-        context = x_past[:, :, :n_context].transpose(1, 2)
+        context = x_past[:, :, :n_context_variates].transpose(1, 2)
 
-        # T0 expects covariates over context + horizon. Re-assemble them from the historic part (in `x_past`)
-        # and the future chunk (`x_future`); the `output_chunk_shift` gap is left NaN (T0 treats NaN as missing).
+        # Future covariates over context + horizon: their historic part (in `x_past`) + the known future.
         future_covariates = None
-        if n_future_covs > 0:
-            historic = x_past[:, :, n_context:]  # (B, L, F)
-            future = torch.full(
-                (batch_size, self.future_len, n_future_covs),
-                torch.nan,
-                device=x_past.device,
-                dtype=x_past.dtype,
-            )
-            if x_future is not None:
-                future[:, -(self.output_chunk_length or 0) :, :] = x_future
-            # (B, L + H, F) -> (B, F, L + H)
-            future_covariates = torch.cat([historic, future], dim=1).transpose(1, 2)
+        if n_future_variates > 0:
+            historic = x_past[:, :, n_context_variates:]  # (B, L, F)
+            # (B, L, F), (B, T, F) -> (B, F, L + T)
+            future_covariates = torch.cat([historic, x_future], dim=1).transpose(1, 2)
 
-        user_q: list[float] = (
-            self.likelihood.quantiles
-            if isinstance(self.likelihood, QuantileRegression)
-            else [0.5]
-        )
-        # quantiles: (B, V, H, N)
-        quantiles = self.t0.predict(
-            context,
-            horizon=self.future_len,
-            quantiles=user_q,
-            future_covariates=future_covariates,
-        ).quantiles
-        # drop the past-covariate variates, keep targets: (B, V, H, N) -> (B, C, H, N)
+        if self.training and self._enable_finetuning:
+            # train through the differentiable `forward` (single parallel-patch pass) to keep gradients;
+            # `predict` is inference-mode only. Take the horizon window of the per-patch prediction.
+            per_patch_prediction = self.t0(
+                TimeSeries.from_array(context, future_covariates)
+            )
+            # keep the context variate rows: (B, V, patches, patch_size, Qp)
+            per_patch_prediction = per_patch_prediction[
+                : batch_size * n_context_variates
+            ].unflatten(0, (batch_size, n_context_variates))
+            # per-timestep over the horizon window: (B, V, H, Qp)
+            quantiles = per_patch_prediction.flatten(2, 3)[:, :, -self.future_len :, :]
+        else:
+            user_q: list[float] = (
+                self.likelihood.quantiles
+                if isinstance(self.likelihood, QuantileRegression)
+                else [0.5]
+            )
+            quantiles = self.t0.predict(
+                context,
+                horizon=self.future_len,
+                quantiles=user_q,
+                future_covariates=future_covariates,
+            ).quantiles
+
+        # keep targets, drop past-covariate variates, then to (B, T, C, *) after the output shift
         quantiles = quantiles[:, : self.n_targets]
-        # (B, C, H, N) -> (B, H, C, N) -> slice output shift -> (B, T, C, N)
         return quantiles.permute(0, 2, 1, 3)[:, self.output_chunk_shift :, :, :]
+
+    def _compute_loss(self, output, target, criterion, sample_weight):
+        if self.training and self._enable_finetuning:
+            # only the first `max_horizon` steps are supported for single-pass training; truncate
+            # the (time) axis so a longer output chunk trains on the supported horizon (no-op when
+            # it already fits). Then compute loss on the pre-trained quantiles.
+            output = output[:, : self._max_train_steps]
+            target = target[:, : self._max_train_steps]
+            if sample_weight is not None:
+                sample_weight = sample_weight[:, : self._max_train_steps]
+            return self._finetuning_likelihood.compute_loss(
+                output, target, sample_weight
+            )
+        return super()._compute_loss(output, target, criterion, sample_weight)
 
 
 class T0Model(FoundationModel):
@@ -118,14 +188,16 @@ class T0Model(FoundationModel):
         likelihood: QuantileRegression | None = None,
         hub_model_name: str = "theforecastingcompany/t0-alpha",
         hub_model_revision: str | None = None,
+        local_dir: str | os.PathLike | None = None,
         **kwargs,
     ):
         """
         T0 foundation model for zero-shot time series forecasting.
 
-        This is a Darts wrapper around The Forecasting Company's open-weights T0 model. The implementation delegates
-        all forecasting logic and weight loading to the optional `tfc-t0 <https://pypi.org/project/tfc-t0>`_ package
-        while exposing a standard :class:`TorchForecastingModel` interface.
+        This is a Darts wrapper around The Forecasting Company's open-weights T0 model. Forecasting logic comes
+        from the optional `tfc-t0 <https://pypi.org/project/tfc-t0>`_ package; the config and weights are loaded
+        from the Hugging Face Hub via Darts' shared HuggingFace connector, exposing a standard
+        :class:`TorchForecastingModel` interface.
 
         T0 is a ~100M-parameter pre-trained patch-transformer foundation model designed for zero-shot forecasting
         across both short and long horizons.
@@ -143,8 +215,10 @@ class T0Model(FoundationModel):
         For more details on the T0 model, see the `model card <https://huggingface.co/theforecastingcompany/t0-alpha>`_
         and the `tfc-t0 repository <https://github.com/theforecastingcompany/tfc-t0>`_.
 
-        .. note::
-            Fine-tuning is not supported for ``T0Model``; the model is used for zero-shot inference only.
+        The model can be fine-tuned (full or partial) via ``enable_finetuning``. The training loss is computed on
+        all pre-trained quantiles to preserve the pre-trained distribution; only the user-specified quantiles are
+        returned at prediction time. Fine-tuning supports horizons up to the model's ``max_horizon`` (longer
+        horizons are truncated to it, with a warning).
 
         Parameters
         ----------
@@ -175,6 +249,22 @@ class T0Model(FoundationModel):
         hub_model_revision
             The model version to use. This can be a branch name, tag name, or commit hash. Default: ``None``, which
             will use the default branch from ``hub_model_name``.
+        local_dir
+            Optional local directory holding a pre-downloaded ``config.json`` and ``model.safetensors``. If set and
+            the files are present, they are loaded directly instead of downloading from the Hub. Default: ``None``.
+        enable_finetuning
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            When enabled, the training loss is always computed on all pre-trained quantiles to preserve the
+            pre-trained distribution. Default: ``None``.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -287,25 +377,18 @@ class T0Model(FoundationModel):
                     f"Got {type(likelihood)}."
                 ),
             )
-
-        if kwargs.get("enable_finetuning"):
+        if output_chunk_shift:
             raise_log(
                 ValueError(
-                    "Fine-tuning is not supported for `T0Model`; it is a zero-shot inference model. "
-                    "Leave `enable_finetuning` unset (or `False`)."
+                    f"T0Model does not support `output_chunk_shift`; got {output_chunk_shift}."
                 ),
             )
 
         super().__init__(**kwargs)
 
-        self.t0_kwargs = {
-            "pretrained_model_name_or_path": hub_model_name,
-            **(
-                {"revision": hub_model_revision}
-                if hub_model_revision is not None
-                else {}
-            ),
-        }
+        self.hub_model_name = hub_model_name
+        self.hub_model_revision = hub_model_revision
+        self.local_dir = local_dir
 
     @property
     def supports_past_covariates(self) -> bool:
@@ -316,4 +399,12 @@ class T0Model(FoundationModel):
         return True
 
     def _create_model(self, train_sample) -> PLForecastingModule:
-        return _T0Module(t0_kwargs=self.t0_kwargs, **(self.pl_module_params or {}))
+        # enable_finetuning is injected into pl_module_params by the base class;
+        # _T0Module accepts it as an explicit parameter and converts dict form to bool
+        return _T0Module(
+            hub_model_name=self.hub_model_name,
+            hub_model_revision=self.hub_model_revision,
+            local_dir=self.local_dir,
+            all_quantiles=self._PRETRAINED_QUANTILES,
+            **(self.pl_module_params or {}),
+        )

@@ -1,3 +1,4 @@
+import logging
 from unittest.mock import patch
 
 import numpy as np
@@ -17,10 +18,9 @@ if not T0_AVAILABLE:
         allow_module_level=True,
     )
 
-import torch
-
 from darts import TimeSeries, concatenate
 from darts.models import T0Model
+from darts.tests.models.forecasting.foundation_test_utils import tiny_t0, tiny_t0_dir
 from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
 from darts.utils.timeseries_generation import (
     gaussian_timeseries,
@@ -28,44 +28,10 @@ from darts.utils.timeseries_generation import (
     sine_timeseries,
 )
 
-# `T0Model` uses `from t0 import T0Forecaster`; mock `from_pretrained` in darts' module.
-_PATCH_T0_FROM_PRETRAINED = (
-    "darts.models.forecasting.t0_model.T0Forecaster.from_pretrained"
-)
-
-
-class _StubForecast:
-    def __init__(self, quantiles: torch.Tensor):
-        self.quantiles = quantiles
-
-
-class _StubT0Forecaster(torch.nn.Module):
-    """Stub emulating the `tfc-t0` ``T0Forecaster`` API used by the wrapper.
-
-    ``predict(context, horizon, quantiles, future_covariates)`` returns a ``Forecast``-like object whose
-    ``quantiles`` is shaped ``(B, V, horizon, Q)`` — matching ``T0Forecaster`` for ndim-3 (multivariate) context.
-    """
-
-    def __init__(self):
-        super().__init__()
-        # a parameter so `next(self.parameters()).device` works like the real model
-        self._p = torch.nn.Parameter(torch.zeros(1))
-
-    def predict(self, context, horizon, quantiles, future_covariates=None):
-        assert torch.is_tensor(context) and context.ndim == 3  # (B, V, T)
-        batch, n_variates, _ = context.shape
-        n_q = len(quantiles)
-        if future_covariates is not None:
-            # covariates must span context + horizon
-            assert future_covariates.shape[0] == batch
-            assert future_covariates.shape[2] == context.shape[-1] + horizon
-        base = torch.arange(1, horizon + 1, dtype=torch.float32, device=context.device)
-        quantile_offsets = torch.tensor(
-            [float(q) - 0.5 for q in quantiles], device=context.device
-        )
-        # (B, V, horizon, Q)
-        out = base.view(1, 1, horizon, 1) + quantile_offsets.view(1, 1, 1, n_q)
-        return _StubForecast(out.expand(batch, n_variates, horizon, n_q).contiguous())
+# Load a small real model from a local dir through the shared HuggingFace connector,
+# exactly like the other foundation models — no gated t0-alpha download.
+_LOCAL = {"local_dir": tiny_t0_dir()}
+_PATCH_T0_FROM_CONFIG = "darts.models.forecasting.t0_model.T0Forecaster.from_config"
 
 
 class TestT0Model:
@@ -92,19 +58,19 @@ class TestT0Model:
                 **tfm_kwargs,
             )
 
-        # fine-tuning is not supported
-        with pytest.raises(ValueError, match="Fine-tuning is not supported"):
-            T0Model(
-                input_chunk_length=12,
-                output_chunk_length=6,
-                enable_finetuning=True,
-                **tfm_kwargs,
-            )
+        # fine-tuning is supported: construction with enable_finetuning must not raise
+        T0Model(
+            input_chunk_length=12,
+            output_chunk_length=6,
+            enable_finetuning=True,
+            **tfm_kwargs,
+        )
 
     def test_default(self):
-        model = T0Model(input_chunk_length=24, output_chunk_length=12, **tfm_kwargs)
-        with patch(_PATCH_T0_FROM_PRETRAINED, return_value=_StubT0Forecaster()):
-            model.fit(self.series)
+        model = T0Model(
+            input_chunk_length=24, output_chunk_length=12, **_LOCAL, **tfm_kwargs
+        )
+        model.fit(self.series)
 
         # deterministic, single component
         pred = model.predict(n=10, series=self.series)
@@ -121,10 +87,10 @@ class TestT0Model:
             input_chunk_length=24,
             output_chunk_length=12,
             likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
+            **_LOCAL,
             **tfm_kwargs,
         )
-        with patch(_PATCH_T0_FROM_PRETRAINED, return_value=_StubT0Forecaster()):
-            model.fit(self.series)
+        model.fit(self.series)
         assert model.model_created
         assert model.supports_probabilistic_prediction
 
@@ -141,10 +107,10 @@ class TestT0Model:
             likelihood=(
                 QuantileRegression(quantiles=[0.1, 0.5, 0.9]) if probabilistic else None
             ),
+            **_LOCAL,
             **tfm_kwargs,
         )
-        with patch(_PATCH_T0_FROM_PRETRAINED, return_value=_StubT0Forecaster()):
-            model.fit(series=self.series_multi)
+        model.fit(series=self.series_multi)
         pred = model.predict(n=7, predict_likelihood_parameters=probabilistic)
         assert len(pred) == 7
         if probabilistic:
@@ -155,17 +121,18 @@ class TestT0Model:
     @pytest.mark.parametrize("which", ["future", "past", "both"])
     def test_covariates(self, which: str):
         # past covariates are forecast jointly with the target and dropped from the output;
-        # future covariates are passed to T0's covariate branch ([B, F, context+horizon], asserted by the stub).
-        model = T0Model(input_chunk_length=24, output_chunk_length=12, **tfm_kwargs)
+        # future covariates are passed to T0's covariate branch ([B, F, context+horizon]).
+        model = T0Model(
+            input_chunk_length=24, output_chunk_length=12, **_LOCAL, **tfm_kwargs
+        )
         past_cov = self.cov if which in ("past", "both") else None
         future_cov = self.cov if which in ("future", "both") else None
 
-        with patch(_PATCH_T0_FROM_PRETRAINED, return_value=_StubT0Forecaster()):
-            model.fit(
-                series=self.series,
-                past_covariates=past_cov,
-                future_covariates=future_cov,
-            )
+        model.fit(
+            series=self.series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
+        )
         pred = model.predict(
             n=12,
             series=self.series,
@@ -177,8 +144,34 @@ class TestT0Model:
         # only the single target component is returned, never the past covariate
         assert pred.n_components == 1
 
+    def test_finetuning_caps_horizon_with_warning(self, caplog):
+        # fine-tuning is a single parallel-patch pass: a horizon beyond max_horizon is not supported,
+        # so the loss is truncated to the first max_horizon steps with a warning (no error).
+        # (The fine-tuning contract itself — requires_grad, fit with a val series, predict — is
+        # covered by test_foundation.py::test_finetuning_all_models.)
+        model = T0Model(
+            input_chunk_length=24,
+            output_chunk_length=16,
+            enable_finetuning=True,
+            n_epochs=1,
+            **_LOCAL,
+            **tfm_kwargs,
+        )
+        tiny = tiny_t0()
+        tiny.max_horizon = 8  # multiple of patch_size; horizon (16) now exceeds it
+        with caplog.at_level(logging.WARNING):  # noqa: PT012
+            with patch(_PATCH_T0_FROM_CONFIG, return_value=tiny):
+                model.fit(self.series)
+        assert "not supported for training" in caplog.text
+
+        # fine-tuning still completes and the model forecasts through the inference path
+        pred = model.predict(n=6, series=self.series)
+        assert len(pred) == 6
+
     def test_multiple_series(self):
-        model = T0Model(input_chunk_length=24, output_chunk_length=8, **tfm_kwargs)
+        model = T0Model(
+            input_chunk_length=24, output_chunk_length=8, **_LOCAL, **tfm_kwargs
+        )
         series_multi_2 = concatenate(
             [
                 linear_timeseries(length=150, dtype=np.float32, column_name="A"),
@@ -187,8 +180,7 @@ class TestT0Model:
             ],
             axis=1,
         )
-        with patch(_PATCH_T0_FROM_PRETRAINED, return_value=_StubT0Forecaster()):
-            model.fit(series=[self.series_multi, series_multi_2])
+        model.fit(series=[self.series_multi, series_multi_2])
         pred = model.predict(n=5, series=[self.series_multi, series_multi_2])
         assert isinstance(pred, list) and len(pred) == 2
         assert all(len(p) == 5 for p in pred)
