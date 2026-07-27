@@ -57,6 +57,7 @@ from darts.models import (
 )
 from darts.models.components.layer_norm_variants import RINorm
 from darts.models.forecasting.global_baseline_models import _GlobalNaiveModel
+from darts.models.forecasting.rin_helper import RINParser
 from darts.tests.conftest import tfm_kwargs, tfm_kwargs_dev
 from darts.utils.data.torch_datasets._data_module import TorchDataModule
 from darts.utils.data.torch_datasets.inference_dataset import (
@@ -498,9 +499,11 @@ class TestTorchForecastingModel:
             return
 
         model.fit(
-            series=self.series
-            if not use_sc
-            else self.series.with_static_covariates(pd.Series([12], ["loc"])),
+            series=(
+                self.series
+                if not use_sc
+                else self.series.with_static_covariates(pd.Series([12], ["loc"]))
+            ),
             past_covariates=self.series + 10 if use_pc else None,
             future_covariates=self.series - 5 if use_fc else None,
         )
@@ -2019,6 +2022,60 @@ class TestTorchForecastingModel:
         assert model_rin_mv.model.use_reversible_instance_norm
         assert isinstance(model_rin_mv.model.rin, RINorm)
         assert model_rin_mv.model.rin.input_dim == self.multivariate_series.n_components
+
+    def test_rin_parser_selector_config(self):
+        cfg, active = RINParser.parse_use_reversible_instance_norm({
+            "params": {"affine": True, "eps": 1e-5},
+            "series": True,
+            "past_covariates": {
+                "components": ["comp1", "comp2"],
+                "params": {"affine": False},
+            },
+            "future_covariates": False,
+        })
+
+        assert active
+        assert cfg.params.affine is True
+        assert cfg.params.eps == 1e-5
+        assert cfg.series.enabled
+        assert cfg.series.components is None
+        assert cfg.past_covariates.enabled
+        assert cfg.past_covariates.components == ["comp1", "comp2"]
+        assert cfg.past_covariates.params is not None
+        assert cfg.past_covariates.params.affine is False
+        assert cfg.future_covariates.enabled is False
+
+    def test_rin_parser_rejects_mixed_legacy_and_selector_keys(self):
+        with pytest.raises(
+            ValueError,
+            match="cannot mix legacy keys",
+        ):
+            RINParser.parse_use_reversible_instance_norm({
+                "affine": True,
+                "series": True,
+            })
+
+    def test_rin_name_selector_rejected_for_fit_from_dataset(self):
+        model = DLinearModel(
+            input_chunk_length=10,
+            output_chunk_length=1,
+            use_reversible_instance_norm={"series": ["var1"]},
+            **tfm_kwargs,
+        )
+        dataset = model._build_train_dataset(
+            series=[self.multivariate_series],
+            past_covariates=None,
+            future_covariates=None,
+            sample_weight=None,
+            max_samples_per_ts=None,
+            stride=1,
+        )
+
+        with pytest.raises(
+            ValueError,
+            match=r"`fit_from_dataset\(\)` does not support name-based RIN component selection",
+        ):
+            model.fit_from_dataset(dataset)
 
     @pytest.mark.parametrize("use_mc_dropout", [False, True])
     def test_mc_dropout_active(self, use_mc_dropout):

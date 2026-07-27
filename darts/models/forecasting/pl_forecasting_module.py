@@ -17,7 +17,7 @@ import torch.nn as nn
 import torchmetrics
 
 from darts.logging import raise_log
-from darts.models.components.layer_norm_variants import RINorm
+from darts.models.forecasting.rin_helper import RINConfig, RINHelper, RINParser
 from darts.utils.data.torch_datasets.utils import (
     PLModuleInput,
     TorchBatch,
@@ -50,25 +50,15 @@ def io_processor(forward):
 
     @wraps(forward)
     def forward_wrapper(self, x_in: PLModuleInput, *args, **kwargs):
+        # Fast path when RIN is not active for this module.
         if not self.use_reversible_instance_norm:
             return forward(self, x_in, *args, **kwargs)
 
-        # `x_in` is input batch tuple which by definition has the past features in the first element
-        # starting with the first n target features; clone it to prevent target re-normalization
-        past_features = x_in[0].clone()
-        # apply reversible instance normalization
-        past_features[:, :, : self.n_targets] = self.rin(
-            past_features[:, :, : self.n_targets]
-        )
-        # run the forward pass
-        out = forward(self, *((past_features, *x_in[1:]), *args), **kwargs)
-        # inverse transform target output back to original scale
-        if isinstance(out, tuple):
-            # RNNModel return tuple with hidden state
-            return self.rin.inverse(out[0]), *out[1:]
-        else:
-            # all other models return only the prediction
-            return self.rin.inverse(out)
+        # Apply RIN on configured input groups before model forward,
+        # then invert only the target-related outputs after forward.
+        normalized_x = self.rin_helper.forward(x_in)
+        out = forward(self, normalized_x, *args, **kwargs)
+        return self.rin_helper.inverse(out)
 
     return forward_wrapper
 
@@ -82,11 +72,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
         output_chunk_shift: int = 0,
         train_sample_shape: tuple | None = None,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
-        torch_metrics: torchmetrics.Metric
-        | torchmetrics.MetricCollection
-        | Sequence[torchmetrics.Metric | torchmetrics.MetricCollection]
-        | dict[str, torchmetrics.Metric | torchmetrics.MetricCollection]
-        | None = None,
+        torch_metrics: (
+            torchmetrics.Metric
+            | torchmetrics.MetricCollection
+            | Sequence[torchmetrics.Metric | torchmetrics.MetricCollection]
+            | dict[str, torchmetrics.Metric | torchmetrics.MetricCollection]
+            | None
+        ) = None,
         likelihood: TorchLikelihood | None = None,
         optimizer_cls: type[torch.optim.Optimizer] = torch.optim.Adam,
         optimizer_kwargs: dict | None = None,
@@ -198,14 +190,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.train_metrics = torch_metrics.clone(prefix="train_")
         self.val_metrics = torch_metrics.clone(prefix="val_")
 
-        # reversible instance norm
-        self.use_reversible_instance_norm = use_reversible_instance_norm
-        if use_reversible_instance_norm is True:
-            self.rin: RINorm | None = RINorm(input_dim=self.n_targets)
-        elif isinstance(use_reversible_instance_norm, dict):
-            self.rin = RINorm(input_dim=self.n_targets, **use_reversible_instance_norm)
-        else:
-            self.rin = None
+        # reversible instance normalization
+        self._setup_reversible_instance_norm(
+            train_sample_shape=train_sample_shape,
+            use_reversible_instance_norm=use_reversible_instance_norm,
+        )
 
         # initialize prediction parameters
         self.pred_n: int | None = None
@@ -760,6 +749,12 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # we must save the metrics to continue logging them when resuming training
         checkpoint["torch_metrics_train"] = self.train_metrics
         checkpoint["torch_metrics_val"] = self.val_metrics
+        rin_indices = self.rin_helper.get_component_indices()
+        checkpoint["rin_component_indices"] = {
+            "series": rin_indices.series,
+            "past_covariates": rin_indices.past_covariates,
+            "future_covariates": rin_indices.future_covariates,
+        }
 
     def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
         # by default our models are initialized as float32. For other dtypes, we need to cast to the correct precision
@@ -771,6 +766,15 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.criterion = checkpoint["loss_fn"]
         self.train_metrics = checkpoint["torch_metrics_train"]
         self.val_metrics = checkpoint["torch_metrics_val"]
+
+        rin_component_indices = checkpoint.get("rin_component_indices")
+        if rin_component_indices is not None:
+            self.rin_helper.set_component_indices(
+                series_indices=rin_component_indices.get("series"),
+                past_covariate_indices=rin_component_indices.get("past_covariates"),
+                future_covariate_indices=rin_component_indices.get("future_covariates"),
+            )
+            self._sync_rin_legacy_attributes()
 
     def to_dtype(self, dtype):
         """Cast module precision (float32 by default) to another precision."""
@@ -801,12 +805,58 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
     @staticmethod
     def configure_torch_metrics(
-        torch_metrics: torchmetrics.Metric
-        | torchmetrics.MetricCollection
-        | Sequence[torchmetrics.Metric | torchmetrics.MetricCollection]
-        | dict[str, torchmetrics.Metric | torchmetrics.MetricCollection],
+        torch_metrics: (
+            torchmetrics.Metric
+            | torchmetrics.MetricCollection
+            | Sequence[torchmetrics.Metric | torchmetrics.MetricCollection]
+            | dict[str, torchmetrics.Metric | torchmetrics.MetricCollection]
+        ),
     ) -> torchmetrics.MetricCollection:
         """process the torch_metrics parameter."""
         return torchmetrics.MetricCollection(
             torch_metrics if torch_metrics is not None else []
         )
+
+    def _sync_rin_legacy_attributes(self) -> None:
+        """Keep backward-compatible attributes in sync with the helper state."""
+        self.rin = self.rin_helper.rin
+        self.rin_past_cov = self.rin_helper.rin_past_cov
+        self.rin_future_cov = self.rin_helper.rin_future_cov
+        self._rin_series_indices = self.rin_helper.series_indices
+        self._rin_past_cov_indices = self.rin_helper.past_covariate_indices
+        self._rin_future_cov_indices = self.rin_helper.future_covariate_indices
+
+    def _setup_reversible_instance_norm(
+        self,
+        train_sample_shape: tuple | None,
+        use_reversible_instance_norm: bool | dict,
+    ) -> None:
+        self.rin_helper = RINHelper.from_user_config(
+            use_reversible_instance_norm=use_reversible_instance_norm,
+            n_targets=self.n_targets,
+            train_sample_shape=train_sample_shape,
+        )
+        self.rin_config = self.rin_helper.rin_config
+        self.use_reversible_instance_norm = self.rin_helper.active
+        self._n_past_covariates = self.rin_helper.n_past_covariates
+        self._n_future_covariates = self.rin_helper.n_future_covariates
+        self._sync_rin_legacy_attributes()
+
+    def set_rin_component_indices(
+        self,
+        series_indices: list[int] | None = None,
+        past_covariate_indices: list[int] | None = None,
+        future_covariate_indices: list[int] | None = None,
+    ) -> None:
+        self.rin_helper.set_component_indices(
+            series_indices=series_indices,
+            past_covariate_indices=past_covariate_indices,
+            future_covariate_indices=future_covariate_indices,
+        )
+        self._sync_rin_legacy_attributes()
+
+    @classmethod
+    def parse_use_reversible_instance_norm(
+        cls, value: bool | dict
+    ) -> tuple[RINConfig, bool]:
+        return RINParser.parse_use_reversible_instance_norm(value)

@@ -11,6 +11,7 @@ This file contains several abstract classes:
 from abc import ABC
 
 from darts.logging import get_logger
+from darts.models.forecasting.rin_helper import RINParser
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.utils.data.torch_datasets.utils import _parse_input_chunk_length
 
@@ -189,14 +190,12 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
         use_reversible_instance_norm: bool | dict = self.pl_module_params.get(
             "use_reversible_instance_norm", False
         )
-        if use_reversible_instance_norm is True or (
-            isinstance(use_reversible_instance_norm, dict)
-            and use_reversible_instance_norm.get("affine", True)
-        ):
-            if use_reversible_instance_norm is True:
-                use_reversible_instance_norm = dict(affine=False)
-            else:
-                use_reversible_instance_norm["affine"] = False
+
+        (
+            use_reversible_instance_norm,
+            affine_overridden,
+        ) = RINParser.override_affine_for_foundation_model(use_reversible_instance_norm)
+        if affine_overridden:
             logger.warning(
                 f"By default, Reversible Instance Normalization (RINorm) in Darts inserts affine transformation "
                 f"weights, which do not exist in foundation model checkpoints. To prevent incompatible model "

@@ -312,8 +312,14 @@ class _TransformerModule(PLForecastingModule):
         if future_target is not None:
             # training: use teacher forcing where ground-truth future targets are fed to the decoder
             if self.rin is not None:
-                # with RIN, io_processor only normalized past targets; apply the same to future targets
-                future_target = self.rin.transform(future_target)
+                # with RIN, io_processor normalized past targets; apply the same to future targets
+                if self.rin_config.series.components is None:
+                    future_target = self.rin.transform(future_target)
+                elif self._rin_series_indices:
+                    future_target = future_target.clone()
+                    future_target[:, :, self._rin_series_indices] = self.rin.transform(
+                        future_target[:, :, self._rin_series_indices]
+                    )
             tgt = F.pad(future_target.permute(1, 0, 2), pad_size)
             tgt = torch.cat([start_token, tgt], dim=0)
             return self._decode(memory, self._embed(tgt))[:, :-1, :, :]
@@ -632,7 +638,7 @@ class TransformerModel(PastCovariatesTorchModel):
 
     def _create_model(self, train_sample: TorchTrainingSample) -> _TransformerModule:
         # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
-        (past_target, past_covariates, _, _, _, _) = train_sample
+        past_target, past_covariates, _, _, _, _ = train_sample
         input_dim = past_target.shape[1] + (
             past_covariates.shape[1] if past_covariates is not None else 0
         )

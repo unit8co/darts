@@ -50,6 +50,7 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
 )
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
+from darts.models.forecasting.rin_helper import RINParser
 from darts.typing import TimeSeriesLike
 from darts.utils.data import (
     SequentialTorchInferenceDataset,
@@ -404,6 +405,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # pl_module_params must be set in __init__ method of TorchForecastingModel subclass
         self.pl_module_params: dict | None = None
+        self._rin_component_indices: dict[str, list[int] | None] | None = None
+        self._rin_indices_from_fit_inputs: bool = False
 
         # fine-tuning control
         self._verify_enable_finetuning(enable_finetuning)
@@ -849,6 +852,44 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 ),
             )
 
+    def _resolve_rin_component_indices_for_fit(
+        self,
+        series: Sequence[TimeSeries],
+        past_covariates: Sequence[TimeSeries] | None,
+        future_covariates: Sequence[TimeSeries] | None,
+    ) -> None:
+        self._rin_indices_from_fit_inputs = True
+        if self.pl_module_params is None:
+            return
+
+        rin_cfg_value = self.pl_module_params.get("use_reversible_instance_norm", False)
+        self._rin_component_indices = RINParser.resolve_component_indices_for_fit(
+            use_reversible_instance_norm=rin_cfg_value,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+    def _validate_rin_component_indices_for_fit_from_dataset(self) -> None:
+        if self.pl_module_params is None:
+            return
+        if self._rin_indices_from_fit_inputs:
+            return
+
+        rin_cfg_value = self.pl_module_params.get("use_reversible_instance_norm", False)
+        RINParser.validate_fit_from_dataset_config(rin_cfg_value)
+
+    def _apply_resolved_rin_component_indices(self, model: PLForecastingModule) -> None:
+        if self._rin_component_indices is None:
+            return
+        model.set_rin_component_indices(
+            series_indices=self._rin_component_indices.get("series"),
+            past_covariate_indices=self._rin_component_indices.get("past_covariates"),
+            future_covariate_indices=self._rin_component_indices.get(
+                "future_covariates"
+            ),
+        )
+
     def _verify_dtypes(
         self,
         sample: TorchTrainingDatasetOutput | TorchInferenceDatasetOutput,
@@ -1176,6 +1217,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if future_covariates is not None:
             self._uses_future_covariates = True
 
+        # resolve optional component-name based RIN selectors before datasets are created
+        self._resolve_rin_component_indices_for_fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
         val_series, val_past_covariates, val_future_covariates = (
             self._process_validation_set(
                 series=series,
@@ -1307,6 +1355,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         trainer, model, and datamodule required for training the model with `_train()`.
         """
         self._verify_train_dataset_type(train_dataset)
+        self._validate_rin_component_indices_for_fit_from_dataset()
 
         # proactively catch length exceptions to display nicer messages
         train_length_ok, val_length_ok = True, True
@@ -1371,6 +1420,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         f" provided input/output dimensions = {sample_shapes}."
                     ),
                 )
+
+        # when training through `fit()`, list-based RIN component selectors are resolved
+        # from TimeSeries metadata and injected here.
+        self._apply_resolved_rin_component_indices(model)
+        self._rin_indices_from_fit_inputs = False
 
         # update the covariates usage based on the training sample (required if model training was called
         # with `fit_from_dataset()`)

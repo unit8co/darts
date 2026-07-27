@@ -50,6 +50,7 @@ from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
 )
+from darts.models.forecasting.rin_helper import RINParser
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.likelihood_models.torch import TorchLikelihood
@@ -689,7 +690,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
 
     def _validate_nf_model_params(
         self,
-        use_reversible_instance_norm: bool,
+        use_reversible_instance_norm: bool | dict,
     ) -> None:
         # check all provided parameters are valid parameters for the nf_model_class
         signature = inspect.signature(self.nf_model_class.__init__)
@@ -716,8 +717,8 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             for param in ignored_params_in_use:
                 self.nf_model_params.pop(param)
 
-        # warn if RINorm is enabled for NF model while `use_reversible_instance_norm` is enabled for the PL module
-        if use_reversible_instance_norm:
+        # warn if RINorm is enabled for NF model while target-series RINorm is enabled for the PL module
+        if RINParser.is_target_series_rin_active(use_reversible_instance_norm):
             self._check_rinorm_compatibility(signature)
 
     def _check_rinorm_compatibility(
