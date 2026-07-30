@@ -57,8 +57,7 @@ class Theta(LocalForecastingModel):
         min_train_length
             Optionally, set a custom minimum required training series length for this model to allow training on
             shorter input series. By default, Darts sets a conservative minimum length to avoid downstream issues.
-            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default
-            requirement).
+            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default requirement).
 
         References
         ----------
@@ -201,9 +200,10 @@ class Theta(LocalForecastingModel):
             and self.seasonality_period
             and self.seasonality_period > 1
         ):
-            return self._min_train_input_length(2 * self.seasonality_period), 0
+            input_length_inferred = 2 * self.seasonality_period
         else:
-            return self._min_train_input_length(3), 0
+            input_length_inferred = 3
+        return self._min_train_input_length(input_length_inferred), 0
 
 
 class FourTheta(LocalForecastingModel):
@@ -258,8 +258,7 @@ class FourTheta(LocalForecastingModel):
         min_train_length
             Optionally, set a custom minimum required training series length for this model to allow training on
             shorter input series. By default, Darts sets a conservative minimum length to avoid downstream issues.
-            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default
-            requirement).
+            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default requirement).
 
         Notes
         -----
@@ -527,6 +526,7 @@ class FourTheta(LocalForecastingModel):
             and self.seasonality_period
             and self.seasonality_period > 1
         ):
-            return self._min_train_input_length(2 * self.seasonality_period), 0
+            input_length_inferred = 2 * self.seasonality_period
         else:
-            return self._min_train_input_length(3), 0
+            input_length_inferred = 3
+        return self._min_train_input_length(input_length_inferred), 0

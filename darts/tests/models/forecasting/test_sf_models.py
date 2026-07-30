@@ -421,7 +421,9 @@ class TestSFModels:
             AutoETS(season_length=1).fit(short)
         model = AutoETS(season_length=1, min_train_length=len(short))
         model.fit(short)
-        assert len(model.predict(3)) == 3
+        pred = model.predict(3)
+        assert len(pred) == 3
+        assert not np.isnan(pred.all_values(copy=False)).any()
 
     @pytest.mark.parametrize("bad", [0, -1, 2.5])
     def test_min_train_length_validation(self, bad):

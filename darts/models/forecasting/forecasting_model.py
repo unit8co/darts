@@ -168,7 +168,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self.add_encoders = kwargs["add_encoders"]
         self.encoders = self.initialize_encoders(default=True)
 
-        # optionally, override of the minimum required training series length. Only
+        # optionally, override the minimum required training series length. Only
         # relevant for (typically third-party) local models whose exact minimum
         # length Darts cannot infer and therefore sets conservatively.
         min_train_length = kwargs.get("min_train_length", None)

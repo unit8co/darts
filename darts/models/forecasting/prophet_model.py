@@ -143,8 +143,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         min_train_length
             Optionally, set a custom minimum required training series length for this model to allow training on
             shorter input series. By default, Darts sets a conservative minimum length to avoid downstream issues.
-            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default
-            requirement).
+            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default requirement).
         prophet_kwargs
             Some optional keyword arguments for Prophet.
             For information about the parameters see:

@@ -109,8 +109,7 @@ class Croston(StatsForecastModel):
         min_train_length
             Optionally, set a custom minimum required training series length for this model to allow training on
             shorter input series. By default, Darts sets a conservative minimum length to avoid downstream issues.
-            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default
-            requirement).
+            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default requirement).
         kwargs
             Keyword arguments for ``statsforecasts.models.Croston*``.
 

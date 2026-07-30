@@ -79,8 +79,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         min_train_length
             Optionally, set a custom minimum required training series length for this model to allow training on
             shorter input series. By default, Darts sets a conservative minimum length to avoid downstream issues.
-            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default
-            requirement).
+            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default requirement).
         kwargs
             Some optional keyword arguments that will be used to call
             :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing()`.
@@ -197,5 +196,7 @@ class ExponentialSmoothing(LocalForecastingModel):
     @property
     def _target_window_lengths(self) -> tuple[int, int]:
         if self.seasonal_periods is not None and self.seasonal_periods > 1:
-            return self._min_train_input_length(2 * self.seasonal_periods), 0
-        return self._min_train_input_length(3), 0
+            input_length_inferred = 2 * self.seasonal_periods
+        else:
+            input_length_inferred = 3
+        return self._min_train_input_length(input_length_inferred), 0
