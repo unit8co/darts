@@ -217,6 +217,7 @@ class FFT(LocalForecastingModel):
         required_matches: set | None = None,
         trend: str | None = None,
         trend_poly_degree: int = 3,
+        min_train_length: int | None = None,
     ):
         """Fast Fourier Transform Model
 
@@ -241,6 +242,10 @@ class FFT(LocalForecastingModel):
             Possible values: 'poly', 'exp' or None, for polynomial trend, exponential trend or no trend, respectively.
         trend_poly_degree
             The degree of the polynomial that will be used for detrending, if `trend='poly'`.
+        min_train_length
+            Optionally, set a custom minimum required training series length for this model to allow training on
+            shorter input series. By default, Darts sets a conservative minimum length to avoid downstream issues.
+            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default requirement).
 
         Examples
         --------
@@ -279,7 +284,7 @@ class FFT(LocalForecastingModel):
             `FFT example notebook <https://unit8co.github.io/darts/examples/03-FFT-examples.html>`__ presents techniques
             that can be used to improve the forecasts quality compared to this simple usage example.
         """
-        super().__init__()
+        super().__init__(min_train_length=min_train_length)
         self.nr_freqs_to_keep = nr_freqs_to_keep
         self.required_matches = required_matches
         self.trend = trend
