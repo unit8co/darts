@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- 🚀 Added new forecasting model `T0Model` : The Forecasting Company's open-weights ~100M-parameter foundation model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series as well as past and future covariates, and can output deterministic or probabilistic forecasts. It can be used zero-shot or fine-tuned (full or partial) via `enable_finetuning`. [#3142](https://github.com/unit8co/darts/pull/3142) by [Geoffrey Négiar](https://github.com/GeoffNN).
 - Added support for per-timestep (non-aggregated) encoder and decoder variable importances in `TFTExplainer`, exposed as `TimeSeries` via `TFTExplainabilityResult.get_encoder_importance_over_time()` and `get_decoder_importance_over_time()`. [#3170](https://github.com/unit8co/darts/pull/3170) by [exactml](https://github.com/exactml).
 - Calling `TFTModel.fit_from_dataset()` on a dataset that does not have future covariates now raises an informative exception. [#3149](https://github.com/unit8co/darts/pull/3149) by [YOON KIWOONG](https://github.com/kiwoongyoon).
 - 🔴 Percentage and range-based metrics (`ape`, `mape`, `sape`, `smape`, `wmape`, `ope`, `arre`, `marre`, `coefficient_of_variation`) no longer raise a hard `ValueError` when the denominator is exactly zero. A new `zero_division` parameter controls the behavior: [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
