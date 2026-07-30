@@ -118,3 +118,11 @@ class TestExponentialSmoothing:
 
         # methods with different error set should yield different forecasts
         assert not np.allclose(pred.values(), pred_boot.values(), atol=1e-5)
+
+    def test_min_train_length(self):
+        # default requirement for a non-seasonal model
+        assert ExponentialSmoothing().min_train_series_length == 3
+        # the override lowers it
+        assert ExponentialSmoothing(min_train_length=2).min_train_series_length == 2
+        with pytest.raises(ValueError, match="`min_train_length` must be"):
+            ExponentialSmoothing(min_train_length=0)

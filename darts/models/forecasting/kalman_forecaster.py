@@ -29,6 +29,7 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         kf: Kalman | None = None,
         add_encoders: dict | None = None,
         random_state: int | None = None,
+        min_train_length: int | None = None,
     ):
         """Kalman filter Forecaster
 
@@ -79,6 +80,10 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
             ..
         random_state
             Controls the randomness for reproducible forecasting.
+        min_train_length
+            Optionally, set a custom minimum required training series length for this model to allow training on
+            shorter input series. By default, Darts sets a conservative minimum length to avoid downstream issues.
+            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default requirement).
 
         Examples
         --------
@@ -105,7 +110,7 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
             presents techniques that can be used to improve the forecasts quality compared to this simple usage
             example.
         """
-        super().__init__(add_encoders=add_encoders)
+        super().__init__(add_encoders=add_encoders, min_train_length=min_train_length)
         self.dim_x = dim_x
         self.kf = kf
         self.darts_kf = KalmanFilter(dim_x, kf)

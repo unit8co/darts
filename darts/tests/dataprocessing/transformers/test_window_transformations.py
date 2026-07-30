@@ -777,3 +777,24 @@ class TestWindowTransformer:
         )
         ts_tr = window_transformer.transform(ts)
         assert ts_tr.hierarchy == ts.hierarchy == {"C": ["A"], "B": ["A"]}
+
+    @pytest.mark.parametrize(
+        "dt_source",
+        ["float32", "float64"],
+    )
+    def test_dtype_conversion(self, dt_source):
+        series = self.sequence_det[0].astype(dt_source)
+
+        window_transformations = {
+            "function": "sum",
+            "components": ["0"],
+        }
+        transformer = WindowTransformer(
+            transforms=window_transformations,
+            treat_na=100,
+            keep_non_transformed=True,
+            forecasting_safe=True,
+        )
+
+        transformed = transformer.transform(series)
+        assert transformed.dtype == dt_source

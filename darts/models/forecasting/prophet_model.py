@@ -36,6 +36,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         add_encoders: dict | None = None,
         random_state: int | None = None,
         suppress_stdout_stderror: bool = True,
+        min_train_length: int | None = None,
         **prophet_kwargs,
     ):
         """Facebook Prophet
@@ -139,6 +140,10 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             Controls the randomness for reproducible forecasting.
         suppress_stdout_stderror
             Optionally suppress the log output produced by Prophet during training.
+        min_train_length
+            Optionally, set a custom minimum required training series length for this model to allow training on
+            shorter input series. By default, Darts sets a conservative minimum length to avoid downstream issues.
+            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default requirement).
         prophet_kwargs
             Some optional keyword arguments for Prophet.
             For information about the parameters see:
@@ -171,7 +176,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
          [539.11716811]]
         """
 
-        super().__init__(add_encoders=add_encoders)
+        super().__init__(add_encoders=add_encoders, min_train_length=min_train_length)
 
         self._auto_seasonalities = self._extract_auto_seasonality(prophet_kwargs)
         self._add_regressor_configs = add_regressor_configs or {}

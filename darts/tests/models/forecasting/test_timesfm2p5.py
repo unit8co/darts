@@ -16,6 +16,11 @@ if not TORCH_AVAILABLE:
 from darts import TimeSeries, concatenate
 from darts.datasets import ElectricityConsumptionZurichDataset
 from darts.models import TimesFM2p5Model
+from darts.tests.models.forecasting.foundation_test_utils import (
+    TIMESFM2P5_TINY_MAX_CONTEXT_LENGTH,
+    TIMESFM2P5_TINY_MAX_PREDICTION_LENGTH,
+    timesfm2p5_tiny_context,
+)
 from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
 from darts.utils.timeseries_generation import (
     gaussian_timeseries,
@@ -227,43 +232,41 @@ class TestTimesFM2p5Model:
             # check that we get the correct number of variables
             assert pred.n_components == self.ts_energy_train.n_components
 
-    @pytest.mark.slow
+    @timesfm2p5_tiny_context()
     @pytest.mark.parametrize("use_longer_projection_head", [True, False])
     def test_creation(self, use_longer_projection_head: bool):
-        # initialize model kwargs with TFM-specific parameters
         model_kwargs = {}
         model_kwargs.update(tfm_kwargs)
 
-        # `use_longer_projection_head` should default to `False` if not specified,
         if use_longer_projection_head:
             model_kwargs["use_longer_projection_head"] = True
-            max_prediction_length = self.max_prediction_length_longer_head
+            max_prediction_length = 16  # tiny output_quantile_len
         else:
-            max_prediction_length = self.max_prediction_length
+            max_prediction_length = TIMESFM2P5_TINY_MAX_PREDICTION_LENGTH
 
         # can use shorter input/output chunk length than max
         model = TimesFM2p5Model(
-            input_chunk_length=11,
-            output_chunk_length=13,
+            input_chunk_length=8,
+            output_chunk_length=4,
             **model_kwargs,
         )
         model.fit(series=self.series)
-        pred = model.predict(n=10, series=self.series)
+        pred = model.predict(n=4, series=self.series)
         assert isinstance(pred, TimeSeries)
-        assert len(pred) == 10
+        assert len(pred) == 4
 
         # cannot create longer input chunk length than max
         with pytest.raises(ValueError, match=r"`input_chunk_length` \d+ plus"):
             TimesFM2p5Model(
-                input_chunk_length=self.context_limit,
-                output_chunk_length=11,
+                input_chunk_length=TIMESFM2P5_TINY_MAX_CONTEXT_LENGTH,
+                output_chunk_length=4,
                 **model_kwargs,
             )
 
         # cannot create longer output chunk length than max
         with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
             TimesFM2p5Model(
-                input_chunk_length=19,
+                input_chunk_length=8,
                 output_chunk_length=max_prediction_length + 1,
                 **model_kwargs,
             )
@@ -271,7 +274,7 @@ class TestTimesFM2p5Model:
         # cannot create longer output chunk length + output chunk shift than max
         with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
             TimesFM2p5Model(
-                input_chunk_length=23,
+                input_chunk_length=8,
                 output_chunk_length=max_prediction_length - 1,
                 output_chunk_shift=3,
                 **model_kwargs,
@@ -280,8 +283,8 @@ class TestTimesFM2p5Model:
         # cannot use likelihood others than QuantileRegression
         with pytest.raises(ValueError, match="Only QuantileRegression likelihood is"):
             TimesFM2p5Model(
-                input_chunk_length=29,
-                output_chunk_length=12,
+                input_chunk_length=8,
+                output_chunk_length=4,
                 likelihood=GaussianLikelihood(),
                 **model_kwargs,
             )
@@ -291,17 +294,17 @@ class TestTimesFM2p5Model:
             ValueError, match="must be a subset of TimesFM 2.5 quantiles"
         ):
             TimesFM2p5Model(
-                input_chunk_length=7,
-                output_chunk_length=6,
+                input_chunk_length=8,
+                output_chunk_length=4,
                 likelihood=QuantileRegression(quantiles=[0.23, 0.5, 0.77]),
                 **model_kwargs,
             )
 
-    @pytest.mark.slow
+    @timesfm2p5_tiny_context()
     def test_default(self):
         # default model is deterministic
         model = TimesFM2p5Model(
-            input_chunk_length=3,
+            input_chunk_length=8,
             output_chunk_length=4,
             **tfm_kwargs,
         )
@@ -325,11 +328,11 @@ class TestTimesFM2p5Model:
         assert len(pred_ar) == 6
         assert pred_ar.n_components == 1
 
-    @pytest.mark.slow
+    @timesfm2p5_tiny_context()
     def test_probabilistic(self):
         # probabilistic model
         model = TimesFM2p5Model(
-            input_chunk_length=5,
+            input_chunk_length=8,
             output_chunk_length=6,
             likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
             **tfm_kwargs,
@@ -361,12 +364,11 @@ class TestTimesFM2p5Model:
         assert pred_ar.n_components == 1  # sampling yields single component
         assert pred_ar.n_samples == 10
 
-    @pytest.mark.slow
+    @timesfm2p5_tiny_context()
     @pytest.mark.parametrize("probabilistic", [True, False])
     def test_multivariate(self, probabilistic: bool):
-        # create model
         model = TimesFM2p5Model(
-            input_chunk_length=3,
+            input_chunk_length=8,
             output_chunk_length=8,
             likelihood=(
                 QuantileRegression(quantiles=[0.1, 0.5, 0.9]) if probabilistic else None
@@ -382,10 +384,11 @@ class TestTimesFM2p5Model:
         else:
             assert pred.n_components == 3
 
+    @timesfm2p5_tiny_context()
     def test_covariates(self):
         model = TimesFM2p5Model(
             input_chunk_length=21,
-            output_chunk_length=23,
+            output_chunk_length=8,
             **tfm_kwargs,
         )
 
@@ -407,12 +410,11 @@ class TestTimesFM2p5Model:
                 future_covariates=self.future_cov,
             )
 
-    @pytest.mark.slow
+    @timesfm2p5_tiny_context()
     def test_multiple_series(self):
-        # create model
         model = TimesFM2p5Model(
-            input_chunk_length=2,
-            output_chunk_length=3,
+            input_chunk_length=8,
+            output_chunk_length=4,
             **tfm_kwargs,
         )
         model.fit(series=[self.series_multi, self.series_multi_2])

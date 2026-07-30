@@ -31,7 +31,12 @@ from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
 )
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    InputChunkLength,
+    PLModuleInput,
+    TorchTrainingSample,
+    _parse_input_chunk_length,
+)
 from darts.utils.likelihood_models.torch import QuantileRegression
 
 
@@ -576,7 +581,7 @@ class _Chronos2Module(PLForecastingModule):
 class Chronos2Model(FoundationModel):
     def __init__(
         self,
-        input_chunk_length: int,
+        input_chunk_length: InputChunkLength,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
         likelihood: QuantileRegression | None = None,
@@ -638,7 +643,9 @@ class Chronos2Model(FoundationModel):
         input_chunk_length
             Number of time steps in the past to take as a model input (per chunk). Applies to the target
             series, and past and/or future covariates (if the model supports it).
-            Maximum is 8192 for Chronos-2.
+            Can be either an ``int`` for a fixed input window, or a ``(min_length, max_length)`` tuple to enable
+            variable-length inputs for inference and fine-tuning.
+            The maximum value is 8192 for Chronos-2.
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
@@ -877,10 +884,11 @@ class Chronos2Model(FoundationModel):
 
         # validate `input_chunk_length` against model's context_length
         context_length = chronos_config["context_length"]
-        if input_chunk_length > context_length:
+        _, max_icl = _parse_input_chunk_length(input_chunk_length)
+        if max_icl > context_length:
             raise_log(
                 ValueError(
-                    f"`input_chunk_length` {input_chunk_length} cannot be greater than "
+                    f"`input_chunk_length` {max_icl} cannot be greater than "
                     f"model's context_length {context_length}"
                 ),
             )

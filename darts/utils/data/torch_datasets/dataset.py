@@ -5,6 +5,7 @@ Base Torch Dataset
 
 from abc import ABC, abstractmethod
 
+import numpy as np
 from torch.utils.data import Dataset
 
 from darts import TimeSeries
@@ -40,6 +41,32 @@ class TorchDataset(ABC, Dataset):
         self, idx: int
     ) -> TorchTrainingDatasetOutput | TorchInferenceDatasetOutput:
         """Returns a sample drawn from this dataset."""
+
+    @staticmethod
+    def _extract_values(
+        vals: np.ndarray,
+        feat_start: int,
+        feat_end: int,
+        pad_len: int = 0,
+    ) -> np.ndarray:
+        """Extract a feature slice, potentially NaN-padding the front for variable input chunk length support.
+
+        If ``pad_len`` != , the first ``pad_len`` positions are considered having no data and are filled with NaN.
+        The real values are taken starting from the feature index that corresponds to target position 0 (e.g. starting
+        at the time when the first target value is known).
+
+        For covariates: even if more historic data was available than the target series provides, these values are
+        ignored and the same number of steps are left-padded as for the target series.
+        """
+        if pad_len == 0:
+            return vals[feat_start:feat_end]
+
+        expected_len = feat_end - feat_start
+        real_start = feat_start + pad_len
+        real_vals = vals[real_start:feat_end]
+        padded = np.full((expected_len,) + vals.shape[1:], np.nan, dtype=vals.dtype)
+        padded[pad_len:] = real_vals
+        return padded
 
     def _memory_indexer(
         self,
@@ -136,8 +163,11 @@ class TorchDataset(ABC, Dataset):
                 # extract actual index value (respects datetime- and integer-based indexes; also from non-zero start)
                 feat_times = feat._time_index
 
-                # `starts` represents start index (e.g. `ts[start]`)
-                if start < len(series):
+                # `start` represents start index (e.g. `ts[start]`)
+                if start < 0:
+                    # variable icl: input extends before the series start and will be left NaN-padded
+                    start_time = series_times[0]
+                elif start < len(series):
                     start_time = series_times[start]
                 else:
                     start_time = (
@@ -187,6 +217,9 @@ class TorchDataset(ABC, Dataset):
 
                 # extract the index position (index) from the start index
                 feat_start = feat_times.get_loc(start_time)
+                if start < 0:
+                    # variable icl: input extends before the series start and will be left NaN-padded
+                    feat_start += start
                 # extract the exclusive range end position (idx + 1) from the end index
                 feat_end = feat_times.get_loc(end_time) + 1
                 idx_bounds[feat_type] = (feat_start, feat_end)

@@ -9,7 +9,7 @@ explainability information from the model.
   each of the input features.
   - encoder importance: historic part of target, past covariates and historic part of future covariates
   - decoder importance: future part of future covariates
-  - static covariates importance: the numeric and catageorical static covariates importance
+  - static covariates importance: the numeric and categorical static covariates importance
 
 - :func:`plot_attention() <TFTExplainer.plot_attention>` plots the transformer attention that the `TFTModel` applies
   on the given past and future input. The attention is aggregated over all attention heads.
@@ -129,8 +129,12 @@ class TFTExplainer(_ForecastingModelExplainer):
         `foreground_series`. If `foreground_series` is `None`, will use the `background` input
         from `TFTExplainer` creation (either the `background` passed to creation, or the series stored in the
         `TFTModel` in case it was only trained on a single series).
-        For each series, the results contain the attention heads, encoder variable importances, decoder variable
-        importances, and static covariates importances.
+        For each series, the results contain the:
+
+        - attention heads
+        - encoder, decoder, and static variable importances aggregated over time.
+        - encoder variable importances per timestep of the input chunk and decoder variable importances per timestep
+          of the output chunk.
 
         Parameters
         ----------
@@ -166,6 +170,8 @@ class TFTExplainer(_ForecastingModelExplainer):
         >>> )
         >>> attn = explain_results.get_attention()
         >>> importances = explain_results.get_feature_importances()
+        >>> enc_importances = explain_results.get_encoder_importance_over_time()
+        >>> dec_importances = explain_results.get_decoder_importance_over_time()
         """
         if target_components is not None or horizons is not None:
             logger.warning(
@@ -216,6 +222,15 @@ class TFTExplainer(_ForecastingModelExplainer):
         decoder_importance = self._decoder_importance
         static_covariates_importance = self._static_covariates_importance
 
+        # get the encoder/decoder importances over time;
+        # static covariates have no time dimension, so there is no "over time" variant for them
+        encoder_importance_over_time, encoder_var_names = (
+            self._encoder_importance_over_time
+        )
+        decoder_importance_over_time, decoder_var_names = (
+            self._decoder_importance_over_time
+        )
+
         horizon_idx = [h - 1 for h in horizons]
 
         results = []
@@ -227,6 +242,16 @@ class TFTExplainer(_ForecastingModelExplainer):
                 times=times,
                 components=[f"horizon {str(i)}" for i in horizons],
             )
+            encoder_importance_over_time_ts = TimeSeries(
+                values=encoder_importance_over_time[idx],
+                times=series.time_index[-icl:],
+                components=encoder_var_names,
+            )
+            decoder_importance_over_time_ts = TimeSeries(
+                values=decoder_importance_over_time[idx],
+                times=pred_series.time_index,
+                components=decoder_var_names,
+            )
             results.append({
                 "attention": attention,
                 "encoder_importance": encoder_importance.iloc[idx : idx + 1],
@@ -234,6 +259,8 @@ class TFTExplainer(_ForecastingModelExplainer):
                 "static_covariates_importance": static_covariates_importance.iloc[
                     idx : idx + 1
                 ],
+                "encoder_importance_over_time": encoder_importance_over_time_ts,
+                "decoder_importance_over_time": decoder_importance_over_time_ts,
             })
         return TFTExplainabilityResult(
             explanations=results[0] if len(results) == 1 else results
@@ -543,6 +570,65 @@ class TFTExplainer(_ForecastingModelExplainer):
 
         # return the importance sorted descending
         return importance.transpose().sort_values(0, ascending=True).transpose()
+
+    @property
+    def _encoder_importance_over_time(self) -> tuple[np.ndarray, list[str]]:
+        """Returns the encoder variable importance over time of the TFT model.
+
+        Returns
+        -------
+        tuple[np.ndarray, list[str]]
+            The importance over time of the encoder variables as well as the variable names.
+        """
+        return self._get_importance_over_time(
+            weight=self.model.model._encoder_sparse_weights,
+            names=self.model.model.encoder_variables,
+        )
+
+    @property
+    def _decoder_importance_over_time(self) -> tuple[np.ndarray, list[str]]:
+        """Returns the decoder variable importance over time of the TFT model.
+
+        Returns
+        -------
+        tuple[np.ndarray, list[str]]
+            The importance over time of the decoder variables as well as the variable names.
+        """
+        return self._get_importance_over_time(
+            weight=self.model.model._decoder_sparse_weights,
+            names=self.model.model.decoder_variables,
+        )
+
+    def _get_importance_over_time(
+        self,
+        weight: Tensor,
+        names: list[str],
+    ) -> tuple[np.ndarray, list[str]]:
+        """Returns the per-timestep encoder/decoder variable importance weights of the TFT model.
+
+        Unlike `_get_importance`, this does not average the weights over the time dimension, so
+        that the importance of each variable can be tracked at every encoder/decoder timestep.
+        Only applicable to the encoder/decoder weights (which have a time dimension); static
+        covariates have no time dimension and therefore no "over time" counterpart.
+
+        Parameters
+        ----------
+        weight
+            The encoder or decoder weights of the trained TFT model, with shape
+            `(batch, time, 1, n_vars)`.
+
+        Returns
+        -------
+        tuple[np.ndarray, list[str]]
+            Array of shape `(batch, time, n_vars)` with the importance in percent per timestep,
+            in the same variable order as `weight`, as well as the variable names.
+        """
+        # weight shape: (batch, time, 1, n_vars) -> (batch, time, n_vars). Column order is kept
+        # as-is (unlike `_get_importance`, not sorted by magnitude), since a `TimeSeries` needs a
+        # fixed component order across all timesteps.
+        var_names = [self._name_mapping[name] for name in names]
+        importance = weight.detach().cpu().numpy().squeeze(axis=2) * 100
+        return importance, var_names
 
     @property
     def _name_mapping(self) -> dict[str, str]:

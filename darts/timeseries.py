@@ -73,6 +73,7 @@ from darts.utils._formatting import (
 )
 from darts.utils.utils import (
     SUPPORTED_RESAMPLE_METHODS,
+    _maybe_cast_array_dtype,
     dataframe_col_to_time_index,
     expand_arr,
     generate_index,
@@ -1708,7 +1709,7 @@ class TimeSeries:
     @property
     def duration(self) -> pd.Timedelta | int:
         """The duration of the series (as a ``pandas.Timedelta`` or `int`)."""
-        return self._time_index[-1] - self._time_index[0]
+        return self.end_time() - self.start_time()
 
     """
     Export functions
@@ -1979,7 +1980,12 @@ class TimeSeries:
             A timestamp containing the first time of the TimeSeries (if indexed by DatetimeIndex),
             or an integer (if indexed by RangeIndex)
         """
-        return self._time_index[0]
+        # index[0] is relatively expensive (esp. for DatetimeIndex); cache on first access.
+        start_time = getattr(self, "_start_time", None)
+        if start_time is None:
+            start_time = self._time_index[0]
+            self._start_time = start_time
+        return start_time
 
     def end_time(self) -> pd.Timestamp | int:
         """End time of the series.
@@ -1990,7 +1996,12 @@ class TimeSeries:
             A timestamp containing the last time of the TimeSeries (if indexed by DatetimeIndex),
             or an integer (if indexed by RangeIndex)
         """
-        return self._time_index[-1]
+        # index[-1] is relatively expensive (esp. for DatetimeIndex); cache on first access.
+        end_time = getattr(self, "_end_time", None)
+        if end_time is None:
+            end_time = self._time_index[-1]
+            self._end_time = end_time
+        return end_time
 
     def first_value(self) -> float:
         """First value of the univariate series.
@@ -2899,6 +2910,7 @@ class TimeSeries:
         if (self._values[0, :, :] == 0).any():
             raise_log(ValueError("Cannot rescale with first value `0`."))
         coef = value_at_first_step / self._values[:1]
+        coef = _maybe_cast_array_dtype(coef, self.dtype)
         return self.__class__(
             times=self._time_index,
             values=self._values * coef,
@@ -2931,11 +2943,11 @@ class TimeSeries:
             n = int(n)
 
         try:
-            self._time_index[-1] + n * self.freq
+            self.end_time() + n * self.freq
         except pd.errors.OutOfBoundsDatetime:
             raise_log(
                 OverflowError(
-                    f"the add operation between {n * self.freq} and {self.time_index[-1]} will "
+                    f"the add operation between {n * self.freq} and {self.end_time()} will "
                     "overflow"
                 ),
             )
@@ -3088,7 +3100,8 @@ class TimeSeries:
                         "Appended TimeSeries must start one (time) step after current one."
                     ),
                 )
-        values = np.concatenate((self._values, other._values), axis=0)
+        values_other = _maybe_cast_array_dtype(other._values, self.dtype)
+        values = np.concatenate((self._values, values_other), axis=0)
         times = self._time_index.append(other._time_index)
         return self.__class__(
             times=times,
@@ -3162,13 +3175,39 @@ class TimeSeries:
         TimeSeries.concatenate : concatenate another series along a given axis.
         TimeSeries.append : append another series along the time axis.
         """
-        if not isinstance(other, self.__class__):
+        if other.has_datetime_index != self.has_datetime_index:
             raise_log(
                 ValueError(
-                    f"`other` to prepend must be a {self.__class__.__name__} object."
+                    "Both series must have the same type of time index (either DatetimeIndex or RangeIndex)."
                 ),
             )
-        return other.append(self)
+        if other.freq != self.freq:
+            raise_log(ValueError("Both series must have the same frequency."))
+        if other.n_components != self.n_components:
+            raise_log(
+                ValueError("Both series must have the same number of components."),
+            )
+        if other.n_samples != self.n_samples:
+            raise_log(
+                ValueError("Both series must have the same number of samples."),
+            )
+        if len(self) > 0 and len(other) > 0:
+            if other.end_time() != self.start_time() - self.freq:
+                raise_log(
+                    ValueError(
+                        "Prepended TimeSeries must end one (time) step before current one."
+                    ),
+                )
+
+        values_other = _maybe_cast_array_dtype(other._values, self.dtype)
+        values = np.concatenate((values_other, self._values), axis=0)
+        times = other._time_index.append(self._time_index)
+        return self.__class__(
+            times=times,
+            values=values,
+            components=self.components,
+            **self._attrs,
+        )
 
     def prepend_values(self, values: np.ndarray) -> Self:
         """Return a new series with `values` prepended to this series along the time axis (added to the beginning).
@@ -3267,6 +3306,7 @@ class TimeSeries:
                     f"Received: {values.shape[1]}, expected: {self.shape[1]}"
                 ),
             )
+        values = _maybe_cast_array_dtype(values, self.dtype)
         return self.__class__(
             times=times,
             values=values,
@@ -3300,6 +3340,7 @@ class TimeSeries:
                     f"Received: {values.shape[:2]}, expected: {self.shape[:2]}"
                 ),
             )
+        values = _maybe_cast_array_dtype(values, self.dtype)
         return self.__class__(
             times=self._time_index,
             values=values,
@@ -3728,7 +3769,7 @@ class TimeSeries:
         bool
             Whether `ts` is contained within the interval of this series.
         """
-        return self.time_index[0] <= ts <= self.time_index[-1]
+        return self.start_time() <= ts <= self.end_time()
 
     def map(
         self,
@@ -3823,6 +3864,7 @@ class TimeSeries:
                 )
             )
 
+        values = _maybe_cast_array_dtype(values, self.dtype)
         return self.__class__(
             times=self._time_index,
             values=values,
@@ -4294,11 +4336,15 @@ class TimeSeries:
                     for k, v in self.hierarchy.items()
                 }
 
+        resulting_transformations = resulting_transformations.values.reshape(
+            len(new_index), -1, n_samples
+        )
+        resulting_transformations = _maybe_cast_array_dtype(
+            resulting_transformations, self.dtype
+        )
         transformed_time_series = TimeSeries(
             times=new_index,
-            values=resulting_transformations.values.reshape(
-                len(new_index), -1, n_samples
-            ),
+            values=resulting_transformations,
             components=new_columns,
             static_covariates=self.static_covariates,
             hierarchy=new_hierarchy,
@@ -5970,7 +6016,10 @@ def concatenate(
     hierarchy = series[0].hierarchy
     metadata = None if drop_metadata else series[0].metadata
 
+    dtype_source = vals[0].dtype
     vals = np.concatenate(vals, axis=axis)
+    vals = _maybe_cast_array_dtype(vals, dtype_source)
+
     if axis == 0:
         # time
         if not (component_axis_equal and sample_axis_equal):

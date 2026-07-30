@@ -3,15 +3,12 @@ Temporal Fusion Transformer (TFT)
 ---------------------------------
 """
 
-from collections.abc import Sequence
-
 import numpy as np
 import pandas as pd
 import torch
 from torch import nn
 from torch.nn import LSTM as _LSTM
 
-from darts import TimeSeries
 from darts.logging import raise_log
 from darts.models.components import glu_variants, layer_norm_variants
 from darts.models.components.glu_variants import GLU_FFN
@@ -28,7 +25,6 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.data import TorchTrainingDataset
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.likelihood_models.torch import QuantileRegression, TorchLikelihood
 
@@ -1015,6 +1011,17 @@ class TFTModel(MixedCovariatesTorchModel):
             future_target,
         ) = train_sample
 
+        if future_covariate is None and not self.add_relative_index:
+            raise_log(
+                ValueError(
+                    "TFTModel requires future covariates. The model applies multi-head attention queries on future "
+                    "inputs. Consider specifying a future encoder with `add_encoders` (only available when training "
+                    "with `fit()` and not `fit_from_dataset()`) or setting `add_relative_index` to `True` at model "
+                    "creation (read TFT model docs for more information). These will automatically generate "
+                    "`future_covariates` from indexes."
+                ),
+            )
+
         # add a covariate placeholder so that relative index will be included
         if self.add_relative_index:
             time_steps = self.input_chunk_length + self.output_chunk_length
@@ -1170,33 +1177,6 @@ class TFTModel(MixedCovariatesTorchModel):
             skip_interpolation=self.skip_interpolation,
             norm_type=self.norm_type,
             **self.pl_module_params,
-        )
-
-    def _build_train_dataset(
-        self,
-        series: Sequence[TimeSeries],
-        past_covariates: Sequence[TimeSeries] | None,
-        future_covariates: Sequence[TimeSeries] | None,
-        sample_weight: Sequence[TimeSeries] | str | None,
-        max_samples_per_ts: int | None,
-        stride: int = 1,
-    ) -> TorchTrainingDataset:
-        if future_covariates is None and not self.add_relative_index:
-            raise_log(
-                ValueError(
-                    "TFTModel requires future covariates. The model applies multi-head attention queries on future "
-                    "inputs. Consider specifying a future encoder with `add_encoders` or setting `add_relative_index` "
-                    "to `True` at model creation (read TFT model docs for more information). "
-                    "These will automatically generate `future_covariates` from indexes."
-                ),
-            )
-        return super()._build_train_dataset(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            max_samples_per_ts=max_samples_per_ts,
-            sample_weight=sample_weight,
-            stride=stride,
         )
 
     @property
