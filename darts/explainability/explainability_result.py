@@ -553,17 +553,17 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
 
     - :func:`get_attention() <TFTExplainabilityResult.get_attention>`: self attention over the encoder and decoder
     - :func:`get_encoder_importance() <TFTExplainabilityResult.get_encoder_importance>`: encoder feature importances
-      including past target, past covariates, and historic part of future covariates.
+      aggregated over time including past target, past covariates, and historic part of future covariates.
     - :func:`get_decoder_importance() <TFTExplainabilityResult.get_decoder_importance>`: decoder feature importances
-      including future part of future covariates.
+      aggregated over time including future part of future covariates.
     - :func:`get_static_covariates_importance() <TFTExplainabilityResult.get_static_covariates_importance>`: static
       covariates importances.
-    - :func:`get_feature_importances() <TFTExplainabilityResult.get_feature_importances>`: get all feature importances
-      at once.
+    - :func:`get_feature_importances() <TFTExplainabilityResult.get_feature_importances>`: get all time-aggregated
+      feature importances at once.
     - :func:`get_encoder_importance_over_time() <TFTExplainabilityResult.get_encoder_importance_over_time>`: encoder
-      feature importances per timestep of the input chunk (not aggregated over time).
+      feature importances over time of the input chunk.
     - :func:`get_decoder_importance_over_time() <TFTExplainabilityResult.get_decoder_importance_over_time>`: decoder
-      feature importances per timestep of the forecast horizon (not aggregated over time).
+      feature importances over time of the output chunk.
 
     Examples
     --------
@@ -633,7 +633,7 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
 
     def get_encoder_importance(self) -> pd.DataFrame | list[pd.DataFrame]:
         """
-        Returns the time-dependent encoder importances as a pd.DataFrames.
+        Returns the encoder importances aggregated over time as a pd.DataFrames.
         If multiple series were used in :func:`TFTExplainer.explain()
         <darts.explainability.tft_explainer.TFTExplainer.explain>`, returns a list of pd.DataFrames.
         """
@@ -641,7 +641,7 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
 
     def get_decoder_importance(self) -> pd.DataFrame | list[pd.DataFrame]:
         """
-        Returns the time-dependent decoder importances as a pd.DataFrames.
+        Returns the decoder importances aggregated over time as a pd.DataFrames.
         If multiple series were used in :func:`TFTExplainer.explain()
         <darts.explainability.tft_explainer.TFTExplainer.explain>`, returns a list of pd.DataFrames.
         """
@@ -659,18 +659,18 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
 
     def get_encoder_importance_over_time(self) -> TimeSeries | list[TimeSeries]:
         """
-        Returns the per-timestep encoder importances (not aggregated over time) as a `TimeSeries`, with one
-        component per encoder variable. The time index corresponds to the input chunk of the explained series.
-        If multiple series were used in :func:`TFTExplainer.explain()
-        <darts.explainability.tft_explainer.TFTExplainer.explain>`, returns a list of `TimeSeries`.
+        Returns the encoder importances over time as a `TimeSeries`, with one component per encoder variable.
+        The time index corresponds to the input chunk of the explained series. If multiple series were used
+        in :func:`TFTExplainer.explain() <darts.explainability.tft_explainer.TFTExplainer.explain>`, returns a list
+        of `TimeSeries`.
         """
         return self.get_explanation("encoder_importance_over_time")
 
     def get_decoder_importance_over_time(self) -> TimeSeries | list[TimeSeries]:
         """
-        Returns the per-timestep decoder importances (not aggregated over time) as a `TimeSeries`, with one
-        component per decoder variable. The time index corresponds to the forecast horizon of the explained
-        series. If multiple series were used in :func:`TFTExplainer.explain()
-        <darts.explainability.tft_explainer.TFTExplainer.explain>`, returns a list of `TimeSeries`.
+        Returns the decoder importances over time as a `TimeSeries`, with one component per decoder variable.
+        The time index corresponds to the forecast horizon of the explained series. If multiple series were used
+        in :func:`TFTExplainer.explain() <darts.explainability.tft_explainer.TFTExplainer.explain>`, returns a list
+        of `TimeSeries`.
         """
         return self.get_explanation("decoder_importance_over_time")
