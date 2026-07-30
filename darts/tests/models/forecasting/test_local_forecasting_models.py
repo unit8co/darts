@@ -731,11 +731,13 @@ class TestLocalForecastingModels:
             (
                 ExponentialSmoothing(),
                 "ExponentialSmoothing(trend=ModelMode.ADDITIVE, damped=False, seasonal=SeasonalityMode.ADDITIVE, "
-                + "seasonal_periods=None, error=add, random_errors=None, random_state=None, kwargs=None)",
+                + "seasonal_periods=None, error=add, random_errors=None, random_state=None, min_train_length=None, "
+                + "kwargs=None)",
             ),  # no params changed
             (
                 ARIMA(1, 1, 1),
-                "ARIMA(p=1, d=1, q=1, seasonal_order=(0, 0, 0, 0), trend=None, random_state=None, add_encoders=None)",
+                "ARIMA(p=1, d=1, q=1, seasonal_order=(0, 0, 0, 0), trend=None, random_state=None, add_encoders=None, "
+                + "min_train_length=None)",
             ),  # default value for a param
         ],
     )
@@ -802,3 +804,17 @@ class TestForecastingModelInputValidation:
         model.fit(self.series)
         with pytest.raises(ValueError, match="Encodings are not available"):
             model.generate_predict_encodings(n=1, series=self.series)
+
+    @pytest.mark.parametrize(
+        "model_cls",
+        [ARIMA, VARIMA, Theta, FourTheta, FFT, KalmanForecaster]
+        + ([Prophet] if PROPHET_AVAILABLE else []),
+    )
+    def test_min_train_length_on_local_models(self, model_cls):
+        # the default minimum required training series length is unchanged
+        assert model_cls().min_train_series_length >= 3
+        # `min_train_length` overrides the default requirement
+        assert model_cls(min_train_length=2).min_train_series_length == 2
+        # invalid values are rejected
+        with pytest.raises(ValueError, match="`min_train_length` must be"):
+            model_cls(min_train_length=0)

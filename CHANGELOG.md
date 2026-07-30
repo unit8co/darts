@@ -16,6 +16,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - 🔴 Percentage and range-based metrics (`ape`, `mape`, `sape`, `smape`, `wmape`, `ope`, `arre`, `marre`, `coefficient_of_variation`) no longer raise a hard `ValueError` when the denominator is exactly zero. A new `zero_division` parameter controls the behavior: [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
   - `"warn"` (default) raises a warning and returns `0.0` when the numerator is also zero (typically meaning perfect forecasts) or `np.nan` otherwise
   - `"raise"` preserves the legacy error.
+- Added an optional `min_train_length` parameter to third-party local forecasting models (StatsForecast models such as `StatsForecastingModel`, `AutoETS`, ... and other models such as `ExponentialSmoothing`, `*ARIMA`, `*Theta`, `Prophet`, `FFT`, and `KalmanForecaster`) to override the conservative default minimum training series length and allow fitting on shorter series. Note that lowering this value might raise exceptions from the third-party models themselves if their internal input requirements are not met. [#3167](https://github.com/unit8co/darts/pull/3167) by [Haibin Yu](https://github.com/haiiibin).
 
 **Fixed**
 

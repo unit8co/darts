@@ -25,6 +25,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         error: str | None = "add",
         random_errors: Any | None = None,
         random_state: int | None = None,
+        min_train_length: int | None = None,
         kwargs: dict[str, Any] | None = None,
         **fit_kwargs,
     ):
@@ -75,6 +76,10 @@ class ExponentialSmoothing(LocalForecastingModel):
             for more information.
         random_state
             Controls the randomness for reproducible forecasting.
+        min_train_length
+            Optionally, set a custom minimum required training series length for this model to allow training on
+            shorter input series. By default, Darts sets a conservative minimum length to avoid downstream issues.
+            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default requirement).
         kwargs
             Some optional keyword arguments that will be used to call
             :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing()`.
@@ -104,7 +109,7 @@ class ExponentialSmoothing(LocalForecastingModel):
          [505.4770514 ]
          [573.31519186]]
         """
-        super().__init__()
+        super().__init__(min_train_length=min_train_length)
         self.trend = trend
         self.damped = damped
         self.seasonal = seasonal
@@ -191,5 +196,7 @@ class ExponentialSmoothing(LocalForecastingModel):
     @property
     def _target_window_lengths(self) -> tuple[int, int]:
         if self.seasonal_periods is not None and self.seasonal_periods > 1:
-            return 2 * self.seasonal_periods, 0
-        return 3, 0
+            input_length_inferred = 2 * self.seasonal_periods
+        else:
+            input_length_inferred = 3
+        return self._min_train_input_length(input_length_inferred), 0

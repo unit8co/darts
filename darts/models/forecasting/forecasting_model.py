@@ -168,6 +168,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self.add_encoders = kwargs["add_encoders"]
         self.encoders = self.initialize_encoders(default=True)
 
+        # optionally, override the minimum required training series length. Only
+        # relevant for (typically third-party) local models whose exact minimum
+        # length Darts cannot infer and therefore sets conservatively.
+        min_train_length = kwargs.get("min_train_length", None)
+        if min_train_length is not None and (
+            not isinstance(min_train_length, int) or min_train_length < 1
+        ):
+            raise_log(
+                ValueError(
+                    "`min_train_length` must be a strictly positive integer or `None`, "
+                    f"received `{min_train_length}`."
+                )
+            )
+        self._min_train_length = min_train_length
+
     @abstractmethod
     def fit(
         self, series: TimeSeries, verbose: bool | None = None
@@ -474,6 +489,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         The minimum required length for the training series.
         """
         return sum(self._target_window_lengths) + (self.min_train_samples - 1)
+
+    def _min_train_input_length(self, default: int) -> int:
+        """Input target-window length, honoring a user-provided ``min_train_length``
+        override when one was set at model creation (else ``default``)."""
+        return default if self._min_train_length is None else self._min_train_length
 
     @property
     @abstractmethod
@@ -2894,8 +2914,10 @@ class LocalForecastingModel(ForecastingModel, ABC):
     All implementations must implement the `fit()` and `predict()` methods.
     """
 
-    def __init__(self, add_encoders: dict | None = None):
-        super().__init__(add_encoders=add_encoders)
+    def __init__(
+        self, add_encoders: dict | None = None, min_train_length: int | None = None
+    ):
+        super().__init__(add_encoders=add_encoders, min_train_length=min_train_length)
 
     @property
     def _model_encoder_settings(
@@ -2951,7 +2973,7 @@ class LocalForecastingModel(ForecastingModel, ABC):
     @property
     def _target_window_lengths(self) -> tuple[int, int]:
         # local models do not work with samples, so the length of the training sample is not tied to lags
-        return 3, self.output_chunk_length or 0
+        return self._min_train_input_length(3), self.output_chunk_length or 0
 
 
 class GlobalForecastingModel(ForecastingModel, ABC):
