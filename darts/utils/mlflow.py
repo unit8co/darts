@@ -6,12 +6,12 @@ Custom MLflow model flavor for Darts forecasting models. Supports saving, loadin
 and logging any Darts ``ForecastingModel`` (statistical, ML-based, and PyTorch-based)
 to MLflow, as well as automatic logging (``autolog()``) of:
 
-* Model creation parameters and covariate usage information.
-* The trained model artifact after each ``fit()`` call when ``log_models=True``
-  (default ``False``).
-* Darts metric function calls made inside an active MLflow run.
-* ``backtest()`` evaluation metrics.
-* Per-epoch training/validation metrics for PyTorch-based models.
+- Model parameters and data metadata: The model creation parameters and covariate usage information.
+- Model storage: The trained model artifact after each ``fit()`` call when ``log_models=True`` (default ``False``).
+- Metrics:
+  - The score for each metric called inside an active MLflow run.
+  - The score(s) from a ``backtest()`` call.
+  - Per-epoch training/validation metrics for PyTorch-based models.
 
 See the `MLflow quickstart example <https://github.com/unit8co/darts/blob/master/examples/29-MLflow-quickstart.ipynb>`_
 for an end-to-end walkthrough.
@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import Any
 
 from darts.logging import raise_log
+from darts.typing import TimeSeriesLike
 
 try:
     import mlflow
@@ -79,6 +80,7 @@ from mlflow.utils.model_utils import (
 from mlflow.utils.requirements_utils import _get_pinned_requirement
 
 import darts
+from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.metrics.utils import (
     _LabelReduction,
@@ -115,7 +117,7 @@ _autolog_state = threading.local()
 
 
 def save_model(
-    model,
+    model: ForecastingModel,
     path: str,
     conda_env: dict | str | None = None,
     code_paths: list[str] | None = None,
@@ -126,18 +128,18 @@ def save_model(
     extra_pip_requirements: list[str] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> None:
-    """Save a darts forecasting model in MLflow format.
+    """Save a Darts forecasting model in MLflow format.
 
     Produces an MLflow model directory at ``path`` containing:
 
-    * The serialised darts model (delegated to the model's own ``save()`` method).
-    * An ``MLmodel`` YAML file with flavor metadata.
-    * ``conda.yaml`` and ``requirements.txt`` environment files.
+    - The serialized Darts model (delegated to the model's own ``save()`` method).
+    - An ``MLmodel`` YAML file with flavor metadata.
+    - ``conda.yaml`` and ``requirements.txt`` environment files.
 
     Parameters
     ----------
     model
-        A fitted darts ``ForecastingModel`` instance.
+        A fitted Darts ``ForecastingModel`` instance.
     path
         Local filesystem path where the model directory will be created.
     conda_env
@@ -168,7 +170,7 @@ def save_model(
     -----
     Signature and input_example params are currently not supported, as they
     are used to support serving and input validation in the MLflow pyfunc flavor,
-    which is not implemented for darts models. They are accepted as params for
+    which is not implemented for Darts models. They are accepted as params for
     simplifying potential future extensibility, and to keep in line with MLflow API
     conventions.
     """
@@ -244,7 +246,7 @@ def load_model(
     dst_path: str | None = None,
     **kwargs,
 ) -> ForecastingModel:
-    """Load a darts model from an MLflow model URI.
+    """Load a Darts model from an MLflow model URI.
 
     Parameters
     ----------
@@ -255,12 +257,12 @@ def load_model(
         Optional local path for downloading remote artifacts.
     **kwargs
         Additional keyword arguments forwarded to the model's ``load()`` method
-        (e.g. ``map_location`` for Torch models).
+        (e.g. ``map_location`` for a `TorchForecastingModel`).
 
     Returns
     -------
     ForecastingModel
-        The loaded darts forecasting model.
+        The loaded Darts forecasting model.
     """
     local_path = _download_artifact_from_uri(
         artifact_uri=model_uri, output_path=dst_path
@@ -286,11 +288,11 @@ def load_model(
     return model_cls.load(str(model_path), **kwargs)
 
 
-def log_model(model, **kwargs):
-    """Log a darts model to the current MLflow run, using the darts MLflow flavor.
+def log_model(model: ForecastingModel, **kwargs):
+    """Log a Darts model to the current MLflow run, using the Darts MLflow flavor.
 
     This is a thin wrapper around ``mlflow.models.Model.log()`` that supplies
-    the darts flavor for saving/loading; every other argument is forwarded
+    the Darts flavor for saving/loading; every other argument is forwarded
     as-is. See the `MLflow documentation
     <https://mlflow.org/docs/latest/api_reference/python_api/mlflow.models.html#mlflow.models.Model.log>`_
     for the full list of accepted parameters (e.g. ``name``,
@@ -300,7 +302,7 @@ def log_model(model, **kwargs):
     Parameters
     ----------
     model
-        A fitted darts ``ForecastingModel`` instance.
+        A fitted Darts ``ForecastingModel`` instance.
     **kwargs
         Forwarded to ``mlflow.models.Model.log()``. Use ``name`` to set the
         run-relative artifact path. ``artifact_path`` parameter is deprecated
@@ -316,7 +318,7 @@ def log_model(model, **kwargs):
     -----
     ``signature`` and ``input_example`` are currently not supported, as they
     are used to support serving and input validation in the MLflow pyfunc
-    flavor, which is not implemented for darts models.
+    flavor, which is not implemented for Darts models.
     """
     # MLflow still requires "artifact_path" to be provided (it has no default),
     # but it is deprecated in favour of "name". Accept it via kwargs for
@@ -339,24 +341,24 @@ def autolog(
     disable: bool = False,
     silent: bool = False,
 ) -> None:
-    """Enable (or disable) automatic MLflow logging for darts models.
+    """Enable (or disable) automatic MLflow logging for Darts.
 
-    When enabled, every call to ``model.fit()`` on any darts forecasting model
-    will automatically:
+    When enabled, the following functionalities emit detailed logs:
 
-    1. Start an MLflow run (or reuse the currently active one).
-    2. Log model creation parameters (``model.model_params``), both as MLflow
-       params and as a ``model_params.json`` artifact.
-    3. Log covariate usage information (past, future, and static covariates).
-    4. Log the result of any darts metric call made inside an active MLflow
-       run. Repeated calls overwrite the previous value.
-    5. For PyTorch-based models: leverage ``mlflow.pytorch.autolog()`` to
-       automatically log per-epoch training and validation metrics.
-    6. When ``log_models=True``: log the trained model artifact at the end of
-       training (default ``False``).
-    7. Patch ``backtest()`` to log evaluation metrics under ``backtest_*`` keys.
-    8. Patch ``historical_forecasts()`` so that its internal per-window
-       ``fit()`` calls don't each spawn their own logging.
+    - Calling ``ForecastingModel.fit()``:
+      - Starts an MLflow run (or reuses the currently active one).
+      - Logs model creation parameters (``model.model_params``), both as MLflow
+        params and as a ``model_params.json`` artifact.
+      - Logs covariate usage information (past, future, and static covariates).
+      - Stores the trained model artifact when ``log_models=True`` (default:
+        ``False``).
+      - Logs per-epoch training and validation metrics for PyTorch-based models.
+    - Calling any Darts metric:
+      - Logs the result of that metric call as an MLflow metric. More information
+        in the notes below.
+    - Calling ``ForecastingModel.backtest()``:
+      - Logs all evaluation metrics under ``backtest_*`` keys. More information
+        in the notes below.
 
     .. note::
 
@@ -364,23 +366,32 @@ def autolog(
         ``{metric_name}{component}{quantile_or_label}``, where each part is
         included only when the corresponding axis is present:
 
-        * ``metric_name`` – the metric function name, or the ``name`` keyword
-          argument when provided (it overrides only this token).
-        * ``component`` – the component name when ``component_reduction=None``.
-        * ``quantile_or_label`` – e.g. ``_q0.500`` / ``_qi_80.000`` / ``_label1``.
+        - ``metric_name`` – the metric function name, or the ``name`` metric
+          keyword argument when provided.
+        - ``component`` – the component name when ``component_reduction=None``.
+        - ``quantile_or_label``, e.g.:
+          – ``_q0.500`` for quantile metrics with keyword argument ``q=[0.5]``
+          - ``_qi_80.000`` for quantile interval metrics with keyword argument
+            ``q_interval=[(0.1, 0.9)]`` (80% interval between quantiles 0.1 and
+            0.9).
+          - ``_label1`` for classification metrics with keyword argument
+            ``labels`` when ``label_reduction=None``.
+
+        Per-timestep metrics (``time_reduction=None``) are charted across the
+        MLflow ``step``.
 
         When ``series_reduction`` is set on a metric call, results are already
         aggregated across series inside the metric itself, so the
         cross-series aggregation described below does not apply.
 
-        Per-timestep results (``time_reduction=None``) are charted across the
-        MLflow ``step``. For a list of series the logged value is
-        ``agg_func`` applied over series, and the full per-series breakdown
-        for every metric/backtest call in the run is appended to a single
-        ``metrics_per_series.json`` table artifact. When components are
-        preserved (``component_reduction=None``), all series scored together
-        must have the same number of components; names are taken from the
-        first series.
+        For a list of series, the logged metric is aggregated over all series
+        using ``agg_func``. The detailed per-series metrics / backtest metrics
+        are logged under a single ``metrics_per_series.json`` table
+        artifact.
+
+        When components are preserved (``component_reduction=None``), all
+        series scored together must have the same number of components; names
+        are taken from the first series.
 
     Parameters
     ----------
@@ -390,7 +401,7 @@ def autolog(
     log_params
         If ``True`` (default), log model creation parameters.
     log_metrics
-        If ``True`` (default), log the result of any darts metric call made
+        If ``True`` (default), log the result of any Darts metric call made
         inside an active MLflow run.
     log_torch_metrics
         If ``True`` (default), enable ``mlflow.pytorch.autolog(log_models=False)``
@@ -415,7 +426,7 @@ def autolog(
     # mlflow.sklearn, which exposes a private, undecorated _autolog(flavor_name=...)
     # that other flavors (e.g. xgboost) call to tag its patches under their own
     # integration name for cleanup, mlflow.pytorch has no such hook: its autolog()
-    # hardcodes its own patches under "pytorch", so darts can't fold pytorch's
+    # hardcodes its own patches under "pytorch", so Darts can't fold pytorch's
     # patch lifecycle into its own and must call mlflow.pytorch.autolog() directly.
     if log_torch_metrics and not disable:
         try:
@@ -487,7 +498,7 @@ def _autolog(
 ) -> None:
     """Internal autolog implementation decorated with ``@autologging_integration``.
 
-    Handles patching of darts ``ForecastingModel.fit()`` and metric functions.
+    Handles patching of Darts ``ForecastingModel.fit()`` and metric functions.
     The ``mlflow.pytorch.autolog`` coordination is handled by the public
     ``autolog()`` wrapper because the decorator short-circuits on
     ``disable=True``.
@@ -549,7 +560,7 @@ def _autolog(
             fit_args = inspect.signature(original).bind(self, *args, **kwargs).arguments
             _log_covariate_info(
                 self,
-                series=fit_args.get("series"),
+                series=fit_args["series"],
                 past_covariates=fit_args.get("past_covariates"),
                 future_covariates=fit_args.get("future_covariates"),
             )
@@ -619,10 +630,10 @@ def _autolog(
 
         autologging_client = MlflowAutologgingQueueingClient()
         _log_backtest_metrics(
-            autologging_client,
-            active_run.info.run_id,
-            result,
-            backtest_args,
+            autologging_client=autologging_client,
+            run_id=active_run.info.run_id,
+            result=result,
+            backtest_args=backtest_args,
             agg_func=agg_func,
         )
         autologging_client.flush(synchronous=False).await_completion()
@@ -658,7 +669,7 @@ def _autolog(
 
 
 def get_default_pip_requirements():
-    """Return the default pip requirements for logging a darts model.
+    """Return the default pip requirements for logging a Darts model.
 
     Returns
     -------
@@ -670,7 +681,7 @@ def get_default_pip_requirements():
 
 
 def get_default_conda_env():
-    """Return a default conda environment dict for a darts model.
+    """Return a default conda environment dict for a Darts model.
 
     Returns
     -------
@@ -703,7 +714,12 @@ def _get_model_info_tags(model: ForecastingModel) -> dict[str, Any]:
     }
 
 
-def _log_covariate_info(model, series, past_covariates, future_covariates) -> None:
+def _log_covariate_info(
+    model: ForecastingModel,
+    series: TimeSeriesLike,
+    past_covariates: TimeSeriesLike | None,
+    future_covariates: TimeSeriesLike | None,
+) -> None:
     """Log covariate usage information to MLflow.
 
     Extracts information about past, future, and static covariates used during
@@ -776,7 +792,9 @@ def _is_torch_model(model) -> bool:
     return TORCH_AVAILABLE and isinstance(model, TorchForecastingModel)
 
 
-def _extract_covariate_metadata(uses: bool, single_cov, names_attr: str) -> dict:
+def _extract_covariate_metadata(
+    uses: bool, single_cov: TimeSeries | pd.DataFrame | None, names_attr: str
+) -> dict:
     """Extract metadata for a single covariate type from its (already
     singular) value.
 
@@ -861,7 +879,7 @@ def _log_backtest_metrics(
     """Log backtest metric result(s) to MLflow.
 
     Reshapes each per-series result to a canonical ``(W, T, C, M)`` layout
-    (windows, timesteps, components × quantiles, metrics) inferred from the
+    (windows, timesteps, components x quantiles, metrics) inferred from the
     metric signatures and ``backtest_args``, logging every cell under a
     descriptive key with the time axis (or window axis when time is reduced)
     mapped to the MLflow ``step``. A metric's ``name`` entry in
@@ -870,18 +888,18 @@ def _log_backtest_metrics(
 
     Shape inference respects all kwargs that affect output dimensions:
 
-    * ``time_reduction`` – collapses the time axis (``T=1``).
-    * ``component_reduction`` – collapses the component axis (``C=1``).
-    * ``series_reduction`` – if other than ``None``, windows are already aggregated
+    - ``time_reduction`` – collapses the time axis (``T=1``).
+    - ``component_reduction`` – collapses the component axis (``C=1``).
+    - ``series_reduction`` – if other than ``None``, windows are already aggregated
       inside the metric, so ``W=1`` regardless of ``backtest.reduction``.
-    * ``q`` / ``q_interval`` – expand the component axis with one entry per
+    - ``q`` / ``q_interval`` – expand the component axis with one entry per
       quantile / interval.
-    * ``labels`` - expand each component with one entry per label along
+    - ``labels`` - expand each component with one entry per label along
       the component axis.
-    * ``label_reduction`` – collapses the labels along the component axis.
+    - ``label_reduction`` – collapses the labels along the component axis.
       value; ``labels`` only restricts which classes are scored.
-    * ``reduction=None`` – no aggregation across windows -> one value per window.
-    * ``last_points_only`` – collapses all windows into one TimeSeries before scoring,
+    - ``reduction=None`` – no aggregation across windows -> one value per window.
+    - ``last_points_only`` – collapses all windows into one TimeSeries before scoring,
       so there is effectively only one window regardless of reduction.
 
     When two metrics have incompatible axis layouts (different
@@ -981,7 +999,7 @@ def _log_backtest_metrics(
     last_points_only = backtest_args.get("last_points_only", False)
 
     # if last_points_only is True, has_windows will be False, so fc_hzn is not needed
-    if historical_forecasts and not last_points_only:
+    if historical_forecasts is not None and not last_points_only:
         first_series_hf = (
             historical_forecasts
             if get_series_seq_type(series) == SeriesType.SINGLE
@@ -998,7 +1016,9 @@ def _log_backtest_metrics(
             raise_log(
                 ValueError(
                     "Backtest metric logging failed: all series must have the same "
-                    f"number of components, got {sorted(n_components)}."
+                    f"number of components, got {sorted(n_components)}. Consider "
+                    f"setting a metric `component_reduction`, or make sure all series "
+                    f"have the same number of components."
                 )
             )
 
@@ -1023,15 +1043,15 @@ def _log_backtest_metrics(
     else:
         # component names/count from the first series (all series share n_components)
         comps = series_seq[0].components.tolist()
-        # c_size = components × quantiles/intervals/labels per component
-        c_size = (series_seq[0].n_components if has_comp_axis else 1) * axis_size
+        # c_size = components x quantiles/intervals/labels per component
+        c_size = (len(comps) if has_comp_axis else 1) * axis_size
         # base_keys[m][c]: sanitized key without the optional window suffix
         base_keys = []
         for m, metric_name in enumerate(metric_names):
             axis_labels = metric_axes[m][2]
             keys_m = []
             for c in range(c_size):
-                # c is a flat index into the (n_components × axis_size) C axis:
+                # c is a flat index into the (n_components x axis_size) C axis:
                 # c = comp_i * axis_size + axis_idx
                 component_index, axis_idx = divmod(c, axis_size)
                 comp_part = (
@@ -1156,7 +1176,7 @@ def _infer_metric_axes(metric: Callable, metric_kwargs: dict) -> tuple:
     Parameters
     ----------
     metric
-        A darts metric callable.
+        A Darts metric callable.
     metric_kwargs
         Keyword arguments that will be forwarded to ``metric``.
 
@@ -1235,7 +1255,7 @@ def _log_metric_result(
     """Log a metric result to the active MLflow run.
 
     Reshapes each per-series result into a canonical ``(T, C)`` layout
-    (timesteps, components × quantiles/intervals/labels) inferred from the
+    (timesteps, components x quantiles/intervals/labels) inferred from the
     metric signature and call kwargs by ``_infer_metric_axes``, logging every
     cell under a descriptive key with the time axis mapped to the MLflow
     ``step``. This mirrors ``_log_backtest_metrics`` (without the
@@ -1249,8 +1269,8 @@ def _log_metric_result(
     where each optional part is included only when the corresponding axis is
     present:
 
-    * ``component`` – ``_{component_name}`` when ``has_comp_axis``.
-    * ``quantile_or_label`` – e.g. ``_q0.500`` / ``_qi_80.000`` / ``_label1``.
+    - ``component`` – ``_{component_name}`` when ``has_comp_axis``.
+    - ``quantile_or_label`` – e.g. ``_q0.500`` / ``_qi_80.000`` / ``_label1``.
 
     When more than one series is scored, the logged value is ``agg_func``
     applied over series for each cell, and the granular per-series breakdown
@@ -1258,6 +1278,9 @@ def _log_metric_result(
     (shared with ``_log_backtest_metrics``). For a single series the
     aggregate is just the value itself and no artifact is written.
 
+    TODO: improve this, it's about predictions of different or different
+      intersection lengths between actual and pred (from the `Raises`
+      below, it sounds even that this wouldn't be supported?)
     Series of different lengths are assumed to share the same end date, so the
     time axis is aligned from the end rather than the start: a shorter series
     lines up on its last value instead of its first.
@@ -1318,13 +1341,14 @@ def _log_metric_result(
                     )
                 )
 
+    # TODO: a lot of this seems duplicated from the backtest logic; improve
     # component names/count from the first series (all series share n_components)
     comps = series_seq[0].components.tolist()
-    # c_size = components × quantiles/intervals/labels per component
-    c_size = (series_seq[0].n_components if has_comp_axis else 1) * axis_size
+    # c_size = components x quantiles/intervals/labels per component
+    c_size = (len(comps) if has_comp_axis else 1) * axis_size
     keys = []
     for c in range(c_size):
-        # c is a flat index into the (n_components × axis_size) C axis:
+        # c is a flat index into the (n_components x axis_size) C axis:
         # c = comp_i * axis_size + axis_idx
         component_index, axis_idx = divmod(c, axis_size)
         comp_part = (
@@ -1403,6 +1427,7 @@ def _log_metric_result(
         _log_per_series_table(rows)
 
 
+# TODO: (does the below TODO still apply? we only support logging under an active run I thought)
 # TODO: To log metrics post-fitting, only patching the metric methods may not be enough.
 # This is becuase `model.fit()` method would terminate the active MLflow run at the end of training,
 # so any metric calls made after that would not be logged.
@@ -1417,7 +1442,7 @@ def _log_metric_result(
 def _mlflow_metric_callback(func, result, args, kwargs) -> None:
     """Metric callback registered with ``darts.metrics.utils`` for autologging.
 
-    Invoked by ``multi_ts_support`` (the outermost decorator on every darts
+    Invoked by ``multi_ts_support`` (the outermost decorator on every Darts
     metric) after every top-level metric call, so it fires regardless of how
     the metric was imported. It is not invoked for internal metric-to-metric
     calls (e.g. ``rmse`` calling ``mse`` internally via ``_get_wrapped_metric``),
@@ -1431,10 +1456,10 @@ def _mlflow_metric_callback(func, result, args, kwargs) -> None:
 
     where:
 
-    * ``metric_name`` – the metric function name, or the ``name`` keyword
+    - ``metric_name`` – the metric function name, or the ``name`` keyword
       argument when provided (it overrides only this token).
-    * ``component`` – ``_{component_name}`` when ``component_reduction=None``.
-    * ``quantile_or_label`` – quantile/interval/label suffix (e.g. ``_q0.500``,
+    - ``component`` – ``_{component_name}`` when ``component_reduction=None``.
+    - ``quantile_or_label`` – quantile/interval/label suffix (e.g. ``_q0.500``,
       ``_qi_80.000``, ``_label1``) when applicable.
 
     When the input is a ``Sequence[TimeSeries]`` with more than one series, the
@@ -1448,7 +1473,7 @@ def _mlflow_metric_callback(func, result, args, kwargs) -> None:
     Parameters
     ----------
     func
-        The darts metric function that was called (used for its name and
+        The Darts metric function that was called (used for its name and
         signature).
     result
         The metric's return value.
