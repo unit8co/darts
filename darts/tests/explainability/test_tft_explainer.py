@@ -418,8 +418,12 @@ class TestTFTExplainer:
         dec_imp_ot = results.get_decoder_importance_over_time()
         if n_series > 1:
             # check that all importances are the same across series (since the series have identical values)
-            assert enc_imp_ot[0] == enc_imp_ot[1]
-            assert dec_imp_ot[0] == dec_imp_ot[1]
+            np.testing.assert_array_almost_equal(
+                enc_imp_ot[0].values(), enc_imp_ot[1].values()
+            )
+            np.testing.assert_array_almost_equal(
+                dec_imp_ot[0].values(), dec_imp_ot[1].values()
+            )
             enc_imp_ot = enc_imp_ot[0]
             dec_imp_ot = dec_imp_ot[0]
         assert isinstance(enc_imp_ot, TimeSeries)
