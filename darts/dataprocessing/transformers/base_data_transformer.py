@@ -358,8 +358,9 @@ class BaseDataTransformer(ABC):
         desc = f"Transform ({self._name})"
 
         # Take note of original input for unmasking purposes:
+        sequence_type_in = get_series_seq_type(series)
         series_specified = series_idx is not None
-        if isinstance(series, TimeSeries):
+        if sequence_type_in is SeriesType.SINGLE:
             data = [series]
             if series_specified:
                 transformer_selector = self._process_series_idx(series_idx)
@@ -402,7 +403,7 @@ class BaseDataTransformer(ABC):
             input_iterator, self._ts_transform, self._n_jobs, args, kwargs
         )
 
-        return series2seq(transformed_data, seq_type_out=get_series_seq_type(series))
+        return series2seq(transformed_data, seq_type_out=sequence_type_in)
 
     def _get_params(
         self,
@@ -497,8 +498,6 @@ class BaseDataTransformer(ABC):
             )
         return component_mask
 
-    # TODO(oswald): Not sure if we should include this in the refactor
-    # TODO(oswald): I also think the typing here is too loose if input is type TS. perhaps it should be TimeSeriesLike
     @staticmethod
     def apply_component_mask(
         series: TimeSeries,
@@ -563,7 +562,6 @@ class BaseDataTransformer(ABC):
             out.append(out_)
         return out[0] if called_with_single_series else out
 
-    # TODO(oswald): Not sure if we should include this in the refactor
     @staticmethod
     def unapply_component_mask(
         series: TimeSeriesLike,
