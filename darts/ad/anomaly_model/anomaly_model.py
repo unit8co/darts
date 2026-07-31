@@ -23,6 +23,7 @@ from darts.ad.utils import (
 )
 from darts.logging import get_logger, raise_log
 from darts.typing import TimeSeriesLike
+from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
 
 logger = get_logger(__name__)
 
@@ -59,8 +60,6 @@ class AnomalyModel(ABC):
         )
         return self
 
-    # TODO(oswald): Discuss how we want to handle those nested lists.
-    # TODO(oswald): The collapsing for single scorers also only happens for single TS input
     @abstractmethod
     def score(
         self,
@@ -95,7 +94,7 @@ class AnomalyModel(ABC):
             A sequence of sequences of `TimeSeries` for a sequence of `series` and multiple anomaly scorers.
             The outer sequence is over the series, and inner sequence is over the scorers.
         """
-        called_with_single_series = isinstance(series, TimeSeries)
+        sequence_type_in = get_series_seq_type(series)
         # check input series and covert to sequences
         series, kwargs = self._process_input_series(series, **kwargs)
         # predict / filter `series`
@@ -104,13 +103,14 @@ class AnomalyModel(ABC):
         scores = list(
             zip(*[sc.score_from_prediction(series, pred) for sc in self.scorers])
         )
-
-        if called_with_single_series:
-            scores = scores[0]
-            if len(scores) == 1:
-                # there's only one scorer
-                scores = scores[0]
-            pred = pred[0]
+        # Collapse the scorer dimension for a single scorer, including for sequence input.
+        scores = (
+            [series_scores[0] for series_scores in scores]
+            if len(self.scorers) == 1
+            else scores
+        )
+        scores = series2seq(scores, seq_type_out=sequence_type_in)
+        pred = series2seq(pred, seq_type_out=sequence_type_in)
 
         if return_model_prediction:
             return scores, pred
@@ -184,7 +184,7 @@ class AnomalyModel(ABC):
                     logger=logger,
                 )
 
-        called_with_single_series = isinstance(series, TimeSeries)
+        sequence_type_in = get_series_seq_type(series)
         # deterministic `series`
         series = _check_input(
             series,
@@ -225,13 +225,14 @@ class AnomalyModel(ABC):
 
         metric_vals = []
         for anomalies, scores in zip(anomalies, pred_scores):
+            scorer_values = eval_metric_from_scores(
+                anomalies=anomalies,
+                pred_scores=scores,
+                window=windows,
+                metric=metric,
+            )
             metric_vals.append(
-                eval_metric_from_scores(
-                    anomalies=anomalies,
-                    pred_scores=scores,
-                    window=windows,
-                    metric=metric,
-                )
+                [scorer_values] if len(self.scorers) == 1 else scorer_values
             )
         metric_vals_pred_scores = [
             dict(zip(name_scorers, scorer_values)) for scorer_values in metric_vals
@@ -239,7 +240,7 @@ class AnomalyModel(ABC):
 
         return (
             metric_vals_pred_scores[0]
-            if called_with_single_series
+            if sequence_type_in is SeriesType.SINGLE
             else metric_vals_pred_scores
         )
 
