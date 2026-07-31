@@ -26,7 +26,7 @@ from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
 )
 from darts.typing import TimeSeriesLike
-from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
+from darts.utils.ts_utils import get_series_seq_type, series2seq
 from darts.utils.utils import TORCH_AVAILABLE
 
 if TORCH_AVAILABLE:
@@ -376,9 +376,7 @@ class EnsembleModel(GlobalForecastingModel):
         random_state: int | None = None,
         verbose: bool | None = None,
     ) -> TimeSeriesLike:
-        sequence_type_in = (
-            SeriesType.SINGLE if series is None else get_series_seq_type(series)
-        )
+        is_single_series = isinstance(series, TimeSeries) or series is None
         # maximize covariate usage
         predictions = [
             model._predict_wrapper(
@@ -399,17 +397,17 @@ class EnsembleModel(GlobalForecastingModel):
             )
             for model in self.forecasting_models
         ]
-        # Normalizing predictions to SeriesType.SEQ so we can always use self._stack_ts_multiseq
-        predictions = [series2seq(pred) for pred in predictions]
-
         # reduce the probabilistics series
         if self.train_samples_reduction is not None and self.train_num_samples > 1:
             predictions = [
                 self._predictions_reduction(prediction) for prediction in predictions
             ]
 
-        result = self._stack_ts_multiseq(predictions)
-        return series2seq(result, seq_type_out=sequence_type_in)
+        return (
+            self._stack_ts_seq(predictions)
+            if is_single_series
+            else self._stack_ts_multiseq(predictions)
+        )
 
     def predict(
         self,
