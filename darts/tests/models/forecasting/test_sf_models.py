@@ -154,8 +154,8 @@ class TestSFModels:
             (
                 StatsForecastModel,
                 {"model": sf_models.SimpleExponentialSmoothing(alpha=0.1)},
-                True,
-            ),  # (custom, custom, conformal)
+                False,
+            ),  # (custom, custom, native since statsforecast 2.1.1)
         ],
     )
     def test_probabilistic_support(self, config):
