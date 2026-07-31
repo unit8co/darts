@@ -264,5 +264,4 @@ def retain_period_common_to_all(
             ValueError("The provided time series must have nonzero overlap"), logger
         )
 
-    common_series = [s.slice(last_first, first_last) for s in series]
-    return series2seq(common_series, seq_type_out=SeriesType.SEQ)
+    return list(map(lambda s: s.slice(last_first, first_last), series))
