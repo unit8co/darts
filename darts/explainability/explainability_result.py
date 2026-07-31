@@ -263,7 +263,6 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
                 logger,
             )
 
-    # TODO(oswald): TSS migration — wrap `list[TimeSeries]` return as TimeSeriesSequence once TSS lands.
     def get_explanation(
         self, horizon: int, component: str | None = None
     ) -> TimeSeriesLike:
@@ -420,7 +419,6 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
         self.feature_values = feature_values
         self.shap_explanation_object = shap_explanation_object
 
-    # TODO(oswald): TSS migration — wrap `list[TimeSeries]` return as TimeSeriesSequence once TSS lands.
     def get_feature_values(
         self, horizon: int, component: str | None = None
     ) -> TimeSeriesLike:
@@ -620,7 +618,6 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
             "static_covariates_importance",
         ]
 
-    # TODO(oswald): TSS migration — wrap `list[TimeSeries]` return as TimeSeriesSequence once TSS lands.
     def get_attention(self) -> TimeSeries | list[TimeSeries]:
         """
         Returns the time-dependent attention on the encoder and decoder for each `horizon` in (1,
