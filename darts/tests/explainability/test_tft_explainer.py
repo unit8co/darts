@@ -505,6 +505,63 @@ class TestTFTExplainer:
         with pytest.raises(ValueError, match="`show_index_as` must either be"):
             _check_plot(show_index_as="invalid")
 
+    @pytest.mark.slow
+    def test_variable_selection_over_time_plotting_stress(self, mpl_safe_plotting):
+        """Stress test `plot_variable_selection_over_time` with a long input/output chunk length and many
+        covariate components -- a long daily `input_chunk_length` and >20 variables are exactly the conditions
+        (raised in https://github.com/unit8co/darts/issues/2685) under which dense/overlapping x-axis date
+        labels and an unreadable legend become a real risk, rather than a theoretical one."""
+        freq = "D"
+        icl, ocl = 60, 20
+        n_pc, n_fc = 15, 15
+        length = icl + ocl + 20
+
+        series = tg.linear_timeseries(length=length, freq=freq)
+        rng = np.random.RandomState(42)
+        pc = TimeSeries(
+            times=series.time_index,
+            values=rng.randn(length, n_pc),
+        )
+        fc_times = tg.linear_timeseries(length=length + ocl, freq=freq).time_index
+        fc = TimeSeries(times=fc_times, values=rng.randn(length + ocl, n_fc))
+
+        model = TFTModel(
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            n_epochs=1,
+            add_encoders={"cyclic": {"past": ["month"], "future": ["month"]}},
+            add_relative_index=True,
+            random_state=42,
+            **tfm_kwargs,
+        )
+        model.fit(series, past_covariates=pc, future_covariates=fc)
+        explainer = TFTExplainer(model)
+        results = explainer.explain()
+
+        enc_imp_ot = results.get_encoder_importance_over_time()
+        dec_imp_ot = results.get_decoder_importance_over_time()
+        # comfortably more variables than the default `max_nr_components=10`, and long enough encoder /
+        # decoder windows to previously have produced crowded date labels
+        assert enc_imp_ot.n_components > 20
+        assert dec_imp_ot.n_components > 10
+        assert len(enc_imp_ot) == icl
+        assert len(dec_imp_ot) == ocl
+
+        # default `max_nr_components=10` keeps the plot readable even with 30+ available variables
+        fig = explainer.plot_variable_selection_over_time(results, show_index_as="time")
+        
+        enc_ax, dec_ax = fig.get_axes()
+        assert len(enc_ax.get_lines()) == 10
+        assert len(dec_ax.get_lines()) == 10
+
+        # the actual point of the stress test: even over a 60/20-timestep *daily* date range, matplotlib's
+        # date locator keeps the number of rendered x-axis tick labels small, instead of emitting one label
+        # per timestep and producing an unreadable, overlapping axis
+        fig.canvas.draw()
+        for ax in (enc_ax, dec_ax):
+            xticklabels = [t.get_text() for t in ax.get_xticklabels() if t.get_text()]
+            assert len(xticklabels) <= 15, xticklabels
+
     @pytest.mark.parametrize("n_series", [1, 2])
     def test_attention_explanation(self, n_series, mpl_safe_plotting):
         """Test attention (feature importance) explanation results and plotting."""
