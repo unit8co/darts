@@ -457,6 +457,55 @@ class TestTFTExplainer:
             assert len(fig.get_axes()) == 3
 
     @pytest.mark.parametrize("n_series", [1, 2])
+    def test_variable_selection_over_time_plotting(self, n_series, mpl_safe_plotting):
+        """Test plotting of per-timestep encoder/decoder variable importance
+        (`TFTExplainer.plot_variable_selection_over_time`)."""
+        model = self.helper_create_model(use_encoders=True, add_relative_idx=True)
+        series, pc, fc = self.helper_get_input(series_option="multivariate")
+        model.fit(series, past_covariates=pc, future_covariates=fc)
+        explainer = TFTExplainer(model)
+        results = explainer.explain(
+            foreground_series=series if n_series == 1 else [series] * 2,
+            foreground_past_covariates=pc if n_series == 1 else [pc] * 2,
+            foreground_future_covariates=fc if n_series == 1 else [fc] * 2,
+        )
+
+        # with `use_encoders=True` and `add_relative_idx=True` on a bivariate target with one past and one
+        # future covariate, the encoder has 9 variables and the decoder has 4 (see `enc_expected`/`dec_expected`
+        # in `test_variable_selection_explanation` above for exactly which ones).
+        n_enc_vars, n_dec_vars = 9, 4
+
+        def _check_plot(**kwargs) -> list[matplotlib.figure.Figure]:
+            figs = explainer.plot_variable_selection_over_time(results, **kwargs)
+            if n_series == 1:
+                figs = [figs]
+            for fig in figs:
+                assert isinstance(fig, matplotlib.figure.Figure)
+                # one subplot for encoder importance over time, one for decoder importance over time
+                enc_ax, dec_ax = fig.get_axes()
+                assert enc_ax.get_title() == "Encoder variable importance over time"
+                assert dec_ax.get_title() == "Decoder variable importance over time"
+            return figs
+
+        # by default, every variable gets its own line in each subplot
+        for fig in _check_plot(show_index_as="relative"):
+            enc_ax, dec_ax = fig.get_axes()
+            assert len(enc_ax.get_lines()) == n_enc_vars
+            assert len(dec_ax.get_lines()) == n_dec_vars
+
+        # `max_nr_components` caps how many variables (lines) are drawn per subplot
+        for fig in _check_plot(show_index_as="relative", max_nr_components=3):
+            enc_ax, dec_ax = fig.get_axes()
+            assert len(enc_ax.get_lines()) == 3
+            assert len(dec_ax.get_lines()) == 3
+
+        # `show_index_as="time"` plots the same data against the actual time index instead of a relative one
+        _check_plot(show_index_as="time")
+
+        with pytest.raises(ValueError, match="`show_index_as` must either be"):
+            _check_plot(show_index_as="invalid")
+
+    @pytest.mark.parametrize("n_series", [1, 2])
     def test_attention_explanation(self, n_series, mpl_safe_plotting):
         """Test attention (feature importance) explanation results and plotting."""
         # past attention (full_attention=False) on attends to values in the past relative to each horizon
