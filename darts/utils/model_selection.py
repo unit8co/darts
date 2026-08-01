@@ -9,6 +9,7 @@ from collections.abc import Sequence
 
 from darts import TimeSeries
 from darts.typing import TimeSeriesLike
+from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
 
 MODEL_AWARE = "model-aware"
 SIMPLE = "simple"
@@ -170,14 +171,13 @@ class SplitTimeSeriesSequence(Sequence):
         tuple[TimeSeries, TimeSeries]
         | tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
     ):
-        # TODO(oswald): Intentionally left as hand-rolled Pattern A. Unlike the migrated
-        # series->same-series sites, this returns a (train, test) PAIR (outside the
-        # SeriesType taxonomy series2seq restores), and lazy=True returns a lazy
-        # SplitTimeSeriesSequence. A TSS-aware version is a deliberate Phase 2 design
-        # call, not a mechanical series2seq exit.
-        if not isinstance(data, Sequence):
+        if len(data) == 0:
+            raise AttributeError("The `data` parameter cannot be empty.")
+
+        sequence_type_in = get_series_seq_type(data)
+        data = series2seq(data)
+        if sequence_type_in is SeriesType.SINGLE:
             axis = 1
-            data = [data]  # convert to sequence for unified processing later
             single_timeseries = True
         else:
             single_timeseries = False
