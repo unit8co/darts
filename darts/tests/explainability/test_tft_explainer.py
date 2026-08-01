@@ -549,7 +549,7 @@ class TestTFTExplainer:
 
         # default `max_nr_components=10` keeps the plot readable even with 30+ available variables
         fig = explainer.plot_variable_selection_over_time(results, show_index_as="time")
-        
+
         enc_ax, dec_ax = fig.get_axes()
         assert len(enc_ax.get_lines()) == 10
         assert len(dec_ax.get_lines()) == 10
