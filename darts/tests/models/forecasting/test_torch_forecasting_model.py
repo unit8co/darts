@@ -2020,6 +2020,187 @@ class TestTorchForecastingModel:
         assert isinstance(model_rin_mv.model.rin, RINorm)
         assert model_rin_mv.model.rin.input_dim == self.multivariate_series.n_components
 
+    @pytest.mark.parametrize(
+        "config_template",
+        [
+            {
+                "series": True,
+                "past_covariates": ["comp1", "compx"],
+                "future_covariates": False,
+            },
+            {
+                "series": ["var2"],
+                "past_covariates": False,
+                "future_covariates": ["fcomp0", "fcomp2"],
+            },
+            {
+                "series": ["var1"],
+                "past_covariates": ["comp0"],
+                "future_covariates": ["fcomp1"],
+            },
+        ],
+    )
+    @pytest.mark.parametrize("model_config", models)
+    def test_rin_group_configs(self, model_config, config_template):
+        model_cls, model_kwargs = model_config
+        model_kwargs = copy.deepcopy(model_kwargs)
+
+        base_model = model_cls(**model_kwargs)
+
+        series = self.multivariate_series
+        past_covariates = TimeSeries.from_dataframe(
+            pd.DataFrame(
+                {"comp0": range(100), "comp1": range(100), "compx": range(100)},
+                index=self.times,
+            )
+        )
+        future_covariates = TimeSeries.from_dataframe(
+            pd.DataFrame(
+                {
+                    "fcomp0": range(101),
+                    "fcomp1": range(101),
+                    "fcomp2": range(101),
+                },
+                index=pd.date_range(self.times[0], periods=101, freq=self.times.freq),
+            )
+        )
+
+        rin_config = {
+            "series": config_template["series"],
+            "past_covariates": (
+                config_template["past_covariates"]
+                if base_model.supports_past_covariates
+                else False
+            ),
+            "future_covariates": (
+                config_template["future_covariates"]
+                if base_model.supports_future_covariates
+                else False
+            ),
+        }
+        model = model_cls(use_reversible_instance_norm=rin_config, **model_kwargs)
+
+        fit_kwargs = {"series": series}
+        predict_kwargs = {"series": series}
+        if base_model.supports_past_covariates:
+            fit_kwargs["past_covariates"] = past_covariates
+            predict_kwargs["past_covariates"] = past_covariates
+        if base_model.supports_future_covariates:
+            fit_kwargs["future_covariates"] = future_covariates
+            predict_kwargs["future_covariates"] = future_covariates
+
+        def _expected_dim(group_config, components):
+            return len(components) if group_config is True else len(group_config)
+
+        def _component_indices(components, group_config):
+            if isinstance(group_config, list):
+                return [components.get_loc(component) for component in group_config]
+            return None
+
+        model.fit(**fit_kwargs)
+
+        if issubclass(model_cls, RNNModel):
+            assert not model.model.use_reversible_instance_norm
+            assert model.model.rin is None
+            return
+
+        rin = model.model.rin
+        assert model.model.use_reversible_instance_norm
+        assert isinstance(rin, RINorm)
+        assert model.model.rin_config == {"params": {}, **rin_config}
+
+        assert rin.input_dim == _expected_dim(rin_config["series"], series.components)
+        assert rin.has_series
+
+        if rin_config["past_covariates"] is False:
+            assert not rin.has_past_cov
+            assert not hasattr(rin, "past_cov_norm")
+        else:
+            assert rin.has_past_cov
+            assert rin.past_cov_dim == _expected_dim(
+                rin_config["past_covariates"], past_covariates.components
+            )
+
+        if rin_config["future_covariates"] is False:
+            assert not rin.has_future_cov
+            assert not hasattr(rin, "future_cov_norm")
+        else:
+            assert rin.has_future_cov
+            assert rin.future_cov_dim == _expected_dim(
+                rin_config["future_covariates"], future_covariates.components
+            )
+
+        preds = model.predict(n=1, **predict_kwargs)
+        assert len(preds) == 1
+
+    def test_rin_groups_end_to_end(self):
+        """End-to-end (no mocks) check that `use_reversible_instance_norm`'s group dict only
+        normalizes the configured groups, using a real `DLinearModel` fit/predict.
+
+        Note: component name-list groups aren't resolved automatically by `fit()` yet
+        (`PLForecastingModule.set_rin_component_indices()` isn't wired in), so only `bool`
+        group configs are exercised here.
+        """
+        icl, ocl = 6, 2
+        start = pd.Timestamp("2000-01-01")
+        series = tg.sine_timeseries(length=20, start=start)
+        pc = tg.linear_timeseries(length=20, start=start) * 3 + 10
+        fc = tg.linear_timeseries(length=20 + ocl, start=start) * 2 - 4
+
+        model = DLinearModel(
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            kernel_size=2,
+            n_epochs=1,
+            random_state=42,
+            use_reversible_instance_norm={
+                "series": True,
+                "past_covariates": True,
+                "future_covariates": False,
+            },
+            **tfm_kwargs,
+        )
+        model.fit(series, past_covariates=pc, future_covariates=fc)
+
+        captured = {}
+
+        def _capture_input(_module, args, kwargs):
+            captured["x_in"] = args[0] if args else kwargs["x_in"]
+
+        handle = model.model.register_forward_pre_hook(_capture_input, with_kwargs=True)
+        try:
+            model.predict(
+                n=ocl, series=series, past_covariates=pc, future_covariates=fc
+            )
+        finally:
+            handle.remove()
+
+        x_past_raw = captured["x_in"][0]
+        n_targets = model.model.n_targets
+        n_past_cov = model.model._past_cov_full_dim
+        series_raw = x_past_raw[:, :, :n_targets]
+        past_cov_raw = x_past_raw[:, :, n_targets : n_targets + n_past_cov]
+
+        rin = model.model.rin
+
+        def _expected_stats(raw):
+            mean = raw.mean(dim=1, keepdim=True)
+            stdev = torch.sqrt(raw.var(dim=1, keepdim=True, unbiased=False) + rin.eps)
+            return mean, stdev
+
+        # "series" and "past_covariates" are configured -> stats computed from their own raw values
+        expected_series_mean, expected_series_stdev = _expected_stats(series_raw)
+        assert torch.allclose(rin.series_norm.mean, expected_series_mean)
+        assert torch.allclose(rin.series_norm.stdev, expected_series_stdev)
+
+        expected_pc_mean, expected_pc_stdev = _expected_stats(past_cov_raw)
+        assert torch.allclose(rin.past_cov_norm.mean, expected_pc_mean)
+        assert torch.allclose(rin.past_cov_norm.stdev, expected_pc_stdev)
+
+        # "future_covariates" is not configured -> no normalization module for that group at all
+        assert not rin.has_future_cov
+        assert not hasattr(rin, "future_cov_norm")
+
     @pytest.mark.parametrize("use_mc_dropout", [False, True])
     def test_mc_dropout_active(self, use_mc_dropout):
         """Test that model activates dropout ."""

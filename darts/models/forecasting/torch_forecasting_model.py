@@ -320,6 +320,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         self.train_sample: TorchTrainingSample | None = None
         self.output_dim: int | None = None
+        self._fit_component_references: (
+            tuple[
+                Sequence[TimeSeries] | None,
+                Sequence[TimeSeries] | None,
+                Sequence[TimeSeries] | None,
+            ]
+            | None
+        ) = None
 
         self.n_epochs = n_epochs
         self.batch_size: int = batch_size
@@ -883,6 +891,107 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 )
         return
 
+    def _set_rin_component_indices(
+        self,
+        model: PLForecastingModule | None = None,
+        series: Sequence[TimeSeries] | None = None,
+        past_covariates: Sequence[TimeSeries] | None = None,
+        future_covariates: Sequence[TimeSeries] | None = None,
+    ) -> None:
+        """Resolve and set named-component RIN indices for the current model state.
+
+        Resolution uses the component names of the provided `TimeSeries` inputs. When inputs are not
+        provided, stored training series / covariates are used when available.
+        """
+        model = self.model if model is None else model
+        if model is None or model.rin_config is None:
+            return
+
+        if not any(
+            isinstance(model.rin_config[group_name], list)
+            for group_name in ["series", "past_covariates", "future_covariates"]
+        ):
+            return
+
+        if series is None and self.training_series is not None:
+            series = [self.training_series]
+        if past_covariates is None and self.past_covariate_series is not None:
+            past_covariates = [self.past_covariate_series]
+        if future_covariates is None and self.future_covariate_series is not None:
+            future_covariates = [self.future_covariate_series]
+
+        group_dims = {
+            "series": model.n_targets,
+            "past_covariates": model._past_cov_full_dim,
+            "future_covariates": model._future_cov_full_dim,
+        }
+
+        def _resolve_group_indices(
+            group_name: str,
+            component_names: list[str],
+            seq: Sequence[TimeSeries] | None,
+        ) -> Sequence[int] | None:
+            if group_dims[group_name] == 0:
+                return None
+            if not seq:
+                raise_log(
+                    ValueError(
+                        f"`use_reversible_instance_norm['{group_name}']` selects components by name, but no "
+                        f"`{group_name}` are available to resolve them."
+                    )
+                )
+
+            resolved_indices: list[int] | None = None
+            missing_err_prefix = f"`use_reversible_instance_norm['{group_name}']` contains unknown component name(s) "
+            for idx, ts in enumerate(seq):
+                components = ts.components
+                missing = [name for name in component_names if name not in components]
+                if missing:
+                    raise_log(
+                        ValueError(
+                            missing_err_prefix
+                            + f"`{missing}` for {group_name} at series sequence index `{idx}`."
+                        )
+                    )
+
+                current_indices = [components.get_loc(name) for name in component_names]
+                if resolved_indices is None:
+                    resolved_indices = current_indices
+                elif current_indices != resolved_indices:
+                    raise_log(
+                        ValueError(
+                            f"All `{group_name}` series must share the same component order for "
+                            "name-based `use_reversible_instance_norm` selection."
+                        )
+                    )
+            return resolved_indices
+
+        model.set_rin_component_indices(
+            series=(
+                _resolve_group_indices("series", model.rin_config["series"], series)
+                if isinstance(model.rin_config["series"], list)
+                else None
+            ),
+            past_covariates=(
+                _resolve_group_indices(
+                    "past_covariates",
+                    model.rin_config["past_covariates"],
+                    past_covariates,
+                )
+                if isinstance(model.rin_config["past_covariates"], list)
+                else None
+            ),
+            future_covariates=(
+                _resolve_group_indices(
+                    "future_covariates",
+                    model.rin_config["future_covariates"],
+                    future_covariates,
+                )
+                if isinstance(model.rin_config["future_covariates"], list)
+                else None
+            ),
+        )
+
     def _update_covariates_use(self):
         """Based on the Forecasting class and the training_sample attribute, update the
         uses_[past/future/static]_covariates attributes."""
@@ -1187,6 +1296,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
         )
 
+        self._fit_component_references = (series, past_covariates, future_covariates)
+
         train_dataset = self._build_train_dataset(
             series=series,
             past_covariates=past_covariates,
@@ -1375,6 +1486,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # update the covariates usage based on the training sample (required if model training was called
         # with `fit_from_dataset()`)
         self._update_covariates_use()
+        fit_component_references = self._fit_component_references
+        if fit_component_references is not None:
+            self._set_rin_component_indices(
+                model=model,
+                series=fit_component_references[0],
+                past_covariates=fit_component_references[1],
+                future_covariates=fit_component_references[2],
+            )
+            self._fit_component_references = None
 
         # loss must not reduce the output when using sample weight
         train_sample_weight = train_sample[-2]
@@ -1962,6 +2082,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             stride=0,
             bounds=None,
         )
+        self._set_rin_component_indices(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
         predict_from_ds_params: dict[str, Any] = dict(
             n=n,
             dataset=dataset,
@@ -2392,6 +2517,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         path_ptl_ckpt = path + ".ckpt"
         if os.path.exists(path_ptl_ckpt):
             model.model = model._load_from_checkpoint(path_ptl_ckpt, **kwargs)
+            model._set_rin_component_indices()
         else:
             model._fit_called = False
             logger.warning(
@@ -2498,6 +2624,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         logger.info(f"loading {file_name}")
 
         model.model = model._load_from_checkpoint(file_path, **kwargs)
+        model._set_rin_component_indices()
 
         # loss_fn is excluded from pl_forecasting_module ckpt, must be restored
         loss_fn = model.model_params.get("loss_fn")
@@ -2674,6 +2801,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # based on the shape of train_sample, figure out which covariates are used by the model
         # (usually set in the Darts model prior to fitting it)
         self._update_covariates_use()
+        self._set_rin_component_indices()
 
     def load_weights(
         self, path: str, load_encoders: bool = True, skip_checks: bool = False, **kwargs
