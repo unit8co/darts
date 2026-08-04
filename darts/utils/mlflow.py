@@ -356,6 +356,13 @@ def autolog(
       - Stores the trained model artifact when ``log_models=True`` (default:
         ``False``).
       - Logs per-epoch training and validation metrics for PyTorch-based models.
+    - Calling ``ForecastingModel.historical_forecasts(retrain=True)`` inside an
+      active MLflow run; does nothing if no run is active or ``retrain`` is not
+      ``True``:
+      - Logs the same model creation parameters and ``series_info.json`` as
+        ``fit()`` (overwriting any prior ``fit()`` artifacts in the same run).
+      - Does not log the trained model artifact; call ``log_model()`` manually
+        if needed.
     - Calling any Darts metric inside an active MLflow run; does nothing if no
       run is active:
       - Logs the result of that metric call as an MLflow metric. More information
@@ -560,20 +567,16 @@ def _autolog(
             return result
         run_id = active_run.info.run_id
 
-        # Set tags to identify the model class and relevant information
-        autologging_client.set_tags(run_id=run_id, tags=_get_model_info_tags(self))
-
-        if log_params:
-            # Log the parameters for model creation
-            autologging_client.log_params(run_id=run_id, params=self.model_params)
-            mlflow.log_dict(self.model_params, "model_params.json")
-            fit_args = inspect.signature(original).bind(self, *args, **kwargs).arguments
-            _log_series_info(
-                self,
-                series=fit_args["series"],
-                past_covariates=fit_args.get("past_covariates"),
-                future_covariates=fit_args.get("future_covariates"),
-            )
+        fit_args = inspect.signature(original).bind(self, *args, **kwargs).arguments
+        _log_model_setup(
+            self,
+            autologging_client,
+            run_id,
+            series=fit_args["series"],
+            past_covariates=fit_args.get("past_covariates"),
+            future_covariates=fit_args.get("future_covariates"),
+            log_params=log_params,
+        )
 
         param_logging_ops = autologging_client.flush(synchronous=False)
 
@@ -606,19 +609,44 @@ def _autolog(
         return result
 
     def _patched_historical_forecasts(original, self, *args, **kwargs):
-        """Suppress per-iteration fit() autologging during historical_forecasts.
+        """Suppress per-iteration fit() autologging; log model setup once when
+        ``retrain=True``.
 
-        Sets a thread-local flag so _patched_fit skips autologging for the
-        internal fit() calls, so that at most the single top-level call site
-        (this patch, or an enclosing backtest()) logs anything. This patch
-        itself does not start or otherwise manage an MLflow run; it relies on
-        whatever run (if any) is already active.
+        Sets a thread-local flag so ``_patched_fit`` skips autologging for the
+        internal ``fit()`` calls. When ``retrain is True`` and an MLflow run is
+        active, logs model tags, creation parameters, and series info once after
+        the call (overwriting any prior ``fit()`` artifacts in the same run).
+        Does not start a run and does not log the trained model artifact.
         """
         _autolog_state.in_historical_forecasts = True
         try:
-            return original(self, *args, **kwargs)
+            result = original(self, *args, **kwargs)
         finally:
             _autolog_state.in_historical_forecasts = False
+
+        active_run = mlflow.active_run()
+        if active_run is None:
+            return result
+
+        bound = inspect.signature(ForecastingModel.historical_forecasts).bind(
+            self, *args, **kwargs
+        )
+        bound.apply_defaults()
+        if bound.arguments["retrain"] is not True:
+            return result
+
+        autologging_client = MlflowAutologgingQueueingClient()
+        _log_model_setup(
+            self,
+            autologging_client,
+            active_run.info.run_id,
+            series=bound.arguments["series"],
+            past_covariates=bound.arguments.get("past_covariates"),
+            future_covariates=bound.arguments.get("future_covariates"),
+            log_params=log_params,
+        )
+        autologging_client.flush(synchronous=False).await_completion()
+        return result
 
     def _patched_backtest(original, self, *args, **kwargs):
         """Wrap ``backtest`` to log metric result(s) to the active MLflow run.
@@ -661,7 +689,8 @@ def _autolog(
         )
 
     # patch `historical_forecasts()` for all forecasting models so that the
-    # N internal fit() calls don't each spawn their own MLflow run
+    # N internal fit() calls don't each log, and so that retrain=True calls
+    # log model setup once
     for _, cls in _get_forecasting_models():
         safe_patch(
             FLAVOR_NAME,
@@ -705,11 +734,59 @@ def get_default_conda_env():
     )
 
 
-def _get_model_info_tags(model: ForecastingModel) -> dict[str, Any]:
+def _infer_covariate_usage(
+    model: ForecastingModel,
+    series: TimeSeriesLike,
+    past_covariates: TimeSeriesLike | None,
+    future_covariates: TimeSeriesLike | None,
+) -> tuple[bool, bool, bool]:
+    """Infer past/future/static covariate usage from model state and call args.
+
+    After ``historical_forecasts(retrain=True)`` the outer model is still
+    unfitted (training happens on internal copies), so ``model.uses_*`` stays
+    ``False``. Fall back to call args / ``add_encoders`` / static covariates on
+    ``series``, gated by ``supports_*`` / ``considers_static_covariates``.
+    """
+    # encoder keys like "datetime_attribute" map to {"past": ..., "future": ...};
+    # non-dict values ("tz", "transformer") are ignored by the isinstance check
+    enc_types = {
+        cov
+        for val in (model.add_encoders or {}).values()
+        if isinstance(val, dict)
+        for cov in ("past", "future")
+        if cov in val
+    }
+    first_series = get_single_series(series)
+    uses_past = model.uses_past_covariates or (
+        model.supports_past_covariates
+        and (past_covariates is not None or "past" in enc_types)
+    )
+    uses_future = model.uses_future_covariates or (
+        model.supports_future_covariates
+        and (future_covariates is not None or "future" in enc_types)
+    )
+    uses_static = model.uses_static_covariates or (
+        first_series is not None
+        and first_series.static_covariates is not None
+        and model.supports_static_covariates
+        and model.considers_static_covariates
+    )
+    return uses_past, uses_future, uses_static
+
+
+def _get_model_info_tags(
+    model: ForecastingModel,
+    series: TimeSeriesLike,
+    past_covariates: TimeSeriesLike | None = None,
+    future_covariates: TimeSeriesLike | None = None,
+) -> dict[str, Any]:
     """
     Returns:
         A dictionary of MLflow run tag keys and values describing the specified model.
     """
+    uses_past, uses_future, uses_static = _infer_covariate_usage(
+        model, series, past_covariates, future_covariates
+    )
     return {
         "model_class": model.__class__.__name__,
         "model_reference": (
@@ -720,10 +797,45 @@ def _get_model_info_tags(model: ForecastingModel) -> dict[str, Any]:
             if model.likelihood is not None
             else None
         ),
-        "model_uses_past_covariates": model.uses_past_covariates,
-        "model_uses_future_covariates": model.uses_future_covariates,
-        "model_uses_static_covariates": model.uses_static_covariates,
+        "model_uses_past_covariates": uses_past,
+        "model_uses_future_covariates": uses_future,
+        "model_uses_static_covariates": uses_static,
     }
+
+
+def _log_model_setup(
+    model: ForecastingModel,
+    autologging_client: MlflowAutologgingQueueingClient,
+    run_id: str,
+    series: TimeSeriesLike,
+    past_covariates: TimeSeriesLike | None = None,
+    future_covariates: TimeSeriesLike | None = None,
+    *,
+    log_params: bool = True,
+) -> None:
+    """Log model tags, creation parameters, and series info to an active run.
+
+    Shared by ``fit()`` and ``historical_forecasts(retrain=True)`` autologging.
+    Does not log the trained model artifact.
+    """
+    autologging_client.set_tags(
+        run_id=run_id,
+        tags=_get_model_info_tags(
+            model,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        ),
+    )
+    if log_params:
+        autologging_client.log_params(run_id=run_id, params=model.model_params)
+        mlflow.log_dict(model.model_params, "model_params.json")
+        _log_series_info(
+            model,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
 
 
 def _log_series_info(
@@ -760,19 +872,22 @@ def _log_series_info(
         ``None``.
     """
     first_series = get_single_series(series)
+    uses_past, uses_future, uses_static = _infer_covariate_usage(
+        model, series, past_covariates, future_covariates
+    )
     series_info = {
         "series": {
             "count": first_series.n_components,
             "names": first_series.components.tolist(),
         },
         "past_covariates": _extract_covariate_metadata(
-            model.uses_past_covariates,
+            uses_past,
             get_single_series(past_covariates),
             "components",
             encoded_names=model.encoders.past_components,
         ),
         "future_covariates": _extract_covariate_metadata(
-            model.uses_future_covariates,
+            uses_future,
             get_single_series(future_covariates),
             "components",
             encoded_names=model.encoders.future_components,
@@ -783,9 +898,9 @@ def _log_series_info(
         first_series.static_covariates if first_series is not None else None
     )
     series_info["static_covariates"] = _extract_covariate_metadata(
-        model.uses_static_covariates, static_covariates, "columns"
+        uses_static, static_covariates, "columns"
     )
-    if model.uses_static_covariates and static_covariates is not None:
+    if uses_static and static_covariates is not None:
         # static covariates are global (one shared row) unless there is one row
         # per series component, in which case they are component-specific
         series_info["static_covariates"]["is_global"] = (

@@ -476,6 +476,161 @@ class TestMLflow:
         )
         assert series_info["static_covariates"]["is_global"] is False
 
+    def test_autolog_historical_forecasts_series_info_covariates(
+        self, mlflow_tracking, autolog_context
+    ):
+        """HF without a prior fit() still reports explicit covariates and static
+        covariates in series_info / tags (outer model stays unfitted)."""
+        target = self.ts_univariate.with_static_covariates(
+            pd.DataFrame({"static_feat": [1.0]})
+        )
+        with autolog_context():
+            with mlflow.start_run() as run:
+                model = LinearRegressionModel(lags=5, lags_past_covariates=3)
+                model.historical_forecasts(
+                    series=target,
+                    past_covariates=self.ts_past_cov,
+                    forecast_horizon=1,
+                    retrain=True,
+                    start=0.5,
+                )
+
+        series_info = mlflow.artifacts.load_dict(
+            f"runs:/{run.info.run_id}/series_info.json"
+        )
+        assert series_info["past_covariates"]["used"] is True
+        assert (
+            series_info["past_covariates"]["names"]
+            == self.ts_past_cov.components.tolist()
+        )
+        assert series_info["static_covariates"]["used"] is True
+        assert series_info["static_covariates"]["names"] == ["static_feat"]
+        tags = mlflow.tracking.MlflowClient().get_run(run.info.run_id).data.tags
+        assert tags["model_uses_past_covariates"] == "True"
+        assert tags["model_uses_static_covariates"] == "True"
+
+    def test_autolog_historical_forecasts_series_info_add_encoders(
+        self, mlflow_tracking, autolog_context
+    ):
+        """HF with add_encoders (no explicit cov args) marks future covariates
+        as used even though the outer model remains unfitted."""
+        with autolog_context():
+            with mlflow.start_run() as run:
+                model = LinearRegressionModel(
+                    lags=5,
+                    lags_future_covariates=[0],
+                    add_encoders={"datetime_attribute": {"future": ["month"]}},
+                )
+                model.historical_forecasts(
+                    series=self.ts_univariate,
+                    forecast_horizon=1,
+                    retrain=True,
+                    start=0.5,
+                )
+
+        series_info = mlflow.artifacts.load_dict(
+            f"runs:/{run.info.run_id}/series_info.json"
+        )
+        assert series_info["future_covariates"]["used"] is True
+        tags = mlflow.tracking.MlflowClient().get_run(run.info.run_id).data.tags
+        assert tags["model_uses_future_covariates"] == "True"
+
+    def test_autolog_backtest_series_info_covariates(
+        self, mlflow_tracking, autolog_context
+    ):
+        """backtest(retrain=True) without a prior fit() reports covariates via
+        the internal historical_forecasts path."""
+        with autolog_context():
+            with mlflow.start_run() as run:
+                model = LinearRegressionModel(lags=5, lags_past_covariates=3)
+                model.backtest(
+                    series=self.ts_univariate,
+                    past_covariates=self.ts_past_cov,
+                    forecast_horizon=1,
+                    retrain=True,
+                    start=0.5,
+                    metric=dm.mae,
+                )
+
+        series_info = mlflow.artifacts.load_dict(
+            f"runs:/{run.info.run_id}/series_info.json"
+        )
+        assert series_info["past_covariates"]["used"] is True
+        assert (
+            series_info["past_covariates"]["names"]
+            == self.ts_past_cov.components.tolist()
+        )
+
+    def test_autolog_historical_forecasts_logs_model_setup(
+        self, mlflow_tracking, autolog_context
+    ):
+        """historical_forecasts(retrain=True) without a prior fit() still logs
+        model params and series_info (but not the model artifact)."""
+        with autolog_context():
+            with mlflow.start_run() as run:
+                model = NaiveSeasonal(K=1)
+                model.historical_forecasts(
+                    series=self.ts_univariate, forecast_horizon=1, retrain=True
+                )
+
+        params = mlflow.artifacts.load_dict(
+            f"runs:/{run.info.run_id}/model_params.json"
+        )
+        assert params["K"] == 1
+        series_info = mlflow.artifacts.load_dict(
+            f"runs:/{run.info.run_id}/series_info.json"
+        )
+        assert series_info["series"]["names"] == self.ts_univariate.components.tolist()
+        client = mlflow.tracking.MlflowClient()
+        artifact_paths = [a.path for a in client.list_artifacts(run.info.run_id)]
+        assert "model" not in artifact_paths
+        assert (
+            client.get_run(run.info.run_id).data.tags["model_class"] == "NaiveSeasonal"
+        )
+
+    def test_autolog_historical_forecasts_retrain_false_skips_model_setup(
+        self, mlflow_tracking, autolog_context
+    ):
+        """historical_forecasts(retrain=False) does not log model setup."""
+        model = LinearRegressionModel(lags=5)
+        model.fit(self.ts_univariate[:40])
+        with autolog_context():
+            with mlflow.start_run() as run:
+                model.historical_forecasts(
+                    series=self.ts_univariate,
+                    forecast_horizon=1,
+                    retrain=False,
+                    start=0.5,
+                )
+
+        client = mlflow.tracking.MlflowClient()
+        artifact_paths = [a.path for a in client.list_artifacts(run.info.run_id)]
+        assert "model_params.json" not in artifact_paths
+        assert "series_info.json" not in artifact_paths
+
+    def test_autolog_historical_forecasts_overwrites_fit_setup(
+        self, mlflow_tracking, autolog_context
+    ):
+        """fit() then historical_forecasts(retrain=True) in the same run
+        overwrites model_params / series_info with the HF call's series."""
+        with autolog_context():
+            with mlflow.start_run() as run:
+                model = LinearRegressionModel(lags=5)
+                model.fit(self.ts_univariate[:30])
+                model.historical_forecasts(
+                    series=self.ts_multivariate,
+                    forecast_horizon=1,
+                    retrain=True,
+                    start=0.5,
+                )
+
+        series_info = mlflow.artifacts.load_dict(
+            f"runs:/{run.info.run_id}/series_info.json"
+        )
+        assert (
+            series_info["series"]["names"] == self.ts_multivariate.components.tolist()
+        )
+
     def test_multivariate_with_all_covariate_types(self, mlflow_tracking):
         """Test saving/loading multivariate series with all covariate types"""
         # create multivariate target with static covariates
