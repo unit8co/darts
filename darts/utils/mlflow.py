@@ -347,18 +347,20 @@ def autolog(
 
     When enabled, the following functionalities emit detailed logs:
 
-    - Calling ``ForecastingModel.fit()``:
-      - Starts an MLflow run (or reuses the currently active one).
+    - Calling ``ForecastingModel.fit()`` inside an active MLflow run (e.g. within
+      ``with mlflow.start_run():``); does nothing if no run is active:
       - Logs model creation parameters (``model.model_params``), both as MLflow
         params and as a ``model_params.json`` artifact.
       - Logs covariate usage information (past, future, and static covariates).
       - Stores the trained model artifact when ``log_models=True`` (default:
         ``False``).
       - Logs per-epoch training and validation metrics for PyTorch-based models.
-    - Calling any Darts metric:
+    - Calling any Darts metric inside an active MLflow run; does nothing if no
+      run is active:
       - Logs the result of that metric call as an MLflow metric. More information
         in the notes below.
-    - Calling ``ForecastingModel.backtest()``:
+    - Calling ``ForecastingModel.backtest()`` inside an active MLflow run; does
+      nothing if no run is active:
       - Logs all evaluation metrics under ``backtest_*`` keys. More information
         in the notes below.
 
@@ -606,8 +608,10 @@ def _autolog(
         """Suppress per-iteration fit() autologging during historical_forecasts.
 
         Sets a thread-local flag so _patched_fit skips autologging for the
-        internal fit() calls. The outer safe_patch() on
-        historical_forecasts itself provides a single managed run.
+        internal fit() calls, so that at most the single top-level call site
+        (this patch, or an enclosing backtest()) logs anything. This patch
+        itself does not start or otherwise manage an MLflow run; it relies on
+        whatever run (if any) is already active.
         """
         _autolog_state.in_historical_forecasts = True
         try:
