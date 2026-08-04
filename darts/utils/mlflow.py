@@ -1455,18 +1455,6 @@ def _log_metric_result(
         _log_per_series_table(rows)
 
 
-# TODO: (does the below TODO still apply? we only support logging under an active run I thought)
-# TODO: To log metrics post-fitting, only patching the metric methods may not be enough.
-# This is becuase `model.fit()` method would terminate the active MLflow run at the end of training,
-# so any metric calls made after that would not be logged.
-# To address this, we need to implement three things:
-# 1. Implement a singleton `_AutologgingMetricsManager` (`mlflow.sklearn`) to maintain a mapping between fitted
-# models and their prediction outputs.
-# 2. Patch the `model.predict()` method to create a mapping between the model (run_id) and prediction output.
-# 3. Patch the metric functions to find the model (run_id) from the input series, then log the metrics to
-# the corresponding run.
-# This way, even if the metric calls are made after `fit()` has terminated the active run, we can still log
-# the metrics to the correct run.
 def _mlflow_metric_callback(func, result, args, kwargs) -> None:
     """Metric callback registered with ``darts.metrics.utils`` for autologging.
 
