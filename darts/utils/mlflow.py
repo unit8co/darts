@@ -16,8 +16,9 @@ to MLflow, as well as automatic logging (``autolog()``) of:
 See the `MLflow quickstart example <https://github.com/unit8co/darts/blob/master/examples/29-MLflow-quickstart.ipynb>`_
 for an end-to-end walkthrough.
 
-References:
-https://github.com/sktime/sktime/blob/main/sktime/utils/mlflow_sktime.py
+To keep auto-logged metrics comparable across runs, use the same evaluation
+time frame, forecast horizon, and evaluation start date for every
+``backtest()`` / metric call you intend to compare.
 """
 
 import inspect
@@ -37,8 +38,9 @@ try:
 except ImportError:
     raise_log(
         ImportError(
-            "MLflow is required for `darts.utils.mlflow`. Install it with `pip"
-            " install mlflow`."
+            "The `mlflow` module could not be imported. To enable MLflow support "
+            "in Darts, follow the detailed instructions in the installation guide: "
+            "https://github.com/unit8co/darts/blob/master/INSTALL.md"
         )
     )
 
@@ -392,6 +394,11 @@ def autolog(
         When components are preserved (``component_reduction=None``), all
         series scored together must have the same number of components; names
         are taken from the first series.
+
+        Metric values are only comparable across runs when the evaluation
+        settings match. Use the same evaluation time frame, forecast horizon,
+        and evaluation start date for every ``backtest()`` / metric call you
+        intend to compare.
 
     Parameters
     ----------

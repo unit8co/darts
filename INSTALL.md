@@ -22,6 +22,12 @@ Some models have additional dependencies that are not included in the `all` inst
 | `NeuralForecastModel` | neuralforecast>=3.0.0 |
 | `TiRexModel`          | tirex-ts>=1.4.0       |
 
+Some optional integrations also require additional dependencies:
+
+| Integration            | Dependencies |
+|-------------------------|--------------|
+| `darts.utils.mlflow` | mlflow>=3.0  |
+
 
 ## From conda-forge
 Create a conda environment (e.g., for Python 3.11):
