@@ -1203,17 +1203,6 @@ def _log_backtest_metrics(
         # both time and window axes present: backtest returns (W*T*C*M,) in C order so we can
         # recover W and T only if forecast_horizon is known (T = forecast_horizon)
         if has_time_axis and has_windows:
-            if not forecast_horizon or rest % forecast_horizon:
-                raise_log(
-                    ValueError(
-                        f"Backtest metric logging failed: cannot split "
-                        f"window/time axes — {rest} elements remain after "
-                        f"stripping component and metric axes, but "
-                        f"forecast_horizon={forecast_horizon!r} does not "
-                        "divide evenly. Pass an explicit forecast_horizon to "
-                        "backtest()."
-                    )
-                )
             t_size, w_size = forecast_horizon, rest // forecast_horizon
         elif has_time_axis:
             t_size, w_size = rest, 1
