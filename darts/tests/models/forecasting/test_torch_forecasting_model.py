@@ -2038,6 +2038,11 @@ class TestTorchForecastingModel:
                 "past_covariates": ["comp0"],
                 "future_covariates": ["fcomp1"],
             },
+            {
+                "series": False,
+                "past_covariates": True,
+                "future_covariates": True,
+            },
         ],
     )
     @pytest.mark.parametrize("model_config", models)
@@ -2078,6 +2083,11 @@ class TestTorchForecastingModel:
                 else False
             ),
         }
+        if not any(rin_config[group] is not False for group in rin_config):
+            pytest.skip(
+                f"{model_cls.__name__} supports neither past nor future covariates, and "
+                "`series` is disabled in this template: no group would be left active."
+            )
         model = model_cls(use_reversible_instance_norm=rin_config, **model_kwargs)
 
         fit_kwargs = {"series": series}
@@ -2092,11 +2102,6 @@ class TestTorchForecastingModel:
         def _expected_dim(group_config, components):
             return len(components) if group_config is True else len(group_config)
 
-        def _component_indices(components, group_config):
-            if isinstance(group_config, list):
-                return [components.get_loc(component) for component in group_config]
-            return None
-
         model.fit(**fit_kwargs)
 
         if issubclass(model_cls, RNNModel):
@@ -2109,42 +2114,54 @@ class TestTorchForecastingModel:
         assert isinstance(rin, RINorm)
         assert model.model.rin_config == {"params": {}, **rin_config}
 
-        assert rin.input_dim == _expected_dim(rin_config["series"], series.components)
-        assert rin.has_series
-
-        if rin_config["past_covariates"] is False:
-            assert not rin.has_past_cov
-            assert not hasattr(rin, "past_cov_norm")
-        else:
-            assert rin.has_past_cov
-            assert rin.past_cov_dim == _expected_dim(
-                rin_config["past_covariates"], past_covariates.components
-            )
-
-        if rin_config["future_covariates"] is False:
-            assert not rin.has_future_cov
-            assert not hasattr(rin, "future_cov_norm")
-        else:
-            assert rin.has_future_cov
-            assert rin.future_cov_dim == _expected_dim(
-                rin_config["future_covariates"], future_covariates.components
-            )
+        for group_config, components, has_attr, dim_attr, norm_attr in (
+            (
+                rin_config["series"],
+                series.components,
+                "has_series",
+                "input_dim",
+                "series_norm",
+            ),
+            (
+                rin_config["past_covariates"],
+                past_covariates.components,
+                "has_past_cov",
+                "past_cov_dim",
+                "past_cov_norm",
+            ),
+            (
+                rin_config["future_covariates"],
+                future_covariates.components,
+                "has_future_cov",
+                "future_cov_dim",
+                "future_cov_norm",
+            ),
+        ):
+            if group_config is False:
+                assert not getattr(rin, has_attr)
+                assert not hasattr(rin, norm_attr)
+            else:
+                assert getattr(rin, has_attr)
+                assert getattr(rin, dim_attr) == _expected_dim(group_config, components)
 
         preds = model.predict(n=1, **predict_kwargs)
         assert len(preds) == 1
 
     def test_rin_groups_end_to_end(self):
-        """End-to-end (no mocks) check that `use_reversible_instance_norm`'s group dict only
-        normalizes the configured groups, using a real `DLinearModel` fit/predict.
-
-        Note: component name-list groups aren't resolved automatically by `fit()` yet
-        (`PLForecastingModule.set_rin_component_indices()` isn't wired in), so only `bool`
-        group configs are exercised here.
+        """End-to-end check that `use_reversible_instance_norm`'s group dict only
+        normalizes the configured groups, and that a name-based (`list[str]`) group selects
+        the right columns out of a multi-component covariate series, using a `DLinearModel`
+        fit/predict.
         """
         icl, ocl = 6, 2
         start = pd.Timestamp("2000-01-01")
         series = tg.sine_timeseries(length=20, start=start)
-        pc = tg.linear_timeseries(length=20, start=start) * 3 + 10
+        # two past covariate components on very different scales: if RIN's name-based selection
+        # resolved the wrong column (or averaged both), the stats checked below would not match
+        pc = (tg.linear_timeseries(length=20, start=start) * 3 + 10).stack(
+            tg.linear_timeseries(length=20, start=start) * -2 + 5
+        )
+        pc = pc.with_columns_renamed(pc.components.tolist(), ["pc_a", "pc_b"])
         fc = tg.linear_timeseries(length=20 + ocl, start=start) * 2 - 4
 
         model = DLinearModel(
@@ -2155,7 +2172,7 @@ class TestTorchForecastingModel:
             random_state=42,
             use_reversible_instance_norm={
                 "series": True,
-                "past_covariates": True,
+                "past_covariates": ["pc_b"],
                 "future_covariates": False,
             },
             **tfm_kwargs,
@@ -2179,7 +2196,8 @@ class TestTorchForecastingModel:
         n_targets = model.model.n_targets
         n_past_cov = model.model._past_cov_full_dim
         series_raw = x_past_raw[:, :, :n_targets]
-        past_cov_raw = x_past_raw[:, :, n_targets : n_targets + n_past_cov]
+        # "pc_b" is column index 1 of the raw (unselected) past covariates
+        pc_b_raw = x_past_raw[:, :, n_targets + 1 : n_targets + n_past_cov]
 
         rin = model.model.rin
 
@@ -2193,7 +2211,9 @@ class TestTorchForecastingModel:
         assert torch.allclose(rin.series_norm.mean, expected_series_mean)
         assert torch.allclose(rin.series_norm.stdev, expected_series_stdev)
 
-        expected_pc_mean, expected_pc_stdev = _expected_stats(past_cov_raw)
+        # only "pc_b" was selected by name -> stats must match "pc_b" alone, not "pc_a" or both
+        assert rin.past_cov_dim == 1
+        expected_pc_mean, expected_pc_stdev = _expected_stats(pc_b_raw)
         assert torch.allclose(rin.past_cov_norm.mean, expected_pc_mean)
         assert torch.allclose(rin.past_cov_norm.stdev, expected_pc_stdev)
 

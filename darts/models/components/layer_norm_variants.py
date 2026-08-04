@@ -65,12 +65,28 @@ class LayerNorm(nn.LayerNorm):
 
 
 class RINormHelper(nn.Module):
+    """Normalizes a single group of components with Reversible Instance Normalization.
+
+    Used internally by :class:`RINorm`, which owns one independent instance of this class per
+    active group (`series`, `past_covariates`, and/or `future_covariates`).
+    """
+
     def __init__(
         self,
         input_dim: int | None = None,
         eps: float = 1e-5,
         affine: bool = True,
     ):
+        """
+        Parameters
+        ----------
+        input_dim
+            The number of components to normalize.
+        eps
+            The epsilon value for numerical stability.
+        affine
+            Whether to apply a learned affine transformation after normalization.
+        """
         super().__init__()
         self.input_dim = input_dim
         self.eps = eps
@@ -81,9 +97,14 @@ class RINormHelper(nn.Module):
             self.affine_bias = nn.Parameter(torch.zeros(self.input_dim))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # at the beginning of `PLForecastingModule.forward()`, `x` has shape
-        # (batch_size, input_chunk_length, n_targets).
-        # select all dimensions except batch and input_dim (0, -1)
+        """Computes and stores `mean`/`stdev` from `x` (to be reused by :meth:`transform` /
+        :meth:`inverse`), then normalizes `x` with them.
+
+        Parameters
+        ----------
+        x
+            Tensor with last dimension `input_dim`. Shape: ``(batch_size, seq_len, input_dim)``.
+        """
         # TL;DR: calculate mean and variance over all dimensions except batch and input_dim
         calc_dims = tuple(range(1, x.ndim - 1))
 
@@ -117,8 +138,15 @@ class RINormHelper(nn.Module):
         return x
 
     def inverse(self, x: torch.Tensor) -> torch.Tensor:
-        # x is assumed to be the output of PLForecastingModule.forward(), and has shape
-        # (batch_size, output_chunk_length, n_targets, nr_params).
+        """Denormalize `x` using the `mean`/`stdev` stored by the last :meth:`forward` call.
+
+        Parameters
+        ----------
+        x
+            Tensor to denormalize. `x` is assumed to be the output of
+            `PLForecastingModule.forward()`, and has shape
+            ``(batch_size, output_chunk_length, input_dim, nr_params)``.
+        """
         if self.affine:
             x = x - self.affine_bias.view(self.affine_bias.shape + (1,))
             x = x / (
@@ -198,6 +226,41 @@ class RINorm(nn.Module):
         if self.has_future_cov:
             self.future_cov_norm = RINormHelper(future_cov_dim, eps, affine)
 
+    def _apply_groups(
+        self,
+        op: str,
+        x: torch.Tensor | None,
+        past_cov: torch.Tensor | None,
+        future_cov: torch.Tensor | None,
+    ) -> (
+        torch.Tensor
+        | tuple[torch.Tensor | None, torch.Tensor | None, torch.Tensor | None]
+    ):
+        """Applies `RINormHelper` method `op` (``"forward"``, ``"transform"``, or ``"inverse"``) to
+        each active, given group, and shapes the result per :meth:`forward`'s `Returns` section.
+        """
+        x_out = (
+            getattr(self.series_norm, op)(x)
+            if self.has_series and x is not None
+            else None
+        )
+        past_cov_out = (
+            getattr(self.past_cov_norm, op)(past_cov)
+            if self.has_past_cov and past_cov is not None
+            else None
+        )
+        future_cov_out = (
+            getattr(self.future_cov_norm, op)(future_cov)
+            if self.has_future_cov and future_cov is not None
+            else None
+        )
+        # backward compatible with the pre-groups, series-only API: unwrap to a bare tensor only
+        # for instances that don't have any covariates group active
+        if x is not None and not (self.has_past_cov or self.has_future_cov):
+            return x_out
+        else:
+            return x_out, past_cov_out, future_cov_out
+
     def forward(
         self,
         x: torch.Tensor | None = None,
@@ -219,24 +282,7 @@ class RINorm(nn.Module):
             ``(x_out, past_cov_out, future_cov_out)``, with `None` in place of any group that
             wasn't normalized.
         """
-        x_out = (
-            self.series_norm.forward(x) if self.has_series and x is not None else None
-        )
-        past_cov_out = (
-            self.past_cov_norm.forward(past_cov)
-            if self.has_past_cov and past_cov is not None
-            else None
-        )
-        future_cov_out = (
-            self.future_cov_norm.forward(future_cov)
-            if self.has_future_cov and future_cov is not None
-            else None
-        )
-        # For backward compatibility when RIN was only on series
-        if x is not None and (past_cov is None and future_cov is None):
-            return x_out
-        else:
-            return x_out, past_cov_out, future_cov_out
+        return self._apply_groups("forward", x, past_cov, future_cov)
 
     def transform(
         self,
@@ -270,29 +316,13 @@ class RINorm(nn.Module):
         Returns
         -------
         torch.Tensor | tuple
-            If exactly one of `x`/`past_cov`/`future_cov` is given, returns the corresponding
-            normalized tensor directly (backward compatible with the single-group call pattern).
+            If `x` is given and this instance has no `past_covariates`/`future_covariates` group
+            active (i.e. it was constructed with only `input_dim`), returns the normalized series
+            tensor directly (backward compatible with the pre-groups, series-only call pattern).
             Otherwise, returns a 3-tuple ``(x_out, past_cov_out, future_cov_out)``, with `None` in
             place of any argument that was not given.
         """
-        x_out = (
-            self.series_norm.transform(x) if self.has_series and x is not None else None
-        )
-        past_cov_out = (
-            self.past_cov_norm.transform(past_cov)
-            if self.has_past_cov and past_cov is not None
-            else None
-        )
-        future_cov_out = (
-            self.future_cov_norm.transform(future_cov)
-            if self.has_future_cov and future_cov is not None
-            else None
-        )
-        # For backward compatibility when RIN was only on series
-        if x is not None and (past_cov is None and future_cov is None):
-            return x_out
-        else:
-            return x_out, past_cov_out, future_cov_out
+        return self._apply_groups("transform", x, past_cov, future_cov)
 
     def inverse(
         self,
@@ -320,29 +350,13 @@ class RINorm(nn.Module):
         Returns
         -------
         torch.Tensor | tuple
-            If exactly one of `x`/`past_cov`/`future_cov` is given, returns the corresponding
-            denormalized tensor directly (backward compatible with the single-group call pattern).
+            If `x` is given and this instance has no `past_covariates`/`future_covariates` group
+            active (i.e. it was constructed with only `input_dim`), returns the denormalized series
+            tensor directly (backward compatible with the pre-groups, series-only call pattern).
             Otherwise, returns a 3-tuple ``(x_out, past_cov_out, future_cov_out)``, with `None` in
             place of any argument that was not given.
         """
-        x_out = (
-            self.series_norm.inverse(x) if self.has_series and x is not None else None
-        )
-        past_cov_out = (
-            self.past_cov_norm.inverse(past_cov)
-            if self.has_past_cov and past_cov is not None
-            else None
-        )
-        future_cov_out = (
-            self.future_cov_norm.inverse(future_cov)
-            if self.has_future_cov and future_cov is not None
-            else None
-        )
-        # For backward compatibility when RIN was only on series
-        if x is not None and (past_cov is None and future_cov is None):
-            return x_out
-        else:
-            return x_out, past_cov_out, future_cov_out
+        return self._apply_groups("inverse", x, past_cov, future_cov)
 
     @classmethod
     def parse_config(cls, config: bool | dict | None) -> dict | None:
@@ -369,8 +383,7 @@ class RINorm(nn.Module):
         dict | None
             ``None`` if RIN is disabled, otherwise a normalized dict with keys ``"params"``,
             ``"series"``, ``"past_covariates"``, ``"future_covariates"`` (the latter three always
-            either a `bool` or a `list[str]`). This method is idempotent: parsing an already
-            normalized dict returns an equivalent dict.
+            either a `bool` or a `list[str]`).
         """
         if config is None or config is False:
             return None

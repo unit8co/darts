@@ -62,101 +62,11 @@ def io_processor(forward):
             return forward(self, x_in, *args, **kwargs)
 
         x_past, x_future, x_static, future_target = x_in
-        # `x_past` concatenates (target, past covariates, historic future covariates)
-        n_targets = self.n_targets
-        n_past_cov = self._past_cov_full_dim
-        n_future_cov = self._future_cov_full_dim
-
-        series_slice = x_past[:, :, :n_targets]
-        past_cov_slice = (
-            x_past[:, :, n_targets : n_targets + n_past_cov] if n_past_cov else None
-        )
-        hist_future_cov_slice = (
-            x_past[:, :, n_targets + n_past_cov : n_targets + n_past_cov + n_future_cov]
-            if n_future_cov
-            else None
-        )
-
-        def _select(tensor, group_name):
-            """Selects the RIN-enabled components of `tensor` for `group_name`, returning the selection
-            together with the index/slice needed to write the normalized values back."""
-            cfg = self.rin_config[group_name]
-            if tensor is None or cfg is False:
-                return None, None
-            if cfg is True:
-                return tensor, slice(None)
-            idx = self.rin_component_indices[group_name]
-            if idx is None:
-                raise_log(
-                    ValueError(
-                        f"`use_reversible_instance_norm['{group_name}']` selects components by name, but the "
-                        "corresponding indices have not been resolved yet. Call `set_rin_component_indices()` "
-                        "before running the model."
-                    )
-                )
-            return tensor[:, :, idx], idx
-
-        def _merge(tensor, group_out, idx):
-            """Returns `tensor` with the normalized `group_out` values written into columns `idx`, without
-            mutating `tensor` in-place (which would corrupt the autograd graph across groups)."""
-            if group_out is None:
-                return tensor
-            if isinstance(idx, slice) and idx == slice(None):
-                return group_out
-            merged = tensor.clone()
-            merged[:, :, idx] = group_out
-            return merged
-
-        series_in, series_idx = _select(series_slice, "series")
-        past_cov_in, past_cov_idx = _select(past_cov_slice, "past_covariates")
-        hist_future_cov_in, future_cov_idx = _select(
-            hist_future_cov_slice, "future_covariates"
-        )
-
-        rin_out = self.rin(
-            x=series_in, past_cov=past_cov_in, future_cov=hist_future_cov_in
-        )
-        # `RINorm` returns a plain tensor (not a 3-tuple) only in the series-only backward-compat case
-        if past_cov_in is None and hist_future_cov_in is None and series_in is not None:
-            series_out, past_cov_out, hist_future_cov_out = rin_out, None, None
-        else:
-            series_out, past_cov_out, hist_future_cov_out = rin_out
-
-        series_slice = _merge(series_slice, series_out, series_idx)
-        if past_cov_slice is not None:
-            past_cov_slice = _merge(past_cov_slice, past_cov_out, past_cov_idx)
-        if hist_future_cov_slice is not None:
-            hist_future_cov_slice = _merge(
-                hist_future_cov_slice, hist_future_cov_out, future_cov_idx
-            )
-
-        past_features = torch.cat(
-            [
-                t
-                for t in (series_slice, past_cov_slice, hist_future_cov_slice)
-                if t is not None
-            ],
-            dim=2,
-        )
-
-        # the future window of future covariates reuses the historic window's normalization statistics
-        x_future_in = x_future
-        if x_future is not None and self.rin_config["future_covariates"] is not False:
-            future_sel, future_idx = _select(x_future, "future_covariates")
-            # `x` isn't passed, so `transform` always returns the 3-tuple form here
-            _, _, future_norm = self.rin.transform(future_cov=future_sel)
-            x_future_in = _merge(x_future, future_norm, future_idx)
-
+        past_features, x_future_in = self._rin_normalize_input(x_past, x_future)
         out = forward(
             self, (past_features, x_future_in, x_static, future_target), *args, **kwargs
         )
-        # inverse transform target output back to original scale
-        if isinstance(out, tuple):
-            # RNNModel return tuple with hidden state
-            return self.rin.inverse(out[0]), *out[1:]
-        else:
-            # all other models return only the prediction
-            return self.rin.inverse(out)
+        return self._rin_denormalize_output(out)
 
     return forward_wrapper
 
@@ -240,7 +150,18 @@ class PLForecastingModule(pl.LightningModule, ABC):
             dictionary, defines which component groups to normalize and the `RINorm` hyperparameters; see
             :meth:`RINorm.parse_config <darts.models.components.layer_norm_variants.RINorm.parse_config>` for the
             supported dict format (``"params"``, ``"series"``, ``"past_covariates"``, ``"future_covariates"`` keys).
-            Default: ``False``.
+            Default: ``False``. For example, to normalize all `series` components, two named
+            `past_covariates` components, and no `future_covariates`:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                use_reversible_instance_norm={
+                    "series": True,  # normalize all `series` components
+                    "past_covariates": ["comp1", "compx"],  # normalize only these components, by name
+                    "future_covariates": False,  # do not normalize `future_covariates` (also the default)
+                }
+            ..
 
         References
         ----------
@@ -294,17 +215,35 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # full (unselected) dims available in the batch, regardless of which components RIN targets
         self._past_cov_full_dim = (
             train_sample_shape[1][1]
-            if train_sample_shape is not None and train_sample_shape[1] is not None
+            if train_sample_shape is not None
+            and len(train_sample_shape) > 1
+            and train_sample_shape[1] is not None
             else 0
         )
         self._future_cov_full_dim = (
             train_sample_shape[3][1]
-            if train_sample_shape is not None and train_sample_shape[3] is not None
+            if train_sample_shape is not None
+            and len(train_sample_shape) > 3
+            and train_sample_shape[3] is not None
             else 0
         )
         if self.rin_config is None:
             self.rin: RINorm | None = None
         else:
+            # Verify that if past_covariates or future_covariates is specified, the model actually
+            # uses past_covariates or future_covariates
+            for group_name, full_dim in (
+                ("series", self.n_targets),
+                ("past_covariates", self._past_cov_full_dim),
+                ("future_covariates", self._future_cov_full_dim),
+            ):
+                if isinstance(self.rin_config[group_name], list) and full_dim == 0:
+                    raise_log(
+                        ValueError(
+                            f"`use_reversible_instance_norm['{group_name}']` selects components by "
+                            f"name, but this model does not use any `{group_name}`."
+                        )
+                    )
             self.rin = RINorm(
                 input_dim=_rin_group_dim(self.rin_config["series"], self.n_targets),
                 past_cov_dim=_rin_group_dim(
@@ -557,6 +496,138 @@ class PLForecastingModule(pl.LightningModule, ABC):
             "past_covariates": past_covariates,
             "future_covariates": future_covariates,
         }
+
+    def _select_rin_group(
+        self, tensor: torch.Tensor | None, group_name: str
+    ) -> tuple[torch.Tensor | None, slice | Sequence[int] | None]:
+        """Selects the `RINorm`-enabled components of `tensor` for `use_reversible_instance_norm`
+        group `group_name`, returning the selection together with the index/slice needed to write
+        the normalized values back into `tensor` (see :meth:`_merge_rin_group`).
+
+        Returns ``(None, None)`` if `tensor` is `None` (the group has no data in this batch) or the
+        group is disabled in `rin_config`.
+        """
+        cfg = self.rin_config[group_name]
+        if tensor is None or cfg is False:
+            return None, None
+        if cfg is True:
+            return tensor, slice(None)
+        idx = self.rin_component_indices[group_name]
+        if idx is None:
+            raise_log(
+                ValueError(
+                    f"`use_reversible_instance_norm['{group_name}']` selects components by name, but the "
+                    "corresponding indices have not been resolved yet. Call `set_rin_component_indices()` "
+                    "before running the model."
+                )
+            )
+        return tensor[:, :, idx], idx
+
+    @staticmethod
+    def _merge_rin_group(
+        tensor: torch.Tensor | None,
+        group_out: torch.Tensor | None,
+        idx: slice | Sequence[int] | None,
+    ) -> torch.Tensor | None:
+        """Returns `tensor` with the normalized `group_out` values written into columns `idx` (as
+        returned by :meth:`_select_rin_group`), without mutating `tensor` in-place (which would
+        corrupt the autograd graph shared with other RIN groups sliced from the same tensor).
+        """
+        if group_out is None:
+            return tensor
+        if idx == slice(None):
+            return group_out
+        merged = tensor.clone()
+        merged[:, :, idx] = group_out
+        return merged
+
+    @staticmethod
+    def _rin_as_tuple(
+        result: torch.Tensor
+        | tuple[torch.Tensor | None, torch.Tensor | None, torch.Tensor | None],
+    ) -> tuple[torch.Tensor | None, torch.Tensor | None, torch.Tensor | None]:
+        """Normalizes an `RINorm` `forward`/`transform`/`inverse` call's result to always be a
+        3-tuple ``(series, past_cov, future_cov)``, regardless of whether `RINorm` took its
+        backward-compatible bare-tensor shortcut for that particular call.
+        """
+        if isinstance(result, tuple):
+            return result
+        return result, None, None
+
+    def _rin_normalize_input(
+        self, x_past: torch.Tensor, x_future: torch.Tensor | None
+    ) -> tuple[torch.Tensor, torch.Tensor | None]:
+        """Applies `RINorm` to the configured groups of `x_past` (target, past covariates, and
+        historic future covariates, concatenated) and `x_future` (future covariates), returning the
+        normalized replacements to feed into the wrapped `forward()`.
+        """
+        n_targets = self.n_targets
+        n_past_cov = self._past_cov_full_dim
+        n_future_cov = self._future_cov_full_dim
+
+        series_slice = x_past[:, :, :n_targets]
+        past_cov_slice = (
+            x_past[:, :, n_targets : n_targets + n_past_cov] if n_past_cov else None
+        )
+        hist_future_cov_slice = (
+            x_past[:, :, n_targets + n_past_cov : n_targets + n_past_cov + n_future_cov]
+            if n_future_cov
+            else None
+        )
+
+        series_in, series_idx = self._select_rin_group(series_slice, "series")
+        past_cov_in, past_cov_idx = self._select_rin_group(
+            past_cov_slice, "past_covariates"
+        )
+        hist_future_cov_in, future_cov_idx = self._select_rin_group(
+            hist_future_cov_slice, "future_covariates"
+        )
+
+        series_out, past_cov_out, hist_future_cov_out = self._rin_as_tuple(
+            self.rin(x=series_in, past_cov=past_cov_in, future_cov=hist_future_cov_in)
+        )
+
+        series_slice = self._merge_rin_group(series_slice, series_out, series_idx)
+        past_cov_slice = self._merge_rin_group(
+            past_cov_slice, past_cov_out, past_cov_idx
+        )
+        hist_future_cov_slice = self._merge_rin_group(
+            hist_future_cov_slice, hist_future_cov_out, future_cov_idx
+        )
+
+        past_features = torch.cat(
+            [
+                t
+                for t in (series_slice, past_cov_slice, hist_future_cov_slice)
+                if t is not None
+            ],
+            dim=2,
+        )
+
+        # the future window of future covariates reuses the historic window's normalization statistics
+        future_sel, future_idx = self._select_rin_group(x_future, "future_covariates")
+        _, _, future_norm = self._rin_as_tuple(
+            self.rin.transform(future_cov=future_sel)
+        )
+        x_future_in = self._merge_rin_group(x_future, future_norm, future_idx)
+
+        return past_features, x_future_in
+
+    def _rin_denormalize_output(self, out: Any) -> Any:
+        """Inverse-transforms the wrapped `forward()`'s target output back to the original scale,
+        if `series` is one of the active RIN groups (a no-op otherwise, since it was never
+        normalized on the way in).
+        """
+        if not self.rin.has_series:
+            return out
+
+        if isinstance(out, tuple):
+            # RNNModel returns a tuple with hidden state
+            out_series, out_extra = out[0], out[1:]
+        else:
+            out_series, out_extra = out, None
+        out_series, _, _ = self._rin_as_tuple(self.rin.inverse(out_series))
+        return (out_series, *out_extra) if out_extra is not None else out_series
 
     def _compute_loss(self, output, target, criterion, sample_weight):
         # output is of shape (batch_size, n_timesteps, n_components, n_params)

@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- `use_reversible_instance_norm` now supports applying Reversible Instance Normalization (`RINorm`) to `past_covariates` and `future_covariates`, in addition to the target `series`. Pass a dict with `"series"`, `"past_covariates"`, `"future_covariates"` keys (each a `bool`, or a list of specific component names to normalize only a subset), and an optional `"params"` key for the `RINorm` hyperparameters (`affine`, `eps`). The existing `bool` / `{"affine": ..., "eps": ...}` forms remain supported unchanged, and continue to apply only to the target series. [#2758](https://github.com/unit8co/darts/issues/2758) by [Alain Gysi](https://github.com/agysi).
 - Calling `TFTModel.fit_from_dataset()` on a dataset that does not have future covariates now raises an informative exception. [#3149](https://github.com/unit8co/darts/pull/3149) by [YOON KIWOONG](https://github.com/kiwoongyoon).
 - 🔴 Percentage and range-based metrics (`ape`, `mape`, `sape`, `smape`, `wmape`, `ope`, `arre`, `marre`, `coefficient_of_variation`) no longer raise a hard `ValueError` when the denominator is exactly zero. A new `zero_division` parameter controls the behavior: [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
   - `"warn"` (default) raises a warning and returns `0.0` when the numerator is also zero (typically meaning perfect forecasts) or `np.nan` otherwise
@@ -2051,10 +2052,10 @@ ts: TimeSeries = AirPassengers().load()
   # Assuming a multivariate TimeSeries named series with 3 columns or variables.
   # To apply fn to columns with names '0' and '2':
 
-  #old syntax
-  series.map(fn, cols=['0', '2']) # returned a time series with 3 columns
-  #new syntax
-  series[['0', '2']].map(fn) # returns a time series with only 2 columns
+  # old syntax
+  series.map(fn, cols=["0", "2"])  # returned a time series with 3 columns
+  # new syntax
+  series[["0", "2"]].map(fn)  # returns a time series with only 2 columns
   ```
 
 - 🔴 Renamed `ScalerWrapper` into `Scaler`
@@ -2062,18 +2063,18 @@ ts: TimeSeries = AirPassengers().load()
 - 🔴 Unified `auto_fillna()` and `fillna()` into a single `fill_missing_value()` function
 
   ```python
-  #old syntax
+  # old syntax
   fillna(series, fill=0)
 
-  #new syntax
+  # new syntax
   fill_missing_values(series, fill=0)
 
-  #old syntax
+  # old syntax
   auto_fillna(series, **interpolate_kwargs)
 
-  #new syntax
-  fill_missing_values(series, fill='auto', **interpolate_kwargs)
-  fill_missing_values(series, **interpolate_kwargs) # fill='auto' by default
+  # new syntax
+  fill_missing_values(series, fill="auto", **interpolate_kwargs)
+  fill_missing_values(series, **interpolate_kwargs)  # fill='auto' by default
   ```
 
 ### For developers of the library
