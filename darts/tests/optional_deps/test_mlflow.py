@@ -1591,11 +1591,10 @@ class TestMLflow:
             assert key in m, f"Expected quantile key {key}"
             assert np.isfinite(m[key])
 
-    def test_autolog_backtest_inconsistent_axes_flat_fallback(
+    def test_autolog_backtest_mixed_degenerate_axes_keep_metric_names(
         self, mlflow_tracking, autolog_context
     ):
-        """Metrics with mismatched axes (mae has no time axis, ae does) cannot be
-        merged into a structured layout, so values are logged flat by index."""
+        """Metrics whose differing axes have size one keep their metric names."""
         with autolog_context(log_metrics=True):
             with mlflow.start_run() as run:
                 self._fit_lr().backtest(
@@ -1606,9 +1605,9 @@ class TestMLflow:
                 )
 
         m = mlflow.get_run(run.info.run_id).data.metrics
-        flat_keys = [k for k in m if k.startswith("backtest_metrics_")]
-        assert flat_keys, "Expected flat fallback keys for inconsistent axes"
-        assert "backtest_mae" not in m, "No structured key on flat fallback"
+        assert "backtest_mae" in m
+        assert "backtest_ae" in m
+        assert not any(k.startswith("backtest_metrics_") for k in m)
 
     def test_autolog_backtest_classification_labels_in_data(
         self, mlflow_tracking, autolog_context

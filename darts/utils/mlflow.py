@@ -1045,9 +1045,6 @@ def _log_backtest_metrics(
     - ``last_points_only`` – collapses all windows into one TimeSeries before scoring,
       so there is effectively only one window regardless of reduction.
 
-    When two metrics have incompatible axis layouts (different
-    ``time_reduction`` / ``component_reduction`` / quantile count), each series
-    result is flattened to integer-indexed keys instead.
 
     When more than one series is scored, the logged value is ``agg_func``
     applied over series for each cell, and the granular per-series breakdown
@@ -1128,14 +1125,6 @@ def _log_backtest_metrics(
     has_time_axis, has_comp_axis, axis_labels_0 = metric_axes[0]
     axis_size = len(axis_labels_0)
 
-    # Inconsistent axes across metrics (different has_time_axis, has_comp_axis, or
-    # axis_size) means the result can't be reshaped into a single canonical array.
-    # Fall back to flat integer-indexed keys for this case.
-    axes_key = (has_time_axis, has_comp_axis, axis_size)
-    axes_inconsistent = any(
-        (ax[0], ax[1], len(ax[2])) != axes_key for ax in metric_axes[1:]
-    )
-
     series = backtest_args.get("series")
     forecast_horizon = backtest_args.get("forecast_horizon")
     historical_forecasts = backtest_args.get("historical_forecasts")
@@ -1169,131 +1158,116 @@ def _log_backtest_metrics(
     agg: dict[tuple[str, int], list[float]] = {}
     rows: list[dict] = []
 
-    if axes_inconsistent:
-        for series_index, r in enumerate(results):
-            name_prefix = metric_names[0] if len(metric_names) == 1 else "metrics"
-            flat = np.asarray(r, dtype=float).flatten()
-            for i, val in enumerate(flat):
-                key = _sanitize_mlflow_key(f"backtest_{name_prefix}_{i}")
-                value = float(val)
-                agg.setdefault((key, 0), []).append(value)
-                rows.append({
-                    "key": key,
-                    "series_index": series_index,
-                    "step": 0,
-                    "value": value,
-                })
-    else:
-        # component names/count from the first series (all series share n_components)
-        comps = series_seq[0].components.tolist()
-        # c_size = components x quantiles/intervals/labels per component
-        c_size = (len(comps) if has_comp_axis else 1) * axis_size
-        # base_keys[m][c]: sanitized key without the optional window suffix
-        base_keys = []
-        for m, metric_name in enumerate(metric_names):
-            axis_labels = metric_axes[m][2]
-            keys_m = []
-            for c in range(c_size):
-                # c is a flat index into the (n_components x axis_size) C axis:
-                # c = comp_i * axis_size + axis_idx
-                component_index, axis_idx = divmod(c, axis_size)
-                comp_part = (
-                    "_" + _sanitize_mlflow_key(comps[component_index])
-                    if has_comp_axis
-                    else ""
+    # component names/count from the first series (all series share n_components)
+    comps = series_seq[0].components.tolist()
+    # c_size = components x quantiles/intervals/labels per component
+    c_size = (len(comps) if has_comp_axis else 1) * axis_size
+    # base_keys[m][c]: sanitized key without the optional window suffix
+    base_keys = []
+    for m, metric_name in enumerate(metric_names):
+        axis_labels = metric_axes[m][2]
+        keys_m = []
+        for c in range(c_size):
+            # c is a flat index into the (n_components x axis_size) C axis:
+            # c = comp_i * axis_size + axis_idx
+            component_index, axis_idx = divmod(c, axis_size)
+            comp_part = (
+                "_" + _sanitize_mlflow_key(comps[component_index])
+                if has_comp_axis
+                else ""
+            )
+            keys_m.append(
+                _sanitize_mlflow_key(
+                    f"backtest_{metric_name}{comp_part}{axis_labels[axis_idx]}"
                 )
-                keys_m.append(
-                    _sanitize_mlflow_key(
-                        f"backtest_{metric_name}{comp_part}{axis_labels[axis_idx]}"
-                    )
-                )
-            base_keys.append(keys_m)
+            )
+        base_keys.append(keys_m)
 
-        # first pass: reshape each series' result into a canonical (W, T, C, M)
-        # array, recording its window-axis length for the alignment pass below.
-        series_shapes = []
-        for r in results:
-            arr = np.asarray(r, dtype=float)
-            # after stripping C and M axes, rest = W*T (or W or T alone)
-            rest, extra = divmod(arr.size, c_size * n_metrics)
-            if extra:
+    # first pass: reshape each series' result into a canonical (W, T, C, M)
+    # array, recording its window-axis length for the alignment pass below.
+    series_shapes = []
+    for r in results:
+        arr = np.asarray(r, dtype=float)
+        # after stripping C and M axes, rest = W*T (or W or T alone)
+        rest, extra = divmod(arr.size, c_size * n_metrics)
+        if extra:
+            raise_log(
+                ValueError(
+                    f"Backtest metric logging failed: result size ({arr.size}) "
+                    f"is not divisible by c_size * n_metrics ({c_size} * "
+                    f"{n_metrics} = {c_size * n_metrics}). The metric output "
+                    "shape does not match the inferred axes."
+                )
+            )
+
+        # both time and window axes present: backtest returns (W*T*C*M,) in C order so we can
+        # recover W and T only if forecast_horizon is known (T = forecast_horizon)
+        if has_time_axis and has_windows:
+            if not forecast_horizon or rest % forecast_horizon:
                 raise_log(
                     ValueError(
-                        f"Backtest metric logging failed: result size ({arr.size}) "
-                        f"is not divisible by c_size * n_metrics ({c_size} * "
-                        f"{n_metrics} = {c_size * n_metrics}). The metric output "
-                        "shape does not match the inferred axes."
+                        f"Backtest metric logging failed: cannot split "
+                        f"window/time axes — {rest} elements remain after "
+                        f"stripping component and metric axes, but "
+                        f"forecast_horizon={forecast_horizon!r} does not "
+                        "divide evenly. Pass an explicit forecast_horizon to "
+                        "backtest()."
                     )
                 )
-
-            # both time and window axes present: backtest returns (W*T*C*M,) in C order so we can
-            # recover W and T only if forecast_horizon is known (T = forecast_horizon)
-            if has_time_axis and has_windows:
-                if not forecast_horizon or rest % forecast_horizon:
-                    raise_log(
-                        ValueError(
-                            f"Backtest metric logging failed: cannot split "
-                            f"window/time axes — {rest} elements remain after "
-                            f"stripping component and metric axes, but "
-                            f"forecast_horizon={forecast_horizon!r} does not "
-                            "divide evenly. Pass an explicit forecast_horizon to "
-                            "backtest()."
-                        )
+            t_size, w_size = forecast_horizon, rest // forecast_horizon
+        elif has_time_axis:
+            t_size, w_size = rest, 1
+        elif has_windows:
+            t_size, w_size = 1, rest
+        else:
+            if rest != 1:
+                raise_log(
+                    ValueError(
+                        f"Backtest metric logging failed: expected a single "
+                        f"scalar per component/metric after reduction, but got "
+                        f"{rest} elements. Check time_reduction and "
+                        "component_reduction defaults."
                     )
-                t_size, w_size = forecast_horizon, rest // forecast_horizon
-            elif has_time_axis:
-                t_size, w_size = rest, 1
-            elif has_windows:
-                t_size, w_size = 1, rest
-            else:
-                if rest != 1:
-                    raise_log(
-                        ValueError(
-                            f"Backtest metric logging failed: expected a single "
-                            f"scalar per component/metric after reduction, but got "
-                            f"{rest} elements. Check time_reduction and "
-                            "component_reduction defaults."
-                        )
-                    )
-                t_size, w_size = 1, 1
+                )
+            t_size, w_size = 1, 1
 
-            series_shapes.append((
-                t_size,
-                w_size,
-                arr.reshape(w_size, t_size, c_size, n_metrics),
-            ))
+        series_shapes.append((
+            t_size,
+            w_size,
+            arr.reshape(w_size, t_size, c_size, n_metrics),
+        ))
 
-        # align the calendar-relative axes from the end
-        max_w_size = max((w_size for _, w_size, _ in series_shapes), default=0)
-        t_axis_is_calendar = has_time_axis and not has_windows and last_points_only
-        max_t_size = (
-            max((t_size for t_size, _, _ in series_shapes), default=0)
-            if t_axis_is_calendar
-            else 0
-        )
+    # align the calendar-relative axes from the end
+    max_w_size = max((w_size for _, w_size, _ in series_shapes), default=0)
+    t_axis_is_calendar = has_time_axis and not has_windows and last_points_only
+    max_t_size = (
+        max((t_size for t_size, _, _ in series_shapes), default=0)
+        if t_axis_is_calendar
+        else 0
+    )
 
-        for series_index, (t_size, w_size, canonical) in enumerate(series_shapes):
-            w_offset = max_w_size - w_size if has_windows else 0
-            t_offset = max_t_size - t_size if t_axis_is_calendar else 0
-            for m in range(n_metrics):
-                for w in range(w_size):
-                    aligned_w = w + w_offset
-                    for c in range(c_size):
-                        key = base_keys[m][c]
-                        if has_time_axis and has_windows:
-                            key = f"{key}_w{aligned_w}"
-                        for t in range(t_size):
-                            # MLflow step maps to the axis the UI should chart:
-                            # time when present, otherwise window index
-                            step = t + t_offset if has_time_axis else aligned_w
-                            value = float(canonical[w, t, c, m])
-                            agg.setdefault((key, step), []).append(value)
-                            rows.append({
-                                "key": key,
-                                "series_index": series_index,
-                                "step": step,
-                                "value": value,
-                            })
+    for series_index, (t_size, w_size, canonical) in enumerate(series_shapes):
+        w_offset = max_w_size - w_size if has_windows else 0
+        t_offset = max_t_size - t_size if t_axis_is_calendar else 0
+        for m in range(n_metrics):
+            for w in range(w_size):
+                aligned_w = w + w_offset
+                for c in range(c_size):
+                    key = base_keys[m][c]
+                    if has_time_axis and has_windows:
+                        key = f"{key}_w{aligned_w}"
+                    for t in range(t_size):
+                        # MLflow step maps to the axis the UI should chart:
+                        # time when present, otherwise window index
+                        step = t + t_offset if has_time_axis else aligned_w
+                        value = float(canonical[w, t, c, m])
+                        agg.setdefault((key, step), []).append(value)
+                        rows.append({
+                            "key": key,
+                            "series_index": series_index,
+                            "step": step,
+                            "value": value,
+                        })
 
     # aggregate across series for each (key, step); for a single series this
     # is just the value itself.
