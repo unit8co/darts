@@ -378,10 +378,9 @@ class TestMLflow:
 
         assert autologging_is_disabled("pytorch")
 
-    def test_autolog_covariate_info_single_series(
-        self, mlflow_tracking, autolog_context
-    ):
-        """The covariates.json artifact reports usage, count, and names for a
+    def test_autolog_series_info_single_series(self, mlflow_tracking, autolog_context):
+        """The series_info.json artifact reports the target series' component
+        names/count, plus covariate usage, count, and names, for a
         single-series fit."""
         with autolog_context():
             with mlflow.start_run() as run:
@@ -390,21 +389,21 @@ class TestMLflow:
                     self.ts_univariate[:40], past_covariates=self.ts_past_cov[:40]
                 )
 
-        covariates = mlflow.artifacts.load_dict(
-            f"runs:/{run.info.run_id}/covariates.json"
+        series_info = mlflow.artifacts.load_dict(
+            f"runs:/{run.info.run_id}/series_info.json"
         )
-        assert covariates["past_covariates"]["used"] is True
-        assert covariates["past_covariates"]["count"] == 1
+        assert series_info["series"]["count"] == self.ts_univariate.n_components
+        assert series_info["series"]["names"] == self.ts_univariate.components.tolist()
+        assert series_info["past_covariates"]["used"] is True
+        assert series_info["past_covariates"]["count"] == 1
         assert (
-            covariates["past_covariates"]["names"]
+            series_info["past_covariates"]["names"]
             == self.ts_past_cov.components.tolist()
         )
-        assert covariates["future_covariates"]["used"] is False
-        assert covariates["static_covariates"]["used"] is False
+        assert series_info["future_covariates"]["used"] is False
+        assert series_info["static_covariates"]["used"] is False
 
-    def test_autolog_covariate_info_multi_series(
-        self, mlflow_tracking, autolog_context
-    ):
+    def test_autolog_series_info_multi_series(self, mlflow_tracking, autolog_context):
         """Fitting on a list of series doesn't leave past_covariates unreported:
         `model.past_covariate_series` stays None for a multi-series fit, so the
         info must come from the actual `fit()` call arguments instead."""
@@ -415,17 +414,40 @@ class TestMLflow:
                 model = LinearRegressionModel(lags=5, lags_past_covariates=3)
                 model.fit(series, past_covariates=past_covs)
 
-        covariates = mlflow.artifacts.load_dict(
-            f"runs:/{run.info.run_id}/covariates.json"
+        series_info = mlflow.artifacts.load_dict(
+            f"runs:/{run.info.run_id}/series_info.json"
         )
-        assert covariates["past_covariates"]["used"] is True
-        assert covariates["past_covariates"]["count"] == 1
+        assert series_info["past_covariates"]["used"] is True
+        assert series_info["past_covariates"]["count"] == 1
         assert (
-            covariates["past_covariates"]["names"]
+            series_info["past_covariates"]["names"]
             == self.ts_past_cov.components.tolist()
         )
 
-    def test_autolog_covariate_info_static_is_global(
+    def test_autolog_series_info_add_encoders(self, mlflow_tracking, autolog_context):
+        """Covariates generated purely via `add_encoders` (no explicit
+        covariate argument passed to `fit()`) are still reported in
+        `series_info.json`."""
+        with autolog_context():
+            with mlflow.start_run() as run:
+                model = LinearRegressionModel(
+                    lags=5,
+                    lags_future_covariates=[0],
+                    add_encoders={"datetime_attribute": {"future": ["month"]}},
+                )
+                model.fit(self.ts_univariate[:40])
+
+        series_info = mlflow.artifacts.load_dict(
+            f"runs:/{run.info.run_id}/series_info.json"
+        )
+        expected_names = model.encoders.future_components.tolist()
+        assert expected_names  # sanity check: encoders actually generated something
+        assert series_info["future_covariates"]["used"] is True
+        assert series_info["future_covariates"]["count"] == len(expected_names)
+        assert series_info["future_covariates"]["names"] == expected_names
+        assert series_info["past_covariates"]["used"] is False
+
+    def test_autolog_series_info_static_is_global(
         self, mlflow_tracking, autolog_context
     ):
         """`is_global` is based on row count vs. the number of series
@@ -437,10 +459,10 @@ class TestMLflow:
         with autolog_context():
             with mlflow.start_run() as run:
                 LinearRegressionModel(lags=5).fit(global_target)
-        covariates = mlflow.artifacts.load_dict(
-            f"runs:/{run.info.run_id}/covariates.json"
+        series_info = mlflow.artifacts.load_dict(
+            f"runs:/{run.info.run_id}/series_info.json"
         )
-        assert covariates["static_covariates"]["is_global"] is True
+        assert series_info["static_covariates"]["is_global"] is True
 
         # one row per component (2 components, 2 rows) -> component-specific
         per_component_target = self.ts_multivariate.with_static_covariates(
@@ -449,10 +471,10 @@ class TestMLflow:
         with autolog_context():
             with mlflow.start_run() as run:
                 LinearRegressionModel(lags=5).fit(per_component_target)
-        covariates = mlflow.artifacts.load_dict(
-            f"runs:/{run.info.run_id}/covariates.json"
+        series_info = mlflow.artifacts.load_dict(
+            f"runs:/{run.info.run_id}/series_info.json"
         )
-        assert covariates["static_covariates"]["is_global"] is False
+        assert series_info["static_covariates"]["is_global"] is False
 
     def test_multivariate_with_all_covariate_types(self, mlflow_tracking):
         """Test saving/loading multivariate series with all covariate types"""
