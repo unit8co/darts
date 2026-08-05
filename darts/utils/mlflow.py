@@ -1050,8 +1050,9 @@ def _log_per_series_table(rows: list[dict]) -> None:
 
     Each row is a single metric cell for one series, with columns ``key`` (the
     aggregate MLflow key, without any series suffix), ``series_index``, ``step``
-    (the time or window index charted by MLflow), and ``value``. All calls
-    within a run append to the same ``metrics_per_series.json`` artifact.
+    (the time or window index charted by MLflow), ``window_index`` (the source
+    backtest window, or ``None``), and ``value``. All calls within a run append
+    to the same ``metrics_per_series.json`` artifact.
     Used when more than one series is scored, since the logged metric keys
     only carry the aggregate over series.
 
@@ -1059,7 +1060,7 @@ def _log_per_series_table(rows: list[dict]) -> None:
     ----------
     rows
         One dict per metric cell with keys ``key``, ``series_index``, ``step``,
-        and ``value``.
+        ``window_index``, and ``value``.
     """
     if not rows:
         return
@@ -1071,9 +1072,8 @@ def _flush_logged_metrics(
     autologging_client: MlflowAutologgingQueueingClient,
     run_id: str,
     agg: dict[tuple[str, int], list[float]],
-    rows: list[dict],
-    n_series: int,
     agg_func: Callable,
+    table_rows: list[dict] | None = None,
 ) -> None:
     """Aggregate per-series cells, log MLflow metrics, and optionally write the
     per-series table artifact.
@@ -1086,13 +1086,11 @@ def _flush_logged_metrics(
         ID of the active MLflow run.
     agg
         Map of ``(key, step) -> list of per-series float values``.
-    rows
-        Granular per-series cells for ``metrics_per_series.json``.
-    n_series
-        Number of series scored; the table artifact is written only when
-        ``n_series > 1``.
     agg_func
         Aggregation over the per-series values for each ``(key, step)``.
+    table_rows
+        Granular cells for ``metrics_per_series.json``. ``None`` skips writing
+        the table artifact.
     """
     metrics_by_step: dict[int, dict[str, float]] = {}
     for (key, step), values in agg.items():
@@ -1100,8 +1098,8 @@ def _flush_logged_metrics(
     for step, metrics in metrics_by_step.items():
         autologging_client.log_metrics(run_id=run_id, metrics=metrics, step=step)
 
-    if n_series > 1:
-        _log_per_series_table(rows)
+    if table_rows is not None:
+        _log_per_series_table(table_rows)
 
 
 def _log_backtest_metrics(
@@ -1315,12 +1313,26 @@ def _log_backtest_metrics(
         w_offset = max_w_size - w_size if has_windows else 0
         t_offset = max_t_size - t_size if t_axis_is_calendar else 0
         for m in range(n_metrics):
-            for w in range(w_size):
-                aligned_w = w + w_offset
-                for c in range(c_size):
-                    key = base_keys[m][c]
-                    if has_time_axis and has_windows:
-                        key = f"{key}_w{aligned_w}"
+            for c in range(c_size):
+                key = base_keys[m][c]
+                if has_time_axis and has_windows:
+                    # Keep window-level values in the detailed table, but aggregate
+                    # windows into one chart value per horizon step for this series.
+                    for t in range(t_size):
+                        values = canonical[:, t, c, m]
+                        agg.setdefault((key, t), []).append(float(np.nanmean(values)))
+                        for w, value in enumerate(values):
+                            rows.append({
+                                "key": key,
+                                "series_index": series_index,
+                                "step": t,
+                                "window_index": w + w_offset,
+                                "value": float(value),
+                            })
+                    continue
+
+                for w in range(w_size):
+                    aligned_w = w + w_offset
                     for t in range(t_size):
                         # MLflow step maps to the axis the UI should chart:
                         # time when present, otherwise window index
@@ -1331,6 +1343,7 @@ def _log_backtest_metrics(
                             "key": key,
                             "series_index": series_index,
                             "step": step,
+                            "window_index": None,
                             "value": value,
                         })
 
@@ -1338,9 +1351,10 @@ def _log_backtest_metrics(
         autologging_client,
         run_id,
         agg,
-        rows,
-        n_series=len(series_seq),
         agg_func=agg_func,
+        table_rows=(
+            rows if len(series_seq) > 1 or (has_time_axis and has_windows) else None
+        ),
     )
 
 
@@ -1575,6 +1589,7 @@ def _log_metric_result(
                     "key": key,
                     "series_index": series_index,
                     "step": step,
+                    "window_index": None,
                     "value": value,
                 })
 
@@ -1582,9 +1597,8 @@ def _log_metric_result(
         autologging_client,
         run_id,
         agg,
-        rows,
-        n_series=len(series_seq),
         agg_func=agg_func,
+        table_rows=rows if len(series_seq) > 1 else None,
     )
     autologging_client.flush(synchronous=False).await_completion()
 

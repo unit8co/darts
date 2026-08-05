@@ -1367,7 +1367,13 @@ class TestMLflow:
                 dm.mae(multi, pred_multi)
 
         rows = self._read_per_series_table(run_multi.info.run_id)
-        assert list(rows[0].keys()) == ["key", "series_index", "step", "value"]
+        assert list(rows[0].keys()) == [
+            "key",
+            "series_index",
+            "step",
+            "window_index",
+            "value",
+        ]
         assert {int(r["series_index"]) for r in rows} == {0, 1}
 
         # single-series: no per-series table artifact should be created
@@ -1520,8 +1526,8 @@ class TestMLflow:
     def test_autolog_backtest_per_timestep_per_window(
         self, mlflow_tracking, autolog_context
     ):
-        """ae + reduction=None + forecast_horizon>1 logs one key per window, with
-        one step per forecast horizon timestep."""
+        """Window-level ae results aggregate per horizon step in the chart and
+        remain available with their window index in the detailed table."""
         with autolog_context(log_metrics=True):
             with mlflow.start_run() as run:
                 ref = self._fit_lr().backtest(
@@ -1534,10 +1540,16 @@ class TestMLflow:
                 )
 
         ref = np.asarray(ref, dtype=float)  # shape (n_windows, forecast_horizon)
-        history = mlflow_tracking.get_metric_history(run.info.run_id, "backtest_ae_w0")
+        history = mlflow_tracking.get_metric_history(run.info.run_id, "backtest_ae")
         assert len(history) == 4, "Expected one step per forecast horizon timestep"
         logged = [m.value for m in sorted(history, key=lambda m: m.step)]
-        np.testing.assert_allclose(logged, ref[0], atol=1e-5)
+        np.testing.assert_allclose(logged, np.nanmean(ref, axis=0), atol=1e-5)
+
+        rows = self._read_per_series_table(run.info.run_id)
+        assert len(rows) == ref.size
+        for row in rows:
+            assert row["key"] == "backtest_ae"
+            assert row["window_index"] in range(len(ref))
 
     def test_autolog_backtest_historical_forecasts_horizon_inferred(
         self, mlflow_tracking, autolog_context
@@ -1566,10 +1578,10 @@ class TestMLflow:
                 )
 
         ref = np.asarray(ref, dtype=float)  # shape (n_windows, forecast_horizon)
-        history = mlflow_tracking.get_metric_history(run.info.run_id, "backtest_ae_w0")
+        history = mlflow_tracking.get_metric_history(run.info.run_id, "backtest_ae")
         assert len(history) == 4, "Expected one step per forecast horizon timestep"
         logged = [m.value for m in sorted(history, key=lambda m: m.step)]
-        np.testing.assert_allclose(logged, ref[0], atol=1e-5)
+        np.testing.assert_allclose(logged, np.nanmean(ref, axis=0), atol=1e-5)
 
     def test_autolog_backtest_quantile(self, mlflow_tracking, autolog_context):
         """A quantile metric (mql) logs one key per quantile."""
@@ -1923,7 +1935,7 @@ def test_build_metric_keys_no_components_no_prefix():
 
 
 def test_flush_logged_metrics_aggregates_and_writes_table(mlflow_tracking):
-    """Multi-series cells are aggregated with agg_func; per-series rows go to table."""
+    """Cells are aggregated with agg_func; supplied table rows are persisted."""
     agg = {
         ("mae", 0): [1.0, 3.0],
         ("mae", 1): [10.0, 30.0],
@@ -1937,7 +1949,7 @@ def test_flush_logged_metrics_aggregates_and_writes_table(mlflow_tracking):
     with mlflow.start_run() as run:
         client = MlflowAutologgingQueueingClient()
         _flush_logged_metrics(
-            client, run.info.run_id, agg, rows, n_series=2, agg_func=np.mean
+            client, run.info.run_id, agg, agg_func=np.mean, table_rows=rows
         )
         client.flush(synchronous=True)
 
@@ -1951,15 +1963,12 @@ def test_flush_logged_metrics_aggregates_and_writes_table(mlflow_tracking):
     assert len(table) == 4
 
 
-def test_flush_logged_metrics_skips_table_for_single_series(mlflow_tracking):
-    """Single-series input logs the aggregate only; no per-series table."""
+def test_flush_logged_metrics_skips_table_without_rows(mlflow_tracking):
+    """Omitting table rows logs the aggregate only."""
     agg = {("mae", 0): [1.5]}
-    rows = [{"key": "mae", "series_index": 0, "step": 0, "value": 1.5}]
     with mlflow.start_run() as run:
         client = MlflowAutologgingQueueingClient()
-        _flush_logged_metrics(
-            client, run.info.run_id, agg, rows, n_series=1, agg_func=np.mean
-        )
+        _flush_logged_metrics(client, run.info.run_id, agg, agg_func=np.mean)
         client.flush(synchronous=True)
 
     assert mlflow.get_run(run.info.run_id).data.metrics["mae"] == pytest.approx(1.5)
