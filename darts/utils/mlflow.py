@@ -989,6 +989,61 @@ def _sanitize_mlflow_key(name: str) -> str:
     return re.sub(r"[^\w-]", "_", name)
 
 
+def _build_metric_keys(
+    metric_names: list[str],
+    components: list[str],
+    has_comp_axis: bool,
+    metric_axes: list[tuple[bool, bool, list[str]]],
+    *,
+    prefix: str = "",
+) -> tuple[int, list[list[str]]]:
+    """Build sanitized MLflow metric keys for each metric x component x axis label.
+
+    Parameters
+    ----------
+    metric_names
+        One sanitized metric-name token per metric.
+    components
+        Component names from the first series (used only when ``has_comp_axis``).
+    has_comp_axis
+        Whether components are preserved in the metric output.
+    metric_axes
+        Per-metric ``(has_time_axis, has_comp_axis, axis_labels)`` tuples from
+        ``_infer_metric_axes``. Axis size is taken from the first entry.
+    prefix
+        Optional key prefix (e.g. ``"backtest_"``).
+
+    Returns
+    -------
+    tuple[int, list[list[str]]]
+        ``(c_size, keys)`` where ``c_size`` is
+        ``(n_components if has_comp_axis else 1) * axis_size`` and ``keys[m][c]``
+        is the sanitized key for metric ``m`` and flat component/axis index ``c``.
+    """
+    axis_size = len(metric_axes[0][2])
+    c_size = (len(components) if has_comp_axis else 1) * axis_size
+    keys: list[list[str]] = []
+    for m, metric_name in enumerate(metric_names):
+        axis_labels = metric_axes[m][2]
+        keys_m = []
+        for c in range(c_size):
+            # c is a flat index into the (n_components x axis_size) C axis:
+            # c = comp_i * axis_size + axis_idx
+            component_index, axis_idx = divmod(c, axis_size)
+            comp_part = (
+                "_" + _sanitize_mlflow_key(components[component_index])
+                if has_comp_axis
+                else ""
+            )
+            keys_m.append(
+                _sanitize_mlflow_key(
+                    f"{prefix}{metric_name}{comp_part}{axis_labels[axis_idx]}"
+                )
+            )
+        keys.append(keys_m)
+    return c_size, keys
+
+
 def _log_per_series_table(rows: list[dict]) -> None:
     """Append the granular per-series metric breakdown to a single, run-wide
     table artifact.
@@ -1010,6 +1065,43 @@ def _log_per_series_table(rows: list[dict]) -> None:
         return
     df = pd.DataFrame(rows).sort_values(["key", "series_index", "step"])
     mlflow.log_table(data=df, artifact_file="metrics_per_series.json")
+
+
+def _flush_logged_metrics(
+    autologging_client: MlflowAutologgingQueueingClient,
+    run_id: str,
+    agg: dict[tuple[str, int], list[float]],
+    rows: list[dict],
+    n_series: int,
+    agg_func: Callable,
+) -> None:
+    """Aggregate per-series cells, log MLflow metrics, and optionally write the
+    per-series table artifact.
+
+    Parameters
+    ----------
+    autologging_client
+        MLflow autologging client used to queue metric writes.
+    run_id
+        ID of the active MLflow run.
+    agg
+        Map of ``(key, step) -> list of per-series float values``.
+    rows
+        Granular per-series cells for ``metrics_per_series.json``.
+    n_series
+        Number of series scored; the table artifact is written only when
+        ``n_series > 1``.
+    agg_func
+        Aggregation over the per-series values for each ``(key, step)``.
+    """
+    metrics_by_step: dict[int, dict[str, float]] = {}
+    for (key, step), values in agg.items():
+        metrics_by_step.setdefault(step, {})[key] = float(agg_func(values))
+    for step, metrics in metrics_by_step.items():
+        autologging_client.log_metrics(run_id=run_id, metrics=metrics, step=step)
+
+    if n_series > 1:
+        _log_per_series_table(rows)
 
 
 def _log_backtest_metrics(
@@ -1122,8 +1214,7 @@ def _log_backtest_metrics(
 
     # check the dim axes from the metric kwargs for each
     metric_axes = [_infer_metric_axes(m, kw) for m, kw in zip(metric, metric_kwargs)]
-    has_time_axis, has_comp_axis, axis_labels_0 = metric_axes[0]
-    axis_size = len(axis_labels_0)
+    has_time_axis, has_comp_axis, _ = metric_axes[0]
 
     series = backtest_args.get("series")
     forecast_horizon = backtest_args.get("forecast_horizon")
@@ -1160,28 +1251,13 @@ def _log_backtest_metrics(
 
     # component names/count from the first series (all series share n_components)
     comps = series_seq[0].components.tolist()
-    # c_size = components x quantiles/intervals/labels per component
-    c_size = (len(comps) if has_comp_axis else 1) * axis_size
-    # base_keys[m][c]: sanitized key without the optional window suffix
-    base_keys = []
-    for m, metric_name in enumerate(metric_names):
-        axis_labels = metric_axes[m][2]
-        keys_m = []
-        for c in range(c_size):
-            # c is a flat index into the (n_components x axis_size) C axis:
-            # c = comp_i * axis_size + axis_idx
-            component_index, axis_idx = divmod(c, axis_size)
-            comp_part = (
-                "_" + _sanitize_mlflow_key(comps[component_index])
-                if has_comp_axis
-                else ""
-            )
-            keys_m.append(
-                _sanitize_mlflow_key(
-                    f"backtest_{metric_name}{comp_part}{axis_labels[axis_idx]}"
-                )
-            )
-        base_keys.append(keys_m)
+    c_size, base_keys = _build_metric_keys(
+        metric_names,
+        comps,
+        has_comp_axis,
+        metric_axes,
+        prefix="backtest_",
+    )
 
     # first pass: reshape each series' result into a canonical (W, T, C, M)
     # array, recording its window-axis length for the alignment pass below.
@@ -1258,18 +1334,14 @@ def _log_backtest_metrics(
                             "value": value,
                         })
 
-    # aggregate across series for each (key, step); for a single series this
-    # is just the value itself.
-    metrics_by_step: dict[int, dict[str, float]] = {}
-    for (key, step), values in agg.items():
-        metrics_by_step.setdefault(step, {})[key] = float(agg_func(values))
-    for step, metrics in metrics_by_step.items():
-        autologging_client.log_metrics(run_id=run_id, metrics=metrics, step=step)
-
-    # append the granular per-series breakdown to the run's table artifact
-    # (multi-series only)
-    if len(series_seq) > 1:
-        _log_per_series_table(rows)
+    _flush_logged_metrics(
+        autologging_client,
+        run_id,
+        agg,
+        rows,
+        n_series=len(series_seq),
+        agg_func=agg_func,
+    )
 
 
 def _infer_metric_axes(metric: Callable, metric_kwargs: dict) -> tuple:
@@ -1424,8 +1496,6 @@ def _log_metric_result(
         single value logged for a list of series. Called as
         ``agg_func(values)`` on a list of floats.
     """
-    axis_size = len(axis_labels)
-
     if series_reduced:
         # series_reduction aggregated across series -> single result, no series axis
         series_seq = [get_single_series(series)]
@@ -1447,22 +1517,15 @@ def _log_metric_result(
                     )
                 )
 
-    # TODO: a lot of this seems duplicated from the backtest logic; improve
     # component names/count from the first series (all series share n_components)
     comps = series_seq[0].components.tolist()
-    # c_size = components x quantiles/intervals/labels per component
-    c_size = (len(comps) if has_comp_axis else 1) * axis_size
-    keys = []
-    for c in range(c_size):
-        # c is a flat index into the (n_components x axis_size) C axis:
-        # c = comp_i * axis_size + axis_idx
-        component_index, axis_idx = divmod(c, axis_size)
-        comp_part = (
-            "_" + _sanitize_mlflow_key(comps[component_index]) if has_comp_axis else ""
-        )
-        keys.append(
-            _sanitize_mlflow_key(metric_name + comp_part + axis_labels[axis_idx])
-        )
+    c_size, base_keys = _build_metric_keys(
+        [metric_name],
+        comps,
+        has_comp_axis,
+        [(has_time_axis, has_comp_axis, axis_labels)],
+    )
+    keys = base_keys[0]
 
     # first pass: reshape each series' result into a canonical (T, C) array,
     # recording its time-axis length for the alignment pass below.
@@ -1518,19 +1581,15 @@ def _log_metric_result(
                     "value": value,
                 })
 
-    # aggregate across series for each (key, step); for a single series this
-    # is just the value itself.
-    metrics_by_step: dict[int, dict[str, float]] = {}
-    for (key, step), values in agg.items():
-        metrics_by_step.setdefault(step, {})[key] = float(agg_func(values))
-    for step, metrics in metrics_by_step.items():
-        autologging_client.log_metrics(run_id=run_id, metrics=metrics, step=step)
+    _flush_logged_metrics(
+        autologging_client,
+        run_id,
+        agg,
+        rows,
+        n_series=len(series_seq),
+        agg_func=agg_func,
+    )
     autologging_client.flush(synchronous=False).await_completion()
-
-    # append the granular per-series breakdown to the run's table artifact
-    # (multi-series only)
-    if len(series_seq) > 1:
-        _log_per_series_table(rows)
 
 
 def _mlflow_metric_callback(func, result, args, kwargs) -> None:

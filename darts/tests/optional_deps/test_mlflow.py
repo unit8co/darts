@@ -31,6 +31,8 @@ from darts.models import (
     RegressionEnsembleModel,
 )
 from darts.utils.mlflow import (
+    _build_metric_keys,
+    _flush_logged_metrics,
     _infer_metric_axes,
     _log_backtest_metrics,
     autolog,
@@ -1875,3 +1877,91 @@ def test_infer_metric_axes_unknown_labels_raises():
     of output labels ahead of time, so this raises rather than falling back."""
     with pytest.raises(ValueError, match="requires explicit `labels`"):
         _infer_metric_axes(dm.f1, {"label_reduction": None})
+
+
+def test_build_metric_keys_components_and_quantiles():
+    """Shared key builder expands components x quantile suffixes per metric."""
+    metric_axes = [
+        (False, True, ["_q0.100", "_q0.900"]),
+        (False, True, ["_label0", "_label1"]),
+    ]
+    c_size, keys = _build_metric_keys(
+        ["mae", "f1"],
+        ["temp", "hum"],
+        has_comp_axis=True,
+        metric_axes=metric_axes,
+        prefix="backtest_",
+    )
+    assert c_size == 4
+    assert keys == [
+        [
+            "backtest_mae_temp_q0_100",
+            "backtest_mae_temp_q0_900",
+            "backtest_mae_hum_q0_100",
+            "backtest_mae_hum_q0_900",
+        ],
+        [
+            "backtest_f1_temp_label0",
+            "backtest_f1_temp_label1",
+            "backtest_f1_hum_label0",
+            "backtest_f1_hum_label1",
+        ],
+    ]
+
+
+def test_build_metric_keys_no_components_no_prefix():
+    """Without components, each metric gets one key per axis label."""
+    metric_axes = [(False, False, ["_q0.500"])]
+    c_size, keys = _build_metric_keys(
+        ["mql"],
+        ["ignored"],
+        has_comp_axis=False,
+        metric_axes=metric_axes,
+    )
+    assert c_size == 1
+    assert keys == [["mql_q0_500"]]
+
+
+def test_flush_logged_metrics_aggregates_and_writes_table(mlflow_tracking):
+    """Multi-series cells are aggregated with agg_func; per-series rows go to table."""
+    agg = {
+        ("mae", 0): [1.0, 3.0],
+        ("mae", 1): [10.0, 30.0],
+    }
+    rows = [
+        {"key": "mae", "series_index": 0, "step": 0, "value": 1.0},
+        {"key": "mae", "series_index": 1, "step": 0, "value": 3.0},
+        {"key": "mae", "series_index": 0, "step": 1, "value": 10.0},
+        {"key": "mae", "series_index": 1, "step": 1, "value": 30.0},
+    ]
+    with mlflow.start_run() as run:
+        client = MlflowAutologgingQueueingClient()
+        _flush_logged_metrics(
+            client, run.info.run_id, agg, rows, n_series=2, agg_func=np.mean
+        )
+        client.flush(synchronous=True)
+
+    history0 = mlflow_tracking.get_metric_history(run.info.run_id, "mae")
+    logged = {m.step: m.value for m in history0}
+    assert logged[0] == pytest.approx(2.0)
+    assert logged[1] == pytest.approx(20.0)
+    table = mlflow.load_table(
+        artifact_file="metrics_per_series.json", run_ids=[run.info.run_id]
+    )
+    assert len(table) == 4
+
+
+def test_flush_logged_metrics_skips_table_for_single_series(mlflow_tracking):
+    """Single-series input logs the aggregate only; no per-series table."""
+    agg = {("mae", 0): [1.5]}
+    rows = [{"key": "mae", "series_index": 0, "step": 0, "value": 1.5}]
+    with mlflow.start_run() as run:
+        client = MlflowAutologgingQueueingClient()
+        _flush_logged_metrics(
+            client, run.info.run_id, agg, rows, n_series=1, agg_func=np.mean
+        )
+        client.flush(synchronous=True)
+
+    assert mlflow.get_run(run.info.run_id).data.metrics["mae"] == pytest.approx(1.5)
+    artifacts = mlflow_tracking.list_artifacts(run.info.run_id)
+    assert not any(a.path == "metrics_per_series.json" for a in artifacts)
