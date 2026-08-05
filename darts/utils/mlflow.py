@@ -1145,11 +1145,11 @@ def _log_backtest_metrics(
     must have the same number of components; names are taken from the first
     series.
 
-    Series of different lengths are assumed to share the same end date, so any
-    axis mapping to real dates (the window axis, or the per-timestep axis
-    when ``last_points_only`` stitches windows into one series) is aligned
-    from the end rather than the start. The per-horizon-step axis is left
-    as-is, since it means "steps ahead" rather than a real date.
+    Series can have different lengths and intersect in different ways,
+    so the time axis is aligned from the end rather than the start: a shorter
+    series lines up on its last value instead of its first. To represent this,
+    the time axis is mapped to the MLflow ``step`` as ``t - t_size`` when
+    ``has_time_axis`` is ``True``.
 
     Raises
     ------
@@ -1303,15 +1303,9 @@ def _log_backtest_metrics(
     # align the calendar-relative axes from the end
     max_w_size = max((w_size for _, w_size, _ in series_shapes), default=0)
     t_axis_is_calendar = has_time_axis and not has_windows and last_points_only
-    max_t_size = (
-        max((t_size for t_size, _, _ in series_shapes), default=0)
-        if t_axis_is_calendar
-        else 0
-    )
 
     for series_index, (t_size, w_size, canonical) in enumerate(series_shapes):
         w_offset = max_w_size - w_size if has_windows else 0
-        t_offset = max_t_size - t_size if t_axis_is_calendar else 0
         for m in range(n_metrics):
             for c in range(c_size):
                 key = base_keys[m][c]
@@ -1322,11 +1316,12 @@ def _log_backtest_metrics(
                         values = canonical[:, t, c, m]
                         agg.setdefault((key, t), []).append(float(np.nanmean(values)))
                         for w, value in enumerate(values):
+                            window_index = w + w_offset
                             rows.append({
                                 "key": key,
                                 "series_index": series_index,
                                 "step": t,
-                                "window_index": w + w_offset,
+                                "window_index": window_index - max_w_size,
                                 "value": float(value),
                             })
                     continue
@@ -1335,8 +1330,11 @@ def _log_backtest_metrics(
                     aligned_w = w + w_offset
                     for t in range(t_size):
                         # MLflow step maps to the axis the UI should chart:
-                        # time when present, otherwise window index
-                        step = t + t_offset if has_time_axis else aligned_w
+                        # horizon when present, otherwise end-relative calendar axis
+                        if has_time_axis:
+                            step = t - t_size if t_axis_is_calendar else t
+                        else:
+                            step = aligned_w - max_w_size
                         value = float(canonical[w, t, c, m])
                         agg.setdefault((key, step), []).append(value)
                         rows.append({
@@ -1472,7 +1470,9 @@ def _log_metric_result(
 
     Series can have different lengths and intersect in different ways,
     so the time axis is aligned from the end rather than the start: a shorter
-    series lines up on its last value instead of its first.
+    series lines up on its last value instead of its first. To represent this,
+    the time axis is mapped to the MLflow ``step`` as ``t - t_size`` when
+    ``has_time_axis`` is ``True``.
 
     Raises
     ------
@@ -1571,18 +1571,14 @@ def _log_metric_result(
 
         series_shapes.append((t_size, arr.reshape(t_size, c_size)))
 
-    # align the time axis from the end (see docstring)
-    max_t_size = max((t_size for t_size, _ in series_shapes), default=0)
-
     # agg maps (key, step) -> per-series values, aggregated into the logged metric.
     agg: dict[tuple[str, int], list[float]] = {}
     rows: list[dict] = []
     for series_index, (t_size, canonical) in enumerate(series_shapes):
-        step_offset = max_t_size - t_size if has_time_axis else 0
         for c, key in enumerate(keys):
             for t in range(t_size):
-                # MLflow step maps to the time axis when present
-                step = t + step_offset if has_time_axis else 0
+                # Time axes are end-relative, with the latest value at step -1.
+                step = t - t_size if has_time_axis else 0
                 value = float(canonical[t, c])
                 agg.setdefault((key, step), []).append(value)
                 rows.append({
