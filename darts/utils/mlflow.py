@@ -1456,17 +1456,14 @@ def _log_metric_result(
     (shared with ``_log_backtest_metrics``). For a single series the
     aggregate is just the value itself and no artifact is written.
 
-    TODO: improve this, it's about predictions of different or different
-      intersection lengths between actual and pred (from the `Raises`
-      below, it sounds even that this wouldn't be supported?)
-    Series of different lengths are assumed to share the same end date, so the
-    time axis is aligned from the end rather than the start: a shorter series
-    lines up on its last value instead of its first.
+    Series can have different lengths and intersect in different ways,
+    so the time axis is aligned from the end rather than the start: a shorter
+    series lines up on its last value instead of its first.
 
     Raises
     ------
     ValueError
-        On a shape/size mismatch between the metric result and the inferred
+        On a shape mismatch between the metric result and the inferred
         axes, or when ``has_comp_axis`` is ``True`` and series in a sequence
         have different numbers of components.
 
