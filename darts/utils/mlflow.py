@@ -1577,8 +1577,8 @@ def _log_metric_result(
     for series_index, (t_size, canonical) in enumerate(series_shapes):
         for c, key in enumerate(keys):
             for t in range(t_size):
-                # Time axes are end-relative, with the latest value at step -1.
-                step = t - t_size if has_time_axis else 0
+                # Forecast positions are zero-based: the first prediction is 0.
+                step = t if has_time_axis else 0
                 value = float(canonical[t, c])
                 agg.setdefault((key, step), []).append(value)
                 rows.append({

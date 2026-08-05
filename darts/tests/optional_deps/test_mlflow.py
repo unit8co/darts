@@ -1070,15 +1070,14 @@ class TestMLflow:
         history = mlflow_tracking.get_metric_history(run.info.run_id, "ae")
         assert len(history) == len(ref), "Expected one step per timestep"
         steps = sorted(m.step for m in history)
-        assert steps == list(range(-len(ref), 0))
+        assert steps == list(range(len(ref)))
         logged = [m.value for m in sorted(history, key=lambda m: m.step)]
         np.testing.assert_allclose(logged, ref, atol=1e-5)
 
-    def test_autolog_metric_aligns_time_axis_by_end_date(
+    def test_autolog_metric_aligns_time_axis_by_forecast_position(
         self, mlflow_tracking, autolog_context
     ):
-        """A shorter series' time axis aligns from the end, not the start, so
-        its negative steps overlap the tail of a longer series."""
+        """Each series starts at forecast position zero."""
         ts_long = self.ts_univariate  # length 50
         ts_short = ts_long[10:]  # length 40, same end, starts 10 steps later
 
@@ -1094,17 +1093,17 @@ class TestMLflow:
         history = mlflow_tracking.get_metric_history(run.info.run_id, "ae")
         by_step = {m.step: m.value for m in history}
         assert len(by_step) == 50
-        for step in range(-50, -40):
-            assert by_step[step] == pytest.approx(1.0, abs=1e-4), step
-        for step in range(-40, 0):
+        for step in range(40):
             assert by_step[step] == pytest.approx(1.5, abs=1e-4), step
+        for step in range(40, 50):
+            assert by_step[step] == pytest.approx(1.0, abs=1e-4), step
 
         rows = self._read_per_series_table(run.info.run_id)
         steps_by_series = {0: set(), 1: set()}
         for r in rows:
             steps_by_series[r["series_index"]].add(r["step"])
-        assert steps_by_series[0] == set(range(-50, 0))
-        assert steps_by_series[1] == set(range(-40, 0))
+        assert steps_by_series[0] == set(range(50))
+        assert steps_by_series[1] == set(range(40))
 
     def test_autolog_metric_quantile(self, mlflow_tracking, autolog_context):
         """A quantile metric (mql) logs one key per quantile with matching values."""
