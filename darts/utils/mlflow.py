@@ -349,6 +349,7 @@ def autolog(
 
     - Calling ``ForecastingModel.fit()`` inside an active MLflow run (e.g. within
       ``with mlflow.start_run():``); does nothing if no run is active:
+
       - Logs model creation parameters (``model.model_params``), both as MLflow
         params and as a ``model_params.json`` artifact.
       - Logs target series info and covariate usage information (past, future,
@@ -359,16 +360,19 @@ def autolog(
     - Calling ``ForecastingModel.historical_forecasts(retrain=True)`` inside an
       active MLflow run; does nothing if no run is active or ``retrain`` is not
       ``True``:
+
       - Logs the same model creation parameters and ``series_info.json`` as
         ``fit()`` (overwriting any prior ``fit()`` artifacts in the same run).
       - Does not log the trained model artifact; call ``log_model()`` manually
         if needed.
     - Calling any Darts metric inside an active MLflow run; does nothing if no
       run is active:
+
       - Logs the result of that metric call as an MLflow metric. More information
         in the notes below.
     - Calling ``ForecastingModel.backtest()`` inside an active MLflow run; does
       nothing if no run is active:
+
       - Logs all evaluation metrics under ``backtest_*`` keys. More information
         in the notes below.
 
@@ -382,7 +386,8 @@ def autolog(
           keyword argument when provided.
         - ``component`` – the component name when ``component_reduction=None``.
         - ``quantile_or_label``, e.g.:
-          – ``_q0.500`` for quantile metrics with keyword argument ``q=[0.5]``
+
+          - ``_q0.500`` for quantile metrics with keyword argument ``q=[0.5]``
           - ``_qi_80.000`` for quantile interval metrics with keyword argument
             ``q_interval=[(0.1, 0.9)]`` (80% interval between quantiles 0.1 and
             0.9).
