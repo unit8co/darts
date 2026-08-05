@@ -92,7 +92,7 @@ class RINormHelper(nn.Module):
         self.eps = eps
         self.affine = affine
 
-        if self.affine:
+        if self.affine and self.input_dim:
             self.affine_weight = nn.Parameter(torch.ones(self.input_dim))
             self.affine_bias = nn.Parameter(torch.zeros(self.input_dim))
 
@@ -113,7 +113,11 @@ class RINormHelper(nn.Module):
             torch.var(x, dim=calc_dims, keepdim=True, unbiased=False) + self.eps
         ).detach()
 
-        return self.transform(x)
+        # explicit class reference rather than `self.transform(x)`: `RINorm` subclasses
+        # `RINormHelper` and overrides `transform` with a different signature/return shape, so
+        # `self.transform` would incorrectly re-dispatch to that override when `self` is a `RINorm`
+        # instance normalizing its `series` group (see `RINorm._apply_groups`).
+        return RINormHelper.transform(self, x)
 
     def transform(self, x: torch.Tensor) -> torch.Tensor:
         """Normalize ``x`` using statistics previously computed by :meth:`forward`.
@@ -158,7 +162,7 @@ class RINormHelper(nn.Module):
         return x
 
 
-class RINorm(nn.Module):
+class RINorm(RINormHelper):
     def __init__(
         self,
         input_dim: int | None = None,
@@ -199,19 +203,11 @@ class RINorm(nn.Module):
         .. [1] Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
                 Distribution Shift" International Conference on Learning Representations (2022)
         """
+        has_series = input_dim is not None and input_dim > 0
+        has_past_cov = past_cov_dim is not None and past_cov_dim > 0
+        has_future_cov = future_cov_dim is not None and future_cov_dim > 0
 
-        super().__init__()
-        self.input_dim = input_dim
-        self.past_cov_dim = past_cov_dim
-        self.future_cov_dim = future_cov_dim
-        self.eps = eps
-        self.affine = affine
-
-        self.has_series = input_dim is not None and input_dim > 0
-        self.has_past_cov = past_cov_dim is not None and past_cov_dim > 0
-        self.has_future_cov = future_cov_dim is not None and future_cov_dim > 0
-
-        if not (self.has_series or self.has_past_cov or self.has_future_cov):
+        if not (has_series or has_past_cov or has_future_cov):
             raise_log(
                 ValueError(
                     "`RINorm` requires at least one of `input_dim`, `past_cov_dim`, or "
@@ -219,11 +215,26 @@ class RINorm(nn.Module):
                 )
             )
 
-        if self.has_series:
-            self.series_norm = RINormHelper(input_dim, eps, affine)
-        if self.has_past_cov:
+        # `series` is normalized directly on `self` (i.e. via the parent `RINormHelper`'s
+        # `affine_weight`/`affine_bias`/`mean`/`stdev`), rather than through a `series_norm`
+        # sub-module, so that checkpoints saved before per-group RIN (where `RINorm` itself held
+        # `affine_weight`/`affine_bias`) remain loadable: those parameters must stay at
+        # `rin.affine_weight`/`rin.affine_bias`, not move to `rin.series_norm.affine_weight`/
+        # `rin.series_norm.affine_bias`. `past_covariates`/`future_covariates` are new groups with
+        # no such backward-compatibility constraint, so they are handled by dedicated
+        # `RINormHelper` sub-modules.
+        super().__init__(
+            input_dim=input_dim if has_series else None, eps=eps, affine=affine
+        )
+        self.has_series = has_series
+        self.has_past_cov = has_past_cov
+        self.has_future_cov = has_future_cov
+        self.past_cov_dim = past_cov_dim
+        self.future_cov_dim = future_cov_dim
+
+        if has_past_cov:
             self.past_cov_norm = RINormHelper(past_cov_dim, eps, affine)
-        if self.has_future_cov:
+        if has_future_cov:
             self.future_cov_norm = RINormHelper(future_cov_dim, eps, affine)
 
     def _apply_groups(
@@ -239,8 +250,11 @@ class RINorm(nn.Module):
         """Applies `RINormHelper` method `op` (``"forward"``, ``"transform"``, or ``"inverse"``) to
         each active, given group, and shapes the result per :meth:`forward`'s `Returns` section.
         """
+        # `series` is handled by `RINormHelper`'s own implementation of `op`, applied to `self`
+        # (see `__init__`); it cannot be called through `getattr(self, op)`, as that would
+        # re-dispatch to this class's own (overridden) `forward`/`transform`/`inverse`.
         x_out = (
-            getattr(self.series_norm, op)(x)
+            getattr(RINormHelper, op)(self, x)
             if self.has_series and x is not None
             else None
         )
@@ -358,6 +372,14 @@ class RINorm(nn.Module):
         """
         return self._apply_groups("inverse", x, past_cov, future_cov)
 
+    @staticmethod
+    def group_is_active(group_cfg: bool | list[str]) -> bool:
+        """Whether a single, already-parsed `use_reversible_instance_norm` group config (as
+        returned per-key by :meth:`parse_config`) is active: `True`, or a non-empty list of
+        component names.
+        """
+        return group_cfg is True or (isinstance(group_cfg, list) and len(group_cfg) > 0)
+
     @classmethod
     def parse_config(cls, config: bool | dict | None) -> dict | None:
         """Validates and normalizes a `use_reversible_instance_norm` value.
@@ -384,6 +406,14 @@ class RINorm(nn.Module):
             ``None`` if RIN is disabled, otherwise a normalized dict with keys ``"params"``,
             ``"series"``, ``"past_covariates"``, ``"future_covariates"`` (the latter three always
             either a `bool` or a `list[str]`).
+
+        Notes
+        -----
+        Enabling a `past_covariates`/`future_covariates` group (`True` or a non-empty list) on a
+        model that isn't actually given that covariate type at fit time raises a `ValueError`,
+        regardless of whether the group was enabled with `True` or a list of component names. If a
+        model is refit with varying covariates across calls, only enable a group unconditionally
+        (`True`) for covariate types that are always provided.
         """
         if config is None or config is False:
             return None
@@ -402,18 +432,25 @@ class RINorm(nn.Module):
                 )
             )
 
-        has_group_keys = any(key in config for key in _RIN_GROUP_KEYS)
-        if not has_group_keys and "params" not in config:
-            # legacy flat format, e.g. `{"affine": False}` / `{"eps": 1e-3}` -> series-only
-            unknown_keys = set(config) - set(_RIN_PARAM_KEYS)
+        def _raise_unknown_keys(
+            allowed_keys: tuple[str, ...], extra_hint: str = ""
+        ) -> None:
+            unknown_keys = set(config) - set(allowed_keys)
             if unknown_keys:
                 raise_log(
                     ValueError(
                         f"Invalid `use_reversible_instance_norm` dict keys `{unknown_keys}`. "
-                        f"Supported keys are `{_RIN_PARAM_KEYS}` (legacy format), or "
-                        f"`{('params',) + _RIN_GROUP_KEYS}`."
+                        f"Supported keys are `{allowed_keys}`{extra_hint}."
                     )
                 )
+
+        has_group_keys = any(key in config for key in _RIN_GROUP_KEYS)
+        if not has_group_keys and "params" not in config:
+            # legacy flat format, e.g. `{"affine": False}` / `{"eps": 1e-3}` -> series-only
+            _raise_unknown_keys(
+                _RIN_PARAM_KEYS,
+                extra_hint=f" (legacy format), or `{('params',) + _RIN_GROUP_KEYS}`",
+            )
             return {
                 "params": dict(config),
                 "series": True,
@@ -421,14 +458,7 @@ class RINorm(nn.Module):
                 "future_covariates": False,
             }
 
-        unknown_keys = set(config) - {"params"} - set(_RIN_GROUP_KEYS)
-        if unknown_keys:
-            raise_log(
-                ValueError(
-                    f"Invalid `use_reversible_instance_norm` dict keys `{unknown_keys}`. "
-                    f"Supported keys are `{('params',) + _RIN_GROUP_KEYS}`."
-                )
-            )
+        _raise_unknown_keys(("params",) + _RIN_GROUP_KEYS)
 
         params = config.get("params", {})
         if not isinstance(params, dict) or not set(params).issubset(_RIN_PARAM_KEYS):
@@ -456,10 +486,7 @@ class RINorm(nn.Module):
                     )
                 )
 
-        if not any(
-            parsed[key] is True or (isinstance(parsed[key], list) and len(parsed[key]))
-            for key in _RIN_GROUP_KEYS
-        ):
+        if not any(cls.group_is_active(parsed[key]) for key in _RIN_GROUP_KEYS):
             raise_log(
                 ValueError(
                     "At least one of `series`, `past_covariates`, `future_covariates` must be "

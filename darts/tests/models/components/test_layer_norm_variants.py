@@ -102,6 +102,27 @@ class TestLayerNormVariants:
         assert future_cov_out is None
         assert past_cov_out is not None
 
+    def test_rin_checkpoint_backward_compat(self):
+        # before per-group RIN, `RINorm` held `affine_weight`/`affine_bias` directly (not under a
+        # `series_norm` sub-module); a checkpoint saved by that version (necessarily series-only,
+        # since covariate groups didn't exist yet) must still be loadable with `strict=True`.
+        old_style_state_dict = {
+            "affine_weight": torch.ones(7),
+            "affine_bias": torch.zeros(7),
+        }
+        rin = RINorm(input_dim=7, affine=True)
+        rin.load_state_dict(old_style_state_dict, strict=True)
+        assert torch.equal(rin.affine_weight, old_style_state_dict["affine_weight"])
+        assert torch.equal(rin.affine_bias, old_style_state_dict["affine_bias"])
+
+    def test_rin_series_disabled_has_no_affine_params(self):
+        # series disabled (`has_series=False`) must not register a spurious `affine_weight`/
+        # `affine_bias` on `self` (would otherwise crash trying to build `torch.ones(None)`)
+        rin = RINorm(input_dim=None, past_cov_dim=2, affine=True)
+        assert not rin.has_series
+        assert "affine_weight" not in dict(rin.named_parameters())
+        assert "past_cov_norm.affine_weight" in dict(rin.named_parameters())
+
     def test_rin_parse_config(self):
         # disabled
         assert RINorm.parse_config(False) is None

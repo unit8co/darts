@@ -210,7 +210,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.val_metrics = torch_metrics.clone(prefix="val_")
 
         # reversible instance norm
-        self.use_reversible_instance_norm = use_reversible_instance_norm
         self.rin_config = RINorm.parse_config(use_reversible_instance_norm)
         # full (unselected) dims available in the batch, regardless of which components RIN targets
         self._past_cov_full_dim = (
@@ -237,13 +236,20 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 ("past_covariates", self._past_cov_full_dim),
                 ("future_covariates", self._future_cov_full_dim),
             ):
-                if isinstance(self.rin_config[group_name], list) and full_dim == 0:
-                    raise_log(
-                        ValueError(
-                            f"`use_reversible_instance_norm['{group_name}']` selects components by "
-                            f"name, but this model does not use any `{group_name}`."
-                        )
+                group_cfg = self.rin_config[group_name]
+                if full_dim > 0 or group_cfg is False:
+                    continue
+                condition = (
+                    "selects components by name"
+                    if isinstance(group_cfg, list)
+                    else "is set to `True`"
+                )
+                raise_log(
+                    ValueError(
+                        f"`use_reversible_instance_norm['{group_name}']` {condition}, but this "
+                        f"model does not use any `{group_name}`."
                     )
+                )
             self.rin = RINorm(
                 input_dim=_rin_group_dim(self.rin_config["series"], self.n_targets),
                 past_cov_dim=_rin_group_dim(
@@ -525,21 +531,27 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
     @staticmethod
     def _merge_rin_group(
-        tensor: torch.Tensor | None,
+        tensor: torch.Tensor,
+        offset: int,
         group_out: torch.Tensor | None,
         idx: slice | Sequence[int] | None,
-    ) -> torch.Tensor | None:
-        """Returns `tensor` with the normalized `group_out` values written into columns `idx` (as
-        returned by :meth:`_select_rin_group`), without mutating `tensor` in-place (which would
-        corrupt the autograd graph shared with other RIN groups sliced from the same tensor).
+    ) -> None:
+        """Writes the normalized `group_out` values into `tensor`'s columns `idx` (as returned by
+        :meth:`_select_rin_group`), shifted by `offset` (this group's columns don't necessarily
+        start at column `0` of `tensor`).
+
+        Writes in-place: `tensor` must be a tensor freshly allocated for this purpose (e.g. via
+        `.clone()`), not a view sharing storage with another RIN group's input, which would
+        corrupt the autograd graph shared with that other group.
         """
         if group_out is None:
-            return tensor
-        if idx == slice(None):
-            return group_out
-        merged = tensor.clone()
-        merged[:, :, idx] = group_out
-        return merged
+            return
+        cols = (
+            slice(offset, offset + group_out.shape[2])
+            if idx == slice(None)
+            else [offset + i for i in idx]
+        )
+        tensor[:, :, cols] = group_out
 
     @staticmethod
     def _rin_as_tuple(
@@ -587,21 +599,18 @@ class PLForecastingModule(pl.LightningModule, ABC):
             self.rin(x=series_in, past_cov=past_cov_in, future_cov=hist_future_cov_in)
         )
 
-        series_slice = self._merge_rin_group(series_slice, series_out, series_idx)
-        past_cov_slice = self._merge_rin_group(
-            past_cov_slice, past_cov_out, past_cov_idx
-        )
-        hist_future_cov_slice = self._merge_rin_group(
-            hist_future_cov_slice, hist_future_cov_out, future_cov_idx
-        )
-
-        past_features = torch.cat(
-            [
-                t
-                for t in (series_slice, past_cov_slice, hist_future_cov_slice)
-                if t is not None
-            ],
-            dim=2,
+        # write every active group's normalized values into a single freshly-allocated buffer,
+        # instead of cloning per-group and then copying everything again via `torch.cat` (which
+        # always allocates a new, full-width tensor anyway). At least one group is always active
+        # here (`_rin_normalize_input` only runs when `self.rin is not None`, which guarantees it).
+        past_features = x_past.clone()
+        self._merge_rin_group(past_features, 0, series_out, series_idx)
+        self._merge_rin_group(past_features, n_targets, past_cov_out, past_cov_idx)
+        self._merge_rin_group(
+            past_features,
+            n_targets + n_past_cov,
+            hist_future_cov_out,
+            future_cov_idx,
         )
 
         # the future window of future covariates reuses the historic window's normalization statistics
@@ -609,7 +618,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
         _, _, future_norm = self._rin_as_tuple(
             self.rin.transform(future_cov=future_sel)
         )
-        x_future_in = self._merge_rin_group(x_future, future_norm, future_idx)
+        if future_norm is None:
+            x_future_in = x_future
+        else:
+            x_future_in = x_future.clone()
+            self._merge_rin_group(x_future_in, 0, future_norm, future_idx)
 
         return past_features, x_future_in
 
@@ -626,7 +639,15 @@ class PLForecastingModule(pl.LightningModule, ABC):
             out_series, out_extra = out[0], out[1:]
         else:
             out_series, out_extra = out, None
-        out_series, _, _ = self._rin_as_tuple(self.rin.inverse(out_series))
+
+        # only the RIN-selected target columns were normalized on the way in (see
+        # `_rin_normalize_input`); denormalize just those, leaving any non-selected target
+        # columns (already in their original scale) untouched.
+        series_sel, series_idx = self._select_rin_group(out_series, "series")
+        inv_series, _, _ = self._rin_as_tuple(self.rin.inverse(x=series_sel))
+        out_series = out_series.clone()
+        self._merge_rin_group(out_series, 0, inv_series, series_idx)
+
         return (out_series, *out_extra) if out_extra is not None else out_series
 
     def _compute_loss(self, output, target, criterion, sample_weight):
@@ -963,6 +984,10 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # we must save the metrics to continue logging them when resuming training
         checkpoint["torch_metrics_train"] = self.train_metrics
         checkpoint["torch_metrics_val"] = self.val_metrics
+        # column indices resolved from named `use_reversible_instance_norm` groups are not
+        # recoverable from the checkpoint's tensors/hyperparameters alone (the original `TimeSeries`
+        # component names are not saved), so they must be persisted directly
+        checkpoint["rin_component_indices"] = self.rin_component_indices
 
     def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
         # by default our models are initialized as float32. For other dtypes, we need to cast to the correct precision
@@ -974,6 +999,10 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.criterion = checkpoint["loss_fn"]
         self.train_metrics = checkpoint["torch_metrics_train"]
         self.val_metrics = checkpoint["torch_metrics_val"]
+        # absent from checkpoints saved before named `use_reversible_instance_norm` groups existed;
+        # `self.rin_component_indices` (all `None`, from `__init__`) is left as-is in that case
+        if "rin_component_indices" in checkpoint:
+            self.rin_component_indices = checkpoint["rin_component_indices"]
 
     def to_dtype(self, dtype):
         """Cast module precision (float32 by default) to another precision."""

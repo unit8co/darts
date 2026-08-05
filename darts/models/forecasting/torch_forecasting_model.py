@@ -947,9 +947,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
             resolved_indices: list[int] | None = None
             for idx, ts in enumerate(seq):
-                components = ts.components
-                missing = [name for name in component_names if name not in components]
-                if missing:
+                indexer = ts.components.get_indexer(component_names)
+                if (indexer < 0).any():
+                    missing = [
+                        name for name, pos in zip(component_names, indexer) if pos < 0
+                    ]
                     raise_log(
                         ValueError(
                             f"`use_reversible_instance_norm['{group_name}']` contains unknown component name(s) "
@@ -957,7 +959,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         )
                     )
 
-                current_indices = [components.get_loc(name) for name in component_names]
+                current_indices = indexer.tolist()
                 if resolved_indices is None:
                     resolved_indices = current_indices
                 elif current_indices != resolved_indices:
@@ -1282,8 +1284,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
         )
 
-        self._rin_fit_series_refs = (series, past_covariates, future_covariates)
-
         train_dataset = self._build_train_dataset(
             series=series,
             past_covariates=past_covariates,
@@ -1306,6 +1306,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             val_dataset = None
 
         logger.info(f"Train dataset contains {len(train_dataset)} samples.")
+
+        self._rin_fit_series_refs = (series, past_covariates, future_covariates)
 
         series_input = (series, past_covariates, future_covariates)
         fit_from_ds_params: dict[str, Any] = dict(
@@ -1483,6 +1485,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 future_covariates=rin_fit_series_refs[2],
             )
             self._rin_fit_series_refs = None
+        else:
+            # `fit_from_dataset()` was called directly, bypassing `fit()`/`_rin_fit_series_refs`.
+            # Best-effort resolve named `use_reversible_instance_norm` groups from the `series`/
+            # `past_covariates`/`future_covariates` attributes exposed by Darts' built-in dataset
+            # classes (absent on arbitrary user-defined `TorchTrainingDataset` subclasses, which
+            # don't necessarily retain the original `TimeSeries` with their component names).
+            self._set_rin_component_indices(
+                model=model,
+                series=getattr(train_dataset, "series", None),
+                past_covariates=getattr(train_dataset, "past_covariates", None),
+                future_covariates=getattr(train_dataset, "future_covariates", None),
+            )
 
         # loss must not reduce the output when using sample weight
         train_sample_weight = train_sample[-2]
@@ -2213,6 +2227,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         self._verify_inference_dataset_type(dataset)
 
+        # unlike `predict()` (which resolves named `use_reversible_instance_norm` groups from the
+        # `TimeSeries` it was given directly, see `_setup_for_predict_from_dataset()`),
+        # `predict_from_dataset()` only has a `TorchInferenceDataset`; best-effort resolve from the
+        # `series`/`past_covariates`/`future_covariates` attributes exposed by Darts' built-in
+        # dataset classes (absent on arbitrary user-defined `TorchInferenceDataset` subclasses).
+        # Re-resolving on every call (rather than reusing whatever was last resolved) avoids silently
+        # applying stale indices when the dataset's covariates have a different component order than
+        # a previous call's.
+        self._set_rin_component_indices(
+            series=getattr(dataset, "series", None),
+            past_covariates=getattr(dataset, "past_covariates", None),
+            future_covariates=getattr(dataset, "future_covariates", None),
+        )
+
         # check that covariates and dimensions are matching what we had during training
         self._validate_predict_sample(
             train_sample=self.train_sample, predict_sample=dataset[0]
@@ -2505,7 +2533,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         path_ptl_ckpt = path + ".ckpt"
         if os.path.exists(path_ptl_ckpt):
             model.model = model._load_from_checkpoint(path_ptl_ckpt, **kwargs)
-            model._set_rin_component_indices()
         else:
             model._fit_called = False
             logger.warning(
@@ -2612,7 +2639,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         logger.info(f"loading {file_name}")
 
         model.model = model._load_from_checkpoint(file_path, **kwargs)
-        model._set_rin_component_indices()
 
         # loss_fn is excluded from pl_forecasting_module ckpt, must be restored
         loss_fn = model.model_params.get("loss_fn")
@@ -2789,7 +2815,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # based on the shape of train_sample, figure out which covariates are used by the model
         # (usually set in the Darts model prior to fitting it)
         self._update_covariates_use()
-        self._set_rin_component_indices()
+        # named `use_reversible_instance_norm` groups' resolved column indices can't be re-derived
+        # here: `self.model` was just freshly instantiated (never fitted), so no `TimeSeries` are
+        # available to resolve component names from. Restore them from the checkpoint directly, if
+        # present (absent for checkpoints saved before named RIN groups existed, in which case
+        # `self.model.rin_component_indices` is left as all `None`, from `_init_model()`).
+        if "rin_component_indices" in ckpt:
+            self.model.rin_component_indices = ckpt["rin_component_indices"]
 
     def load_weights(
         self, path: str, load_encoders: bool = True, skip_checks: bool = False, **kwargs

@@ -56,6 +56,7 @@ def generate_series(n_variables: int, length: int, prefix: str):
 
 class TestFoundationModel:
     series = generate_series(n_variables=2, length=100, prefix="A")
+    past_cov = generate_series(n_variables=2, length=100, prefix="B")
     future_cov = generate_series(n_variables=3, length=200, prefix="C")
 
     @patch(
@@ -158,7 +159,15 @@ class TestFoundationModel:
         ) is affine_override
         # RINorm affine transformation is disabled
         assert model.pl_module_params["use_reversible_instance_norm"] == expected_rin
-        model.fit(series=self.series)
+        # the model must actually be fit with `past_covariates` for a `use_reversible_instance_norm`
+        # config that enables its `"past_covariates"` group to be valid
+        uses_past_covariates = (
+            isinstance(user_rin, dict) and user_rin.get("past_covariates") is True
+        )
+        model.fit(
+            series=self.series,
+            past_covariates=self.past_cov if uses_past_covariates else None,
+        )
 
         if user_rin:
             assert model.model.rin.affine is False

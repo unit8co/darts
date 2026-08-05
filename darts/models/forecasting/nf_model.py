@@ -46,6 +46,7 @@ from neuralforecast.common._base_model import BaseModel
 from neuralforecast.losses.pytorch import BasePointLoss
 
 from darts.logging import get_logger, raise_log
+from darts.models.components.layer_norm_variants import RINorm
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
@@ -702,7 +703,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
 
     def _validate_nf_model_params(
         self,
-        use_reversible_instance_norm: bool,
+        use_reversible_instance_norm: bool | dict,
     ) -> None:
         # check all provided parameters are valid parameters for the nf_model_class
         signature = inspect.signature(self.nf_model_class.__init__)
@@ -729,8 +730,14 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             for param in ignored_params_in_use:
                 self.nf_model_params.pop(param)
 
-        # warn if RINorm is enabled for NF model while `use_reversible_instance_norm` is enabled for the PL module
-        if use_reversible_instance_norm:
+        # warn if RINorm is enabled for NF model while Darts' RIN normalizes the target `series`
+        # (a non-empty dict with `series` disabled, e.g. `{"past_covariates": True}`, does not
+        # conflict with the NF model's own target-series normalization)
+        rin_config = RINorm.parse_config(use_reversible_instance_norm)
+        series_rin_active = rin_config is not None and RINorm.group_is_active(
+            rin_config["series"]
+        )
+        if series_rin_active:
             self._check_rinorm_compatibility(signature)
 
     def _check_rinorm_compatibility(

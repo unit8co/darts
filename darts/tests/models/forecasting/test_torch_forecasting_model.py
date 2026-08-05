@@ -1999,24 +1999,20 @@ class TestTorchForecastingModel:
 
         # univariate no RIN
         model_no_rin.fit(self.series)
-        assert not model_no_rin.model.use_reversible_instance_norm
         assert model_no_rin.model.rin is None
 
         # univariate with RIN
         model_rin.fit(self.series)
         if issubclass(model_cls, RNNModel):
             # RNNModel will not use RIN
-            assert not model_rin.model.use_reversible_instance_norm
             assert model_rin.model.rin is None
             return
         else:
-            assert model_rin.model.use_reversible_instance_norm
             assert isinstance(model_rin.model.rin, RINorm)
             assert model_rin.model.rin.input_dim == self.series.n_components
         # multivariate with RIN
         model_rin_mv = model_rin.untrained_model()
         model_rin_mv.fit(self.multivariate_series)
-        assert model_rin_mv.model.use_reversible_instance_norm
         assert isinstance(model_rin_mv.model.rin, RINorm)
         assert model_rin_mv.model.rin.input_dim == self.multivariate_series.n_components
 
@@ -2105,22 +2101,22 @@ class TestTorchForecastingModel:
         model.fit(**fit_kwargs)
 
         if issubclass(model_cls, RNNModel):
-            assert not model.model.use_reversible_instance_norm
             assert model.model.rin is None
             return
 
         rin = model.model.rin
-        assert model.model.use_reversible_instance_norm
         assert isinstance(rin, RINorm)
         assert model.model.rin_config == {"params": {}, **rin_config}
 
         for group_config, components, has_attr, dim_attr, norm_attr in (
+            # "series" is normalized directly on `rin` itself (not a dedicated sub-module, for
+            # checkpoint backward-compatibility, see `RINorm.__init__`), hence `norm_attr=None`
             (
                 rin_config["series"],
                 series.components,
                 "has_series",
                 "input_dim",
-                "series_norm",
+                None,
             ),
             (
                 rin_config["past_covariates"],
@@ -2139,7 +2135,8 @@ class TestTorchForecastingModel:
         ):
             if group_config is False:
                 assert not getattr(rin, has_attr)
-                assert not hasattr(rin, norm_attr)
+                if norm_attr is not None:
+                    assert not hasattr(rin, norm_attr)
             else:
                 assert getattr(rin, has_attr)
                 assert getattr(rin, dim_attr) == _expected_dim(group_config, components)
@@ -2206,10 +2203,12 @@ class TestTorchForecastingModel:
             stdev = torch.sqrt(raw.var(dim=1, keepdim=True, unbiased=False) + rin.eps)
             return mean, stdev
 
-        # "series" and "past_covariates" are configured -> stats computed from their own raw values
+        # "series" and "past_covariates" are configured -> stats computed from their own raw values.
+        # "series" stats live directly on `rin` (not a `series_norm` sub-module), for checkpoint
+        # backward-compatibility (see `RINorm.__init__`).
         expected_series_mean, expected_series_stdev = _expected_stats(series_raw)
-        assert torch.allclose(rin.series_norm.mean, expected_series_mean)
-        assert torch.allclose(rin.series_norm.stdev, expected_series_stdev)
+        assert torch.allclose(rin.mean, expected_series_mean)
+        assert torch.allclose(rin.stdev, expected_series_stdev)
 
         # only "pc_b" was selected by name -> stats must match "pc_b" alone, not "pc_a" or both
         assert rin.past_cov_dim == 1
@@ -2220,6 +2219,84 @@ class TestTorchForecastingModel:
         # "future_covariates" is not configured -> no normalization module for that group at all
         assert not rin.has_future_cov
         assert not hasattr(rin, "future_cov_norm")
+
+    @staticmethod
+    def _rin_pc_setup(icl=6, ocl=2, length=20):
+        start = pd.Timestamp("2000-01-01")
+        series = tg.sine_timeseries(length=length, start=start).astype(np.float32)
+        pc = (
+            (tg.linear_timeseries(length=length, start=start) * 3 + 10).stack(
+                tg.linear_timeseries(length=length, start=start) * -2 + 5
+            )
+        ).astype(np.float32)
+        pc = pc.with_columns_renamed(pc.components.tolist(), ["pc_a", "pc_b"])
+        return icl, ocl, series, pc
+
+    def test_rin_group_config_save_load(self, tmpdir_fn):
+        """A model fit on a *list* of series and saved with `clean=True`, using a name-based RIN
+        group, must remain loadable (regression test: `load()` used to unconditionally try to
+        re-resolve RIN's column indices from `training_series`/`past_covariate_series`, which are
+        only ever set by `fit()` for a single-series fit, and are cleared by `clean=True`)."""
+        icl, ocl, series, pc = self._rin_pc_setup()
+        series2, pc2 = series + 1.0, pc + 1.0
+
+        model = DLinearModel(
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            kernel_size=2,
+            n_epochs=1,
+            random_state=42,
+            use_reversible_instance_norm={"past_covariates": ["pc_b"]},
+            **tfm_kwargs,
+        )
+        model.fit([series, series2], past_covariates=[pc, pc2])
+
+        path = os.path.join(tmpdir_fn, "rin_model.pt")
+        model.save(path, clean=True)
+        loaded_model = DLinearModel.load(path)
+
+        preds = loaded_model.predict(n=ocl, series=series, past_covariates=pc)
+        assert len(preds) == ocl
+
+    def test_rin_group_config_load_weights_from_checkpoint(self, tmpdir_fn):
+        """`load_weights_from_checkpoint()` (loading weights into a freshly-instantiated, never-fitted
+        model) must work with a name-based RIN group (regression test: it used to unconditionally try
+        to re-resolve indices from `training_series`, which is `None` on a never-fitted model)."""
+        icl, ocl, series, pc = self._rin_pc_setup()
+        original_name = "rin_original"
+
+        model = DLinearModel(
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            kernel_size=2,
+            n_epochs=1,
+            random_state=42,
+            work_dir=tmpdir_fn,
+            save_checkpoints=True,
+            model_name=original_name,
+            use_reversible_instance_norm={"past_covariates": ["pc_b"]},
+            **tfm_kwargs,
+        )
+        model.fit(series, past_covariates=pc)
+        original_preds = model.predict(n=ocl, series=series, past_covariates=pc)
+
+        model_rt = DLinearModel(
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            kernel_size=2,
+            n_epochs=1,
+            random_state=42,
+            use_reversible_instance_norm={"past_covariates": ["pc_b"]},
+            **tfm_kwargs,
+        )
+        model_rt.load_weights_from_checkpoint(
+            model_name=original_name,
+            work_dir=tmpdir_fn,
+            best=False,
+            map_location="cpu",
+        )
+        loaded_preds = model_rt.predict(n=ocl, series=series, past_covariates=pc)
+        assert original_preds == loaded_preds
 
     @pytest.mark.parametrize("use_mc_dropout", [False, True])
     def test_mc_dropout_active(self, use_mc_dropout):
