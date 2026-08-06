@@ -2253,7 +2253,9 @@ class TestTorchForecastingModel:
 
         path = os.path.join(tmpdir_fn, "rin_model.pt")
         model.save(path, clean=True)
-        loaded_model = DLinearModel.load(path)
+        loaded_model = DLinearModel.load(
+            path, pl_trainer_kwargs=tfm_kwargs["pl_trainer_kwargs"]
+        )
 
         preds = loaded_model.predict(n=ocl, series=series, past_covariates=pc)
         assert len(preds) == ocl
