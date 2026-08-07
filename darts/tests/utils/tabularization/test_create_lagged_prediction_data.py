@@ -9,7 +9,7 @@ import pytest
 
 from darts import TimeSeries
 from darts import concatenate as darts_concatenate
-from darts.logging import get_logger, raise_if_not, raise_log
+from darts.logging import raise_log
 from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.timeseries_generation import linear_timeseries
 from darts.utils.utils import n_steps_between
@@ -224,7 +224,7 @@ class TestCreateLaggedPredictionData:
                 f"Caused by `future_covariates_lags = {future_covariates_lags}`."
             )
             error = ValueError(error_msg)
-            raise_log(error, get_logger(__name__))
+            raise_log(error)
         return times
 
     @staticmethod
@@ -310,10 +310,12 @@ class TestCreateLaggedPredictionData:
                     idx_to_get = time_idx + lag
                     # Account for prepended values:
                     idx_to_get -= num_prepended
-                    raise_if_not(
-                        idx_to_get >= 0,
-                        f"Unexpected case encountered: `time_idx + lag - num_prepended = {idx_to_get} < 0`.",
-                    )
+                    if idx_to_get < 0:
+                        raise_log(
+                            ValueError(
+                                f"Unexpected case encountered: `time_idx + lag - num_prepended = {idx_to_get} < 0`."
+                            ),
+                        )
                     # Extract all components at this lagged time:
                     X_row.append(array_vals[idx_to_get, :].reshape(-1))
                 # Concatenate together all lagged values into a single row:

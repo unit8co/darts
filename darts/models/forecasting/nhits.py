@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from darts.logging import get_logger, raise_if_not
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
@@ -105,9 +105,8 @@ class _Block(nn.Module):
         self.dropout = dropout
         self.MaxPool1d = MaxPool1d
 
-        raise_if_not(
-            activation in ACTIVATIONS, f"'{activation}' is not in {ACTIVATIONS}"
-        )
+        if activation not in ACTIVATIONS:
+            raise_log(ValueError(f"'{activation}' is not in {ACTIVATIONS}."))
         self.activation = getattr(nn, activation)()
 
         # number of parameters theta for backcast and forecast
@@ -422,7 +421,7 @@ class _NHiTSModule(PLForecastingModule):
 
     @io_processor
     def forward(self, x_in: PLModuleInput):
-        x, _, _ = x_in
+        x, _, _, _ = x_in
 
         # if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts
         # we reshape into x1, y1, a1, x2, y2, a2... etc
@@ -730,12 +729,13 @@ class NHiTSModel(PastCovariatesTorchModel):
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
-        raise_if_not(
-            isinstance(layer_widths, int) or len(layer_widths) == num_stacks,
-            "Please pass an integer or a list of integers with length `num_stacks`"
-            "as value for the `layer_widths` argument.",
-            logger,
-        )
+        if not (isinstance(layer_widths, int) or len(layer_widths) == num_stacks):
+            raise_log(
+                ValueError(
+                    "Please pass an integer or a list of integers with length `num_stacks`"
+                    "as value for the `layer_widths` argument."
+                ),
+            )
 
         self.num_stacks = num_stacks
         self.num_blocks = num_blocks
@@ -768,14 +768,18 @@ class NHiTSModel(PastCovariatesTorchModel):
         pooling_kernel_sizes, n_freq_downsample, in_len, out_len, num_blocks, num_stacks
     ):
         def _check_sizes(tup, name):
-            raise_if_not(
-                len(tup) == num_stacks,
-                f"the length of {name} must match the number of stacks.",
-            )
-            raise_if_not(
-                all([len(i) == num_blocks for i in tup]),
-                f"the length of each tuple in {name} must be `num_blocks={num_blocks}`",
-            )
+            if len(tup) != num_stacks:
+                raise_log(
+                    ValueError(
+                        f"the length of {name} must match the number of stacks."
+                    ),
+                )
+            if not all([len(i) == num_blocks for i in tup]):
+                raise_log(
+                    ValueError(
+                        f"the length of each tuple in {name} must be `num_blocks={num_blocks}`."
+                    ),
+                )
 
         if pooling_kernel_sizes is None:
             # make stacks handle different frequencies
@@ -807,11 +811,13 @@ class NHiTSModel(PastCovariatesTorchModel):
             _check_sizes(n_freq_downsample, "`n_freq_downsample`")
 
             # check that last value is 1
-            raise_if_not(
-                n_freq_downsample[-1][-1] == 1,
-                "the downsampling coefficient of the last block of the last stack must be 1 "
-                + "(i.e., `n_freq_downsample[-1][-1]`).",
-            )
+            if n_freq_downsample[-1][-1] != 1:
+                raise_log(
+                    ValueError(
+                        "the downsampling coefficient of the last block of the last stack must be 1 "
+                        + "(i.e., `n_freq_downsample[-1][-1]`)."
+                    ),
+                )
 
         return pooling_kernel_sizes, n_freq_downsample
 

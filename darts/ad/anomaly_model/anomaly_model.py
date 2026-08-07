@@ -21,11 +21,9 @@ from darts.ad.utils import (
     eval_metric_from_scores,
     show_anomalies_from_scores,
 )
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.typing import TimeSeriesLike
 from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
-
-logger = get_logger(__name__)
 
 
 class AnomalyModel(ABC):
@@ -38,7 +36,6 @@ class AnomalyModel(ABC):
                 ValueError(
                     "all scorers must be of instance `darts.ad.scorers.AnomalyScorer`."
                 ),
-                logger=logger,
             )
         self.model = model
 
@@ -181,7 +178,6 @@ class AnomalyModel(ABC):
                         f"`anomalies`. The evaluation of the accuracy cannot be computed. If applicable, "
                         f"think about setting the scorer parameter `componenet_wise` to True."
                     ),
-                    logger=logger,
                 )
 
         sequence_type_in = get_series_seq_type(series)

@@ -54,19 +54,18 @@ def _historical_forecasts_general_checks(
     """
     # parse kwargs
     n = SimpleNamespace(**kwargs)
+    series = series2seq(series)
 
     # check forecast horizon
     if n.forecast_horizon <= 0:
         raise_log(
             ValueError("`forecast_horizon` must be a positive integer."),
-            logger,
         )
 
     # check stride
     if n.stride <= 0:
         raise_log(
             ValueError("`stride` must be a positive integer."),
-            logger,
         )
 
     # check stride for ConformalModel
@@ -78,268 +77,396 @@ def _historical_forecasts_general_checks(
                 f"`stride` must be a round-multiple of `cal_stride={model.cal_stride}` "
                 f"and `>=cal_stride`. Received `stride={n.stride}`"
             ),
-            logger,
         )
 
-    series = series2seq(series)
+    _general_checks_start(model=model, series=series, n=n, is_conformal=is_conformal)
+    _general_checks_probabilistic(model=model, n=n)
+    _general_checks_data_transformers(series=series, n=n)
+    _general_checks_training(model=model, series=series, n=n)
 
-    if n.start is not None:
+    # check fit and predict kwargs
+    _ = _historical_forecasts_sanitize_kwargs(
+        model=model,
+        fit_kwargs=n.fit_kwargs,
+        predict_kwargs=n.predict_kwargs,
+        retrain=n.retrain is not False and n.retrain != 0,
+        val_length=n.val_length,
+        show_warnings=n.show_warnings,
+    )
+
+
+def _general_checks_start(
+    model,
+    series: Sequence[TimeSeries],
+    n: SimpleNamespace,
+    is_conformal: bool,
+):
+    start = n.start
+    start_format = n.start_format
+    stride = n.stride
+
+    if start is None:
+        return
+
         # check start parameter in general (non series dependent)
-        if not isinstance(n.start, float | int | np.int64 | pd.Timestamp):
+    if isinstance(start, str):
+        if start != "end":
             raise_log(
-                TypeError(
-                    "`start` must be either `float`, `int`, `pd.Timestamp` or `None`."
-                ),
-                logger,
+                ValueError(f"`start` string value must be 'end', received '{start}'.")
             )
+        # start="end" skips all position/timestamp/overlap_end checks;
+        # validation happens in _get_historical_forecasts_setup per series
+        return
 
-        if n.start_format not in ["position", "value"]:
-            raise_log(
-                ValueError(
-                    f"`start_format` must be on of ['position', 'value']. Received '{n.start_format}'."
-                )
+    if not isinstance(start, float | int | np.int64 | pd.Timestamp):
+        raise_log(
+            TypeError(
+                "`start` must be either `float`, `int`, `pd.Timestamp`, `'end'` or `None`."
             )
-        if n.start_format == "position" and not isinstance(n.start, int | np.int64):
+        )
+
+    if start_format not in ["position", "value"]:
+        raise_log(
+            ValueError(
+                f"`start_format` must be one of ['position', 'value']. Received '{start_format}'."
+            )
+        )
+    if start_format == "position" and not isinstance(start, int | np.int64):
+        raise_log(
+            ValueError(
+                f"Since `start_format='position'`, `start` must be an integer, received {type(start)}."
+            ),
+        )
+    if isinstance(start, float):
+        if is_conformal:
             raise_log(
                 ValueError(
-                    f"Since `start_format='position'`, `start` must be an integer, received {type(n.start)}."
+                    "`start` of type float is not supported for `ConformalModel`."
                 ),
-                logger,
             )
-        if isinstance(n.start, float):
-            if is_conformal:
+        if not 0.0 <= start <= 1.0:
+            raise_log(ValueError("if `start` is a float, must be between 0.0 and 1.0."))
+
+    series_freq = None
+    for idx, series_ in enumerate(series):
+        start_is_value = False
+        # check specifically for int and Timestamp as error by `get_timestamp_at_point` is too generic
+        if isinstance(start, pd.Timestamp):
+            if not series_._has_datetime_index:
                 raise_log(
                     ValueError(
-                        "`start` of type float is not supported for `ConformalModel`."
+                        "if `start` is a `pd.Timestamp`, all series must be indexed with a `pd.DatetimeIndex`"
                     ),
-                    logger,
                 )
-            if not 0.0 <= n.start <= 1.0:
+            if start > series_.end_time():
                 raise_log(
-                    ValueError("if `start` is a float, must be between 0.0 and 1.0."),
-                    logger,
+                    ValueError(
+                        f"`start` time `{start}` is after the last timestamp `{series_.end_time()}` of the "
+                        f"series at index: {idx}."
+                    ),
                 )
-
-        series_freq = None
-        for idx, series_ in enumerate(series):
-            start_is_value = False
-            # check specifically for int and Timestamp as error by `get_timestamp_at_point` is too generic
-            if isinstance(n.start, pd.Timestamp):
-                if not series_._has_datetime_index:
+            start_is_value = True
+        elif isinstance(start, int | np.int64):
+            if start_format == "position" or series_.has_datetime_index:
+                if start >= len(series_):
                     raise_log(
                         ValueError(
-                            "if `start` is a `pd.Timestamp`, all series must be indexed with a `pd.DatetimeIndex`"
+                            f"`start` position `{start}` is out of bounds for series of length {len(series_)} "
+                            f"at index: {idx}."
                         ),
-                        logger,
                     )
-                if n.start > series_.end_time():
+            else:
+                if start > series_.end_time():  # format "value" and range index
                     raise_log(
                         ValueError(
-                            f"`start` time `{n.start}` is after the last timestamp `{series_.end_time()}` of the "
-                            f"series at index: {idx}."
+                            f"`start` time `{start}` is larger than the last index `{series_.end_time()}` "
+                            f"for series at index: {idx}."
                         ),
-                        logger,
                     )
                 start_is_value = True
-            elif isinstance(n.start, int | np.int64):
-                if n.start_format == "position" or series_.has_datetime_index:
-                    if n.start >= len(series_):
-                        raise_log(
-                            ValueError(
-                                f"`start` position `{n.start}` is out of bounds for series of length {len(series_)} "
-                                f"at index: {idx}."
-                            ),
-                            logger,
-                        )
-                else:
-                    if (
-                        n.start > series_.time_index[-1]
-                    ):  # format "value" and range index
-                        raise_log(
-                            ValueError(
-                                f"`start` time `{n.start}` is larger than the last index `{series_.time_index[-1]}` "
-                                f"for series at index: {idx}."
-                            ),
-                            logger,
-                        )
-                    start_is_value = True
 
-            # `ConformalModel` with `start_format='value'` requires all series to have the same frequency
-            if is_conformal and start_is_value:
-                if series_freq is None:
-                    series_freq = series_.freq
+        # `ConformalModel` with `start_format='value'` requires all series to have the same frequency
+        if is_conformal and start_is_value:
+            if series_freq is None:
+                series_freq = series_.freq
 
-                if series_freq != series_.freq:
-                    raise_log(
-                        ValueError(
-                            f"Found mismatching `series` time index frequencies `{series_freq}` and `{series_.freq}`. "
-                            f"`start_format='value'` with `ConformalModel` is only supported if all series in "
-                            f"`series` have the same frequency."
-                        ),
-                        logger=logger,
-                    )
-
-            # find valid start position relative to the series start time, otherwise raise an error
-            start_idx, _ = _get_start_index(
-                series_, idx, n.start, n.start_format, n.stride
-            )
-
-            # check that `overlap_end` and `start` are a valid combination
-            overlap_end = n.overlap_end
-            if (
-                not overlap_end
-                and start_idx + n.forecast_horizon + model.output_chunk_shift
-                > len(series_)
-            ):
-                # verbose error messages
-                if n.start_format == "position" or (
-                    not isinstance(n.start, pd.Timestamp)
-                    and series_._has_datetime_index
-                ):
-                    start_value_msg = (
-                        f"`start` position `{n.start}` corresponding to time"
-                    )
-                else:
-                    start_value_msg = "`start` time"
-                start = series_._time_index[start_idx]
+            if series_freq != series_.freq:
                 raise_log(
                     ValueError(
-                        f"{start_value_msg} `{start}` is too late in the series {idx} to make any predictions with "
-                        f"`overlap_end` set to `False`."
+                        f"Found mismatching `series` time index frequencies `{series_freq}` and `{series_.freq}`. "
+                        f"`start_format='value'` with `ConformalModel` is only supported if all series in "
+                        f"`series` have the same frequency."
                     ),
-                    logger,
                 )
 
+        # find valid start position relative to the series start time, otherwise raise an error
+        start_idx, _ = _get_start_index(series_, idx, start, start_format, stride)
+
+        # check that `overlap_end` and `start` are a valid combination
+        overlap_end = n.overlap_end
+        if (
+            not overlap_end
+            and start_idx + n.forecast_horizon + model.output_chunk_shift > len(series_)
+        ):
+            # verbose error messages
+            if start_format == "position" or (
+                not isinstance(start, pd.Timestamp) and series_._has_datetime_index
+            ):
+                start_value_msg = f"`start` position `{start}` corresponding to time"
+            else:
+                start_value_msg = "`start` time"
+            start_ = series_._time_index[start_idx]
+            raise_log(
+                ValueError(
+                    f"{start_value_msg} `{start_}` is too late in the series {idx} to make any "
+                    f"predictions with `overlap_end` set to `False`."
+                ),
+            )
+
+
+def _general_checks_probabilistic(model, n: SimpleNamespace):
     # duplication of ForecastingModel.predict() check for the optimized historical forecasts implementations
     if not model.supports_probabilistic_prediction and n.num_samples > 1:
         raise_log(
             ValueError("`num_samples > 1` is only supported for probabilistic models."),
-            logger,
         )
 
     # check direct likelihood parameter prediction before fitting a model
-    if n.predict_likelihood_parameters:
-        if not model.supports_likelihood_parameter_prediction:
-            raise_log(
-                ValueError(
-                    f"Model `{model.__class__.__name__}` does not support `predict_likelihood_parameters=True`. "
-                    f"Either the model does not support likelihoods, or no `likelihood` was used at model "
-                    f"creation."
-                )
-            )
-        if n.num_samples != 1:
-            raise_log(
-                ValueError(
-                    f"`predict_likelihood_parameters=True` is only supported for `num_samples=1`, "
-                    f"received {n.num_samples}."
-                ),
-                logger,
-            )
+    if not n.predict_likelihood_parameters:
+        return
 
+    if not model.supports_likelihood_parameter_prediction:
+        raise_log(
+            ValueError(
+                f"Model `{model.__class__.__name__}` does not support `predict_likelihood_parameters=True`. "
+                f"Either the model does not support likelihoods, or no `likelihood` was used at model "
+                f"creation."
+            )
+        )
+    if n.num_samples != 1:
+        raise_log(
+            ValueError(
+                f"`predict_likelihood_parameters=True` is only supported for `num_samples=1`, "
+                f"received {n.num_samples}."
+            ),
+        )
+
+    if (
+        model.output_chunk_length is not None
+        and n.forecast_horizon > model.output_chunk_length
+    ):
+        raise_log(
+            ValueError(
+                "`predict_likelihood_parameters=True` is only supported for `forecast_horizon` smaller than or "
+                "equal to model's `output_chunk_length`."
+            ),
+        )
+
+
+def _general_checks_data_transformers(series: Sequence[TimeSeries], n: SimpleNamespace):
+    data_transformers = n.data_transformers
+    if data_transformers is None:
+        return
+
+    # check the type
+    if not isinstance(data_transformers, dict):
+        raise_log(
+            ValueError("`data_transformers` must be either `None` or a dictionary.")
+        )
+    # check the keys
+    supported_keys = {"series", "past_covariates", "future_covariates"}
+    incorrect_keys = set(data_transformers.keys()) - supported_keys
+    if len(incorrect_keys) > 0:
+        raise_log(
+            ValueError(
+                f"The keys supported by `data_transformers` are {supported_keys}, received the following "
+                f"incorrect keys: {incorrect_keys}."
+            ),
+        )
+
+    # convert to Pipelines
+    data_pipelines = _convert_data_transformers(
+        data_transformers=data_transformers, copy=False
+    )
+    # extract pipelines containing at least one fittable element
+    fittable_pipelines = [
+        transf_ for transf_ in data_pipelines.values() if transf_.fittable
+    ]
+    # extract pipelines where all the fittable transformer are fitted globally
+    global_fit_pipelines = [
+        transf_ for transf_ in fittable_pipelines if transf_._global_fit
+    ]
+
+    if n.retrain:
+        # if more than one series is passed and the pipelines are retrained, they cannot be global
         if (
-            model.output_chunk_length is not None
-            and n.forecast_horizon > model.output_chunk_length
+            n.show_warnings
+            and len(series) > 1
+            and len(global_fit_pipelines) > 0
+            and not n.apply_globally
+        ):
+            logger.warning(
+                "When `retrain=True` and multiple series are provided, the fittable `data_transformers` "
+                "are trained on each series independently (`global_fit=True` will be ignored)."
+            )
+        return
+
+    # must already be fitted without retraining
+    not_fitted_pipelines = [
+        name_
+        for name_, transf_ in data_pipelines.items()
+        if transf_.fittable and not transf_._fit_called
+    ]
+    if len(not_fitted_pipelines) > 0:
+        raise_log(
+            ValueError(
+                "All the fittable entries in `data_transformers` must already be fitted when "
+                f"`retrain=False`, the following entries were not fitted: {', '.join(not_fitted_pipelines)}."
+            ),
+        )
+    # extract the number of fitted params in each pipeline (already fitted)
+    fitted_params_pipelines = [
+        max(
+            len(t._fitted_params)
+            for t in pipeline
+            if isinstance(t, FittableDataTransformer)
+        )
+        for pipeline in data_pipelines.values()
+    ]
+
+    if len(series) > 1:
+        # if multiple series are passed and the pipelines are not all globally fitted, the number of series must
+        # match the number of fitted params in the pipelines
+        if len(global_fit_pipelines) != len(fittable_pipelines) and len(series) != max(
+            fitted_params_pipelines
         ):
             raise_log(
                 ValueError(
-                    "`predict_likelihood_parameters=True` is only supported for `forecast_horizon` smaller than or "
-                    "equal to model's `output_chunk_length`."
+                    f"When multiple series are provided, their number should match the number of "
+                    f"`TimeSeries` used to fit the data transformers `n={max(fitted_params_pipelines)}` "
+                    f"(only relevant for fittable transformers that use `global_fit=False`)."
                 ),
-                logger,
+            )
+    else:
+        # at least one pipeline was fitted on several series with `global_fit=False` but only
+        # one series was passed
+        if n.show_warnings and max(fitted_params_pipelines) > 1:
+            logger.warning(
+                "Provided only a single series, but at least one of the `data_transformers` "
+                "that use `global_fit=False` was fitted on multiple `TimeSeries`."
             )
 
-    if n.data_transformers is not None:
-        # check the type
-        if not isinstance(n.data_transformers, dict):
-            raise_log(
-                ValueError(
-                    "`data_transformers` should either `None` or a dictionary.", logger
-                )
-            )
-        # check the keys
-        supported_keys = {"series", "past_covariates", "future_covariates"}
-        incorrect_keys = set(n.data_transformers.keys()) - supported_keys
-        if len(incorrect_keys) > 0:
-            raise_log(
-                ValueError(
-                    f"The keys supported by `data_transformers` are {supported_keys}, received the following "
-                    f"incorrect keys: {incorrect_keys}."
-                ),
-                logger,
-            )
 
-        # convert to Pipelines
-        data_pipelines = _convert_data_transformers(
-            data_transformers=n.data_transformers, copy=False
+def _general_checks_training(model, series: Sequence[TimeSeries], n: SimpleNamespace):
+    retrain = n.retrain
+    val_length = n.val_length
+
+    # check retrain value
+    if not (
+        isinstance(retrain, bool)
+        or (isinstance(retrain, int) and retrain >= 0)
+        or (isinstance(retrain, Callable))
+    ):
+        raise_log(
+            ValueError(
+                "`retrain` must be either `bool`, positive `int` or a "
+                "`Callable` returning a `bool`."
+            ),
         )
-        # extract pipelines containing at least one fittable element
-        fittable_pipelines = [
-            transf_ for transf_ in data_pipelines.values() if transf_.fittable
-        ]
-        # extract pipelines where all the fittable transformer are fitted globally
-        global_fit_pipelines = [
-            transf_ for transf_ in fittable_pipelines if transf_._global_fit
-        ]
+    elif isinstance(retrain, Callable):
+        retrain_func = retrain
 
-        if n.retrain:
-            # if more than one series is passed and the pipelines are retrained, they cannot be global
-            if (
-                n.show_warnings
-                and len(series) > 1
-                and len(global_fit_pipelines) > 0
-                and not n.apply_globally
-            ):
-                logger.warning(
-                    "When `retrain=True` and multiple series are provided, the fittable `data_transformers` "
-                    "are trained on each series independently (`global_fit=True` will be ignored)."
-                )
-        else:
-            # must already be fitted without retraining
-            not_fitted_pipelines = [
-                name_
-                for name_, transf_ in data_pipelines.items()
-                if transf_.fittable and not transf_._fit_called
-            ]
-            if len(not_fitted_pipelines) > 0:
-                raise_log(
-                    ValueError(
-                        "All the fittable entries in `data_transformers` must already be fitted when "
-                        f"`retrain=False`, the following entries were not fitted: {', '.join(not_fitted_pipelines)}."
-                    ),
-                    logger,
-                )
-            # extract the number of fitted params in each pipeline (already fitted)
-            fitted_params_pipelines = [
-                max(
-                    len(t._fitted_params)
-                    for t in pipeline
-                    if isinstance(t, FittableDataTransformer)
-                )
-                for pipeline in data_pipelines.values()
-            ]
+        # check that the signature matches the documentation
+        expected_arguments = [
+            "counter",
+            "pred_time",
+            "train_series",
+            "past_covariates",
+            "future_covariates",
+        ]
+        passed_arguments = list(inspect.signature(retrain_func).parameters.keys())
+        if expected_arguments != passed_arguments:
+            raise_log(
+                ValueError(
+                    f"the Callable `retrain` must have a signature/arguments matching "
+                    f"the following positional arguments: `{expected_arguments}`."
+                ),
+            )
 
-            if len(series) > 1:
-                # if multiple series are passed and the pipelines are not all globally fitted, the number of series must
-                # match the number of fitted params in the pipelines
-                if len(global_fit_pipelines) != len(fittable_pipelines) and len(
-                    series
-                ) != max(fitted_params_pipelines):
-                    raise_log(
-                        ValueError(
-                            f"When multiple series are provided, their number should match the number of "
-                            f"`TimeSeries` used to fit the data transformers `n={max(fitted_params_pipelines)}` "
-                            f"(only relevant for fittable transformers that use `global_fit=False`)."
-                        ),
-                        logger,
-                    )
-            else:
-                # at least one pipeline was fitted on several series with `global_fit=False` but only
-                # one series was passed
-                if n.show_warnings and max(fitted_params_pipelines) > 1:
-                    logger.warning(
-                        "Provided only a single series, but at least one of the `data_transformers` "
-                        "that use `global_fit=False` was fitted on multiple `TimeSeries`."
-                    )
+        # passing dummy values to check the type of the output
+        result = retrain_func(
+            counter=0,
+            pred_time=get_single_series(series).end_time(),
+            train_series=get_single_series(series),
+            past_covariates=get_single_series(n.past_covariates),
+            future_covariates=get_single_series(n.future_covariates),
+        )
+        if not isinstance(result, bool):
+            raise_log(
+                ValueError(
+                    f"Return value of `retrain` must be bool, received {type(result)}"
+                ),
+            )
+
+    # model must have been fitted if not retraining
+    if not model._fit_called and retrain is False:
+        raise_log(
+            ValueError(
+                "The model has not been fitted yet, and `retrain` is ``False``. "
+                "Either call `fit()` before `historical_forecasts()`, or set `retrain` "
+                "to something different than ``False``."
+            ),
+        )
+    # only certain trained models support non-retrainable historical forecasts
+    if (isinstance(retrain, Callable) or int(retrain) != 1) and (
+        not model._supports_non_retrainable_historical_forecasts
+    ):
+        raise_log(
+            ValueError(
+                f"{model.__class__.__base__.__name__} does not support historical forecasting "
+                f"with `retrain` set to `False`. For now, this is only supported with "
+                f"GlobalForecastingModels such as TorchForecastingModels. For more information, "
+                f"read the documentation for `retrain` in `historical_forecasts()`"
+            ),
+        )
+
+    # check training length
+    if n.train_length is not None and n.train_length <= 0:
+        raise_log(
+            ValueError("`train_length` must be `None` or a positive integer."),
+        )
+    elif n.train_length is not None:
+        if retrain is False:
+            raise_log(
+                ValueError("Cannot use `train_length` with `retrain=False`."),
+            )
+        elif n.train_length < model.min_train_series_length:
+            raise_log(
+                ValueError(
+                    "`train_length` is too small for the training requirements of this model. "
+                    f"Must be `>={model.min_train_series_length}`."
+                ),
+            )
+
+    # check val length
+    if val_length < 0:
+        raise_log(
+            ValueError("`val_length` must be a non-negative integer."),
+        )
+    elif val_length >= 1:
+        if retrain is False:
+            raise_log(
+                ValueError("Cannot use `val_length` with `retrain=False`."),
+            )
+        elif val_length < model._target_window_lengths[1]:
+            # val length must cover at least one full prediction output (e.g. output window)
+            # the first input window is taken from the end of training series to use all available data
+            raise_log(
+                ValueError(
+                    f"`val_length` is too small for the validation requirements of this model. "
+                    f"Must be `>={model._target_window_lengths[1]}`."
+                )
+            )
 
     if (
         n.sample_weight is not None
@@ -359,135 +486,7 @@ def _historical_forecasts_general_checks(
                         f"`sample_weight` at series index {idx} must contain at least all times "
                         f"of the corresponding target `series`."
                     ),
-                    logger=logger,
                 )
-
-    # check retrain value
-    if not (
-        isinstance(n.retrain, bool)
-        or (isinstance(n.retrain, int) and n.retrain >= 0)
-        or (isinstance(n.retrain, Callable))
-    ):
-        raise_log(
-            ValueError(
-                "`retrain` must be either `bool`, positive `int` or a "
-                "`Callable` returning a `bool`."
-            ),
-            logger,
-        )
-    elif isinstance(n.retrain, Callable):
-        retrain_func = n.retrain
-
-        # check that the signature matches the documentation
-        expected_arguments = [
-            "counter",
-            "pred_time",
-            "train_series",
-            "past_covariates",
-            "future_covariates",
-        ]
-        passed_arguments = list(inspect.signature(retrain_func).parameters.keys())
-        if expected_arguments != passed_arguments:
-            raise_log(
-                ValueError(
-                    f"the Callable `retrain` must have a signature/arguments matching "
-                    f"the following positional arguments: `{expected_arguments}`."
-                ),
-                logger,
-            )
-
-        # passing dummy values to check the type of the output
-        result = retrain_func(
-            counter=0,
-            pred_time=get_single_series(series).time_index[-1],
-            train_series=get_single_series(series),
-            past_covariates=get_single_series(n.past_covariates),
-            future_covariates=get_single_series(n.future_covariates),
-        )
-        if not isinstance(result, bool):
-            raise_log(
-                ValueError(
-                    f"Return value of `retrain` must be bool, received {type(result)}"
-                ),
-                logger,
-            )
-
-    # model must have been fitted if not retraining
-    if not model._fit_called and n.retrain is False:
-        raise_log(
-            ValueError(
-                "The model has not been fitted yet, and `retrain` is ``False``. "
-                "Either call `fit()` before `historical_forecasts()`, or set `retrain` "
-                "to something different than ``False``."
-            ),
-            logger,
-        )
-    # only certain trained models support non-retrainable historical forecasts
-    if (isinstance(n.retrain, Callable) or int(n.retrain) != 1) and (
-        not model._supports_non_retrainable_historical_forecasts
-    ):
-        raise_log(
-            ValueError(
-                f"{model.__class__.__base__.__name__} does not support historical forecasting "
-                f"with `retrain` set to `False`. For now, this is only supported with "
-                f"GlobalForecastingModels such as TorchForecastingModels. For more information, "
-                f"read the documentation for `retrain` in `historical_forecasts()`"
-            ),
-            logger,
-        )
-
-    # check training length
-    if n.train_length is not None and n.train_length <= 0:
-        raise_log(
-            ValueError("`train_length` must be `None` or a positive integer."),
-            logger,
-        )
-    elif n.train_length is not None:
-        if n.retrain is False:
-            raise_log(
-                ValueError("Cannot use `train_length` with `retrain=False`."),
-                logger,
-            )
-        elif n.train_length < model.min_train_series_length:
-            raise_log(
-                ValueError(
-                    "`train_length` is too small for the training requirements of this model. "
-                    f"Must be `>={model.min_train_series_length}`."
-                ),
-                logger,
-            )
-
-    # check val length
-    if n.val_length < 0:
-        raise_log(
-            ValueError("`val_length` must be a non-negative integer."),
-            logger,
-        )
-    elif n.val_length >= 1:
-        if n.retrain is False:
-            raise_log(
-                ValueError("Cannot use `val_length` with `retrain=False`."),
-                logger,
-            )
-        elif n.val_length < model._target_window_lengths[1]:
-            # val length must cover at least one full prediction output (e.g. output window)
-            # the first input window is taken from the end of training series to use all available data
-            raise_log(
-                ValueError(
-                    f"`val_length` is too small for the validation requirements of this model. "
-                    f"Must be `>={model._target_window_lengths[1]}`."
-                )
-            )
-
-    # check fit and predict kwargs
-    _ = _historical_forecasts_sanitize_kwargs(
-        model=model,
-        fit_kwargs=n.fit_kwargs,
-        predict_kwargs=n.predict_kwargs,
-        retrain=n.retrain is not False and n.retrain != 0,
-        val_length=n.val_length,
-        show_warnings=n.show_warnings,
-    )
 
 
 def _historical_forecasts_sanitize_kwargs(
@@ -517,7 +516,6 @@ def _historical_forecasts_sanitize_kwargs(
                 ValueError(
                     "`val_length` must be `0` when `val_series` is provided in `fit_kwargs`."
                 ),
-                logger,
             )
     elif show_warnings:
         logger.warning(
@@ -553,7 +551,6 @@ def _historical_forecasts_check_kwargs(
                 f"The following parameters cannot be passed in `{name_kwargs}`: {invalid_args}. "
                 f"Make sure to pass them explicitly to the function/method."
             ),
-            logger,
         )
     return dict_kwargs
 
@@ -561,7 +558,7 @@ def _historical_forecasts_check_kwargs(
 def _get_start_index(
     series: TimeSeries,
     series_idx: int,
-    start: pd.Timestamp | int | float,
+    start: pd.Timestamp | int | float | Literal["end"],
     start_format: Literal["value", "position"],
     stride: int,
     historical_forecasts_time_index: ExtendedTimeIndex | None = None,
@@ -591,7 +588,7 @@ def _get_start_index(
     historical_forecasts_time_index
         Optionally, the historical forecast index (or the boundaries only) to use as the reference index.
     """
-    series_start, series_end = series._time_index[0], series._time_index[-1]
+    series_start, series_end = series.start_time(), series.end_time()
     has_dti = series._has_datetime_index
     # find start position relative to the series start time
     if isinstance(start, float):
@@ -706,7 +703,6 @@ def _check_start(
             f"ahead of `start` (first inferred start is `{start_new}`, but last {ref_msg}time index "
             f"is `{ref_end}`."
         ),
-        logger=logger,
     )
 
 
@@ -717,7 +713,7 @@ def _get_historical_forecasts_setup(
     future_covariates: TimeSeries | None,
     series_idx: int,
     forecast_horizon: int,
-    start: pd.Timestamp | int | float,
+    start: pd.Timestamp | int | float | Literal["end"] | None,
     start_format: Literal["value", "position"],
     stride: int,
     overlap_end: bool,
@@ -732,7 +728,10 @@ def _get_historical_forecasts_setup(
     int,
 ]:
     # get the first and last historical forecast start points for either (re)training or (zero shot) prediction
-    # mode
+    # mode; models that don't require training (e.g. global naive models, foundation models without fine-tuning)
+    # use prediction-mode extreme lags even when retrain is set
+    is_training = bool(retrain) and model._requires_training
+    overlap_end = True if start == "end" else overlap_end
     historical_forecasts_time_index = _get_maximum_historical_forecastable_time_index(
         model=model,
         series=series,
@@ -740,21 +739,20 @@ def _get_historical_forecasts_setup(
         overlap_end=overlap_end,
         past_covariates=past_covariates,
         future_covariates=future_covariates,
-        is_training=bool(retrain),
+        is_training=is_training,
     )
 
     if historical_forecasts_time_index is None:
         raise_log(
             ValueError(
-                f"Cannot build any dataset {'to train the model' if retrain else 'for prediction'} "
+                f"Cannot build any dataset {'to train the model' if is_training else 'for prediction'} "
                 f"with the provided `series` and `*_covariates` at series index: {series_idx}. "
-                f"The minimum {'training' if retrain else 'prediction'} input time index requirements "
+                f"The minimum {'training' if is_training else 'prediction'} input time index requirements "
                 f"were not met. Please check the time index of `series` and `*_covariates`."
             ),
-            logger,
         )
 
-    if retrain:
+    if is_training:
         # trainable time indexes (considering lags and available covariates)
         # We need the first value timestamp to be used in order to properly shift the series
         # Look at both past and future, since the target lags must be taken in consideration
@@ -767,7 +765,7 @@ def _get_historical_forecasts_setup(
         # we are only predicting: start of the series does not have to change
         min_timestamp_series = series.start_time()
 
-    # based on `retrain`, historical_forecasts_time_index is based either on train or predict
+    # based on `is_training`, historical_forecasts_time_index is based either on train or predict
     (
         historical_forecasts_time_index,
         train_length,
@@ -777,13 +775,13 @@ def _get_historical_forecasts_setup(
         historical_forecasts_time_index=historical_forecasts_time_index,
         series=series,
         series_idx=series_idx,
-        retrain=retrain,
+        is_training=is_training,
         train_length=train_length,
         val_length=val_length,
         show_warnings=show_warnings,
     )
 
-    # based on `forecast_horizon` and `overlap_end`, historical_forecasts_time_index is shortened
+    # based on `start`, historical_forecasts_time_index is shortened
     historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
         series=series,
         series_idx=series_idx,
@@ -1006,7 +1004,7 @@ def _adjust_historical_forecasts_time_index(
     series: TimeSeries,
     series_idx: int,
     historical_forecasts_time_index: ExtendedTimeIndex,
-    start: pd.Timestamp | float | int | None,
+    start: pd.Timestamp | float | int | Literal["end"] | None,
     start_format: Literal["position", "value"],
     stride: int,
     show_warnings: bool,
@@ -1014,44 +1012,62 @@ def _adjust_historical_forecasts_time_index(
     """
     Shrink the beginning and end of the historical forecasts time index based on the value of `start`.
     """
-    # retrieve actual start
-    # when applicable, shift the start of the forecastable index based on `start`
-    if start is not None:
-        # find valid start position relative to the hfc start time, otherwise raise an error
-        start_idx, start_idx_orig = _get_start_index(
-            series=series,
-            series_idx=series_idx,
-            start=start,
-            start_format=start_format,
-            stride=stride,
-            historical_forecasts_time_index=historical_forecasts_time_index,
-        )
-        start_time = series._time_index[start_idx]
+    if start is None:
+        return historical_forecasts_time_index
 
-        if start_idx != start_idx_orig and show_warnings:
-            if start_idx_orig >= 0:
-                start_time_orig = series._time_index[start_idx_orig]
-            else:
-                start_time_orig = series.start_time() + start_idx_orig * series.freq
-
-            if start_format == "position" or (
-                not isinstance(start, pd.Timestamp) and series._has_datetime_index
-            ):
-                start_value_msg = (
-                    f"position `{start}` corresponding to time `{start_time_orig}`"
-                )
-            else:
-                start_value_msg = f"time `{start_time_orig}`"
-            logger.warning(
-                f"`start` {start_value_msg} is before the first predictable/trainable historical "
-                f"forecasting point for series at index: {series_idx}. Using the first historical forecasting "
-                f"point `{start_time}` that lies a round-multiple of `stride={stride}` "
-                f"ahead of `start`. To hide these warnings, set `show_warnings=False`."
+    if start == "end":
+        desired_pred_time = series.end_time() + series.freq
+        if (
+            desired_pred_time < historical_forecasts_time_index[0]
+            or desired_pred_time > historical_forecasts_time_index[1]
+        ):
+            raise_log(
+                ValueError(
+                    f"Cannot generate a forecast with `start='end'` for series at index: {series_idx}. "
+                    f"The prediction start point one step after the series end "
+                    f"(`{desired_pred_time}`) is outside the forecastable time range "
+                    f"`({historical_forecasts_time_index[0]}, {historical_forecasts_time_index[1]})`. "
+                    f"Please check that the `series` and `*_covariates` are long enough."
+                ),
             )
-        historical_forecasts_time_index = (
-            max(historical_forecasts_time_index[0], start_time),
-            historical_forecasts_time_index[1],
+        return (desired_pred_time, desired_pred_time)
+
+    # retrieve actual start
+    # find valid start position relative to the hfc start time, otherwise raise an error
+    start_idx, start_idx_orig = _get_start_index(
+        series=series,
+        series_idx=series_idx,
+        start=start,
+        start_format=start_format,
+        stride=stride,
+        historical_forecasts_time_index=historical_forecasts_time_index,
+    )
+    start_time = series._time_index[start_idx]
+
+    if start_idx != start_idx_orig and show_warnings:
+        if start_idx_orig >= 0:
+            start_time_orig = series._time_index[start_idx_orig]
+        else:
+            start_time_orig = series.start_time() + start_idx_orig * series.freq
+
+        if start_format == "position" or (
+            not isinstance(start, pd.Timestamp) and series._has_datetime_index
+        ):
+            start_value_msg = (
+                f"position `{start}` corresponding to time `{start_time_orig}`"
+            )
+        else:
+            start_value_msg = f"time `{start_time_orig}`"
+        logger.warning(
+            f"`start` {start_value_msg} is before the first predictable/trainable historical "
+            f"forecasting point for series at index: {series_idx}. Using the first historical forecasting "
+            f"point `{start_time}` that lies a round-multiple of `stride={stride}` "
+            f"ahead of `start`. To hide these warnings, set `show_warnings=False`."
         )
+    historical_forecasts_time_index = (
+        max(historical_forecasts_time_index[0], start_time),
+        historical_forecasts_time_index[1],
+    )
     return historical_forecasts_time_index
 
 
@@ -1060,20 +1076,20 @@ def _adjust_historical_forecasts_time_index_training(
     historical_forecasts_time_index: ExtendedTimeIndex,
     series: TimeSeries,
     series_idx: int,
-    retrain: bool | int | Callable[..., bool],
+    is_training: bool,
     train_length: int | None,
     val_length: int,
     show_warnings: bool,
 ) -> tuple[ExtendedTimeIndex, int | None, int]:
     """
-    Shrink the beginning of the historical forecasts time index based on the value of `retrain`, `train_length`
+    Shrink the beginning of the historical forecasts time index based on the value of `is_training`, `train_length`
     and `val_length`.
     """
-    # if not retraining and model is already fitted, ignore train_length and val_length
+    # if not training and model is already fitted, ignore train_length and val_length
     effective_train_length = None
     effective_val_length = 0
 
-    if not (retrain or (not model._fit_called)):
+    if not (is_training or (not model._fit_called)):
         return (
             historical_forecasts_time_index,
             effective_train_length,
@@ -1159,7 +1175,7 @@ def _get_historical_forecast_boundaries(
     series_idx: int,
     past_covariates: TimeSeries | None,
     future_covariates: TimeSeries | None,
-    start: pd.Timestamp | float | int | None,
+    start: pd.Timestamp | float | int | Literal["end"] | None,
     start_format: Literal["position", "value"],
     forecast_horizon: int,
     overlap_end: bool,
@@ -1295,7 +1311,6 @@ def _process_historical_forecast_input(
     if not model._fit_called:
         raise_log(
             ValueError("Model has not been fit yet."),
-            logger,
         )
 
     # manage covariates, usually handled by SKLearnModel.predict()
@@ -1343,7 +1358,6 @@ def _process_predict_start_points_bounds(
                 "`bounds` must be an array like with shape `(n target series, 2)`, "
                 "with the start and end bounds of each series"
             ),
-            logger=logger,
         )
     # we might have some steps that are too long considering stride
     steps_too_long = (bounds[:, 1] - bounds[:, 0]) % stride
@@ -1502,7 +1516,6 @@ def _slice_intersect_series(
                     f"The slice intersection of the `{name}` is empty. "
                     f"Cannot apply historical forecasts globally."
                 ),
-                logger=logger,
             )
     return series, past_covariates, future_covariates, sample_weight
 
@@ -1534,7 +1547,7 @@ def _process_historical_forecast_for_backtest(
     | Sequence[TimeSeries]
     | Sequence[Sequence[TimeSeries]],
     last_points_only: bool,
-):
+) -> tuple[Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """Checks that the `historical_forecasts` have the correct format based on the input `series` and
     `last_points_only`. If all checks have passed, it converts `series` and `historical_forecasts` format into a
     multiple series case with `last_points_only=False`.
@@ -1562,7 +1575,6 @@ def _process_historical_forecast_for_backtest(
                 f"{forecast_seq_type}. Make sure to pass the same `last_points_only` "
                 f"value that was used to generate the historical forecasts."
             ),
-            logger=logger,
         )
 
     # we must wrap each fc in a list if `last_points_only=True`
@@ -1586,7 +1598,6 @@ def _process_historical_forecast_for_backtest(
             error_msg += f"`historical_forecasts` of type {expected_seq_type} with length n={len(series)}."
         raise_log(
             ValueError(error_msg),
-            logger=logger,
         )
     return series, historical_forecasts
 
@@ -1600,19 +1611,28 @@ def _extend_series_for_overlap_end(
 
     Assumes the input meets the multiple `series` case with `last_points_only=False` (e.g. the output of
     `darts.utils.historical_forecasts.utils_process_historical_forecast_for_backtest()`).
+
+    Notes
+    -----
+    Most forecasts do not end after their target series. We therefore compare end times first and only call the
+    more expensive `n_steps_between()` / `append_values()` when an extension is needed. If nothing needs extending,
+    the original `series` sequence is returned as-is.
     """
-    series_extended = []
-    append_vals = [np.nan] * series[0].n_components
-    for series_, hfcs_ in zip(series, historical_forecasts):
-        # find number of missing target time steps based on the last forecast
-        missing_steps = n_steps_between(
-            hfcs_[-1].end_time(), series[0].end_time(), freq=series[0].freq
+    series_extended = None
+    for i, (series_, hfcs_) in enumerate(zip(series, historical_forecasts)):
+        fc_end = hfcs_[-1].end_time()
+        series_end = series_.end_time()
+        # cheap rejection of the common case before n_steps_between()
+        if fc_end <= series_end:
+            if series_extended is not None:
+                series_extended.append(series_)
+            continue
+
+        missing_steps = n_steps_between(fc_end, series_end, freq=series_.freq)
+        if series_extended is None:
+            # defer list allocation until at least one series must be extended
+            series_extended = list(series[:i])
+        series_extended.append(
+            series_.append_values(np.full((missing_steps,) + series_.shape[1:], np.nan))
         )
-        # extend the target if it is too short
-        if missing_steps > 0:
-            series_extended.append(
-                series_.append_values(np.array([append_vals] * missing_steps))
-            )
-        else:
-            series_extended.append(series_)
-    return series_extended
+    return series if series_extended is None else series_extended

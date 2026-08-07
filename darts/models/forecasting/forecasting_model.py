@@ -50,7 +50,7 @@ from darts import TimeSeries, metrics
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import BaseDataTransformer
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.metrics.utils import METRIC_OUTPUT_TYPE, METRIC_TYPE
 from darts.typing import TimeIndex
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
@@ -162,12 +162,26 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 NotImplementedError(
                     "Model subclass must pass the `add_encoders` parameter to base class."
                 ),
-                logger=logger,
             )
 
         # by default models do not use encoders
         self.add_encoders = kwargs["add_encoders"]
         self.encoders = self.initialize_encoders(default=True)
+
+        # optionally, override the minimum required training series length. Only
+        # relevant for (typically third-party) local models whose exact minimum
+        # length Darts cannot infer and therefore sets conservatively.
+        min_train_length = kwargs.get("min_train_length", None)
+        if min_train_length is not None and (
+            not isinstance(min_train_length, int) or min_train_length < 1
+        ):
+            raise_log(
+                ValueError(
+                    "`min_train_length` must be a strictly positive integer or `None`, "
+                    f"received `{min_train_length}`."
+                )
+            )
+        self._min_train_length = min_train_length
 
     @abstractmethod
     def fit(
@@ -190,7 +204,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if not isinstance(series, TimeSeries):
             raise_log(
                 ValueError("Train `series` must be a single `TimeSeries`."),
-                logger=logger,
             )
         if not len(series) >= self.min_train_series_length:
             raise_log(
@@ -198,7 +211,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     f"Train series only contains {len(series)} elements"
                     f" but {str(self)} model requires at least {self.min_train_series_length} entries"
                 ),
-                logger=logger,
             )
         self.training_series = series
         self._fit_called = True
@@ -385,7 +397,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "For global models, if predict() is called without specifying a series, "
                     "the model must have been fit on a single training series."
                 ),
-                logger,
             )
         is_autoregression = (
             False
@@ -398,7 +409,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "Cannot perform auto-regression `(n > output_chunk_length)` with a model that uses a "
                     "shifted output chunk `(output_chunk_shift > 0)`."
                 ),
-                logger=logger,
             )
 
         if not self.supports_probabilistic_prediction and num_samples > 1:
@@ -406,7 +416,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ValueError(
                     "`num_samples > 1` is only supported for probabilistic models."
                 ),
-                logger,
             )
 
     def _fit_wrapper(
@@ -436,7 +445,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             elif series_ is not None:
                 raise_log(
                     ValueError(f"Model cannot be fit/trained with `{series_name}`."),
-                    logger,
                 )
         return self.fit(series=series, **add_kwargs, **kwargs)
 
@@ -469,7 +477,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         f"does not support `{name}` in general, or because it was fit/trained "
                         f"without using `{name}`."
                     ),
-                    logger,
                 )
 
         if self.supports_likelihood_parameter_prediction:
@@ -482,6 +489,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         The minimum required length for the training series.
         """
         return sum(self._target_window_lengths) + (self.min_train_samples - 1)
+
+    def _min_train_input_length(self, default: int) -> int:
+        """Input target-window length, honoring a user-provided ``min_train_length``
+        override when one was set at model creation (else ``default``)."""
+        return default if self._min_train_length is None else self._min_train_length
 
     @property
     @abstractmethod
@@ -497,6 +509,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         The input and output target series window lengths consumed (input + output for training, input for prediction)
         or generated (output for prediction) by the model.
         """
+
+    @property
+    def _requires_training(self):
+        """Whether the model is trained when calling a `fit*` method."""
+        return True
 
     @property
     @abstractmethod
@@ -646,20 +663,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             self, series, kwargs, is_conformal=is_conformal
         )
 
-    def _get_last_prediction_time(
-        self,
-        series,
-        forecast_horizon,
-        overlap_end,
-        latest_possible_prediction_start,
-    ):
-        # if `overlap_end` is True, we can use the pre-computed latest possible first prediction point
-        if overlap_end:
-            return latest_possible_prediction_start
-
-        # otherwise, the upper bound for the last time step of the last prediction is the end of the target series
-        return series.time_index[-forecast_horizon]
-
     def _check_optimizable_historical_forecasts(
         self,
         retrain: bool | int | Callable[..., bool],
@@ -677,7 +680,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | float | int | None = None,
+        start: pd.Timestamp | float | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -760,12 +763,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             (``output_chunk_length + output_chunk_shift`` for global models and ``0`` for local models).
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
-            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            ``float``, ``int``, ``pandas.Timestamp``, ``'end'``, and ``None``.
             If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
             If an ``int``, it is either the index position of the first prediction point for `series` with a
             `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
             the index position with `start_format="position"`.
             If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If the string ``'end'``, generates a single forecast per series starting one step after the end of each
+            series (future-only forecasting). Forecasts will extend beyond the series end regardless ``overlap_end``.
             If ``None``, the first prediction point will automatically be set to:
 
             - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
@@ -781,7 +786,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
               (default behavior with ``None``) and start at the first trainable/predictable point.
         start_format
-            Defines the `start` format.
+            Defines the `start` format. Ignored when ``start='end'``.
             If set to ``'position'``, `start` corresponds to the index position of the first predicted point and can
             range from `(-len(series), len(series) - 1)`.
             If set to ``'value'``, `start` corresponds to the index value/label of the first predicted point. Will raise
@@ -1110,7 +1115,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                                 f"`historical_forecasts()`, use a different `retrain` value or modify the function "
                                 f"to return `True` at or before this timestamp."
                             ),
-                            logger,
                         )
                     _counter_train += 1
 
@@ -1259,7 +1263,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | float | int | None = None,
+        start: pd.Timestamp | float | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -1331,12 +1335,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             (``output_chunk_length + output_chunk_shift`` for global models and ``0`` for local models).
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
-            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            ``float``, ``int``, ``pandas.Timestamp``, ``'end'``, and ``None``.
             If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
             If an ``int``, it is either the index position of the first prediction point for `series` with a
             `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
             the index position with `start_format="position"`.
             If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If the string ``'end'``, generates a single forecast per series starting one step after the end of each
+            series (future-only forecasting). Forecasts will extend beyond the series end regardless ``overlap_end``.
             If ``None``, the first prediction point will automatically be set to:
 
             - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
@@ -1355,7 +1361,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
               also shifted by `output_chunk_shift` points into the future.
 
         start_format
-            Defines the `start` format.
+            Defines the `start` format. Ignored when ``start='end'``.
             If set to ``'position'``, `start` corresponds to the index position of the first predicted point and can
             range from `(-len(series), len(series) - 1)`.
             If set to ``'value'``, `start` corresponds to the index value/label of the first predicted point. Will raise
@@ -1490,11 +1496,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     f"For `metric_kwargs`, either give a list of dicts of length `{len(metric)}` "
                     f"with metric-specific kwargs, or a single dict that is applied to all metrics."
                 ),
-                logger=logger,
             )
         if len(metric_kwargs) != len(metric):
             metric_kwargs = [metric_kwargs[0] for _ in range(len(metric))]
 
+        hfc_precomputed = historical_forecasts is not None
         historical_forecasts = historical_forecasts or self.historical_forecasts(
             series=series,
             past_covariates=past_covariates,
@@ -1528,6 +1534,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             historical_forecasts=historical_forecasts,
             last_points_only=last_points_only,
         )
+
+        # when pre-computed historical forecasts are supplied, extend each series with NaN
+        # where any forecast goes beyond the series end, so that per-time-step metrics
+        # produce arrays of consistent shape across all forecasts
+        if hfc_precomputed or overlap_end:
+            series = _extend_series_for_overlap_end(
+                series=series, historical_forecasts=historical_forecasts
+            )
 
         # we have multiple forecasts per series: rearrange forecasts to call each metric only once;
         # flatten historical forecasts, get matching target series index, remember cumulative target lengths
@@ -1635,7 +1649,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         future_covariates: TimeSeries | None = None,
         forecast_horizon: int | None = None,
         stride: int = 1,
-        start: pd.Timestamp | float | int | None = None,
+        start: pd.Timestamp | float | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         last_points_only: bool = False,
         show_warnings: bool = True,
@@ -1802,15 +1816,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             along with a dictionary containing these best hyper-parameters,
             and metric score for the best hyper-parameters.
         """
-        raise_if_not(
-            (forecast_horizon is not None)
-            + (val_series is not None)
-            + use_fitted_values
-            == 1,
-            "Please pass exactly one of the arguments 'forecast_horizon', "
-            "'val_series' or 'use_fitted_values'.",
-            logger,
-        )
+        if (forecast_horizon is not None) + (
+            val_series is not None
+        ) + use_fitted_values != 1:
+            raise_log(
+                ValueError(
+                    "Please pass exactly one of the arguments 'forecast_horizon', "
+                    "'val_series' or 'use_fitted_values'."
+                ),
+            )
 
         if not isinstance(parameters, dict):
             raise_log(
@@ -1826,25 +1840,27 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ValueError(
                     "Every value in the `parameters` dictionary should be a list or a np.ndarray."
                 ),
-                logger,
             )
 
         if use_fitted_values:
-            raise_if_not(
-                hasattr(
-                    model_class(**{k: v[0] for k, v in parameters.items()}),
-                    "fitted_values",
-                ),
-                "The model must have a fitted_values attribute to compare with the train TimeSeries (local models)",
-                logger,
-            )
+            if not hasattr(
+                model_class(**{k: v[0] for k, v in parameters.items()}),
+                "fitted_values",
+            ):
+                raise_log(
+                    ValueError(
+                        "The model must have a fitted_values attribute to compare with the train "
+                        "TimeSeries (local models)."
+                    ),
+                )
 
         elif val_series is not None:
-            raise_if_not(
-                series.width == val_series.width,
-                "Training and validation series require the same number of components.",
-                logger,
-            )
+            if series.width != val_series.width:
+                raise_log(
+                    ValueError(
+                        "Training and validation series require the same number of components."
+                    ),
+                )
 
         data_transformers = _convert_data_transformers(
             data_transformers=data_transformers, copy=True
@@ -2014,7 +2030,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | float | int | None = None,
+        start: pd.Timestamp | float | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -2095,12 +2111,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             (``output_chunk_length + output_chunk_shift`` for global models and ``0`` for local models).
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
-            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            ``float``, ``int``, ``pandas.Timestamp``, ``'end'``, and ``None``.
             If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
             If an ``int``, it is either the index position of the first prediction point for `series` with a
             `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
             the index position with `start_format="position"`.
             If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If the string ``'end'``, generates a single forecast per series starting one step after the end of each
+            series (future-only forecasting). Forecasts will extend beyond the series end regardless ``overlap_end``.
             If ``None``, the first prediction point will automatically be set to:
 
             - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
@@ -2262,12 +2280,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             last_points_only=last_points_only,
         )
 
-        # optionally, add nans to end of series to get residuals of same shape for each forecast
-        if overlap_end:
-            series = _extend_series_for_overlap_end(
-                series=series, historical_forecasts=historical_forecasts
-            )
-
         residuals = self.backtest(
             series=series,
             historical_forecasts=historical_forecasts,
@@ -2292,7 +2304,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     f"custom metric. The following exception was raised: "
                     f"{type(err).__name__}('{err}')"
                 ),
-                logger=logger,
             )
 
         # process residuals
@@ -2408,12 +2419,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             A tuple of (past covariates, future covariates). Each covariate contains the original as well as the
             encoded covariates.
         """
-        raise_if(
-            self.encoders is None or not self.encoders.encoding_available,
-            "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "
-            "model with `model.fit()` before.",
-            logger=logger,
-        )
+        if self.encoders is None or not self.encoders.encoding_available:
+            raise_log(
+                ValueError(
+                    "Encodings are not available. Consider adding parameter `add_encoders` at model creation "
+                    "and fitting the model with `model.fit()` before."
+                ),
+            )
         return self.encoders.encode_train(
             target=series,
             past_covariates=past_covariates,
@@ -2451,12 +2463,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             A tuple of (past covariates, future covariates). Each covariate contains the original as well as the
             encoded covariates.
         """
-        raise_if(
-            self.encoders is None or not self.encoders.encoding_available,
-            "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "
-            "model with `model.fit()` before.",
-            logger=logger,
-        )
+        if self.encoders is None or not self.encoders.encoding_available:
+            raise_log(
+                ValueError(
+                    "Encodings are not available. Consider adding parameter `add_encoders` at model creation "
+                    "and fitting the model with `model.fit()` before."
+                ),
+            )
         return self.encoders.encode_inference(
             n=n,
             target=series,
@@ -2495,12 +2508,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             A tuple of (past covariates, future covariates). Each covariate contains the original as well as the
             encoded covariates.
         """
-        raise_if(
-            self.encoders is None or not self.encoders.encoding_available,
-            "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "
-            "model with `model.fit()` before.",
-            logger=logger,
-        )
+        if self.encoders is None or not self.encoders.encoding_available:
+            raise_log(
+                ValueError(
+                    "Encodings are not available. Consider adding parameter `add_encoders` at model creation "
+                    "and fitting the model with `model.fit()` before."
+                ),
+            )
         return self.encoders.encode_train_inference(
             n=n,
             target=series,
@@ -2597,7 +2611,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         f"{'' if len(val_series) == 1 else 'at sequence/list index `' + str(idx) + '` '}"
                         f"do not match."
                     ),
-                    logger=logger,
                 )
         return val_series, val_past_covariates, val_future_covariates
 
@@ -2625,18 +2638,22 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         supplied, select a fraction"""
 
         if isinstance(n_random_samples, int):
-            raise_if_not(
-                (n_random_samples > 0) and (n_random_samples <= len(params)),
-                "If supplied as an integer, n_random_samples must be greater than 0 and less"
-                "than or equal to the size of the cartesian product of the hyperparameters.",
-            )
+            if not ((n_random_samples > 0) and (n_random_samples <= len(params))):
+                raise_log(
+                    ValueError(
+                        "If supplied as an integer, n_random_samples must be greater than 0 and less"
+                        "than or equal to the size of the cartesian product of the hyperparameters."
+                    ),
+                )
             return sample(params, n_random_samples)
 
         if isinstance(n_random_samples, float):
-            raise_if_not(
-                (n_random_samples > 0.0) and (n_random_samples <= 1.0),
-                "If supplied as a float, n_random_samples must be greater than 0.0 and less than 1.0.",
-            )
+            if not ((n_random_samples > 0.0) and (n_random_samples <= 1.0)):
+                raise_log(
+                    ValueError(
+                        "If supplied as a float, n_random_samples must be greater than 0.0 and less than 1.0."
+                    ),
+                )
             return sample(params, int(n_random_samples * len(params)))
 
     def _extract_model_creation_params(self):
@@ -2719,7 +2736,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "Argument 'path' has to be either 'str' or 'PathLike' (for a filepath) "
                     f"or 'BufferedWriter' (for an already opened file), but was '{path.__class__}'."
                 ),
-                logger=logger,
             )
 
     @staticmethod
@@ -2734,11 +2750,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
 
         if isinstance(path, str | os.PathLike):
-            raise_if_not(
-                os.path.exists(path),
-                f"The file {path} doesn't exist",
-                logger,
-            )
+            if not os.path.exists(path):
+                raise_log(ValueError(f"The file {path} doesn't exist."))
 
             with open(path, "rb") as handle:
                 model = pickle.load(file=handle)
@@ -2750,7 +2763,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "Argument 'path' has to be either 'str' or 'PathLike' (for a filepath) "
                     f"or 'BufferedReader' (for an already opened file), but was '{path.__class__}'."
                 ),
-                logger=logger,
             )
 
         return model
@@ -2761,7 +2773,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ValueError(
                     f"Model `{self.__class__.__name__}` only supports univariate TimeSeries instances"
                 ),
-                logger=logger,
             )
 
     def _assert_multivariate(self, series: TimeSeries):
@@ -2770,7 +2781,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ValueError(
                     f"Model `{self.__class__.__name__}` only supports multivariate TimeSeries instances"
                 ),
-                logger=logger,
             )
 
     def __repr__(self):
@@ -2837,7 +2847,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         "`darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer` "
                         "or set `use_static_covariates=False` at model creation to ignore static covariates."
                     ),
-                    logger,
                 )
 
     def _optimized_historical_forecasts(
@@ -2846,7 +2855,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates: Sequence[TimeSeries] | None = None,
         future_covariates: Sequence[TimeSeries] | None = None,
         num_samples: int = 1,
-        start: pd.Timestamp | float | int | None = None,
+        start: pd.Timestamp | float | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
         stride: int = 1,
@@ -2877,7 +2886,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "`predict_likelihood_parameters=True` is only supported for probabilistic models fitted with "
                     "a likelihood."
                 ),
-                logger,
             )
         if num_samples != 1:
             raise_log(
@@ -2885,7 +2893,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     f"`predict_likelihood_parameters=True` is only supported for `num_samples=1`, "
                     f"received {num_samples}."
                 ),
-                logger,
             )
         if output_chunk_length is not None and n > output_chunk_length:
             raise_log(
@@ -2893,7 +2900,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "`predict_likelihood_parameters=True` is only supported for `n` smaller than or equal to "
                     "`output_chunk_length`."
                 ),
-                logger,
             )
 
 
@@ -2908,8 +2914,10 @@ class LocalForecastingModel(ForecastingModel, ABC):
     All implementations must implement the `fit()` and `predict()` methods.
     """
 
-    def __init__(self, add_encoders: dict | None = None):
-        super().__init__(add_encoders=add_encoders)
+    def __init__(
+        self, add_encoders: dict | None = None, min_train_length: int | None = None
+    ):
+        super().__init__(add_encoders=add_encoders, min_train_length=min_train_length)
 
     @property
     def _model_encoder_settings(
@@ -2965,7 +2973,7 @@ class LocalForecastingModel(ForecastingModel, ABC):
     @property
     def _target_window_lengths(self) -> tuple[int, int]:
         # local models do not work with samples, so the length of the training sample is not tied to lags
-        return 3, self.output_chunk_length or 0
+        return self._min_train_input_length(3), self.output_chunk_length or 0
 
 
 class GlobalForecastingModel(ForecastingModel, ABC):
@@ -3275,7 +3283,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                         "The provided `future_covariates` series must contain at least the same time steps/"
                         "indices as the target `series`."
                     ),
-                    logger=logger,
                 )
             self.future_covariate_series = future_covariates_copy
             self._uses_future_covariates = True
@@ -3367,7 +3374,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                         f"series must contain at least the next `n={n}` time steps/indices after the "
                         f"end of the target `series` that was used to train the model."
                     ),
-                    logger=logger,
                 )
 
         return self._predict(
@@ -3558,7 +3564,6 @@ class TransferableFutureCovariatesLocalForecastingModel(
                         "The provided `future_covariates` related to the new target series must contain at "
                         "least the same timesteps/indices as the target `series` + `n`."
                     ),
-                    logger=logger,
                 )
             historic_future_covariates = future_covariates.slice_intersect(series_)
 
@@ -3593,12 +3598,14 @@ class TransferableFutureCovariatesLocalForecastingModel(
         past_covariates: TimeSeriesLike | None = None,
         future_covariates: TimeSeriesLike | None = None,
     ) -> tuple[TimeSeriesLike, TimeSeriesLike]:
-        raise_if(
-            self.encoders is None or not self.encoders.encoding_available,
-            "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "
-            "model with `model.fit()` before.",
-            logger=logger,
-        )
+        if self.encoders is None or not self.encoders.encoding_available:
+            raise_log(
+                ValueError(
+                    "Encodings are not available. Consider adding parameter "
+                    "`add_encoders` at model creation and fitting the model "
+                    "with `model.fit()` before."
+                ),
+            )
         return self.generate_fit_predict_encodings(
             n=n,
             series=series,

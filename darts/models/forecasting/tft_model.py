@@ -3,23 +3,16 @@ Temporal Fusion Transformer (TFT)
 ---------------------------------
 """
 
-from collections.abc import Sequence
-
 import numpy as np
 import pandas as pd
 import torch
 from torch import nn
 from torch.nn import LSTM as _LSTM
 
-from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import raise_log
 from darts.models.components import glu_variants, layer_norm_variants
 from darts.models.components.glu_variants import GLU_FFN
-from darts.models.forecasting.pl_forecasting_module import (
-    PLForecastingModule,
-    io_processor,
-)
-from darts.models.forecasting.tft_submodels import (
+from darts.models.components.tft_submodels import (
     _GateAddNorm,
     _GatedResidualNetwork,
     _InterpretableMultiHeadAttention,
@@ -27,12 +20,13 @@ from darts.models.forecasting.tft_submodels import (
     _VariableSelectionNetwork,
     get_embedding_size,
 )
+from darts.models.forecasting.pl_forecasting_module import (
+    PLForecastingModule,
+    io_processor,
+)
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.data import TorchTrainingDataset
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.likelihood_models.torch import QuantileRegression, TorchLikelihood
-
-logger = get_logger(__name__)
 
 
 class _TFTModule(PLForecastingModule):
@@ -311,10 +305,12 @@ class _TFTModule(PLForecastingModule):
                 layer_norm=self.layer_norm,
             )
         else:
-            raise_if_not(
-                self.feed_forward in GLU_FFN,
-                f"'{self.feed_forward}' is not in {GLU_FFN + ['GatedResidualNetwork']}",
-            )
+            if self.feed_forward not in GLU_FFN:
+                raise_log(
+                    ValueError(
+                        f"'{self.feed_forward}' is not in {GLU_FFN + ['GatedResidualNetwork']}."
+                    ),
+                )
             # use glu variant feedforward layers
             # 4 is a commonly used feedforward multiplier
             self.feed_forward_block = getattr(glu_variants, self.feed_forward)(
@@ -459,15 +455,15 @@ class _TFTModule(PLForecastingModule):
         Parameters
         ----------
         x_in
-            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
-            is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
+            comes as tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
+            `x_future` is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
 
         Returns
         -------
         torch.Tensor
             the output tensor
         """
-        x_cont_past, x_cont_future, x_static = x_in
+        x_cont_past, x_cont_future, x_static, _ = x_in
         dim_samples, dim_time, dim_variable = 0, 1, 2
         device = x_in[0].device
 
@@ -970,6 +966,16 @@ class TFTModel(MixedCovariatesTorchModel):
             if categorical_embedding_sizes is not None
             else {}
         )
+        for embedding in self.categorical_embedding_sizes.values():
+            if not isinstance(embedding, int | tuple):
+                raise_log(
+                    ValueError(
+                        "Dict values of `categorical_embedding_sizes` must "
+                        "either be integers or tuples. Read the TFTModel "
+                        "documentation for more information."
+                    ),
+                )
+
         self.add_relative_index = add_relative_index
         self.skip_interpolation = skip_interpolation
         self.output_dim: tuple[int, int] | None = None
@@ -1004,6 +1010,17 @@ class TFTModel(MixedCovariatesTorchModel):
             static_covariates,
             future_target,
         ) = train_sample
+
+        if future_covariate is None and not self.add_relative_index:
+            raise_log(
+                ValueError(
+                    "TFTModel requires future covariates. The model applies multi-head attention queries on future "
+                    "inputs. Consider specifying a future encoder with `add_encoders` (only available when training "
+                    "with `fit()` and not `fit_from_dataset()`) or setting `add_relative_index` to `True` at model "
+                    "creation (read TFT model docs for more information). These will automatically generate "
+                    "`future_covariates` from indexes."
+                ),
+            )
 
         # add a covariate placeholder so that relative index will be included
         if self.add_relative_index:
@@ -1111,12 +1128,6 @@ class TFTModel(MixedCovariatesTorchModel):
                         else:
                             # get embedding sizes for each categorical variable
                             embedding = self.categorical_embedding_sizes[col_name]
-                            raise_if_not(
-                                isinstance(embedding, int | tuple),
-                                "Dict values of `categorical_embedding_sizes` must either be integers or tuples. Read "
-                                "the TFTModel documentation for more information.",
-                                logger,
-                            )
                             if isinstance(embedding, int):
                                 embedding = (embedding, get_embedding_size(n=embedding))
                             categorical_embedding_sizes[vars_meta[idx]] = embedding
@@ -1166,32 +1177,6 @@ class TFTModel(MixedCovariatesTorchModel):
             skip_interpolation=self.skip_interpolation,
             norm_type=self.norm_type,
             **self.pl_module_params,
-        )
-
-    def _build_train_dataset(
-        self,
-        series: Sequence[TimeSeries],
-        past_covariates: Sequence[TimeSeries] | None,
-        future_covariates: Sequence[TimeSeries] | None,
-        sample_weight: Sequence[TimeSeries] | str | None,
-        max_samples_per_ts: int | None,
-        stride: int = 1,
-    ) -> TorchTrainingDataset:
-        raise_if(
-            future_covariates is None and not self.add_relative_index,
-            "TFTModel requires future covariates. The model applies multi-head attention queries on future "
-            "inputs. Consider specifying a future encoder with `add_encoders` or setting `add_relative_index` "
-            "to `True` at model creation (read TFT model docs for more information). "
-            "These will automatically generate `future_covariates` from indexes.",
-            logger,
-        )
-        return super()._build_train_dataset(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            max_samples_per_ts=max_samples_per_ts,
-            sample_weight=sample_weight,
-            stride=stride,
         )
 
     @property

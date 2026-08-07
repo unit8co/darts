@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.utils.data.tabularization import _get_feature_times
 from darts.utils.timeseries_generation import linear_timeseries
 
@@ -186,7 +186,7 @@ class TestGetFeatureTimes:
                 f"Caused by `future_covariates_lags = {future_covariates_lags}`."
             )
             error = ValueError(error_msg)
-            raise_log(error, get_logger(__name__))
+            raise_log(error)
         return times
 
     #

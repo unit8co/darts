@@ -14,12 +14,13 @@ from darts.dataprocessing.transformers import (
     FittableDataTransformer,
     InvertibleDataTransformer,
 )
-from darts.logging import get_logger, raise_log
-from darts.timeseries import DEFAULT_GLOBAL_STATIC_COV_NAME, _finite_rows_boundaries
+from darts.logging import raise_log
+from darts.timeseries import (
+    DEFAULT_GLOBAL_STATIC_COV_NAME,
+    _finite_rows_boundaries,
+)
 from darts.typing import TimeIndex, TimeSeriesLike
-from darts.utils.utils import generate_index
-
-logger = get_logger(__name__)
+from darts.utils.utils import _maybe_cast_array_dtype, generate_index
 
 
 class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
@@ -108,7 +109,6 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
                     f"Cannot infer period alias for `low_freq={low_freq}`. "
                     f"Is it a valid pandas offset/frequency alias?"
                 ),
-                logger=logger,
             )
         self._low_freq = pd.tseries.frequencies.to_offset(low_freq).freqstr
         self._strip = strip
@@ -147,7 +147,6 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
                         f"`low_freq` set at MIDAS creation. "
                         f"Received series frequency {high_freq} against `low_freq={low_freq}`"
                     ),
-                    logger=logger,
                 )
             fitted_params.append({
                 "high_freq": high_freq,
@@ -221,7 +220,6 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
                     f"{low_freq}. E.g., a valid conversion would be from a monthly (high) to a quarterly "
                     f"(low) frequency."
                 ),
-                logger=logger,
             )
 
         # max size is the number of higher frequency time steps per lower frequency period
@@ -375,10 +373,10 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             start_time = series.start_time()
             shift = 0
             # adjust the start if was shifted due to the frequency change
-            if len(series.time_index) > 1:
-                low_freq_timedelta = series.time_index[1] - series.time_index[0]
-                start_to_start_shift = series.time_index[0] - orig_ts_start_time
-                start_to_end_shift = series.time_index[0] - orig_ts_end_time
+            if len(series._time_index) > 1:
+                low_freq_timedelta = series._time_index[1] - series.start_time()
+                start_to_start_shift = series.start_time() - orig_ts_start_time
+                start_to_end_shift = series.start_time() - orig_ts_end_time
                 # shift is caused by the low frequency anchoring, fitted and inversed ts have the same start
                 if np.abs(start_to_start_shift) <= low_freq_timedelta:
                     start_time = orig_ts_start_time
@@ -412,10 +410,9 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         low_freq: str | None = None,
     ):
         """Some sanity checks on the input, the high_freq and low_freq arguments are mutually exclusive"""
-        if not isinstance(series.time_index, pd.DatetimeIndex):
+        if not isinstance(series._time_index, pd.DatetimeIndex):
             raise_log(
                 ValueError("MIDAS input series must have a pd.Datetime index"),
-                logger,
             )
 
         series_freq_str = series.freq_str
@@ -430,7 +427,6 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
                     f"The frequency string of the series to transform must be identical to the fitted one, expected "
                     f"{high_freq} but received {series_freq_str}."
                 ),
-                logger=logger,
             )
         if low_freq is not None and low_freq not in input_freq:
             raise_log(
@@ -438,7 +434,6 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
                     f"The frequency string of the series to inverse-transform must be identical to the fitted one, "
                     f"expected {low_freq} but received {series_freq_str}."
                 ),
-                logger=logger,
             )
 
     @staticmethod
@@ -497,7 +492,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         )
         return TimeSeries(
             times=time_index,
-            values=arr,
+            values=_maybe_cast_array_dtype(arr, series.dtype),
             components=cols,
             static_covariates=static_covariates,
             metadata=series.metadata,

@@ -20,7 +20,6 @@ from darts.dataprocessing.encoders import (
     FutureCyclicEncoder,
     PastDatetimeAttributeEncoder,
 )
-from darts.logging import get_logger
 from darts.metrics import mae, rmse
 from darts.models import (
     CatBoostModel,
@@ -46,8 +45,6 @@ from darts.utils.likelihood_models.sklearn import (
 )
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import generate_index
-
-logger = get_logger(__name__)
 
 
 def train_test_split(series, split_ts):
@@ -4663,3 +4660,54 @@ class TestProbabilisticSKLearnModels:
         _ = model.predict(n=ocl, num_samples=1, predict_likelihood_parameters=True)
         # sampled
         _ = model.predict(n=ocl, num_samples=10, predict_likelihood_parameters=False)
+
+
+class TestSKLearnModelInputValidation:
+    def test_invalid_output_chunk_length(self):
+        with pytest.raises(ValueError, match="output_chunk_length must be an integer"):
+            LinearRegressionModel(lags=1, output_chunk_length=0)
+        with pytest.raises(ValueError, match="output_chunk_length must be an integer"):
+            LinearRegressionModel(lags=1, output_chunk_length=-1)
+
+    def test_model_without_fit_method(self):
+        class NoFit:
+            def predict(self, X):
+                pass
+
+        with pytest.raises(ValueError, match="must have a fit"):
+            RegressionModel(lags=1, model=NoFit())
+
+    def test_model_without_predict_method(self):
+        class NoPred:
+            def fit(self, X, y):
+                pass
+
+        with pytest.raises(ValueError, match="must have a predict"):
+            RegressionModel(lags=1, model=NoPred())
+
+    def test_lags_future_covariates_tuple_zero_zero(self):
+        with pytest.raises(ValueError, match="cannot be \\(0, 0\\)"):
+            LinearRegressionModel(lags=1, lags_future_covariates=(0, 0))
+
+    def test_lags_future_covariates_list_non_int(self):
+        with pytest.raises(ValueError, match="list must contain only integers"):
+            LinearRegressionModel(lags=1, lags_future_covariates=[True])
+        with pytest.raises(ValueError, match="list must contain only integers"):
+            LinearRegressionModel(lags=1, lags_future_covariates=[1.5])
+
+    def test_fit_component_lags_mismatch(self):
+        ts = TimeSeries.from_values(np.random.rand(100, 2), columns=["a", "b"])
+        model = LinearRegressionModel(
+            lags={"wrong_col": [-1]},
+        )
+        with pytest.raises(ValueError):
+            model.fit(ts)
+
+    @pytest.mark.skipif(not XGB_AVAILABLE, reason="xgboost required")
+    def test_xgb_quantile_loss_invalid_quantile(self):
+        from darts.models.forecasting.xgboost import xgb_quantile_loss
+
+        labels = np.array([1.0, 2.0, 3.0])
+        preds = np.array([1.1, 2.1, 3.1])
+        with pytest.raises(ValueError, match="Quantile must be between 0 and 1"):
+            xgb_quantile_loss(labels, preds, quantile=1.5)

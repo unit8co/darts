@@ -122,8 +122,8 @@ class _TideModule(PLForecastingModule):
         Inputs
         ------
         x
-            Tuple of Tensors `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and
-            `x_future`is the output/future chunk. Input dimensions are `(batch_size, time_steps, components)`
+            Tuple of Tensors `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
+            `x_future` is the output/future chunk. Input dimensions are `(batch_size, time_steps, components)`
         Outputs
         -------
         y
@@ -265,8 +265,8 @@ class _TideModule(PLForecastingModule):
         Parameters
         ----------
         x_in
-            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
-            is the output/future chunk. Input dimensions are `(batch_size, time_steps, components)`
+            comes as tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
+            `x_future` is the output/future chunk. Input dimensions are `(batch_size, time_steps, components)`
         Returns
         -------
         torch.Tensor
@@ -276,7 +276,7 @@ class _TideModule(PLForecastingModule):
         # x has shape (batch_size, input_chunk_length, input_dim)
         # x_future_covariates has shape (batch_size, input_chunk_length, future_cov_dim)
         # x_static_covariates has shape (batch_size, static_cov_dim)
-        x, x_future_covariates, x_static_covariates = x_in
+        x, x_future_covariates, x_static_covariates, _ = x_in
 
         x_lookback = x[:, :, : self.output_dim]
 
@@ -639,7 +639,6 @@ class TiDEModel(MixedCovariatesTorchModel):
                 ValueError(
                     "`temporal_width_past` and `temporal_width_future` must be >= 0."
                 ),
-                logger=logger,
             )
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 

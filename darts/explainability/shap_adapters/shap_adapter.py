@@ -111,8 +111,7 @@ class ShapAdapter(ABC):
                 ValueError(
                     f"`background_num_samples` must be less than or equal to "
                     f"MAX_BACKGROUND_SAMPLE={MAX_BACKGROUND_SAMPLE}. Got {background_num_samples}."
-                ),
-                logger,
+                )
             )
 
         self.model = model

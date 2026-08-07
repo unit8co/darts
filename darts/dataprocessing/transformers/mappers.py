@@ -14,9 +14,6 @@ from darts.dataprocessing.transformers.base_data_transformer import BaseDataTran
 from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
-from darts.logging import get_logger
-
-logger = get_logger(__name__)
 
 MapperFn = (
     Callable[[np.number], np.number] | Callable[[pd.Timestamp, np.number], np.number]

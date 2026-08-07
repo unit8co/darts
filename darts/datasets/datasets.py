@@ -21,10 +21,8 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.datasets.dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
-from darts.logging import get_logger, raise_if_not
+from darts.logging import raise_log
 from darts.utils.utils import _build_tqdm_iterator
-
-logger = get_logger(__name__)
 
 _DEFAULT_PATH = "https://raw.githubusercontent.com/unit8co/darts/master/datasets"
 
@@ -616,11 +614,10 @@ class UberTLCDataset(DatasetLoaderCSV):
             Default is True.
         """
         valid_sample_freq = ["daily", "hourly"]
-        raise_if_not(
-            sample_freq in valid_sample_freq,
-            f"sample_freq must be one of {valid_sample_freq}",
-            logger,
-        )
+        if sample_freq not in valid_sample_freq:
+            raise_log(
+                ValueError(f"sample_freq must be one of {valid_sample_freq}."),
+            )
 
         def pre_proces_fn(extracted_dir, dataset_path):
             df = pd.read_csv(

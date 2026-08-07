@@ -240,8 +240,7 @@ class SKLearnShapAdapter(ShapAdapter):
                 ValueError(
                     f"Invalid `model` type: `{type(model)}`. Only models of type "
                     f"`SKLearnModel` are supported."
-                ),
-                logger,
+                )
             )
 
         if not model.multi_models:
@@ -250,6 +249,5 @@ class SKLearnShapAdapter(ShapAdapter):
                     "Invalid `multi_models` value `False`. Currently, "
                     "ShapExplainer only supports SKLearnModels "
                     "with `multi_models=True`."
-                ),
-                logger,
+                )
             )

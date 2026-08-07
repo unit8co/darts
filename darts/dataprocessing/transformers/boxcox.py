@@ -18,10 +18,9 @@ from darts.dataprocessing.transformers.fittable_data_transformer import (
 from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
-from darts.logging import get_logger, raise_if
+from darts.logging import raise_log
 from darts.typing import TimeSeriesLike
-
-logger = get_logger(__name__)
+from darts.utils.utils import _maybe_cast_array_dtype
 
 
 class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
@@ -105,12 +104,12 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         ----------
         .. [1] https://otexts.com/fpp2/transformations.html#mathematical-transformations
         """
-        raise_if(
-            not isinstance(optim_method, str)
-            or optim_method not in ["mle", "pearsonr"],
-            "optim_method parameter must be either 'mle' or 'pearsonr'",
-            logger,
-        )
+        if not isinstance(optim_method, str) or optim_method not in ["mle", "pearsonr"]:
+            raise_log(
+                ValueError(
+                    "optim_method parameter must be either 'mle' or 'pearsonr'."
+                ),
+            )
 
         # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self._lmbda = lmbda
@@ -142,22 +141,27 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         # otherwise, `series` is a single `TimeSeries`:
         if isinstance(series, TimeSeries):
             series = [series]
+
         if lmbda is None:
             # Compute optimal lmbda for each dimension of the time series. In this case, the return type is
             # an ndarray and not a Sequence
             vals = np.concatenate([BoxCox.stack_samples(ts) for ts in series], axis=0)
             lmbda = np.apply_along_axis(boxcox_normmax, axis=0, arr=vals, method=method)
 
-        elif isinstance(lmbda, Sequence):
-            raise_if(
-                len(lmbda) != series[0].width,
-                "lmbda should have one value per dimension (ie. column or variable) of the time series",
-                logger,
-            )
-        else:
-            # Replicate lmbda to match dimensions of the time series
-            lmbda = [lmbda] * series[0].width
+        if not isinstance(lmbda, np.ndarray):
+            lmbda = np.atleast_1d(lmbda)
 
+        if len(lmbda) == 1 and series[0].width > 1:
+            lmbda = np.repeat(lmbda, series[0].width)
+
+        if lmbda.shape != (series[0].width,):
+            raise_log(
+                ValueError(
+                    "lmbda should have one value per dimension (ie. column or variable) of the time series."
+                ),
+            )
+
+        lmbda = _maybe_cast_array_dtype(lmbda, series[0].dtype)
         return lmbda
 
     @staticmethod

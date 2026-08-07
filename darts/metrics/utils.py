@@ -8,7 +8,7 @@ from collections.abc import Callable, Sequence
 from enum import Enum
 from functools import wraps
 from inspect import signature
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -103,7 +103,6 @@ def interval_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                 ValueError(
                     f"`{_PARAM_Q_INTERVAL}` must be a tuple (float, float) or a sequence of tuples (float, float)."
                 ),
-                logger=logger,
             )
         if not np.all(q_interval[:, 1] - q_interval[:, 0] > 0):
             raise_log(
@@ -111,7 +110,6 @@ def interval_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                     f"all intervals in `{_PARAM_Q_INTERVAL}` must be tuples of (lower q, upper q) with "
                     f"`lower q > upper q`. Received `{_PARAM_Q_INTERVAL}={q_interval}`"
                 ),
-                logger=logger,
             )
         kwargs[_PARAM_Q_INTERVAL] = q_interval
         kwargs[_PARAM_Q] = np.sort(np.unique(q_interval))
@@ -148,7 +146,6 @@ def classification_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                             f"Invalid `{_PARAM_LABEL_REDUCTION}` value: `{label_reduction}`. "
                             f"Must be one of `{list(_LabelReduction._value2member_map_)}`."
                         ),
-                        logger=logger,
                     )
                 kwargs[_PARAM_LABEL_REDUCTION] = _LabelReduction(label_reduction)
 
@@ -222,7 +219,6 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                     f"Mismatch between number of series in `actual_series` (n={len(actual_series)}) and "
                     f"`pred_series` (n={len(pred_series)})."
                 ),
-                logger=logger,
             )
         num_series_in_args = int("actual_series" not in kwargs) + int(
             "pred_series" not in kwargs
@@ -247,7 +243,6 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                         f"Mismatch between number of series in `actual_series` (n={len(actual_series)}) and "
                         f"`insample` series (n={len(insample)})."
                     ),
-                    logger=logger,
                 )
             input_series += (insample,)
             num_series_in_args += int("insample" not in kwargs)
@@ -274,14 +269,12 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                             f"`{_PARAM_Q}` must be of type `float`, or a sequence of increasing order with unique "
                             f"values only. Received `{_PARAM_Q}={q}`."
                         ),
-                        logger=logger,
                     )
                 if not np.all(q >= 0.0) & np.all(q <= 1.0):
                     raise_log(
                         ValueError(
                             f"All `{_PARAM_Q}` values must be in the range `(>=0,<=1)`. Received `{_PARAM_Q}={q}`."
                         ),
-                        logger=logger,
                     )
                 kwargs[_PARAM_Q] = (q, q_comp_names)
 
@@ -361,7 +354,6 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                         f"Mismatch between number of components in `actual_series` "
                         f"(n={actual_series.width}) and `insample` (n={insample.width}."
                     ),
-                    logger=logger,
                 )
             input_series += (insample,)
             num_series_in_args += 1
@@ -381,7 +373,6 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                         "or 3 dimensions (n times, n components, n quantiles or n labels)  "
                         "for time dependent metrics (e.g. `ae()`, ...)"
                     ),
-                    logger=logger,
                 )
 
         if n_dims == 2:
@@ -433,7 +424,6 @@ def _regression_handling(actual_series, pred_series, params, kwargs):
                     f"Mismatch between number of components in `actual_series` "
                     f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
                 ),
-                logger=logger,
             )
         # compute median for stochastic predictions
         if pred_series.is_stochastic:
@@ -447,7 +437,6 @@ def _regression_handling(actual_series, pred_series, params, kwargs):
                     "where the (quantile values, optional quantile component names). "
                     f"Received `{_PARAM_Q}={q}`."
                 ),
-                logger=logger,
             )
         q, q_comp_names = q
         if not pred_series.is_stochastic:
@@ -468,7 +457,6 @@ def _regression_handling(actual_series, pred_series, params, kwargs):
                         f"quantiles as columns / components. Either pass a probabilistic `pred_series` or "
                         f"a series containing the expected quantile components: {q_comp_names.tolist()} "
                     ),
-                    logger=logger,
                 )
 
     if _PARAM_Q in params:
@@ -499,7 +487,6 @@ def _classification_handling(actual_series, pred_series):
                     f"Original components: {actual_series.components}, predicted components: "
                     f"{pred_series.components}."
                 ),
-                logger=logger,
             )
 
 
@@ -643,7 +630,6 @@ def _get_values_or_raise(
                     "The `insample` series must start before the `pred_series` and "
                     "extend at least until one time step before the start of `pred_series`."
                 ),
-                logger=logger,
             )
         end = end or None
         vals_actual_common = actual_series.all_values(copy=make_copy)[:end]
@@ -658,13 +644,17 @@ def _get_values_or_raise(
     if not remove_nan_union or is_insample:
         return vals_a, vals_b
 
-    isnan_mask = np.expand_dims(
-        np.logical_or(np.isnan(vals_a), np.isnan(vals_b)).any(axis=SMPL_AX), axis=-1
-    )
-    isnan_mask_pred = np.repeat(isnan_mask, vals_b.shape[SMPL_AX], axis=SMPL_AX)
-    return np.where(isnan_mask, np.nan, vals_a), np.where(
-        isnan_mask_pred, np.nan, vals_b
-    )
+    # fast path: most series contain no NaNs
+    nan_a, nan_b = np.isnan(vals_a), np.isnan(vals_b)
+    if not nan_a.any() and not nan_b.any():
+        return vals_a, vals_b
+
+    nan_union = nan_a | nan_b
+    if vals_b.shape[SMPL_AX] > 1:
+        isnan_mask = nan_union.any(axis=SMPL_AX, keepdims=True)
+    else:
+        isnan_mask = nan_union
+    return np.where(isnan_mask, np.nan, vals_a), np.where(isnan_mask, np.nan, vals_b)
 
 
 def _get_quantile_intervals(
@@ -776,7 +766,6 @@ def _get_wrapped_metric(
     if not 2 <= n_wrappers <= 3:
         raise_log(
             NotImplementedError("Only 2-3 wrappers are currently supported"),
-            logger=logger,
         )
     if n_wrappers == 2:
         return func.__wrapped__.__wrapped__
@@ -804,7 +793,6 @@ def _get_reduction(
                 ValueError(
                     f"Invalid `{red_name}` function: Must have a parameter called `axis`."
                 ),
-                logger=logger,
             )
         # verify `red_fn` reduces to array with correct shape
         shape_in = (2, 1) if axis == 0 else (1, 2)
@@ -816,7 +804,6 @@ def _get_reduction(
                     f"Invalid `{red_name}` function output type: Expected type "
                     f"`np.ndarray`, received type=`{type(out)}`."
                 ),
-                logger=logger,
             )
         shape_invalid = out.shape != (1,)
         if shape_invalid:
@@ -827,7 +814,6 @@ def _get_reduction(
                     f"However, the function reduced a test array of shape `{shape_in}` to "
                     f"`{out.shape}`."
                 ),
-                logger=logger,
             )
     return red_fn
 
@@ -842,7 +828,6 @@ def _get_error_scale(
     if not isinstance(m, int):
         raise_log(
             ValueError(f"Seasonality `m` must be of type `int`, received `m={m}`"),
-            logger=logger,
         )
 
     # `x_t` are the true `y` values before the start of `y_pred`
@@ -861,45 +846,57 @@ def _get_error_scale(
             ValueError(
                 f"unknown `metric={metric}`. Must be one of ('mae', 'mse', 'rmse')."
             ),
-            logger=logger,
         )
 
     return scale
 
 
-def _safe_scaled_divide(
-    errors: np.ndarray,
-    scale: np.ndarray,
+def _safe_divide(
+    numerator: np.ndarray,
+    denominator: np.ndarray,
     zero_division: str = "warn",
+    zero_fill: float = 1.0,
+    strict_zero: bool = False,
+    metric_type: Literal["scaled", "percentage"] = "scaled",
 ) -> np.ndarray:
     """Divides ``errors`` by ``scale``, handling zero-scale entries gracefully.
 
     When ``zero_division`` is ``"warn"`` (default), the behavior depends on
-    whether the *numerator* is also zero:
+    whether the *numerator* is also considered zero:
 
-    * **Case 1** – scale ≈ 0, errors ≠ 0 (non-zero / zero): the scaled error
-      is undefined, so the result is ``np.nan``.
-    * **Case 2** – scale ≈ 0, errors ≈ 0 (zero / zero): the model is on par
-      with the naive baseline, so the result is ``1.0``.
+    * **Case 1** – zero scale, non-zero errors (non-zero / zero): the result is
+      undefined, so the entry is set to ``np.nan``.
+    * **Case 2** – zero scale, zero errors (zero / zero): the entry is set to
+      ``zero_fill``.
 
-    .. note::
-       Returning ``1.0`` for the 0/0 case assumes "model matches naive baseline"
-       since we cannot distinguish whether the model trivially *is* the seasonal
-       naive or made a non-trivial prediction that happens to match. For practical
-       purposes ``1.0`` is the right default.
+    The fill is applied element-wise, so a single zero-scale component (e.g. a
+    constant ``actual_series`` for a range-based metric) does not contaminate
+    the finite entries of the other components.
 
     Parameters
     ----------
-    errors
-        Numerator array of shape ``(t, c)`` or ``(c,)``.
-    scale
-        Denominator array of shape ``(c,)``.
+    numerator
+        Numerator array. Broadcasts against ``scale``.
+    denominator
+        Denominator array. Broadcasts against ``errors``.
     zero_division
         Controls behavior when ``scale`` is (near) zero.
 
         * ``"warn"`` (default) – applies the defaults described above
-          (``np.nan`` for case 1, ``1.0`` for case 2) and emits a ``UserWarning``.
+          (``np.nan`` for case 1, ``zero_fill`` for case 2) and emits a
+          warning.
         * ``"raise"`` – raises a ``ValueError`` (the legacy behavior).
+    zero_fill
+        The value for the ``0 / 0`` case under ``"warn"``. Use ``1.0`` for
+        scaled-error metrics ("on par with the naive baseline") and ``0.0`` for
+        percentage metrics ("a perfect forecast").
+    strict_zero
+        If ``True``, only exact zeros trigger zero-division handling. If
+        ``False`` (default), values close to zero according to ``np.isclose``
+        are also handled as zero. Percentage metrics use exact zeros to avoid
+        treating valid small denominators as zero.
+    metric_type
+        The metric type ('scaled', 'percentage') for logging purposes.
 
     Returns
     -------
@@ -911,34 +908,42 @@ def _safe_scaled_divide(
             ValueError(
                 f"`zero_division` must be 'warn' or 'raise'. Received {zero_division}."
             ),
-            logger=logger,
         )
 
-    zero_mask = np.isclose(scale, 0.0)
+    zero_mask = denominator == 0.0 if strict_zero else np.isclose(denominator, 0.0)
     if not zero_mask.any():
-        return errors / scale
+        return numerator / denominator
 
-    # --- legacy behavior: raise on zero scale ---
     if zero_division == "raise":
-        raise_log(
-            ValueError("Cannot use scaled metric with periodical signals."),
-            logger=logger,
-        )
+        raise_log(ValueError(_SAFE_DIVIDE_LOGS[metric_type]["exception"]))
 
-    # Determine the fill value for zero-scale entries in a single pass.
-    # For numeric zero_division: use that value everywhere.
-    # For "warn": Case 1 (non-zero / zero) → nan, Case 2 (0 / 0) → 1.0.
-    fill = np.where(np.isclose(errors, 0.0), 1.0, np.nan)
-
-    # Single-pass: where scale ≈ 0 use fill, otherwise normal division
-    result = np.where(zero_mask, fill, errors / np.where(zero_mask, 1.0, scale))
-
-    logger.warning(
-        "The error scale (denominator) is zero for some components. "
-        "Those entries are set to NaN (when numerator is non-zero) or "
-        "1.0 (when numerator is also zero, i.e. on par with naive)."
+    numerator_zero = numerator == 0.0 if strict_zero else np.isclose(numerator, 0.0)
+    fill = np.where(numerator_zero, zero_fill, np.nan)
+    result = np.where(
+        zero_mask, fill, numerator / np.where(zero_mask, 1.0, denominator)
     )
+
+    logger.warning(_SAFE_DIVIDE_LOGS[metric_type]["warning"].format(zero_fill))
     return result
+
+
+_SAFE_DIVIDE_LOGS = {
+    "scaled": {
+        "exception": "Cannot use scaled metric with periodical signals.",
+        "warning": (
+            "The error scale (denominator) is zero for some components. "
+            "Those entries are set to NaN (when numerator is non-zero) or "
+            "{0} (when numerator is also zero, i.e. on par with naive)."
+        ),
+    },
+    "percentage": {
+        "exception": "Cannot compute metric: the denominator is zero for some entries.",
+        "warning": (
+            "The metric denominator is zero for some entries. Those entries are set to "
+            "NaN when the numerator is non-zero and {0} when the numerator is also zero."
+        ),
+    },
+}
 
 
 def _unique_labels(y_true: np.ndarray, y_pred: np.ndarray) -> list[np.ndarray]:
@@ -1122,14 +1127,12 @@ def _get_tolerance_levels(
             ValueError(
                 "min_tolerance must be >= 0, max_tolerance must be <= 1, and min_tolerance < max_tolerance."
             ),
-            logger=logger,
         )
     if step <= 0 or step > (max_tolerance - min_tolerance):
         raise_log(
             ValueError(
                 "step must be positive and not larger than (max_tolerance - min_tolerance)."
             ),
-            logger=logger,
         )
     num_steps = int(round((max_tolerance - min_tolerance) / step)) + 1
     return np.linspace(min_tolerance, max_tolerance, num_steps)

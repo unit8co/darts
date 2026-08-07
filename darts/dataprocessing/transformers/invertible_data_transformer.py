@@ -14,11 +14,9 @@ from darts.dataprocessing.transformers.base_data_transformer import (
     BaseDataTransformer,
     component_masking,
 )
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.typing import TimeSeriesLike
 from darts.utils import _build_tqdm_iterator, _parallel_apply
-
-logger = get_logger(__name__)
 
 
 class InvertibleDataTransformer(BaseDataTransformer):
@@ -320,7 +318,6 @@ class InvertibleDataTransformer(BaseDataTransformer):
         if hasattr(self, "_fit_called") and not self._fit_called:
             raise_log(
                 ValueError("fit() must have been called before inverse_transform()"),
-                logger=logger,
             )
 
         desc = f"Inverse ({self._name})"
@@ -334,7 +331,6 @@ class InvertibleDataTransformer(BaseDataTransformer):
                         f"`insample` must have the same number of TimeSeries as `series` "
                         f"(expected {outer_len}, got {len(insample)})."
                     ),
-                    logger=logger,
                 )
             use_insample = True
         else:
@@ -439,7 +435,6 @@ class InvertibleDataTransformer(BaseDataTransformer):
                     f"`insample` is of frequency {insample.freq}, but "
                     f"transform was fitted to data of frequency {freq}."
                 ),
-                logger,
             )
         if insample.start_time() >= forecast_start:
             raise_log(
@@ -448,7 +443,6 @@ class InvertibleDataTransformer(BaseDataTransformer):
                     f"Expected `insample.start_time()` <= {forecast_start}, "
                     f"got {insample.start_time()}."
                 ),
-                logger,
             )
         expected_end = forecast_start - freq
         if insample.end_time() < expected_end:
@@ -459,7 +453,6 @@ class InvertibleDataTransformer(BaseDataTransformer):
                     f"Expected `insample.end_time()` >= {expected_end}, "
                     f"got {insample.end_time()}."
                 ),
-                logger,
             )
         series = insample[:expected_end].append(series)
         return series, n_forecast_output

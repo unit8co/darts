@@ -9,9 +9,7 @@ import warnings
 from pytorch_lightning.callbacks import Callback, TQDMProgressBar
 from pytorch_lightning.callbacks.progress.tqdm_progress import Tqdm
 
-from darts.logging import get_logger, raise_log
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
 
 # system attr keys used to coordinate DDP pruning across processes
 _OPTUNA_EPOCH_KEY = "ddp_pl:epoch"
@@ -174,7 +172,6 @@ class PyTorchLightningPruningCallback(Callback):
                         "PyTorchLightningPruningCallback supports only "
                         "optuna.storages.RDBStorage in DDP."
                     ),
-                    logger,
                 )
             # It is necessary to store intermediate values directly in the backend storage because
             # they are not properly propagated to main process due to cached storage.
@@ -209,7 +206,7 @@ class PyTorchLightningPruningCallback(Callback):
             self._trial.report(current_score.item(), step=epoch)
             if not self._trial.should_prune():
                 return
-            raise_log(optuna.TrialPruned(f"Trial was pruned at epoch {epoch}."), logger)
+            raise_log(optuna.TrialPruned(f"Trial was pruned at epoch {epoch}."))
 
         # Determine if the trial should be terminated in a DDP.
         if trainer.is_global_zero:
@@ -275,4 +272,4 @@ class PyTorchLightningPruningCallback(Callback):
             self._trial.report(score, step=int(epoch))
         if is_pruned:
             epoch = _trial_system_attrs.get(_OPTUNA_EPOCH_KEY)
-            raise_log(optuna.TrialPruned(f"Trial was pruned at epoch {epoch}."), logger)
+            raise_log(optuna.TrialPruned(f"Trial was pruned at epoch {epoch}."))

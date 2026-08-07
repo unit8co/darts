@@ -13,9 +13,7 @@ import numpy as np
 
 from darts import TimeSeries
 from darts.ad.detectors.detectors import Detector, _BoundedDetectorMixin
-from darts.logging import get_logger, raise_log
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
 
 
 class ThresholdDetector(Detector, _BoundedDetectorMixin):
@@ -67,7 +65,6 @@ class ThresholdDetector(Detector, _BoundedDetectorMixin):
                     f"equal to the number of threshold values. Found number of "
                     f"components equal to {series.width} and expected {len(self.low_threshold)}."
                 ),
-                logger=logger,
             )
 
         # if length is 1, tile it to series width:

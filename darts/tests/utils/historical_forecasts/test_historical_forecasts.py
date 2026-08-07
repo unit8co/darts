@@ -26,6 +26,7 @@ from darts.models import (
     ConformalNaiveModel,
     LightGBMModel,
     LinearRegressionModel,
+    MultivariateModel,
     NaiveDrift,
     NaiveSeasonal,
     Prophet,
@@ -677,8 +678,13 @@ class TestHistoricalforecast:
             "Model cannot be fit/trained with `past_covariates`."
         )
 
-    def test_historical_forecasts_local_models(self):
-        model = NaiveSeasonal()
+    @pytest.mark.parametrize(
+        "config",
+        [(NaiveSeasonal, {}), (MultivariateModel, {"model": "NaiveSeasonal"})],
+    )
+    def test_historical_forecasts_local_models(self, config):
+        model_cls, model_kwargs = config
+        model = model_cls(**model_kwargs)
         assert model.min_train_series_length == 3
         series = tg.sine_timeseries(length=4)
         res = model.historical_forecasts(
@@ -695,11 +701,11 @@ class TestHistoricalforecast:
         assert series.end_time() == res.time_index[0]
 
         model.fit(series)
-        with pytest.raises(ValueError) as msg:
+        with pytest.raises(
+            ValueError,
+            match="ForecastingModel does not support historical forecasting with `retrain` set to `False`",
+        ):
             model.historical_forecasts(series, retrain=False, forecast_horizon=1)
-        assert str(msg.value).startswith(
-            "LocalForecastingModel does not support historical forecasting with `retrain` set to `False`"
-        )
 
     def test_historical_forecasts_position_start(self):
         series = tg.sine_timeseries(length=10)
@@ -1017,7 +1023,7 @@ class TestHistoricalforecast:
         with pytest.raises(TypeError) as msg:
             model.historical_forecasts(rangeidx_step1, start=[0.1])
         assert str(msg.value).startswith(
-            "`start` must be either `float`, `int`, `pd.Timestamp` or `None`."
+            "`start` must be either `float`, `int`, `pd.Timestamp`, `'end'` or `None`."
         )
 
         # label_index (timestamp) with range index series
@@ -1177,6 +1183,149 @@ class TestHistoricalforecast:
         assert str(msg.value).startswith(
             "`start` position `10` is out of bounds for series of length 10"
         )
+
+    @pytest.mark.parametrize(
+        "config",
+        list(
+            itertools.product(
+                [True, False],  # retrain
+                [True, False],  # last_points_only
+                [1, 2],  # forecast_horizon
+            )
+        ),
+    )
+    def test_historical_forecasts_start_end(self, config):
+        """Test start='end' generates a single forecast per series starting one step after series end."""
+        retrain, last_points_only, forecast_horizon = config
+        model = LinearRegressionModel(lags=2)
+        ts_dt = tg.linear_timeseries(
+            length=20, start=pd.Timestamp("2000-01-01"), freq="D"
+        )
+        ts_ri = tg.linear_timeseries(length=20, start=0, freq=1)
+
+        model.fit(ts_dt)
+
+        for ts in [ts_dt, ts_ri]:
+            preds = model.historical_forecasts(
+                ts,
+                start="end",
+                retrain=retrain,
+                last_points_only=last_points_only,
+                forecast_horizon=forecast_horizon,
+            )
+
+            if retrain:
+                model.fit(ts)
+
+            preds_direct = model.predict(n=forecast_horizon, series=ts)
+            if last_points_only:
+                preds_direct = preds_direct[-1:]
+            else:
+                preds = preds[0]
+
+            assert preds == preds_direct
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            [
+                (NaiveSeasonal, {"K": 2}),
+                (LinearRegressionModel, {"lags": 2}),
+            ]
+            + (
+                [
+                    (
+                        GlobalNaiveSeasonal,
+                        {
+                            "input_chunk_length": 2,
+                            "output_chunk_length": 1,
+                            **tfm_kwargs,
+                        },
+                    )
+                ]
+                if TORCH_AVAILABLE
+                else []
+            ),
+            [True, False],
+            [True, False],
+        ),
+    )
+    def test_historical_forecasts_start_end_multiple_series_global(self, config):
+        """Test start='end' with multiple series."""
+        (model_cls, model_kwargs), retrain, apply_globally = config
+        model = model_cls(**model_kwargs)
+        ts1 = tg.sine_timeseries(length=12, start=pd.Timestamp("2000-01-01"), freq="MS")
+        ts2 = tg.sine_timeseries(length=25, start=pd.Timestamp("1999-01-01"), freq="MS")
+
+        is_global = isinstance(model, GlobalForecastingModel)
+        retrain = retrain if is_global else True
+
+        if apply_globally:
+            train_ts = slice_intersect([ts1, ts2])
+        else:
+            train_ts = [ts1, ts2]
+
+        if not retrain:
+            model.fit(train_ts)
+
+        preds = model.historical_forecasts(
+            [ts1, ts2],
+            start="end",
+            retrain=retrain,
+            last_points_only=True,
+            enable_optimization=True,
+            apply_globally=apply_globally,
+        )
+
+        preds_direct = []
+        for ts in train_ts:
+            if retrain:
+                if not apply_globally or not is_global:
+                    model = model.untrained_model().fit(ts)
+                else:
+                    model = model.untrained_model().fit(train_ts)
+
+            pred_kwargs = {"series": ts} if is_global else {}
+            preds_direct.append(model.predict(n=1, **pred_kwargs))
+        assert preds == preds_direct
+
+    def test_historical_forecasts_start_end_invalid_string(self):
+        """Test that invalid string values for start raise ValueError."""
+        model = LinearRegressionModel(lags=2)
+        ts = tg.linear_timeseries(length=20)
+        with pytest.raises(ValueError, match=r"`start` string value must be 'end'"):
+            model.historical_forecasts(ts, start="invalid")
+
+    def test_historical_forecasts_start_end_overlap_end_ignored(self):
+        """Test that overlap_end parameter is ignored when start='end'."""
+        model = LinearRegressionModel(lags=2)
+        ts = tg.linear_timeseries(length=20, start=pd.Timestamp("2000-01-01"), freq="D")
+
+        preds_oe_true = model.historical_forecasts(
+            ts, start="end", overlap_end=True, retrain=True
+        )
+        preds_oe_false = model.historical_forecasts(
+            ts, start="end", overlap_end=False, retrain=True
+        )
+        assert preds_oe_true == preds_oe_false
+
+    def test_historical_forecasts_start_end_outside_forecastable_range(self):
+        """start='end' raises when the next time step is outside the forecastable range."""
+        ts = tg.linear_timeseries(length=20, start=pd.Timestamp("2000-01-01"), freq="D")
+        # future covariates end with the series, so predicting one step after the end
+        # is not possible without longer covariates
+        fut_cov = tg.linear_timeseries(
+            length=20, start=pd.Timestamp("2000-01-01"), freq="D"
+        )
+        model = LinearRegressionModel(lags=2, lags_future_covariates=[0])
+        model.fit(ts, future_covariates=fut_cov)
+
+        with pytest.raises(
+            ValueError, match=r"Cannot generate a forecast with `start='end'`"
+        ):
+            model.historical_forecasts(
+                ts, future_covariates=fut_cov, start="end", retrain=False
+            )
 
     @pytest.mark.parametrize(
         "config",
@@ -2098,8 +2247,9 @@ class TestHistoricalforecast:
         )
 
         # with the required time spans we expect to get `n_fcs` forecasts
-        if not retrain:
-            # with retrain=False, we can start `output_chunk_length + min train samples` steps earlier
+        if not retrain or not model._requires_training:
+            # with retrain=False or models that don't require training (global naive models, foundation models without
+            # fine-tuning), we can start `output_chunk_length + min train samples` steps earlier
             add_fcs = model.extreme_lags[1] + model.min_train_samples
         else:
             add_fcs = 0
@@ -3562,6 +3712,37 @@ class TestHistoricalforecast:
                 stride=0,
             )
         assert str(err.value) == "`stride` must be a positive integer."
+
+        # invalid `start_format`
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=self.ts_pass_train,
+                start=0.5,
+                start_format="invalid",
+            )
+        assert str(err.value).startswith(
+            "`start_format` must be one of ['position', 'value']. Received 'invalid'."
+        )
+
+        # `data_transformers` must be a dict
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=self.ts_pass_train,
+                data_transformers=Scaler(),
+            )
+        assert str(err.value) == (
+            "`data_transformers` must be either `None` or a dictionary."
+        )
+
+        # `data_transformers` keys must be supported
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=self.ts_pass_train,
+                data_transformers={"invalid_key": Scaler()},
+            )
+        assert str(err.value).startswith(
+            "The keys supported by `data_transformers` are"
+        )
 
         # `start_format="position"` but `start` is not `int`
         with pytest.raises(ValueError) as err:

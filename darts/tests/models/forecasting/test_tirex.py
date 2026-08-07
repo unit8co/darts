@@ -20,23 +20,20 @@ if not TIREX_AVAILABLE:
         allow_module_level=True,
     )
 
-# TiRex default quantiles used by the wrapper
-ALL_QUANTILES = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
-
-import torch
-
 from darts import TimeSeries, concatenate
 from darts.datasets import ElectricityConsumptionZurichDataset
 from darts.models import TiRexModel
+from darts.tests.models.forecasting.foundation_test_utils import (
+    TIREX_LOAD_MODEL_PATCH_TARGET,
+    TIREX_QUANTILES,
+    TiRexStub,
+)
 from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
 from darts.utils.timeseries_generation import (
     gaussian_timeseries,
     linear_timeseries,
     sine_timeseries,
 )
-
-# `TiRexModel` uses `from tirex import load_model`; mock the name in darts' module.
-_PATCH_TIREX_LOAD_MODEL = "darts.models.forecasting.tirex_model.load_model"
 
 
 def load_validation_inputs():
@@ -47,33 +44,6 @@ def load_validation_inputs():
     validation_cutoff = pd.Timestamp("2022-01-01")
     ts_energy_train, ts_energy_val = ts_energy.split_after(validation_cutoff)
     return ts_energy_train, ts_energy_val
-
-
-class _StubTiRexPipeline:
-    """Stub pipeline emulating `tirex-ts` API used by the wrapper.
-
-    Must provide `_forecast_quantiles(context, prediction_length)`.
-    The wrapper calls this inside a torch `forward()`.
-    """
-
-    def _forecast_quantiles(self, context, prediction_length: int, **_kwargs):
-        # context: torch.Tensor of shape (B, T)
-        assert torch.is_tensor(context)
-        B = int(context.shape[0])
-        H = int(prediction_length)
-        Q = len(ALL_QUANTILES)
-
-        # mean: (B, H)
-        mean = torch.arange(
-            1, H + 1, dtype=torch.float32, device=context.device
-        ).repeat(B, 1)
-
-        # quantiles: (B, H, Q)
-        quantiles = torch.zeros((B, H, Q), dtype=torch.float32, device=context.device)
-        for qi, q in enumerate(ALL_QUANTILES):
-            quantiles[:, :, qi] = mean + (float(q) - 0.5)
-
-        return quantiles, mean
 
 
 class TestTiRexModel:
@@ -155,7 +125,7 @@ class TestTiRexModel:
             input_chunk_length=2048,  # use generous context
             output_chunk_length=self.prediction_length,  # no auto-regression
             likelihood=(
-                QuantileRegression(quantiles=list(ALL_QUANTILES))
+                QuantileRegression(quantiles=list(TIREX_QUANTILES))
                 if probabilistic
                 else None
             ),
@@ -269,7 +239,7 @@ class TestTiRexModel:
             **tfm_kwargs,
         )
 
-        with patch(_PATCH_TIREX_LOAD_MODEL, return_value=_StubTiRexPipeline()):
+        with patch(TIREX_LOAD_MODEL_PATCH_TARGET, return_value=TiRexStub()):
             model.fit(self.series)
 
         # predictions should not be probabilistic
@@ -296,7 +266,7 @@ class TestTiRexModel:
         )
 
         # calling `fit()` should not use `trainer.fit()`
-        with patch(_PATCH_TIREX_LOAD_MODEL, return_value=_StubTiRexPipeline()):
+        with patch(TIREX_LOAD_MODEL_PATCH_TARGET, return_value=TiRexStub()):
             model.fit(self.series)
         assert model.model_created
         assert model.supports_probabilistic_prediction
@@ -333,7 +303,7 @@ class TestTiRexModel:
             accept_license=True,
             **tfm_kwargs,
         )
-        with patch(_PATCH_TIREX_LOAD_MODEL, return_value=_StubTiRexPipeline()):
+        with patch(TIREX_LOAD_MODEL_PATCH_TARGET, return_value=TiRexStub()):
             model.fit(series=self.series_multi)
         pred = model.predict(n=7, predict_likelihood_parameters=probabilistic)
         assert isinstance(pred, TimeSeries)
@@ -378,7 +348,7 @@ class TestTiRexModel:
             accept_license=True,
             **tfm_kwargs,
         )
-        with patch(_PATCH_TIREX_LOAD_MODEL, return_value=_StubTiRexPipeline()):
+        with patch(TIREX_LOAD_MODEL_PATCH_TARGET, return_value=TiRexStub()):
             model.fit(series=[self.series_multi, self.series_multi_2])
         pred = model.predict(n=5, series=[self.series_multi, self.series_multi_2])
 

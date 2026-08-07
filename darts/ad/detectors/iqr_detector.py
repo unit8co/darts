@@ -15,9 +15,7 @@ import numpy as np
 from darts import TimeSeries
 from darts.ad.detectors.quantile_detector import QuantileDetector
 from darts.ad.detectors.threshold_detector import ThresholdDetector
-from darts.logging import get_logger, raise_log
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
 
 
 class IQRDetector(QuantileDetector):
@@ -52,7 +50,6 @@ class IQRDetector(QuantileDetector):
         if not np.issubdtype(self.scale.dtype, np.number) or (self.scale < 0.0).any():
             raise_log(
                 ValueError("All values in `scale` must be non-negative numbers."),
-                logger=logger,
             )
 
     def _fit_core(self, series: Sequence[TimeSeries]) -> None:
@@ -65,7 +62,6 @@ class IQRDetector(QuantileDetector):
                     "of values given for `scale`. Found number of components "
                     f"equal to {series[0].width} and expected {len(self.scale)}."
                 ),
-                logger=logger,
             )
 
         low_threshold = np.array(self.detector.low_threshold)

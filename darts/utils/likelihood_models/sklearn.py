@@ -9,15 +9,13 @@ from collections.abc import Sequence
 import numpy as np
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.utils.likelihood_models.base import (
     Likelihood,
     LikelihoodType,
     quantile_names,
 )
 from darts.utils.utils import _check_quantiles
-
-logger = get_logger(__name__)
 
 
 class SKLearnLikelihood(Likelihood, ABC):
@@ -426,7 +424,6 @@ class MultiQuantileRegression(QuantileRegression):
                     "'multiquantile' likelihood only supports multiple quantiles. "
                     "For example `quantiles=[0.05, 0.50, 0.95]`."
                 ),
-                logger,
             )
 
     def _estimator_predict(
@@ -490,7 +487,6 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
                 ValueError(
                     "The model must have a `class_labels` attribute to fit the likelihood."
                 ),
-                logger,
             )
 
         self._classes = model.class_labels
@@ -528,7 +524,6 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
         if (series is not None) == (components is not None):
             raise_log(
                 ValueError("Only one of `series` or `components` must be specified."),
-                logger=logger,
             )
         if series is not None:
             components = series.components
@@ -706,7 +701,6 @@ def _get_likelihood(
             ValueError(
                 f"Invalid `likelihood='{likelihood}'`. Must be one of {available_likelihoods}"
             ),
-            logger=logger,
         )
 
     if likelihood == LikelihoodType.Gaussian.value:
@@ -722,5 +716,4 @@ def _get_likelihood(
     else:
         raise_log(
             ValueError("Unknown `likelihood='{likelihood}'`."),
-            logger=logger,
         )

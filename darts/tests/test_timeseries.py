@@ -539,6 +539,26 @@ class TestTimeSeries:
         assert self.series1.end_time() == pd.Timestamp("20130110")
         assert self.series1.duration == pd.Timedelta(days=9)
 
+    def test_is_within_range(self):
+        # datetime index: timestamp does not need to be an element of the index
+        assert self.series1.is_within_range(self.series1.start_time())
+        assert self.series1.is_within_range(self.series1.end_time())
+        assert self.series1.is_within_range(pd.Timestamp("20130105 12:00:00"))
+        assert not self.series1.is_within_range(
+            self.series1.start_time() - self.series1.freq
+        )
+        assert not self.series1.is_within_range(
+            self.series1.end_time() + self.series1.freq
+        )
+
+        # range index
+        series_ri = TimeSeries.from_values(np.arange(5.0))
+        assert series_ri.is_within_range(series_ri.start_time())
+        assert series_ri.is_within_range(series_ri.end_time())
+        assert series_ri.is_within_range(2)
+        assert not series_ri.is_within_range(series_ri.start_time() - series_ri.freq)
+        assert not series_ri.is_within_range(series_ri.end_time() + series_ri.freq)
+
     def test_rescale(self):
         with pytest.raises(ValueError) as exc:
             self.series1.rescale_with_value(1)
@@ -555,6 +575,18 @@ class TestTimeSeries:
 
         seriesD = self.series2.rescale_with_value(1e20)
         assert self.series2 * 0.2e20 == seriesD
+
+    @pytest.mark.parametrize(
+        "dt_source,dt_vals",
+        itertools.product(["float32", "float64"], ["float64", "float32"]),
+    )
+    def test_rescale_dtype_conversion(self, dt_source, dt_vals):
+        series_1 = linear_timeseries(
+            start_value=1, start=2, length=5, freq=2, column_name="YE"
+        ).astype(dt_source)
+        vals = np.array(2, dtype=dt_vals)
+
+        assert series_1.rescale_with_value(vals).dtype == dt_source
 
     def test_slice(self):
         helper_test_slice(self.series1)
@@ -815,7 +847,98 @@ class TestTimeSeries:
         expected_idx = pd.RangeIndex(start=1, stop=15, step=2)
         assert np.allclose(prepended.all_values(), expected_vals)
         assert prepended.time_index.equals(expected_idx)
-        assert prepended.components.equals(series_1.components)
+        assert prepended.components.equals(series_2.components)
+
+    @pytest.mark.parametrize(
+        "dt_source,dt_vals",
+        itertools.product(["float32", "float64"], ["float64", "float32"]),
+    )
+    def test_append_prepend_dtype_conversion(self, dt_source, dt_vals):
+        series_1 = linear_timeseries(
+            start=2, length=5, freq=2, column_name="YE"
+        ).astype(dt_source)
+        series_prepend = linear_timeseries(
+            start=0, length=1, freq=2, column_name="YE"
+        ).astype(dt_vals)
+        series_append = linear_timeseries(
+            start=12, length=1, freq=2, column_name="YE"
+        ).astype(dt_vals)
+
+        assert series_1.prepend(series_prepend).dtype == dt_source
+        assert series_1.append(series_append).dtype == dt_source
+
+    def test_append_invalid_inputs(self):
+        series = linear_timeseries(length=1)
+        other_valid = linear_timeseries(length=1, start=series.end_time() + series.freq)
+
+        with pytest.raises(ValueError, match=r"must start one \(time\) step after"):
+            series.append(other_valid.shift(1))
+
+        with pytest.raises(ValueError, match="same number of components"):
+            series.append(other_valid.stack(other_valid))
+
+        with pytest.raises(ValueError, match="same number of samples"):
+            series.append(
+                other_valid.with_values(
+                    np.concatenate([other_valid.all_values()] * 2, axis=2)
+                )
+            )
+
+        with pytest.raises(ValueError, match="same type of time index"):
+            series.append(linear_timeseries(length=1, start=0))
+
+        with pytest.raises(ValueError, match="must have the same frequency"):
+            series.append(
+                linear_timeseries(
+                    start=series.end_time() + series.freq,
+                    length=1,
+                    freq=2 * series.freq,
+                )
+            )
+
+    def test_prepend_invalid_inputs(self):
+        series = linear_timeseries(length=1)
+        other_valid = linear_timeseries(
+            length=1, start=None, end=series.start_time() - series.freq
+        )
+
+        with pytest.raises(ValueError, match=r"must end one \(time\) step before"):
+            series.prepend(other_valid.shift(1))
+
+        with pytest.raises(ValueError, match="same number of components"):
+            series.prepend(other_valid.stack(other_valid))
+
+        with pytest.raises(ValueError, match="same number of samples"):
+            series.prepend(
+                other_valid.with_values(
+                    np.concatenate([other_valid.all_values()] * 2, axis=2)
+                )
+            )
+
+        with pytest.raises(ValueError, match="same type of time index"):
+            series.prepend(linear_timeseries(length=1, start=0))
+
+        with pytest.raises(ValueError, match="must have the same frequency"):
+            series.prepend(
+                linear_timeseries(
+                    start=series.end_time() + series.freq,
+                    length=1,
+                    freq=2 * series.freq,
+                )
+            )
+
+    @pytest.mark.parametrize(
+        "dt_source,dt_vals",
+        itertools.product(["float32", "float64"], ["float64", "float32"]),
+    )
+    def test_append_prepend_values_dtype_conversion(self, dt_source, dt_vals):
+        series_1 = linear_timeseries(
+            start=1, length=5, freq=2, column_name="YE"
+        ).astype(dt_source)
+        vals = np.array([[1]], dtype=dt_vals)
+
+        assert series_1.prepend_values(vals).dtype == dt_source
+        assert series_1.append_values(vals).dtype == dt_source
 
     @pytest.mark.parametrize(
         "config",
@@ -860,6 +983,21 @@ class TestTimeSeries:
         # should not fail for univariate deterministic series if values is a 1D array
         getattr(series[series.columns[0]], method)(
             values=np.random.rand(len(vals)), **kwargs
+        )
+
+    @pytest.mark.parametrize(
+        "dt_source,dt_vals",
+        itertools.product(["float32", "float64"], ["float64", "float32"]),
+    )
+    def test_with_values_dtype_conversion(self, dt_source, dt_vals):
+        series_1 = linear_timeseries(
+            start=2, length=5, freq=2, column_name="YE"
+        ).astype(dt_source)
+        vals = series_1.all_values(copy=True).astype(dt_vals)
+
+        assert series_1.with_values(vals).dtype == dt_source
+        assert (
+            series_1.with_times_and_values(series_1.time_index, vals).dtype == dt_source
         )
 
     def test_cumsum(self):
@@ -1005,6 +1143,22 @@ class TestTimeSeries:
         assert seriesA * arrayB == seriesMul
         assert seriesA / arrayB == seriesDiv
         assert seriesA**arrayB == seriesPow
+
+    @pytest.mark.parametrize(
+        "dt_source,dt_vals",
+        itertools.product(["float32", "float64"], ["float64", "float32"]),
+    )
+    def test_ops_dtype_conversion(self, dt_source, dt_vals):
+        series = linear_timeseries(
+            start_value=1, start=2, length=5, freq=2, column_name="YE"
+        ).astype(dt_source)
+        vals = series.all_values(copy=True).astype(dt_vals)
+
+        assert (series + vals).dtype == dt_source
+        assert (series - vals).dtype == dt_source
+        assert (series * vals).dtype == dt_source
+        assert (series / vals).dtype == dt_source
+        assert (series**vals).dtype == dt_source
 
     def test_getitem_datetime_index(self):
         series_short: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))
@@ -2778,6 +2932,21 @@ class TestTimeSeriesConcatenate:
         assert pd.Timestamp("2000-01-20") == result_ts.end_time()
         assert "D" == result_ts.freq
 
+    @pytest.mark.parametrize(
+        "dt_source,dt_vals",
+        itertools.product(["float32", "float64"], ["float64", "float32"]),
+    )
+    def test_concatenate_dtype_conversion(self, dt_source, dt_vals):
+        series_1 = linear_timeseries(
+            start=2, length=5, freq=2, column_name="YE"
+        ).astype(dt_source)
+        series_2 = linear_timeseries(
+            start=12, length=1, freq=2, column_name="YE"
+        ).astype(dt_vals)
+
+        assert series_1.concatenate(series_2).dtype == dt_source
+        assert concatenate([series_1, series_2]).dtype == dt_source
+
 
 class TestTimeSeriesHierarchy:
     components = ["total", "a", "b", "x", "y", "ax", "ay", "bx", "by"]
@@ -3390,3 +3559,19 @@ class TestSimpleStatistics:
         new_ts = ts.quantile(q=qs)
         assert new_ts == q_ts
         assert new_ts.dtype == dtype
+
+
+class TestTimeSeriesInputValidation:
+    ts = constant_timeseries(value=1, length=10)
+
+    def test_slice_n_points_after_non_positive(self):
+        with pytest.raises(ValueError, match="n should be a positive integer"):
+            self.ts.slice_n_points_after(self.ts.start_time(), n=0)
+        with pytest.raises(ValueError, match="n should be a positive integer"):
+            self.ts.slice_n_points_after(self.ts.start_time(), n=-1)
+
+    def test_slice_n_points_before_non_positive(self):
+        with pytest.raises(ValueError, match="n should be a positive integer"):
+            self.ts.slice_n_points_before(self.ts.end_time(), n=0)
+        with pytest.raises(ValueError, match="n should be a positive integer"):
+            self.ts.slice_n_points_before(self.ts.end_time(), n=-1)

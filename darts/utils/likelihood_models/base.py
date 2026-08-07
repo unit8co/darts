@@ -9,9 +9,7 @@ from enum import Enum
 import pandas as pd
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
 
 
 class LikelihoodType(Enum):
@@ -78,7 +76,6 @@ class Likelihood:
         if (series is not None) == (components is not None):
             raise_log(
                 ValueError("Only one of `series` or `components` must be specified."),
-                logger=logger,
             )
         if series is not None:
             components = series.components

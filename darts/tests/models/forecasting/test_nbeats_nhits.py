@@ -205,3 +205,27 @@ class TestNbeatsNhitsModel:
                     **tfm_kwargs,
                 )
                 model.fit(ts)
+
+
+class TestNHiTSInputValidation:
+    def test_pooling_kernel_sizes_wrong_num_stacks(self):
+        with pytest.raises(ValueError, match="must match the number of stacks"):
+            NHiTSModel(
+                input_chunk_length=12,
+                output_chunk_length=1,
+                num_stacks=2,
+                num_blocks=1,
+                pooling_kernel_sizes=((2,),),
+                **tfm_kwargs,
+            )
+
+    def test_pooling_kernel_sizes_wrong_num_blocks(self):
+        with pytest.raises(ValueError, match="must be `num_blocks="):
+            NHiTSModel(
+                input_chunk_length=12,
+                output_chunk_length=1,
+                num_stacks=1,
+                num_blocks=2,
+                pooling_kernel_sizes=((2,),),
+                **tfm_kwargs,
+            )

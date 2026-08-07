@@ -13,7 +13,7 @@ import pandas as pd
 import prophet
 
 from darts import TimeSeries
-from darts.logging import execute_and_suppress_output, get_logger, raise_if, raise_log
+from darts.logging import execute_and_suppress_output, get_logger, raise_log
 from darts.models.forecasting.forecasting_model import (
     FutureCovariatesLocalForecastingModel,
 )
@@ -36,6 +36,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         add_encoders: dict | None = None,
         random_state: int | None = None,
         suppress_stdout_stderror: bool = True,
+        min_train_length: int | None = None,
         **prophet_kwargs,
     ):
         """Facebook Prophet
@@ -139,6 +140,10 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             Controls the randomness for reproducible forecasting.
         suppress_stdout_stderror
             Optionally suppress the log output produced by Prophet during training.
+        min_train_length
+            Optionally, set a custom minimum required training series length for this model to allow training on
+            shorter input series. By default, Darts sets a conservative minimum length to avoid downstream issues.
+            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default requirement).
         prophet_kwargs
             Some optional keyword arguments for Prophet.
             For information about the parameters see:
@@ -171,7 +176,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
          [539.11716811]]
         """
 
-        super().__init__(add_encoders=add_encoders)
+        super().__init__(add_encoders=add_encoders, min_train_length=min_train_length)
 
         self._auto_seasonalities = self._extract_auto_seasonality(prophet_kwargs)
         self._add_regressor_configs = add_regressor_configs or {}
@@ -204,11 +209,12 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 "logistic. The set capacities will be ignored."
             )
         if self.is_logistic:
-            raise_if(
-                cap is None,
-                "Parameter `cap` has to be set when `growth` is logistic",
-                logger,
-            )
+            if cap is None:
+                raise_log(
+                    ValueError(
+                        "Parameter `cap` has to be set when `growth` is logistic."
+                    ),
+                )
             if floor is None:
                 # Use 0 as default value
                 self._floor = 0
@@ -259,7 +265,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                             f"The following components have been configured in `add_regressor_configs` "
                             f"but are not present in the `future_covariates`: `{comps_invalid}`."
                         ),
-                        logger=logger,
                     )
 
             fit_df = fit_df.merge(
@@ -325,13 +330,14 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             df["cap"] = self._cap(dates) if callable(self._cap) else self._cap
             df["floor"] = self._floor(dates) if callable(self._floor) else self._floor
         except ValueError as e:
-            raise_if(
-                "does not match length of index" in str(e),
-                "Callables supplied to `Prophet.set_capacity` as `cap` or `floor` "
-                "arguments have to return Sequences of identical length as their "
-                " input argument Sequence!",
-                logger,
-            )
+            if "does not match length of index" in str(e):
+                raise_log(
+                    ValueError(
+                        "Callables supplied to `Prophet.set_capacity` as `cap` or `floor` "
+                        "arguments have to return Sequences of identical length as their "
+                        " input argument Sequence!"
+                    ),
+                )
             raise
         return df
 
@@ -420,7 +426,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                     f"Each conditional seasonality must be accompanied by a binary component/column in the "
                     f"`future_covariates` with the same name as the `condition_name`"
                 ),
-                logger,
             )
         return conditional_seasonality_covariates
 
@@ -569,30 +574,36 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         missing_kws = [
             kw for kw in mandatory_keywords if add_seasonality_call[kw] is None
         ]
-        raise_if(
-            len(missing_kws) > 0,
-            f"Seasonality `{add_seasonality_call['name']}` has missing mandatory keywords or empty arguments: "
-            f"{missing_kws}.",
-            logger,
-        )
+        if len(missing_kws) > 0:
+            raise_log(
+                ValueError(
+                    f"Seasonality `{add_seasonality_call['name']}` has missing mandatory keywords or empty arguments: "
+                    f"{missing_kws}."
+                ),
+            )
 
         seasonality_name = add_seasonality_call["name"]
-        raise_if(
+        if (
             seasonality_name in self._auto_seasonalities
-            or seasonality_name in self._add_seasonalities,
-            f"Adding seasonality with `name={seasonality_name}` failed. A seasonality with this name already "
-            f"exists.",
-        )
+            or seasonality_name in self._add_seasonalities
+        ):
+            raise_log(
+                ValueError(
+                    f"Adding seasonality with `name={seasonality_name}` failed. A seasonality with this name already "
+                    f"exists."
+                ),
+            )
 
         invalid_kws = [
             kw for kw in add_seasonality_call if kw not in seasonality_default
         ]
-        raise_if(
-            len(invalid_kws) > 0,
-            f"Seasonality `{add_seasonality_call['name']}` has invalid keywords: {invalid_kws}. Only the "
-            f"following arguments are supported: {list(seasonality_default)}",
-            logger,
-        )
+        if len(invalid_kws) > 0:
+            raise_log(
+                ValueError(
+                    f"Seasonality `{add_seasonality_call['name']}` has invalid keywords: {invalid_kws}. Only the "
+                    f"following arguments are supported: {list(seasonality_default)}."
+                ),
+            )
 
         invalid_types = [
             kw
@@ -600,12 +611,13 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             if not isinstance(value, seasonality_properties[kw]["dtype"])
             and value is not None
         ]
-        raise_if(
-            len(invalid_types) > 0,
-            f"Seasonality `{add_seasonality_call['name']}` has invalid value dtypes: {invalid_types} must be "
-            f"of type {[seasonality_properties[kw]['dtype'] for kw in invalid_types]}.",
-            logger,
-        )
+        if len(invalid_types) > 0:
+            raise_log(
+                ValueError(
+                    f"Seasonality `{add_seasonality_call['name']}` has invalid value dtypes: {invalid_types} must be "
+                    f"of type {[seasonality_properties[kw]['dtype'] for kw in invalid_types]}."
+                ),
+            )
 
         self._add_seasonalities[seasonality_name] = add_seasonality_call
 
@@ -688,17 +700,15 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 ValueError(
                     f"freq {freq} not understood. Please report if you think this is in error."
                 ),
-                logger=logger,
             )
         return freq_times * days
 
     @property
     def _supports_range_index(self) -> bool:
         """Prophet does not support integer range index."""
-        raise_if(
-            True,
-            "Prophet does not support integer range index. The index of the TimeSeries must be of type "
-            "pandas.DatetimeIndex",
-            logger,
+        raise_log(
+            ValueError(
+                "Prophet does not support integer range index. The index of the TimeSeries must be of type "
+                "`pandas.DatetimeIndex`."
+            ),
         )
-        return False

@@ -52,3 +52,25 @@ class TestMissingValuesFiller:
             self.const_series.static_covariates.values
             == transformed.static_covariates.values
         )
+
+    @pytest.mark.parametrize(
+        "dt_source",
+        ["float32", "float64"],
+    )
+    def test_dtype_conversion(self, dt_source):
+        series = self.const_series_with_holes.astype(dt_source)
+
+        transformer = MissingValuesFiller(fill=2.0)
+        transformed = transformer.transform(series)
+
+        assert transformed.dtype == dt_source
+
+
+class TestMissingValuesFillerInputValidation:
+    def test_fill_invalid_type(self):
+        with pytest.raises(ValueError, match="should either be a string or a float"):
+            MissingValuesFiller(fill=None)
+
+    def test_fill_invalid_string(self):
+        with pytest.raises(ValueError, match="can only be set to 'auto'"):
+            MissingValuesFiller(fill="mean")

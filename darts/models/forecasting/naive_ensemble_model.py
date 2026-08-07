@@ -6,13 +6,10 @@ Naive Ensemble Model
 import numpy as np
 
 from darts import TimeSeries
-from darts.logging import get_logger
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.typing import TimeSeriesLike
 from darts.utils.ts_utils import get_series_seq_type, series2seq
-
-logger = get_logger(__name__)
 
 
 class NaiveEnsembleModel(EnsembleModel):

@@ -5,10 +5,7 @@ AutoMFLES
 
 from statsforecast.models import AutoMFLES as SFAutoMFLES
 
-from darts.logging import get_logger
 from darts.models.forecasting.sf_model import StatsForecastModel
-
-logger = get_logger(__name__)
 
 
 class AutoMFLES(StatsForecastModel):
@@ -18,6 +15,7 @@ class AutoMFLES(StatsForecastModel):
         add_encoders: dict | None = None,
         quantiles: list[float] | None = None,
         random_state: int | None = None,
+        min_train_length: int | None = None,
         **kwargs,
     ):
         """Auto-MFLES based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`__.
@@ -85,6 +83,10 @@ class AutoMFLES(StatsForecastModel):
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
         random_state
             Controls the randomness for reproducible forecasting.
+        min_train_length
+            Optionally, set a custom minimum required training series length for this model to allow training on
+            shorter input series. By default, Darts sets a conservative minimum length to avoid downstream issues.
+            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default requirement).
         kwargs
             Keyword arguments for ``statsforecasts.models.AutoMFLES``.
 
@@ -113,6 +115,7 @@ class AutoMFLES(StatsForecastModel):
             quantiles=quantiles,
             add_encoders=add_encoders,
             random_state=random_state,
+            min_train_length=min_train_length,
         )
 
     @property

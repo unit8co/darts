@@ -15,9 +15,7 @@ from darts.dataprocessing.transformers.fittable_data_transformer import (
 from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
-from darts.logging import get_logger, raise_log
-
-logger = get_logger(__name__)
+from darts.logging import raise_log
 
 
 class Diff(FittableDataTransformer, InvertibleDataTransformer):
@@ -137,7 +135,6 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                     f"to difference with lags {lags}; series only has "
                     f"{series.n_timesteps} timesteps."
                 ),
-                logger,
             )
         component_mask = kwargs.get("component_mask")
 
@@ -186,7 +183,6 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                     f"Series is of frequency {series.freq}, but "
                     f"transform was fitted to data of frequency {freq}."
                 ),
-                logger,
             )
 
         # if given, add the historic part of `insample` to the `series`
@@ -203,7 +199,6 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                     f"Expected the {'`insample` series' if n_forecast_output else '`series`'} "
                     f"to begin at time {expected_start}; instead, it begins at time {series.start_time()}."
                 ),
-                logger,
             )
         component_mask = kwargs.get("component_mask")
         if np.any(fit_component_mask != component_mask):
@@ -212,7 +207,6 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                     "Provided `component_mask` does not match "
                     "`component_mask` specified when `fit` was called."
                 ),
-                logger,
             )
         if dropna:
             start_shape = (sum(lags), series.n_components, series.n_samples)
@@ -236,7 +230,6 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                     f"Expected series to have {start_vals.shape[1]} components; "
                     f"instead, it has {vals.shape[1]}."
                 ),
-                logger,
             )
         if vals.shape[2] != start_vals.shape[2]:
             raise_log(
@@ -244,7 +237,6 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                     f"Expected series to have {start_vals.shape[2]} samples; "
                     f"instead, it has {vals.shape[2]}."
                 ),
-                logger,
             )
         cutoff = sum(lags)
         for lag in reversed(lags):

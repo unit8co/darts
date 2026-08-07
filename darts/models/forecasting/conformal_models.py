@@ -29,7 +29,7 @@ import pandas as pd
 from darts import TimeSeries, metrics
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import BaseDataTransformer
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.metrics.utils import METRIC_TYPE
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.typing import TimeSeriesLike
@@ -56,8 +56,6 @@ if TORCH_AVAILABLE:
     from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 else:
     TorchForecastingModel = None
-
-logger = get_logger(__name__)
 
 
 class ConformalModel(GlobalForecastingModel, ABC):
@@ -136,18 +134,17 @@ class ConformalModel(GlobalForecastingModel, ABC):
         if not isinstance(model, GlobalForecastingModel) or not model._fit_called:
             raise_log(
                 ValueError("`model` must be a pre-trained `GlobalForecastingModel`."),
-                logger=logger,
             )
         _check_quantiles(quantiles)
 
         if cal_length is not None and cal_length < 1:
             raise_log(
-                ValueError("`cal_length` must be `>=1` or `None`."), logger=logger
+                ValueError("`cal_length` must be `>=1` or `None`."),
             )
         if cal_stride < 1:
-            raise_log(ValueError("`cal_stride` must be `>=1`."), logger=logger)
+            raise_log(ValueError("`cal_stride` must be `>=1`."))
         if cal_num_samples < 1:
-            raise_log(ValueError("`cal_num_samples` must be `>=1`."), logger=logger)
+            raise_log(ValueError("`cal_num_samples` must be `>=1`."))
 
         super().__init__(add_encoders=None)
 
@@ -398,7 +395,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | int | None = None,
+        start: pd.Timestamp | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -465,11 +462,14 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Currently ignored by conformal models.
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
-            ``int``, ``pandas.Timestamp``, and ``None``.
+            ``int``, ``pandas.Timestamp``, ``'end'``, and ``None``.
             If an ``int``, it is either the index position of the first prediction point for `series` with a
             `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
             the index position with `start_format="position"`.
             If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If the string ``'end'``, generates a single forecast per series starting one step after the end of each
+            series (future-only forecasting). The model uses the entire series as input. Forecasts will extend beyond
+            the series end regardless of the ``overlap_end`` parameter value.
             If ``None``, the first prediction point will automatically be set to:
 
             - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
@@ -484,7 +484,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
             (default behavior with ``None``) and start at the first trainable/predictable point.
         start_format
-            Defines the `start` format.
+            Defines the `start` format. Ignored when ``start='end'``.
             If set to ``'position'``, `start` corresponds to the index position of the first predicted point and can
             range from `(-len(series), len(series) - 1)`.
             If set to ``'value'``, `start` corresponds to the index value/label of the first predicted point. Will raise
@@ -631,7 +631,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | int | None = None,
+        start: pd.Timestamp | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -865,7 +865,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | int | None = None,
+        start: pd.Timestamp | int | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -1202,7 +1202,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
                         f"Expected to generate at least `{min_n_cal}` calibration forecasts with known residuals "
                         f"before the first conformal forecast, but could only generate `{len(res)}`."
                     ),
-                    logger=logger,
                 )
 
             # adjust first index based on `start`
@@ -1806,7 +1805,6 @@ class ConformalQRModel(ConformalModel):
                     "`model` must support probabilistic forecasting. Consider using a `likelihood` at "
                     "forecasting model creation, or use another conformal model."
                 ),
-                logger=logger,
             )
         super().__init__(
             model=model,

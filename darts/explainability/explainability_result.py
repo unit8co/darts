@@ -25,10 +25,8 @@ import pandas as pd
 import shap
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.typing import TimeSeriesLike
-
-logger = get_logger(__name__)
 
 
 class _ExplainabilityResult(ABC):
@@ -70,8 +68,7 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
                 raise_log(
                     ValueError(
                         "When giving a list of explained component dicts, the dict keys must match."
-                    ),
-                    logger=logger,
+                    )
                 )
         else:
             comps_available = explained_components.keys()
@@ -129,8 +126,7 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
             raise_log(
                 ValueError(
                     "The component parameter is required when the model has more than one component."
-                ),
-                logger,
+                )
             )
 
         component_out = self.available_components[0] if component is None else component
@@ -140,8 +136,7 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
                 ValueError(
                     f'Component "{component_out}" is not available. '
                     f"Available components are: {self.available_components}"
-                ),
-                logger,
+                )
             )
         return component_out
 
@@ -228,8 +223,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
                 raise_log(
                     ValueError(
                         "The `explained_forecasts` list must consist of dictionaries."
-                    ),
-                    logger,
+                    )
                 )
             if not all(
                 isinstance(key, int) for key in self.explained_forecasts[0].keys()
@@ -237,8 +231,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
                 raise_log(
                     ValueError(
                         "The `explained_forecasts` dictionary list must have all integer keys."
-                    ),
-                    logger,
+                    )
                 )
             self.available_horizons = list(self.explained_forecasts[0].keys())
             h_0 = self.available_horizons[0]
@@ -252,15 +245,13 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
                 raise_log(
                     ValueError(
                         "The `explained_forecasts` dictionary must have all integer keys."
-                    ),
-                    logger,
+                    )
                 )
         else:
             raise_log(
                 ValueError(
                     "The `explained_forecasts` must be a dictionary or a list of dictionaries."
-                ),
-                logger,
+                )
             )
 
     def get_explanation(
@@ -315,7 +306,6 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
                 ValueError(
                     f"Something went wrong. {self.__class__.__name__} got instantiated with an unexpected type."
                 ),
-                logger,
             )
 
     def _validate_input_for_querying_explainability_result(
@@ -337,8 +327,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
             raise_log(
                 ValueError(
                     "The component parameter is required when the model has more than one component."
-                ),
-                logger,
+                )
             )
 
         component_out = self.available_components[0] if component is None else component
@@ -348,16 +337,14 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
                 ValueError(
                     f'Component "{component_out}" is not available. '
                     f"Available components are: {self.available_components}"
-                ),
-                logger,
+                )
             )
 
         if horizon not in self.available_horizons:
             raise_log(
                 ValueError(
                     f"Horizon {horizon} is not available. Available horizons are: {self.available_horizons}"
-                ),
-                logger,
+                )
             )
         return component_out
 
@@ -567,13 +554,17 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
 
     - :func:`get_attention() <TFTExplainabilityResult.get_attention>`: self attention over the encoder and decoder
     - :func:`get_encoder_importance() <TFTExplainabilityResult.get_encoder_importance>`: encoder feature importances
-      including past target, past covariates, and historic part of future covariates.
+      aggregated over time including past target, past covariates, and historic part of future covariates.
     - :func:`get_decoder_importance() <TFTExplainabilityResult.get_decoder_importance>`: decoder feature importances
-      including future part of future covariates.
+      aggregated over time including future part of future covariates.
     - :func:`get_static_covariates_importance() <TFTExplainabilityResult.get_static_covariates_importance>`: static
       covariates importances.
-    - :func:`get_feature_importances() <TFTExplainabilityResult.get_feature_importances>`: get all feature importances
-      at once.
+    - :func:`get_feature_importances() <TFTExplainabilityResult.get_feature_importances>`: get all time-aggregated
+      feature importances at once.
+    - :func:`get_encoder_importance_over_time() <TFTExplainabilityResult.get_encoder_importance_over_time>`: encoder
+      feature importances over time of the input chunk.
+    - :func:`get_decoder_importance_over_time() <TFTExplainabilityResult.get_decoder_importance_over_time>`: decoder
+      feature importances over time of the output chunk.
 
     Examples
     --------
@@ -605,6 +596,8 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
     >>> encoder_importance = result.get_encoder_importance()
     >>> decoder_importance = result.get_decoder_importance()
     >>> static_cov_importance = result.get_static_covariates_importance()
+    >>> encoder_importance_over_time = result.get_encoder_importance_over_time()
+    >>> decoder_importance_over_time = result.get_decoder_importance_over_time()
     """
 
     def __init__(
@@ -641,7 +634,7 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
 
     def get_encoder_importance(self) -> pd.DataFrame | list[pd.DataFrame]:
         """
-        Returns the time-dependent encoder importances as a pd.DataFrames.
+        Returns the encoder importances aggregated over time as a pd.DataFrames.
         If multiple series were used in :func:`TFTExplainer.explain()
         <darts.explainability.tft_explainer.TFTExplainer.explain>`, returns a list of pd.DataFrames.
         """
@@ -649,7 +642,7 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
 
     def get_decoder_importance(self) -> pd.DataFrame | list[pd.DataFrame]:
         """
-        Returns the time-dependent decoder importances as a pd.DataFrames.
+        Returns the decoder importances aggregated over time as a pd.DataFrames.
         If multiple series were used in :func:`TFTExplainer.explain()
         <darts.explainability.tft_explainer.TFTExplainer.explain>`, returns a list of pd.DataFrames.
         """
@@ -664,3 +657,21 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
         <darts.explainability.tft_explainer.TFTExplainer.explain>`, returns a list of pd.DataFrames.
         """
         return self.get_explanation("static_covariates_importance")
+
+    def get_encoder_importance_over_time(self) -> TimeSeries | list[TimeSeries]:
+        """
+        Returns the encoder importances over time as a `TimeSeries`, with one component per encoder variable.
+        The time index corresponds to the input chunk of the explained series. If multiple series were used
+        in :func:`TFTExplainer.explain() <darts.explainability.tft_explainer.TFTExplainer.explain>`, returns a list
+        of `TimeSeries`.
+        """
+        return self.get_explanation("encoder_importance_over_time")
+
+    def get_decoder_importance_over_time(self) -> TimeSeries | list[TimeSeries]:
+        """
+        Returns the decoder importances over time as a `TimeSeries`, with one component per decoder variable.
+        The time index corresponds to the forecast horizon of the explained series. If multiple series were used
+        in :func:`TFTExplainer.explain() <darts.explainability.tft_explainer.TFTExplainer.explain>`, returns a list
+        of `TimeSeries`.
+        """
+        return self.get_explanation("decoder_importance_over_time")

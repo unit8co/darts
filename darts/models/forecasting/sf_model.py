@@ -9,7 +9,7 @@ import numpy as np
 import statsforecast.models as sf_models
 
 from darts import TimeSeries, concatenate
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models import LinearRegressionModel
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
@@ -17,8 +17,6 @@ from darts.models.forecasting.forecasting_model import (
 from darts.utils.likelihood_models.statsforecast import QuantilePrediction
 from darts.utils.timeseries_generation import _build_forecast_series
 from darts.utils.utils import random_method
-
-logger = get_logger(__name__)
 
 
 @runtime_checkable
@@ -47,6 +45,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         add_encoders: dict | None = None,
         quantiles: list[float] | None = None,
         random_state: int | None = None,
+        min_train_length: int | None = None,
     ):
         """StatsForecast Model.
 
@@ -126,6 +125,10 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
         random_state
             Controls the randomness for reproducible forecasting.
+        min_train_length
+            Optionally, set a custom minimum required training series length for this model to allow training on
+            shorter input series. By default, Darts sets a conservative minimum length to avoid downstream issues.
+            Changing this value might lead to such downstream issues. Default: ``None`` (keeps the default requirement).
 
         Examples
         --------
@@ -159,7 +162,6 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
                         f"Could not find a StatsForecast model class named `{model}` "
                         f"in `statsforecast.models`."
                     ),
-                    logger,
                 )
             model = model_class(**model_kwargs)
         elif isinstance(model, type) and issubclass(model, sf_models._TS):
@@ -169,7 +171,6 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
                 ValueError(
                     "`model` must be a valid StatsForecast model name (str), class or instance."
                 ),
-                logger,
             )
 
         self.model: _SFModel = model
@@ -177,7 +178,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
 
         # future covariates support can be added through the use of a linear model
         self._linreg: LinearRegressionModel | None = None
-        super().__init__(add_encoders=add_encoders)
+        super().__init__(add_encoders=add_encoders, min_train_length=min_train_length)
 
     def _fit(
         self,
@@ -396,7 +397,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
 
     @property
     def _target_window_lengths(self) -> tuple[int, int]:
-        return 10, 0
+        return self._min_train_input_length(10), 0
 
     @property
     def _supports_range_index(self) -> bool:

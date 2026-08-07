@@ -172,6 +172,22 @@ class TestTFTExplainer:
         assert attention.end_time() == series.end_time() + ocl * freq
         assert attention.n_components == ocl
 
+        enc_imp_ot = result.get_encoder_importance_over_time()
+        dec_imp_ot = result.get_decoder_importance_over_time()
+        assert isinstance(enc_imp_ot, TimeSeries)
+        assert isinstance(dec_imp_ot, TimeSeries)
+        assert len(enc_imp_ot) == icl
+        assert enc_imp_ot.start_time() == series.end_time() - (icl - 1) * freq
+        assert enc_imp_ot.end_time() == series.end_time()
+        assert enc_imp_ot.n_components == n_enc_expected
+        assert len(dec_imp_ot) == ocl
+        assert dec_imp_ot.start_time() == series.end_time() + freq
+        assert dec_imp_ot.end_time() == series.end_time() + ocl * freq
+        assert dec_imp_ot.n_components == n_dec_expected
+        # importances must sum up to 100 percent at every single timestep (not just on average)
+        np.testing.assert_allclose(enc_imp_ot.values().sum(axis=1), 100.0, atol=0.1)
+        np.testing.assert_allclose(dec_imp_ot.values().sum(axis=1), 100.0, atol=0.1)
+
     @pytest.mark.parametrize("test_case", helper_create_test_cases(["multiple"]))
     def test_explainer_multiple_multivariate_series(self, test_case):
         """Test TFTExplainer with multiple multivaraites series and a combination of encoders, covariates,
@@ -284,6 +300,28 @@ class TestTFTExplainer:
         ])
         assert all([att.n_components == ocl for att in attention])
 
+        enc_imp_ot = result.get_encoder_importance_over_time()
+        dec_imp_ot = result.get_decoder_importance_over_time()
+        assert isinstance(enc_imp_ot, list) and len(enc_imp_ot) == len(series)
+        assert isinstance(dec_imp_ot, list) and len(dec_imp_ot) == len(series)
+        assert all([isinstance(ts, TimeSeries) for ts in enc_imp_ot])
+        assert all([isinstance(ts, TimeSeries) for ts in dec_imp_ot])
+        assert all([len(ts) == icl for ts in enc_imp_ot])
+        assert all([len(ts) == ocl for ts in dec_imp_ot])
+        assert all([ts.n_components == n_enc_expected for ts in enc_imp_ot])
+        assert all([ts.n_components == n_dec_expected for ts in dec_imp_ot])
+        assert all([
+            ts.start_time() == series_.end_time() - (icl - 1) * freq
+            for ts, series_ in zip(enc_imp_ot, series)
+        ])
+        assert all([
+            ts.end_time() == series_.end_time() + ocl * freq
+            for ts, series_ in zip(dec_imp_ot, series)
+        ])
+        # importances must sum up to 100 percent at every single timestep (not just on average)
+        for ts in enc_imp_ot + dec_imp_ot:
+            np.testing.assert_allclose(ts.values().sum(axis=1), 100.0, atol=0.1)
+
         # cannot explain more series than the batch size
         with pytest.raises(ValueError) as exc:
             explainer.explain(
@@ -376,6 +414,41 @@ class TestTFTExplainer:
         # relaxed comparison because M1 chip gives slightly different results than intel chip
         assert ((stc_imp.round(decimals=1) - stc_expected).abs() <= 0.1).all().all()
 
+        enc_imp_ot = results.get_encoder_importance_over_time()
+        dec_imp_ot = results.get_decoder_importance_over_time()
+        if n_series > 1:
+            # check that all importances are the same across series (since the series have identical values)
+            np.testing.assert_array_almost_equal(
+                enc_imp_ot[0].values(), enc_imp_ot[1].values()
+            )
+            np.testing.assert_array_almost_equal(
+                dec_imp_ot[0].values(), dec_imp_ot[1].values()
+            )
+            enc_imp_ot = enc_imp_ot[0]
+            dec_imp_ot = dec_imp_ot[0]
+        assert isinstance(enc_imp_ot, TimeSeries)
+        assert isinstance(dec_imp_ot, TimeSeries)
+        assert set(enc_imp_ot.components) == set(enc_imp.columns)
+        assert set(dec_imp_ot.components) == set(dec_imp.columns)
+        # averaging the per-timestep importance over time must recover the (already validated)
+        # time-aggregated importance, since both derive from the same underlying softmax weights
+        mean_enc_ot = pd.Series(
+            enc_imp_ot.values().mean(axis=0), index=enc_imp_ot.components
+        )
+        mean_dec_ot = pd.Series(
+            dec_imp_ot.values().mean(axis=0), index=dec_imp_ot.components
+        )
+        np.testing.assert_allclose(
+            mean_enc_ot[enc_imp.columns].to_numpy(),
+            enc_imp.iloc[0].to_numpy(),
+            atol=0.1,
+        )
+        np.testing.assert_allclose(
+            mean_dec_ot[dec_imp.columns].to_numpy(),
+            dec_imp.iloc[0].to_numpy(),
+            atol=0.1,
+        )
+
         figs = explainer.plot_variable_selection(results)
         if n_series == 1:
             figs = [figs]
@@ -453,6 +526,9 @@ class TestTFTExplainer:
             # heatmap also plot colorbar axis
             _check_plot(n_series, 2, plot_type="heatmap", show_index_as="relative")
             _check_plot(n_series, 2, plot_type="heatmap", show_index_as="time")
+
+            with pytest.raises(ValueError, match="`plot_type` must be either"):
+                _check_plot(n_series, 2, plot_type="invalid", show_index_as="time")
 
     def helper_create_model(
         self, use_encoders=True, add_relative_idx=True, full_attention=False

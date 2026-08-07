@@ -14,10 +14,7 @@ from sklearn.cluster import KMeans
 
 from darts import metrics
 from darts.ad.scorers.scorers import WindowedAnomalyScorer
-from darts.logging import get_logger
 from darts.metrics.utils import METRIC_TYPE
-
-logger = get_logger(__name__)
 
 
 class KMeansScorer(WindowedAnomalyScorer):

@@ -77,8 +77,7 @@ class TorchShapAdapter(ShapAdapter):
                     ValueError(
                         f"Background series must contain at least {MIN_BACKGROUND_SAMPLE} samples to create a "
                         f"valid background. Got background dataset length={len(dataset)}."
-                    ),
-                    logger,
+                    )
                 )
             if n_samples > MAX_BACKGROUND_SAMPLE:
                 logger.warning(
@@ -307,6 +306,5 @@ class TorchShapAdapter(ShapAdapter):
                 ValueError(
                     f"Invalid `model` type: `{type(model)}`. Only models of type "
                     f"`TorchForecastingModel` are supported."
-                ),
-                logger,
+                )
             )

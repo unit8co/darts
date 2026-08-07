@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "darts"
-version = "0.45.0"
+version = "0.46.1"
 description = "A python library for easy manipulation and forecasting of time series."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -46,6 +46,10 @@ dependencies = [
     "tqdm>=4.60.0",
     "typing-extensions>=4.0.0",
     "xarray>=0.17.0",
+    "numba<0.63; sys_platform == 'darwin' and platform_machine == 'x86_64'",  # numba 0.63+ dropped macOS x86_64 wheels, see numba/numba#10187
+    "numba; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+    "llvmlite<0.46; sys_platform == 'darwin' and platform_machine == 'x86_64'",  # llvmlite 0.46+ dropped macOS x86_64 wheels, see numba/numba#10187
+    "llvmlite; sys_platform != 'darwin' or platform_machine != 'x86_64'",
 ]
 
 [project.urls]
@@ -58,7 +62,7 @@ Repository = "https://github.com/unit8co/darts"
 # Main feature sets - pip installable with: pip install "darts[torch]"
 torch = [
     "torch>=2.0.0",
-    "pytorch-lightning>=2.0.0,<2.5.3",
+    "pytorch-lightning>=2.0.0",
     "tensorboardx>=2.1",
     "huggingface-hub>=0.35.3",
     "safetensors>=0.6.2",
@@ -75,7 +79,7 @@ all = ["darts[torch,notorch]"]
 [tool.uv]
 # Cooldown period for PyPI releases to mitigate supply chain attacks.
 exclude-newer = "7 days"
-exclude-newer-package = { jupyterlab = "3 days" }
+exclude-newer-package = {}
 # Must resolve dependencies for major platforms in uv.lock
 required-environments = [
     "sys_platform == 'darwin'",
@@ -185,8 +189,8 @@ release = [
     "ipython-genutils==0.2.0",
     "ipywidgets==8.1.8",
     "jinja2==3.1.6",
-    "jupyterlab==4.5.7",
-    "lxml-html-clean==0.4.4",
+    "jupyterlab==4.6.2",
+    "lxml-html-clean==0.4.5",
     "myst-parser==5.0.0; python_version >= '3.11'",
     "myst-parser==4.0.1; python_version < '3.11'",
     "nbsphinx==0.9.7",
@@ -208,7 +212,7 @@ dev-all = [
 ]
 
 [tool.bumpversion]
-current_version = "0.45.0"
+current_version = "0.46.1"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
 serialize = ["{major}.{minor}.{patch}"]
 commit = true

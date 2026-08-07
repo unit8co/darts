@@ -6,7 +6,6 @@ D-Linear
 import torch
 import torch.nn as nn
 
-from darts.logging import raise_if
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
@@ -153,11 +152,11 @@ class _DLinearModule(PLForecastingModule):
     def forward(self, x_in: PLModuleInput):
         """
         x_in
-            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
-            is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
+            comes as tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
+            `x_future` is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
         """
 
-        x, x_future, x_static = x_in  # x: (batch, in_len, in_dim)
+        x, x_future, x_static, _ = x_in  # x: (batch, in_len, in_dim)
         batch, _, _ = x.shape
 
         if self.shared_weights:
@@ -474,16 +473,10 @@ class DLinearModel(MixedCovariatesTorchModel):
         self.const_init = const_init
         self._considers_static_covariates = use_static_covariates
 
-    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
         (past_target, past_covariates, _, future_covariates, static_covariates, _) = (
             train_sample
-        )
-        raise_if(
-            self.shared_weights
-            and (past_covariates is not None or future_covariates is not None),
-            "Covariates have been provided, but the model has been built with `shared_weights=True`. "
-            "Please set `shared_weights=False` to use covariates.",
         )
 
         input_dim = past_target.shape[1] + sum(

@@ -16,7 +16,7 @@ import torch
 import torch.nn as nn
 import torchmetrics
 
-from darts.logging import get_logger, raise_if, raise_log
+from darts.logging import raise_log
 from darts.models.components.layer_norm_variants import RINorm
 from darts.utils.data.torch_datasets.utils import (
     PLModuleInput,
@@ -26,8 +26,6 @@ from darts.utils.data.torch_datasets.utils import (
 )
 from darts.utils.likelihood_models.torch import TorchLikelihood
 from darts.utils.torch import MonteCarloDropout
-
-logger = get_logger(__name__)
 
 
 def io_processor(forward):
@@ -164,12 +162,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # save hyper parameters for saving/loading
         self.save_hyperparameters(ignore=["loss_fn", "torch_metrics"])
 
-        raise_if(
-            input_chunk_length is None or output_chunk_length is None,
-            "Both `input_chunk_length` and `output_chunk_length` must be passed to `PLForecastingModule`",
-            logger,
-        )
-
         self.input_chunk_length = input_chunk_length
         # output_chunk_length is a property
         self._output_chunk_length = output_chunk_length
@@ -209,7 +201,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # reversible instance norm
         self.use_reversible_instance_norm = use_reversible_instance_norm
         if use_reversible_instance_norm is True:
-            self.rin = RINorm(input_dim=self.n_targets)
+            self.rin: RINorm | None = RINorm(input_dim=self.n_targets)
         elif isinstance(use_reversible_instance_norm, dict):
             self.rin = RINorm(input_dim=self.n_targets, **use_reversible_instance_norm)
         else:
@@ -237,7 +229,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
         Parameters
         ----------
         x_in
-            ``(x_past, x_future, x_static)`` the past, future, and static features.
+            ``(x_past, x_future, x_static, future_target)`` the past, future, and static features, as well as
+            the future target.
         *args
             Whatever you decide to pass into the forward method.
         **kwargs
@@ -296,6 +289,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 historic_future_covariates,
                 future_covariates,
                 static_covariates,
+                future_target if name == "train" else None,
             ),
         )
         loss = self._compute_loss(output, future_target, criterion, sample_weight)
@@ -492,7 +486,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
                         f"\narguments (kwargs): {kws}"
                         f"\nerror:\n{e}"
                     ),
-                    logger,
                 )
 
         # Create the optimizer and (optionally) the learning rate scheduler
@@ -537,7 +530,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         Parameters
         ----------
         input_batch
-            ``(past target, past cov, historic future cov, future cov, static cov)``.
+            ``(past target, past cov, historic future cov, future cov, static cov, future target)``.
         """
         return self(self._process_input_batch(input_batch))
 
@@ -550,12 +543,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
         Parameters
         ----------
         input_batch
-            ``(past target, past cov, historic future cov, future cov, static cov)``.
+            ``(past target, past cov, historic future cov, future cov, static cov, future target)``.
 
         Returns
         -------
         tuple
-            ``(x_past, x_future, x_static)`` the past, future, and static features.
+            ``(x_past, x_future, x_static, future_target)`` the past, future, and static features, as well as
+            the future target.
         """
         (
             past_target,
@@ -563,6 +557,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             historic_future_covariates,
             future_covariates,
             static_covariates,
+            future_target,
         ) = input_batch
         dim_comp = 2
 
@@ -578,7 +573,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             ],
             dim=dim_comp,
         )
-        return x_past, future_covariates, static_covariates
+        return x_past, future_covariates, static_covariates, future_target
 
     def _get_batch_prediction(
         self, n: int, input_batch: tuple[torch.Tensor | None, ...], roll_size: int
@@ -619,7 +614,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             else 0
         )
 
-        input_past, input_future, input_static = self._process_input_batch((
+        input_past, input_future, input_static, _ = self._process_input_batch((
             past_target,
             past_covariates,
             historic_future_covariates,
@@ -629,11 +624,12 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 else None
             ),
             static_covariates,
+            None,  # future target
         ))
 
-        out = self._produce_predict_output(x=(input_past, input_future, input_static))[
-            :, self.first_prediction_index :, :
-        ]
+        out = self._produce_predict_output(
+            x=(input_past, input_future, input_static, None)
+        )[:, self.first_prediction_index :, :]
 
         batch_prediction = [out[:, :roll_size, :]]
         prediction_length = roll_size
@@ -702,7 +698,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
             # take only last part of the output sequence where needed
             out = self._produce_predict_output(
-                x=(input_past, input_future, input_static)
+                x=(input_past, input_future, input_static, None)
             )[:, self.first_prediction_index :, :]
 
             batch_prediction.append(out)
@@ -744,7 +740,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
     def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None or len(self._get_mc_dropout_modules()) > 0
 
-    def _produce_predict_output(self, x: tuple) -> torch.Tensor:
+    def _produce_predict_output(self, x: PLModuleInput) -> torch.Tensor:
         if self.likelihood:
             output = self(x)
             if self.predict_likelihood_parameters:
@@ -785,11 +781,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
         elif dtype == torch.float64:
             self.double()
         else:
-            raise_if(
-                True,
-                f"Trying to load dtype `{dtype}`. Loading for this type is not implemented yet. Please report this "
-                f"issue on https://github.com/unit8co/darts",
-                logger,
+            raise_log(
+                ValueError(
+                    f"Trying to load dtype `{dtype}`. Loading for this type is not implemented yet. Please report this "
+                    f"issue on https://github.com/unit8co/darts."
+                ),
             )
 
     @property

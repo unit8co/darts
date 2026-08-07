@@ -4,7 +4,7 @@ import pytest
 
 from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers import Scaler
-from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs, tfm_kwargs_dev
 from darts.utils import timeseries_generation as tg
 
 if not TORCH_AVAILABLE:
@@ -16,8 +16,9 @@ import torch
 import torch.nn as nn
 from torch.nn import MSELoss
 
+from darts.models.components.tft_submodels import get_embedding_size
 from darts.models.forecasting.tft_model import TFTModel
-from darts.models.forecasting.tft_submodels import get_embedding_size
+from darts.utils.data import SequentialTorchTrainingDataset
 from darts.utils.likelihood_models.torch import QuantileRegression
 
 
@@ -42,6 +43,15 @@ class TestTFTModel:
         model = TFTModel(input_chunk_length=1, output_chunk_length=1, **tfm_kwargs)
         with pytest.raises(ValueError):
             model.fit(ts_time_index, verbose=False)
+
+        dataset = SequentialTorchTrainingDataset(
+            series=ts_time_index,
+            future_covariates=None,
+            input_chunk_length=1,
+            output_chunk_length=1,
+        )
+        with pytest.raises(ValueError, match="TFTModel requires future covariates"):
+            model.fit_from_dataset(dataset)
 
         # should work with cyclic encoding for time index
         model = TFTModel(
@@ -512,3 +522,28 @@ class TestTFTModel:
         preds = model.predict(n=3, series=series)
         assert len(preds) == 3
         assert np.all(np.isfinite(preds.values()))
+
+
+class TestTFTModelInputValidation:
+    def test_invalid_feed_forward(self):
+        ts = tg.linear_timeseries(length=50, start=pd.Timestamp("2000-01-01"))
+        with pytest.raises(ValueError, match="is not in"):
+            m = TFTModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                feed_forward="invalid_ffn",
+                add_relative_index=True,
+                n_epochs=1,
+                **tfm_kwargs_dev,
+            )
+            m.fit(ts)
+
+    def test_invalid_cat_embeddings(self):
+        with pytest.raises(ValueError, match="must either be integers or tuples"):
+            _ = TFTModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                categorical_embedding_sizes={"a": "invalid"},
+                n_epochs=1,
+                **tfm_kwargs_dev,
+            )

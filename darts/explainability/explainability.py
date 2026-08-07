@@ -10,11 +10,9 @@ from collections.abc import Sequence
 
 from darts.explainability.explainability_result import _ExplainabilityResult
 from darts.explainability.utils import process_horizons_and_targets, process_input
-from darts.logging import get_logger, raise_log
+from darts.logging import raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.typing import TimeSeriesLike
-
-logger = get_logger(__name__)
 
 MIN_BACKGROUND_SAMPLE = 10
 
@@ -67,16 +65,12 @@ class _ForecastingModelExplainer(ABC):
             Whether to raise a warning if not all `background_series` are stationary.
         """
         if not isinstance(model, ForecastingModel):
-            raise_log(
-                ValueError("`model` must be a Darts `ForecastingModel` object."),
-                logger,
-            )
+            raise_log(ValueError("`model` must be a Darts `ForecastingModel` object."))
         if not model._fit_called:
             raise_log(
                 ValueError(
                     f"The model must be fitted before instantiating a {self.__class__.__name__}."
                 ),
-                logger,
             )
         self.model = model
         # default forecasting horizon
