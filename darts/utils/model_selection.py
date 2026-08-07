@@ -9,7 +9,6 @@ from collections.abc import Sequence
 
 from darts import TimeSeries
 from darts.typing import TimeSeriesLike
-from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
 
 MODEL_AWARE = "model-aware"
 SIMPLE = "simple"
@@ -171,13 +170,9 @@ class SplitTimeSeriesSequence(Sequence):
         tuple[TimeSeries, TimeSeries]
         | tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
     ):
-        if len(data) == 0:
-            raise AttributeError("The `data` parameter cannot be empty.")
-
-        sequence_type_in = get_series_seq_type(data)
-        data = series2seq(data)
-        if sequence_type_in is SeriesType.SINGLE:
+        if not isinstance(data, Sequence):
             axis = 1
+            data = [data]  # convert to sequence for unified processing later
             single_timeseries = True
         else:
             single_timeseries = False

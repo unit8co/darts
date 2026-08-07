@@ -1446,7 +1446,6 @@ def _apply_data_transformers(
     return tuple(transformed_ts)
 
 
-# TODO(oswald): TSS migration — touchpoint for nested `list[list[TS]]` (lpo=False) preservation
 def _apply_inverse_data_transformers(
     series: TimeSeriesLike,
     forecasts: TimeSeriesLike | Sequence[Sequence[TimeSeries]],
@@ -1467,7 +1466,7 @@ def _apply_inverse_data_transformers(
     """
     if "series" in data_transformers and data_transformers["series"].invertible:
         sequence_type_in = get_series_seq_type(series)
-        if sequence_type_in == SeriesType.SINGLE:
+        if sequence_type_in is SeriesType.SINGLE:
             forecasts = [forecasts]
         forecasts = data_transformers["series"].inverse_transform(
             data=forecasts,
@@ -1539,8 +1538,6 @@ def _pack_series_in_list(
     return series, past_covariates, future_covariates, sample_weight
 
 
-# TODO(oswald): TSS migration — touchpoint for nested `list[list[TS]]` (lpo=False) preservation;
-# TBD if Phase 2 supports nested TSS.
 def _process_historical_forecast_for_backtest(
     series: TimeSeriesLike,
     historical_forecasts: TimeSeries
@@ -1578,7 +1575,7 @@ def _process_historical_forecast_for_backtest(
         )
 
     # we must wrap each fc in a list if `last_points_only=True`
-    nested = last_points_only and forecast_seq_type == SeriesType.SEQ
+    nested = last_points_only and forecast_seq_type is SeriesType.SEQ
     historical_forecasts = series2seq(
         historical_forecasts, seq_type_out=SeriesType.SEQ_SEQ, nested=nested
     )
@@ -1592,7 +1589,7 @@ def _process_historical_forecast_for_backtest(
             f"(n={len(series)}). For `last_points_only={last_points_only}`, expected "
         )
         expected_seq_type = series_seq_type if last_points_only else series_seq_type + 1
-        if expected_seq_type == SeriesType.SINGLE:
+        if expected_seq_type is SeriesType.SINGLE:
             error_msg += f"a single `historical_forecasts` of type {expected_seq_type}."
         else:
             error_msg += f"`historical_forecasts` of type {expected_seq_type} with length n={len(series)}."

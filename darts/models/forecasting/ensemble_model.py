@@ -383,6 +383,7 @@ class EnsembleModel(GlobalForecastingModel):
             )
             for model in self.forecasting_models
         ]
+
         # reduce the probabilistics series
         if self.train_samples_reduction is not None and self.train_num_samples > 1:
             predictions = [

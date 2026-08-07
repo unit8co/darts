@@ -27,7 +27,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Dependencies**
 
 ### For developers of the library:
-- Refactored single-vs-sequence returns across the library to uniformly use `series2seq`, instead of per-site hardcoded `isinstance(series, TimeSeries)`. Behavior preserving groundwork for the upcoming `TimeSeriesSequence` migration ([#3037](https://github.com/unit8co/darts/issues/3037)). [#3131](https://github.com/unit8co/darts/pull/3131) by [Oswald Zink](https://github.com/ozink-u8).
+
+- Refactored single-vs-sequence returns across the library to uniformly use `series2seq` and `SeriesType` for future typing improvements. [#3131](https://github.com/unit8co/darts/pull/3131) by [Oswald Zink](https://github.com/ozink-u8).
 
 ## [0.46.1](https://github.com/unit8co/darts/tree/0.46.1) (2026-07-20)
 

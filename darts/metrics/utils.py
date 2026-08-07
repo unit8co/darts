@@ -155,7 +155,6 @@ def classification_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     return wrapper_classification_support
 
 
-# TODO(oswald): Does not need change for migration bcs its list[literals] not TS
 def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     """
     This decorator further adapts the metrics that took as input two (or three for scaled metrics with `insample`)
@@ -310,7 +309,7 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         # reduce metrics along series axis
         if series_reduction is not None:
             vals = kwargs[_PARAM_SERIES_REDUCTION](vals, axis=0)
-        elif series_seq_type == SeriesType.SINGLE:
+        elif series_seq_type is SeriesType.SINGLE:
             vals = vals[0]
 
         # flatten along series axis if n series == 1

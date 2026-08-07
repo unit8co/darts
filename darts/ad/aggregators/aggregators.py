@@ -13,8 +13,6 @@ Base Aggregator
 import sys
 from typing import Literal
 
-from darts.utils.ts_utils import get_series_seq_type
-
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
@@ -34,6 +32,7 @@ from darts.ad.utils import (
 )
 from darts.logging import raise_log
 from darts.typing import TimeSeriesLike
+from darts.utils.ts_utils import get_series_seq_type
 
 
 class Aggregator(ABC):

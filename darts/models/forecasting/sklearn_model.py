@@ -1292,7 +1292,7 @@ class SKLearnModel(GlobalForecastingModel):
                 if len(series_) < min_target_length:
                     index_text = (
                         " "
-                        if sequence_type_in == SeriesType.SINGLE
+                        if sequence_type_in is SeriesType.SINGLE
                         else f" at list/sequence index {idx} "
                     )
                     end_ts = series_.end_time()
@@ -1335,7 +1335,7 @@ class SKLearnModel(GlobalForecastingModel):
                 if not (cov.start_time() <= start_ts and cov.end_time() >= end_ts):
                     index_text = (
                         " "
-                        if sequence_type_in == SeriesType.SINGLE
+                        if sequence_type_in is SeriesType.SINGLE
                         else f" at list/sequence index {idx} "
                     )
                     raise_log(

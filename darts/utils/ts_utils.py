@@ -95,22 +95,22 @@ def series2seq(
     if seq_type_out == seq_type_in:
         return ts
 
-    n_series = 1 if seq_type_in == SeriesType.SINGLE else len(ts)
+    n_series = 1 if seq_type_in is SeriesType.SINGLE else len(ts)
 
-    if seq_type_in == SeriesType.SINGLE and seq_type_out == SeriesType.SEQ:
+    if seq_type_in is SeriesType.SINGLE and seq_type_out is SeriesType.SEQ:
         # ts -> [ts]
         return [ts]
-    elif seq_type_in == SeriesType.SINGLE and seq_type_out == SeriesType.SEQ_SEQ:
+    elif seq_type_in is SeriesType.SINGLE and seq_type_out is SeriesType.SEQ_SEQ:
         # ts -> [[ts]]
         return [[ts]]
     elif (
-        seq_type_in == SeriesType.SEQ
-        and seq_type_out == SeriesType.SINGLE
+        seq_type_in is SeriesType.SEQ
+        and seq_type_out is SeriesType.SINGLE
         and n_series == 1
     ):
         # [ts] -> ts
         return ts[0]
-    elif seq_type_in == SeriesType.SEQ and seq_type_out == SeriesType.SEQ_SEQ:
+    elif seq_type_in is SeriesType.SEQ and seq_type_out is SeriesType.SEQ_SEQ:
         if not nested:
             # [ts1, ts2] -> [[ts1, ts2]]
             return [ts]
@@ -118,15 +118,15 @@ def series2seq(
             # [ts1, ts2] -> [[ts1], [ts2]]
             return [[ts_] for ts_ in ts]
     elif (
-        seq_type_in == SeriesType.SEQ_SEQ
-        and seq_type_out == SeriesType.SINGLE
+        seq_type_in is SeriesType.SEQ_SEQ
+        and seq_type_out is SeriesType.SINGLE
         and n_series == 1
     ):
         # [[ts]] -> [ts]
         return ts[0]
     elif (
-        seq_type_in == SeriesType.SEQ_SEQ
-        and seq_type_out == SeriesType.SEQ
+        seq_type_in is SeriesType.SEQ_SEQ
+        and seq_type_out is SeriesType.SEQ
         and n_series == 1
     ):
         # [[ts1, ts2]] -> [[ts1, ts2]]
@@ -176,7 +176,7 @@ def get_single_series(
     if seq_type <= SeriesType.SINGLE:
         # `None` and `TimeSeries`
         return ts
-    elif seq_type == SeriesType.SEQ:
+    elif seq_type is SeriesType.SEQ:
         return ts[0]
     else:
         return ts[0][0]

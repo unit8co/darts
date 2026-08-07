@@ -523,7 +523,7 @@ class BaseDataTransformer(ABC):
 
         """
         sequence_type_in = get_series_seq_type(series)
-        called_with_single_series = sequence_type_in == SeriesType.SINGLE
+        called_with_single_series = sequence_type_in is SeriesType.SINGLE
         series = series2seq(series)
 
         if component_mask is None:
@@ -596,7 +596,7 @@ class BaseDataTransformer(ABC):
             )
 
         sequence_type_in = get_series_seq_type(series)
-        called_with_single_series = sequence_type_in == SeriesType.SINGLE
+        called_with_single_series = sequence_type_in is SeriesType.SINGLE
         series = series2seq(series)
         if called_with_single_series:
             vals = [vals]
