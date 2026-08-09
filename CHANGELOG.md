@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added `effective_sample_size()` to `darts.utils.statistics`, reporting how many independent observations an autocorrelated sample is worth. Motivated by `backtest()`: when `stride` is smaller than `forecast_horizon` the evaluation windows overlap, the per-window error scores are strongly autocorrelated, and the window count overstates how much the backtest pins down. The `reduction` parameter documentation now points at it. [#3176](https://github.com/unit8co/darts/pull/3176) by [ipezygj](https://github.com/ipezygj).
 - Added support for per-timestep (non-aggregated) encoder and decoder variable importances in `TFTExplainer`, exposed as `TimeSeries` via `TFTExplainabilityResult.get_encoder_importance_over_time()` and `get_decoder_importance_over_time()`. [#3170](https://github.com/unit8co/darts/pull/3170) by [exactml](https://github.com/exactml).
 - Calling `TFTModel.fit_from_dataset()` on a dataset that does not have future covariates now raises an informative exception. [#3149](https://github.com/unit8co/darts/pull/3149) by [YOON KIWOONG](https://github.com/kiwoongyoon).
 - 🔴 Percentage and range-based metrics (`ape`, `mape`, `sape`, `smape`, `wmape`, `ope`, `arre`, `marre`, `coefficient_of_variation`) no longer raise a hard `ValueError` when the denominator is exactly zero. A new `zero_division` parameter controls the behavior: [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
