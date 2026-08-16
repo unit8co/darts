@@ -1041,6 +1041,16 @@ class TestAnomalyDetectionScorer:
         with pytest.raises(ValueError):
             KMeansScorer.load("path/that/does/not/exist.pkl")
 
+    def test_kmeans_scorer_save_load_invalid_path_type(self):
+        scorer = KMeansScorer(window=5, k=2, random_state=42)
+        scorer.fit(linear_timeseries(length=50))
+
+        with pytest.raises(ValueError):
+            scorer.save(b"invalid_path")
+
+        with pytest.raises(ValueError):
+            KMeansScorer.load(b"invalid_path")
+
     def test_univariate_kmeans(self):
         # univariate example
         np.random.seed(40)
