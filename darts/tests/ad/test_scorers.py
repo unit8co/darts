@@ -1,3 +1,5 @@
+import os
+import pathlib
 from collections.abc import Sequence
 from itertools import product
 
@@ -996,6 +998,48 @@ class TestAnomalyDetectionScorer:
         self.diff_fn_parameter(KMeansScorer)
         self.expects_deterministic_input(KMeansScorer)
         assert not KMeansScorer().is_probabilistic
+
+    def test_kmeans_scorer_save_load(self, tmpdir_module):
+        # check that save/load returns a scorer producing the same scores, and works
+        # with str, pathlib.Path, and already-opened file handles
+        series = linear_timeseries(length=50)
+
+        scorer = KMeansScorer(window=5, k=2, random_state=42)
+        scorer.fit(series)
+        scores_before = scorer.score(series)
+
+        path_str = os.path.join(tmpdir_module, "kmeans_scorer_str.pkl")
+        path_pathlike = pathlib.Path(tmpdir_module) / "kmeans_scorer_pathlike.pkl"
+        path_binary = os.path.join(tmpdir_module, "kmeans_scorer_binary.pkl")
+
+        scorer.save(path_str)
+        scorer.save(path_pathlike)
+        with open(path_binary, "wb") as f:
+            scorer.save(f)
+
+        loaded_str = KMeansScorer.load(path_str)
+        loaded_pathlike = KMeansScorer.load(path_pathlike)
+        with open(path_binary, "rb") as f:
+            loaded_binary = KMeansScorer.load(f)
+
+        for loaded_scorer in [loaded_str, loaded_pathlike, loaded_binary]:
+            assert isinstance(loaded_scorer, KMeansScorer)
+            assert loaded_scorer.score(series) == scores_before
+
+    def test_kmeans_scorer_save_default_path(self, tmpdir_module):
+        # tmpdir_module fixture already chdir's into a fresh temp directory
+        scorer = KMeansScorer(window=5, k=2, random_state=42)
+        scorer.fit(linear_timeseries(length=50))
+        scorer.save()
+
+        saved_files = [
+            f for f in os.listdir(tmpdir_module) if f.startswith("KMeansScorer_")
+        ]
+        assert len(saved_files) == 1
+
+    def test_kmeans_scorer_load_missing_file(self):
+        with pytest.raises(ValueError):
+            KMeansScorer.load("path/that/does/not/exist.pkl")
 
     def test_univariate_kmeans(self):
         # univariate example

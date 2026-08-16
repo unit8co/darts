@@ -9,11 +9,18 @@ References
 .. [1] https://en.wikipedia.org/wiki/K-means_clustering
 """
 
+import datetime
+import io
+import os
+import pickle
+from typing import BinaryIO
+
 import numpy as np
 from sklearn.cluster import KMeans
 
 from darts import metrics
 from darts.ad.scorers.scorers import WindowedAnomalyScorer
+from darts.logging import raise_log
 from darts.metrics.utils import METRIC_TYPE
 
 
@@ -128,3 +135,79 @@ class KMeansScorer(WindowedAnomalyScorer):
         """Wrapper around model inference method"""
         # only return the closest distance out of the k ones (k centroids)
         return model.transform(data).min(axis=1)
+
+    def _default_save_path(self) -> str:
+        return f"{self.__class__.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')}"
+
+    def save(
+        self,
+        path: str | os.PathLike | BinaryIO | None = None,
+        **pkl_kwargs,
+    ) -> None:
+        """Saves the scorer under a given path or file handle.
+
+        Example for saving and loading a :class:`KMeansScorer`:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.ad import KMeansScorer
+
+                scorer = KMeansScorer()
+                scorer.fit(series)
+
+                scorer.save("my_scorer.pkl")
+                scorer_loaded = KMeansScorer.load("my_scorer.pkl")
+            ..
+
+        Parameters
+        ----------
+        path
+            Path or file handle under which to save the scorer at its current state. If no path is specified, the
+            scorer is automatically saved under ``"{ScorerClass}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
+            E.g., ``"KMeansScorer_2020-01-01_12_00_00.pkl"``.
+        pkl_kwargs
+            Keyword arguments passed to `pickle.dump()`
+        """
+        if path is None:
+            path = self._default_save_path() + ".pkl"
+
+        if isinstance(path, str | os.PathLike):
+            with open(path, "wb") as handle:
+                pickle.dump(obj=self, file=handle, **pkl_kwargs)
+        elif isinstance(path, io.BufferedWriter):
+            pickle.dump(obj=self, file=path, **pkl_kwargs)
+        else:
+            raise_log(
+                ValueError(
+                    "Argument 'path' has to be either 'str' or 'PathLike' (for a filepath) "
+                    f"or 'BufferedWriter' (for an already opened file), but was '{path.__class__}'."
+                ),
+            )
+
+    @staticmethod
+    def load(path: str | os.PathLike | BinaryIO) -> "KMeansScorer":
+        """Loads a scorer from a given path or file handle.
+
+        Parameters
+        ----------
+        path
+            Path or file handle from which to load the scorer.
+        """
+        if isinstance(path, str | os.PathLike):
+            if not os.path.exists(path):
+                raise_log(ValueError(f"The file {path} doesn't exist."))
+
+            with open(path, "rb") as handle:
+                scorer = pickle.load(file=handle)
+        elif isinstance(path, io.BufferedReader):
+            scorer = pickle.load(file=path)
+        else:
+            raise_log(
+                ValueError(
+                    "Argument 'path' has to be either 'str' or 'PathLike' (for a filepath) "
+                    f"or 'BufferedReader' (for an already opened file), but was '{path.__class__}'."
+                ),
+            )
+
+        return scorer

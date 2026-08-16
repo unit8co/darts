@@ -17,6 +17,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - `"warn"` (default) raises a warning and returns `0.0` when the numerator is also zero (typically meaning perfect forecasts) or `np.nan` otherwise
   - `"raise"` preserves the legacy error.
 - Added an optional `min_train_length` parameter to third-party local forecasting models (StatsForecast models such as `StatsForecastingModel`, `AutoETS`, ... and other models such as `ExponentialSmoothing`, `*ARIMA`, `*Theta`, `Prophet`, `FFT`, and `KalmanForecaster`) to override the conservative default minimum training series length and allow fitting on shorter series. Note that lowering this value might raise exceptions from the third-party models themselves if their internal input requirements are not met. [#3167](https://github.com/unit8co/darts/pull/3167) by [Haibin Yu](https://github.com/haiiibin).
+- Added `save()` and `load()` methods to `KMeansScorer`, allowing a fitted scorer to be persisted to disk and reloaded without retraining. [#3051](https://github.com/unit8co/darts/issues/3051) by [Boubker Bennani](https://github.com/boubkerbennani).
 
 **Fixed**
 
