@@ -4809,6 +4809,74 @@ class TimeSeries:
             **(self._attrs if axis != 1 else dict()),
         )
 
+    def argmin(self, axis: int = 2) -> Self:
+        """Return a new series with the position of the minimum computed over the specified `axis`.
+
+        The returned values are the integer indices along `axis` at which the minimum occurs (following
+        :func:`numpy.argmin` semantics). For example, with ``axis=0`` each value is the position in the
+        original ``time_index`` where that component/sample reaches its minimum, which can then be mapped
+        back to a timestamp via ``series.time_index[position]``.
+
+        If we reduce over time (``axis=0``), the series will have length one and will use the first entry of the
+        original ``time_index``. If we perform the calculation over the components (``axis=1``), the resulting single
+        component will be renamed to "components_argmin". When applied to the samples (``axis=2``), a deterministic
+        series is returned.
+
+        If ``axis=1``, the static covariates and the hierarchy are discarded from the series.
+
+        Parameters
+        ----------
+        axis
+            The axis to reduce over. The default is to calculate over samples, i.e. axis=2.
+
+        Returns
+        -------
+        TimeSeries
+            A new series with the position of the minimum applied to the indicated axis.
+        """
+        values = self._values.argmin(axis=axis, keepdims=True)
+        times, components = self._get_agg_dims("components_argmin", axis)
+        return self.__class__(
+            times=times,
+            values=values,
+            components=components,
+            **(self._attrs if axis != 1 else dict()),
+        )
+
+    def argmax(self, axis: int = 2) -> Self:
+        """Return a new series with the position of the maximum computed over the specified `axis`.
+
+        The returned values are the integer indices along `axis` at which the maximum occurs (following
+        :func:`numpy.argmax` semantics). For example, with ``axis=0`` each value is the position in the
+        original ``time_index`` where that component/sample reaches its maximum, which can then be mapped
+        back to a timestamp via ``series.time_index[position]``.
+
+        If we reduce over time (``axis=0``), the series will have length one and will use the first entry of the
+        original ``time_index``. If we perform the calculation over the components (``axis=1``), the resulting single
+        component will be renamed to "components_argmax". When applied to the samples (``axis=2``), a deterministic
+        series is returned.
+
+        If ``axis=1``, the static covariates and the hierarchy are discarded from the series.
+
+        Parameters
+        ----------
+        axis
+            The axis to reduce over. The default is to calculate over samples, i.e. axis=2.
+
+        Returns
+        -------
+        TimeSeries
+            A new series with the position of the maximum applied to the indicated axis.
+        """
+        values = self._values.argmax(axis=axis, keepdims=True)
+        times, components = self._get_agg_dims("components_argmax", axis)
+        return self.__class__(
+            times=times,
+            values=values,
+            components=components,
+            **(self._attrs if axis != 1 else dict()),
+        )
+
     def quantile(self, q: float | Sequence[float] = 0.5, **kwargs) -> Self:
         """Return a deterministic series with the desired quantile(s) `q` of each component computed over the samples
         of the stochastic series.
