@@ -29,6 +29,8 @@ import matplotlib.axes
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import pytorch_lightning as pl
+import torch
 from matplotlib.figure import Figure
 from torch import Tensor
 
@@ -38,10 +40,92 @@ from darts.explainability.explainability import _ForecastingModelExplainer
 from darts.logging import get_logger, raise_log
 from darts.models import TFTModel
 from darts.typing import TimeSeriesLike
-from darts.utils.ts_utils import SeriesType, get_series_seq_type
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
+
+
+class _TFTPredictionOutputCollector(pl.Callback):
+    """Collect the raw TFT explanation tensors emitted by each prediction batch."""
+
+    _OUTPUT_ATTRIBUTES = (
+        "_attn_out_weights",
+        "_encoder_sparse_weights",
+        "_decoder_sparse_weights",
+        "_static_covariate_var",
+    )
+
+    def __init__(self):
+        self._batch_outputs: dict[str, list[Tensor | None]] = {
+            name: [] for name in self._OUTPUT_ATTRIBUTES
+        }
+
+    def on_predict_batch_end(
+        self,
+        trainer,
+        pl_module,
+        outputs,
+        batch,
+        batch_idx,
+        dataloader_idx=0,
+    ):
+        batch_size = outputs[0].shape[1]
+        for name, batch_outputs in self._batch_outputs.items():
+            output = getattr(pl_module, name)
+            if output is not None:
+                if not isinstance(output, Tensor):
+                    raise TypeError(
+                        f"Expected `{name}` to be a torch.Tensor or None, "
+                        f"but received {type(output).__name__}."
+                    )
+                if output.shape[0] != batch_size:
+                    raise RuntimeError(
+                        f"Expected `{name}` to contain {batch_size} explanation "
+                        f"outputs, but received {output.shape[0]}."
+                    )
+                output = output.detach().to(device="cpu", copy=True)
+            batch_outputs.append(output)
+
+    def collect(
+        self, expected_num_series: int
+    ) -> tuple[Tensor, Tensor, Tensor, Tensor | None]:
+        if not self._batch_outputs["_attn_out_weights"]:
+            raise RuntimeError(
+                "No TFT explanation outputs were collected during prediction."
+            )
+
+        collected = []
+        for name, batch_outputs in self._batch_outputs.items():
+            if all(output is None for output in batch_outputs):
+                if name != "_static_covariate_var":
+                    raise RuntimeError(
+                        f"No `{name}` outputs were collected during prediction."
+                    )
+                combined = None
+            elif any(output is None for output in batch_outputs):
+                raise RuntimeError(
+                    f"TFT explanation output `{name}` was missing from some prediction batches."
+                )
+            else:
+                tensor_outputs = [
+                    output for output in batch_outputs if output is not None
+                ]
+                combined = (
+                    tensor_outputs[0]
+                    if len(tensor_outputs) == 1
+                    else torch.cat(tensor_outputs, dim=0)
+                )
+                if combined.shape[0] != expected_num_series:
+                    raise RuntimeError(
+                        f"Expected `{name}` to contain {expected_num_series} explanation "
+                        f"outputs, but collected {combined.shape[0]}."
+                    )
+            collected.append(combined)
+        return tuple(collected)
+
+    def clear(self):
+        for batch_outputs in self._batch_outputs.values():
+            batch_outputs.clear()
 
 
 class TFTExplainer(_ForecastingModelExplainer):
@@ -136,6 +220,9 @@ class TFTExplainer(_ForecastingModelExplainer):
         - encoder variable importances per timestep of the input chunk and decoder variable importances per timestep
           of the output chunk.
 
+        .. note::
+            `TFTExplainer` currently supports only single-process prediction.
+
         Parameters
         ----------
         foreground_series
@@ -194,41 +281,85 @@ class TFTExplainer(_ForecastingModelExplainer):
             foreground_past_covariates,
             foreground_future_covariates,
         )
-        if (
-            get_series_seq_type(foreground_series) is SeriesType.SEQ
-            and len(foreground_series) > self.model.batch_size
-        ):
-            raise_log(
-                ValueError(
-                    f"The number of back- or foreground series to explain ({len(foreground_series)}) "
-                    f"must be smaller than or equal to the model's batch size ({self.model.batch_size})."
-                ),
-            )
-
         horizons, _ = self._process_horizons_and_targets(None, None)
-        preds = self.model.predict(
-            n=self.n,
-            series=foreground_series,
-            past_covariates=foreground_past_covariates,
-            future_covariates=foreground_future_covariates,
+        collector = _TFTPredictionOutputCollector()
+        trainer_params = dict(self.model.trainer_params)
+        trainer_params["callbacks"] = [
+            collector,
+            *list(trainer_params.get("callbacks") or []),
+        ]
+        trainer = self.model._init_trainer(
+            trainer_params=trainer_params,
+            max_epochs=self.model.n_epochs,
         )
-        # get the weights and the attention head from the trained model for the prediction
+
+        try:
+            if (
+                trainer.strategy.launcher is not None
+                or trainer.world_size != 1
+                or trainer.num_devices != 1
+                or trainer.num_nodes != 1
+            ):
+                raise_log(
+                    ValueError(
+                        "TFTExplainer only supports single-process prediction. "
+                        "Configure the model's trainer with a non-launching strategy "
+                        "on a single device and node."
+                    )
+                )
+            preds = self.model.predict(
+                n=self.n,
+                series=foreground_series,
+                past_covariates=foreground_past_covariates,
+                future_covariates=foreground_future_covariates,
+                trainer=trainer,
+            )
+            num_series = len(foreground_series)
+            if len(preds) != num_series:
+                raise RuntimeError(
+                    f"TFT prediction returned {len(preds)} series for {num_series} inputs."
+                )
+            (
+                attention_weights,
+                encoder_weights,
+                decoder_weights,
+                static_covariate_weights,
+            ) = collector.collect(expected_num_series=num_series)
+        finally:
+            trainer.callbacks[:] = [
+                callback for callback in trainer.callbacks if callback is not collector
+            ]
+            collector.clear()
+
         # aggregate over attention heads
-        attention_heads = (
-            self.model.model._attn_out_weights.detach().cpu().numpy().sum(axis=-2)
-        )
+        attention_heads = attention_weights.numpy().sum(axis=-2)
         # get the variable importances (pd.DataFrame with rows corresponding to the number of input series)
-        encoder_importance = self._encoder_importance
-        decoder_importance = self._decoder_importance
-        static_covariates_importance = self._static_covariates_importance
+        encoder_importance = self._get_importance(
+            weight=encoder_weights,
+            names=self.model.model.encoder_variables,
+        )
+        decoder_importance = self._get_importance(
+            weight=decoder_weights,
+            names=self.model.model.decoder_variables,
+        )
+        static_covariates_importance = self._get_importance(
+            weight=static_covariate_weights,
+            names=self.model.model.static_variables,
+        )
 
         # get the encoder/decoder importances over time;
         # static covariates have no time dimension, so there is no "over time" variant for them
         encoder_importance_over_time, encoder_var_names = (
-            self._encoder_importance_over_time
+            self._get_importance_over_time(
+                weight=encoder_weights,
+                names=self.model.model.encoder_variables,
+            )
         )
         decoder_importance_over_time, decoder_var_names = (
-            self._decoder_importance_over_time
+            self._get_importance_over_time(
+                weight=decoder_weights,
+                names=self.model.model.decoder_variables,
+            )
         )
 
         horizon_idx = [h - 1 for h in horizons]
@@ -529,7 +660,7 @@ class TFTExplainer(_ForecastingModelExplainer):
 
     def _get_importance(
         self,
-        weight: Tensor,
+        weight: Tensor | None,
         names: list[str],
         n_decimals=3,
     ) -> pd.DataFrame:
