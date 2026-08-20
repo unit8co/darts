@@ -941,9 +941,7 @@ class TestTorchForecastingModel:
         """
         from darts.models.forecasting.torch_forecasting_model import _PL_2_6_OR_ABOVE
 
-        if not _PL_2_6_OR_ABOVE or not hasattr(
-            torch.serialization, "add_safe_globals"
-        ):
+        if not _PL_2_6_OR_ABOVE or not hasattr(torch.serialization, "add_safe_globals"):
             pytest.skip(
                 "requires torch/lightning >= 2.6 with `weights_only` load support"
             )
