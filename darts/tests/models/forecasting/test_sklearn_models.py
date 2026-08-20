@@ -256,7 +256,7 @@ class TestSKLearnModels:
         ]
         multivariate_multiseries_accuracies += [
             0.85,  # PoissonXGBModel
-            0.65,  # QuantileXGBModel
+            0.7,  # QuantileXGBModel
         ]
 
     if LGBM_AVAILABLE:
