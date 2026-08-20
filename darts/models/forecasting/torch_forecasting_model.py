@@ -221,6 +221,22 @@ def _register_safe_globals() -> None:
     except Exception as e:  # pragma: no cover - defensive only
         logger.debug(f"Could not register torch/torchmetrics safe globals: {e}")
 
+    # Optional forecasting-library integrations that Darts wraps: their model classes
+    # are serialized into the checkpoint (e.g. the NeuralForecast integration stores
+    # ``neuralforecast.models.*`` classes). Allow-list them when the integration is
+    # installed. These are ``nn.Module`` subclasses (type objects), not callables.
+    try:
+        import neuralforecast.models as _nf_models
+        from torch.nn.modules.module import Module as _NnModuleNf
+
+        safe_globals.extend(
+            obj
+            for obj in vars(_nf_models).values()
+            if inspect.isclass(obj) and issubclass(obj, _NnModuleNf)
+        )
+    except Exception as e:  # pragma: no cover - optional dependency
+        logger.debug(f"Could not register neuralforecast safe globals: {e}")
+
     # de-duplicate while preserving order
     seen = set()
     unique = [g for g in safe_globals if not (id(g) in seen or seen.add(id(g)))]
