@@ -669,7 +669,8 @@ class TestTimeSeries:
             freq_expected = pd.tseries.frequencies.to_offset(expected)
             # apply trick to resample a timestamp to the desired frequency
             start = (
-                pd.Series(index=[pd.Timestamp("2000-01-01")])
+                pd
+                .Series(index=[pd.Timestamp("2000-01-01")])
                 .resample(freq_expected)
                 .mean()
                 .index[0]
@@ -3507,6 +3508,32 @@ class TestSimpleStatistics:
             # check values
             assert np.isclose(
                 new_ts._values, self.values.max(axis=axis, keepdims=True)
+            ).all()
+
+    def test_argmin(self):
+        for axis in range(3):
+            new_ts = self.ts.argmin(axis=axis)
+            # check values match numpy argmin positions
+            assert (
+                new_ts._values == self.values.argmin(axis=axis, keepdims=True)
+            ).all()
+            # position must point back to the actual minimum
+            assert np.isclose(
+                np.take_along_axis(self.values, new_ts._values.astype(int), axis=axis),
+                self.values.min(axis=axis, keepdims=True),
+            ).all()
+
+    def test_argmax(self):
+        for axis in range(3):
+            new_ts = self.ts.argmax(axis=axis)
+            # check values match numpy argmax positions
+            assert (
+                new_ts._values == self.values.argmax(axis=axis, keepdims=True)
+            ).all()
+            # position must point back to the actual maximum
+            assert np.isclose(
+                np.take_along_axis(self.values, new_ts._values.astype(int), axis=axis),
+                self.values.max(axis=axis, keepdims=True),
             ).all()
 
     def test_sum(self):
