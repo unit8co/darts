@@ -2,6 +2,6 @@
 Filtering Models
 ----------------
 
-Models for filtering and smoothing time series data, including Kalman filters, Gaussian Process Filters,
-and Moving Average Filters.
+Models for filtering, smoothing, and reconstructing time series data, including
+Kalman filters, Gaussian Process Filters, Moving Average Filters, and TSPulse.
 """

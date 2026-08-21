@@ -21,6 +21,7 @@ Some models have additional dependencies that are not included in the `all` inst
 |-----------------------|-----------------------|
 | `NeuralForecastModel` | neuralforecast>=3.0.0 |
 | `TiRexModel`          | tirex-ts>=1.4.0       |
+| `TSPulseFilter`       | granite-tsfm>=0.3.6 (Python 3.11-3.13) |
 
 
 ## From conda-forge
@@ -52,6 +53,7 @@ Some models have dependencies not available on conda-forge. To use them, you nee
 | Model                 | Dependencies          |
 |-----------------------|-----------------------|
 | `TiRexModel`          | tirex-ts>=1.4.0       |
+| `TSPulseFilter`       | granite-tsfm>=0.3.6 (Python 3.11-3.13) |
 
 
 ## Other Information

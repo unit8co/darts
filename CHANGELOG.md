@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added `TSPulseFilter` for zero-shot time-series reconstruction and missing-value imputation with IBM Granite TSPulse-R1. The reconstruction can also be used with `FilteringAnomalyModel` and existing Darts anomaly scorers to produce time-domain residual scores; IBM's all-head anomaly pipeline is not included. [#3128](https://github.com/unit8co/darts/issues/3128) by [ishitta-iyer](https://github.com/ishitta-iyer).
 - Added support for per-timestep (non-aggregated) encoder and decoder variable importances in `TFTExplainer`, exposed as `TimeSeries` via `TFTExplainabilityResult.get_encoder_importance_over_time()` and `get_decoder_importance_over_time()`. [#3170](https://github.com/unit8co/darts/pull/3170) by [exactml](https://github.com/exactml).
 - Calling `TFTModel.fit_from_dataset()` on a dataset that does not have future covariates now raises an informative exception. [#3149](https://github.com/unit8co/darts/pull/3149) by [YOON KIWOONG](https://github.com/kiwoongyoon).
 - 🔴 Percentage and range-based metrics (`ape`, `mape`, `sape`, `smape`, `wmape`, `ope`, `arre`, `marre`, `coefficient_of_variation`) no longer raise a hard `ValueError` when the denominator is exactly zero. A new `zero_division` parameter controls the behavior: [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).

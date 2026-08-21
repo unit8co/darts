@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from darts.models.filtering.moving_average_filter import (
         MovingAverageFilter as MovingAverageFilter,
     )
+    from darts.models.filtering.tspulse_filter import TSPulseFilter as TSPulseFilter
     from darts.models.forecasting.arima import ARIMA as ARIMA
     from darts.models.forecasting.baselines import NaiveDrift as NaiveDrift
     from darts.models.forecasting.baselines import NaiveMean as NaiveMean
@@ -215,6 +216,10 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     "GaussianProcessFilter": ("darts.models.filtering.gaussian_process_filter", None),
     "KalmanFilter": ("darts.models.filtering.kalman_filter", None),
     "MovingAverageFilter": ("darts.models.filtering.moving_average_filter", None),
+    "TSPulseFilter": (
+        "darts.models.filtering.tspulse_filter",
+        "(Py)Torch",
+    ),
 }
 
 __all__, __getattr__, __dir__ = setup_lazy_imports(_LAZY_IMPORTS, __name__, globals())

@@ -353,7 +353,7 @@ Features
 
 * **PyTorch Lightning Support:** All deep learning models are implemented using PyTorch Lightning, supporting among other things custom callbacks, GPUs/TPUs training and custom trainers.
 
-* **Filtering Models:** Darts offers three filtering models: ``KalmanFilter``, ``GaussianProcessFilter``, and ``MovingAverageFilter``, which allow to filter time series, and in some cases obtain probabilistic inferences of the underlying states/values.
+* **Filtering Models:** Darts offers four filtering models: ``KalmanFilter``, ``GaussianProcessFilter``, ``MovingAverageFilter``, and ``TSPulseFilter``, which allow to filter or reconstruct time series, fill missing values, and in some cases obtain probabilistic inferences of the underlying states/values.
 
 * **Datasets:** The ``darts.datasets`` submodule contains some popular time series datasets for rapid and reproducible experimentation.
 
