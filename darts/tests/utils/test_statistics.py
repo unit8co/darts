@@ -112,6 +112,31 @@ class TestTimeSeries:
         assert stationarity_test_adf(series_3)[1] < 0.05
         assert stationarity_tests
 
+    def test_stationarity_tests_return_type_annotation(self):
+        # the functions wrap statsmodels' ``kpss``/``adfuller`` which return a
+        # tuple; the return type annotation must match the actual return value.
+        import typing
+
+        series = gaussian_timeseries(start=0, end=999)
+
+        for fn in (stationarity_test_kpss, stationarity_test_adf):
+            annotated = typing.get_type_hints(fn)["return"]
+            result = fn(series)
+            assert isinstance(result, annotated)
+            assert isinstance(result, tuple)
+
+    def test_granger_causality_return_type_annotation(self):
+        # ``granger_causality_tests`` wraps statsmodels' ``grangercausalitytests``
+        # which returns a dict; the annotation must match the actual return value.
+        import typing
+
+        series = gaussian_timeseries(start=0, end=999)
+
+        annotated = typing.get_type_hints(granger_causality_tests)["return"]
+        result = granger_causality_tests(series, series, 2)
+        assert isinstance(result, annotated)
+        assert isinstance(result, dict)
+
 
 class TestSeasonalDecompose:
     pd_series = pd.Series(range(50), index=pd.date_range("20130101", "20130219"))
