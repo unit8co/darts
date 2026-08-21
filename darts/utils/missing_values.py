@@ -99,7 +99,7 @@ def extract_subseries(
     # Get start/end times of sub-series without gaps of missing values
     gaps_df = series.gaps(mode=mode)
     if gaps_df.empty:
-        return series
+        return [series]
     else:
         gaps_df = gaps_df.query(f"gap_size>={min_gap_size}")
         start_times = [series.start_time()] + (gaps_df["gap_end"] + freq).to_list()

@@ -256,7 +256,7 @@ class TestSKLearnModels:
         ]
         multivariate_multiseries_accuracies += [
             0.85,  # PoissonXGBModel
-            0.65,  # QuantileXGBModel
+            0.7,  # QuantileXGBModel
         ]
 
     if LGBM_AVAILABLE:
@@ -2528,11 +2528,28 @@ class TestSKLearnModels:
 
         # check eval set
         eval_set_name, eval_weight_name = model.val_set_params
-        assert eval_set_name in fit_patch.call_args[1]
-        eval_set = fit_patch.call_args[1]["eval_set"]
-        assert eval_set is not None
-        assert isinstance(eval_set, list)
-        eval_set = eval_set[0]
+        if isinstance(eval_set_name, str):
+            # global eval set parameter
+            assert eval_set_name in fit_patch.call_args[1]
+            eval_set = fit_patch.call_args[1]["eval_set"]
+            assert eval_set is not None
+            assert isinstance(eval_set, list)
+            eval_set = eval_set[0]
+        else:
+            # dedicated eval_X and eval_y parameters for LightGBMModel since v4.7.0
+            assert isinstance(model, LightGBMModel)
+            eval_samples_name, eval_labels_name = eval_set_name
+            assert eval_samples_name in fit_patch.call_args[1]
+            assert eval_labels_name in fit_patch.call_args[1]
+            eval_samples = fit_patch.call_args[1][eval_samples_name]
+            eval_labels = fit_patch.call_args[1][eval_labels_name]
+            assert eval_samples is not None and eval_labels is not None
+            # since lightgbm>=4.7.0, eval X and y must be single arrays
+            assert isinstance(eval_samples, np.ndarray) and isinstance(
+                eval_labels, np.ndarray
+            )
+            assert eval_samples.ndim == 2 and eval_labels.ndim == 1
+            eval_set = (eval_samples, eval_labels)
 
         weight = None
         if CB_AVAILABLE and isinstance(model, CatBoostModel):

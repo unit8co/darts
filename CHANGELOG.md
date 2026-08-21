@@ -21,6 +21,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed a deprecation warning from `lightgbm>=4.7.0` when training a `LightGBMModel` with validation series. [#3186](https://github.com/unit8co/darts/pull/3186) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed `extract_subseries` returning a single `TimeSeries` instead of a `list[TimeSeries]` when the series has no gap under the selected `mode`. [#3184](https://github.com/unit8co/darts/pull/3184) by [Alejandro Coronado](https://github.com/AlejandroCoronadoN).
 - Fixed metrics `arre` and `marre` rejecting an entire input when any component of `actual_series` is constant; the zero-range denominator is now handled element-wise, so an exact prediction yields `0.0` and only undefined entries become `np.nan`. [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
 - Fixed metric `ope` to accept an `actual_series` with a strictly negative sum (the previous `sum > 0` check rejected valid inputs such as financial return series). [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
 - Fixed metric `wmape` docstring which inaccurately claimed it raised on zeros in `actual_series`. [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).

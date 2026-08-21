@@ -30,7 +30,7 @@ class MultiOutputMixin:
     def __init__(
         self,
         estimator,
-        eval_set_name: str | None = None,
+        eval_set_name: str | tuple[str, str] | None = None,
         eval_weight_name: str | None = None,
         output_chunk_length: int | None = None,
         **kwargs,
@@ -40,6 +40,10 @@ class MultiOutputMixin:
         # all other params at fitting time must have the suffix `"_"`
         self.eval_set_name = eval_set_name
         self.eval_weight_name = eval_weight_name
+        # dedicated X and y eval parameters
+        self.eval_samples_name, self.eval_labels_name = None, None
+        if isinstance(self.eval_set_name, tuple):
+            self.eval_samples_name, self.eval_labels_name = self.eval_set_name
         self.output_chunk_length = output_chunk_length
 
     def fit(self, X, y, sample_weight=None, **fit_params):
@@ -104,7 +108,12 @@ class MultiOutputMixin:
             fit_params.pop("verbose")
 
         fit_params_validated = _check_method_params(X, fit_params)
-        eval_set = fit_params_validated.pop(self.eval_set_name, None)
+        eval_set, eval_samples, eval_labels = None, None, None
+        if self.eval_set_name is not None and self.eval_labels_name is not None:
+            eval_samples = fit_params_validated.pop(self.eval_samples_name, None)
+            eval_labels = fit_params_validated.pop(self.eval_labels_name, None)
+        else:
+            eval_set = fit_params_validated.pop(self.eval_set_name, None)
         eval_weight = fit_params_validated.pop(self.eval_weight_name, None)
 
         self.estimators_ = Parallel(n_jobs=self.n_jobs)(
@@ -116,6 +125,14 @@ class MultiOutputMixin:
                 if sample_weight is not None
                 else None,
                 **({self.eval_set_name: [eval_set[i]]} if eval_set is not None else {}),
+                **(
+                    {
+                        self.eval_samples_name: eval_samples[i],
+                        self.eval_labels_name: eval_labels[i],
+                    }
+                    if eval_samples is not None and eval_labels is not None
+                    else {}
+                ),
                 **(
                     {self.eval_weight_name: [eval_weight[i]]}
                     if eval_weight is not None

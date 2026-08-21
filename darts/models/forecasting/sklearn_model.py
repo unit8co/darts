@@ -754,7 +754,17 @@ class SKLearnModel(GlobalForecastingModel):
             val_weights = [val_weight]
 
         val_set_name, val_weight_name = self.val_set_params
-        return dict(kwargs, **{val_set_name: val_sets, val_weight_name: val_weights})
+        if isinstance(val_set_name, tuple):
+            # dedicated X and y evaluation parameters
+            val_samples_name, val_labels_name = val_set_name
+            val_set_params = {val_samples_name: [], val_labels_name: []}
+            for samples, labels in val_sets:
+                val_set_params[val_samples_name].append(samples)
+                val_set_params[val_labels_name].append(labels)
+        else:  # str
+            # global evaluation set parameter
+            val_set_params = {val_set_name: val_sets}
+        return dict(kwargs, **{**val_set_params, val_weight_name: val_weights})
 
     def _create_lagged_data(
         self,
@@ -1541,9 +1551,13 @@ class SKLearnModel(GlobalForecastingModel):
         )
 
     @property
-    def val_set_params(self) -> tuple[str | None, str | None]:
+    def val_set_params(self) -> tuple[str | None | tuple[str, str], str | None]:
         """Returns the parameter names for the validation set, and validation sample weights if it supports
-        a validation set."""
+        a validation set.
+
+        If provided, the first element can be either a string denoting a single evaluation set (e.g. ``"eval_set"``
+        or a ``tuple[str, str]`` for dedicated evaluation X and y parameters (e.g. ``("eval_X", "eval_y")``.
+        """
         return None, None
 
     def _check_optimizable_historical_forecasts(
