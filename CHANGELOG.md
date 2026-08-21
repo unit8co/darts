@@ -11,6 +11,12 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- 🚀🚀 Added a custom MLflow model flavor for Darts, available under `darts.utils.mlflow`. It provides an MLflow integration for any Darts `ForecastingModel` (statistical, scikit-learn-like, and PyTorch-based). [#3022](https://github.com/unit8co/darts/pull/3022) by [Jakub Chłapek](https://github.com/jakubchlapek), [Zhihao Dai](https://github.com/daidahao) and [Michel Zeller](https://github.com/mizeller).
+  - Added `save_model()`, `load_model()`, and `log_model()` to persist and reload Darts models as MLflow models, including model and covariate metadata.
+  - Added `autolog()` for model parameters, series/covariate metadata, optional model artifacts, PyTorch epoch metrics, and backtest metrics. Nested historical-forecast fits are suppressed.
+  - Darts metrics are logged with shape-aware keys; multi-series and window-level backtest details are available in `metrics_per_series.json`.
+  - Added a new notebook for [MLflow quickstart](https://unit8co.github.io/darts/examples/29-MLflow-quickstart.html) with detailed usage examples.
+  - Note: model serving and deployment (MLflow's `pyfunc` flavor, model signatures, and input examples) are not yet supported.
 - Added support for per-timestep (non-aggregated) encoder and decoder variable importances in `TFTExplainer`, exposed as `TimeSeries` via `TFTExplainabilityResult.get_encoder_importance_over_time()` and `get_decoder_importance_over_time()`. [#3170](https://github.com/unit8co/darts/pull/3170) by [exactml](https://github.com/exactml).
 - Calling `TFTModel.fit_from_dataset()` on a dataset that does not have future covariates now raises an informative exception. [#3149](https://github.com/unit8co/darts/pull/3149) by [YOON KIWOONG](https://github.com/kiwoongyoon).
 - 🔴 Percentage and range-based metrics (`ape`, `mape`, `sape`, `smape`, `wmape`, `ope`, `arre`, `marre`, `coefficient_of_variation`) no longer raise a hard `ValueError` when the denominator is exactly zero. A new `zero_division` parameter controls the behavior: [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
@@ -27,6 +33,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed metric `wmape` docstring which inaccurately claimed it raised on zeros in `actual_series`. [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
 
 **Dependencies**
+
+- Added `mlflow>=3.0` to the optional dependency group, enabling the MLflow integration. [#3022](https://github.com/unit8co/darts/pull/3022) by [Jakub Chłapek](https://github.com/jakubchlapek), [Zhihao Dai](https://github.com/daidahao) and [Michel Zeller](https://github.com/mizeller).
 
 ### For developers of the library:
 
