@@ -178,6 +178,7 @@ optional = [
     "ray>=2.53.0",
     "plotly>=6.5.2",
     "neuralforecast>=3.0.0",
+    "granite-tsfm>=0.3.6; python_version >= '3.11' and python_version < '3.14'",
     "tirex-ts>=1.4.0",
 ]
 release = [
