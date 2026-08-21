@@ -444,7 +444,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         return True
 
     @property
-    def val_set_params(self) -> tuple[str | None, str | None]:
+    def val_set_params(self) -> tuple[str | None | tuple[str, str], str | None]:
         return "eval_set", "eval_sample_weight"
 
     @property
