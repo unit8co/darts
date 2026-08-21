@@ -1,4 +1,5 @@
 import itertools
+from unittest.mock import patch
 
 import matplotlib.figure
 import numpy as np
@@ -14,8 +15,41 @@ if not TORCH_AVAILABLE:
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+import pytorch_lightning as pl
+import torch
+
 from darts.explainability import TFTExplainabilityResult, TFTExplainer
+from darts.explainability.tft_explainer import _TFTPredictionOutputCollector
 from darts.models import TFTModel
+
+
+class _PredictionBatchCallback(pl.Callback):
+    def __init__(self):
+        self.batch_sizes = []
+        self.collector_batch_counts = []
+        self.collector = None
+        self.raise_on_batch_idx = None
+
+    def on_predict_batch_end(
+        self,
+        trainer,
+        pl_module,
+        outputs,
+        batch,
+        batch_idx,
+        dataloader_idx=0,
+    ):
+        self.batch_sizes.append(batch[0].shape[0])
+        self.collector = next(
+            callback
+            for callback in trainer.callbacks
+            if isinstance(callback, _TFTPredictionOutputCollector)
+        )
+        self.collector_batch_counts.append(
+            len(self.collector._batch_outputs["_attn_out_weights"])
+        )
+        if batch_idx == self.raise_on_batch_idx:
+            raise RuntimeError("user callback failure")
 
 
 def helper_create_test_cases(series_options: list):
@@ -322,21 +356,241 @@ class TestTFTExplainer:
         for ts in enc_imp_ot + dec_imp_ot:
             np.testing.assert_allclose(ts.values().sum(axis=1), 100.0, atol=0.1)
 
-        # cannot explain more series than the batch size
-        with pytest.raises(ValueError) as exc:
-            explainer.explain(
-                foreground_series=[series[0]] * (model.batch_size + 1),
-                foreground_past_covariates=[pc[0]] * (model.batch_size + 1)
-                if use_pc
-                else None,
-                foreground_future_covariates=[fc[0]] * (model.batch_size + 1)
-                if use_fc
-                else None,
-            )
-        assert str(exc.value) == (
-            "The number of back- or foreground series to explain (33) must be smaller than "
-            "or equal to the model's batch size (32)."
+    def test_explain_multiple_prediction_batches(self):
+        series, past_covariates, future_covariates = (
+            self.helper_get_distinct_batched_input()
         )
+        user_callback = _PredictionBatchCallback()
+        model = self.helper_create_model(
+            batch_size=2,
+            callbacks=[user_callback],
+        )
+        model.fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+        explainer = TFTExplainer(
+            model,
+            background_series=series,
+            background_past_covariates=past_covariates,
+            background_future_covariates=future_covariates,
+        )
+        configured_callbacks = tuple(model.trainer_params["callbacks"])
+        expected_five_series = None
+
+        for n_series, expected_batch_sizes in [
+            (1, [1]),
+            (2, [2]),
+            (4, [2, 2]),
+            (5, [2, 2, 1]),
+        ]:
+            inputs = {
+                "foreground_series": series[:n_series],
+                "foreground_past_covariates": past_covariates[:n_series],
+                "foreground_future_covariates": future_covariates[:n_series],
+            }
+            with patch.object(model, "batch_size", n_series):
+                expected = explainer.explain(**inputs)
+
+            user_callback.batch_sizes.clear()
+            user_callback.collector_batch_counts.clear()
+            with patch.object(model, "predict", wraps=model.predict) as predict_mock:
+                actual = explainer.explain(**inputs)
+
+            assert predict_mock.call_count == 1
+            assert user_callback.batch_sizes == expected_batch_sizes
+            assert user_callback.collector_batch_counts == list(
+                range(1, len(expected_batch_sizes) + 1)
+            )
+            assert all(
+                not batch_outputs
+                for batch_outputs in user_callback.collector._batch_outputs.values()
+            )
+            assert tuple(model.trainer_params["callbacks"]) == configured_callbacks
+            assert user_callback in model.trainer.callbacks
+            self.helper_assert_no_tft_collector(model)
+            self.helper_assert_tft_results_equal(actual, expected, n_series)
+
+            if n_series == 1:
+                assert isinstance(actual.get_attention(), TimeSeries)
+            else:
+                assert isinstance(actual.get_attention(), list)
+
+            if n_series == 5:
+                expected_five_series = expected
+                encoder_importance = actual.get_encoder_importance()
+                assert [
+                    importance.index.tolist() for importance in encoder_importance
+                ] == [[idx] for idx in range(n_series)]
+                self.helper_assert_distinct_tft_results(actual)
+
+        user_callback.batch_sizes.clear()
+        user_callback.collector_batch_counts.clear()
+        user_callback.raise_on_batch_idx = 1
+        with pytest.raises(RuntimeError, match="user callback failure"):
+            explainer.explain(
+                foreground_series=series,
+                foreground_past_covariates=past_covariates,
+                foreground_future_covariates=future_covariates,
+            )
+        assert user_callback.batch_sizes == [2, 2]
+        assert user_callback.collector_batch_counts == [1, 2]
+        assert all(
+            not batch_outputs
+            for batch_outputs in user_callback.collector._batch_outputs.values()
+        )
+        assert tuple(model.trainer_params["callbacks"]) == configured_callbacks
+        assert user_callback in model.trainer.callbacks
+        self.helper_assert_no_tft_collector(model)
+
+        user_callback.batch_sizes.clear()
+        user_callback.collector_batch_counts.clear()
+        user_callback.raise_on_batch_idx = None
+        recovered = explainer.explain(
+            foreground_series=series,
+            foreground_past_covariates=past_covariates,
+            foreground_future_covariates=future_covariates,
+        )
+        assert user_callback.batch_sizes == [2, 2, 1]
+        assert user_callback.collector_batch_counts == [1, 2, 3]
+        self.helper_assert_no_tft_collector(model)
+        self.helper_assert_tft_results_equal(
+            recovered, expected_five_series, len(series)
+        )
+
+    def test_explain_multiple_prediction_batches_without_static_covariates(self):
+        series, past_covariates, future_covariates = (
+            self.helper_get_distinct_batched_input(with_static_covariates=False)
+        )
+        model = self.helper_create_model(batch_size=2)
+        model.fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+        explainer = TFTExplainer(
+            model,
+            background_series=series,
+            background_past_covariates=past_covariates,
+            background_future_covariates=future_covariates,
+        )
+        inputs = {
+            "foreground_series": series,
+            "foreground_past_covariates": past_covariates,
+            "foreground_future_covariates": future_covariates,
+        }
+
+        with patch.object(model, "batch_size", len(series)):
+            expected = explainer.explain(**inputs)
+        with patch.object(model, "predict", wraps=model.predict) as predict_mock:
+            actual = explainer.explain(**inputs)
+
+        assert predict_mock.call_count == 1
+        self.helper_assert_no_tft_collector(model)
+        self.helper_assert_tft_results_equal(actual, expected, len(series))
+        assert all(
+            importance.shape == (0, 0)
+            for importance in actual.get_static_covariates_importance()
+        )
+
+    def test_explain_rejects_incomplete_prediction_output(self):
+        series, past_covariates, future_covariates = (
+            self.helper_get_distinct_batched_input()
+        )
+        model = self.helper_create_model(batch_size=2)
+        model.fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+        explainer = TFTExplainer(
+            model,
+            background_series=series,
+            background_past_covariates=past_covariates,
+            background_future_covariates=future_covariates,
+        )
+        model.trainer_params["limit_predict_batches"] = 1
+
+        with pytest.raises(
+            RuntimeError,
+            match="TFT prediction returned 2 series for 5 inputs",
+        ):
+            explainer.explain()
+        self.helper_assert_no_tft_collector(model)
+
+    @pytest.mark.parametrize(
+        "trainer_overrides",
+        [
+            {"devices": 2, "strategy": "ddp_spawn"},
+            {"devices": 1, "strategy": "ddp_spawn"},
+        ],
+    )
+    def test_explain_rejects_distributed_prediction(self, trainer_overrides):
+        model = self.helper_create_model(batch_size=2)
+        model.fit(self.series_mv1, past_covariates=self.pc, future_covariates=self.fc)
+        explainer = TFTExplainer(model)
+        model.trainer_params.update(trainer_overrides)
+        model.trainer_params["accelerator"] = "cpu"
+        previous_trainer = model.trainer
+        created_trainer = None
+        init_trainer = model._init_trainer
+
+        def capture_trainer(*args, **kwargs):
+            nonlocal created_trainer
+            created_trainer = init_trainer(*args, **kwargs)
+            return created_trainer
+
+        with (
+            patch.object(model, "_init_trainer", side_effect=capture_trainer),
+            patch.object(model, "predict", wraps=model.predict) as predict_mock,
+            pytest.raises(ValueError, match="only supports single-process prediction"),
+        ):
+            explainer.explain()
+
+        predict_mock.assert_not_called()
+        assert model.trainer is previous_trainer
+        self.helper_assert_no_tft_collector(created_trainer)
+
+    def test_prediction_output_collector_validates_cache_shapes_and_presence(self):
+        required_attributes = _TFTPredictionOutputCollector._OUTPUT_ATTRIBUTES[:-1]
+        pl_module = type("TFTModule", (), {})()
+        for name in required_attributes:
+            setattr(pl_module, name, torch.ones((2, 1)))
+        pl_module._static_covariate_var = None
+        outputs = (torch.ones((1, 2, 1, 1)), [], [])
+        batch = (torch.ones((2, 1)),)
+
+        with pytest.raises(RuntimeError, match="No TFT explanation outputs"):
+            _TFTPredictionOutputCollector().collect(expected_num_series=2)
+
+        collector = _TFTPredictionOutputCollector()
+        pl_module._attn_out_weights = "invalid"
+        with pytest.raises(TypeError, match="torch.Tensor or None"):
+            collector.on_predict_batch_end(None, pl_module, outputs, batch, 0)
+
+        pl_module._attn_out_weights = torch.ones((2, 1))
+        collector = _TFTPredictionOutputCollector()
+        collector.on_predict_batch_end(None, pl_module, outputs, batch, 0)
+        with pytest.raises(RuntimeError, match="collected 2"):
+            collector.collect(expected_num_series=3)
+
+        pl_module._static_covariate_var = torch.ones((2, 1))
+        collector.on_predict_batch_end(None, pl_module, outputs, batch, 1)
+        with pytest.raises(RuntimeError, match="missing from some prediction batches"):
+            collector.collect(expected_num_series=4)
+
+        collector = _TFTPredictionOutputCollector()
+        pl_module._static_covariate_var = None
+        pl_module._attn_out_weights = torch.ones((1, 1))
+        with pytest.raises(RuntimeError, match="contain 2 explanation outputs"):
+            collector.on_predict_batch_end(None, pl_module, outputs, batch, 0)
+
+        collector = _TFTPredictionOutputCollector()
+        pl_module._attn_out_weights = None
+        collector.on_predict_batch_end(None, pl_module, outputs, batch, 0)
+        with pytest.raises(RuntimeError, match="No `_attn_out_weights` outputs"):
+            collector.collect(expected_num_series=2)
 
     @pytest.mark.parametrize("n_series", [1, 2])
     def test_variable_selection_explanation(self, n_series, mpl_safe_plotting):
@@ -531,20 +785,118 @@ class TestTFTExplainer:
                 _check_plot(n_series, 2, plot_type="invalid", show_index_as="time")
 
     def helper_create_model(
-        self, use_encoders=True, add_relative_idx=True, full_attention=False
+        self,
+        use_encoders=True,
+        add_relative_idx=True,
+        full_attention=False,
+        batch_size=32,
+        callbacks=None,
     ):
         add_encoders = (
             {"cyclic": {"past": ["month"], "future": ["month"]}}
             if use_encoders
             else None
         )
+        model_kwargs = dict(tfm_kwargs)
+        trainer_kwargs = dict(model_kwargs["pl_trainer_kwargs"])
+        trainer_kwargs["callbacks"] = list(callbacks or [])
+        model_kwargs["pl_trainer_kwargs"] = trainer_kwargs
         return TFTModel(
             input_chunk_length=5,
             output_chunk_length=2,
             n_epochs=1,
+            batch_size=batch_size,
             add_encoders=add_encoders,
             add_relative_index=add_relative_idx,
             full_attention=full_attention,
             random_state=42,
-            **tfm_kwargs,
+            **model_kwargs,
+        )
+
+    def helper_get_distinct_batched_input(self, with_static_covariates=True):
+        inputs = []
+        for idx in range(5):
+            target = (self.series_mv1 * (idx + 1) + idx).shift(idx * 12)
+            if with_static_covariates:
+                target = target.with_static_covariates(
+                    pd.Series(
+                        [idx % 2, idx + 0.25],
+                        index=["cat", "num"],
+                    )
+                )
+            else:
+                target = target.with_static_covariates(None)
+            past_covariate = (self.pc * (idx + 1)).shift(idx * 12)
+            future_covariate = (self.fc * (idx + 2) + idx).shift(idx * 12)
+            inputs.append((target, past_covariate, future_covariate))
+
+        ordered = [inputs[idx] for idx in [3, 0, 4, 1, 2]]
+        return tuple([values[idx] for values in ordered] for idx in range(3))
+
+    @staticmethod
+    def helper_as_list(value):
+        return value if isinstance(value, list) else [value]
+
+    @classmethod
+    def helper_assert_tft_results_equal(cls, actual, expected, n_series):
+        time_series_getters = [
+            "get_attention",
+            "get_encoder_importance_over_time",
+            "get_decoder_importance_over_time",
+        ]
+        dataframe_getters = [
+            "get_encoder_importance",
+            "get_decoder_importance",
+            "get_static_covariates_importance",
+        ]
+
+        for getter_name in time_series_getters:
+            actual_values = cls.helper_as_list(getattr(actual, getter_name)())
+            expected_values = cls.helper_as_list(getattr(expected, getter_name)())
+            assert len(actual_values) == len(expected_values) == n_series
+            for actual_ts, expected_ts in zip(actual_values, expected_values):
+                assert actual_ts.time_index.equals(expected_ts.time_index)
+                assert actual_ts.components.equals(expected_ts.components)
+                np.testing.assert_allclose(
+                    actual_ts.all_values(copy=False),
+                    expected_ts.all_values(copy=False),
+                    rtol=1e-6,
+                    atol=1e-6,
+                )
+
+        for getter_name in dataframe_getters:
+            actual_values = cls.helper_as_list(getattr(actual, getter_name)())
+            expected_values = cls.helper_as_list(getattr(expected, getter_name)())
+            assert len(actual_values) == len(expected_values) == n_series
+            for actual_df, expected_df in zip(actual_values, expected_values):
+                pd.testing.assert_frame_equal(
+                    actual_df,
+                    expected_df,
+                    check_exact=False,
+                    rtol=1e-6,
+                    atol=1e-6,
+                )
+
+    @classmethod
+    def helper_assert_distinct_tft_results(cls, result):
+        fingerprints = [
+            (
+                tuple(attention.all_values(copy=False).ravel()),
+                tuple(encoder.all_values(copy=False).ravel()),
+                tuple(decoder.all_values(copy=False).ravel()),
+            )
+            for attention, encoder, decoder in zip(
+                cls.helper_as_list(result.get_attention()),
+                cls.helper_as_list(result.get_encoder_importance_over_time()),
+                cls.helper_as_list(result.get_decoder_importance_over_time()),
+            )
+        ]
+        assert len(set(fingerprints)) == len(fingerprints)
+
+    @staticmethod
+    def helper_assert_no_tft_collector(model_or_trainer):
+        trainer = getattr(model_or_trainer, "trainer", model_or_trainer)
+        assert not any(
+            isinstance(callback, _TFTPredictionOutputCollector)
+            for callback in trainer.callbacks
         )
