@@ -47,6 +47,16 @@ class TorchShapAdapter(ShapAdapter):
         past_covariates: Sequence[TimeSeries] | None = series2seq(past_covariates)
         future_covariates: Sequence[TimeSeries] | None = series2seq(future_covariates)
 
+        # `_func_wrapper()` calls `PLForecastingModule.predict_step()` directly, bypassing
+        # `TorchForecastingModel.predict()` (which would otherwise resolve named
+        # `use_reversible_instance_norm` groups); resolve them here instead, from this call's
+        # actual `series`/`past_covariates`/`future_covariates`.
+        self.model._set_rin_component_indices(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
         bounds, _ = _create_dataset_bounds(
             model=self.model,
             series=series,
