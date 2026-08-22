@@ -30,6 +30,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For developers of the library:
 
+- Refactored single-vs-sequence returns across the library to uniformly use `series2seq` and `SeriesType` for future typing improvements. [#3131](https://github.com/unit8co/darts/pull/3131) by [Oswald Zink](https://github.com/ozink-u8).
+
 ## [0.46.1](https://github.com/unit8co/darts/tree/0.46.1) (2026-07-20)
 
 ### For users of the library:

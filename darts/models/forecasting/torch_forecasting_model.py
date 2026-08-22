@@ -75,7 +75,6 @@ from darts.utils.likelihood_models.torch import TorchLikelihood
 from darts.utils.timeseries_generation import _build_forecast_series_from_schema
 from darts.utils.torch import random_method
 from darts.utils.ts_utils import (
-    SeriesType,
     get_series_seq_type,
     get_single_series,
     seq2series,
@@ -1858,9 +1857,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             One or several time series containing the forecasts of ``series``, or the forecast of the training series
             if ``series`` is not specified and the model has been trained on a single series.
         """
-        called_with_single_series = (
-            get_series_seq_type(series if series is not None else self.training_series)
-            == SeriesType.SINGLE
+        sequence_type_in = get_series_seq_type(
+            series if series is not None else self.training_series
         )
 
         params = self._setup_for_predict_from_dataset(
@@ -1882,7 +1880,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
         predictions = self.predict_from_dataset(**params)
 
-        return predictions[0] if called_with_single_series else predictions
+        return series2seq(predictions, seq_type_out=sequence_type_in)
 
     def _setup_for_predict_from_dataset(
         self,

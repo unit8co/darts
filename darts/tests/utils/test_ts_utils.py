@@ -17,10 +17,10 @@ class TestTsUtils:
         assert SeriesType.SEQ_SEQ.value == 2
 
         # equality works with members
-        assert SeriesType.NONE == SeriesType.NONE
-        assert SeriesType.SINGLE == SeriesType.SINGLE
-        assert SeriesType.SEQ == SeriesType.SEQ
-        assert SeriesType.SEQ_SEQ == SeriesType.SEQ_SEQ
+        assert SeriesType.NONE is SeriesType.NONE
+        assert SeriesType.SINGLE is SeriesType.SINGLE
+        assert SeriesType.SEQ is SeriesType.SEQ
+        assert SeriesType.SEQ_SEQ is SeriesType.SEQ_SEQ
 
         # inequality works with members
         assert SeriesType.SINGLE != SeriesType.SEQ
@@ -37,10 +37,10 @@ class TestTsUtils:
 
     def test_get_series_seq_type(self):
         ts = linear_timeseries(length=3)
-        assert get_series_seq_type(None) == SeriesType.NONE
-        assert get_series_seq_type(ts) == SeriesType.SINGLE
-        assert get_series_seq_type([ts]) == SeriesType.SEQ
-        assert get_series_seq_type([[ts]]) == SeriesType.SEQ_SEQ
+        assert get_series_seq_type(None) is SeriesType.NONE
+        assert get_series_seq_type(ts) is SeriesType.SINGLE
+        assert get_series_seq_type([ts]) is SeriesType.SEQ
+        assert get_series_seq_type([[ts]]) is SeriesType.SEQ_SEQ
 
         # unknown sequence type
         with pytest.raises(ValueError) as err:

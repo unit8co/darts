@@ -299,7 +299,7 @@ class BaseDataTransformer(ABC):
         component_mask: np.ndarray | None = None,
         series_idx: int | Sequence[int] | None = None,
         **kwargs,
-    ) -> TimeSeries | list[TimeSeries]:
+    ) -> TimeSeriesLike:
         """Transforms a (sequence of) of series by calling the user-implemeneted `ts_transform` method.
 
         In case a ``Sequence[TimeSeries]`` is passed as input data, this function takes care of
@@ -358,8 +358,9 @@ class BaseDataTransformer(ABC):
         desc = f"Transform ({self._name})"
 
         # Take note of original input for unmasking purposes:
+        sequence_type_in = get_series_seq_type(series)
         series_specified = series_idx is not None
-        if isinstance(series, TimeSeries):
+        if sequence_type_in is SeriesType.SINGLE:
             data = [series]
             if series_specified:
                 transformer_selector = self._process_series_idx(series_idx)
@@ -401,9 +402,8 @@ class BaseDataTransformer(ABC):
         transformed_data = _parallel_apply(
             input_iterator, self._ts_transform, self._n_jobs, args, kwargs
         )
-        return (
-            transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
-        )
+
+        return series2seq(transformed_data, seq_type_out=sequence_type_in)
 
     def _get_params(
         self,
@@ -523,7 +523,7 @@ class BaseDataTransformer(ABC):
 
         """
         sequence_type_in = get_series_seq_type(series)
-        called_with_single_series = sequence_type_in == SeriesType.SINGLE
+        called_with_single_series = sequence_type_in is SeriesType.SINGLE
         series = series2seq(series)
 
         if component_mask is None:
@@ -596,7 +596,7 @@ class BaseDataTransformer(ABC):
             )
 
         sequence_type_in = get_series_seq_type(series)
-        called_with_single_series = sequence_type_in == SeriesType.SINGLE
+        called_with_single_series = sequence_type_in is SeriesType.SINGLE
         series = series2seq(series)
         if called_with_single_series:
             vals = [vals]

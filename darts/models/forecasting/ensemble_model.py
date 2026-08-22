@@ -26,7 +26,7 @@ from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
 )
 from darts.typing import TimeSeriesLike
-from darts.utils.ts_utils import series2seq
+from darts.utils.ts_utils import get_series_seq_type, series2seq
 from darts.utils.utils import TORCH_AVAILABLE
 
 if TORCH_AVAILABLE:
@@ -505,7 +505,7 @@ class EnsembleModel(GlobalForecastingModel):
 
     def _predictions_reduction(self, predictions: TimeSeriesLike) -> TimeSeriesLike:
         """Reduce the sample dimension of the forecasting models predictions"""
-        is_single_series = isinstance(predictions, TimeSeries)
+        sequence_type_in = get_series_seq_type(predictions)
         predictions = series2seq(predictions)
         if self.train_samples_reduction == "median":
             predictions = [pred.median(axis=2) for pred in predictions]
@@ -515,7 +515,7 @@ class EnsembleModel(GlobalForecastingModel):
             predictions = [
                 pred.quantile(self.train_samples_reduction) for pred in predictions
             ]
-        return predictions[0] if is_single_series else predictions
+        return series2seq(predictions, seq_type_out=sequence_type_in)
 
     def _clean(self) -> Self:
         """Cleans the model and sub-models."""

@@ -17,6 +17,7 @@ import requests
 
 from darts import TimeSeries
 from darts.logging import get_logger
+from darts.typing import TimeSeriesLike
 
 logger = get_logger(__name__)
 
@@ -204,7 +205,7 @@ class DatasetLoaderCSV(DatasetLoader):
 
     def _load_from_disk(
         self, path_to_file: Path, metadata: DatasetLoaderMetadata
-    ) -> TimeSeries | list[TimeSeries]:
+    ) -> TimeSeriesLike:
         df = pd.read_csv(path_to_file)
         if metadata.header_time is not None:
             df = self._format_time_column(df)
