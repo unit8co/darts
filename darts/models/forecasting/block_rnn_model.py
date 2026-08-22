@@ -90,6 +90,8 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
         self.num_layers_out_fc = [] if num_layers_out_fc is None else num_layers_out_fc
         self.dropout = dropout
         self.activation = activation
+        # hidden state from the most recent forward pass, see `BlockRNNModel.last_hidden_state`
+        self.last_hidden_state = None
 
     @io_processor
     @abstractmethod
@@ -224,7 +226,8 @@ class _BlockRNNModule(CustomBlockRNNModule):
             x_past = torch.concat([x_past, x_static], dim=-1)
 
         # -> (B, L, H_D)
-        out, _ = self.rnn(x_past)
+        out, hidden_state = self.rnn(x_past)
+        self.last_hidden_state = hidden_state
 
         # use the RNN output of length `T` as input for the FC
         # -> (B, T, H_D)
@@ -583,3 +586,14 @@ class BlockRNNModel(MixedCovariatesTorchModel):
     @property
     def supports_static_covariates(self) -> bool:
         return True
+
+    @property
+    def last_hidden_state(self):
+        """The hidden state of the underlying encoder RNN after its most recent forward pass
+        (e.g. the last call to `predict()`).
+
+        Returns `None` if the model hasn't been used for training or prediction yet. Matches
+        whatever the underlying PyTorch module returns as hidden state: a single tensor `h_n`
+        for "RNN"/"GRU", or a tuple `(h_n, c_n)` for "LSTM".
+        """
+        return self.model.last_hidden_state if self.model is not None else None
