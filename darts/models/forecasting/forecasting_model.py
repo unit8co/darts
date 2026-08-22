@@ -1412,6 +1412,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             value for each metric function.
             If explicitly set to `None`, the method will return a list of the individual error scores instead.
             Set to ``np.mean`` by default.
+
+            .. note::
+                When `stride` is smaller than `forecast_horizon` the evaluation windows overlap, and the
+                individual error scores are strongly autocorrelated as a result. The number of windows then
+                overstates how much the backtest actually pins down, so a standard error formed as
+                ``std / sqrt(number of windows)`` is far too small. Pass ``reduction=None`` and see
+                :func:`~darts.utils.statistics.effective_sample_size` for how many independent observations
+                the scores are worth.
         verbose
             Whether to print the progress.
         show_warnings

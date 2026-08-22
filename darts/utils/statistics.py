@@ -1230,3 +1230,86 @@ def plot_tolerance_curve(
     axis.set_title("Tolerance Curve")
     axis.grid(True, alpha=0.3)
     axis.legend()
+
+
+def effective_sample_size(
+    values: Sequence[float] | np.ndarray,
+    max_lag: int | None = None,
+) -> float:
+    r"""
+    Number of independent observations a correlated sample is worth.
+
+    A sample of `n` autocorrelated values carries less information than `n`
+    independent ones, so a standard error formed as ``std / sqrt(n)`` is too
+    small. This returns
+
+    .. math:: n_{eff} = \frac{n}{1 + 2 \sum_{k=1}^{K} \rho_k}
+
+    where :math:`\rho_k` is the sample autocorrelation at lag `k`, truncated at
+    the first non-positive :math:`\rho_k` (the initial positive sequence rule of
+    Geyer, 1992). The result is clipped to ``[1, n]``.
+
+    The motivating case in Darts is
+    :func:`~darts.models.forecasting.forecasting_model.ForecastingModel.backtest`
+    with ``reduction=None``: when ``stride < forecast_horizon`` the evaluation
+    windows overlap, successive window metrics are strongly autocorrelated, and
+    the number of windows badly overstates how much the backtest pins down.
+
+    Note that a small effective size is a warning, not something to divide by
+    and move on. A backtest of one series cannot, by any correction, deliver a
+    valid interval for expected performance on a *new* series: the variation
+    between series realisations is not visible inside one of them.
+
+    Parameters
+    ----------
+    values
+        The (possibly autocorrelated) sample, e.g. the per-window metrics from
+        ``backtest(..., reduction=None)``. Must be finite and not constant.
+    max_lag
+        Highest lag considered. Defaults to ``min(len(values) - 1, 10 * log10(n))``,
+        the statsmodels convention.
+
+    Returns
+    -------
+    float
+        The effective sample size, between 1 and ``len(values)``.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from darts.utils.statistics import effective_sample_size
+    >>> rng = np.random.default_rng(0)
+    >>> round(effective_sample_size(rng.normal(size=2000)))  # doctest: +SKIP
+    2013
+    """
+    array = np.asarray(values, dtype=float).ravel()
+    n = array.size
+
+    if n < 3:
+        raise_log(
+            ValueError(f"`values` must contain at least 3 observations, received {n}.")
+        )
+    if not np.all(np.isfinite(array)):
+        raise_log(ValueError("`values` must be finite; found NaN or infinity."))
+    if np.all(array == array[0]):
+        raise_log(
+            ValueError("`values` is constant, so its autocorrelation is undefined.")
+        )
+
+    if max_lag is None:
+        max_lag = int(min(n - 1, 10 * math.log10(n)))
+    max_lag = max(1, min(max_lag, n - 1))
+
+    rho = acf(array, nlags=max_lag, fft=True)[1:]
+    # Initial positive sequence: stop at the first lag whose correlation is not
+    # positive, rather than summing noise from long lags.
+    non_positive = np.flatnonzero(rho <= 0)
+    cutoff = non_positive[0] if non_positive.size else rho.size
+    inflation = 1.0 + 2.0 * float(np.sum(rho[:cutoff]))
+
+    # The truncated sum runs over strictly positive autocorrelations, so
+    # `inflation >= 1` by construction and the result can never exceed `n`.
+    # No upper clamp is applied: one would be unreachable, and an unreachable
+    # guard reads as if it were doing work. The lower floor is not provable in
+    # the same way for very small `n`, so it stays.
+    return float(max(1.0, n / inflation))
