@@ -11,6 +11,10 @@ explainability information from the model.
   - decoder importance: future part of future covariates
   - static covariates importance: the numeric and categorical static covariates importance
 
+- :func:`plot_variable_selection_over_time() <TFTExplainer.plot_variable_selection_over_time>` plots the same
+  encoder / decoder variable importances as :func:`plot_variable_selection() <TFTExplainer.plot_variable_selection>`,
+  but per individual timestep instead of aggregated over the whole input chunk / forecast horizon.
+
 - :func:`plot_attention() <TFTExplainer.plot_attention>` plots the transformer attention that the `TFTModel` applies
   on the given past and future input. The attention is aggregated over all attention heads.
 
@@ -329,6 +333,105 @@ class TFTExplainer(_ForecastingModelExplainer):
                     title="Static variable importance",
                     ax=axes[2],
                 )
+            fig.tight_layout()
+            if show_plot:
+                plt.show()
+            plotted_figures.append(fig)
+
+            if idx + 1 == max_nr_series:
+                break
+
+        if len(plotted_figures) == 1:
+            return plotted_figures[0]
+        return plotted_figures
+
+    def plot_variable_selection_over_time(
+        self,
+        expl_result: TFTExplainabilityResult,
+        show_index_as: Literal["relative", "time"] = "relative",
+        max_nr_components: int = 10,
+        fig_size=None,
+        max_nr_series: int = 5,
+        show_plot: bool = True,
+    ) -> Figure | list[Figure]:
+        """Plots the variable selection (feature importance) of the `TFTModel` per individual timestep.
+
+        Unlike :func:`plot_variable_selection() <TFTExplainer.plot_variable_selection>`, which aggregates
+        importances over the whole input chunk / forecast horizon, this shows how each variable's importance
+        evolves at every timestep. The figure includes two subplots:
+
+        - encoder importance over time: importance of each encoder variable at every input chunk timestep
+        - decoder importance over time: importance of each decoder variable at every forecast horizon timestep
+
+        Parameters
+        ----------
+        expl_result
+            A `TFTExplainabilityResult` object. Corresponds to the output of :func:`explain() <TFTExplainer.explain>`.
+        show_index_as
+            The type of index to be shown on the x-axis. One of ("relative", "time").
+            If "relative", will plot the x-axis from `(-input_chunk_length, output_chunk_length - 1)`. `0` corresponds
+            to the first prediction point.
+            If "time", will plot the x-axis with the actual time index (or range index) of the corresponding
+            `TFTExplainabilityResult`.
+        max_nr_components
+            The maximum number of variables to plot per subplot. -1 means all variables will be plotted.
+        fig_size
+            The size of the figure to be plotted.
+        max_nr_series
+            The maximum number of plots to show in case `expl_result` was computed on multiple series.
+        show_plot
+            Whether to show the plot.
+
+        Returns
+        -------
+        Figure | list[Figure]
+            The matplotlib figures used for plotting. Returns a single Figure when explaining a single series,
+            and a list of Figures when explaining multiple series.
+        """
+        encoder_importance_ot = expl_result.get_encoder_importance_over_time()
+        decoder_importance_ot = expl_result.get_decoder_importance_over_time()
+        if not isinstance(encoder_importance_ot, list):
+            encoder_importance_ot = [encoder_importance_ot]
+            decoder_importance_ot = [decoder_importance_ot]
+
+        plotted_figures: list[Figure] = []
+        for idx, (enc_imp_ot, dec_imp_ot) in enumerate(
+            zip(encoder_importance_ot, decoder_importance_ot)
+        ):
+            if show_index_as == "relative":
+                enc_imp_ot = TimeSeries(
+                    times=generate_index(start=-len(enc_imp_ot), end=-1),
+                    values=enc_imp_ot.values(copy=False),
+                    components=enc_imp_ot.components,
+                )
+                dec_imp_ot = TimeSeries(
+                    times=generate_index(start=0, end=len(dec_imp_ot) - 1),
+                    values=dec_imp_ot.values(copy=False),
+                    components=dec_imp_ot.components,
+                )
+                x_label = "Index relative to first prediction point"
+            elif show_index_as == "time":
+                x_label = "Time index"
+            else:
+                raise_log(
+                    ValueError("`show_index_as` must either be 'relative', or 'time'.")
+                )
+
+            fig, axes = plt.subplots(nrows=2, figsize=fig_size)
+            for ax, imp_ot, ax_title in zip(
+                axes,
+                [enc_imp_ot, dec_imp_ot],
+                [
+                    "Encoder variable importance over time",
+                    "Decoder variable importance over time",
+                ],
+            ):
+                imp_ot.plot(max_nr_components=max_nr_components, ax=ax)
+                ax.set_title(ax_title)
+                ax.set_xlabel(x_label)
+                ax.set_ylabel("Importance in %")
+                ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
+
             fig.tight_layout()
             if show_plot:
                 plt.show()
