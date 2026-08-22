@@ -1318,6 +1318,20 @@ def _process_historical_forecast_input(
         past_covariates = [model.past_covariate_series] * len(series)
     if future_covariates is None and model.future_covariate_series is not None:
         future_covariates = [model.future_covariate_series] * len(series)
+        # the covariates stored on the model only cover the period it was fit on; if `series`
+        # extends further, historical forecasts will run out of future covariates partway
+        # through and fail deep inside with an opaque array indexing error
+        for series_, future_covariates_ in zip(series, future_covariates):
+            if future_covariates_.end_time() < series_.end_time():
+                raise_log(
+                    ValueError(
+                        "`future_covariates` was not passed, so the covariates stored on the "
+                        "model from `fit()` were used instead. Those covariates end at "
+                        f"{future_covariates_.end_time()}, which is before the end of `series` "
+                        f"({series_.end_time()}). Pass `future_covariates` explicitly, covering "
+                        "the full period you're forecasting over."
+                    ),
+                )
 
     if model.uses_static_covariates:
         model._verify_static_covariates(series[0].static_covariates)
