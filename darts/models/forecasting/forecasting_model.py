@@ -1842,6 +1842,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ),
             )
 
+        for series_name, series_arg in (
+            ("series", series),
+            ("val_series", val_series),
+            ("past_covariates", past_covariates),
+            ("future_covariates", future_covariates),
+        ):
+            if get_series_seq_type(series_arg) > SeriesType.SINGLE:
+                raise_log(
+                    ValueError(
+                        f"`gridsearch` only supports a single (univariate or multivariate) `TimeSeries` "
+                        f"for `{series_name}`, not a sequence of multiple `TimeSeries`. "
+                        f"Received a {get_series_seq_type(series_arg)} for `{series_name}`."
+                    ),
+                )
+
         if use_fitted_values:
             if not hasattr(
                 model_class(**{k: v[0] for k, v in parameters.items()}),
