@@ -1320,6 +1320,25 @@ class TestBacktesting:
             )
 
     @pytest.mark.parametrize(
+        "series_arg", ["series", "val_series", "past_covariates", "future_covariates"]
+    )
+    def test_gridsearch_multiple_series_raises(self, series_arg):
+        """`gridsearch` only supports a single `TimeSeries`; passing a sequence of
+        `TimeSeries` for `series`, `val_series`, `past_covariates`, or `future_covariates`
+        should raise a clear `ValueError` instead of failing deep in the call stack."""
+        dummy_series = get_dummy_series(ts_length=50)
+
+        kwargs = {"series": dummy_series, "val_series": dummy_series}
+        kwargs[series_arg] = [dummy_series, dummy_series]
+
+        with pytest.raises(ValueError) as msg:
+            Theta.gridsearch(parameters={"theta": [1, 2]}, **kwargs)
+        assert str(msg.value).startswith(
+            "`gridsearch` only supports a single (univariate or multivariate) `TimeSeries` "
+            f"for `{series_arg}`"
+        )
+
+    @pytest.mark.parametrize(
         "config",
         itertools.product([True, False], [True, False]),
     )

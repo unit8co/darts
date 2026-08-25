@@ -25,6 +25,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed metrics `arre` and `marre` rejecting an entire input when any component of `actual_series` is constant; the zero-range denominator is now handled element-wise, so an exact prediction yields `0.0` and only undefined entries become `np.nan`. [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
 - Fixed metric `ope` to accept an `actual_series` with a strictly negative sum (the previous `sum > 0` check rejected valid inputs such as financial return series). [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
 - Fixed metric `wmape` docstring which inaccurately claimed it raised on zeros in `actual_series`. [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
+- Fixed `gridsearch()` failing with a cryptic error deep in the call stack when passed a sequence of `TimeSeries` (instead of a single `TimeSeries`) for `series`, `val_series`, `past_covariates`, or `future_covariates`; it now raises a clear `ValueError` naming the offending argument. [#3191](https://github.com/unit8co/darts/pull/3191) by [Geovanny Basantes](https://github.com/COMPUMAX-EC).
 
 **Dependencies**
 
