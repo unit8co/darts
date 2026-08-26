@@ -989,6 +989,28 @@ class TestAnomalyDetectionScorer:
         assert np.abs(0.98606 - auc_roc_cwtrue[0]) < delta
         assert np.abs(0.96722 - auc_roc_cwtrue[1]) < delta
 
+    def test_kmeansScorer_save_load(self):
+        import os
+        import tempfile
+
+        scorer = KMeansScorer(k=2, window=3, component_wise=True)
+        scorer.fit(self.test)
+        score1 = scorer.score(self.test)
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file_path = os.path.join(tmp_dir, "scorer.pkl")
+            scorer.save(file_path)
+
+            loaded_scorer = KMeansScorer.load(file_path)
+            
+            # The loaded model should have the same window, k, and produce the same score
+            assert loaded_scorer.window == scorer.window
+            assert loaded_scorer.kmeans_kwargs["n_clusters"] == scorer.kmeans_kwargs["n_clusters"]
+            assert loaded_scorer.is_univariate == scorer.is_univariate
+
+            score2 = loaded_scorer.score(self.test)
+            np.testing.assert_array_equal(score1.values(), score2.values())
+
     def test_kmeansScorer(self):
         # Check parameters and inputs
         self.component_wise_parameter(KMeansScorer)
