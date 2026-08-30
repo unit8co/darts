@@ -1707,6 +1707,11 @@ class TimeSeries:
         return self.metadata is not None
 
     @property
+    def has_nan(self) -> bool:
+        """Whether the series contains any NaN values."""
+        return np.isnan(self._values).any()
+
+    @property
     def duration(self) -> pd.Timedelta | int:
         """The duration of the series (as a ``pandas.Timedelta`` or `int`)."""
         return self.end_time() - self.start_time()

@@ -1904,6 +1904,21 @@ class TestTimeSeries:
         ts8 = TimeSeries.from_values(values1)
         assert ts8.has_range_index
 
+    def test_has_nan(self):
+        ts_nan = TimeSeries.from_values([1.0, np.nan, 3.0])
+        assert ts_nan.has_nan
+
+        ts_clean = TimeSeries.from_values([1.0, 2.0, 3.0])
+        assert not ts_clean.has_nan
+
+        ts_int = TimeSeries.from_values([1, 2, 3])
+        assert not ts_int.has_nan
+
+        ts_multivariate = TimeSeries.from_values(
+            np.array([[1.0, 2.0], [np.nan, 4.0]])
+        )
+        assert ts_multivariate.has_nan
+
     def test_short_series_slice(self):
         seriesA, seriesB = self.series1.split_after(pd.Timestamp("20130108"))
         assert len(seriesA) == 8
