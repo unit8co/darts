@@ -116,6 +116,32 @@ class TestUtils:
         assert subseries_any[1] == series[3:5]
         assert subseries_any[2] == series[-1]
 
+        # a series without any missing value must return a list holding the
+        # single (unchanged) series, not a bare TimeSeries
+        clean_series = TimeSeries.from_values(np.arange(5.0).reshape(-1, 1))
+        subseries_clean = extract_subseries(clean_series)
+        assert isinstance(subseries_clean, list)
+        assert len(subseries_clean) == 1
+        assert subseries_clean[0] == clean_series
+
+        # series with missing values but no gap under the selected mode must
+        # still return a list with a single series (not a bare TimeSeries)
+        no_gap_df = pd.DataFrame(
+            {
+                "0": [1.0, np.nan, 3.0, 4.0],
+                "1": [10.0, 20.0, np.nan, 40.0],
+            },
+            index=pd.date_range("20130206", periods=4),
+        )
+        no_gap_series = TimeSeries.from_dataframe(no_gap_df)
+        # NaNs are present, but never in all columns at once, so mode="all"
+        # finds no gap
+        assert no_gap_series.gaps(mode="all").empty
+        subseries_no_gap = extract_subseries(no_gap_series, mode="all")
+        assert isinstance(subseries_no_gap, list)
+        assert len(subseries_no_gap) == 1
+        assert subseries_no_gap[0] == no_gap_series
+
     @pytest.mark.parametrize(
         "config",
         [
