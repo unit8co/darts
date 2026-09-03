@@ -18,8 +18,11 @@ To enable LightGBM support in Darts, follow the detailed install instructions fo
 https://github.com/unit8co/darts/blob/master/INSTALL.md
 """
 
+from collections.abc import Sequence
+
 import lightgbm as lgb
 
+from darts import TimeSeries
 from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
@@ -30,6 +33,7 @@ from darts.models.forecasting.sklearn_model import (
 from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import QuantileRegression, _get_likelihood
+from darts.utils.multioutput import MultiOutputMixin
 
 
 class LightGBMModel(SKLearnModelWithCategoricalFeatures):
@@ -358,8 +362,39 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
         return True
 
     @property
-    def val_set_params(self) -> tuple[str | None, str | None]:
-        return "eval_set", "eval_sample_weight"
+    def val_set_params(self) -> tuple[str | None | tuple[str, str], str | None]:
+        return ("eval_X", "eval_y"), "eval_sample_weight"
+
+    def _add_val_set_to_kwargs(
+        self,
+        kwargs: dict,
+        val_series: Sequence[TimeSeries],
+        val_past_covariates: Sequence[TimeSeries] | None,
+        val_future_covariates: Sequence[TimeSeries] | None,
+        val_sample_weight: Sequence[TimeSeries] | str | None,
+        max_samples_per_ts: int,
+        stride: int,
+    ) -> dict:
+        # LightGBMRegressor requires validation set X and y to be passed as independently
+        kwargs = super()._add_val_set_to_kwargs(
+            kwargs=kwargs,
+            val_series=val_series,
+            val_past_covariates=val_past_covariates,
+            val_future_covariates=val_future_covariates,
+            val_sample_weight=val_sample_weight,
+            max_samples_per_ts=max_samples_per_ts,
+            stride=stride,
+        )
+        # LightGBMRegressor.fit() requires single array eval_X and eval_y;
+        # MultiOutputMixin handles this internally
+        if isinstance(self.model, MultiOutputMixin):
+            return kwargs
+
+        # otherwise, we flatten here
+        (val_samples_name, val_labels_name), _ = self.val_set_params
+        kwargs[val_samples_name] = kwargs[val_samples_name][0]
+        kwargs[val_labels_name] = kwargs[val_labels_name][0]
+        return kwargs
 
     @property
     def _categorical_fit_param(self) -> str | None:

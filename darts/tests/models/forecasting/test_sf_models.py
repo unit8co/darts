@@ -12,6 +12,7 @@ if not SF_AVAILABLE:
         allow_module_level=True,
     )
 
+import statsforecast
 import statsforecast.models as sf_models
 from statsforecast.utils import ConformalIntervals
 
@@ -28,6 +29,12 @@ from darts.models import (
     StatsForecastModel,
 )
 from darts.utils.likelihood_models.statsforecast import QuantilePrediction
+
+_SF_211_OR_ABOVE = tuple(int(i) for i in statsforecast.__version__.split(".")) >= (
+    2,
+    1,
+    1,
+)
 
 
 class TestSFModels:
@@ -154,8 +161,8 @@ class TestSFModels:
             (
                 StatsForecastModel,
                 {"model": sf_models.SimpleExponentialSmoothing(alpha=0.1)},
-                True,
-            ),  # (custom, custom, conformal)
+                not _SF_211_OR_ABOVE,
+            ),  # (custom, custom, native since statsforecast 2.1.1)
         ],
     )
     def test_probabilistic_support(self, config):
