@@ -8,7 +8,7 @@ Custom MLflow model flavor for Darts forecasting models. Supports saving, loadin
 and logging any Darts ``ForecastingModel`` (statistical, ML-based, and PyTorch-based)
 to MLflow, as well as automatic logging  via ``autolog()``.
 
-See the `MLflow quickstart example <https://github.com/unit8co/darts/blob/master/examples/29-MLflow-examples.ipynb>`_
+See the `MLflow quickstart <https://github.com/unit8co/darts/blob/master/examples/29-MLflow-examples.ipynb>`_
 for an end-to-end walkthrough.
 
 .. dropdown:: Here's a quick start example
