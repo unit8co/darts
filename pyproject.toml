@@ -169,6 +169,7 @@ dev = [
 ]
 torch-cpu = ["torch>=2.0.0"]
 optional = [
+    "mlflow>=3.0",
     "onnx>=1.0.0",
     "onnxruntime>=1.24.1; python_version >= '3.11'",
     "onnxruntime<1.24.1; python_version < '3.11'",  # 1.24.1 dropped python 3.10 support

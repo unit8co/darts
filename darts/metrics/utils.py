@@ -155,6 +155,22 @@ def classification_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     return wrapper_classification_support
 
 
+_metric_callbacks: list[Callable] = []
+
+
+def register_metric_callback(callback: Callable) -> None:
+    """Register a callback to be invoked after every top-level metric call."""
+    _metric_callbacks.append(callback)
+
+
+def unregister_metric_callback(callback: Callable) -> None:
+    """Remove a previously registered metric callback, if present."""
+    try:
+        _metric_callbacks.remove(callback)
+    except ValueError:
+        pass
+
+
 def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     """
     This decorator further adapts the metrics that took as input two (or three for scaled metrics with `insample`)
@@ -169,6 +185,9 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
 
     @wraps(func)
     def wrapper_multi_ts_support(*args, **kwargs):
+        original_args = args
+        original_kwargs = dict(kwargs)
+
         actual_series = (
             kwargs["actual_series"] if "actual_series" in kwargs else args[0]
         )
@@ -311,6 +330,10 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             vals = kwargs[_PARAM_SERIES_REDUCTION](vals, axis=0)
         elif series_seq_type == SeriesType.SINGLE:
             vals = vals[0]
+
+        # invoke registered callbacks (e.g. MLflow autologging)
+        for cb in _metric_callbacks:
+            cb(func=func, result=vals, args=original_args, kwargs=original_kwargs)
 
         # flatten along series axis if n series == 1
         return vals
