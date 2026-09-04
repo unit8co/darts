@@ -1071,13 +1071,14 @@ def plot_residuals_analysis(
     ax1.set_title("Residual values")
 
     # plot histogram and distribution
+    res_values = residuals.univariate_values(copy=False)
     res_mean, res_std = (
-        np.mean(residuals.univariate_values(copy=False)),
-        np.std(residuals.univariate_values(copy=False)),
+        np.mean(res_values),
+        np.std(res_values),
     )
     res_min, res_max = (
-        min(residuals.univariate_values(copy=False)),
-        max(residuals.univariate_values(copy=False)),
+        min(res_values),
+        max(res_values),
     )
     x = np.linspace(res_min, res_max, 100)
     ax2 = fig.add_subplot(gs[1:, 1:])
