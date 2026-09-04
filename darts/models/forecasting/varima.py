@@ -239,7 +239,7 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 nsimulations=n,
                 repetitions=num_samples,
                 initial_state=self.model.states.predicted[-1, :],
-                random_state=rng,
+                rng=rng,
                 exog=(
                     future_covariates.values(copy=False) if future_covariates else None
                 ),

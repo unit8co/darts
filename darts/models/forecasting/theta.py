@@ -134,7 +134,10 @@ class Theta(LocalForecastingModel):
             new_ts = remove_from_series(ts, self.seasonality, model=self.season_mode)
 
         # SES part of the decomposition.
-        self.model = hw.SimpleExpSmoothing(new_ts.values(copy=False)).fit()
+        self.model = hw.SimpleExpSmoothing(
+            endog=new_ts.values(copy=False),
+            initialization_method="estimated",
+        ).fit()
 
         # Linear Regression part of the decomposition. We select the degree one coefficient.
         b_theta = np.polyfit(
@@ -382,7 +385,10 @@ class FourTheta(LocalForecastingModel):
             theta_t = self.theta * ts_values + (1 - self.theta) * theta0_in
 
         # SES part of the decomposition.
-        self.model = hw.SimpleExpSmoothing(theta_t).fit()
+        self.model = hw.SimpleExpSmoothing(
+            endog=theta_t,
+            initialization_method="estimated",
+        ).fit()
         theta2_in = self.model.fittedvalues
 
         if (theta2_in > 0).all() and self.model_mode is ModelMode.MULTIPLICATIVE:

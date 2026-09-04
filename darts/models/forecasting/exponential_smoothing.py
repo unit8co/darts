@@ -176,7 +176,7 @@ class ExponentialSmoothing(LocalForecastingModel):
                 self.model.simulate(
                     n,
                     repetitions=num_samples,
-                    random_state=rng,
+                    rng=rng,
                     random_errors=self.random_errors,
                     error=self.error,
                 ),
