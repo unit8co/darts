@@ -11,6 +11,7 @@ from sklearn.utils import check_random_state
 
 from darts import TimeSeries
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
+from darts.utils._statsmodels_utils import SM_RNG_KWARG
 from darts.utils.utils import ModelMode, SeasonalityMode, random_method
 
 
@@ -176,9 +177,9 @@ class ExponentialSmoothing(LocalForecastingModel):
                 self.model.simulate(
                     n,
                     repetitions=num_samples,
-                    random_state=rng,
                     random_errors=self.random_errors,
                     error=self.error,
+                    **{SM_RNG_KWARG: rng},
                 ),
                 axis=1,
             )

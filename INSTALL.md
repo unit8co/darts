@@ -15,12 +15,19 @@ Darts offers a modular installation system with optional dependencies. Choose th
 If the PyTorch installation fails on your platform, please follow the official installation guide for [PyTorch](https://pytorch.org/get-started/locally/), then try installing Darts again.
 
 ### Optional dependencies for specific models
+
 Some models have additional dependencies that are not included in the `all` installation option. To use them, you need to install the following dependencies separately from PyPI:
 
 | Model                 | Dependencies          |
 |-----------------------|-----------------------|
 | `NeuralForecastModel` | neuralforecast>=3.0.0 |
 | `TiRexModel`          | tirex-ts>=1.4.0       |
+
+Some optional integrations also require additional dependencies:
+
+| Integration          | Dependencies |
+|----------------------|--------------|
+| `darts.utils.mlflow` | mlflow>=3.0  |
 
 
 ## From conda-forge

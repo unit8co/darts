@@ -353,6 +353,8 @@ Features
 
 * **PyTorch Lightning Support:** All deep learning models are implemented using PyTorch Lightning, supporting among other things custom callbacks, GPUs/TPUs training and custom trainers.
 
+* **MLflow Integration:** Integration with MLflow for automated tracking, comparing, and persisting of Darts forecasting model experiments. See the `MLflow quickstart notebook <https://unit8co.github.io/darts/examples/29-MLflow-examples.html>`_ for examples.
+
 * **Filtering Models:** Darts offers three filtering models: ``KalmanFilter``, ``GaussianProcessFilter``, and ``MovingAverageFilter``, which allow to filter time series, and in some cases obtain probabilistic inferences of the underlying states/values.
 
 * **Datasets:** The ``darts.datasets`` submodule contains some popular time series datasets for rapid and reproducible experimentation.
