@@ -11,6 +11,7 @@ This file contains several abstract classes:
 from abc import ABC
 
 from darts.logging import get_logger
+from darts.models.components.layer_norm_variants import RINorm
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.utils.data.torch_datasets.utils import _parse_input_chunk_length
 
@@ -186,26 +187,20 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
         if self.enable_finetuning:
             self.pl_module_params["enable_finetuning"] = True
 
-        use_reversible_instance_norm: bool | dict = self.pl_module_params.get(
-            "use_reversible_instance_norm", False
+        # normalize first (handles `bool`, the legacy flat `{"affine": ..., "eps": ...}` dict, and the
+        # newer per-group dict uniformly) so the `affine` override below always targets the right place
+        rin_config = RINorm.parse_config(
+            self.pl_module_params.get("use_reversible_instance_norm", False)
         )
-        if use_reversible_instance_norm is True or (
-            isinstance(use_reversible_instance_norm, dict)
-            and use_reversible_instance_norm.get("affine", True)
-        ):
-            if use_reversible_instance_norm is True:
-                use_reversible_instance_norm = dict(affine=False)
-            else:
-                use_reversible_instance_norm["affine"] = False
+        if rin_config is not None and rin_config["params"].get("affine", True):
+            rin_config["params"]["affine"] = False
             logger.warning(
                 f"By default, Reversible Instance Normalization (RINorm) in Darts inserts affine transformation "
                 f"weights, which do not exist in foundation model checkpoints. To prevent incompatible model "
                 f"weights when loading checkpoints, `use_reversible_instance_norm` is overridden to "
-                f"`{use_reversible_instance_norm}`."
+                f"`{rin_config}`."
             )
-            self.pl_module_params["use_reversible_instance_norm"] = (
-                use_reversible_instance_norm
-            )
+            self.pl_module_params["use_reversible_instance_norm"] = rin_config
 
     @property
     def _ckpt_skipped_params(self) -> list[str]:
