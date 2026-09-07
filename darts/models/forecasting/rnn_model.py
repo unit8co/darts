@@ -85,6 +85,8 @@ class CustomRNNModule(PLForecastingModule, ABC):
         self.target_size = target_size
         self.nr_params = nr_params
         self.dropout = dropout
+        # hidden state from the most recent `predict()` call, see `RNNModel.last_hidden_state`
+        self.last_hidden_state: torch.Tensor | None = None
 
     @io_processor
     @abstractmethod
@@ -216,6 +218,11 @@ class CustomRNNModule(PLForecastingModule, ABC):
         # bring predictions into desired format and drop unnecessary values
         batch_prediction = torch.cat(batch_prediction, dim=1)
         batch_prediction = batch_prediction[:, :n, :]
+
+        # keep the hidden state from the last prediction step around so it can be
+        # retrieved from the model after `predict()` (see `RNNModel.last_hidden_state`)
+        self.last_hidden_state = last_hidden_state
+
         return batch_prediction
 
 
@@ -629,3 +636,14 @@ class RNNModel(DualCovariatesTorchModel):
         return (
             super().min_train_samples + self.training_length - self.input_chunk_length
         )
+
+    @property
+    def last_hidden_state(self):
+        """The hidden state of the underlying PyTorch RNN module after the most recent
+        call to `predict()`.
+
+        Returns `None` if the model hasn't been used for prediction yet. Matches
+        whatever the underlying PyTorch module returns as hidden state: a single
+        tensor `h_n` for "RNN"/"GRU", or a tuple `(h_n, c_n)` for "LSTM".
+        """
+        return self.model.last_hidden_state if self.model is not None else None
