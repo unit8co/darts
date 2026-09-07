@@ -20,6 +20,7 @@ from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
+from darts.utils._statsmodels_utils import SM_RNG_KWARG
 from darts.utils.utils import random_method
 
 logger = get_logger(__name__)
@@ -239,10 +240,10 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 nsimulations=n,
                 repetitions=num_samples,
                 initial_state=self.model.states.predicted[-1, :],
-                random_state=rng,
                 exog=(
                     future_covariates.values(copy=False) if future_covariates else None
                 ),
+                **{SM_RNG_KWARG: rng},
             )
 
         forecast = self._invert_transformation(forecast)
