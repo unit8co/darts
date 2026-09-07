@@ -3,9 +3,13 @@ TiRex-2: Zero-Shot Multivariate Forecasting
 -----------------------------------------
 
 TiRex-2 supports joint multivariate forecasting with past and future covariates.
-See the `Foundation Model Examples
-<https://unit8co.github.io/darts/examples/25-FoundationModel-examples.html>`__
-for the Darts foundation model workflow.
+
+For detailed examples and tutorials, see:
+
+* `Foundation Model Examples
+  <https://unit8co.github.io/darts/examples/25-FoundationModel-examples.html>`__
+* `Fine-Tuning Examples
+  <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__
 """
 
 import os
