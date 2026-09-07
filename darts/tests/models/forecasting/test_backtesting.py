@@ -1109,6 +1109,33 @@ class TestBacktesting:
                 "Model cannot be fit/trained with `future_covariates`."
             )
 
+    def test_backtest_missing_future_covariates(self):
+        """`backtest()`/`historical_forecasts()` on a model trained with future covariates
+        should raise a clear error when those covariates are not provided."""
+        series = AirPassengersDataset().load().astype("float32")
+        features = TimeSeries.from_times_and_values(
+            series.time_index, np.arange(len(series)).reshape(-1, 1).astype("float32")
+        )
+        model = LinearRegressionModel(
+            lags=6, lags_future_covariates=(0, 1), output_chunk_length=1
+        )
+        model.fit(series, future_covariates=features)
+
+        bt_kwargs = {"start": 0.7, "forecast_horizon": 1, "retrain": False}
+        with pytest.raises(ValueError) as msg:
+            model.backtest(series=series, **bt_kwargs)
+        assert str(msg.value).startswith(
+            "The model was trained with future covariates. Some matching future_covariates "
+            "must be passed to `historical_forecasts()`."
+        )
+
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(series=series, **bt_kwargs)
+        assert str(msg.value).startswith(
+            "The model was trained with future covariates. Some matching future_covariates "
+            "must be passed to `historical_forecasts()`."
+        )
+
     def test_gridsearch(self):
         np.random.seed(1)
 

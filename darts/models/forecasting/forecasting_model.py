@@ -904,6 +904,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
+
+        if self.uses_past_covariates and past_covariates is None:
+            raise_log(
+                ValueError(
+                    "The model was trained with past covariates. Some matching past_covariates "
+                    "must be passed to `historical_forecasts()`."
+                )
+            )
+        if self.uses_future_covariates and future_covariates is None:
+            raise_log(
+                ValueError(
+                    "The model was trained with future covariates. Some matching future_covariates "
+                    "must be passed to `historical_forecasts()`."
+                )
+            )
         sample_weight = (
             sample_weight
             if isinstance(sample_weight, str)
