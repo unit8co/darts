@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- `TFTExplainer` can now explain more series than the model's batch size. [#3171](https://github.com/unit8co/darts/issues/3171) by [Mahimn](https://github.com/mahimn01).
+
 **Fixed**
 
 **Dependencies**
