@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added `TiRex2Model` for zero-shot joint multivariate forecasting with past and future covariates, using the optional `tirex-2` package.
 - Improvements to `TorchForecastingModel` : [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader).
   - 🚀🚀 ONNX export and inference are substantially more capable: train a model in PyTorch, export it once, then run forecasts in a lightweight environment with only ONNX Runtime, NumPy, and Darts — no PyTorch required. `run_onnx_prediction()` mirrors `predict()` (including auto-regressive horizons and RNN warm-up); `RNNModel` and probabilistic models are now supported as well.
     - 🔴 Removed `darts.utils.onnx_utils`; use `darts.utils.onnx.inference` instead. Custom ONNX loops should load graph metadata via `OnnxModelSpec.from_session()`.
