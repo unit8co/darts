@@ -49,7 +49,7 @@ class AnomalyModel(ABC):
         if not allow_model_training and not self.scorers_are_trainable:
             return self
 
-        # check input series and covert to sequences
+        # check input series and convert to sequences
         series, kwargs = self._process_input_series(series, **kwargs)
         self._fit_core(
             series=series, allow_model_training=allow_model_training, **kwargs
@@ -91,7 +91,7 @@ class AnomalyModel(ABC):
             The outer sequence is over the series, and inner sequence is over the scorers.
         """
         called_with_single_series = isinstance(series, TimeSeries)
-        # check input series and covert to sequences
+        # check input series and convert to sequences
         series, kwargs = self._process_input_series(series, **kwargs)
         # predict / filter `series`
         pred = self.predict_series(series=series, **kwargs)
@@ -344,7 +344,7 @@ class AnomalyModel(ABC):
 
     @staticmethod
     def _process_input_series(series: TimeSeriesLike, **kwargs):
-        """Checks input series and coverts series and covariates in `kwargs` to sequences."""
+        """Checks input series and converts series and covariates in `kwargs` to sequences."""
         series = _check_input(series, name="series")
         for cov_name in ["past_covariates", "future_covariates"]:
             cov = kwargs.pop(cov_name, None)
