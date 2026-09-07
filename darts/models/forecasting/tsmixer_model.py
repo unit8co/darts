@@ -476,7 +476,8 @@ class _TSMixerModule(PLForecastingModule):
         # N_P: likelihood parameters
 
         # `x`: (B, L, H), `x_future`: (B, T, F), `x_static`: (B, C or 1, S)
-        x, x_future, x_static, _ = x_in
+        *x, x_future, x_static, _ = x_in
+        x = self._concatenate_features(*x)
 
         # swap feature and time dimensions (B, L, H) -> (B, H, L)
         x = _time_to_feature(x)

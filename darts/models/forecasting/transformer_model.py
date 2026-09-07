@@ -296,7 +296,8 @@ class _TransformerModule(PLForecastingModule):
             has shape ``(batch_size, input_chunk_length, input_size)``.
         """
         # PyTorch's nn.Transformer needs (seq_len, batch_size, features)
-        src = x_in[0].permute(1, 0, 2)
+        x_past = self._concatenate_features(*x_in[:3])
+        src = x_past.permute(1, 0, 2)
         pad_size = (0, self.input_size - self.target_size)
         start_token = src[-1:, :, :]
 

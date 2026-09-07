@@ -260,7 +260,7 @@ class _TimesFM2p5Module(PLForecastingModule):
         # N: likelihood quantiles (user-specified)
 
         # `x_past`: (B, L, C)
-        x_past, _, _, _ = x_in
+        x_past = x_in[0]
 
         # TimesFM 2.5 is a univariate model and its inputs do not have a variable dimension,
         # so here we reshape `x_past` to (B * C, L)

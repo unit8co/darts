@@ -156,7 +156,8 @@ class _DLinearModule(PLForecastingModule):
             `x_future` is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
         """
 
-        x, x_future, x_static, _ = x_in  # x: (batch, in_len, in_dim)
+        *x, x_future, x_static, _ = x_in  # x: (batch, in_len, in_dim)
+        x = self._concatenate_features(*x)
         batch, _, _ = x.shape
 
         if self.shared_weights:

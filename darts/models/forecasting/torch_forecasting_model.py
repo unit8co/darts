@@ -158,6 +158,52 @@ def _get_checkpoint_fname(work_dir, model_name, best=False):
     return os.path.basename(file_name)
 
 
+class _ONNXExportWrapper(torch.nn.Module):
+    """Wraps a PL module for ONNX export with separate input tensors."""
+
+    def __init__(
+        self,
+        pl_module: PLForecastingModule,
+        uses_past_covariates: bool,
+        uses_future_covariates: bool,
+        uses_static_covariates: bool,
+    ):
+        super().__init__()
+        self.pl_module = pl_module
+        self.uses_past_covariates = uses_past_covariates
+        self.uses_future_covariates = uses_future_covariates
+        self.uses_static_covariates = uses_static_covariates
+
+    def forward(self, past_target: torch.Tensor, *optional_inputs: torch.Tensor):
+        idx = 0
+        past_cov = None
+        historic_future_cov = None
+        future_cov = None
+        static_cov = None
+
+        if self.uses_past_covariates:
+            past_cov = optional_inputs[idx]
+            idx += 1
+        if self.uses_future_covariates:
+            historic_future_cov = optional_inputs[idx]
+            future_cov = optional_inputs[idx + 1]
+            idx += 2
+        if self.uses_static_covariates:
+            static_cov = optional_inputs[idx]
+
+        out = self.pl_module((
+            past_target,
+            past_cov,
+            historic_future_cov,
+            future_cov,
+            static_cov,
+            None,
+        ))
+        if isinstance(out, tuple):
+            out = out[0]
+        return out
+
+
 class TorchForecastingModel(GlobalForecastingModel, ABC):
     @random_method
     def __init__(
@@ -957,23 +1003,42 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             # future_target is excluded: ONNX export traces the inference path only
             None,
         )
-        input_sample = self.model._process_input_batch(mock_batch)
 
-        # torch models necessarily use historic target values as features in current implementation
-        input_names = ["x_past"]
+        input_tensors = [mock_batch[0]]
+        input_names = ["past_target"]
+        if self.uses_past_covariates:
+            input_tensors.append(mock_batch[1])
+            input_names.append("past_cov")
         if self.uses_future_covariates:
-            input_names.append("x_future")
+            input_tensors.extend([mock_batch[2], mock_batch[3]])
+            input_names.extend(["historic_future_cov", "future_cov"])
         if self.uses_static_covariates:
-            input_names.append("x_static")
+            input_tensors.append(mock_batch[4])
+            input_names.append("static_cov")
+
+        wrapper = _ONNXExportWrapper(
+            pl_module=self.model,
+            uses_past_covariates=self.uses_past_covariates,
+            uses_future_covariates=self.uses_future_covariates,
+            uses_static_covariates=self.uses_static_covariates,
+        )
+        wrapper.eval()
+
+        export_kwargs = {
+            k: v
+            for k, v in kwargs.items()
+            if k not in {"file_path", "input_sample", "input_names", "dynamo"}
+        }
 
         # TODO: `dynamo=True` should be the way to go since PyTorch 2.9; we have to wait until RNN module onnx exports
         #  are  fixed
-        self.model.to_onnx(
-            file_path=path,
-            input_sample=(input_sample,),
+        torch.onnx.export(
+            wrapper,
+            tuple(input_tensors),
+            path,
             input_names=input_names,
             dynamo=False,
-            **kwargs,
+            **export_kwargs,
         )
 
     @random_method

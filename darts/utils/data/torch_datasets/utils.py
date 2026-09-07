@@ -80,10 +80,15 @@ TorchBatch = tuple[
     torch.Tensor | None,
 ]
 
-# the final module input is a tuple of three tensors where the past features concatenated
-# (past features (past target + past cov + historic future cov), future cov, static cov, future target)
+# the final module input is a tuple of six tensors
+# (past target, past cov, historic future cov, future cov, static cov, future target)
 PLModuleInput = tuple[
-    torch.Tensor, torch.Tensor | None, torch.Tensor | None, torch.Tensor | None
+    torch.Tensor | None,
+    torch.Tensor | None,
+    torch.Tensor | None,
+    torch.Tensor | None,
+    torch.Tensor | None,
+    torch.Tensor | None,
 ]
 
 # variable input chunk length

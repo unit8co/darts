@@ -96,9 +96,8 @@ class CustomRNNModule(PLForecastingModule, ABC):
         Parameters
         ----------
         x_in
-            Tuple of Tensors containing the features of the input sequence. The tuple has elements (past target,
-            historic future covariates, future covariates, static covariates). The shape of the past target is
-            `(batch_size, input_length, input_size)`.
+            ``(past target, past cov, historic future cov, future cov, static cov, future target)``.
+            For RNN models, future covariates are remapped into the past cov slot.
         h
             Optionally, the hidden state.
 
@@ -175,14 +174,15 @@ class CustomRNNModule(PLForecastingModule, ABC):
                 all_covariates[:, : past_target.shape[1], :],
                 all_covariates[:, past_target.shape[1] :, :],
             )
-            input_series = torch.cat([past_target, cov_past], dim=2)
         else:
-            input_series = past_target
+            cov_past = None
             cov_future = None
 
         batch_prediction = []
         out, last_hidden_state = self._produce_predict_output((
-            input_series,
+            past_target,
+            cov_past,
+            None,
             None,
             static_covariates,
             None,
@@ -191,22 +191,17 @@ class CustomRNNModule(PLForecastingModule, ABC):
         prediction_length = 1
 
         while prediction_length < n:
-            # create new input to model from last prediction and current covariates, if available
-            new_input = (
-                torch.cat(
-                    [
-                        out[:, -1:, :],
-                        cov_future[:, prediction_length - 1 : prediction_length, :],
-                    ],
-                    dim=2,
-                )
+            new_past_target = out[:, -1:, :]
+            new_cov = (
+                cov_future[:, prediction_length - 1 : prediction_length, :]
                 if cov_future is not None
-                else out[:, -1:, :]
+                else None
             )
 
             # feed new input to model, including the last hidden state from the previous iteration
             out, last_hidden_state = self._produce_predict_output(
-                (new_input, None, static_covariates, None), last_hidden_state
+                (new_past_target, new_cov, None, None, static_covariates, None),
+                last_hidden_state,
             )
 
             # append prediction to batch prediction array, increase counter
@@ -273,7 +268,7 @@ class _RNNModule(CustomRNNModule):
     def forward(
         self, x_in: PLModuleInput, h: torch.Tensor | None = None
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        x, _, _, _ = x_in
+        x = self._concatenate_features(*x_in[:2])
         # data is of size (batch_size, input_length, input_size)
         batch_size = x.shape[0]
 

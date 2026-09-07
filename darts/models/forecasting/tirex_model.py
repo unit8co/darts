@@ -111,7 +111,7 @@ class _TiRexModule(PLForecastingModule):
         #   N: likelihood quantiles (user-specified, 1 if deterministic)
 
         # `x_past`: (B, L, C)
-        x_past, _, _, _ = x_in
+        x_past = x_in[0]
         # fold target components into batch dim for multivariate support: (B, L, C) -> (B*C, L)
         x_past = x_past.transpose(1, 2).flatten(start_dim=0, end_dim=1)
 

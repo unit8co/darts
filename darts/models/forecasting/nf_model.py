@@ -220,10 +220,19 @@ class _NeuralForecastModule(PLForecastingModule):
             (e.g., 2 for Gaussian likelihood with mean and variance) or 1 if no likelihood is specified.
         """
         # unpack inputs
-        # `x_past`: (B, L, C + X + F)
+        # `past_target`: (B, L, C)
+        # `past_covariates`: (B, L, X)
+        # `historic_future_covariates`: (B, L, F)
         # `x_future`: (B, H, F)
         # `x_static`: (B, C, S) or (B, 1, S)
-        x_past, x_future, x_static, _ = x_in
+        (
+            past_target,
+            past_covariates,
+            historic_future_covariates,
+            x_future,
+            x_static,
+            _,
+        ) = x_in
 
         # build window_batch dict expected by `nf.forward()`
         # Expected shapes in the univariate case (C=1):
@@ -239,8 +248,8 @@ class _NeuralForecastModule(PLForecastingModule):
         # - `futr_exog`: (B, F, L + H, C) or None
         # - `stat_exog`: (C, S) or None
 
-        insample_y = x_past[:, :, : self.n_targets]
-        insample_mask = torch.ones_like(x_past[:, :, 0])
+        insample_y = past_target
+        insample_mask = torch.ones_like(past_target[:, :, 0])
         hist_exog, futr_exog, stat_exog = None, None, None
 
         if self.converts_to_multivariate:
@@ -257,7 +266,7 @@ class _NeuralForecastModule(PLForecastingModule):
         # process past covariates if supported and provided
         if self.past_slice is not None:
             # `hist_exog`: (B, L, X)
-            hist_exog = x_past[:, :, self.past_slice]
+            hist_exog = past_covariates
             if self.is_multivariate_base:
                 # -> (B, X, L, 1)
                 hist_exog = hist_exog.transpose(1, 2).unsqueeze(-1)
@@ -272,7 +281,7 @@ class _NeuralForecastModule(PLForecastingModule):
         # process future covariates if supported and provided
         if x_future is not None and self.future_slice is not None:
             # `futr_exog`: (B, L + H, F)
-            futr_exog = torch.cat([x_past[:, :, self.future_slice], x_future], dim=1)
+            futr_exog = self._concatenate_time(historic_future_covariates, x_future)
             if self.is_multivariate_base:
                 # -> (B, F, L + H, 1)
                 futr_exog = futr_exog.transpose(1, 2).unsqueeze(-1)

@@ -53,15 +53,9 @@ def io_processor(forward):
         if not self.use_reversible_instance_norm:
             return forward(self, x_in, *args, **kwargs)
 
-        # `x_in` is input batch tuple which by definition has the past features in the first element
-        # starting with the first n target features; clone it to prevent target re-normalization
-        past_features = x_in[0].clone()
-        # apply reversible instance normalization
-        past_features[:, :, : self.n_targets] = self.rin(
-            past_features[:, :, : self.n_targets]
-        )
-        # run the forward pass
-        out = forward(self, *((past_features, *x_in[1:]), *args), **kwargs)
+        # apply reversible instance normalization to past target only; clone to prevent re-normalization
+        past_target = self.rin(x_in[0].clone())
+        out = forward(self, (past_target, *x_in[1:]), *args, **kwargs)
         # inverse transform target output back to original scale
         if isinstance(out, tuple):
             # RNNModel return tuple with hidden state
@@ -229,8 +223,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         Parameters
         ----------
         x_in
-            ``(x_past, x_future, x_static, future_target)`` the past, future, and static features, as well as
-            the future target.
+            ``(past target, past cov, historic future cov, future cov, static cov, future target)``.
         *args
             Whatever you decide to pass into the forward method.
         **kwargs
@@ -524,11 +517,24 @@ class PLForecastingModule(pl.LightningModule, ABC):
         else:
             return optimizer
 
+    @staticmethod
+    def _concatenate_features(*tensors) -> torch.Tensor:
+        """Concatenates features from multiple (available or missing) tensors."""
+        return torch.cat(
+            [tensor for tensor in tensors if tensor is not None],
+            dim=2,  # component dim
+        )
+
+    @staticmethod
+    def _concatenate_time(*tensors) -> torch.Tensor:
+        """Concatenates features along time from multiple (available or missing) tensors."""
+        return torch.cat(
+            [tensor for tensor in tensors if tensor is not None],
+            dim=1,  # time dim
+        )
+
     def _produce_train_output(self, input_batch: TorchBatch):
         """Generates train output.
-
-        Feeds `PLForecastingModule` with (past target + past cov + historic future cov (concatenated), future cov,
-        static cov)
 
         Parameters
         ----------
@@ -540,9 +546,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
     def _process_input_batch(self, input_batch: TorchBatch) -> PLModuleInput:
         """Processes module input batch.
 
-        Converts output of a dataset into a tuple of tensors (past target + past cov + historic future cov
-        (concatenated), future cov, static cov)
-
         Parameters
         ----------
         input_batch
@@ -551,32 +554,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
         Returns
         -------
         tuple
-            ``(x_past, x_future, x_static, future_target)`` the past, future, and static features, as well as
-            the future target.
+            ``(past target, past cov, historic future cov, future cov, static cov, future target)``.
         """
-        (
-            past_target,
-            past_covariates,
-            historic_future_covariates,
-            future_covariates,
-            static_covariates,
-            future_target,
-        ) = input_batch
-        dim_comp = 2
-
-        x_past = torch.cat(
-            [
-                tensor
-                for tensor in [
-                    past_target,
-                    past_covariates,
-                    historic_future_covariates,
-                ]
-                if tensor is not None
-            ],
-            dim=dim_comp,
-        )
-        return x_past, future_covariates, static_covariates, future_target
+        return input_batch
 
     def _get_batch_prediction(
         self, n: int, input_batch: tuple[torch.Tensor | None, ...], roll_size: int
@@ -597,7 +577,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
             ``self.output_chunk_length``
         """
 
-        dim_component = 2
         (
             past_target,
             past_covariates,
@@ -607,32 +586,26 @@ class PLForecastingModule(pl.LightningModule, ABC):
             static_covariates,
         ) = input_batch
 
-        n_targets = past_target.shape[dim_component]
-        n_past_covs = (
-            past_covariates.shape[dim_component] if past_covariates is not None else 0
-        )
-        n_future_covs = (
-            future_covariates.shape[dim_component]
+        def _build_pl_input(future_cov_slice):
+            return self._process_input_batch((
+                past_target,
+                past_covariates,
+                historic_future_covariates,
+                future_cov_slice,
+                static_covariates,
+                None,
+            ))
+
+        future_cov_slice = (
+            future_covariates[:, :roll_size, :]
             if future_covariates is not None
-            else 0
+            else None
         )
+        pl_input = _build_pl_input(future_cov_slice)
 
-        input_past, input_future, input_static, _ = self._process_input_batch((
-            past_target,
-            past_covariates,
-            historic_future_covariates,
-            (
-                future_covariates[:, :roll_size, :]
-                if future_covariates is not None
-                else None
-            ),
-            static_covariates,
-            None,  # future target
-        ))
-
-        out = self._produce_predict_output(
-            x=(input_past, input_future, input_static, None)
-        )[:, self.first_prediction_index :, :]
+        out = self._produce_predict_output(x=pl_input)[
+            :, self.first_prediction_index :, :
+        ]
 
         batch_prediction = [out[:, :roll_size, :]]
         prediction_length = roll_size
@@ -651,15 +624,20 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 prediction_length -= spillover_prediction_length
                 batch_prediction[-1] = batch_prediction[-1][:, :roll_size, :]
 
-            # ==========> PAST INPUT <==========
-            # roll over input series to contain the latest target and covariates
-            input_past = torch.roll(input_past, -roll_size, 1)
+            # roll over past input tensors to contain the latest target and covariates
+            past_target = torch.roll(past_target, -roll_size, 1)
+            if past_covariates is not None:
+                past_covariates = torch.roll(past_covariates, -roll_size, 1)
+            if historic_future_covariates is not None:
+                historic_future_covariates = torch.roll(
+                    historic_future_covariates, -roll_size, 1
+                )
 
             # update target input to include next `roll_size` predictions
             if self.input_chunk_length >= roll_size:
-                input_past[:, -roll_size:, :n_targets] = out[:, :roll_size, :]
+                past_target[:, -roll_size:, :] = out[:, :roll_size, :]
             else:
-                input_past[:, :, :n_targets] = out[:, -self.input_chunk_length :, :]
+                past_target[:, :, :] = out[:, -self.input_chunk_length :, :]
 
             # set left and right boundaries for extracting future elements
             if self.input_chunk_length >= roll_size:
@@ -671,38 +649,41 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 )
 
             # update past covariates to include next `roll_size` future past covariates elements
-            if n_past_covs and self.input_chunk_length >= roll_size:
-                input_past[:, -roll_size:, n_targets : n_targets + n_past_covs] = (
-                    future_past_covariates[:, left_past:right_past, :]
-                )
-            elif n_past_covs:
-                input_past[:, :, n_targets : n_targets + n_past_covs] = (
-                    future_past_covariates[:, left_past:right_past, :]
-                )
+            if past_covariates is not None and future_past_covariates is not None:
+                if self.input_chunk_length >= roll_size:
+                    past_covariates[:, -roll_size:, :] = future_past_covariates[
+                        :, left_past:right_past, :
+                    ]
+                else:
+                    past_covariates[:, :, :] = future_past_covariates[
+                        :, left_past:right_past, :
+                    ]
 
             # update historic future covariates to include next `roll_size` future covariates elements
-            if n_future_covs and self.input_chunk_length >= roll_size:
-                input_past[:, -roll_size:, n_targets + n_past_covs :] = (
-                    future_covariates[:, left_past:right_past, :]
-                )
-            elif n_future_covs:
-                input_past[:, :, n_targets + n_past_covs :] = future_covariates[
-                    :, left_past:right_past, :
-                ]
+            if historic_future_covariates is not None and future_covariates is not None:
+                if self.input_chunk_length >= roll_size:
+                    historic_future_covariates[:, -roll_size:, :] = future_covariates[
+                        :, left_past:right_past, :
+                    ]
+                else:
+                    historic_future_covariates[:, :, :] = future_covariates[
+                        :, left_past:right_past, :
+                    ]
 
-            # ==========> FUTURE INPUT <==========
             left_future, right_future = (
                 right_past,
                 right_past + self.output_chunk_length,
             )
-            # update future covariates to include next `roll_size` future covariates elements
-            if n_future_covs:
-                input_future = future_covariates[:, left_future:right_future, :]
+            future_cov_slice = (
+                future_covariates[:, left_future:right_future, :]
+                if future_covariates is not None
+                else None
+            )
 
-            # take only last part of the output sequence where needed
-            out = self._produce_predict_output(
-                x=(input_past, input_future, input_static, None)
-            )[:, self.first_prediction_index :, :]
+            pl_input = _build_pl_input(future_cov_slice)
+            out = self._produce_predict_output(x=pl_input)[
+                :, self.first_prediction_index :, :
+            ]
 
             batch_prediction.append(out)
             prediction_length += self.output_chunk_length

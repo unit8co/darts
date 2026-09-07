@@ -463,9 +463,10 @@ class _TFTModule(PLForecastingModule):
         torch.Tensor
             the output tensor
         """
-        x_cont_past, x_cont_future, x_static, _ = x_in
+        *x_cont_past, x_cont_future, x_static, _ = x_in
+        x_cont_past = self._concatenate_features(*x_cont_past)
         dim_samples, dim_time, dim_variable = 0, 1, 2
-        device = x_in[0].device
+        device = x_cont_past.device
 
         batch_size = x_cont_past.shape[dim_samples]
         encoder_length = self.input_chunk_length

@@ -32,19 +32,6 @@ from darts.utils.data import (
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 
 
-def _extract_targets(batch: tuple[torch.Tensor], n_targets: int):
-    """Extracts and returns the target components from an input batch
-
-    Parameters
-    ----------
-    batch
-        The input batch tuple for the forward method. Has elements `(x_past, x_future, x_static, future_target)`.
-    n_targets
-        The number of target components to extract.
-    """
-    return batch[0][:, :, :n_targets]
-
-
 def _repeat_along_output_chunk(x: torch.Tensor, ocl: int) -> torch.Tensor:
     """Expands a tensor `x` of shape (batch size, n components) to a tensor of shape
     (batch size, `ocl`, n target components, 1 (n samples)), by repeating the values
@@ -278,7 +265,7 @@ class _GlobalNaiveAggregateModule(_GlobalNaiveModule):
         self.agg_fn = agg_fn
 
     def _forward(self, x_in) -> torch.Tensor:
-        y_target = _extract_targets(x_in, self.n_targets)
+        y_target = x_in[0]
         aggregate = self.agg_fn(y_target, dim=1)
         return _repeat_along_output_chunk(aggregate, self.output_chunk_length)
 
@@ -435,7 +422,7 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
 
 class _GlobalNaiveSeasonalModule(_GlobalNaiveModule):
     def _forward(self, x_in) -> torch.Tensor:
-        y_target = _extract_targets(x_in, self.n_targets)
+        y_target = x_in[0]
         season = y_target[:, 0, :]
         return _repeat_along_output_chunk(season, self.output_chunk_length)
 
@@ -533,7 +520,7 @@ class GlobalNaiveSeasonal(_NoCovariatesMixin, _GlobalNaiveModel):
 
 class _GlobalNaiveDrift(_GlobalNaiveModule):
     def _forward(self, x_in) -> torch.Tensor:
-        y_target = _extract_targets(x_in, self.n_targets)
+        y_target = x_in[0]
         slope = _repeat_along_output_chunk(
             (y_target[:, -1, :] - y_target[:, 0, :]) / (self.input_chunk_length - 1),
             self.output_chunk_length,

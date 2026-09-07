@@ -210,7 +210,8 @@ class _BlockRNNModule(CustomBlockRNNModule):
         # N_P: likelihood parameters
 
         # `x_past`: (B, L, H), `x_future`: (B, T, F), `x_static`: (B, C or 1 = C1, S)
-        x_past, x_future, x_static, _ = x_in
+        *x_past, x_future, x_static, _ = x_in
+        x_past = self._concatenate_features(*x_past)
 
         batch_size = x_past.shape[0]
 

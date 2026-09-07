@@ -192,7 +192,7 @@ class TestOnnx:
         ort_session = ort.InferenceSession(onnx_filename)
 
         # extract the input arrays from the series
-        past_feats, future_feats, static_feats = prepare_onnx_inputs(
+        onnx_inputs = prepare_onnx_inputs(
             model=model,
             series=series,
             past_covariates=past_covariates,
@@ -201,9 +201,7 @@ class TestOnnx:
 
         # extract only the features expected by the model
         ort_inputs = {}
-        for name, arr in zip(
-            ["x_past", "x_future", "x_static"], [past_feats, future_feats, static_feats]
-        ):
+        for name, arr in onnx_inputs.items():
             if name in [inp.name for inp in list(ort_session.get_inputs())]:
                 ort_inputs[name] = arr
 
