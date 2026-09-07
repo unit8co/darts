@@ -26,6 +26,7 @@ import shap
 
 from darts import TimeSeries
 from darts.logging import raise_log
+from darts.typing import TimeSeriesLike
 
 
 class _ExplainabilityResult(ABC):
@@ -255,7 +256,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
 
     def get_explanation(
         self, horizon: int, component: str | None = None
-    ) -> TimeSeries | list[TimeSeries]:
+    ) -> TimeSeriesLike:
         """
         Returns one or several ``TimeSeries`` representing the explanations
         for a given horizon and component.
@@ -407,7 +408,7 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
 
     def get_feature_values(
         self, horizon: int, component: str | None = None
-    ) -> TimeSeries | list[TimeSeries]:
+    ) -> TimeSeriesLike:
         """
         Returns one or several ``TimeSeries`` representing the feature values
         for a given horizon and component.

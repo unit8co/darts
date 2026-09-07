@@ -3103,10 +3103,10 @@ class TestHistoricalforecast:
         assert type_ts_a == type_ts_b
         assert len(ts_A) == len(ts_B)
 
-        if type_ts_a == SeriesType.SINGLE:
+        if type_ts_a is SeriesType.SINGLE:
             ts_A = [[ts_A]]
             ts_B = [[ts_B]]
-        elif type_ts_a == SeriesType.SEQ:
+        elif type_ts_a is SeriesType.SEQ:
             ts_A = [ts_A]
             ts_B = [ts_B]
 

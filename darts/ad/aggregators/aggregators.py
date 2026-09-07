@@ -10,7 +10,6 @@ Base Aggregator
 #     - decision tree
 # - create show_all_combined (info about correlation, and from what path did
 #   the anomaly alarm came from)
-
 import sys
 from typing import Literal
 
@@ -33,6 +32,7 @@ from darts.ad.utils import (
 )
 from darts.logging import raise_log
 from darts.typing import TimeSeriesLike
+from darts.utils.ts_utils import get_series_seq_type
 
 
 class Aggregator(ABC):
@@ -84,7 +84,8 @@ class Aggregator(ABC):
         TimeSeries
             (Sequence of) aggregated results.
         """
-        called_with_single_series = isinstance(series, TimeSeries)
+        sequence_type_in = get_series_seq_type(series)
+
         series = _check_input(
             series,
             name=name,
@@ -94,7 +95,8 @@ class Aggregator(ABC):
             check_multivariate=True,
         )
         pred = self._predict_core(series)
-        return pred[0] if called_with_single_series else pred
+
+        return series2seq(pred, seq_type_out=sequence_type_in)
 
     def eval_metric(
         self,

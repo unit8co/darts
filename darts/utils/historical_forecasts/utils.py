@@ -1465,15 +1465,15 @@ def _apply_inverse_data_transformers(
     :meth:`~darts.dataprocessing.pipeline.Pipeline.inverse_transform`.
     """
     if "series" in data_transformers and data_transformers["series"].invertible:
-        called_with_single_series = get_series_seq_type(series) == SeriesType.SINGLE
-        if called_with_single_series:
+        sequence_type_in = get_series_seq_type(series)
+        if sequence_type_in is SeriesType.SINGLE:
             forecasts = [forecasts]
         forecasts = data_transformers["series"].inverse_transform(
             data=forecasts,
             series_idx=series_idx,
             insample=series if pass_insample else None,
         )
-        return forecasts[0] if called_with_single_series else forecasts
+        return series2seq(forecasts, seq_type_out=sequence_type_in)
     else:
         return forecasts
 
@@ -1575,7 +1575,7 @@ def _process_historical_forecast_for_backtest(
         )
 
     # we must wrap each fc in a list if `last_points_only=True`
-    nested = last_points_only and forecast_seq_type == SeriesType.SEQ
+    nested = last_points_only and forecast_seq_type is SeriesType.SEQ
     historical_forecasts = series2seq(
         historical_forecasts, seq_type_out=SeriesType.SEQ_SEQ, nested=nested
     )
@@ -1589,7 +1589,7 @@ def _process_historical_forecast_for_backtest(
             f"(n={len(series)}). For `last_points_only={last_points_only}`, expected "
         )
         expected_seq_type = series_seq_type if last_points_only else series_seq_type + 1
-        if expected_seq_type == SeriesType.SINGLE:
+        if expected_seq_type is SeriesType.SINGLE:
             error_msg += f"a single `historical_forecasts` of type {expected_seq_type}."
         else:
             error_msg += f"`historical_forecasts` of type {expected_seq_type} with length n={len(series)}."

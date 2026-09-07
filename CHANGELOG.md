@@ -46,6 +46,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed `extract_subseries` returning a single `TimeSeries` instead of a `list[TimeSeries]` when the series has no gap under the selected `mode`. [#3184](https://github.com/unit8co/darts/pull/3184) by [Alejandro Coronado](https://github.com/AlejandroCoronadoN).
 - Fixed a deprecation warning from `lightgbm>=4.7.0` when training a `LightGBMModel` with validation series. [#3186](https://github.com/unit8co/darts/pull/3186) by [Dennis Bader](https://github.com/dennisbader).
 
+- Refactored single-vs-sequence returns across the library to uniformly use `series2seq` and `SeriesType` for future typing improvements. [#3131](https://github.com/unit8co/darts/pull/3131) by [Oswald Zink](https://github.com/ozink-u8).
+
 ## [0.46.1](https://github.com/unit8co/darts/tree/0.46.1) (2026-07-20)
 
 ### For users of the library:

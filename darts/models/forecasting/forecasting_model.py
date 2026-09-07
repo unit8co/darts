@@ -2359,7 +2359,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             residuals_out.append(res_list_out)
 
         # if required, reduce to `series` input type
-        if series_seq_type == SeriesType.SINGLE:
+        if series_seq_type is SeriesType.SINGLE:
             return residuals_out[0][0] if last_points_only else residuals_out[0]
 
         return (

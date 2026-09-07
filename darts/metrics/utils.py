@@ -328,7 +328,7 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         # reduce metrics along series axis
         if series_reduction is not None:
             vals = kwargs[_PARAM_SERIES_REDUCTION](vals, axis=0)
-        elif series_seq_type == SeriesType.SINGLE:
+        elif series_seq_type is SeriesType.SINGLE:
             vals = vals[0]
 
         # invoke registered callbacks (e.g. MLflow autologging)
