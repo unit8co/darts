@@ -12,18 +12,32 @@ For detailed examples and tutorials, see:
   <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__
 """
 
+"""
+Throughout this file, we use the following notation for tensor shapes:
+
+    SYMBOL: Description
+    ------------------------------------------------
+    B: batch size
+    L: input chunk length
+    H: output chunk length
+    S: output chunk shift
+    C: target components
+    X: past covariate components
+    F: future covariate components
+    N: likelihood parameters
+    Q: number of pretrained quantiles (9 for TiRex-2)
+
+"""
+
 import os
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 from tirex2 import TimeseriesType, load_model
 
 from darts.logging import raise_log
 from darts.models.forecasting.foundation_model import FoundationModel
-from darts.models.forecasting.pl_forecasting_module import (
-    PLForecastingModule,
-    io_processor,
-)
+from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.utils.data.torch_datasets.utils import (
     InputChunkLength,
     PLModuleInput,
@@ -31,15 +45,18 @@ from darts.utils.data.torch_datasets.utils import (
 )
 from darts.utils.likelihood_models.torch import QuantileRegression
 
+if TYPE_CHECKING:
+    from tirex2.model import TiRex2
+
 
 class _TiRex2Module(PLForecastingModule):
     """Adapt TiRex-2's native multivariate inputs and quantiles to Darts."""
 
     def __init__(self, tirex2_kwargs: dict[str, Any], **kwargs):
         super().__init__(**kwargs)
-        # ForecastModel is not an nn.Module. Register its backbone directly so
+        # ForecastModel (tirex2) is not an nn.Module. Register its backbone directly so
         # Lightning can move, freeze, and serialize all pretrained parameters.
-        self.tirex2 = load_model(**tirex2_kwargs).model
+        self.tirex2: TiRex2 = load_model(**tirex2_kwargs).model
         self.future_len = self.output_chunk_length + self.output_chunk_shift
         if self.future_len > self.tirex2.future_len:
             raise_log(
@@ -59,41 +76,44 @@ class _TiRex2Module(PLForecastingModule):
             torch.tensor([all_quantiles.index(q) for q in user_quantiles]),
         )
 
-    @io_processor
     def forward(self, x_in: PLModuleInput, *args, **kwargs):
+        # x_past: (B, L, C + X + F); x_future: (B, H, F)
         x_past, x_future, _, _ = x_in
+        B = x_past.shape[0]
+        C = self.n_targets
+        S = self.output_chunk_shift
         # Darts concatenates target, past covariates, then historic future covariates.
-        n_future = x_future.shape[-1] if x_future is not None else 0
-        past_end = x_past.shape[-1] - n_future
+        F = x_future.shape[-1] if x_future is not None else 0
+        X = x_past.shape[-1] - C - F
+
+        # Prepare future covariates (if any)
         future = None
-        if n_future:
+        if F:
             # Darts does not supply future covariates inside the output shift.
             # Mark that gap as missing, preserving alignment with target history.
-            gap = x_past.new_full(
-                (len(x_past), self.output_chunk_shift, n_future), float("nan")
-            )
-            future = torch.cat((x_past[:, :, past_end:], gap, x_future), dim=1)
+            # gap: (B, S, F) filled with NaN
+            gap = x_past.new_full((B, S, F), float("nan"))
+            # future: (B, H + S, F)
+            future = torch.cat((x_past[:, :, -F:], gap, x_future), dim=1)
+
+        # Prepare TiRex-2's native multivariate inputs: a list of TimeseriesType objects.
         timeseries = [
             TimeseriesType(
-                target=past[:, : self.n_targets].T,
-                past_covariates=(
-                    past[:, self.n_targets : past_end].T
-                    if past_end > self.n_targets
-                    else None
-                ),
+                target=past[:, :C].T,
+                past_covariates=past[:, C : C + X].T if X else None,
                 future_covariates=future[i].T if future is not None else None,
             )
             for i, past in enumerate(x_past)
         ]
+
         # Each sample remains a joint multivariate task, independent of other
-        # samples in the batch. Native output: list[(targets, quantiles, horizon)].
+        # samples in the batch. Native output: B tensors of shape
+        # (C, Q, H + S), with all pretrained quantiles.
         forecasts = self.tirex2.predict(timeseries, prediction_length=self.future_len)
+        # Stack the forecasts into a single tensor: (B, C, Q, H + S)
         output = torch.stack(forecasts).permute(0, 3, 1, 2)
-        return (
-            output[:, self.output_chunk_shift :]
-            .index_select(-1, self._user_quantile_indices)
-            .to(x_past)
-        )
+        # Select the requested horizon and likelihood parameters: (B, H, C, N).
+        return output[:, S:].index_select(-1, self._user_quantile_indices).to(x_past)
 
 
 class TiRex2Model(FoundationModel):
