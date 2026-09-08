@@ -808,33 +808,127 @@ class TestVariableInputChunkLength:
         min_target_lag = model.extreme_lags[0]
         assert min_target_lag == -14
 
-    @patch(
-        HF_HUB_DOWNLOAD_PATCH_TARGET,
-        side_effect=mock_hf_hub_download,
+    @pytest.mark.parametrize(
+        "model_cls,extra_kwargs,mock_ctx_factory",
+        [
+            pytest.param(
+                Chronos2Model,
+                {},
+                lambda: patch(
+                    HF_HUB_DOWNLOAD_PATCH_TARGET,
+                    side_effect=mock_hf_hub_download,
+                ),
+                id="Chronos2",
+            ),
+            pytest.param(
+                PatchTSTFMModel,
+                {"local_dir": PATCHTST_FM_TINY_DIR},
+                contextlib.nullcontext,
+                id="PatchTSTFM",
+            ),
+            pytest.param(
+                TimesFM2p5Model,
+                {},
+                timesfm2p5_tiny_context,
+                id="TimesFM2p5",
+            ),
+            pytest.param(
+                TimesFM3Model,
+                {"accept_license": True, "local_dir": TIMESFM3_TINY_DIR},
+                contextlib.nullcontext,
+                id="TimesFM3",
+            ),
+        ]
+        + (
+            [
+                pytest.param(
+                    TiRexModel,
+                    {"accept_license": True},
+                    lambda: patch(
+                        TIREX_LOAD_MODEL_PATCH_TARGET,
+                        return_value=TiRexStub(),
+                    ),
+                    id="TiRex",
+                ),
+            ]
+            if TIREX_AVAILABLE
+            else []
+        ),
     )
-    def test_min_train_series_length_variable(self, mock_method):
+    def test_min_train_series_length_variable(
+        self, model_cls, extra_kwargs, mock_ctx_factory
+    ):
         """min_train_series_length should use min_input_chunk_length."""
-        model_var = Chronos2Model(
-            input_chunk_length=(2, 14),
-            output_chunk_length=6,
-            **tfm_kwargs,
-        )
-        # min_train_series_length = min_icl + ocl
-        assert model_var.min_train_series_length == 8
+        with mock_ctx_factory():
+            model_var = model_cls(
+                input_chunk_length=(2, 14),
+                output_chunk_length=6,
+                **extra_kwargs,
+                **tfm_kwargs,
+            )
+            # min_train_series_length = min_icl + ocl
+            assert model_var.min_train_series_length == 8
 
-    @patch(
-        HF_HUB_DOWNLOAD_PATCH_TARGET,
-        side_effect=mock_hf_hub_download,
+    @pytest.mark.parametrize(
+        "model_cls,extra_kwargs,mock_ctx_factory",
+        [
+            pytest.param(
+                Chronos2Model,
+                {},
+                lambda: patch(
+                    HF_HUB_DOWNLOAD_PATCH_TARGET,
+                    side_effect=mock_hf_hub_download,
+                ),
+                id="Chronos2",
+            ),
+            pytest.param(
+                PatchTSTFMModel,
+                {"local_dir": PATCHTST_FM_TINY_DIR},
+                contextlib.nullcontext,
+                id="PatchTSTFM",
+            ),
+            pytest.param(
+                TimesFM2p5Model,
+                {},
+                timesfm2p5_tiny_context,
+                id="TimesFM2p5",
+            ),
+            pytest.param(
+                TimesFM3Model,
+                {"accept_license": True, "local_dir": TIMESFM3_TINY_DIR},
+                contextlib.nullcontext,
+                id="TimesFM3",
+            ),
+        ]
+        + (
+            [
+                pytest.param(
+                    TiRexModel,
+                    {"accept_license": True},
+                    lambda: patch(
+                        TIREX_LOAD_MODEL_PATCH_TARGET,
+                        return_value=TiRexStub(),
+                    ),
+                    id="TiRex",
+                ),
+            ]
+            if TIREX_AVAILABLE
+            else []
+        ),
     )
-    def test_min_train_series_length_fixed(self, mock_method):
+    def test_min_train_series_length_fixed(
+        self, model_cls, extra_kwargs, mock_ctx_factory
+    ):
         """min_train_series_length for fixed ICL should be standard (ICL only as pre-trained)."""
-        model = Chronos2Model(
-            input_chunk_length=14,
-            output_chunk_length=6,
-            **tfm_kwargs,
-        )
-        # min_train_series_length = icl + ocl
-        assert model.min_train_series_length == 20
+        with mock_ctx_factory():
+            model = model_cls(
+                input_chunk_length=14,
+                output_chunk_length=6,
+                **extra_kwargs,
+                **tfm_kwargs,
+            )
+            # min_train_series_length = icl + ocl
+            assert model.min_train_series_length == 20
 
     @pytest.mark.parametrize(
         "model_cls,extra_kwargs,mock_ctx_factory,supports_ckpt",
@@ -862,6 +956,15 @@ class TestVariableInputChunkLength:
                 timesfm2p5_tiny_context,
                 True,
                 id="TimesFM2p5",
+            ),
+            pytest.param(
+                TimesFM3Model,
+                {"accept_license": True, "local_dir": TIMESFM3_TINY_DIR},
+                contextlib.nullcontext,
+                # fine-tuning (required for load_from_checkpoint) is not
+                # supported yet for TimesFM3
+                False,
+                id="TimesFM3",
             ),
         ]
         + (
@@ -988,6 +1091,12 @@ class TestVariableInputChunkLength:
                 timesfm2p5_tiny_context,
                 id="TimesFM2p5",
             ),
+            pytest.param(
+                TimesFM3Model,
+                {"accept_license": True, "local_dir": TIMESFM3_TINY_DIR},
+                contextlib.nullcontext,
+                id="TimesFM3",
+            ),
         ]
         + (
             [
@@ -1087,6 +1196,12 @@ class TestVariableInputChunkLength:
                 {},
                 timesfm2p5_tiny_context,
                 id="TimesFM2p5",
+            ),
+            pytest.param(
+                TimesFM3Model,
+                {"accept_license": True, "local_dir": TIMESFM3_TINY_DIR},
+                contextlib.nullcontext,
+                id="TimesFM3",
             ),
         ]
         + (
