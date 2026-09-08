@@ -56,6 +56,13 @@ def generate_series(n_variables: int, length: int, prefix: str):
     )
 
 
+def series_with_nans(series: TimeSeries, start: int, end: int | None) -> TimeSeries:
+    """Returns a copy of `series` with the values in [start, end) set to NaN."""
+    values = series.values(copy=True).astype(np.float32)
+    values[start:end, :] = np.nan
+    return TimeSeries.from_times_and_values(series.time_index, values)
+
+
 class TestTimesFM3Model:
     # set random seed
     np.random.seed(42)
@@ -405,16 +412,97 @@ class TestTimesFM3Model:
         assert pred.n_components == 1
         assert not np.isnan(pred.all_values(copy=False)).any()
 
-    def test_too_many_variates(self):
+    def test_missing_values(self):
+        """NaNs in target and covariates are handled via the masking logic of the
+        ported `decode()`, instead of the linear interpolation applied by the
+        upstream `TimesFM3Forecaster.predict_batch()`. Predictions must not
+        contain NaNs for any of the missing value locations.
+        """
+
+        def make_model() -> TimesFM3Model:
+            return TimesFM3Model(
+                input_chunk_length=8,
+                output_chunk_length=4,
+                accept_license=True,
+                local_dir=TIMESFM3_TINY_DIR,
+                **tfm_kwargs,
+            )
+
+        # NaNs inside the target series, incl. autoregressive prediction
+        series_nan = series_with_nans(self.series, 20, 26)
+        model = make_model()
+        model.fit(series=series_nan)
+        pred = model.predict(n=6, series=series_nan)
+        assert isinstance(pred, TimeSeries)
+        assert not np.isnan(pred.all_values(copy=False)).any()
+
+        # NaNs at the end of the target series (trailing missing values)
+        series_trailing_nan = series_with_nans(self.series, len(self.series) - 3, None)
+        model = make_model()
+        model.fit(series=series_trailing_nan)
+        pred = model.predict(n=4, series=series_trailing_nan)
+        assert isinstance(pred, TimeSeries)
+        assert not np.isnan(pred.all_values(copy=False)).any()
+
+        # NaNs in the past covariates
+        past_cov_nan = series_with_nans(self.past_cov, 5, 10)
+        model = make_model()
+        model.fit(series=self.series, past_covariates=past_cov_nan)
+        pred = model.predict(n=4, series=self.series, past_covariates=past_cov_nan)
+        assert isinstance(pred, TimeSeries)
+        assert not np.isnan(pred.all_values(copy=False)).any()
+
+        # NaNs in the future covariates
+        future_cov_nan = series_with_nans(self.future_cov, 204, 208)
+        model = make_model()
+        model.fit(series=self.series, future_covariates=future_cov_nan)
+        pred = model.predict(n=4, series=self.series, future_covariates=future_cov_nan)
+        assert isinstance(pred, TimeSeries)
+        assert not np.isnan(pred.all_values(copy=False)).any()
+
+    def test_output_chunk_shift(self):
+        """With `output_chunk_shift`, predictions start after the shifted gap and
+        auto-regressive prediction (`n > output_chunk_length`) is not allowed."""
         model = TimesFM3Model(
             input_chunk_length=8,
             output_chunk_length=4,
+            output_chunk_shift=2,
             accept_license=True,
             local_dir=TIMESFM3_TINY_DIR,
             **tfm_kwargs,
         )
+        model.fit(series=self.series, future_covariates=self.future_cov)
+        pred = model.predict(n=4, series=self.series, future_covariates=self.future_cov)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 4
+        # predictions start `output_chunk_shift + 1` steps after the end of the series
+        assert pred.start_time() == self.series.end_time() + self.series.freq * 3
+        assert not np.isnan(pred.all_values(copy=False)).any()
+
+        # auto-regression is not allowed with an output chunk shift
+        with pytest.raises(ValueError, match="output_chunk_shift > 0"):
+            model.predict(n=5, series=self.series, future_covariates=self.future_cov)
+
+    def test_too_many_variates(self):
+        def make_model() -> TimesFM3Model:
+            return TimesFM3Model(
+                input_chunk_length=8,
+                output_chunk_length=4,
+                accept_license=True,
+                local_dir=TIMESFM3_TINY_DIR,
+                **tfm_kwargs,
+            )
+
+        # 32 target components (the maximum supported) work
+        series_max = generate_series(n_variables=32, length=64, prefix="V")
+        model = make_model()
+        model.fit(series=series_max)
+        pred = model.predict(n=4, series=series_max)
+        assert pred.n_components == 32
+
         # 33 target components exceed the 32 variates supported by the checkpoint
         series = generate_series(n_variables=33, length=64, prefix="V")
+        model = make_model()
         model.fit(series=series)
         with pytest.raises(ValueError, match="maximum number of variates"):
             model.predict(n=4, series=series)
