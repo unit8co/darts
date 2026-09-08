@@ -38,6 +38,9 @@ Adapted for Darts with custom `PLForecastingModule` and `FoundationModel` integr
   `TimesFM3Forecaster`: missing values are handled through the masking logic of `decode()`.
 - Only the `identity` input transformation is supported (the one used by the released
   checkpoint).
+- Support the `swiglu` feed-forward activation (mapped to plain SiLU, matching the released
+  `timesfm` PyPI package, which implements no gated FFN in its PyTorch backend). This keeps
+  configurations of checkpoints published with earlier `timesfm` releases loadable.
 - Configurations can be built directly from the dictionaries stored in the HuggingFace
   `config.json` using `build_residual_block_config()` and `build_stacked_transformers_config()`.
 """
@@ -86,7 +89,7 @@ class _TransformerConfig:
     use_bias: bool
     use_rope_seq: bool
     use_rope_var: bool
-    ff_activation: Literal["relu", "swish", "none"]
+    ff_activation: Literal["relu", "swish", "none", "swiglu"]
     deterministic: bool
     v_norm: Literal["rms", "none"] = "none"
     causal_attention: bool = True
@@ -933,6 +936,9 @@ _ACTIVATIONS: dict[str, Callable[[torch.Tensor], torch.Tensor]] = {
     "relu": F.relu,
     "swish": F.silu,
     "silu": F.silu,
+    # NOTE: matches the original implementation, which maps "swiglu" to plain
+    # `F.silu` (no gated FFN is implemented in the PyTorch port)
+    "swiglu": F.silu,
     "none": lambda x: x,
 }
 
