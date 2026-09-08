@@ -18,11 +18,18 @@ if not TORCH_AVAILABLE:
         allow_module_level=True,
     )
 
-from darts.models import Chronos2Model, PatchTSTFMModel, TimesFM2p5Model, TiRexModel
+from darts.models import (
+    Chronos2Model,
+    PatchTSTFMModel,
+    TimesFM2p5Model,
+    TimesFM3Model,
+    TiRexModel,
+)
 from darts.tests.models.forecasting.foundation_test_utils import (
     CHRONOS2_TINY_DIR,
     HF_HUB_DOWNLOAD_PATCH_TARGET,
     PATCHTST_FM_TINY_DIR,
+    TIMESFM3_TINY_DIR,
     TIREX_LOAD_MODEL_PATCH_TARGET,
     TiRexStub,
     mock_hf_hub_download,
@@ -575,6 +582,12 @@ class TestVariableInputChunkLength:
                 {},
                 timesfm2p5_tiny_context,
                 id="TimesFM2p5",
+            ),
+            pytest.param(
+                TimesFM3Model,
+                {"accept_license": True, "local_dir": TIMESFM3_TINY_DIR},
+                contextlib.nullcontext,
+                id="TimesFM3",
             ),
         ]
         + (

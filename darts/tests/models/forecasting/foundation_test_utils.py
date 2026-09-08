@@ -27,6 +27,8 @@ TIMESFM2P5_TINY_DIR = (ARTEFACTS_DIR / "timesfm2p5" / "tiny_timesfm2p5").absolut
 TIMESFM2P5_TINY_MAX_CONTEXT_LENGTH = 64
 TIMESFM2P5_TINY_MAX_PREDICTION_LENGTH = 8
 
+TIMESFM3_TINY_DIR = (ARTEFACTS_DIR / "timesfm3" / "tiny_timesfm3").absolute()
+
 # ── HuggingFace mock download (Chronos-2 tiny artefact) ────────────────────
 HF_HUB_DOWNLOAD_PATCH_TARGET = (
     "darts.models.components.huggingface_connector.hf_hub_download"
