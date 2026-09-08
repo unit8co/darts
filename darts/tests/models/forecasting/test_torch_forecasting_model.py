@@ -933,6 +933,130 @@ class TestTorchForecastingModel:
             "incorrect"
         )
 
+    def test_load_checkpoint_weights_only_blocks_malicious_payload(self, tmpdir_fn):
+        """Security regression test (CWE-502): the checkpoint loading paths must default to
+        ``weights_only=True`` so that a maliciously crafted ``.ckpt`` cannot execute arbitrary
+        code, while still (a) loading legitimate models and (b) allowing an explicit
+        ``weights_only=False`` opt-out for trusted files.
+        """
+        from darts.models.forecasting.torch_forecasting_model import _PL_2_6_OR_ABOVE
+
+        if not _PL_2_6_OR_ABOVE or not hasattr(torch.serialization, "safe_globals"):
+            pytest.skip(
+                "requires torch/lightning >= 2.6 with `weights_only` load support"
+            )
+
+        # 1) a normally-saved model still loads with the safe default -------------------
+        model_name = "wo_safe"
+        ckpt_path = os.path.join(tmpdir_fn, f"{model_name}.pt")
+        model = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            n_epochs=1,
+            likelihood=GaussianLikelihood(),
+            **tfm_kwargs,
+        )
+        model.fit(self.series[:20])
+        model.save(ckpt_path)
+
+        # default `load_weights` uses `weights_only=True` and must succeed via the
+        # load-scoped allow-list
+        reloaded = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            likelihood=GaussianLikelihood(),
+            **tfm_kwargs,
+        )
+        reloaded.load_weights(ckpt_path, map_location="cpu")
+        reloaded.predict(n=2, series=self.series[:20])
+
+        # 2) craft a malicious checkpoint whose `__reduce__` writes a marker file --------
+        marker_path = os.path.join(tmpdir_fn, "cwe502_marker.txt")
+        if os.path.exists(marker_path):
+            os.remove(marker_path)
+
+        class _MaliciousPayload:
+            # benign PoC standing in for arbitrary code execution: write a marker file
+            def __reduce__(self):
+                return (os.system, (f'echo pwned > "{marker_path}"',))
+
+        # build a checkpoint dict that mimics a real one but embeds the payload
+        real_ckpt = torch.load(ckpt_path + ".ckpt", weights_only=False)
+        real_ckpt["cwe502_payload"] = _MaliciousPayload()
+        evil_path = os.path.join(tmpdir_fn, "evil.pt.ckpt")
+        torch.save(real_ckpt, evil_path)
+
+        # SAFE default (`weights_only=True`) must REFUSE the payload -> marker NOT created
+        with pytest.raises(Exception):
+            torch.load(evil_path, weights_only=True)
+        assert not os.path.exists(marker_path), (
+            "weights_only=True must not execute the checkpoint payload"
+        )
+
+        # explicit opt-out (`weights_only=False`) still loads (and here executes) the
+        # payload, confirming the opt-out path is preserved
+        torch.load(evil_path, weights_only=False)
+        assert os.path.exists(marker_path), (
+            "weights_only=False should still fully unpickle the checkpoint"
+        )
+        # cleanup the benign marker
+        os.remove(marker_path)
+
+        # 3) the user-facing path (`load_weights_from_checkpoint`) must ALSO refuse it under
+        #    the safe default (skip_checks=True -> exercise only the `.ckpt` safe-load).
+        reloaded2 = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            likelihood=GaussianLikelihood(),
+            **tfm_kwargs,
+        )
+        with pytest.raises(Exception):
+            reloaded2.load_weights_from_checkpoint(
+                file_name=evil_path,
+                work_dir=tmpdir_fn,
+                load_encoders=False,
+                skip_checks=True,
+                map_location="cpu",
+            )
+        assert not os.path.exists(marker_path), (
+            "load_weights_from_checkpoint must not execute the payload under the safe default"
+        )
+
+    def test_resume_from_checkpoint_optimizer_state(self, tmpdir_fn):
+        """Resuming from a checkpoint reloads optimizer/scheduler *state* (not just the
+        allow-listed classes). After flipping the internal ``weights_only`` default to True,
+        the trusted resume path must keep full unpickling and continue training successfully.
+        """
+        from darts.models.forecasting.torch_forecasting_model import _PL_2_6_OR_ABOVE
+
+        if not _PL_2_6_OR_ABOVE:
+            pytest.skip("requires lightning >= 2.6")
+
+        model_name = "resume_optstate"
+        model = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            n_epochs=2,
+            model_name=model_name,
+            work_dir=tmpdir_fn,
+            save_checkpoints=True,
+            **tfm_kwargs,
+        )
+        model.fit(self.series[:20])
+
+        # reload including trainer/optimizer/lr-scheduler state, then CONTINUE training
+        loaded = DLinearModel.load_from_checkpoint(
+            model_name=model_name,
+            work_dir=tmpdir_fn,
+            best=False,
+            map_location="cpu",
+        )
+        # loading the `.ckpt` under `weights_only=True` must deserialize the optimizer /
+        # lr-scheduler *state* it carries (via the checkpoint-driven allow-list), not just the
+        # model weights -- if an optimizer/scheduler class were not allow-listed this would raise.
+        assert loaded._fit_called
+        loaded.predict(n=2, series=self.series[:20])
+
     def test_load_weights_params_check(self, tmpdir_fn):
         """
         Verify that the method comparing the parameters between the saved model and the loading model
@@ -1272,16 +1396,18 @@ class TestTorchForecastingModel:
                 map_location="cpu",
             )
 
-        # raise Exception when trying to pass `weights_only`=True to `torch.load()`
-        with pytest.raises(ValueError):
-            model_rt = RNNModel(12, "RNN", 5, 5, **tfm_kwargs)
-            model_rt.load_weights_from_checkpoint(
-                model_name=original_model_name,
-                work_dir=tmpdir_fn,
-                best=False,
-                weights_only=True,
-                map_location="cpu",
-            )
+        # `weights_only=True` is now the safe DEFAULT and must SUCCEED on a legitimate
+        # checkpoint via the load-scoped allow-list (the old block expected a ValueError; that
+        # guard was removed, so an explicit `weights_only=True` now loads the real checkpoint).
+        model_wo = RNNModel(12, "RNN", 5, 1, **tfm_kwargs)
+        model_wo.load_weights_from_checkpoint(
+            model_name=original_model_name,
+            work_dir=tmpdir_fn,
+            best=False,
+            weights_only=True,
+            map_location="cpu",
+        )
+        assert model_wo._fit_called
 
     @pytest.mark.parametrize(
         "config",
