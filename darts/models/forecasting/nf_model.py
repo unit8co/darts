@@ -207,10 +207,9 @@ class _NeuralForecastModule(PLForecastingModule):
         Parameters
         ----------
         x_in
-            comes as tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk,
-            `x_future` is the output/future chunk, and `x_static` is the static covariates.
-            Input dimensions are `(n_samples, n_time_steps, n_variables)` for `x_past` and `x_future`,
-            and `(n_samples, n_targets, n_static_covariates)` for `x_static`.
+            Named module input with independent past, future, and static tensors.
+            Input dimensions are `(n_samples, n_time_steps, n_variables)` for time-varying tensors,
+            and `(n_samples, n_targets, n_static_covariates)` for static covariates.
 
         Returns
         -------
@@ -219,20 +218,15 @@ class _NeuralForecastModule(PLForecastingModule):
             where `n_likelihood_params` is the number of parameters required by the likelihood model
             (e.g., 2 for Gaussian likelihood with mean and variance) or 1 if no likelihood is specified.
         """
-        # unpack inputs
         # `past_target`: (B, L, C)
         # `past_covariates`: (B, L, X)
         # `historic_future_covariates`: (B, L, F)
         # `x_future`: (B, H, F)
         # `x_static`: (B, C, S) or (B, 1, S)
-        (
-            past_target,
-            past_covariates,
-            historic_future_covariates,
-            x_future,
-            x_static,
-            _,
-        ) = x_in
+        past_target = x_in.past_target
+        past_covariates = x_in.past_covariates
+        x_future = x_in.future_covariates
+        x_static = x_in.static_covariates
 
         # build window_batch dict expected by `nf.forward()`
         # Expected shapes in the univariate case (C=1):
@@ -281,7 +275,7 @@ class _NeuralForecastModule(PLForecastingModule):
         # process future covariates if supported and provided
         if x_future is not None and self.future_slice is not None:
             # `futr_exog`: (B, L + H, F)
-            futr_exog = self._concatenate_time(historic_future_covariates, x_future)
+            futr_exog = x_in.concatenate_future_along_time()
             if self.is_multivariate_base:
                 # -> (B, F, L + H, 1)
                 futr_exog = futr_exog.transpose(1, 2).unsqueeze(-1)

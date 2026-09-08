@@ -35,7 +35,7 @@ class ModuleValid2(CustomBlockRNNModule):
         self.linear = nn.Linear(self.input_size, self.target_size)
 
     def forward(self, x_in):
-        x = self.linear(x_in[0])
+        x = self.linear(x_in.past_target)
         return x.view(len(x), -1, self.target_size, self.nr_params)
 
 

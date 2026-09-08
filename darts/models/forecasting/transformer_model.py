@@ -292,11 +292,11 @@ class _TransformerModule(PLForecastingModule):
         Parameters
         ----------
         x_in
-            ``PLModuleInput`` tuple of ``(x_past, x_future, x_static, future_target)``, where ``x_past``
-            has shape ``(batch_size, input_chunk_length, input_size)``.
+            Named module input. Past-window tensors are concatenated along the component dimension.
+            Past features have shape ``(batch_size, input_chunk_length, input_size)``.
         """
         # PyTorch's nn.Transformer needs (seq_len, batch_size, features)
-        x_past = self._concatenate_features(*x_in[:3])
+        x_past = x_in.concatenate_past_features()
         src = x_past.permute(1, 0, 2)
         pad_size = (0, self.input_size - self.target_size)
         start_token = src[-1:, :, :]
@@ -304,7 +304,7 @@ class _TransformerModule(PLForecastingModule):
         # Ground-truth future target values for teacher forcing during training.
         # Shape: ``(batch_size, output_chunk_length, target_size)``.
         # ``None`` during validation and inference.
-        future_target = x_in[-1]
+        future_target = x_in.future_target
 
         # encoder
         memory = self.transformer.encoder(self._embed(src))

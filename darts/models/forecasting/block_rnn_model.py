@@ -99,8 +99,7 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
         Parameters
         ----------
         x_in
-            Tuple of Tensors containing the features of the input sequence. The tuple has elements
-            (past target, historic future covariates, future covariates, static covariates).
+            Named module input with independent past, future, and static tensors.
             The shape of the past target is `(batch_size, input_length, input_size)`.
 
         Returns
@@ -210,8 +209,9 @@ class _BlockRNNModule(CustomBlockRNNModule):
         # N_P: likelihood parameters
 
         # `x_past`: (B, L, H), `x_future`: (B, T, F), `x_static`: (B, C or 1 = C1, S)
-        *x_past, x_future, x_static, _ = x_in
-        x_past = self._concatenate_features(*x_past)
+        x_past = x_in.concatenate_past_features()
+        x_future = x_in.future_covariates
+        x_static = x_in.static_covariates
 
         batch_size = x_past.shape[0]
 

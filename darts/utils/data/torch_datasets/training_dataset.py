@@ -31,8 +31,9 @@ class TorchTrainingDataset(TorchDataset, ABC):
         """
         Abstract class for all training datasets that can be used with Darts' `TorchForecastingModel`.
 
-        Each sample drawn from this dataset must be a seven-element tuple extracted from a specific time window and
-        set of single input `TimeSeries`. The elements are:
+        Each sample drawn from this dataset must be a seven-element
+        :class:`~darts.utils.data.torch_datasets.utils.TorchTrainingDatasetOutput` (a named tuple, still unpackable
+        as a tuple) extracted from a specific time window and set of single input `TimeSeries`. The elements are:
 
         - past_target: target `series` values in the input chunk
         - past_covariates: Optional `past_covariates` values in the input chunk
@@ -306,16 +307,15 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         if self.uses_static_covariates_covariates:
             sc = series.static_covariates_values(copy=False)
 
-        # (
-        #     past target,
-        #     past cov,
-        #     historic future cov,
-        #     future cov,
-        #     static cov,
-        #     sample weight,
-        #     future target
-        # )
-        return pt, pc, hfc, fc, sc, sw, ft
+        return TorchTrainingDatasetOutput(
+            past_target=pt,
+            past_covariates=pc,
+            historic_future_covariates=hfc,
+            future_covariates=fc,
+            static_covariates=sc,
+            sample_weight=sw,
+            future_target=ft,
+        )
 
     def _get_end_of_output_idx(self, series, series_idx, idx):
         # determine the actual number of possible samples in this time series

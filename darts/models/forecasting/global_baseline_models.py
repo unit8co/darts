@@ -63,8 +63,8 @@ class _GlobalNaiveModule(PLForecastingModule, ABC):
         Parameters
         ----------
         x_in
-            comes as tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
-            `x_future` is the output/future chunk. Input dimensions are `(batch_size, time_steps, components)`
+            Named module input. Only the past target is used.
+            Input dimensions are `(batch_size, time_steps, components)`.
 
         Returns
         -------
@@ -265,7 +265,7 @@ class _GlobalNaiveAggregateModule(_GlobalNaiveModule):
         self.agg_fn = agg_fn
 
     def _forward(self, x_in) -> torch.Tensor:
-        y_target = x_in[0]
+        y_target = x_in.past_target
         aggregate = self.agg_fn(y_target, dim=1)
         return _repeat_along_output_chunk(aggregate, self.output_chunk_length)
 
@@ -422,7 +422,7 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
 
 class _GlobalNaiveSeasonalModule(_GlobalNaiveModule):
     def _forward(self, x_in) -> torch.Tensor:
-        y_target = x_in[0]
+        y_target = x_in.past_target
         season = y_target[:, 0, :]
         return _repeat_along_output_chunk(season, self.output_chunk_length)
 
@@ -520,7 +520,7 @@ class GlobalNaiveSeasonal(_NoCovariatesMixin, _GlobalNaiveModel):
 
 class _GlobalNaiveDrift(_GlobalNaiveModule):
     def _forward(self, x_in) -> torch.Tensor:
-        y_target = x_in[0]
+        y_target = x_in.past_target
         slope = _repeat_along_output_chunk(
             (y_target[:, -1, :] - y_target[:, 0, :]) / (self.input_chunk_length - 1),
             self.output_chunk_length,

@@ -31,8 +31,9 @@ class TorchInferenceDataset(TorchDataset, ABC):
 
         Provides samples to compute forecasts using a `TorchForecastingModel`.
 
-        Each sample drawn from this dataset is an eight-element tuple extracted from a specific time window and
-        set of single input `TimeSeries`. The elements are:
+        Each sample drawn from this dataset is an eight-element
+        :class:`~darts.utils.data.torch_datasets.utils.TorchInferenceDatasetOutput` (a named tuple, still unpackable
+        as a tuple) extracted from a specific time window and set of single input `TimeSeries`. The elements are:
 
         - past_target: target `series` values in the input chunk
         - past_covariates: Optional `past_covariates` values in the input chunk
@@ -314,23 +315,13 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
         if self.uses_static_covariates_covariates:
             sc = series.static_covariates_values(copy=False)
 
-        # (
-        #     past target,
-        #     past cov,
-        #     future past cov,
-        #     historic future cov,
-        #     future cov,
-        #     static cov,
-        #     target series schema,
-        #     prediction start time,
-        # )
-        return (
-            pt,
-            pc,
-            fpc,
-            hfc,
-            fc,
-            sc,
-            series.schema(copy=False),
-            pred_start,
+        return TorchInferenceDatasetOutput(
+            past_target=pt,
+            past_covariates=pc,
+            future_past_covariates=fpc,
+            historic_future_covariates=hfc,
+            future_covariates=fc,
+            static_covariates=sc,
+            series_schema=series.schema(copy=False),
+            pred_time=pred_start,
         )

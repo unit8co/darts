@@ -20,7 +20,6 @@ from darts.logging import raise_log
 from darts.models.components.layer_norm_variants import RINorm
 from darts.utils.data.torch_datasets.utils import (
     PLModuleInput,
-    TorchBatch,
     TorchInferenceBatch,
     TorchTrainingBatch,
 )
@@ -54,8 +53,8 @@ def io_processor(forward):
             return forward(self, x_in, *args, **kwargs)
 
         # apply reversible instance normalization to past target only; clone to prevent re-normalization
-        past_target = self.rin(x_in[0].clone())
-        out = forward(self, (past_target, *x_in[1:]), *args, **kwargs)
+        x_in = x_in.replace(past_target=self.rin(x_in.past_target.clone()))
+        out = forward(self, x_in, *args, **kwargs)
         # inverse transform target output back to original scale
         if isinstance(out, tuple):
             # RNNModel return tuple with hidden state
@@ -223,7 +222,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         Parameters
         ----------
         x_in
-            ``(past target, past cov, historic future cov, future cov, static cov, future target)``.
+            Named module input with independent past, future, and static tensors.
         *args
             Whatever you decide to pass into the forward method.
         **kwargs
@@ -265,35 +264,20 @@ class PLForecastingModule(pl.LightningModule, ABC):
         metrics,
     ) -> torch.Tensor:
         """performs a training or validation step"""
-        (
-            past_target,
-            past_covariates,
-            historic_future_covariates,
-            future_covariates,
-            static_covariates,
-            sample_weight,
-            future_target,
-        ) = batch
-
         output = self._produce_train_output(
-            (
-                past_target,
-                past_covariates,
-                historic_future_covariates,
-                future_covariates,
-                static_covariates,
-                future_target if name == "train" else None,
-            ),
+            batch.to_module_input(include_future_target=name == "train"),
         )
-        loss = self._compute_loss(output, future_target, criterion, sample_weight)
+        loss = self._compute_loss(
+            output, batch.future_target, criterion, batch.sample_weight
+        )
         self.log(
             f"{name}_loss",
             loss,
-            batch_size=past_target.shape[0],
+            batch_size=batch.past_target.shape[0],
             prog_bar=True,
             sync_dist=True,
         )
-        self._update_metrics(output, future_target, metrics)
+        self._update_metrics(output, batch.future_target, metrics)
         return loss
 
     def on_fit_end(self) -> None:
@@ -332,24 +316,15 @@ class PLForecastingModule(pl.LightningModule, ABC):
         """performs the prediction step
 
         batch
-            output of Darts' :class:`TorchInferenceDataset` - tuple of ``(past target, past cov,
-            future past cov, historic future cov, future cov, static cov, target series schema,
-            prediction start time step)``
+            Collated :class:`~darts.utils.data.torch_datasets.utils.TorchInferenceBatch` from
+            Darts' :class:`TorchInferenceDataset`.
         batch_idx
             the batch index of the current batch
         dataloader_idx
             the dataloader index
         """
-        # batch has elements (past target, past cov, future past cov, historic future cov, future cov,
-        # static cov, target series schema, pred start time)
-        input_data_tuple, batch_series_schemas, batch_pred_starts = (
-            batch[:-2],
-            batch[-2],
-            batch[-1],
-        )
-
         # number of individual series to be predicted in current batch
-        num_series = input_data_tuple[0].shape[0]
+        num_series = batch.past_target.shape[0]
 
         # number of times the input tensor should be tiled to produce predictions for multiple samples
         # this variable is larger than 1 only if the batch_size is at least twice as large as the number
@@ -369,14 +344,12 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 batch_sample_size = self.pred_num_samples - sample_count
 
             # stack multiple copies of the tensors to produce probabilistic forecasts
-            input_data_tuple_samples = self._sample_tiling(
-                input_data_tuple, batch_sample_size
-            )
+            input_batch_samples = batch.tile_tensors(batch_sample_size)
 
             # get predictions for 1 whole batch (can include predictions of multiple series
             # and for multiple samples if a probabilistic forecast is produced)
             batch_prediction = self._get_batch_prediction(
-                self.pred_n, input_data_tuple_samples, self.pred_roll_size
+                self.pred_n, input_batch_samples, self.pred_roll_size
             )
 
             # reshape from 3d tensor (num_series x batch_sample_size, ...)
@@ -398,8 +371,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
         batch_predictions = torch.cat(batch_predictions, dim=0)
         return (
             batch_predictions,
-            batch_series_schemas,
-            batch_pred_starts,
+            batch.series_schema,
+            batch.pred_time,
         )
 
     def set_predict_parameters(
@@ -517,49 +490,33 @@ class PLForecastingModule(pl.LightningModule, ABC):
         else:
             return optimizer
 
-    @staticmethod
-    def _concatenate_features(*tensors) -> torch.Tensor:
-        """Concatenates features from multiple (available or missing) tensors."""
-        return torch.cat(
-            [tensor for tensor in tensors if tensor is not None],
-            dim=2,  # component dim
-        )
-
-    @staticmethod
-    def _concatenate_time(*tensors) -> torch.Tensor:
-        """Concatenates features along time from multiple (available or missing) tensors."""
-        return torch.cat(
-            [tensor for tensor in tensors if tensor is not None],
-            dim=1,  # time dim
-        )
-
-    def _produce_train_output(self, input_batch: TorchBatch):
+    def _produce_train_output(self, input_batch: PLModuleInput):
         """Generates train output.
 
         Parameters
         ----------
         input_batch
-            ``(past target, past cov, historic future cov, future cov, static cov, future target)``.
+            Model-facing batch with independent past, future, and static tensors.
         """
         return self(self._process_input_batch(input_batch))
 
-    def _process_input_batch(self, input_batch: TorchBatch) -> PLModuleInput:
+    def _process_input_batch(self, input_batch: PLModuleInput) -> PLModuleInput:
         """Processes module input batch.
 
         Parameters
         ----------
         input_batch
-            ``(past target, past cov, historic future cov, future cov, static cov, future target)``.
+            Model-facing batch with independent past, future, and static tensors.
 
         Returns
         -------
-        tuple
-            ``(past target, past cov, historic future cov, future cov, static cov, future target)``.
+        PLModuleInput
+            Processed module input (identity by default).
         """
         return input_batch
 
     def _get_batch_prediction(
-        self, n: int, input_batch: tuple[torch.Tensor | None, ...], roll_size: int
+        self, n: int, input_batch: TorchInferenceBatch, roll_size: int
     ) -> torch.Tensor:
         """Generates batch predictions.
 
@@ -571,30 +528,30 @@ class PLForecastingModule(pl.LightningModule, ABC):
         n
             prediction length
         input_batch
-            (past target, past cov, future past cov, historic future cov, future cov, static cov)
+            Collated inference batch (tensors may already be tiled for multi-sample prediction).
         roll_size
             roll input arrays after every sequence by ``roll_size``. Initially, ``roll_size`` is equivalent to
             ``self.output_chunk_length``
         """
 
-        (
-            past_target,
-            past_covariates,
-            future_past_covariates,
-            historic_future_covariates,
-            future_covariates,
-            static_covariates,
-        ) = input_batch
+        past_target = input_batch.past_target
+        past_covariates = input_batch.past_covariates
+        future_past_covariates = input_batch.future_past_covariates
+        historic_future_covariates = input_batch.historic_future_covariates
+        future_covariates = input_batch.future_covariates
+        static_covariates = input_batch.static_covariates
 
         def _build_pl_input(future_cov_slice):
-            return self._process_input_batch((
-                past_target,
-                past_covariates,
-                historic_future_covariates,
-                future_cov_slice,
-                static_covariates,
-                None,
-            ))
+            return self._process_input_batch(
+                PLModuleInput(
+                    past_target=past_target,
+                    past_covariates=past_covariates,
+                    historic_future_covariates=historic_future_covariates,
+                    future_covariates=future_cov_slice,
+                    static_covariates=static_covariates,
+                    future_target=None,
+                )
+            )
 
         future_cov_slice = (
             future_covariates[:, :roll_size, :]
@@ -692,18 +649,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
         batch_prediction = torch.cat(batch_prediction, dim=1)
         batch_prediction = batch_prediction[:, :n, :]
         return batch_prediction
-
-    @staticmethod
-    def _sample_tiling(
-        input_data_tuple: tuple[torch.Tensor | None, ...], batch_sample_size
-    ) -> tuple[torch.Tensor | None, ...]:
-        tiled_input_data = []
-        for tensor in input_data_tuple:
-            if tensor is not None:
-                tiled_input_data.append(tensor.tile((batch_sample_size, 1, 1)))
-            else:
-                tiled_input_data.append(None)
-        return tuple(tiled_input_data)
 
     def _get_mc_dropout_modules(self) -> set:
         def recurse_children(children, acc):

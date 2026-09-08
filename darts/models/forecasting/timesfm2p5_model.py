@@ -236,8 +236,8 @@ class _TimesFM2p5Module(PLForecastingModule):
         Parameters
         ----------
         x_in
-            comes as a tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
-            `x_future` is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
+            Named module input. Only the past target is used.
+            Input dimensions are `(n_samples, n_time_steps, n_variables)`.
 
         Returns
         -------
@@ -260,7 +260,7 @@ class _TimesFM2p5Module(PLForecastingModule):
         # N: likelihood quantiles (user-specified)
 
         # `x_past`: (B, L, C)
-        x_past = x_in[0]
+        x_past = x_in.past_target
 
         # TimesFM 2.5 is a univariate model and its inputs do not have a variable dimension,
         # so here we reshape `x_past` to (B * C, L)

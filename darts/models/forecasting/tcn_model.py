@@ -238,7 +238,7 @@ class _TCNModule(PLForecastingModule):
 
     @io_processor
     def forward(self, x_in: PLModuleInput):
-        x = self._concatenate_features(*x_in[:3])
+        x = x_in.concatenate_past_features()
         # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
         x = x.transpose(1, 2)

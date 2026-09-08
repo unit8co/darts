@@ -22,7 +22,10 @@ from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 from darts.typing import TimeSeriesLike
 from darts.utils.data.tabularization import create_lagged_component_names
-from darts.utils.data.torch_datasets.utils import TorchInferenceDatasetOutput
+from darts.utils.data.torch_datasets.utils import (
+    TorchInferenceDatasetOutput,
+    _to_inference_output,
+)
 from darts.utils.historical_forecasts.optimized_historical_forecasts_torch import (
     _create_dataset_bounds,
 )
@@ -102,20 +105,25 @@ class TorchShapAdapter(ShapAdapter):
         # - Collate each input type separately and arrange in the same feature order as SKLearnModel X array:
         #   - lagged_target | lagged_past_covariates | lagged_future_covariates | static,
         #   where lagged_future_covariates includes both historic (-ICL to -1) and actual future (0 to OCL-1)
-        # - `batch` is a list of tuples of (past target, past cov, future past cov, historic future cov, future cov,
-        #   static cov, target series schema, pred time)
-        # - since `ShapExplainer` never performs auto-regression, we can skip the "future past cov" part
-        extract_batch_indices = [0, 1, 3, 4, 5]
+        # - since `ShapExplainer` never performs auto-regression, we can skip "future past cov"
+        batch = [_to_inference_output(sample) for sample in batch]
+        extract_fields = (
+            "past_target",
+            "past_covariates",
+            "historic_future_covariates",
+            "future_covariates",
+            "static_covariates",
+        )
         arrays = [
-            np.stack([sample[idx] for sample in batch])
-            for idx in extract_batch_indices
-            if batch[0][idx] is not None
+            np.stack([getattr(sample, name) for sample in batch])
+            for name in extract_fields
+            if getattr(batch[0], name) is not None
         ]
         shap_array = np.concatenate(
             [array.reshape(array.shape[0], -1) for array in arrays],
             axis=-1,
         )
-        prediction_times = pd.Index([c[-1] for c in batch])
+        prediction_times = pd.Index([sample.pred_time for sample in batch])
         return shap_array, prediction_times
 
     def _build_feature_names(self) -> list[str]:

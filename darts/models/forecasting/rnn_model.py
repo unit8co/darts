@@ -25,7 +25,7 @@ from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorch
 from darts.utils.data import ShiftedTorchTrainingDataset
 from darts.utils.data.torch_datasets.utils import (
     PLModuleInput,
-    TorchBatch,
+    TorchInferenceBatch,
     TorchTrainingSample,
 )
 
@@ -96,8 +96,7 @@ class CustomRNNModule(PLForecastingModule, ABC):
         Parameters
         ----------
         x_in
-            ``(past target, past cov, historic future cov, future cov, static cov, future target)``.
-            For RNN models, future covariates are remapped into the past cov slot.
+            Named module input. For RNN models, future covariates are remapped into the past cov slot.
         h
             Optionally, the hidden state.
 
@@ -111,30 +110,20 @@ class CustomRNNModule(PLForecastingModule, ABC):
         """
         pass
 
-    def _produce_train_output(self, input_batch: TorchBatch) -> torch.Tensor:
+    def _produce_train_output(self, input_batch: PLModuleInput) -> torch.Tensor:
         # only return the forecast, not the hidden state
         return self(self._process_input_batch(input_batch))[0]
 
-    def _process_input_batch(self, input_batch: TorchBatch) -> PLModuleInput:
-        (
-            past_target,
-            _,  # past covariates
-            _,  # historic future covariates
-            future_covariates,
-            static_covariates,
-            future_target,
-        ) = input_batch
+    def _process_input_batch(self, input_batch: PLModuleInput) -> PLModuleInput:
         # For the RNN we concatenate the past_target with the future_covariates
         # (they have the same length because we enforce a Shift dataset for RNNs)
-        input_batch = (
-            past_target,
-            future_covariates,  # future covariates as past covariates for RNN input
-            None,
-            None,
-            static_covariates,
-            future_target,
+        return super()._process_input_batch(
+            input_batch.replace(
+                past_covariates=input_batch.future_covariates,
+                historic_future_covariates=None,
+                future_covariates=None,
+            )
         )
-        return super()._process_input_batch(input_batch)
 
     def _produce_predict_output(
         self, x: PLModuleInput, last_hidden_state: torch.Tensor | None = None
@@ -150,20 +139,16 @@ class CustomRNNModule(PLForecastingModule, ABC):
             return output.squeeze(dim=-1), hidden
 
     def _get_batch_prediction(
-        self, n: int, input_batch: tuple[torch.Tensor | None, ...], roll_size: int
+        self, n: int, input_batch: TorchInferenceBatch, roll_size: int
     ) -> torch.Tensor:
         """
         This model is recurrent, so we have to write a specific way to
         obtain the time series forecasts of length n.
         """
-        (
-            past_target,
-            _,  # past covariates
-            _,  # future past covariates
-            historic_future_covariates,
-            future_covariates,
-            static_covariates,
-        ) = input_batch
+        past_target = input_batch.past_target
+        historic_future_covariates = input_batch.historic_future_covariates
+        future_covariates = input_batch.future_covariates
+        static_covariates = input_batch.static_covariates
 
         if historic_future_covariates is not None and future_covariates is not None:
             # RNNs need as inputs (target[t] and covariates[t+1]) so here we shift the covariates
@@ -179,14 +164,16 @@ class CustomRNNModule(PLForecastingModule, ABC):
             cov_future = None
 
         batch_prediction = []
-        out, last_hidden_state = self._produce_predict_output((
-            past_target,
-            cov_past,
-            None,
-            None,
-            static_covariates,
-            None,
-        ))
+        out, last_hidden_state = self._produce_predict_output(
+            PLModuleInput(
+                past_target=past_target,
+                past_covariates=cov_past,
+                historic_future_covariates=None,
+                future_covariates=None,
+                static_covariates=static_covariates,
+                future_target=None,
+            )
+        )
         batch_prediction.append(out[:, -1:, :])
         prediction_length = 1
 
@@ -200,7 +187,14 @@ class CustomRNNModule(PLForecastingModule, ABC):
 
             # feed new input to model, including the last hidden state from the previous iteration
             out, last_hidden_state = self._produce_predict_output(
-                (new_past_target, new_cov, None, None, static_covariates, None),
+                PLModuleInput(
+                    past_target=new_past_target,
+                    past_covariates=new_cov,
+                    historic_future_covariates=None,
+                    future_covariates=None,
+                    static_covariates=static_covariates,
+                    future_target=None,
+                ),
                 last_hidden_state,
             )
 
@@ -268,7 +262,7 @@ class _RNNModule(CustomRNNModule):
     def forward(
         self, x_in: PLModuleInput, h: torch.Tensor | None = None
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        x = self._concatenate_features(*x_in[:2])
+        x = x_in.concatenate_past_features()
         # data is of size (batch_size, input_length, input_size)
         batch_size = x.shape[0]
 

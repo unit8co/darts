@@ -455,9 +455,8 @@ class _TSMixerModule(PLForecastingModule):
         Parameters
         ----------
         x_in
-            comes as Tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
-            `x_future` is the output/future chunk. Input dimensions are `(batch_size, time_steps,
-            components)`.
+            Named module input. Past-window tensors are concatenated along the component dimension.
+            Input dimensions are `(batch_size, time_steps, components)`.
 
         Returns
         -------
@@ -476,8 +475,9 @@ class _TSMixerModule(PLForecastingModule):
         # N_P: likelihood parameters
 
         # `x`: (B, L, H), `x_future`: (B, T, F), `x_static`: (B, C or 1, S)
-        *x, x_future, x_static, _ = x_in
-        x = self._concatenate_features(*x)
+        x = x_in.concatenate_past_features()
+        x_future = x_in.future_covariates
+        x_static = x_in.static_covariates
 
         # swap feature and time dimensions (B, L, H) -> (B, H, L)
         x = _time_to_feature(x)

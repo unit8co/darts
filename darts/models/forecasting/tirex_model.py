@@ -93,8 +93,7 @@ class _TiRexModule(PLForecastingModule):
         Parameters
         ----------
         x_in
-            ``(x_past, x_future, x_static, future_target)`` the past, future, and static features, as well as
-            the future target.
+            Named module input. Only the past target is used.
         *args
             Positional arguments passed to the forward method.
         **kwargs
@@ -111,7 +110,7 @@ class _TiRexModule(PLForecastingModule):
         #   N: likelihood quantiles (user-specified, 1 if deterministic)
 
         # `x_past`: (B, L, C)
-        x_past = x_in[0]
+        x_past = x_in.past_target
         # fold target components into batch dim for multivariate support: (B, L, C) -> (B*C, L)
         x_past = x_past.transpose(1, 2).flatten(start_dim=0, end_dim=1)
 

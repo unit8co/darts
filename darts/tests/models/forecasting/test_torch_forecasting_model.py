@@ -67,6 +67,10 @@ from darts.utils.data.torch_datasets.training_dataset import (
     SequentialTorchTrainingDataset,
     TorchTrainingDataset,
 )
+from darts.utils.data.torch_datasets.utils import (
+    _batch_collate_fn_predict,
+    _batch_collate_fn_train,
+)
 from darts.utils.likelihood_models.torch import (
     CauchyLikelihood,
     GaussianLikelihood,
@@ -1816,7 +1820,7 @@ class TestTorchForecastingModel:
                 "batch_size": model.batch_size,
                 "pin_memory": True,
                 "drop_last": False,
-                "collate_fn": model._batch_collate_fn,
+                "collate_fn": _batch_collate_fn_train,
             }
             assert all([getattr(train_dl, k) == v for k, v in dl_defaults.items()])
             # shuffle=True gives random sampler
@@ -1855,7 +1859,7 @@ class TestTorchForecastingModel:
                 "batch_size": model.batch_size,
                 "pin_memory": True,
                 "drop_last": False,
-                "collate_fn": model._batch_collate_fn,
+                "collate_fn": _batch_collate_fn_predict,
             }
             assert all([getattr(pred_dl, k) == v for k, v in dl_defaults.items()])
             # shuffle=False gives sequential sampler
@@ -2414,7 +2418,7 @@ class TestTorchForecastingModel:
                 pred.all_values(), pred_no_weight.all_values()
             )
 
-    def test_validate_predict_samples(self, tmpdir_fn):
+    def test_validate_predict_ds_outputs(self, tmpdir_fn):
         model = self.helper_create_DLinearModel(work_dir=tmpdir_fn)
 
         # train model with all features types
@@ -2442,49 +2446,49 @@ class TestTorchForecastingModel:
         )
 
         # valid sample works
-        model._validate_predict_sample(model.train_sample, valid_sample)
+        model._validate_predict_ds_output(model.train_sample, valid_sample)
 
         with pytest.raises(ValueError) as exc:
-            model._validate_predict_sample(model.train_sample, valid_sample[:-1])
+            model._validate_predict_ds_output(model.train_sample, valid_sample[:-1])
         assert str(exc.value).startswith(
-            "Mismatch between number of training features `5` and prediction features `4`."
+            "Inference dataset `__getitem__` must return an 8-element sample"
         )
 
         target_wrong_comp = np.empty((train_sample[0].shape[0], 2))
         with pytest.raises(ValueError) as exc:
-            model._validate_predict_sample(
+            model._validate_predict_ds_output(
                 model.train_sample, (target_wrong_comp,) + valid_sample[1:]
             )
         assert str(exc.value) == (
-            "The provided `series` must have equal number of components as the `series` used to train the model. "
-            "Received number of components: `2`, expected: `1`."
+            "The provided `series` must have equal number of components as "
+            "the `series` used to train the model. Received number of "
+            "components: `2`, expected: `1`."
         )
 
         with pytest.raises(ValueError) as exc:
-            model._validate_predict_sample(
+            model._validate_predict_ds_output(
                 model.train_sample, (None,) + valid_sample[1:]
             )
         assert str(exc.value).startswith(
-            "This model has been trained with `series`; some `series` "
+            "This model has been trained with `past_target`; some `past_target` "
             "of matching dimensionality are needed for prediction."
         )
 
         with pytest.raises(ValueError) as exc:
-            model._validate_predict_sample(
+            model._validate_predict_ds_output(
                 (None,) + model.train_sample[1:], valid_sample
             )
         assert str(exc.value).startswith(
-            "This model has been trained without `series`; No `series` "
+            "This model has been trained without `past_target`; No `past_target` "
             "should be provided for prediction."
         )
 
         # incorrect number of pred features
         pred_sample = [1.0, 1.0]
         with pytest.raises(ValueError) as exc:
-            model._validate_predict_sample(model.train_sample, pred_sample)
+            model._validate_predict_ds_output(model.train_sample, pred_sample)
         assert str(exc.value).startswith(
-            "Mismatch between number of training features `5` "
-            "and prediction features `2`."
+            "Inference dataset `__getitem__` must return an 8-element sample"
         )
 
     def test_to_dtype(self, tmpdir_fn):
@@ -2862,7 +2866,7 @@ class TestTorchForecastingModel:
         with pytest.raises(ValueError) as exc:
             _ = model.predict_from_dataset(n=n, dataset=inf_dataset)
         assert str(exc.value).startswith(
-            "This model has been trained with `historic_future_covariates`"
+            "This model has been trained with `future_covariates`"
         )
 
         inf_dataset = SequentialTorchInferenceDataset(
@@ -3336,7 +3340,7 @@ class TestTorchForecastingModelInputValidation:
         real_ds = SequentialTorchTrainingDataset(
             self.series, input_chunk_length=4, output_chunk_length=2
         )
-        with pytest.raises(ValueError, match="size of the training set samples"):
+        with pytest.raises(ValueError, match="must return a 7-element sample"):
             model.fit_from_dataset(WrongTupleLenDataset(real_ds))
 
     def test_fit_from_dataset_sample_dim_mismatch(self):

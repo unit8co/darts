@@ -122,8 +122,8 @@ class _TideModule(PLForecastingModule):
         Inputs
         ------
         x
-            Tuple of Tensors `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
-            `x_future` is the output/future chunk. Input dimensions are `(batch_size, time_steps, components)`
+            Named module input with independent past, future, and static tensors.
+            Input dimensions are `(batch_size, time_steps, components)`.
         Outputs
         -------
         y
@@ -265,28 +265,21 @@ class _TideModule(PLForecastingModule):
         Parameters
         ----------
         x_in
-            comes as tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
-            `x_future` is the output/future chunk. Input dimensions are `(batch_size, time_steps, components)`
+            Named module input with independent past, future, and static tensors.
+            Input dimensions are `(batch_size, time_steps, components)`.
         Returns
         -------
         torch.Tensor
             The output Tensor of shape `(batch_size, output_chunk_length, output_dim, nr_params)`
         """
 
-        (
-            x_lookback,
-            x_dynamic_past_covariates,
-            x_historic_future_covariates,
-            x_future_covariates,
-            x_static_covariates,
-            _,
-        ) = x_in
+        x_lookback = x_in.past_target
+        x_dynamic_past_covariates = x_in.past_covariates
+        x_static_covariates = x_in.static_covariates
 
         # future covariates: feature projection or raw features
         if self.future_cov_dim:
-            x_dynamic_future_covariates = self._concatenate_time(
-                x_historic_future_covariates, x_future_covariates
-            )
+            x_dynamic_future_covariates = x_in.concatenate_future_along_time()
             if self.temporal_width_future:
                 # project input features across all input and output time steps
                 x_dynamic_future_covariates = self.future_cov_projection(

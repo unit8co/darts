@@ -477,8 +477,8 @@ class _Chronos2Module(PLForecastingModule):
         Parameters
         ----------
         x_in
-            comes as a tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
-            `x_future` is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
+            Named module input. Past-window tensors are concatenated along the component dimension.
+            Input dimensions are `(n_samples, n_time_steps, n_variables)`.
 
         Returns
         -------
@@ -487,12 +487,12 @@ class _Chronos2Module(PLForecastingModule):
             probabilistic forecasts, or `(n_samples, n_time_steps, n_targets, 1)` for
             deterministic forecasts (median only).
         """
-        *x_past, x_future, _, _ = x_in
-        x_past = self._concatenate_features(*x_past)
         # x_past is a tuple of (past_target, past_covariates, historic_future_covariates),
         # x_future is just future_covariates.
-        # So here we need to create `future_covariates` in Chronos2's format that is
-        # a stack of [past_target (NaNs), past_covariates (NaNs), future_covariates].
+        x_past = x_in.concatenate_past_features()
+        x_future = x_in.future_covariates
+        # Chronos-2 future covariates are a stack of
+        # [past_target (NaNs), past_covariates (NaNs), future_covariates].
         batch_size, past_length, n_variables = x_past.shape
         output_chunk_length = self.output_chunk_length or 0
         output_chunk_shift = self.output_chunk_shift

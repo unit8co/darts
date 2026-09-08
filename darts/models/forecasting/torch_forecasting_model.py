@@ -59,10 +59,15 @@ from darts.utils.data import (
 )
 from darts.utils.data.torch_datasets._data_module import TorchDataModule
 from darts.utils.data.torch_datasets.utils import (
-    TorchBatch,
+    PLModuleInput,
     TorchInferenceDatasetOutput,
     TorchTrainingDatasetOutput,
     TorchTrainingSample,
+    _batch_collate_fn_predict,
+    _batch_collate_fn_train,
+    _to_inference_output,
+    _to_training_output,
+    _to_training_sample,
 )
 from darts.utils.historical_forecasts import (
     _check_optimizable_historical_forecasts_global_models,
@@ -505,7 +510,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             if trainer is None
             else trainer.precision
         )
-        dtype = self.train_sample[0].dtype
+        dtype = self.train_sample.past_target.dtype
         if precision_user is not None:
             logger.info(
                 f"Using user-defined precision: {precision_user}. The model output will have the same dtype. If you "
@@ -707,10 +712,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         _raise_if_wrong_type(inference_dataset, TorchInferenceDataset)
 
-    def _validate_predict_sample(
+    def _validate_predict_ds_output(
         self,
         train_sample: TorchTrainingSample,
-        predict_sample: TorchInferenceDatasetOutput,
+        predict_ds_output: TorchInferenceDatasetOutput,
     ):
         """Validates that the predict sample matches a sample that the model was trained on.
 
@@ -719,42 +724,28 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         train_sample
-            (past target, past covariates, historic future covariates, future covariates, static covariates,
-            future target)
-        predict_sample
-            (past target, past covariates, future past covariates, historic future covariates, future covariates,
-            static covariates, target series schema, prediction start time)
+            Stored model snapshot (``TorchTrainingSample``) or a training dataset sample.
+        predict_ds_output
+            Inference dataset output. Malformed outptus will raise an exception.
         """
-        # datasets; we skip future target for train and predict, and skip future past covariates for predict datasets
+        # skip future_target (train labels) and future_past_covariates (inference-only AR)
+        train_sample = _to_training_sample(train_sample)
+        predict_ds_output = _to_inference_output(predict_ds_output)
+        predict_sample = predict_ds_output.to_training_sample()
+        # mind the order for more intuitive error messages (dataset name)
         ds_names = [
-            "series",
-            "past_covariates",
-            "historic_future_covariates",
-            "future_covariates",
-            "static_covariates",
+            ("past_covariates", "past_covariates"),
+            ("future_covariates", "future_covariates"),
+            ("static_covariates", "static_covariates"),
+            ("past_target", "series"),
+            ("historic_future_covariates", "future_covariates"),
         ]
+        for ds_name, series_name in ds_names:
+            ds_train = getattr(train_sample, ds_name)
+            ds_predict = getattr(predict_sample, ds_name)
 
-        # ignore sample weight and future target from train sample
-        train_features = train_sample[:-1]
-        train_has_ds = [ds is not None for ds in train_features]
-
-        # ignore future past covariates, target schema, and prediction start time from predict sample
-        predict_features = predict_sample[:2] + predict_sample[3:-2]
-        predict_has_ds = [ds is not None for ds in predict_features]
-
-        if len(train_features) != len(predict_features):
-            raise_log(
-                ValueError(
-                    f"Mismatch between number of training features `{len(train_features)}` "
-                    f"and prediction features `{len(predict_features)}`. Make sure your prediction "
-                    f"dataset's `__getitem__` method returns the same output type as given in "
-                    f"`darts.utils.data.inference_dataset.TorchInferenceDataset`."
-                ),
-            )
-
-        for idx, (ds_in_train, ds_in_predict, ds_name) in enumerate(
-            zip(train_has_ds, predict_has_ds, ds_names)
-        ):
+            ds_in_train = ds_train is not None
+            ds_in_predict = ds_predict is not None
             if ds_in_train and not ds_in_predict:
                 raise_log(
                     ValueError(
@@ -770,8 +761,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     ),
                 )
             if ds_in_train and ds_in_predict:
-                train_shape = train_features[idx].shape
-                preds_shape = predict_features[idx].shape
+                train_shape = ds_train.shape
+                preds_shape = ds_predict.shape
 
                 if ds_name == "static_covariates":
                     train_n_comp = train_shape[0] * train_shape[1]
@@ -783,14 +774,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 if train_n_comp != preds_n_comp:
                     raise_log(
                         ValueError(
-                            f"The provided `{ds_name}` must have equal number of components as the "
-                            f"`{ds_name}` used to train the model. Received number of components: "
+                            f"The provided `{series_name}` must have equal number of components as the "
+                            f"`{series_name}` used to train the model. Received number of components: "
                             f"`{preds_n_comp}`, expected: `{train_n_comp}`.",
                         ),
                     )
 
         # check dtype consistency within predict sample
-        self._verify_dtypes(predict_sample)
+        self._verify_dtypes(predict_ds_output)
 
     def _verify_past_future_covariates(self, past_covariates, future_covariates):
         """
@@ -851,14 +842,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _verify_dtypes(
         self,
-        sample: TorchTrainingDatasetOutput | TorchInferenceDatasetOutput,
+        ds_output: TorchTrainingDatasetOutput | TorchInferenceDatasetOutput,
     ):
         """Dataset output dtype checks.
 
         Checks that all dataset output arrays have the same dtype, and whether the dtype matches
         the one of the training dataset
         """
-        observed_dtypes = set([el.dtype for el in sample if isinstance(el, np.ndarray)])
+        observed_dtypes = set([
+            el.dtype for el in ds_output if isinstance(el, np.ndarray)
+        ])
         if len(observed_dtypes) != 1:
             logger.warning(
                 f"Observed mixed data types in the dataset output: {observed_dtypes}. "
@@ -869,8 +862,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         if self.train_sample is not None:
             expected_dtype = (
-                self.train_sample[0].dtype
-                if isinstance(self.train_sample[0], np.ndarray)
+                self.train_sample.past_target.dtype
+                if isinstance(self.train_sample.past_target, np.ndarray)
                 else None
             )
             current_dtype = observed_dtypes.pop()
@@ -886,7 +879,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _update_covariates_use(self):
         """Based on the Forecasting class and the training_sample attribute, update the
         uses_[past/future/static]_covariates attributes."""
-        _, past_cov, historic_future_cov, future_cov, static_cov, _ = self.train_sample
+        past_cov = self.train_sample.past_covariates
+        future_cov = self.train_sample.future_covariates
+        static_cov = self.train_sample.static_covariates
 
         self._uses_past_covariates = past_cov is not None
         self._expect_past_covariates = (
@@ -948,14 +943,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # type warning if we do not create the mocked `mock_batch` explicitly
         train_sample_shape = self.model.train_sample_shape
-        mock_batch: TorchBatch = (
-            _randomize(train_sample_shape[0]),
-            _randomize(train_sample_shape[1]),
-            _randomize(train_sample_shape[2]),
-            _randomize(train_sample_shape[3]),
-            _randomize(train_sample_shape[4]),
+        mock_batch = PLModuleInput(
+            past_target=_randomize(train_sample_shape[0]),
+            past_covariates=_randomize(train_sample_shape[1]),
+            historic_future_covariates=_randomize(train_sample_shape[2]),
+            future_covariates=_randomize(train_sample_shape[3]),
+            static_covariates=_randomize(train_sample_shape[4]),
             # future_target is excluded: ONNX export traces the inference path only
-            None,
+            future_target=None,
         )
         input_sample = self.model._process_input_batch(mock_batch)
 
@@ -1335,35 +1330,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 ),
             )
 
-        train_sample = train_dataset[0]
-        # ignore sample weights [-2] for model dimensions
-        train_sample_no_weight = train_sample[:-2] + train_sample[-1:]
+        train_output = _to_training_output(train_dataset[0])
+        train_sample = train_output.to_training_sample()
 
         # Test dtypes of sample
-        self._verify_dtypes(train_sample)
+        self._verify_dtypes(train_output)
 
         if self.model is None:
             # build model based on the dimensions of the first series in the train set.
-            self.train_sample = train_sample_no_weight
-            self.output_dim = train_sample[-1].shape[1]
+            self.train_sample = train_sample
+            self.output_dim = train_output.future_target.shape[1]
             model = self._init_model(trainer)
         else:
             model = self.model
-            # check existing model has input/output dims matching what's provided in the training set.
-            if len(train_sample_no_weight) != len(self.train_sample):
-                raise_log(
-                    ValueError(
-                        "The size of the training set samples (tuples) does not match what the model has been"
-                        f" previously trained on. Trained on tuples of length {len(self.train_sample)},"
-                        f" received tuples of length {len(train_sample_no_weight)}."
-                    ),
-                )
-            sample_shapes_last = [
-                s.shape[1] if s is not None else None for s in self.train_sample
-            ]
-            sample_shapes = [
-                s.shape[1] if s is not None else None for s in train_sample_no_weight
-            ]
+            sample_shapes_last = self.train_sample.component_dims()
+            sample_shapes = train_sample.component_dims()
             if sample_shapes != sample_shapes_last:
                 raise_log(
                     ValueError(
@@ -1379,8 +1360,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self._update_covariates_use()
 
         # loss must not reduce the output when using sample weight
-        train_sample_weight = train_sample[-2]
-        val_sample_weight = val_dataset[0][-2] if val_dataset is not None else None
+        train_sample_weight = train_output.sample_weight
+        val_sample_weight = (
+            _to_training_output(val_dataset[0]).sample_weight
+            if val_dataset is not None
+            else None
+        )
         for sample_weight, criterion, set_name in [
             (train_sample_weight, model.train_criterion, "train"),
             (val_sample_weight, model.val_criterion, "val"),
@@ -1422,7 +1407,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             train_dataset=train_dataset,
             val_dataset=val_dataset,
             batch_size=self.batch_size,
-            collate_fn=self._batch_collate_fn,
+            collate_fn=_batch_collate_fn_train,
             dataloader_kwargs=dataloader_kwargs,
         )
 
@@ -2103,8 +2088,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self._verify_inference_dataset_type(dataset)
 
         # check that covariates and dimensions are matching what we had during training
-        self._validate_predict_sample(
-            train_sample=self.train_sample, predict_sample=dataset[0]
+        self._validate_predict_ds_output(
+            train_sample=self.train_sample,
+            predict_ds_output=dataset[0],
         )
 
         if roll_size is None:
@@ -2148,7 +2134,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         datamodule = TorchDataModule(
             predict_dataset=dataset,
             batch_size=batch_size,
-            collate_fn=self._batch_collate_fn,
+            collate_fn=_batch_collate_fn_predict,
             dataloader_kwargs=dataloader_kwargs,
         )
 
@@ -2232,25 +2218,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             self.min_input_chunk_length,
             self.output_chunk_length + self.output_chunk_shift,
         )
-
-    @staticmethod
-    def _batch_collate_fn(batch: list[tuple]) -> tuple:
-        """
-        Returns a batch Tuple from a list of samples
-        """
-        aggregated = []
-        first_sample = batch[0]
-        for i in range(len(first_sample)):
-            elem = first_sample[i]
-            if isinstance(elem, np.ndarray):
-                aggregated.append(
-                    torch.from_numpy(np.stack([sample[i] for sample in batch], axis=0))
-                )
-            elif elem is None:
-                aggregated.append(None)
-            else:
-                aggregated.append([sample[i] for sample in batch])
-        return tuple(aggregated)
 
     def _clean(self) -> Self:
         """Returns a cleaned model, keeping only the necessary attributes for prediction."""
@@ -2636,7 +2603,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             np.zeros(sample_shape, dtype=np_dtype) if sample_shape else None
             for sample_shape in ckpt["train_sample_shape"]
         ]
-        self.train_sample = tuple(mock_train_sample)
+        self.train_sample = TorchTrainingSample(*mock_train_sample)
 
         if not skip_checks:
             # path to the tfm checkpoint (darts model, .pt extension)
