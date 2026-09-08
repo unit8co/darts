@@ -133,15 +133,14 @@ class TiRex2Model(FoundationModel):
     ):
         """TiRex-2 foundation model for zero-shot multivariate forecasting.
 
-        Wraps the pretrained xLSTM model from Podest et al. (2026) [1]_ using
-        the optional `tirex-2 <https://pypi.org/project/tirex-2/>`_ package
-        (Python 3.11 or newer). Please install it alongside ``darts[torch]``.
+        Wraps the pretrained xLSTM model from Podest et al. (2026) [1]_ using the optional `tirex-2
+        <https://pypi.org/project/tirex-2/>`_ package (Python 3.11 or newer). Please install it alongside
+        ``darts[torch]``.
 
-        TiRex-2 jointly forecasts all target components and supports past and
-        future covariates. The default forecast is the median; pass
-        :class:`~darts.utils.likelihood_models.torch.QuantileRegression` to ``likelihood``
-        and call :func:`predict()` with ``predict_likelihood_parameters=True`` or
-        ``num_samples >> 1`` to obtain quantiles or probabilistic samples.
+        TiRex-2 jointly forecasts all target components and supports past and future covariates. The default
+        forecast is the median; pass :class:`~darts.utils.likelihood_models.torch.QuantileRegression` to
+        ``likelihood`` and call :func:`predict()` with ``predict_likelihood_parameters=True`` or ``num_samples >>
+        1`` to obtain quantiles or probabilistic samples.
 
         For more details on the TiRex-2 model, see the original paper [1]_ and `docs
         <https://nx-ai.github.io/tirex-2/>`_.
