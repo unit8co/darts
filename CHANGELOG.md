@@ -11,7 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- 🚀🚀 Added new forecasting model `TimesFM3Model` : Google's pre-trained 330M-parameter foundation model for zero-shot forecasting. Unlike previous versions, it natively supports multivariate time series, past covariates, and future covariates, and can output deterministic or probabilistic forecasts without training. The TimesFM 3.0 pre-trained weights are non-commercial: users must accept the license with `accept_license=True` when creating the model. [#3196](https://github.com/unit8co/darts/issues/3196) by [JuanCruzC97](https://github.com/JuanCruzC97).
+- 🚀🚀 Added new forecasting model `TimesFM3Model` : Google's pre-trained 330M-parameter foundation model for zero-shot forecasting. Unlike previous versions, it natively supports multivariate time series, past covariates, and future covariates, and can output deterministic or probabilistic forecasts without training. The TimesFM 3.0 pre-trained weights are non-commercial: users must accept the license with `accept_license=True` when creating the model. [#3199](https://github.com/unit8co/darts/pull/3199) by [JuanCruzC97](https://github.com/JuanCruzC97).
 
 **Fixed**
 
