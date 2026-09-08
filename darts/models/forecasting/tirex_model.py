@@ -164,6 +164,8 @@ class TiRexModel(FoundationModel):
         tirex_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ):
+        # TODO: update fine-tuning recommendations in docstring
+        # TODO: redirect to TiRex-2 for multivariate forecasting with covariates
         """
         TiRex foundation model for zero-shot time series forecasting.
 
