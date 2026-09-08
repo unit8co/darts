@@ -340,8 +340,15 @@ class TiRex2Model(FoundationModel):
         ... )
         >>> model.fit(series)
         >>> pred = model.predict(n=6)
-        >>> len(pred)
-        6
+        >>> pred
+                    #Passengers
+        Month
+        1961-01-01   446.937927
+        1961-02-01   454.835083
+        1961-03-01   459.679291
+        1961-04-01   461.265442
+        1961-05-01   463.061127
+        1961-06-01   462.221680
 
         Probabilistic forecasting:
 
@@ -353,8 +360,15 @@ class TiRex2Model(FoundationModel):
         ... )
         >>> model.fit(series)
         >>> pred = model.predict(n=6, predict_likelihood_parameters=True)
-        >>> len(pred)
-        6
+        >>> pred
+                    #Passengers_q0.100  #Passengers_q0.500  #Passengers_q0.900
+        Month
+        1961-01-01          383.065399          446.937927          521.927185
+        1961-02-01          365.019501          454.835083          562.312622
+        1961-03-01          352.370239          459.679291          598.056763
+        1961-04-01          344.941345          461.265442          613.258972
+        1961-05-01          338.307678          463.061127          626.979980
+        1961-06-01          333.445587          462.221680          630.935303
         """
         # TODO: enable fine-tuning
         if kwargs.get("enable_finetuning"):
