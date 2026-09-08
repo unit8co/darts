@@ -789,19 +789,13 @@ class _TimesFM3Module(PLForecastingModule):
 
 
 class TimesFM3Model(FoundationModel):
-    _DEFAULT_QUANTILES: tuple[float, ...] = (
-        0.1,
-        0.2,
-        0.3,
-        0.4,
-        0.5,
-        0.6,
-        0.7,
-        0.8,
-        0.9,
-    )
-    _MAX_PREDICTION_LENGTH = 1024
+    # Structural limits of the original implementation. These are constants of the
+    # upstream `TimesFM3Forecaster` and are not part of the HuggingFace `config.json`
+    # (which only carries the architecture parameters read by `_create_model()`).
     _MAX_CONTEXT_LENGTH = 15360
+    # no upstream limit exists (stitching supports arbitrarily long horizons); this
+    # is a conservative cap aligned with the 1024-step long head of TimesFM 2.5
+    _MAX_PREDICTION_LENGTH = 1024
 
     def __init__(
         self,
@@ -1116,9 +1110,19 @@ class TimesFM3Model(FoundationModel):
                 ),
             )
 
+        # load the model configuration for validation, as done by `Chronos2Model`
+        self.hf_connector = HuggingFaceConnector(
+            model_name=hub_model_name,
+            model_revision=hub_model_revision,
+            local_dir=local_dir,
+        )
+        config = self.hf_connector.load_config()
+        self._model_quantiles = tuple(config["quantiles"])
+        self._max_variates = config["transformer_config"]["transformer"]["max_variates"]
+
         # by default (`likelihood=None`), model is deterministic; otherwise, only
         # QuantileRegression likelihood is supported and quantiles must be a subset of
-        # the pre-trained quantiles
+        # the quantiles used during pre-training (read from the model configuration)
         if likelihood is not None:
             if not isinstance(likelihood, QuantileRegression):
                 raise_log(
@@ -1128,12 +1132,12 @@ class TimesFM3Model(FoundationModel):
                     ),
                 )
             user_quantiles: list[float] = likelihood.quantiles
-            if not set(user_quantiles).issubset(self._DEFAULT_QUANTILES):
+            if not set(user_quantiles).issubset(self._model_quantiles):
                 raise_log(
                     ValueError(
                         f"The quantiles for QuantileRegression likelihood {user_quantiles} "
                         f"must be a subset of TimesFM 3.0 quantiles "
-                        f"{self._DEFAULT_QUANTILES}."
+                        f"{self._model_quantiles}."
                     ),
                 )
 
@@ -1145,16 +1149,29 @@ class TimesFM3Model(FoundationModel):
                 ),
             )
 
-        self.hf_connector = HuggingFaceConnector(
-            model_name=hub_model_name,
-            model_revision=hub_model_revision,
-            local_dir=local_dir,
-        )
         super().__init__(**kwargs)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
-        pl_module_params = self.pl_module_params or {}
+        # validate the number of variates early, at fit time; `_TimesFM3Module`
+        # additionally validates at prediction time in `forward()`. The train sample
+        # is `(past_target, past_cov, historic_future_cov, future_cov, static_cov,
+        # future_target)`; `historic_future_cov` and `future_cov` stem from the same
+        # future covariates series, so its width must only be counted once
+        past_target, past_cov, _, future_cov = train_sample[:4]
+        n_variates = past_target.shape[1]
+        for variate in (past_cov, future_cov):
+            if variate is not None:
+                n_variates += variate.shape[1]
+        if n_variates > self._max_variates:
+            raise_log(
+                ValueError(
+                    f"The total number of target components and covariates {n_variates} "
+                    f"exceeds the maximum number of variates {self._max_variates} "
+                    f"supported by the TimesFM 3.0 checkpoint."
+                ),
+            )
         # the architecture parameters are extracted from the HuggingFace `config.json`
+        pl_module_params = self.pl_module_params or {}
         return self.hf_connector.load_model(
             module_class=_TimesFM3Module,
             pl_module_params=pl_module_params,

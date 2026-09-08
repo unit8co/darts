@@ -500,12 +500,12 @@ class TestTimesFM3Model:
         pred = model.predict(n=4, series=series_max)
         assert pred.n_components == 32
 
-        # 33 target components exceed the 32 variates supported by the checkpoint
+        # 33 target components exceed the 32 variates supported by the checkpoint;
+        # the number of variates is validated at fit time
         series = generate_series(n_variables=33, length=64, prefix="V")
         model = make_model()
-        model.fit(series=series)
         with pytest.raises(ValueError, match="maximum number of variates"):
-            model.predict(n=4, series=series)
+            model.fit(series=series)
 
     def test_multiple_series(self):
         model = TimesFM3Model(
