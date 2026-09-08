@@ -54,9 +54,13 @@ class _TiRex2Module(PLForecastingModule):
 
     def __init__(self, tirex2_kwargs: dict[str, Any], **kwargs):
         super().__init__(**kwargs)
+
         # ForecastModel (tirex2) is not an nn.Module. Register its backbone directly so
         # Lightning can move, freeze, and serialize all pretrained parameters.
+        tirex2_kwargs["device"] = str(self.device)
         self.tirex2: TiRex2 = load_model(**tirex2_kwargs).model
+
+        # Validate against the checkpoint's maximum prediction length
         self.future_len = self.output_chunk_length + self.output_chunk_shift
         if self.future_len > self.tirex2.future_len:
             raise_log(
@@ -65,12 +69,19 @@ class _TiRex2Module(PLForecastingModule):
                     f"the checkpoint's maximum prediction length {self.tirex2.future_len}."
                 )
             )
+
+        # Validate against the checkpoint's pretrained quantiles
         all_quantiles = [round(float(q), 6) for q in self.tirex2.quantiles]
         user_quantiles = self.likelihood.quantiles if self.likelihood else [0.5]
         if not set(user_quantiles).issubset(all_quantiles):
             raise_log(
-                ValueError("The checkpoint does not support the requested quantiles.")
+                ValueError(
+                    f"The checkpoint does not support the requested quantiles: {user_quantiles}. "
+                    f"Supported quantiles are: {all_quantiles}."
+                )
             )
+
+        # Register the indices of the requested quantiles
         self.register_buffer(
             "_user_quantile_indices",
             torch.tensor([all_quantiles.index(q) for q in user_quantiles]),
@@ -117,8 +128,6 @@ class _TiRex2Module(PLForecastingModule):
 
 
 class TiRex2Model(FoundationModel):
-    _DEFAULT_QUANTILES = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
-
     def __init__(
         self,
         input_chunk_length: InputChunkLength,
@@ -373,21 +382,18 @@ class TiRex2Model(FoundationModel):
         # TODO: enable fine-tuning
         if kwargs.get("enable_finetuning"):
             raise_log(ValueError("TiRex2Model does not support fine-tuning."))
+
+        # Validate likelihood argument
         if likelihood is not None:
             if not isinstance(likelihood, QuantileRegression):
                 raise_log(
                     ValueError(
-                        "Only QuantileRegression likelihood is supported for TiRex-2."
+                        "Only QuantileRegression likelihood is supported for TiRex-2. "
+                        f"Got {type(likelihood)}."
                     )
                 )
-            # TODO: remove validation here
-            if not set(likelihood.quantiles).issubset(self._DEFAULT_QUANTILES):
-                raise_log(
-                    ValueError(
-                        "The quantiles must be a subset of TiRex-2 quantiles "
-                        f"{self._DEFAULT_QUANTILES}."
-                    )
-                )
+
+        # Validate tirex2_kwargs argument
         load_kwargs = dict(tirex2_kwargs or {})
         if "ckpt_path" in load_kwargs:
             raise_log(
@@ -402,11 +408,11 @@ class TiRex2Model(FoundationModel):
             hf_kwargs["local_dir"] = local_dir
         self.tirex2_kwargs = {
             "ckpt_path": hub_model_name,
-            "device": "cpu",
             **load_kwargs,
         }
         if hf_kwargs:
             self.tirex2_kwargs["hf_kwargs"] = hf_kwargs
+
         super().__init__(**kwargs)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:

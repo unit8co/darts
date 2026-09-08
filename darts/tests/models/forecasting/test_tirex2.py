@@ -178,13 +178,21 @@ class TestTiRex2Model:
                 "does not support fine-tuning",
             ),
             ({"likelihood": GaussianLikelihood()}, "Only QuantileRegression"),
-            ({"likelihood": QuantileRegression([0.05, 0.5, 0.95])}, "must be a subset"),
             ({"tirex2_kwargs": {"ckpt_path": "bad"}}, "via `hub_model_name`"),
         ],
     )
     def test_invalid_options(self, kwargs, match):
         with pytest.raises(ValueError, match=match):
             TiRex2Model(8, 5, **kwargs, **tfm_kwargs)
+
+    def test_checkpoint_quantiles(self, pipeline):
+        model = TiRex2Model(
+            8, 5, likelihood=QuantileRegression([0.05, 0.5, 0.95]), **tfm_kwargs
+        )
+        with pytest.raises(
+            ValueError, match="does not support the requested quantiles"
+        ):
+            model.fit(self.series)
 
     def test_checkpoint_horizon(self, pipeline):
         model = TiRex2Model(8, 30, output_chunk_shift=3, **tfm_kwargs)
