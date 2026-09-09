@@ -51,7 +51,11 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    PLModuleInput,
+    PLModuleOutput,
+    TorchTrainingSample,
+)
 from darts.utils.likelihood_models.torch import TorchLikelihood
 
 logger = get_logger(__name__)
@@ -201,23 +205,7 @@ class _NeuralForecastModule(PLForecastingModule):
         )
 
     @io_processor
-    def forward(self, x_in: PLModuleInput):
-        """PyTorch-native forward pass.
-
-        Parameters
-        ----------
-        x_in
-            Named module input with independent past, future, and static tensors.
-            Input dimensions are `(n_samples, n_time_steps, n_variables)` for time-varying tensors,
-            and `(n_samples, n_targets, n_static_covariates)` for static covariates.
-
-        Returns
-        -------
-        torch.Tensor
-            the output tensor in the shape of `(n_samples, n_time_steps, n_targets, n_likelihood_params)`,
-            where `n_likelihood_params` is the number of parameters required by the likelihood model
-            (e.g., 2 for Gaussian likelihood with mean and variance) or 1 if no likelihood is specified.
-        """
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
         # `past_target`: (B, L, C)
         # `past_covariates`: (B, L, X)
         # `historic_future_covariates`: (B, L, F)
@@ -333,7 +321,7 @@ class _NeuralForecastModule(PLForecastingModule):
             # -> (B, H, C, N)
             y_pred = y_pred.unflatten(-1, (self.n_targets, -1))
 
-        return y_pred
+        return PLModuleOutput(prediction=y_pred)
 
 
 class NeuralForecastModel(MixedCovariatesTorchModel):
@@ -767,14 +755,9 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         # `historic_future_covariates`: (L, F)
         # `future_covariates`: (H, F)
         # `static_covariates`: (C, S) or (1, S)
-        (
-            past_target,
-            past_covariates,
-            historic_future_covariates,
-            future_covariates,
-            static_covariates,
-            future_target,
-        ) = train_sample
+        past_covariates = train_sample.past_covariates
+        future_covariates = train_sample.future_covariates
+        static_covariates = train_sample.static_covariates
 
         n_past_covs, n_future_covs, n_stat_covs = 0, 0, 0
         if future_covariates is not None:

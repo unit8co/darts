@@ -34,6 +34,7 @@ from darts.models.forecasting.pl_forecasting_module import (
 from darts.utils.data.torch_datasets.utils import (
     InputChunkLength,
     PLModuleInput,
+    PLModuleOutput,
     TorchTrainingSample,
     _parse_input_chunk_length,
 )
@@ -471,22 +472,7 @@ class _Chronos2Module(PLForecastingModule):
     # We need to think about how best to implement Chronos-2 `RINorm` in `io_processor()` without
     # breaking existing behavior, while also allowing fine-tuning with normalized loss.
     @io_processor
-    def forward(self, x_in: PLModuleInput, *args, **kwargs) -> Any:
-        """Chronos-2 model forward pass.
-
-        Parameters
-        ----------
-        x_in
-            Named module input. Past-window tensors are concatenated along the component dimension.
-            Input dimensions are `(n_samples, n_time_steps, n_variables)`.
-
-        Returns
-        -------
-        torch.Tensor
-            the output tensor in the shape `(n_samples, n_time_steps, n_targets, n_quantiles)` for
-            probabilistic forecasts, or `(n_samples, n_time_steps, n_targets, 1)` for
-            deterministic forecasts (median only).
-        """
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
         # x_past is a tuple of (past_target, past_covariates, historic_future_covariates),
         # x_future is just future_covariates.
         x_past = x_in.concatenate_past_features()
@@ -567,13 +553,13 @@ class _Chronos2Module(PLForecastingModule):
         else:
             quantile_preds = quantile_preds[:, :, :, self.user_quantile_indices]
 
-        return quantile_preds
+        return PLModuleOutput(prediction=quantile_preds)
 
-    def _compute_loss(self, output, target, criterion, sample_weight):
+    def _compute_loss(self, output: PLModuleOutput, target, criterion, sample_weight):
         if self.training:
             # compute loss on pre-trained quantiles
             return self._finetuning_likelihood.compute_loss(
-                output, target, sample_weight
+                output.prediction, target, sample_weight
             )
         else:
             return super()._compute_loss(output, target, criterion, sample_weight)

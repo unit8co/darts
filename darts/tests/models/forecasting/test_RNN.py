@@ -13,6 +13,7 @@ if not TORCH_AVAILABLE:
 import torch.nn as nn
 
 from darts.models.forecasting.rnn_model import CustomRNNModule, RNNModel, _RNNModule
+from darts.utils.data.torch_datasets.utils import PLModuleOutput
 
 
 class ModuleValid1(_RNNModule):
@@ -29,9 +30,12 @@ class ModuleValid2(CustomRNNModule):
         super().__init__(**kwargs)
         self.linear = nn.Linear(self.input_size, self.target_size)
 
-    def forward(self, x_in, h=None):
+    def forward(self, x_in):
         x = self.linear(x_in.past_target)
-        return x.view(len(x), -1, self.target_size, self.nr_params), h
+        return PLModuleOutput(
+            prediction=x.view(len(x), -1, self.target_size, self.nr_params),
+            state=x_in.state,
+        )
 
 
 class TestRNNModel:

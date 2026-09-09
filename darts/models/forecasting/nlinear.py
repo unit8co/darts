@@ -12,7 +12,11 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    PLModuleInput,
+    PLModuleOutput,
+    TorchTrainingSample,
+)
 
 
 class _NLinearModule(PLForecastingModule):
@@ -107,12 +111,7 @@ class _NLinearModule(PLForecastingModule):
             )
 
     @io_processor
-    def forward(self, x_in: PLModuleInput):
-        """
-        x_in
-            Named module input. Past-window tensors are concatenated along the component dimension.
-            Input dimensions are `(n_samples, n_time_steps, n_variables)`.
-        """
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
         # x: (batch, in_len, in_dim)
         x = x_in.concatenate_past_features()
         x_future = x_in.future_covariates
@@ -181,7 +180,7 @@ class _NLinearModule(PLForecastingModule):
 
             x = x.view(batch, self.output_chunk_length, self.output_dim, self.nr_params)
 
-        return x
+        return PLModuleOutput(prediction=x)
 
 
 class NLinearModel(MixedCovariatesTorchModel):
@@ -451,10 +450,10 @@ class NLinearModel(MixedCovariatesTorchModel):
             )
 
     def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
-        # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
-        (past_target, past_covariates, _, future_covariates, static_covariates, _) = (
-            train_sample
-        )
+        past_target = train_sample.past_target
+        past_covariates = train_sample.past_covariates
+        future_covariates = train_sample.future_covariates
+        static_covariates = train_sample.static_covariates
 
         input_dim = past_target.shape[1] + sum(
             # add past covariates dim and historic future covariates dim, if present

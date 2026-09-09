@@ -20,8 +20,10 @@ from darts.logging import raise_log
 from darts.models.components.layer_norm_variants import RINorm
 from darts.utils.data.torch_datasets.utils import (
     PLModuleInput,
+    PLModuleOutput,
     TorchInferenceBatch,
     TorchTrainingBatch,
+    _normalize_train_sample_shape,
 )
 from darts.utils.likelihood_models.torch import TorchLikelihood
 from darts.utils.torch import MonteCarloDropout
@@ -37,7 +39,7 @@ def io_processor(forward):
     .. code-block:: python
 
         @io_processor
-        def forward(self, *args, **kwargs)
+        def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
             pass
     ..
 
@@ -56,12 +58,7 @@ def io_processor(forward):
         x_in = x_in.replace(past_target=self.rin(x_in.past_target.clone()))
         out = forward(self, x_in, *args, **kwargs)
         # inverse transform target output back to original scale
-        if isinstance(out, tuple):
-            # RNNModel return tuple with hidden state
-            return self.rin.inverse(out[0]), *out[1:]
-        else:
-            # all other models return only the prediction
-            return self.rin.inverse(out)
+        return out.replace(prediction=self.rin.inverse(out.prediction))
 
     return forward_wrapper
 
@@ -73,7 +70,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        train_sample_shape: tuple | None = None,
+        train_sample_shape: dict[str, tuple | None] | tuple | None = None,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
         torch_metrics: torchmetrics.Metric
         | torchmetrics.MetricCollection
@@ -173,10 +170,12 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.likelihood = likelihood
 
         # saved in checkpoint to be able to instantiate a model without calling fit_from_dataset
-        self.train_sample_shape = train_sample_shape
-        self.n_targets = (
-            train_sample_shape[0][1] if train_sample_shape is not None else 1
-        )
+        self.train_sample_shape = _normalize_train_sample_shape(train_sample_shape)
+        if self.train_sample_shape is not None:
+            past_shape = self.train_sample_shape.get("past_target")
+            self.n_targets = past_shape[1] if past_shape is not None else 1
+        else:
+            self.n_targets = 1
 
         # persist optimiser and LR scheduler parameters
         self.optimizer_cls = optimizer_cls
@@ -216,22 +215,20 @@ class PLForecastingModule(pl.LightningModule, ABC):
         return 0
 
     @abstractmethod
-    def forward(self, x_in: PLModuleInput, *args, **kwargs) -> Any:
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
         """Same as :meth:`torch.nn.Module.forward`.
 
         Parameters
         ----------
         x_in
             Named module input with independent past, future, and static tensors.
-        *args
-            Whatever you decide to pass into the forward method.
-        **kwargs
-            Keyword arguments are also possible.
+            Recurrent / cached values from a previous call are in ``x_in.state``.
 
         Returns
         -------
-        Any
-            The module's output.
+        PLModuleOutput
+            Named module output. ``prediction`` is the forecast / likelihood-parameter
+            tensor; ``state`` is carried to the next ``forward`` as ``PLModuleInput.state``.
         """
 
     def training_step(
@@ -392,37 +389,39 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.predict_likelihood_parameters = predict_likelihood_parameters
         self.pred_mc_dropout = mc_dropout
 
-    def _compute_loss(self, output, target, criterion, sample_weight):
-        # output is of shape (batch_size, n_timesteps, n_components, n_params)
+    def _compute_loss(self, output: PLModuleOutput, target, criterion, sample_weight):
+        # prediction is of shape (batch_size, n_timesteps, n_components, n_params)
+        prediction = output.prediction
         if self.likelihood:
-            loss = self.likelihood.compute_loss(output, target, sample_weight)
+            loss = self.likelihood.compute_loss(prediction, target, sample_weight)
         else:
             # If there's no likelihood, nr_params=1, and we need to squeeze out the
-            # last dimension of model output, for properly computing the loss.
-            loss = criterion(output.squeeze(dim=-1), target)
+            # last dimension of model prediction, for properly computing the loss.
+            loss = criterion(prediction.squeeze(dim=-1), target)
             if sample_weight is not None:
                 loss = (loss * sample_weight).mean()
         return loss
 
-    def _update_metrics(self, output, target, metrics):
+    def _update_metrics(self, output: PLModuleOutput, target: torch.Tensor, metrics):
         if not len(metrics):
             return
 
+        prediction = output.prediction
         if self.likelihood:
-            pred = self.likelihood.sample(output)
+            prediction = self.likelihood.sample(prediction)
         else:
             # If there's no likelihood, nr_params=1, and we need to squeeze out the
-            # last dimension of model output, for properly computing the metric.
-            pred = output.squeeze(dim=-1)
+            # last dimension of model prediction, for properly computing the metric.
+            prediction = prediction.squeeze(dim=-1)
 
         # torch metrics require 2D targets of shape (batch size * ocl, num targets)
         # contiguous() is needed because model outputs can be non-contiguous views
         # (e.g. NBEATS slices the last dimension), and some torchmetrics implementations
         # call .view() internally which requires a contiguous tensor.
         target = target.reshape(-1, self.n_targets).contiguous()
-        pred = pred.reshape(-1, self.n_targets).contiguous()
+        prediction = prediction.reshape(-1, self.n_targets).contiguous()
 
-        metrics.update(pred, target)
+        metrics.update(prediction, target)
 
     def _compute_metrics(self, metrics):
         if not len(metrics):
@@ -490,7 +489,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         else:
             return optimizer
 
-    def _produce_train_output(self, input_batch: PLModuleInput):
+    def _produce_train_output(self, input_batch: PLModuleInput) -> PLModuleOutput:
         """Generates train output.
 
         Parameters
@@ -541,7 +540,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         future_covariates = input_batch.future_covariates
         static_covariates = input_batch.static_covariates
 
-        def _build_pl_input(future_cov_slice):
+        def _build_pl_input(future_cov_slice, state=None):
             return self._process_input_batch(
                 PLModuleInput(
                     past_target=past_target,
@@ -550,6 +549,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
                     future_covariates=future_cov_slice,
                     static_covariates=static_covariates,
                     future_target=None,
+                    state=state,
                 )
             )
 
@@ -559,10 +559,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
             else None
         )
         pl_input = _build_pl_input(future_cov_slice)
-
-        out = self._produce_predict_output(x=pl_input)[
-            :, self.first_prediction_index :, :
-        ]
+        module_out = self._produce_predict_output(x=pl_input)
+        out = module_out.prediction[:, self.first_prediction_index :, :]
+        state = module_out.state
 
         batch_prediction = [out[:, :roll_size, :]]
         prediction_length = roll_size
@@ -637,10 +636,10 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 else None
             )
 
-            pl_input = _build_pl_input(future_cov_slice)
-            out = self._produce_predict_output(x=pl_input)[
-                :, self.first_prediction_index :, :
-            ]
+            pl_input = _build_pl_input(future_cov_slice, state=state)
+            module_out = self._produce_predict_output(x=pl_input)
+            out = module_out.prediction[:, self.first_prediction_index :, :]
+            state = module_out.state
 
             batch_prediction.append(out)
             prediction_length += self.output_chunk_length
@@ -669,15 +668,17 @@ class PLForecastingModule(pl.LightningModule, ABC):
     def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None or len(self._get_mc_dropout_modules()) > 0
 
-    def _produce_predict_output(self, x: PLModuleInput) -> torch.Tensor:
+    def _produce_predict_output(self, x: PLModuleInput) -> PLModuleOutput:
+        output = self(x)
+        prediction = output.prediction
         if self.likelihood:
-            output = self(x)
             if self.predict_likelihood_parameters:
-                return self.likelihood.predict_likelihood_parameters(output)
+                prediction = self.likelihood.predict_likelihood_parameters(prediction)
             else:
-                return self.likelihood.sample(output)
+                prediction = self.likelihood.sample(prediction)
         else:
-            return self(x).squeeze(dim=-1)
+            prediction = prediction.squeeze(dim=-1)
+        return output.replace(prediction=prediction)
 
     def on_save_checkpoint(self, checkpoint: dict[str, Any]) -> None:
         # we must save the dtype for correct parameter precision at loading time

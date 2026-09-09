@@ -21,7 +21,11 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    PLModuleInput,
+    PLModuleOutput,
+    TorchTrainingSample,
+)
 from darts.utils.torch import MonteCarloDropout
 
 BUILT_IN = ["relu", "gelu"]
@@ -286,15 +290,7 @@ class _TransformerModule(PLForecastingModule):
         self.decoder = nn.Linear(d_model, self.target_size * self.nr_params)
 
     @io_processor
-    def forward(self, x_in: PLModuleInput):
-        """Forward pass with teacher forcing (training) or autoregressive decoding (inference).
-
-        Parameters
-        ----------
-        x_in
-            Named module input. Past-window tensors are concatenated along the component dimension.
-            Past features have shape ``(batch_size, input_chunk_length, input_size)``.
-        """
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
         # PyTorch's nn.Transformer needs (seq_len, batch_size, features)
         x_past = x_in.concatenate_past_features()
         src = x_past.permute(1, 0, 2)
@@ -317,7 +313,9 @@ class _TransformerModule(PLForecastingModule):
                 future_target = self.rin.transform(future_target)
             tgt = F.pad(future_target.permute(1, 0, 2), pad_size)
             tgt = torch.cat([start_token, tgt], dim=0)
-            return self._decode(memory, self._embed(tgt))[:, :-1, :, :]
+            return PLModuleOutput(
+                prediction=self._decode(memory, self._embed(tgt))[:, :-1, :, :]
+            )
 
         # autoregressive: build up tgt embeddings and extend by one token per step
         tgt_emb = self._embed(start_token)
@@ -329,7 +327,7 @@ class _TransformerModule(PLForecastingModule):
             tgt_emb = torch.cat(
                 [tgt_emb, self._embed(next_token, start_pos=t + 1)], dim=0
             )
-        return torch.stack(predictions, dim=1)
+        return PLModuleOutput(prediction=torch.stack(predictions, dim=1))
 
     def _embed(self, x: torch.Tensor, start_pos: int = 0) -> torch.Tensor:
         """Project to d_model and add positional encoding starting at ``pos``."""
@@ -632,8 +630,8 @@ class TransformerModel(PastCovariatesTorchModel):
         self.custom_decoder = custom_decoder
 
     def _create_model(self, train_sample: TorchTrainingSample) -> _TransformerModule:
-        # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
-        (past_target, past_covariates, _, _, _, _) = train_sample
+        past_target = train_sample.past_target
+        past_covariates = train_sample.past_covariates
         input_dim = past_target.shape[1] + (
             past_covariates.shape[1] if past_covariates is not None else 0
         )

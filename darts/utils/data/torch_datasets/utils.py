@@ -4,12 +4,13 @@ Dataset Utils
 """
 
 from collections.abc import Sequence
-from dataclasses import dataclass, replace
-from typing import Any, NamedTuple, TypeAlias
+from dataclasses import dataclass, fields, replace
+from typing import Any, TypeAlias, overload
 
 import numpy as np
 import pandas as pd
 import torch
+from torch.utils._pytree import register_pytree_node
 
 from darts.logging import raise_log
 
@@ -19,82 +20,20 @@ except ImportError:  # pragma: no cover
     from typing_extensions import Self
 
 
-class TorchTrainingSample(NamedTuple):
-    """Model-init snapshot of feature arrays (no sample weight, no inference metadata).
-
-    Built from a training or inference dataset sample via ``to_training_sample()``.
-    Stored on the forecasting model for dimension inference and covariate-use flags.
-    """
-
-    past_target: np.ndarray | None
-    past_covariates: np.ndarray | None
-    historic_future_covariates: np.ndarray | None
-    future_covariates: np.ndarray | None
-    static_covariates: np.ndarray | None
-    future_target: np.ndarray | None
-
-    def component_dims(self) -> list[int | None]:
-        """Per-slot component dimension, or ``None`` if the slot is unused."""
-        return [s.shape[1] if s is not None else None for s in self]
-
-
-class TorchTrainingDatasetOutput(NamedTuple):
-    """Single training sample from a :class:`~darts.utils.data.TorchTrainingDataset`.
-
-    Field order is the public dataset contract. Custom datasets may still return a
-    plain 7-tuple with the same layout.
-    """
-
-    past_target: np.ndarray | None
-    past_covariates: np.ndarray | None
-    historic_future_covariates: np.ndarray | None
-    future_covariates: np.ndarray | None
-    static_covariates: np.ndarray | None
-    sample_weight: np.ndarray | None
-    future_target: np.ndarray
-
-    def to_training_sample(self) -> "TorchTrainingSample":
-        """Model-init snapshot: same feature slots, without sample weight."""
-        return TorchTrainingSample(
-            past_target=self.past_target,
-            past_covariates=self.past_covariates,
-            historic_future_covariates=self.historic_future_covariates,
-            future_covariates=self.future_covariates,
-            static_covariates=self.static_covariates,
-            future_target=self.future_target,
-        )
-
-
-class TorchInferenceDatasetOutput(NamedTuple):
-    """Single inference sample from a :class:`~darts.utils.data.TorchInferenceDataset`.
-
-    Field order is the public dataset contract. Custom datasets may still return a
-    plain 8-tuple with the same layout.
-    """
-
-    past_target: np.ndarray | None
-    past_covariates: np.ndarray | None
-    future_past_covariates: np.ndarray | None
-    historic_future_covariates: np.ndarray | None
-    future_covariates: np.ndarray | None
-    static_covariates: np.ndarray | None
-    series_schema: dict[str, Any]
-    pred_time: pd.Timestamp | int
-
-    def to_training_sample(self) -> TorchTrainingSample:
-        """Model-relevant feature slots; ``future_target`` is ``None`` at inference."""
-        return TorchTrainingSample(
-            past_target=self.past_target,
-            past_covariates=self.past_covariates,
-            historic_future_covariates=self.historic_future_covariates,
-            future_covariates=self.future_covariates,
-            static_covariates=self.static_covariates,
-            future_target=None,
-        )
+# Feature slots used for model-init snapshots, dim inference, and checkpoint shapes.
+# Order matches the historical 6-element ``train_sample_shape`` list.
+FEATURE_FIELDS: tuple[str, ...] = (
+    "past_target",
+    "past_covariates",
+    "historic_future_covariates",
+    "future_covariates",
+    "static_covariates",
+    "future_target",
+)
 
 
 @dataclass(slots=True)
-class _ReplacableBatch:
+class _Replacable:
     """Mixin providing a cheap field-update that reuses unchanged tensor references."""
 
     def replace(self, **changes) -> Self:
@@ -102,10 +41,73 @@ class _ReplacableBatch:
 
 
 @dataclass(slots=True)
-class PLModuleInput(_ReplacableBatch):
+class TorchSample(_Replacable):
+    def feature_arrays(self) -> dict[str, np.ndarray | None]:
+        """Feature slots used for model init (excludes ``sample_weight``)."""
+        return {name: getattr(self, name) for name in FEATURE_FIELDS}
+
+    def sample_shapes(self):
+        return {
+            name: arr.shape if arr is not None else None
+            for name, arr in self.feature_arrays().items()
+        }
+
+    def component_dims(self) -> dict[str, int | None]:
+        """Per-feature component dimension, or ``None`` if the slot is unused."""
+        return {
+            name: arr.shape[1] if arr is not None else None
+            for name, arr in self.feature_arrays().items()
+        }
+
+    def iter_arrays(self):
+        """Yield non-``None`` numpy arrays (for dtype checks)."""
+        for f in fields(self):
+            val = getattr(self, f.name)
+            if isinstance(val, np.ndarray):
+                yield val
+
+
+@dataclass(slots=True)
+class TorchTrainingSample(TorchSample):
+    """Single training sample from a :class:`~darts.utils.data.TorchTrainingDataset`.
+
+    Also stored on the forecasting model for dimension inference and covariate-use flags.
+    Construct by field name and omit unused optional slots.
+    """
+
+    past_target: np.ndarray | None = None
+    past_covariates: np.ndarray | None = None
+    historic_future_covariates: np.ndarray | None = None
+    future_covariates: np.ndarray | None = None
+    static_covariates: np.ndarray | None = None
+    future_target: np.ndarray | None = None
+    sample_weight: np.ndarray | None = None
+
+
+@dataclass(slots=True)
+class TorchInferenceSample(TorchSample):
+    """Single inference sample from a :class:`~darts.utils.data.TorchInferenceDataset`.
+
+    Construct by field name and omit unused optional slots.
+    """
+
+    past_target: np.ndarray | None = None
+    past_covariates: np.ndarray | None = None
+    future_past_covariates: np.ndarray | None = None
+    historic_future_covariates: np.ndarray | None = None
+    future_covariates: np.ndarray | None = None
+    static_covariates: np.ndarray | None = None
+    series_schema: dict[str, Any] | None = None
+    pred_time: pd.Timestamp | int | None = None
+
+
+@dataclass(slots=True)
+class PLModuleInput(_Replacable):
     """Model-facing batch of independent tensors.
 
     Concatenation is optional and model-specific; use the helpers below when needed.
+    ``state`` carries recurrent / cached values from a previous ``forward`` (hidden
+    state, KV cache, ...).
     """
 
     past_target: torch.Tensor
@@ -114,6 +116,7 @@ class PLModuleInput(_ReplacableBatch):
     future_covariates: torch.Tensor | None = None
     static_covariates: torch.Tensor | None = None
     future_target: torch.Tensor | None = None
+    state: Any = None
 
     def concatenate_past_features(self) -> torch.Tensor:
         """Concatenate past-window tensors along the component dimension."""
@@ -143,16 +146,29 @@ class PLModuleInput(_ReplacableBatch):
 
 
 @dataclass(slots=True)
-class TorchTrainingBatch(_ReplacableBatch):
+class PLModuleOutput(_Replacable):
+    """Model-facing ``forward`` output.
+
+    ``prediction`` is the forecast / likelihood-parameter tensor of shape
+    ``(batch, time, components, nr_params)``. ``state`` is carried to the next
+    ``forward`` as ``PLModuleInput.state``.
+    """
+
+    prediction: torch.Tensor
+    state: Any = None
+
+
+@dataclass(slots=True)
+class TorchTrainingBatch(_Replacable):
     """Collated training batch, including sample weight for the loss."""
 
     past_target: torch.Tensor
-    past_covariates: torch.Tensor | None
-    historic_future_covariates: torch.Tensor | None
-    future_covariates: torch.Tensor | None
-    static_covariates: torch.Tensor | None
-    sample_weight: torch.Tensor | None
-    future_target: torch.Tensor
+    past_covariates: torch.Tensor | None = None
+    historic_future_covariates: torch.Tensor | None = None
+    future_covariates: torch.Tensor | None = None
+    static_covariates: torch.Tensor | None = None
+    sample_weight: torch.Tensor | None = None
+    future_target: torch.Tensor | None = None
 
     def to_module_input(self, *, include_future_target: bool = True) -> PLModuleInput:
         """Share tensor references into a model-facing batch (no copies)."""
@@ -167,17 +183,17 @@ class TorchTrainingBatch(_ReplacableBatch):
 
 
 @dataclass(slots=True)
-class TorchInferenceBatch(_ReplacableBatch):
+class TorchInferenceBatch(_Replacable):
     """Collated inference batch, including series schema and prediction start times."""
 
     past_target: torch.Tensor
-    past_covariates: torch.Tensor | None
-    future_past_covariates: torch.Tensor | None
-    historic_future_covariates: torch.Tensor | None
-    future_covariates: torch.Tensor | None
-    static_covariates: torch.Tensor | None
-    series_schema: Sequence[dict[str, Any]]
-    pred_time: Sequence[pd.Timestamp] | Sequence[int]
+    past_covariates: torch.Tensor | None = None
+    future_past_covariates: torch.Tensor | None = None
+    historic_future_covariates: torch.Tensor | None = None
+    future_covariates: torch.Tensor | None = None
+    static_covariates: torch.Tensor | None = None
+    series_schema: Sequence[dict[str, Any]] | None = None
+    pred_time: Sequence[pd.Timestamp] | Sequence[int] | None = None
 
     def tile_tensors(self, batch_sample_size: int) -> Self:
         """Tile tensor fields for multi-sample (probabilistic) prediction."""
@@ -197,98 +213,164 @@ class TorchInferenceBatch(_ReplacableBatch):
         )
 
 
-def _to_training_output(sample: Sequence[Any]) -> TorchTrainingDatasetOutput:
-    """Coerce a custom-dataset tuple into :class:`TorchTrainingDatasetOutput`."""
-    if isinstance(sample, TorchTrainingDatasetOutput):
-        return sample
-    try:
-        return TorchTrainingDatasetOutput(*sample)
-    except TypeError:
-        raise_log(
-            ValueError(
-                f"Training dataset `__getitem__` must return a 7-element sample "
-                f"or `TorchTrainingDatasetOutput` (see `TorchTrainingDataset`); "
-                f"received {len(sample)} elements."
-            ),
-        )
+def _flatten_dataclass(obj):
+    flds = fields(obj)
+    return [getattr(obj, f.name) for f in flds], [f.name for f in flds]
 
 
-def _to_inference_output(sample: Sequence[Any]) -> TorchInferenceDatasetOutput:
-    """Coerce a custom-dataset tuple into :class:`TorchInferenceDatasetOutput`."""
-    if isinstance(sample, TorchInferenceDatasetOutput):
-        return sample
-    try:
-        return TorchInferenceDatasetOutput(*sample)
-    except TypeError:
-        raise_log(
-            ValueError(
-                f"Inference dataset `__getitem__` must return an 8-element sample "
-                f"or `TorchInferenceDatasetOutput` (see `TorchInferenceDataset`); "
-                f"received {len(sample)} elements."
-            ),
-        )
+def _unflatten_pl_module_input(values, context):
+    return PLModuleInput(**dict(zip(context, values)))
 
 
-def _to_training_sample(sample: Sequence[Any]) -> TorchTrainingSample:
-    """Coerce a dataset sample or stored snapshot into :class:`TorchTrainingSample`.
+def _unflatten_pl_module_output(values, context):
+    return PLModuleOutput(**dict(zip(context, values)))
 
-    Accepts a ``TorchTrainingSample``, a 6-tuple with the same layout, a training
-    dataset output (7-tuple / NamedTuple), or an inference dataset output
-    (8-tuple / NamedTuple). Other lengths raise ``TypeError``.
-    """
+
+register_pytree_node(
+    PLModuleInput,
+    flatten_fn=_flatten_dataclass,
+    unflatten_fn=_unflatten_pl_module_input,
+)
+register_pytree_node(
+    PLModuleOutput,
+    flatten_fn=_flatten_dataclass,
+    unflatten_fn=_unflatten_pl_module_output,
+)
+
+
+def _as_training_sample(sample: Any) -> TorchTrainingSample:
+    """Validate that a dataset sample is a :class:`TorchTrainingSample`."""
     if isinstance(sample, TorchTrainingSample):
         return sample
-
-    try:
-        return TorchTrainingSample(*sample)
-    except TypeError:
-        raise_log(
-            ValueError(
-                f"Expected a 6-element training sample or a `TorchTrainingSample`; "
-                f"received {len(sample)} elements."
-            )
-        )
+    raise_log(
+        ValueError(
+            "Training dataset `__getitem__` must return a `TorchTrainingSample` "
+            f"(see `TorchTrainingDataset`); received {type(sample).__name__}."
+        ),
+    )
 
 
-def _stack_batch_samples(
-    batch: list[TorchTrainingDatasetOutput | TorchInferenceDatasetOutput],
-) -> list[torch.Tensor | None | dict[str, Any] | pd.Timestamp | int]:
-    """Stack dataset samples into tensor (or other type) batch."""
-    aggregated = []
-    first_sample = batch[0]
-    for i in range(len(first_sample)):
-        elem = first_sample[i]
-        if isinstance(elem, np.ndarray):
-            aggregated.append(
-                torch.from_numpy(np.stack([sample[i] for sample in batch], axis=0))
-            )
-        elif elem is None:
-            aggregated.append(None)
-        else:
-            aggregated.append([sample[i] for sample in batch])
-    return aggregated
+def _as_inference_sample(sample: Any) -> TorchInferenceSample:
+    """Validate that a dataset sample is a :class:`TorchInferenceSample`."""
+    if isinstance(sample, TorchInferenceSample):
+        return sample
+    raise_log(
+        ValueError(
+            "Inference dataset `__getitem__` must return a `TorchInferenceSample` "
+            f"(see `TorchInferenceDataset`); received {type(sample).__name__}."
+        ),
+    )
 
 
-def _batch_collate_fn_train(
-    batch: list[TorchTrainingDatasetOutput],
-) -> TorchTrainingBatch:
-    """Stack dataset samples into a named tensor batch for training.
+def _stack_field(samples: Sequence[Any], name: str):
+    """Stack one named field across samples into a batched tensor or list."""
+    first = getattr(samples[0], name)
+    if isinstance(first, np.ndarray):
+        return torch.from_numpy(np.stack([getattr(s, name) for s in samples], axis=0))
+    if first is None:
+        return None
+    return [getattr(s, name) for s in samples]
 
-    Positional mapping from the documented dataset field order to the dataclass batches
-    consumed by the modules. Custom datasets may return plain tuples with the same layout.
+
+@overload
+def _collate_samples(
+    batch: Sequence[Any],
+    batch_cls: type[TorchTrainingBatch],
+) -> TorchTrainingBatch: ...
+
+
+@overload
+def _collate_samples(
+    batch: Sequence[Any],
+    batch_cls: type[TorchInferenceBatch],
+) -> TorchInferenceBatch: ...
+
+
+def _collate_samples(
+    batch: Sequence[Any],
+    batch_cls: type[TorchTrainingBatch] | type[TorchInferenceBatch],
+):
+    """Name-based collate from sample dataclasses into a batch dataclass."""
+    return batch_cls(**{f.name: _stack_field(batch, f.name) for f in fields(batch_cls)})
+
+
+def _batch_collate_fn_train(batch: list[TorchTrainingSample]) -> TorchTrainingBatch:
+    """Stack training samples into a named tensor batch."""
+    return _collate_samples(batch, TorchTrainingBatch)
+
+
+def _batch_collate_fn_predict(batch: list[TorchInferenceSample]) -> TorchInferenceBatch:
+    """Stack inference samples into a named tensor batch."""
+    return _collate_samples(batch, TorchInferenceBatch)
+
+
+def _normalize_train_sample_shape(
+    train_sample_shape: dict[str, tuple | None] | Sequence[tuple | None] | None,
+) -> dict[str, tuple | None] | None:
+    """Coerce ``train_sample_shape`` to a field-name dict.
+
+    Accepts the current dict format or the historical 6-element list/tuple of shapes.
     """
-    return TorchTrainingBatch(*_stack_batch_samples(batch))
+    if train_sample_shape is None:
+        return None
+    if isinstance(train_sample_shape, dict):
+        return train_sample_shape
+    return {
+        name: train_sample_shape[i] if i < len(train_sample_shape) else None
+        for i, name in enumerate(FEATURE_FIELDS)
+    }
 
 
-def _batch_collate_fn_predict(
-    batch: list[TorchInferenceDatasetOutput],
-) -> TorchInferenceBatch:
-    """Stack dataset samples into a named tensor batch for inference.
+def _train_sample_from_shapes(
+    train_sample_shape: dict[str, tuple | None] | Sequence[tuple | None],
+    dtype: np.dtype,
+) -> TorchTrainingSample:
+    """Build a mock :class:`TorchTrainingSample` from stored shapes (checkpoint load)."""
+    shape_by_name = _normalize_train_sample_shape(train_sample_shape)
+    if shape_by_name is None:
+        raise_log(ValueError("`train_sample_shape` must not be `None`."))
+    return TorchTrainingSample(**{
+        name: np.zeros(shape, dtype=dtype) if shape else None
+        for name, shape in shape_by_name.items()
+    })
 
-    Positional mapping from the documented dataset field order to the dataclass batches
-    consumed by the modules. Custom datasets may return plain tuples with the same layout.
-    """
-    return TorchInferenceBatch(*_stack_batch_samples(batch))
+
+def _flatten_state(state: Any) -> tuple[list[torch.Tensor], Any]:
+    """Flatten a nested tensor state into a list and a rebuild spec."""
+    if state is None:
+        return [], None
+    if isinstance(state, torch.Tensor):
+        return [state], "tensor"
+    if isinstance(state, tuple | list):
+        tensors: list[torch.Tensor] = []
+        child_specs = []
+        for item in state:
+            item_tensors, item_spec = _flatten_state(item)
+            tensors.extend(item_tensors)
+            child_specs.append(item_spec)
+        return tensors, (type(state).__name__, child_specs)
+    raise_log(
+        TypeError(
+            f"Unsupported module state type `{type(state).__name__}`; expected a "
+            "tensor or nested tuple/list of tensors."
+        ),
+    )
+
+
+def _unflatten_state(tensors: Sequence[torch.Tensor], spec: Any) -> Any:
+    """Rebuild a nested tensor state from a flat list and spec."""
+    if spec is None:
+        return None
+    tensors = list(tensors)
+    return _unflatten_state_from(tensors, spec)
+
+
+def _unflatten_state_from(tensors: list[torch.Tensor], spec: Any) -> Any:
+    if spec == "tensor":
+        return tensors.pop(0)
+    kind, child_specs = spec
+    children = [_unflatten_state_from(tensors, child) for child in child_specs]
+    return tuple(children) if kind == "tuple" else children
 
 
 # variable input chunk length

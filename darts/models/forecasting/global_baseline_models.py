@@ -29,7 +29,11 @@ from darts.utils.data import (
     SequentialTorchTrainingDataset,
     TorchTrainingDataset,
 )
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    PLModuleInput,
+    PLModuleOutput,
+    TorchTrainingSample,
+)
 
 
 def _repeat_along_output_chunk(x: torch.Tensor, ocl: int) -> torch.Tensor:
@@ -57,21 +61,8 @@ class _GlobalNaiveModule(PLForecastingModule, ABC):
         super().__init__(*args, **kwargs)
 
     @io_processor
-    def forward(self, x_in: PLModuleInput) -> torch.Tensor:
-        """Naive model forward pass.
-
-        Parameters
-        ----------
-        x_in
-            Named module input. Only the past target is used.
-            Input dimensions are `(batch_size, time_steps, components)`.
-
-        Returns
-        -------
-        torch.Tensor
-            The output Tensor of shape `(batch_size, output_chunk_length, output_dim, nr_params)`
-        """
-        return self._forward(x_in)
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
+        return PLModuleOutput(prediction=self._forward(x_in))
 
     @abstractmethod
     def _forward(self, x_in) -> torch.Tensor:

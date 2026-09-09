@@ -25,7 +25,11 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    PLModuleInput,
+    PLModuleOutput,
+    TorchTrainingSample,
+)
 from darts.utils.likelihood_models.torch import QuantileRegression, TorchLikelihood
 
 
@@ -449,20 +453,7 @@ class _TFTModule(PLForecastingModule):
         return mask
 
     @io_processor
-    def forward(self, x_in: PLModuleInput) -> torch.Tensor:
-        """TFT model forward pass.
-
-        Parameters
-        ----------
-        x_in
-            Named module input. Past-window tensors are concatenated along the component dimension.
-            Input dimensions are `(n_samples, n_time_steps, n_variables)`.
-
-        Returns
-        -------
-        torch.Tensor
-            the output tensor
-        """
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
         x_cont_past = x_in.concatenate_past_features()
         x_cont_future = x_in.future_covariates
         x_static = x_in.static_covariates
@@ -643,7 +634,7 @@ class _TFTModule(PLForecastingModule):
         self._static_covariate_var = static_covariate_var
         self._encoder_sparse_weights = encoder_sparse_weights
         self._decoder_sparse_weights = decoder_sparse_weights
-        return out
+        return PLModuleOutput(prediction=out)
 
 
 class TFTModel(MixedCovariatesTorchModel):
@@ -1004,14 +995,12 @@ class TFTModel(MixedCovariatesTorchModel):
 
         `variable_meta` is used in TFT to access specific variables
         """
-        (
-            past_target,
-            past_covariate,
-            historic_future_covariate,
-            future_covariate,
-            static_covariates,
-            future_target,
-        ) = train_sample
+        past_target = train_sample.past_target
+        past_covariate = train_sample.past_covariates
+        historic_future_covariate = train_sample.historic_future_covariates
+        future_covariate = train_sample.future_covariates
+        static_covariates = train_sample.static_covariates
+        future_target = train_sample.future_target
 
         if future_covariate is None and not self.add_relative_index:
             raise_log(

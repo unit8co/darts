@@ -13,6 +13,7 @@ import itertools
 import logging
 import math
 import os
+from dataclasses import fields
 from typing import Any
 from unittest.mock import patch
 
@@ -68,6 +69,8 @@ from darts.utils.data.torch_datasets.training_dataset import (
     TorchTrainingDataset,
 )
 from darts.utils.data.torch_datasets.utils import (
+    TorchInferenceSample,
+    TorchTrainingSample,
     _batch_collate_fn_predict,
     _batch_collate_fn_train,
 )
@@ -1988,11 +1991,14 @@ class TestTorchForecastingModel:
         # check that input in first batch have same dimensions
         train_sample = train_ds[0]
         val_sample = val_ds[0]
-        assert len(val_sample) == len(train_sample)
-        for x_train, x_val in zip(train_sample, val_sample):
+        assert isinstance(train_sample, TorchTrainingSample)
+        assert isinstance(val_sample, TorchTrainingSample)
+        for f in fields(train_sample):
+            x_train = getattr(train_sample, f.name)
+            x_val = getattr(val_sample, f.name)
             if x_train is None:
                 assert x_val is None
-            else:
+            elif isinstance(x_train, np.ndarray):
                 assert x_val.shape[1:] == x_train.shape[1:]
 
     @pytest.mark.parametrize("model_config", models)
@@ -2433,31 +2439,32 @@ class TestTorchForecastingModel:
             future_covariates=fc,
         )
 
-        # train sample has (past_target, past_covariates, historic_future_covariates, future_covariates,
-        # static covariates, future_target)
         train_sample = model.train_sample
-        # predict sample has (past_target, past_covariates, future_past_covariates, historic_future_covariates,
-        # future_covariates, static_covariates, target series, prediction start time)
-        valid_sample = (
-            train_sample[:2]
-            + (None,)
-            + train_sample[2:-1]
-            + (series, series.end_time() + series.freq)
+        valid_sample = TorchInferenceSample(
+            past_target=train_sample.past_target,
+            past_covariates=train_sample.past_covariates,
+            future_past_covariates=None,
+            historic_future_covariates=train_sample.historic_future_covariates,
+            future_covariates=train_sample.future_covariates,
+            static_covariates=train_sample.static_covariates,
+            series_schema=series.schema(copy=False),
+            pred_time=series.end_time() + series.freq,
         )
 
         # valid sample works
         model._validate_predict_ds_output(model.train_sample, valid_sample)
 
         with pytest.raises(ValueError) as exc:
-            model._validate_predict_ds_output(model.train_sample, valid_sample[:-1])
+            model._validate_predict_ds_output(model.train_sample, (1.0, 1.0))
         assert str(exc.value).startswith(
-            "Inference dataset `__getitem__` must return an 8-element sample"
+            "Inference dataset `__getitem__` must return a `TorchInferenceSample`"
         )
 
-        target_wrong_comp = np.empty((train_sample[0].shape[0], 2))
+        target_wrong_comp = np.empty((train_sample.past_target.shape[0], 2))
         with pytest.raises(ValueError) as exc:
             model._validate_predict_ds_output(
-                model.train_sample, (target_wrong_comp,) + valid_sample[1:]
+                model.train_sample,
+                valid_sample.replace(past_target=target_wrong_comp),
             )
         assert str(exc.value) == (
             "The provided `series` must have equal number of components as "
@@ -2467,7 +2474,7 @@ class TestTorchForecastingModel:
 
         with pytest.raises(ValueError) as exc:
             model._validate_predict_ds_output(
-                model.train_sample, (None,) + valid_sample[1:]
+                model.train_sample, valid_sample.replace(past_target=None)
             )
         assert str(exc.value).startswith(
             "This model has been trained with `past_target`; some `past_target` "
@@ -2476,19 +2483,18 @@ class TestTorchForecastingModel:
 
         with pytest.raises(ValueError) as exc:
             model._validate_predict_ds_output(
-                (None,) + model.train_sample[1:], valid_sample
+                model.train_sample.replace(past_target=None), valid_sample
             )
         assert str(exc.value).startswith(
             "This model has been trained without `past_target`; No `past_target` "
             "should be provided for prediction."
         )
 
-        # incorrect number of pred features
         pred_sample = [1.0, 1.0]
         with pytest.raises(ValueError) as exc:
             model._validate_predict_ds_output(model.train_sample, pred_sample)
         assert str(exc.value).startswith(
-            "Inference dataset `__getitem__` must return an 8-element sample"
+            "Inference dataset `__getitem__` must return a `TorchInferenceSample`"
         )
 
     def test_to_dtype(self, tmpdir_fn):
@@ -3291,7 +3297,7 @@ class TestTorchForecastingModelInputValidation:
             def __len__(self):
                 return 0
 
-            def __getitem__(self, idx):
+            def __getitem__(self, index):
                 raise IndexError
 
         model = DLinearModel(
@@ -3305,7 +3311,7 @@ class TestTorchForecastingModelInputValidation:
             def __len__(self):
                 return 0
 
-            def __getitem__(self, idx):
+            def __getitem__(self, index):
                 raise IndexError
 
         model = DLinearModel(
@@ -3319,9 +3325,9 @@ class TestTorchForecastingModelInputValidation:
         with pytest.raises(ValueError, match="too short"):
             model.fit_from_dataset(train_ds, val_dataset=EmptyDataset())
 
-    def test_fit_from_dataset_sample_tuple_length_mismatch(self):
-        class WrongTupleLenDataset(TorchTrainingDataset):
-            """Returns tuples of wrong length (8 instead of 7)."""
+    def test_fit_from_dataset_sample_type_mismatch(self):
+        class WrongTypeDataset(TorchTrainingDataset):
+            """Returns a plain tuple instead of `TorchTrainingSample`."""
 
             def __init__(self, real_ds):
                 super().__init__()
@@ -3330,8 +3336,9 @@ class TestTorchForecastingModelInputValidation:
             def __len__(self):
                 return len(self._ds)
 
-            def __getitem__(self, idx):
-                return self._ds[idx] + (np.zeros(1),)
+            def __getitem__(self, index):
+                sample = self._ds[index]
+                return (sample.past_target, sample.future_target)
 
         model = DLinearModel(
             input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs
@@ -3340,8 +3347,8 @@ class TestTorchForecastingModelInputValidation:
         real_ds = SequentialTorchTrainingDataset(
             self.series, input_chunk_length=4, output_chunk_length=2
         )
-        with pytest.raises(ValueError, match="must return a 7-element sample"):
-            model.fit_from_dataset(WrongTupleLenDataset(real_ds))
+        with pytest.raises(ValueError, match="must return a `TorchTrainingSample`"):
+            model.fit_from_dataset(WrongTypeDataset(real_ds))
 
     def test_fit_from_dataset_sample_dim_mismatch(self):
         model = DLinearModel(

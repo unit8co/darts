@@ -12,7 +12,11 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    PLModuleInput,
+    PLModuleOutput,
+    TorchTrainingSample,
+)
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -260,19 +264,7 @@ class _TideModule(PLForecastingModule):
         )
 
     @io_processor
-    def forward(self, x_in: PLModuleInput) -> torch.Tensor:
-        """TiDE model forward pass.
-        Parameters
-        ----------
-        x_in
-            Named module input with independent past, future, and static tensors.
-            Input dimensions are `(batch_size, time_steps, components)`.
-        Returns
-        -------
-        torch.Tensor
-            The output Tensor of shape `(batch_size, output_chunk_length, output_dim, nr_params)`
-        """
-
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
         x_lookback = x_in.past_target
         x_dynamic_past_covariates = x_in.past_covariates
         x_static_covariates = x_in.static_covariates
@@ -340,7 +332,7 @@ class _TideModule(PLForecastingModule):
         )  # skip.view(temporal_decoded.shape)
 
         y = y.view(-1, self.output_chunk_length, self.output_dim, self.nr_params)
-        return y
+        return PLModuleOutput(prediction=y)
 
 
 class TiDEModel(MixedCovariatesTorchModel):
@@ -641,14 +633,12 @@ class TiDEModel(MixedCovariatesTorchModel):
         self.dropout = dropout
 
     def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
-        (
-            past_target,
-            past_covariates,
-            historic_future_covariates,
-            future_covariates,
-            static_covariates,
-            future_target,
-        ) = train_sample
+        past_target = train_sample.past_target
+        past_covariates = train_sample.past_covariates
+        historic_future_covariates = train_sample.historic_future_covariates
+        future_covariates = train_sample.future_covariates
+        static_covariates = train_sample.static_covariates
+        future_target = train_sample.future_target
 
         # target, past covariates, historic future covariates
         input_dim = (

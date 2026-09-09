@@ -1,5 +1,6 @@
 import itertools
 import math
+from dataclasses import fields
 
 import numpy as np
 import pandas as pd
@@ -25,13 +26,13 @@ from darts.utils.data import (
 )
 from darts.utils.data.torch_datasets.utils import (
     TorchInferenceBatch,
-    TorchInferenceDatasetOutput,
+    TorchInferenceSample,
     TorchTrainingBatch,
-    TorchTrainingDatasetOutput,
+    TorchTrainingSample,
+    _as_inference_sample,
+    _as_training_sample,
     _batch_collate_fn_predict,
     _batch_collate_fn_train,
-    _to_inference_output,
-    _to_training_output,
 )
 
 
@@ -68,21 +69,21 @@ class TestDataset:
         else:
             assert actual == expected
 
-    def _assert_training_output(
-        self, sample: TorchTrainingDatasetOutput, **sample_expected
-    ):
-        assert isinstance(sample, TorchTrainingDatasetOutput)
-        sample_expected = TorchTrainingDatasetOutput(**sample_expected)
-        for actual, expected in zip(sample, sample_expected, strict=True):
-            self._assert_field(actual, expected)
+    def _assert_training_output(self, sample: TorchTrainingSample, **sample_expected):
+        assert isinstance(sample, TorchTrainingSample)
+        sample_expected = TorchTrainingSample(**sample_expected)
+        for f in fields(sample):
+            self._assert_field(
+                getattr(sample, f.name), getattr(sample_expected, f.name)
+            )
 
-    def _assert_inference_output(
-        self, sample: TorchInferenceDatasetOutput, **sample_expected
-    ):
-        assert isinstance(sample, TorchInferenceDatasetOutput)
-        sample_expected = TorchInferenceDatasetOutput(**sample_expected)
-        for actual, expected in zip(sample, sample_expected, strict=True):
-            self._assert_field(actual, expected)
+    def _assert_inference_output(self, sample: TorchInferenceSample, **sample_expected):
+        assert isinstance(sample, TorchInferenceSample)
+        sample_expected = TorchInferenceSample(**sample_expected)
+        for f in fields(sample):
+            self._assert_field(
+                getattr(sample, f.name), getattr(sample_expected, f.name)
+            )
 
     def _check_ds_stride(self, ds_regular, ds_stride, stride: int):
         """
@@ -95,7 +96,8 @@ class TestDataset:
         for idx, sample_stride in enumerate(ds_stride):
             sample_regular = ds_regular[idx * stride]
             assert type(sample_stride) is type(sample_regular)
-            for name in sample_stride._fields:
+            for f in fields(sample_stride):
+                name = f.name
                 self._assert_field(
                     getattr(sample_stride, name), getattr(sample_regular, name)
                 )
@@ -727,8 +729,8 @@ class TestDataset:
         )
 
         batch_reg, batch_shift = ds_reg[0], ds_shift[0]
-        assert isinstance(batch_reg, TorchInferenceDatasetOutput)
-        assert isinstance(batch_shift, TorchInferenceDatasetOutput)
+        assert isinstance(batch_reg, TorchInferenceSample)
+        assert isinstance(batch_shift, TorchInferenceSample)
 
         # shifted prediction starts 2 steps after regular prediction
         assert batch_reg.pred_time == batch_shift.pred_time - ocs * target.freq
@@ -742,7 +744,8 @@ class TestDataset:
         skip = {"pred_time", "series_schema"}
         if future_idx is not None:
             skip.add("future_covariates")
-        for name in batch_reg._fields:
+        for f in fields(batch_reg):
+            name = f.name
             if name in skip:
                 continue
             el_reg, el_shift = getattr(batch_reg, name), getattr(batch_shift, name)
@@ -2382,8 +2385,8 @@ class TestDataset:
         )
 
         batch_reg, batch_shift = ds_reg[0], ds_shift[0]
-        assert isinstance(batch_reg, TorchTrainingDatasetOutput)
-        assert isinstance(batch_shift, TorchTrainingDatasetOutput)
+        assert isinstance(batch_reg, TorchTrainingSample)
+        assert isinstance(batch_shift, TorchTrainingSample)
 
         if future_idx is not None:
             # 3rd future values of regular ds must be identical to the 1st future values of shifted dataset
@@ -2394,7 +2397,8 @@ class TestDataset:
         skip = {"sample_weight", "future_target"}
         if future_idx is not None:
             skip.add("future_covariates")
-        for name in batch_reg._fields:
+        for f in fields(batch_reg):
+            name = f.name
             if name in skip:
                 continue
             el_reg, el_shift = getattr(batch_reg, name), getattr(batch_shift, name)
@@ -2686,10 +2690,10 @@ class TestDataset:
         assert len(ds_stride) * 3 == len(ds_reg) == nb_samples
         self._check_ds_stride(ds_regular=ds_reg, ds_stride=ds_stride, stride=3)
 
-    def test_custom_training_dataset_plain_tuple(self):
-        """Custom training datasets may return a plain 7-tuple, not the named tuple."""
+    def test_custom_training_dataset_named_sample(self):
+        """Custom training datasets must return a `TorchTrainingSample` (unused fields can be omitted)."""
 
-        class PlainTupleTrainingDataset(TorchTrainingDataset):
+        class NamedTrainingDataset(TorchTrainingDataset):
             def __init__(self, wrapped):
                 super().__init__()
                 self._wrapped = wrapped
@@ -2697,8 +2701,16 @@ class TestDataset:
             def __len__(self):
                 return len(self._wrapped)
 
-            def __getitem__(self, idx):
-                return tuple(self._wrapped[idx])
+            def __getitem__(self, index):
+                sample = self._wrapped[index]
+                return TorchTrainingSample(
+                    past_target=sample.past_target,
+                    past_covariates=sample.past_covariates,
+                    historic_future_covariates=sample.historic_future_covariates,
+                    future_covariates=sample.future_covariates,
+                    static_covariates=sample.static_covariates,
+                    future_target=sample.future_target,
+                )
 
         wrapped = SequentialTorchTrainingDataset(
             series=self.target1,
@@ -2707,23 +2719,19 @@ class TestDataset:
             input_chunk_length=4,
             output_chunk_length=3,
         )
-        ds = PlainTupleTrainingDataset(wrapped)
+        ds = NamedTrainingDataset(wrapped)
 
         sample = ds[0]
-        assert type(sample) is tuple
-        assert not isinstance(sample, TorchTrainingDatasetOutput)
-        assert len(sample) == 7
-
-        named = _to_training_output(sample)
+        assert isinstance(sample, TorchTrainingSample)
         expected = wrapped[0]
         self._assert_training_output(
-            named,
+            _as_training_sample(sample),
             past_target=expected.past_target,
             past_covariates=expected.past_covariates,
             historic_future_covariates=expected.historic_future_covariates,
             future_covariates=expected.future_covariates,
             static_covariates=expected.static_covariates,
-            sample_weight=expected.sample_weight,
+            sample_weight=None,
             future_target=expected.future_target,
         )
 
@@ -2737,13 +2745,13 @@ class TestDataset:
             batch.future_target[0].numpy(), expected.future_target
         )
 
-        with pytest.raises(ValueError, match="must return a 7-element sample"):
-            _to_training_output(sample + (np.zeros(1),))
+        with pytest.raises(ValueError, match="must return a `TorchTrainingSample`"):
+            _as_training_sample((expected.past_target, expected.future_target))
 
-    def test_custom_inference_dataset_plain_tuple(self):
-        """Custom inference datasets may return a plain 8-tuple, not the named tuple."""
+    def test_custom_inference_dataset_named_sample(self):
+        """Custom inference datasets must return a `TorchInferenceSample`."""
 
-        class PlainTupleInferenceDataset(TorchInferenceDataset):
+        class NamedInferenceDataset(TorchInferenceDataset):
             def __init__(self, wrapped):
                 super().__init__()
                 self._wrapped = wrapped
@@ -2751,8 +2759,18 @@ class TestDataset:
             def __len__(self):
                 return len(self._wrapped)
 
-            def __getitem__(self, idx):
-                return tuple(self._wrapped[idx])
+            def __getitem__(self, index):
+                sample = self._wrapped[index]
+                return TorchInferenceSample(
+                    past_target=sample.past_target,
+                    past_covariates=sample.past_covariates,
+                    future_past_covariates=sample.future_past_covariates,
+                    historic_future_covariates=sample.historic_future_covariates,
+                    future_covariates=sample.future_covariates,
+                    static_covariates=sample.static_covariates,
+                    series_schema=sample.series_schema,
+                    pred_time=sample.pred_time,
+                )
 
         wrapped = SequentialTorchInferenceDataset(
             series=[self.target1, self.target2],
@@ -2761,17 +2779,13 @@ class TestDataset:
             output_chunk_length=3,
             n=1,
         )
-        ds = PlainTupleInferenceDataset(wrapped)
+        ds = NamedInferenceDataset(wrapped)
 
         sample = ds[0]
-        assert type(sample) is tuple
-        assert not isinstance(sample, TorchInferenceDatasetOutput)
-        assert len(sample) == 8
-
-        named = _to_inference_output(sample)
+        assert isinstance(sample, TorchInferenceSample)
         expected = wrapped[0]
         self._assert_inference_output(
-            named,
+            _as_inference_sample(sample),
             past_target=expected.past_target,
             past_covariates=expected.past_covariates,
             future_past_covariates=expected.future_past_covariates,
@@ -2790,8 +2804,8 @@ class TestDataset:
         )
         assert batch.pred_time[0] == expected.pred_time
 
-        with pytest.raises(ValueError, match="must return an 8-element sample"):
-            _to_inference_output(sample[:-1])
+        with pytest.raises(ValueError, match="must return a `TorchInferenceSample`"):
+            _as_inference_sample((expected.past_target, expected.pred_time))
 
     def test_get_matching_index(self):
         from darts.utils.data.utils import _get_matching_index
@@ -2852,7 +2866,7 @@ class TestVariableICLDataset:
 
         # rightmost sample (idx 0): past_start = 25 - 6 - 14 = 5, no padding
         sample = ds[0]
-        assert isinstance(sample, TorchTrainingDatasetOutput)
+        assert isinstance(sample, TorchTrainingSample)
         pt, ft = sample.past_target, sample.future_target
         assert pt.shape == (icl, 1)
         assert ft.shape == (ocl, 1)
@@ -2860,7 +2874,7 @@ class TestVariableICLDataset:
 
         # leftmost sample (idx 17): past_start = 8 - 6 - 14 = -12, pad_len = 12
         sample = ds[17]
-        assert isinstance(sample, TorchTrainingDatasetOutput)
+        assert isinstance(sample, TorchTrainingSample)
         pt, ft = sample.past_target, sample.future_target
         assert pt.shape == (icl, 1)
         assert ft.shape == (ocl, 1)
@@ -2883,7 +2897,7 @@ class TestVariableICLDataset:
         assert len(ds) == 1
 
         sample = ds[0]
-        assert isinstance(sample, TorchInferenceDatasetOutput)
+        assert isinstance(sample, TorchInferenceSample)
         pt = sample.past_target
         assert pt.shape == (icl, 1)
         # first (icl - len(series)) = 9 values should be NaN
@@ -2952,7 +2966,7 @@ class TestVariableICLDataset:
 
         # leftmost sample (most padding)
         sample = ds[len(ds) - 1]
-        assert isinstance(sample, TorchTrainingDatasetOutput)
+        assert isinstance(sample, TorchTrainingSample)
         pt, pc, hfc, fc = (
             sample.past_target,
             sample.past_covariates,

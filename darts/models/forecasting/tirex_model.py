@@ -26,6 +26,7 @@ from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.utils.data.torch_datasets.utils import (
     InputChunkLength,
     PLModuleInput,
+    PLModuleOutput,
     TorchTrainingSample,
 )
 from darts.utils.likelihood_models.torch import QuantileRegression
@@ -84,21 +85,7 @@ class _TiRexModule(PLForecastingModule):
         else:
             self._finetuning_likelihood = None
 
-    def forward(self, x_in: PLModuleInput, *args, **kwargs):
-        """Forward pass returning quantile predictions shaped ``(batch, time, n_targets, n_quantiles)``.
-
-        During training with fine-tuning enabled, all 9 pre-trained quantiles are returned
-        for the loss. At prediction time, only user-specified quantiles are returned.
-
-        Parameters
-        ----------
-        x_in
-            Named module input. Only the past target is used.
-        *args
-            Positional arguments passed to the forward method.
-        **kwargs
-            Optional keyword arguments.
-        """
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
         # Dimension notation in comments below:
         #   B: batch size
         #   L: input chunk length
@@ -134,13 +121,17 @@ class _TiRexModule(PLForecastingModule):
             )
 
         # unfold batch dim and permute to Darts' output shape: (B, T, C, N or Q)
-        return q_sel.unflatten(dim=0, sizes=(-1, self.n_targets)).permute(0, 2, 1, 3)
+        return PLModuleOutput(
+            prediction=q_sel.unflatten(dim=0, sizes=(-1, self.n_targets)).permute(
+                0, 2, 1, 3
+            )
+        )
 
-    def _compute_loss(self, output, target, criterion, sample_weight):
+    def _compute_loss(self, output: PLModuleOutput, target, criterion, sample_weight):
         if self.training and self._enable_finetuning:
             # compute loss on pre-trained quantiles
             return self._finetuning_likelihood.compute_loss(
-                output, target, sample_weight
+                output.prediction, target, sample_weight
             )
         return super()._compute_loss(output, target, criterion, sample_weight)
 

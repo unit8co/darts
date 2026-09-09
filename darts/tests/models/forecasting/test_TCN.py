@@ -119,14 +119,14 @@ class TestTCNModel:
                     )
                     zero_output = model.model.forward(
                         PLModuleInput(past_target=input_tensor)
-                    )[0, -1, 0]
+                    ).prediction[0, -1, 0]
 
                     # test for full coverage
                     for i in range(input_chunk_length):
                         input_tensor[0, i, 0] = 1
                         curr_output = model.model.forward(
                             PLModuleInput(past_target=input_tensor)
-                        )[0, -1, 0]
+                        ).prediction[0, -1, 0]
                         assert zero_output != curr_output
                         input_tensor[0, i, 0] = 0
 
@@ -167,7 +167,7 @@ class TestTCNModel:
                     )
                     zero_output = model_2.model.forward(
                         PLModuleInput(past_target=input_tensor)
-                    )[0, -1, 0]
+                    ).prediction[0, -1, 0]
 
                     # test for incomplete coverage
                     uncovered_input_found = False
@@ -177,7 +177,7 @@ class TestTCNModel:
                         input_tensor[0, i, 0] = 1
                         curr_output = model_2.model.forward(
                             PLModuleInput(past_target=input_tensor)
-                        )[0, -1, 0]
+                        ).prediction[0, -1, 0]
                         if zero_output == curr_output:
                             uncovered_input_found = True
                             break

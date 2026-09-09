@@ -21,6 +21,7 @@ import onnxruntime as ort
 from darts.models import (
     BlockRNNModel,
     NHiTSModel,
+    RNNModel,
     TiDEModel,
 )
 
@@ -205,5 +206,24 @@ class TestOnnx:
             if name in [inp.name for inp in list(ort_session.get_inputs())]:
                 ort_inputs[name] = arr
 
-        # output has shape (batch, output_chunk_length, n components, 1 or n likelihood params)
+        # output[0] (`prediction`) has shape (batch, output_chunk_length, n components, 1 or n likelihood params)
         return ort_session.run(None, ort_inputs)
+
+    def test_onnx_rnn_export(self, tmpdir_fn):
+        """RNN exports through the same wrapper: named features plus flattened state."""
+        model = RNNModel(
+            input_chunk_length=4,
+            training_length=6,
+            n_epochs=1,
+            **tfm_kwargs_dev,
+        )
+        model.fit(series=self.ts_tg)
+        onnx_filename = f"test_onnx_{model.model_name}.onnx"
+        model.to_onnx(onnx_filename)
+        assert os.path.exists(onnx_filename)
+
+        onnx_model = onnx.load(onnx_filename)
+        onnx.checker.check_model(onnx_model)
+        output_names = [node.name for node in onnx_model.graph.output]
+        assert "prediction" in output_names
+        assert any(name.startswith("state_") for name in output_names)

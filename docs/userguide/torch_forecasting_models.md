@@ -374,7 +374,7 @@ For a comprehensive walkthrough of fine-tuning Torch Forecasting Models and Foun
 
 #### Exporting model to ONNX format for inference
 
-It is also possible to export the model weights to the ONNX format to run inference in a lightweight environment. The example below works for any `TorchForecastingModel` except `RNNModel` and for optional usage of past, future and / or static covariates. Note that all series and covariates must extend far enough into the past (`input_chunk_length)` and future (`output_chunk_length`) relative to the end of the target `series`. It will not be possible to forecast a horizon `n > output_chunk_length` without implementing the auto-regression logic.
+It is also possible to export the model weights to the ONNX format to run inference in a lightweight environment. The example below works for any `TorchForecastingModel`, including `RNNModel`. Feature inputs are named after the module fields (`past_target`, `past_covariates`, ...). Recurrent models also export flattened `state_*` inputs/outputs; pass zeros for the first step and feed the previous `state_*` outputs back on subsequent steps. Note that all series and covariates must extend far enough into the past (`input_chunk_length`) and future (`output_chunk_length`) relative to the end of the target `series`. It will not be possible to forecast a horizon `n > output_chunk_length` without implementing the auto-regression logic.
 
 ```python
 model = SomeTorchForecastingModel(...)
@@ -388,19 +388,16 @@ model.to_onnx(onnx_filename, export_params=True)
 Now, to load the model and predict steps after the end of the series:
 
 ```python
-from typing import Optional
 import onnx
 import onnxruntime as ort
-import numpy as np
-from darts import TimeSeries
-from darts.utils.onnx_utils.py import prepare_onnx_inputs
+from darts.utils.onnx_utils import prepare_onnx_inputs
 
 onnx_model = onnx.load(onnx_filename)
 onnx.checker.check_model(onnx_model)
 ort_session = ort.InferenceSession(onnx_filename)
 
 # use helper function to extract the features from the series
-past_feats, future_feats, static_feats = prepare_onnx_inputs(
+onnx_inputs = prepare_onnx_inputs(
     model=model,
     series=series,
     past_covariates=ts_past,
@@ -409,11 +406,11 @@ past_feats, future_feats, static_feats = prepare_onnx_inputs(
 
 # extract only the features expected by the model
 ort_inputs = {}
-for name, arr in zip(['x_past', 'x_future', 'x_static'], [past_feats, future_feats, static_feats]):
-    if name in [inp.name for inp in list(ort_session.get_inputs())]:
-        ort_inputs[name] = arr
+for inp in ort_session.get_inputs():
+    if inp.name in onnx_inputs:
+        ort_inputs[inp.name] = onnx_inputs[inp.name]
 
-# output has shape (batch, output_chunk_length, n components, 1 or n likelihood params)
+# output[0] (`prediction`) has shape (batch, output_chunk_length, n components, 1 or n likelihood params)
 ort_out = ort_session.run(None, ort_inputs)
 ```
 
@@ -575,7 +572,10 @@ impacts the time required to train the model for one epoch. You have two options
 * Specify some `max_samples_per_ts` argument to the `fit()` function. This will use only the most recent `max_samples_per_ts` samples
 per `TimeSeries` for training.
 * If this option does not do what you want, you can implement your own `TorchTrainingDataset` instance, and define
-how to slice your `TimeSeries` for training yourself. We suggest to have a look at [this submodule](https://github.com/unit8co/darts/tree/master/darts/utils/data)
+how to slice your `TimeSeries` for training yourself. Each `__getitem__` must return a `TorchTrainingSample`
+constructed by field name (omit unused optional slots). Custom modules implement
+`forward(x_in: PLModuleInput) -> PLModuleOutput`. Recurrent / cached values go in `x_in.state` and
+`output.state`. We suggest to have a look at [this submodule](https://github.com/unit8co/darts/tree/master/darts/utils/data)
 to see examples of how to do it.
 
 

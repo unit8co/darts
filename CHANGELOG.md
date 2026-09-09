@@ -9,6 +9,10 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 
+**Breaking changes** 🔴
+
+- Torch datasets now return `TorchTrainingSample` / `TorchInferenceSample` dataclasses (constructed by field name) instead of positional named tuples or plain 7/8-tuples. Custom datasets must return these dataclasses. Module `forward()` now takes `PLModuleInput` and must return `PLModuleOutput` (`prediction` plus optional `state`). Recurrent hidden state is no longer an extra `forward` argument or tuple return. `train_sample_shape` is a field-name dict (old 6-element checkpoint lists still load). ONNX export uses named feature inputs (`past_target`, ...) and a `prediction` output, plus flattened `state_*` I/O for recurrent models.
+
 **Improved**
 
 **Fixed**
