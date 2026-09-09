@@ -33,6 +33,7 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.utils.data.torch_datasets.utils import (
     InputChunkLength,
+    ModuleStage,
     PLModuleInput,
     PLModuleOutput,
     TorchTrainingSample,
@@ -548,7 +549,7 @@ class _Chronos2Module(PLForecastingModule):
 
         # during training (fine-tuning), output all pre-trained quantiles for loss;
         # during prediction, output only user-specified quantiles
-        if self.training:
+        if x_in.stage is ModuleStage.TRAIN:
             quantile_preds = quantile_preds[:, :, :, self._finetuning_quantile_indices]
         else:
             quantile_preds = quantile_preds[:, :, :, self.user_quantile_indices]

@@ -24,6 +24,7 @@ from darts.models.forecasting.pl_forecasting_module import (
 from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
 from darts.utils.data import ShiftedTorchTrainingDataset
 from darts.utils.data.torch_datasets.utils import (
+    ModuleStage,
     PLModuleInput,
     PLModuleOutput,
     TorchTrainingSample,
@@ -86,11 +87,6 @@ class CustomRNNModule(PLForecastingModule, ABC):
         self.nr_params = nr_params
         self.dropout = dropout
 
-    @property
-    def first_prediction_index(self) -> int:
-        """Use the last RNN output after a multi-step forward during prediction."""
-        return -1
-
     @io_processor
     @abstractmethod
     def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
@@ -100,7 +96,9 @@ class CustomRNNModule(PLForecastingModule, ABC):
         ----------
         x_in
             Named module input. For RNN models, future covariates are remapped into the past cov slot.
-            The previous hidden state is in ``x_in.state``.
+            The previous hidden state is in ``x_in.state``. Train / val
+            (``x_in.stage is not ModuleStage.PREDICT``) uses the shifted-dataset
+            layout; predict / ONNX applies the inference covariate shift.
 
         Returns
         -------
@@ -169,7 +167,7 @@ class _RNNModule(CustomRNNModule):
         historic_future_covariates = x_in.historic_future_covariates
         future_covariates = x_in.future_covariates
 
-        if not self.trainer.predicting:
+        if x_in.stage is not ModuleStage.PREDICT:
             # during training, sanity checking and evaluation, RNN receives a ShiftedDataset sample;
             # concatenate `past_target` with `future_covariates` (they have the same length due to
             # shifted dataset)
@@ -212,7 +210,10 @@ class _RNNModule(CustomRNNModule):
         # predictions shape (batch_size, input_length, target_size)
         predictions = predictions.view(batch_size, -1, self.target_size, self.nr_params)
 
-        # returns outputs for all inputs, only the last one is needed for prediction time
+        # during prediction mode, only the last prediction is required;
+        # otherwise, return outputs for all inputs
+        if x_in.stage is ModuleStage.PREDICT:
+            predictions = predictions[:, -1:, :]
         return PLModuleOutput(prediction=predictions, state=last_hidden_state)
 
 

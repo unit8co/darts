@@ -19,6 +19,7 @@ from darts.models.forecasting.pl_forecasting_module import (
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.utils.data import ShiftedTorchTrainingDataset, TorchTrainingDataset
 from darts.utils.data.torch_datasets.utils import (
+    ModuleStage,
     PLModuleInput,
     PLModuleOutput,
     TorchTrainingSample,
@@ -255,11 +256,9 @@ class _TCNModule(PLForecastingModule):
             batch_size, self.input_chunk_length, self.target_size, self.nr_params
         )
 
+        if x_in.stage is ModuleStage.PREDICT:
+            x = x[:, -(self.output_chunk_length or 0) :, :]
         return PLModuleOutput(prediction=x)
-
-    @property
-    def first_prediction_index(self) -> int:
-        return -self.output_chunk_length
 
 
 class TCNModel(PastCovariatesTorchModel):

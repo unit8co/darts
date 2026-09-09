@@ -5,6 +5,7 @@ Dataset Utils
 
 from collections.abc import Sequence
 from dataclasses import dataclass, fields, replace
+from enum import Enum
 from typing import Any, TypeAlias, overload
 
 import numpy as np
@@ -30,6 +31,26 @@ FEATURE_FIELDS: tuple[str, ...] = (
     "static_covariates",
     "future_target",
 )
+
+
+class ModuleStage(str, Enum):
+    """Loop role for a :class:`PLModuleInput`.
+
+    Set at the batch-to-module boundary. ``forward()`` should branch on this
+    instead of ``self.trainer``. Keep ``nn.Module.training`` for dropout /
+    BatchNorm.
+
+    - ``TRAIN``: ``training_step``
+    - ``VALIDATE``: ``validation_step`` and Lightning sanity checking
+    - ``PREDICT``: ``predict_step``, ONNX export, and raw ``forward()`` calls
+
+    Defaults to ``PREDICT`` so exported and standalone calls take the inference
+    path.
+    """
+
+    TRAIN = "train"
+    VALIDATE = "val"
+    PREDICT = "pred"
 
 
 @dataclass(slots=True)
@@ -107,7 +128,8 @@ class PLModuleInput(_Replacable):
 
     Concatenation is optional and model-specific; use the helpers below when needed.
     ``state`` carries recurrent / cached values from a previous ``forward`` (hidden
-    state, KV cache, ...).
+    state, KV cache, ...). ``stage`` is the Lightning loop role (train / validate /
+    predict); it is a Python value, not an ONNX graph input.
     """
 
     past_target: torch.Tensor
@@ -117,6 +139,7 @@ class PLModuleInput(_Replacable):
     static_covariates: torch.Tensor | None = None
     future_target: torch.Tensor | None = None
     state: Any = None
+    stage: ModuleStage = ModuleStage.PREDICT
 
     def concatenate_past_features(self) -> torch.Tensor:
         """Concatenate past-window tensors along the component dimension."""
@@ -170,7 +193,7 @@ class TorchTrainingBatch(_Replacable):
     sample_weight: torch.Tensor | None = None
     future_target: torch.Tensor | None = None
 
-    def to_module_input(self) -> PLModuleInput:
+    def to_module_input(self, stage: ModuleStage = ModuleStage.TRAIN) -> PLModuleInput:
         """Share tensor references into a model-facing batch (no copies)."""
         return PLModuleInput(
             past_target=self.past_target,
@@ -179,6 +202,7 @@ class TorchTrainingBatch(_Replacable):
             future_covariates=self.future_covariates,
             static_covariates=self.static_covariates,
             future_target=self.future_target,
+            stage=stage,
         )
 
 
@@ -218,8 +242,24 @@ def _flatten_dataclass(obj):
     return [getattr(obj, f.name) for f in flds], [f.name for f in flds]
 
 
+# ``stage`` is a Python loop flag, not a graph tensor; keep it in pytree context.
+_PL_MODULE_INPUT_TENSOR_FIELDS: tuple[str, ...] = tuple(
+    f.name for f in fields(PLModuleInput) if f.name != "stage"
+)
+
+
+def _flatten_pl_module_input(obj: PLModuleInput):
+    return (
+        [getattr(obj, name) for name in _PL_MODULE_INPUT_TENSOR_FIELDS],
+        obj.stage,
+    )
+
+
 def _unflatten_pl_module_input(values, context):
-    return PLModuleInput(**dict(zip(context, values)))
+    return PLModuleInput(
+        **dict(zip(_PL_MODULE_INPUT_TENSOR_FIELDS, values)),
+        stage=context,
+    )
 
 
 def _unflatten_pl_module_output(values, context):
@@ -228,7 +268,7 @@ def _unflatten_pl_module_output(values, context):
 
 register_pytree_node(
     PLModuleInput,
-    flatten_fn=_flatten_dataclass,
+    flatten_fn=_flatten_pl_module_input,
     unflatten_fn=_unflatten_pl_module_input,
 )
 register_pytree_node(

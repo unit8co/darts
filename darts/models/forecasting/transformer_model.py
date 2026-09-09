@@ -22,6 +22,7 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.utils.data.torch_datasets.utils import (
+    ModuleStage,
     PLModuleInput,
     PLModuleOutput,
     TorchTrainingSample,
@@ -301,7 +302,7 @@ class _TransformerModule(PLForecastingModule):
         memory = self.transformer.encoder(self._embed(src))
 
         # decoder
-        if self.training:
+        if x_in.stage is ModuleStage.TRAIN:
             # Ground-truth future target values for teacher forcing during training.
             # Shape: ``(batch_size, output_chunk_length, target_size)``.
             # ``None`` during validation and inference.

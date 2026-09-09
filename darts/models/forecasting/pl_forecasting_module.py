@@ -19,6 +19,7 @@ import torchmetrics
 from darts.logging import raise_log
 from darts.models.components.layer_norm_variants import RINorm
 from darts.utils.data.torch_datasets.utils import (
+    ModuleStage,
     PLModuleInput,
     PLModuleOutput,
     TorchInferenceBatch,
@@ -92,9 +93,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         - :func:`PLForecastingModule.__init__()`
         - :func:`PLForecastingModule.forward()`
-        - :func:`PLForecastingModule._process_input_batch()`
-        - :func:`PLForecastingModule._produce_train_output()`
-        - :func:`PLForecastingModule._get_batch_prediction()`
 
         In subclass `MyModel`'s :func:`__init__` function call ``super(MyModel, self).__init__(**kwargs)`` where
         ``kwargs`` are the parameters of :class:`PLForecastingModule`.
@@ -207,13 +205,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.predict_likelihood_parameters: bool | None = None
         self.pred_mc_dropout: bool | None = None
 
-    @property
-    def first_prediction_index(self) -> int:
-        """
-        Returns the index of the first predicted within the output of self.model.
-        """
-        return 0
-
     @abstractmethod
     def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
         """Same as :meth:`torch.nn.Module.forward`.
@@ -223,6 +214,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
         x_in
             Named module input with independent past, future, and static tensors.
             Recurrent / cached values from a previous call are in ``x_in.state``.
+            ``x_in.stage`` is the loop role (train / validate / predict); branch on
+            it instead of ``self.trainer``. Keep ``self.training`` for dropout /
+            BatchNorm.
 
         Returns
         -------
@@ -237,7 +231,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         """performs the training step"""
         return self._train_val_step(
             batch=train_batch,
-            name="train",
+            stage=ModuleStage.TRAIN,
             criterion=self.train_criterion,
             metrics=self.train_metrics,
         )
@@ -248,7 +242,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         """performs the validation step"""
         return self._train_val_step(
             batch=val_batch,
-            name="val",
+            stage=ModuleStage.VALIDATE,
             criterion=self.val_criterion,
             metrics=self.val_metrics,
         )
@@ -256,17 +250,17 @@ class PLForecastingModule(pl.LightningModule, ABC):
     def _train_val_step(
         self,
         batch: TorchTrainingBatch,
-        name: str,
+        stage: ModuleStage,
         criterion,
         metrics,
     ) -> torch.Tensor:
         """performs a training or validation step"""
-        output = self(batch.to_module_input())
+        output = self(batch.to_module_input(stage=stage))
         loss = self._compute_loss(
             output, batch.future_target, criterion, batch.sample_weight
         )
         self.log(
-            f"{name}_loss",
+            f"{stage.value}_loss",
             loss,
             batch_size=batch.past_target.shape[0],
             prog_bar=True,
@@ -522,6 +516,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 static_covariates=static_covariates,
                 future_target=None,
                 state=state,
+                stage=ModuleStage.PREDICT,
             )
 
         future_cov_slice = (
@@ -531,7 +526,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         )
         pl_input = _build_pl_input(future_cov_slice)
         module_out = self._produce_predict_output(x=pl_input)
-        out = module_out.prediction[:, self.first_prediction_index :, :]
+        out = module_out.prediction
         state = module_out.state
 
         batch_prediction = [out[:, :roll_size, :]]
@@ -609,7 +604,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
             pl_input = _build_pl_input(future_cov_slice, state=state)
             module_out = self._produce_predict_output(x=pl_input)
-            out = module_out.prediction[:, self.first_prediction_index :, :]
+            out = module_out.prediction
             state = module_out.state
 
             batch_prediction.append(out)

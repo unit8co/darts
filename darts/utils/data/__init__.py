@@ -30,6 +30,9 @@ if TYPE_CHECKING:
         TorchTrainingDataset as TorchTrainingDataset,
     )
     from darts.utils.data.torch_datasets.utils import (
+        ModuleStage as ModuleStage,
+    )
+    from darts.utils.data.torch_datasets.utils import (
         PLModuleInput as PLModuleInput,
     )
     from darts.utils.data.torch_datasets.utils import (
@@ -86,6 +89,10 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
         "(Py)Torch",
     ),
     "TorchInferenceBatch": (
+        "darts.utils.data.torch_datasets.utils",
+        "(Py)Torch",
+    ),
+    "ModuleStage": (
         "darts.utils.data.torch_datasets.utils",
         "(Py)Torch",
     ),

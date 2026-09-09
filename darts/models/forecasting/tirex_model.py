@@ -25,6 +25,7 @@ from darts.models.forecasting.foundation_model import FoundationModel
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.utils.data.torch_datasets.utils import (
     InputChunkLength,
+    ModuleStage,
     PLModuleInput,
     PLModuleOutput,
     TorchTrainingSample,
@@ -101,7 +102,7 @@ class _TiRexModule(PLForecastingModule):
         # fold target components into batch dim for multivariate support: (B, L, C) -> (B*C, L)
         x_past = x_past.transpose(1, 2).flatten(start_dim=0, end_dim=1)
 
-        if self.training and self._enable_finetuning:
+        if x_in.stage is ModuleStage.TRAIN and self._enable_finetuning:
             # call _forecast_tensor directly to keep gradients flowing — _forecast_quantiles
             # is decorated with @torch.inference_mode() which would block backprop
             # output: (B*C, Q, H) -> swapaxes -> (B*C, H, Q) -> slice output shift -> (B*C, T, Q)

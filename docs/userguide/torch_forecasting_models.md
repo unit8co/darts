@@ -575,7 +575,8 @@ per `TimeSeries` for training.
 how to slice your `TimeSeries` for training yourself. Each `__getitem__` must return a `TorchTrainingSample`
 constructed by field name (omit unused optional slots). Custom modules implement
 `forward(x_in: PLModuleInput) -> PLModuleOutput`. Recurrent / cached values go in `x_in.state` and
-`output.state`. We suggest to have a look at [this submodule](https://github.com/unit8co/darts/tree/master/darts/utils/data)
+`output.state`. Train / val / predict layout differences should branch on `x_in.stage`
+(`ModuleStage`) rather than `self.trainer`. We suggest to have a look at [this submodule](https://github.com/unit8co/darts/tree/master/darts/utils/data)
 to see examples of how to do it.
 
 

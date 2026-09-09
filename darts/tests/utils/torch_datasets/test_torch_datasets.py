@@ -16,6 +16,9 @@ if not TORCH_AVAILABLE:
         allow_module_level=True,
     )
 
+import torch
+from torch.utils._pytree import tree_flatten, tree_unflatten
+
 from darts.utils.data import (
     HorizonBasedTorchTrainingDataset,
     SequentialTorchInferenceDataset,
@@ -25,6 +28,8 @@ from darts.utils.data import (
     TorchTrainingDataset,
 )
 from darts.utils.data.torch_datasets.utils import (
+    ModuleStage,
+    PLModuleInput,
     TorchInferenceBatch,
     TorchInferenceSample,
     TorchTrainingBatch,
@@ -2835,6 +2840,28 @@ class TestDataset:
         )
         cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
         assert _get_matching_index(target, cov, idx=15) == 5
+
+    def test_pl_module_input_stage(self):
+        """`stage` defaults to predict, is set on train batches, and is not a pytree leaf."""
+        past = torch.zeros(2, 3, 1)
+        x_default = PLModuleInput(past_target=past)
+        assert x_default.stage is ModuleStage.PREDICT
+
+        batch = TorchTrainingBatch(past_target=past, future_target=torch.zeros(2, 1, 1))
+        assert batch.to_module_input().stage is ModuleStage.TRAIN
+        assert (
+            batch.to_module_input(stage=ModuleStage.VALIDATE).stage
+            is ModuleStage.VALIDATE
+        )
+
+        x_train = PLModuleInput(past_target=past, stage=ModuleStage.TRAIN)
+        leaves, spec = tree_flatten(x_train)
+        assert ModuleStage.TRAIN not in leaves
+        assert all(leaf is None or torch.is_tensor(leaf) for leaf in leaves)
+        restored = tree_unflatten(leaves, spec)
+        assert isinstance(restored, PLModuleInput)
+        assert restored.stage is ModuleStage.TRAIN
+        assert restored.past_target is past
 
 
 def generate_series(n_variables: int, length: int, prefix: str):

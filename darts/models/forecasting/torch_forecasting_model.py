@@ -59,6 +59,7 @@ from darts.utils.data import (
 )
 from darts.utils.data.torch_datasets._data_module import TorchDataModule
 from darts.utils.data.torch_datasets.utils import (
+    ModuleStage,
     PLModuleInput,
     TorchInferenceSample,
     TorchTrainingSample,
@@ -950,6 +951,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             static_covariates=_randomize(train_sample_shape.get("static_covariates")),
             # future_target is excluded: ONNX export traces the inference path only
             future_target=None,
+            stage=ModuleStage.PREDICT,
         )
 
         wrapper, example_inputs, input_names, output_names = prepare_onnx_export(

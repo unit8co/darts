@@ -11,6 +11,7 @@ import torch.nn as nn
 
 from darts import TimeSeries
 from darts.utils.data.torch_datasets.utils import (
+    ModuleStage,
     PLModuleInput,
     _flatten_state,
     _unflatten_state,
@@ -54,8 +55,8 @@ class _ONNXExportWrapper(nn.Module):
             if self.state_names
             else None
         )
-        x_in = PLModuleInput(**values, state=state)
-        out = self.pl_module(self.pl_module._process_input_batch(x_in))
+        x_in = PLModuleInput(**values, state=state, stage=ModuleStage.PREDICT)
+        out = self.pl_module(x_in)
         if not self.state_names:
             return out.prediction
         state_out, _ = _flatten_state(out.state)
@@ -79,7 +80,7 @@ def prepare_onnx_export(
 
     pl_module.eval()
     with torch.no_grad():
-        dummy_out = pl_module(pl_module._process_input_batch(input_sample))
+        dummy_out = pl_module(input_sample)
 
     state_tensors, state_spec = _flatten_state(dummy_out.state)
     state_names = [f"state_{i}" for i in range(len(state_tensors))]
