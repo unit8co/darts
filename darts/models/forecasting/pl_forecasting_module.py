@@ -261,9 +261,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         metrics,
     ) -> torch.Tensor:
         """performs a training or validation step"""
-        output = self._produce_train_output(
-            batch.to_module_input(include_future_target=name == "train"),
-        )
+        output = self._produce_train_output(batch.to_module_input())
         loss = self._compute_loss(
             output, batch.future_target, criterion, batch.sample_weight
         )

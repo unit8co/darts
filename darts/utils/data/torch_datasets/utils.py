@@ -170,7 +170,7 @@ class TorchTrainingBatch(_Replacable):
     sample_weight: torch.Tensor | None = None
     future_target: torch.Tensor | None = None
 
-    def to_module_input(self, *, include_future_target: bool = True) -> PLModuleInput:
+    def to_module_input(self) -> PLModuleInput:
         """Share tensor references into a model-facing batch (no copies)."""
         return PLModuleInput(
             past_target=self.past_target,
@@ -178,7 +178,7 @@ class TorchTrainingBatch(_Replacable):
             historic_future_covariates=self.historic_future_covariates,
             future_covariates=self.future_covariates,
             static_covariates=self.static_covariates,
-            future_target=self.future_target if include_future_target else None,
+            future_target=self.future_target,
         )
 
 

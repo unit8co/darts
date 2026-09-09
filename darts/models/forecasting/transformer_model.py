@@ -297,16 +297,16 @@ class _TransformerModule(PLForecastingModule):
         pad_size = (0, self.input_size - self.target_size)
         start_token = src[-1:, :, :]
 
-        # Ground-truth future target values for teacher forcing during training.
-        # Shape: ``(batch_size, output_chunk_length, target_size)``.
-        # ``None`` during validation and inference.
-        future_target = x_in.future_target
-
         # encoder
         memory = self.transformer.encoder(self._embed(src))
 
         # decoder
-        if future_target is not None:
+        if self.training:
+            # Ground-truth future target values for teacher forcing during training.
+            # Shape: ``(batch_size, output_chunk_length, target_size)``.
+            # ``None`` during validation and inference.
+            future_target = x_in.future_target
+
             # training: use teacher forcing where ground-truth future targets are fed to the decoder
             if self.rin is not None:
                 # with RIN, io_processor only normalized past targets; apply the same to future targets
