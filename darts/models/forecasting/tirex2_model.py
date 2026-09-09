@@ -142,7 +142,14 @@ class TiRex2Model(FoundationModel):
     ):
         """TiRex-2 foundation model for zero-shot multivariate forecasting.
 
-        Wraps the pretrained xLSTM model from Podest et al. (2026) [1]_ using the optional `tirex-2
+        Compared to TiRex-1, TiRex-2 offers several advantages:
+
+        - Native support for multivariate forecasting with covariates.
+        - Stronger results on the public benchmarks.
+        - Efficient memory usage and inference speed.
+        - A permissive Apache 2.0 license, which allows commercial use.
+
+        This wraps the pretrained xLSTM model from Podest et al. (2026) [1]_ using the `tirex-2
         <https://pypi.org/project/tirex-2/>`_ package (Python 3.11 or newer). Please install it alongside
         ``darts[torch]``.
 
