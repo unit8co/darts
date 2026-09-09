@@ -261,7 +261,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         metrics,
     ) -> torch.Tensor:
         """performs a training or validation step"""
-        output = self._produce_train_output(batch.to_module_input())
+        output = self(batch.to_module_input())
         loss = self._compute_loss(
             output, batch.future_target, criterion, batch.sample_weight
         )
@@ -487,31 +487,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
         else:
             return optimizer
 
-    def _produce_train_output(self, input_batch: PLModuleInput) -> PLModuleOutput:
-        """Generates train output.
-
-        Parameters
-        ----------
-        input_batch
-            Model-facing batch with independent past, future, and static tensors.
-        """
-        return self(self._process_input_batch(input_batch))
-
-    def _process_input_batch(self, input_batch: PLModuleInput) -> PLModuleInput:
-        """Processes module input batch.
-
-        Parameters
-        ----------
-        input_batch
-            Model-facing batch with independent past, future, and static tensors.
-
-        Returns
-        -------
-        PLModuleInput
-            Processed module input (identity by default).
-        """
-        return input_batch
-
     def _get_batch_prediction(
         self, n: int, input_batch: TorchInferenceBatch, roll_size: int
     ) -> torch.Tensor:
@@ -539,16 +514,14 @@ class PLForecastingModule(pl.LightningModule, ABC):
         static_covariates = input_batch.static_covariates
 
         def _build_pl_input(future_cov_slice, state=None):
-            return self._process_input_batch(
-                PLModuleInput(
-                    past_target=past_target,
-                    past_covariates=past_covariates,
-                    historic_future_covariates=historic_future_covariates,
-                    future_covariates=future_cov_slice,
-                    static_covariates=static_covariates,
-                    future_target=None,
-                    state=state,
-                )
+            return PLModuleInput(
+                past_target=past_target,
+                past_covariates=past_covariates,
+                historic_future_covariates=historic_future_covariates,
+                future_covariates=future_cov_slice,
+                static_covariates=static_covariates,
+                future_target=None,
+                state=state,
             )
 
         future_cov_slice = (
