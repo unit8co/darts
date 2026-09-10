@@ -204,7 +204,9 @@ class TiRexModel(FoundationModel):
             ``enable_finetuning={"unfreeze": ["tirex.output_patch_embedding*", ...]}``.
 
             Full fine-tuning (``enable_finetuning=True``) is **not supported** because backpropagation through
-            the early sLSTM blocks produces NaN gradients.
+            the early sLSTM blocks produces NaN gradients. See the `Fine-Tuning Examples
+            <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__
+            notebook for more details.
 
         Parameters
         ----------

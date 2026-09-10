@@ -36,6 +36,8 @@ from darts.tests.models.forecasting.foundation_test_utils import (
     timesfm2p5_tiny_context,
 )
 
+# TODO: add TiRex2Model tests
+
 
 def generate_series(n_variables: int, length: int, prefix: str):
     return concatenate(
