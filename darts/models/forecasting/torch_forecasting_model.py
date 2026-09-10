@@ -962,13 +962,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "output_names": output_names,
             **kwargs,
         }
-        # TODO: `dynamo=True` should be the way to go since PyTorch 2.9
-        try:
-            torch.onnx.export(
-                wrapper, example_inputs, path, dynamo=False, **export_kwargs
-            )
-        except TypeError:
-            torch.onnx.export(wrapper, example_inputs, path, **export_kwargs)
+
+        torch.onnx.export(
+            model=wrapper, args=example_inputs, f=path, dynamo=True, **export_kwargs
+        )
 
     @random_method
     def fit(

@@ -21,6 +21,7 @@ from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 from darts.typing import TimeSeriesLike
+from darts.utils.data import TorchInferenceBatch
 from darts.utils.data.tabularization import create_lagged_component_names
 from darts.utils.data.torch_datasets.utils import TorchInferenceSample
 from darts.utils.historical_forecasts.optimized_historical_forecasts_torch import (
@@ -269,12 +270,21 @@ class TorchShapAdapter(ShapAdapter):
         # set model to eval mode to deactivate dropout layers
         pl_module.eval()
 
+        def _slice_or_none(el, sl):
+            return el[sl] if el is not None else None
+
         outputs = []
         for batch_idx, i in enumerate(range(0, num_samples, self.batch_size)):
             batch_slice = slice(i, i + self.batch_size)
-            batch = tuple(
-                x_i[batch_slice] if x_i is not None else None
-                for x_i in [x_pt, x_pc, None, x_hfc, x_fc, x_sc, None, None]
+            batch = TorchInferenceBatch(
+                past_target=x_pt[batch_slice],
+                past_covariates=_slice_or_none(x_pc, batch_slice),
+                future_past_covariates=None,
+                historic_future_covariates=_slice_or_none(x_hfc, batch_slice),
+                future_covariates=_slice_or_none(x_fc, batch_slice),
+                static_covariates=_slice_or_none(x_sc, batch_slice),
+                series_schema=None,
+                pred_time=None,
             )
 
             # output shape: (num_samples = 1, batch_size, output_chunk_length, n_targets_likelihood)

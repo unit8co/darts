@@ -572,11 +572,7 @@ impacts the time required to train the model for one epoch. You have two options
 * Specify some `max_samples_per_ts` argument to the `fit()` function. This will use only the most recent `max_samples_per_ts` samples
 per `TimeSeries` for training.
 * If this option does not do what you want, you can implement your own `TorchTrainingDataset` instance, and define
-how to slice your `TimeSeries` for training yourself. Each `__getitem__` must return a `TorchTrainingSample`
-constructed by field name (omit unused optional slots). Custom modules implement
-`forward(x_in: PLModuleInput) -> PLModuleOutput`. Recurrent / cached values go in `x_in.state` and
-`output.state`. Train / val / predict layout differences should branch on `x_in.stage`
-(`ModuleStage`) rather than `self.trainer`. We suggest to have a look at [this submodule](https://github.com/unit8co/darts/tree/master/darts/utils/data)
+how to slice your `TimeSeries` for training yourself. Each `__getitem__` must return a `TorchTrainingSample`. We suggest to have a look at [this submodule](https://github.com/unit8co/darts/tree/master/darts/utils/data/torch_datasets)
 to see examples of how to do it.
 
 
