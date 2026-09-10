@@ -20,6 +20,8 @@ if not TIREX2_AVAILABLE:
         allow_module_level=True,
     )
 
+import torch
+
 from darts import TimeSeries, concatenate
 from darts.datasets import ElectricityConsumptionZurichDataset
 from darts.models import TiRex2Model
@@ -111,34 +113,54 @@ class TestTiRex2Model:
         import pandas as pd
         import torch
         from darts.datasets import ElectricityConsumptionZurichDataset
-        from tirex import load_model
-
-        ts_energy = ElectricityConsumptionZurichDataset().load().astype(np.float32)
-        ts_energy = ts_energy[["Value_NE5", "Value_NE7"]]
-        ts_energy_train, _ = ts_energy.split_after(pd.Timestamp("2022-01-01"))
-
-        pipeline = load_model("NX-AI/TiRex")
+        from tirex2 import TimeseriesType, load_model
 
         context_length = 2048
-        prediction_length = 512
+        prediction_length = 320
 
-        # context: each variable as its own batch item -> (n_variables, T)
-        context = torch.tensor(ts_energy_train.values().T, dtype=torch.float32)
-        context = context[:, -context_length:]
+        # adapted from `20-SKLearnModel-examples` notebook
+        ts_energy = ElectricityConsumptionZurichDataset().load().astype(np.float32)
 
-        # quantiles: (B, H, Q) where B=2, H=512, Q=9
-        quantiles, _ = pipeline._forecast_quantiles(
-            context=context,
-            prediction_length=prediction_length,
-            output_device=context.device,
+        # future covariates: extract temperature, solar irradiation and rain duration
+        ts_weather = ts_energy[["T [°C]", "StrGlo [W/m2]", "RainDur [min]"]]
+        # past covariates: extract other weather features for the sake of example
+        # including humidity, wind direction, wind speed and air pressure
+        ts_other = ts_energy[["Hr [%Hr]", "WD [°]", "WVs [m/s]", "WVv [m/s]", "p [hPa]"]]
+
+        # target: extract households energy consumption
+        ts_energy = ts_energy[["Value_NE5", "Value_NE7"]]
+
+        # create train and validation splits
+        validation_cutoff = pd.Timestamp("2022-01-01")
+        ts_energy_train, ts_energy_val = ts_energy.split_after(validation_cutoff)
+        ts_weather_train, ts_weather_val = ts_weather.split_after(validation_cutoff)
+        ts_other_train, ts_other_val = ts_other.split_after(validation_cutoff)
+
+        pipeline = load_model("NX-AI/TiRex-2", device="cpu")
+
+        # context: a TimeseriesType object that contains the target, past covariates and future covariates
+        to_tensor = lambda df: torch.tensor(df.values().T, dtype=torch.float32)
+        context = TimeseriesType(
+            target=to_tensor(ts_energy_train)[:, -context_length:],
+            past_covariates=to_tensor(ts_other_train)[:, -context_length:],
+            future_covariates=torch.cat([
+                to_tensor(ts_weather_train)[:, -context_length:],
+                to_tensor(ts_weather_val)[:, :prediction_length],
+            ], dim=1)
         )
-        # (B, H, Q) -> (H, B, Q) = (time, variables, quantiles)
-        pred_np = quantiles.cpu().numpy().transpose(1, 0, 2)
+
+        # forecast: (C, Q, P) = (variables, quantiles, prediction_length)
+        forecast = pipeline.forecast(
+            timeseries=[context],
+            prediction_length=prediction_length,
+        )[0]
+        # (C, Q, P) -> (P, C, Q) for saving to npz
+        pred_np = forecast.cpu().numpy().transpose(2, 0, 1)
 
         np.savez_compressed("tirex2.npz", pred=pred_np)
         ```
 
-        Code accessed from https://github.com/NX-AI/tirex commit used on 26 March 2026.
+        Code accessed from https://github.com/NX-AI/tirex-2 commit used on 10 Sep 2026.
 
         """
         model = TiRex2Model(
@@ -412,3 +434,57 @@ class TestTiRex2Model:
         assert all(len(p) == 5 for p in pred)
         # check that each prediction is deterministic with 3 components
         assert all(p.n_components == 3 for p in pred)
+
+    @pytest.mark.parametrize("device", ["cuda:1", "mps"])
+    def test_backend_device_selection(self, device, pipeline):
+        _, loader = pipeline
+        loader.side_effect = lambda **kwargs: SimpleNamespace(model=TiRex2Stub())
+        load_kwargs = {
+            "ckpt_path": "test-checkpoint",
+            "hf_kwargs": {"revision": "test"},
+        }
+        with (
+            patch("torch.cuda.device") as cuda_device,
+        ):
+            model = TiRex2Model(
+                hub_model_name=load_kwargs["ckpt_path"],
+                hub_model_revision=load_kwargs["hf_kwargs"]["revision"],
+                input_chunk_length=3,
+                output_chunk_length=4,
+                **tfm_kwargs,
+            )
+            model.fit(self.series)
+            module = model.model
+            strategy = SimpleNamespace(root_device=torch.device("cpu"))
+            module.trainer = SimpleNamespace(strategy=strategy)
+            module.configure_model()
+            assert loader.call_count == 1
+            assert "device" not in load_kwargs
+
+            # Backend changes must retain loaded weights, precision, and frozen state.
+            module.double().eval().requires_grad_(False)
+            module.tirex2.weight.fill_(7)
+            original = module.tirex2
+            strategy.root_device = torch.device(device)
+            module.configure_model()
+            assert module.tirex2 is not original
+            loader.assert_called_with(**load_kwargs, device=strategy.root_device.type)
+            torch.testing.assert_close(module.tirex2.weight, original.weight)
+            assert not module.tirex2.training
+            assert not module.tirex2.weight.requires_grad
+            if strategy.root_device.type == "cuda":
+                cuda_device.assert_called_once_with(torch.device(device))
+                # A different GPU uses the same backend, without another reload.
+                strategy.root_device = torch.device("cuda:0")
+            else:
+                cuda_device.assert_not_called()
+            module.configure_model()
+            assert loader.call_count == 2
+
+            # Moving back to CPU must restore native kernels.
+            strategy.root_device = torch.device("cpu")
+            module.configure_model()
+            loader.assert_called_with(**load_kwargs, device="cpu")
+            torch.testing.assert_close(module.tirex2.weight, original.weight)
+            module.configure_model()
+            assert loader.call_count == 3

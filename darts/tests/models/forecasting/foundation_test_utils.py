@@ -82,7 +82,7 @@ TIREX2_LOAD_MODEL_PATCH_TARGET = "darts.models.forecasting.tirex2_model.load_mod
 TIREX2_MAX_PREDICTION_LENGTH = 320
 
 
-class TiRex2Stub:
+class TiRex2Stub(torch.nn.Module):
     """Lightweight stub emulating the ``tirex2`` pipeline API so that
     ``TiRex2Model`` can run without downloading the real weights.
 
@@ -92,6 +92,10 @@ class TiRex2Stub:
 
     quantiles: tuple[float, ...] = TIREX2_QUANTILES
     future_len: int = TIREX2_MAX_PREDICTION_LENGTH
+
+    def __init__(self):
+        super().__init__()
+        self.weight = torch.nn.Parameter(torch.ones(1))
 
     def predict(self, timeseries, prediction_length: int, **_kwargs):
         target0 = timeseries[0].target

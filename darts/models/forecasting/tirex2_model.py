@@ -30,6 +30,7 @@ Throughout this file, we use the following notation for tensor shapes:
 """
 
 import os
+from contextlib import nullcontext
 from typing import TYPE_CHECKING, Any
 
 import torch
@@ -57,12 +58,13 @@ class _TiRex2Module(PLForecastingModule):
 
         # ForecastModel (tirex2) is not an nn.Module. Register its backbone directly so
         # Lightning can move, freeze, and serialize all pretrained parameters.
-        tirex2_kwargs["device"] = str(self.device)
-        self.tirex2: TiRex2 = load_model(**tirex2_kwargs).model
+        self._tirex2_kwargs = tirex2_kwargs
+        self._tirex2_device = self.device.type
+        self.tirex2: TiRex2 = self._load_tirex2_model(self.device)
 
         # Validate against the checkpoint's maximum prediction length
-        self.future_len = self.output_chunk_length + self.output_chunk_shift
-        if self.future_len > self.tirex2.future_len:
+        self._future_len = self.output_chunk_length + self.output_chunk_shift
+        if self._future_len > self.tirex2.future_len:
             raise_log(
                 ValueError(
                     f"`output_chunk_length` {self.output_chunk_length} plus "
@@ -87,6 +89,34 @@ class _TiRex2Module(PLForecastingModule):
             "_user_quantile_indices",
             torch.tensor([all_quantiles.index(q) for q in user_quantiles]),
         )
+
+    def _load_tirex2_model(self, device: torch.device) -> None:
+        # The loader accepts "cuda", not "cuda:N". Select the correct GPU for
+        # its allocations, including when running one process per GPU.
+        context = torch.cuda.device(device) if device.type == "cuda" else nullcontext()
+        with context:
+            model = load_model(**self._tirex2_kwargs, device=device.type).model
+        model.to(dtype=self.dtype)
+        return model
+
+    def _restore_tirex2_weights(self, model: TiRex2) -> None:
+        model.load_state_dict(self.tirex2.state_dict())
+        model.train(self.tirex2.training)
+        for name, parameter in model.named_parameters():
+            parameter.requires_grad_(self.tirex2.get_parameter(name).requires_grad)
+        return model
+
+    def configure_model(self) -> None:
+        # TiRex-2 chooses its recurrent kernels at construction; moving its
+        # tensors later does not switch backends. Lightning knows the actual
+        # execution device here, before moving the model or restoring weights.
+        device = self.trainer.strategy.root_device
+        if device.type == self._tirex2_device:
+            return
+
+        model = self._load_tirex2_model(device)
+        self.tirex2 = self._restore_tirex2_weights(model)
+        self._tirex2_device = device.type
 
     def forward(self, x_in: PLModuleInput, *args, **kwargs):
         # x_past: (B, L, C + X + F); x_future: (B, H, F)
@@ -123,7 +153,7 @@ class _TiRex2Module(PLForecastingModule):
         # Each sample remains a joint multivariate task, independent of other
         # samples in the batch. Native output: B tensors of shape
         # (C, Q, H + S), with all pretrained quantiles.
-        forecasts = self.tirex2.predict(timeseries, prediction_length=self.future_len)
+        forecasts = self.tirex2.predict(timeseries, prediction_length=self._future_len)
         # Stack and permute the forecasts: (B, H + S, C, Q)
         output = torch.stack(forecasts).permute(0, 3, 1, 2)
         # Select the requested horizon and likelihood parameters: (B, H, C, N).
@@ -409,6 +439,12 @@ class TiRex2Model(FoundationModel):
             raise_log(
                 ValueError(
                     "Pass `ckpt_path` via `hub_model_name`, not `tirex2_kwargs`."
+                )
+            )
+        if "device" in load_kwargs:
+            raise_log(
+                ValueError(
+                    'Pass `device` via `pl_trainer_kwargs["accelerator"]`, not `tirex2_kwargs`.'
                 )
             )
         hf_kwargs = dict(load_kwargs.pop("hf_kwargs", {}) or {})
