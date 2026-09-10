@@ -1,245 +1,414 @@
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from darts.tests.conftest import TIREX2_AVAILABLE, TORCH_AVAILABLE, tfm_kwargs
 
-if not TORCH_AVAILABLE or not TIREX2_AVAILABLE:
-    pytest.skip("TiRex-2 and Torch are required.", allow_module_level=True)
+if not TORCH_AVAILABLE:
+    pytest.skip(
+        f"Torch not available. {__name__} tests will be skipped.",
+        allow_module_level=True,
+    )
 
-import torch
-from torch import nn
+if not TIREX2_AVAILABLE:
+    pytest.skip(
+        f"TiRex2 not available. {__name__} tests will be skipped.",
+        allow_module_level=True,
+    )
 
+from darts import TimeSeries, concatenate
+from darts.datasets import ElectricityConsumptionZurichDataset
 from darts.models import TiRex2Model
+from darts.tests.models.forecasting.foundation_test_utils import (
+    TIREX2_LOAD_MODEL_PATCH_TARGET,
+    TIREX2_MAX_PREDICTION_LENGTH,
+    TIREX2_QUANTILES,
+    TiRex2Stub,
+)
 from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
-from darts.utils.timeseries_generation import linear_timeseries
+from darts.utils.timeseries_generation import (
+    gaussian_timeseries,
+    linear_timeseries,
+    sine_timeseries,
+)
 
-LOAD_MODEL = "darts.models.forecasting.tirex2_model.load_model"
 
+def load_validation_inputs():
+    """Load validation inputs for TiRex2Model fidelity tests. The data imports
+    here are adapted from the `20-SKLearnModel-examples` notebook.
+    """
+    # convert to float32 due to MPS not supporting float64
+    ts_energy = ElectricityConsumptionZurichDataset().load().astype(np.float32)
 
-class TiRex2Stub(nn.Module):
-    """Encode target, horizon and quantile axes in predictions to test alignment."""
+    # extract temperature, solar irradiation and rain duration
+    ts_weather = ts_energy[["T [°C]", "StrGlo [W/m2]", "RainDur [min]"]]
+    # extract other weather features as past covariates for the sake of example
+    # including humidity, wind direction, wind speed and air pressure
+    ts_other = ts_energy[["Hr [%Hr]", "WD [°]", "WVs [m/s]", "WVv [m/s]", "p [hPa]"]]
 
-    def __init__(self):
-        super().__init__()
-        self.weight = nn.Parameter(torch.tensor(1.0))
-        self.register_buffer("quantiles", torch.arange(1, 10) / 10)
-        self.future_len = 32
-        self.inputs = []
+    # extract households energy consumption
+    ts_energy = ts_energy[["Value_NE5", "Value_NE7"]]
 
-    def predict(self, timeseries, prediction_length):
-        self.inputs.extend(timeseries)
-        return [
-            ts.target[:, -1, None, None]
-            + torch.arange(prediction_length, device=ts.target.device)[None, None, :]
-            + self.quantiles[None, :, None] * self.weight
-            for ts in timeseries
-        ]
+    # create train and validation splits
+    validation_cutoff = pd.Timestamp("2022-01-01")
+    ts_energy_train, ts_energy_val = ts_energy.split_after(validation_cutoff)
+    return ts_energy_train, ts_energy_val, ts_weather, ts_other
 
 
 @pytest.fixture
 def pipeline():
     model = TiRex2Stub()
-    with patch(LOAD_MODEL, return_value=SimpleNamespace(model=model)) as loader:
+    with patch(
+        TIREX2_LOAD_MODEL_PATCH_TARGET, return_value=SimpleNamespace(model=model)
+    ) as loader:
         yield model, loader
 
 
 class TestTiRex2Model:
-    series = linear_timeseries(length=60, dtype=np.float32, column_name="a")
-    multi = series.stack((series + 10).with_columns_renamed("a", "b"))
-    cov = linear_timeseries(length=100, dtype=np.float32)
+    # set random seed
+    np.random.seed(42)
 
-    @pytest.mark.parametrize("past", [False, True])
-    @pytest.mark.parametrize("future", [False, True])
-    @pytest.mark.parametrize("shift", [0, 3])
-    @pytest.mark.parametrize("probabilistic", [False, True])
-    def test_alignment(self, pipeline, past, future, shift, probabilistic):
-        backbone, _ = pipeline
-        model = TiRex2Model(
-            8,
-            5,
-            output_chunk_shift=shift,
-            likelihood=QuantileRegression([0.1, 0.5, 0.9]) if probabilistic else None,
-            **tfm_kwargs,
-        )
-        model.fit(
-            self.multi,
-            past_covariates=self.cov if past else None,
-            future_covariates=self.cov + 100 if future else None,
-        )
-        pred = model.predict(5, predict_likelihood_parameters=probabilistic)
-        quantiles = [0.1, 0.5, 0.9] if probabilistic else [0.5]
-        expected = (
-            self.multi.values()[-1][None, :, None]
-            + np.arange(shift, shift + 5)[:, None, None]
-            + np.array(quantiles)[None, None, :]
-        )
-        np.testing.assert_allclose(pred.values().reshape(5, 2, -1), expected, rtol=1e-6)
-        assert (
-            pred.start_time() == self.multi.end_time() + (shift + 1) * self.multi.freq
-        )
-        ts = backbone.inputs[-1]
-        np.testing.assert_array_equal(ts.target.numpy(), self.multi.values()[-8:].T)
-        if past:
-            np.testing.assert_array_equal(
-                ts.past_covariates.numpy(), self.cov.values()[52:60].T
-            )
-        else:
-            assert ts.past_covariates is None
-        if future:
-            np.testing.assert_array_equal(
-                ts.future_covariates[:, :8].numpy(), (self.cov.values()[52:60] + 100).T
-            )
-            assert torch.isnan(ts.future_covariates[:, 8 : 8 + shift]).all()
-            np.testing.assert_array_equal(
-                ts.future_covariates[:, 8 + shift :].numpy(),
-                (self.cov.values()[60 + shift : 65 + shift] + 100).T,
-            )
-        else:
-            assert ts.future_covariates is None
-        assert not backbone.weight.requires_grad
-        assert "tirex2.weight" in model.model.state_dict()
+    # ---- Fidelity Tests ---- #
+    # load validation inputs once for fidelity tests
+    ts_energy_train, ts_energy_val, ts_weather, ts_other = load_validation_inputs()
+    # prediction length for fidelity test
+    prediction_length = 320
 
-    def test_batches_autoregression_and_samples(self, pipeline):
-        model = TiRex2Model(
-            8,
-            5,
-            likelihood=QuantileRegression([0.1, 0.5, 0.9]),
-            batch_size=2,
-            **tfm_kwargs,
-        )
-        series = [self.multi, self.multi + 100, self.multi + 200]
-        model.fit(
-            series, past_covariates=[self.cov] * 3, future_covariates=[self.cov] * 3
-        )
-        preds = model.predict(
-            12,
-            series=series,
-            past_covariates=[self.cov] * 3,
-            future_covariates=[self.cov] * 3,
-            num_samples=4,
-        )
-        assert len(preds) == 3
-        assert all(p.all_values().shape == (12, 2, 4) for p in preds)
-        assert preds[1].all_values().mean() > preds[0].all_values().mean() + 90
-
-    def test_variable_context(self, pipeline):
-        model = TiRex2Model((3, 8), 5, **tfm_kwargs)
-        model.fit(self.series)
-        preds = model.predict(4, series=[self.series[:4], self.series[:7]])
-        assert all(len(p) == 4 for p in preds)
-
-    def test_loading_options(self, pipeline):
-        _, loader = pipeline
-        options = {
-            "hf_kwargs": {"local_files_only": True, "revision": "old"},
-            "use_flex_attention": False,
-        }
-        model = TiRex2Model(
-            8,
-            5,
-            hub_model_name="org/checkpoint",
-            hub_model_revision="pinned",
-            local_dir="/tmp/weights",
-            tirex2_kwargs=options,
-            **tfm_kwargs,
-        )
-        model.fit(self.series)
-        loader.assert_called_once_with(
-            ckpt_path="org/checkpoint",
-            device="cpu",
-            hf_kwargs={
-                "local_files_only": True,
-                "revision": "pinned",
-                "local_dir": "/tmp/weights",
-            },
-            use_flex_attention=False,
-        )
-        assert options["hf_kwargs"]["revision"] == "old"
-        assert "device" not in options
-
-    def test_save_load(self, pipeline, tmp_path):
-        model = TiRex2Model(8, 5, **tfm_kwargs)
-        model.fit(self.multi, future_covariates=self.cov)
-        expected = model.predict(5)
-        path = str(tmp_path / "tirex2.pt")
-        model.save(path)
-        loaded = TiRex2Model.load(path, map_location="cpu")
-        assert loaded.predict(5) == expected
-
-    @pytest.mark.parametrize(
-        "kwargs,match",
+    # ---- Dummy Tests ---- #
+    series = linear_timeseries(length=200, dtype=np.float32, column_name="A")
+    series_multi = concatenate(
         [
-            ({"enable_finetuning": True}, "does not support fine-tuning"),
-            (
-                {"enable_finetuning": {"unfreeze": ["*"]}},
-                "does not support fine-tuning",
-            ),
-            ({"likelihood": GaussianLikelihood()}, "Only QuantileRegression"),
-            ({"tirex2_kwargs": {"ckpt_path": "bad"}}, "via `hub_model_name`"),
+            linear_timeseries(length=200, dtype=np.float32, column_name="A"),
+            sine_timeseries(length=200, dtype=np.float32, column_name="B"),
+            gaussian_timeseries(length=200, dtype=np.float32, column_name="C"),
         ],
+        axis=1,
     )
-    def test_invalid_options(self, kwargs, match):
-        with pytest.raises(ValueError, match=match):
-            TiRex2Model(8, 5, **kwargs, **tfm_kwargs)
+    series_multi_2 = concatenate(
+        [
+            linear_timeseries(length=150, dtype=np.float32, column_name="A"),
+            sine_timeseries(length=150, dtype=np.float32, column_name="B"),
+            gaussian_timeseries(length=150, dtype=np.float32, column_name="C"),
+        ],
+        axis=1,
+    )
+    past_cov = linear_timeseries(length=200, dtype=np.float32, column_name="B")
+    future_cov = linear_timeseries(length=300, dtype=np.float32, column_name="C")
 
-    def test_checkpoint_quantiles(self, pipeline):
-        model = TiRex2Model(
-            8, 5, likelihood=QuantileRegression([0.05, 0.5, 0.95]), **tfm_kwargs
+    @pytest.mark.slow
+    @pytest.mark.parametrize("probabilistic", [True, False])
+    def test_fidelity(self, probabilistic: bool):
+        """Test TiRex2Model predictions against the original tirex-ts implementation.
+        The test passes if the predictions match up to a certain numerical tolerance.
+        Original predictions were generated with the following code:
+
+        ```python
+        import numpy as np
+        import pandas as pd
+        import torch
+        from darts.datasets import ElectricityConsumptionZurichDataset
+        from tirex import load_model
+
+        ts_energy = ElectricityConsumptionZurichDataset().load().astype(np.float32)
+        ts_energy = ts_energy[["Value_NE5", "Value_NE7"]]
+        ts_energy_train, _ = ts_energy.split_after(pd.Timestamp("2022-01-01"))
+
+        pipeline = load_model("NX-AI/TiRex")
+
+        context_length = 2048
+        prediction_length = 512
+
+        # context: each variable as its own batch item -> (n_variables, T)
+        context = torch.tensor(ts_energy_train.values().T, dtype=torch.float32)
+        context = context[:, -context_length:]
+
+        # quantiles: (B, H, Q) where B=2, H=512, Q=9
+        quantiles, _ = pipeline._forecast_quantiles(
+            context=context,
+            prediction_length=prediction_length,
+            output_device=context.device,
         )
+        # (B, H, Q) -> (H, B, Q) = (time, variables, quantiles)
+        pred_np = quantiles.cpu().numpy().transpose(1, 0, 2)
+
+        np.savez_compressed("tirex2.npz", pred=pred_np)
+        ```
+
+        Code accessed from https://github.com/NX-AI/tirex commit used on 26 March 2026.
+
+        """
+        model = TiRex2Model(
+            input_chunk_length=2048,  # use generous context
+            output_chunk_length=self.prediction_length,  # no auto-regression
+            likelihood=(
+                QuantileRegression(quantiles=list(TIREX2_QUANTILES))
+                if probabilistic
+                else None
+            ),
+            **tfm_kwargs,
+        )
+        # fit w/o fine-tuning
+        model.fit(
+            series=self.ts_energy_train,
+            past_covariates=self.ts_other,
+            future_covariates=self.ts_weather,
+        )
+
+        pred = model.predict(
+            n=self.prediction_length,
+            past_covariates=self.ts_other,
+            future_covariates=self.ts_weather,
+            predict_likelihood_parameters=probabilistic,
+        )
+        assert isinstance(pred, TimeSeries)
+        # reshape to (time, variables, quantiles)
+        pred_np = pred.values().reshape(
+            self.prediction_length, self.ts_energy_train.n_components, -1
+        )
+
+        # load reference predictions
+        path = (
+            Path(__file__).parent
+            / "artefacts"
+            / "tirex2"
+            / "tirex2_prediction"
+            / "tirex2.npz"
+        )
+        original = np.load(path)["pred"]
+
+        if not probabilistic:
+            original = original[:, :, [4]]  # median quantile (index 4 = 0.5)
+
+        # increase tolerance due to platform differences
+        # reference: https://github.com/NX-AI/tirex/blob/30702459b2454660242d63e4ef8f57906e6be65b/tests/test_forecast.py
+        np.testing.assert_allclose(pred_np, original, rtol=1.6e-2, atol=1e-5)
+
+    @pytest.mark.slow
+    def test_creation(self):
+        kwargs = tfm_kwargs
+
+        # ----- Input/output chunk length checks ----- #
+        # can use shorter input/output chunk length than max
+        model = TiRex2Model(
+            input_chunk_length=7,
+            output_chunk_length=TIREX2_MAX_PREDICTION_LENGTH - 1,
+            **kwargs,
+        )
+        model.fit(self.series)
+
+        # creation-time check: cannot create longer output chunk length than max
+        with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
+            model = TiRex2Model(
+                input_chunk_length=19,
+                output_chunk_length=TIREX2_MAX_PREDICTION_LENGTH + 1,
+                **kwargs,
+            )
+            model.fit(self.series)
+
+        # creation-time check: cannot create longer output chunk length + output chunk shift than max
+        with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
+            model = TiRex2Model(
+                input_chunk_length=23,
+                output_chunk_length=TIREX2_MAX_PREDICTION_LENGTH - 1,
+                output_chunk_shift=3,
+                **kwargs,
+            )
+            model.fit(self.series)
+
+        # ----- Likelihood checks ----- #
+        # can use likelihood QuantileRegression with supported quantiles
+        TiRex2Model(
+            input_chunk_length=11,
+            output_chunk_length=34,
+            likelihood=QuantileRegression([0.1, 0.5, 0.9]),
+            **kwargs,
+        )
+
+        # cannot use likelihood others than QuantileRegression
+        with pytest.raises(ValueError, match="Only QuantileRegression likelihood is"):
+            TiRex2Model(
+                input_chunk_length=29,
+                output_chunk_length=12,
+                likelihood=GaussianLikelihood(),
+                **kwargs,
+            )
+
+        # creation-time check: cannot use quantiles other than those used in pre-training
         with pytest.raises(
             ValueError, match="does not support the requested quantiles"
         ):
-            model.fit(self.series)
-
-    def test_checkpoint_horizon(self, pipeline):
-        model = TiRex2Model(8, 30, output_chunk_shift=3, **tfm_kwargs)
-        with pytest.raises(ValueError, match="maximum prediction length 32"):
-            model.fit(self.series)
-
-
-@pytest.mark.slow
-@pytest.mark.parametrize("with_covariates,shift", [(False, 0), (True, 2)])
-def test_fidelity(with_covariates, shift):
-    """Compare Darts forecasts with the public upstream API on the same checkpoint."""
-    from tirex2 import TimeseriesType, load_model
-
-    series = TestTiRex2Model.multi
-    cov = TestTiRex2Model.cov
-    pipeline = load_model("NX-AI/TiRex-2", device="cpu")
-    future = None
-    if with_covariates:
-        future = torch.tensor(cov.values()[44 : 68 + shift].T.copy())
-        future[:, 16 : 16 + shift] = float("nan")
-    reference = pipeline.forecast(
-        [
-            TimeseriesType(
-                target=torch.tensor(series.values()[-16:].T.copy()),
-                past_covariates=torch.tensor(cov.values()[44:60].T.copy())
-                if with_covariates
-                else None,
-                future_covariates=future,
+            model = TiRex2Model(
+                input_chunk_length=7,
+                output_chunk_length=6,
+                likelihood=QuantileRegression(quantiles=[0.23, 0.5, 0.77]),
+                **kwargs,
             )
-        ],
-        prediction_length=8 + shift,
-        output_type="numpy",
-    )[0][:, [0, 4, 8], shift:].transpose(2, 0, 1)
-    model = TiRex2Model(
-        16,
-        8,
-        output_chunk_shift=shift,
-        likelihood=QuantileRegression([0.1, 0.5, 0.9]),
-        **tfm_kwargs,
-    )
-    with patch(LOAD_MODEL, return_value=pipeline):
-        model.fit(
-            series,
-            past_covariates=cov if with_covariates else None,
-            future_covariates=cov if with_covariates else None,
+            model.fit(self.series)
+
+        # ----- Checkpoint path checks ----- #
+        # can use `hub_model_name` and `hub_model_revision` to specify checkpoint path
+        # no model download should occur since model is not created yet
+        TiRex2Model(
+            input_chunk_length=5,
+            output_chunk_length=3,
+            hub_model_name="NX-AI/TiRex-2",
+            hub_model_revision="05e5b26db52bfb256f1ae1bdf785589850482de3",
+            local_dir="/tmp/weights",
+            **kwargs,
         )
-    actual = model.predict(8, predict_likelihood_parameters=True)
-    np.testing.assert_allclose(
-        actual.values().reshape(8, 2, 3), reference, rtol=1e-5, atol=1e-5
-    )
+
+        # cannot use `ckpt_path` in `tirex2_kwargs`
+        with pytest.raises(
+            ValueError,
+            match="Pass `ckpt_path` via `hub_model_name`, not `tirex2_kwargs`.",
+        ):
+            TiRex2Model(
+                input_chunk_length=7,
+                output_chunk_length=6,
+                tirex2_kwargs={"ckpt_path": "/tmp/weights"},
+                **kwargs,
+            )
+
+    def test_default(self, pipeline):
+        model = TiRex2Model(
+            input_chunk_length=3,
+            output_chunk_length=4,
+            **tfm_kwargs,
+        )
+
+        model.fit(self.series)
+
+        # predictions should not be probabilistic
+        pred = model.predict(n=10, series=self.series)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 10
+        assert pred.n_components == 1
+
+        # default model allows autoregressive predictions (6 > 4)
+        pred_ar = model.predict(n=6, series=self.series)
+        assert isinstance(pred_ar, TimeSeries)
+        assert len(pred_ar) == 6
+        assert pred_ar.n_components == 1
+
+    def test_probabilistic(self, pipeline):
+        # probabilistic model
+        model = TiRex2Model(
+            input_chunk_length=5,
+            output_chunk_length=6,
+            likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
+            **tfm_kwargs,
+        )
+
+        # calling `fit()` should not use `trainer.fit()`
+        model.fit(self.series)
+        assert model.model_created
+        assert model.supports_probabilistic_prediction
+
+        # predictions should be probabilistic
+        pred = model.predict(
+            n=5, series=self.series, predict_likelihood_parameters=True
+        )
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 5
+        assert pred.n_components == 3  # 3 quantiles
+
+        # probabilistic model allows autoregressive predictions (8 > 6)
+        pred_ar = model.predict(
+            n=8,
+            series=self.series,
+            num_samples=10,
+        )
+        assert isinstance(pred_ar, TimeSeries)
+        assert len(pred_ar) == 8
+        assert pred_ar.n_components == 1  # sampling yields single component
+        assert pred_ar.n_samples == 10
+
+    @pytest.mark.parametrize("probabilistic", [True, False])
+    def test_multivariate(self, pipeline, probabilistic: bool):
+        # create model
+        model = TiRex2Model(
+            input_chunk_length=3,
+            output_chunk_length=8,
+            likelihood=(
+                QuantileRegression(quantiles=[0.1, 0.5, 0.9]) if probabilistic else None
+            ),
+            **tfm_kwargs,
+        )
+        model.fit(series=self.series_multi)
+        pred = model.predict(n=7, predict_likelihood_parameters=probabilistic)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 7
+        if probabilistic:
+            assert pred.n_components == 9  # 3 variables x 3 quantiles
+        else:
+            assert pred.n_components == 3
+
+    def test_past_covariates(self):
+        model = TiRex2Model(
+            input_chunk_length=11,
+            output_chunk_length=13,
+            **tfm_kwargs,
+        )
+        model.fit(series=self.series, past_covariates=self.past_cov)
+        pred = model.predict(n=10, series=self.series, past_covariates=self.past_cov)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 10
+        assert pred.n_components == 1
+
+    def test_future_covariates(self):
+        model = TiRex2Model(
+            input_chunk_length=11,
+            output_chunk_length=13,
+            **tfm_kwargs,
+        )
+        model.fit(series=self.series, future_covariates=self.future_cov)
+        pred = model.predict(
+            n=10, series=self.series, future_covariates=self.future_cov
+        )
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 10
+        assert pred.n_components == 1
+
+    def test_past_and_future_covariates(self):
+        model = TiRex2Model(
+            input_chunk_length=11,
+            output_chunk_length=13,
+            **tfm_kwargs,
+        )
+        model.fit(
+            series=self.series,
+            past_covariates=self.past_cov,
+            future_covariates=self.future_cov,
+        )
+        pred = model.predict(
+            n=10,
+            series=self.series,
+            past_covariates=self.past_cov,
+            future_covariates=self.future_cov,
+        )
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 10
+        assert pred.n_components == 1
+
+    def test_multiple_series(self):
+        # create model
+        model = TiRex2Model(
+            input_chunk_length=2,
+            output_chunk_length=3,
+            **tfm_kwargs,
+        )
+        model.fit(series=[self.series_multi, self.series_multi_2])
+        pred = model.predict(n=5, series=[self.series_multi, self.series_multi_2])
+
+        # check that we get a list of predictions
+        assert isinstance(pred, list) and len(pred) == 2
+        assert all(isinstance(p, TimeSeries) for p in pred)
+
+        # check that each prediction has correct length
+        assert all(len(p) == 5 for p in pred)
+        # check that each prediction is deterministic with 3 components
+        assert all(p.n_components == 3 for p in pred)

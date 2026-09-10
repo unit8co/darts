@@ -65,7 +65,8 @@ class _TiRex2Module(PLForecastingModule):
         if self.future_len > self.tirex2.future_len:
             raise_log(
                 ValueError(
-                    "`output_chunk_length` plus `output_chunk_shift` cannot exceed "
+                    f"`output_chunk_length` {self.output_chunk_length} plus "
+                    f"`output_chunk_shift` {self.output_chunk_shift} cannot exceed "
                     f"the checkpoint's maximum prediction length {self.tirex2.future_len}."
                 )
             )
@@ -108,6 +109,8 @@ class _TiRex2Module(PLForecastingModule):
             future = torch.cat((x_past[:, :, -F:], gap, x_future), dim=1)
 
         # Prepare TiRex-2's native multivariate inputs: a list of TimeseriesType objects.
+        # Each object contains a single multivariate sample with optional past and future covariates:
+        # target: (C, L), past_covariates: (X, L), future_covariates: (F, L + S + H)
         timeseries = [
             TimeseriesType(
                 target=past[:, :C].T,

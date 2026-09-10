@@ -76,6 +76,46 @@ class TiRexStub:
         return quantiles, mean
 
 
+# ── TiRex2 stub ──────────────────────────────────────────────────────────────
+TIREX2_QUANTILES = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
+TIREX2_LOAD_MODEL_PATCH_TARGET = "darts.models.forecasting.tirex2_model.load_model"
+TIREX2_MAX_PREDICTION_LENGTH = 320
+
+
+class TiRex2Stub:
+    """Lightweight stub emulating the ``tirex2`` pipeline API so that
+    ``TiRex2Model`` can run without downloading the real weights.
+
+    Provides ``predict(timeseries, prediction_length)`` which
+    returns deterministic quantile forecasts based on simple arithmetic.
+    """
+
+    quantiles: tuple[float, ...] = TIREX2_QUANTILES
+    future_len: int = TIREX2_MAX_PREDICTION_LENGTH
+
+    def predict(self, timeseries, prediction_length: int, **_kwargs):
+        target0 = timeseries[0].target
+        B, C, P = (
+            len(timeseries),
+            target0.shape[0],
+            prediction_length,
+        )
+
+        # compute a simple deterministic forecast of shape (C, Q, P)
+        mean = torch.arange(1, P + 1, dtype=torch.float32, device=target0.device)
+        quantiles = torch.tensor(
+            TIREX2_QUANTILES, dtype=torch.float32, device=target0.device
+        )
+        # broadcast mean and quantiles sum minus 0.5 to shape (Q, P)
+        forecast = mean.unsqueeze(0) + quantiles.unsqueeze(1) - 0.5
+        # repeat forecast for each target variate (C, Q, P)
+        forecast = forecast.unsqueeze(0).repeat(C, 1, 1)
+
+        # repeat forecast for each batch sample
+        forecasts = [forecast] * B
+        return forecasts
+
+
 # ── TimesFM 2.5 tiny model ─────────────────────────────────────────────────
 #
 # The production ``_TimesFM2p5Module`` uses a hardcoded
