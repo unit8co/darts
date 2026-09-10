@@ -79,7 +79,8 @@ all = ["darts[torch,notorch]"]
 [tool.uv]
 # Cooldown period for PyPI releases to mitigate supply chain attacks.
 exclude-newer = "7 days"
-exclude-newer-package = { xlstm = "0 day", "mlstm_kernels" = "0 day" }
+# TODO: empty this before merging to main
+exclude-newer-package = { xlstm = "0 day", "mlstm_kernels" = "0 day", "tirex-2" = "0 day" }
 # Must resolve dependencies for major platforms in uv.lock
 required-environments = [
     "sys_platform == 'darwin'",
@@ -180,7 +181,7 @@ optional = [
     "plotly>=6.5.2",
     "neuralforecast>=3.0.0",
     "tirex-ts>=1.4.0",
-    "tirex-2>=0.2.1; python_version >= '3.11'",
+    "tirex-2 @ git+https://github.com/NX-AI/tirex-2.git ; python_version >= '3.11'",
 ]
 release = [
     "bump-my-version==1.3.0",
