@@ -164,9 +164,14 @@ class TiRexModel(FoundationModel):
         tirex_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ):
-        # TODO: redirect to TiRex-2 for multivariate forecasting with covariates
         """
         TiRex foundation model for zero-shot time series forecasting.
+
+        .. attention::
+            TiRex-2 extends TiRex with joint multivariate and covariate capabilities and achieves better performance
+            on public benchmarks. It is now available in Darts as
+            :class:`~darts.models.forecasting.tirex2_model.TiRex2Model`. For new use cases, we recommend using TiRex-2
+            instead of TiRex.
 
         This is a Darts wrapper around the TiRex model introduced in Auer et al. (2025) [1]_. The implementation
         delegates all forecasting logic and weight loading to the optional `tirex-ts
@@ -177,6 +182,8 @@ class TiRexModel(FoundationModel):
 
         This model supports either univariate or multivariate time series, but does not support covariates.
         For multivariate time series, the model is applied independently to each component.
+        For joint multivariate forecasting with past and future covariates, use
+        :class:`~darts.models.forecasting.tirex2_model.TiRex2Model` (TiRex-2).
 
         By default, the model is deterministic (median forecast only). To enable probabilistic forecasts, pass a
         :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the ``likelihood`` parameter.
