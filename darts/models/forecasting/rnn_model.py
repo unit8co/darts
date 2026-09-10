@@ -98,7 +98,7 @@ class CustomRNNModule(PLForecastingModule, ABC):
             Named module input. For RNN models, future covariates are remapped into the past cov slot.
             The previous hidden state is in ``x_in.state``. Train / val
             (``x_in.stage is not ModuleStage.PREDICT``) uses the shifted-dataset
-            layout; predict / ONNX applies the inference covariate shift.
+            layout; predict applies the inference covariate shift.
 
         Returns
         -------
@@ -109,6 +109,25 @@ class CustomRNNModule(PLForecastingModule, ABC):
             ``state`` is the last hidden state, passed to the next ``forward``.
         """
         pass
+
+    def _onnx_wrapper(self, input_sample: PLModuleInput, **meta):
+        """Export a 1-step cell; inference warms up over the input window."""
+        from darts.utils.onnx.export import prepare_onnx_export
+
+        def _last_step(tensor):
+            return tensor[:, -1:] if tensor is not None else None
+
+        # state is always a tensor in the graph, so only the last target is consumed
+        input_sample = input_sample.replace(
+            past_target=input_sample.past_target[:, -1:],
+            past_covariates=_last_step(input_sample.past_covariates),
+            historic_future_covariates=_last_step(
+                input_sample.historic_future_covariates
+            ),
+        )
+        bundle = prepare_onnx_export(self, input_sample, **meta)
+        bundle.spec.stepwise_state = True
+        return bundle
 
 
 # TODO add batch norm
@@ -174,9 +193,8 @@ class _RNNModule(CustomRNNModule):
             historic_future_covariates = future_covariates
         else:
             if x_in.state is not None:
-                # only last target point required when last hidden state is available
+                # a previous predict step already encoded the history into `state`
                 past_target = past_target[:, -1:]
-
             if historic_future_covariates is not None and future_covariates is not None:
                 # RNNs need as inputs (target[t] and covariates[t+1]) so here we shift the covariates
                 # extract the relevant times depending on the length of `past_target`

@@ -374,45 +374,63 @@ For a comprehensive walkthrough of fine-tuning Torch Forecasting Models and Foun
 
 #### Exporting model to ONNX format for inference
 
-It is also possible to export the model weights to the ONNX format to run inference in a lightweight environment. The example below works for any `TorchForecastingModel`, including `RNNModel`. Feature inputs are named after the module fields (`past_target`, `past_covariates`, ...). Recurrent models also export flattened `state_*` inputs/outputs; pass zeros for the first step and feed the previous `state_*` outputs back on subsequent steps. Note that all series and covariates must extend far enough into the past (`input_chunk_length`) and future (`output_chunk_length`) relative to the end of the target `series`. It will not be possible to forecast a horizon `n > output_chunk_length` without implementing the auto-regression logic.
+Export requires PyTorch and the optional `onnx` dependency. After export, inference can run **without PyTorch** using only `onnxruntime`, NumPy, and Darts' torch-free helpers in `darts.utils.onnx.inference`.
+
+`to_onnx()` writes two artifacts:
+
+- the ONNX graph (`.onnx`)
+- a companion spec (`.onnx.spec.json`) describing input/output names, covariate usage, and (for RNNs) hidden-state shapes
+
+Feature inputs are named after the module fields (`past_target`, `past_covariates`, ...). Every model uses the same graph (`prediction` out). Recurrent models such as `RNNModel` export a 1-step cell with flattened `state_in_*` / `state_out_*` tensors (zeros on the first step). `run_onnx_prediction` warms that cell up over the input window, then keeps stepping — the same contract as `predict()`, reconstructed outside the graph.
 
 ```python
 model = SomeTorchForecastingModel(...)
 model.fit(...)
 
-# make sure to have `onnx` and `onnxruntime` installed
-onnx_filename = "example_onnx.onnx"
+# export requires torch + onnx; produces `example.onnx` and `example.onnx.spec.json`
+onnx_filename = "example.onnx"
 model.to_onnx(onnx_filename, export_params=True)
 ```
 
-Now, to load the model and predict steps after the end of the series:
+For multi-step forecasting (`n > output_chunk_length`), use the autoregressive runner (mirrors the torch predict loop, deterministic `num_samples=1` only):
 
 ```python
-import onnx
 import onnxruntime as ort
-from darts.utils.onnx_utils import prepare_onnx_inputs
+from darts.utils.onnx.inference import OnnxModelSpec, run_onnx_prediction
 
-onnx_model = onnx.load(onnx_filename)
-onnx.checker.check_model(onnx_model)
-ort_session = ort.InferenceSession(onnx_filename)
+spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
+session = ort.InferenceSession(onnx_filename)
 
-# use helper function to extract the features from the series
-onnx_inputs = prepare_onnx_inputs(
-    model=model,
+# returns NumPy array shaped like `TimeSeries.all_values()` for the forecast horizon
+forecast = run_onnx_prediction(
+    n=12,
+    session=session,
+    spec=spec,
     series=series,
     past_covariates=ts_past,
     future_covariates=ts_future,
 )
-
-# extract only the features expected by the model
-ort_inputs = {}
-for inp in ort_session.get_inputs():
-    if inp.name in onnx_inputs:
-        ort_inputs[inp.name] = onnx_inputs[inp.name]
-
-# output[0] (`prediction`) has shape (batch, output_chunk_length, n components, 1 or n likelihood params)
-ort_out = ort_session.run(None, ort_inputs)
 ```
+
+For a single ONNX step (advanced / custom loops), slice features with `prepare_onnx_inputs` using the spec:
+
+```python
+from darts.utils.onnx.inference import OnnxModelSpec, prepare_onnx_inputs, extract_point_forecast
+
+spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
+onnx_inputs = prepare_onnx_inputs(
+    series=series,
+    spec=spec,
+    past_covariates=ts_past,
+    future_covariates=ts_future,
+)
+ort_out = session.run(spec.output_names, onnx_inputs)
+point_forecast = extract_point_forecast(ort_out)  # shape (time, components)
+```
+
+Raw ONNX output tensors have shape `(batch, output_chunk_length, n_components, n_likelihood_params)`. Models trained with a `likelihood` export those raw parameters (sampling is not in the graph). `extract_point_forecast` and `run_onnx_prediction` keep the first parameter as the point forecast (e.g. Gaussian μ). That matches `predict(predict_likelihood_parameters=True)` for `n <= output_chunk_length`, not sampled `predict()` draws.
+
+`use_reversible_instance_norm=True` is part of `forward()` and is therefore included in the graph (normalize `past_target`, denormalize `prediction`).
 
 ### Callbacks
 

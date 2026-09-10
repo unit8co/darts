@@ -77,7 +77,6 @@ from darts.utils.historical_forecasts.optimized_historical_forecasts_torch impor
     _optimized_historical_forecasts,
 )
 from darts.utils.likelihood_models.torch import TorchLikelihood
-from darts.utils.onnx_utils import prepare_onnx_export
 from darts.utils.timeseries_generation import _build_forecast_series_from_schema
 from darts.utils.torch import random_method
 from darts.utils.ts_utils import (
@@ -895,11 +894,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def to_onnx(self, path: str | None = None, **kwargs):
         """Export model to ONNX format for optimized inference.
 
-        Exports a generic wrapper around
-        :meth:`~darts.models.forecasting.pl_forecasting_module.PLForecastingModule.forward`
-        so every model uses the same named inputs (`past_target`, optional covariate
-        tensors, and flattened ``state_*`` tensors when the module returns recurrent
-        state) and named outputs (`prediction`, plus ``state_*``).
+        Exports a wrapper around the Lightning module so graphs use named feature
+        inputs (`past_target`, optional covariate tensors) and a ``prediction``
+        output. If the module returns recurrent state, flattened ``state_in_*`` /
+        ``state_out_*`` tensors are included (zeros on the first step).
+        Recurrent modules such as :class:`~darts.models.forecasting.rnn_model.RNNModel`
+        export a 1-step cell; :func:`~darts.utils.onnx.inference.run_onnx_prediction`
+        warms it up over the input window. Likelihood models export raw distribution
+        parameters (first parameter is used as the point forecast). Reversible
+        instance norm is included in the graph when enabled.
+
+        A companion JSON spec file (``*.onnx.spec.json``) is written next to the
+        ONNX file for torch-free inference via
+        :func:`~darts.utils.onnx.inference.run_onnx_prediction`.
 
         Note: requires `onnx` library (optional dependency) to be installed.
 
@@ -937,34 +944,66 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if path is None:
             path = self._default_save_path() + ".onnx"
 
-        def _randomize(shape) -> torch.Tensor | None:
-            return torch.rand((1,) + shape, dtype=self.model.dtype) if shape else None
+        mock_batch = self._onnx_dummy_input()
+        self.model.eval()
+        bundle = self.model._onnx_wrapper(
+            mock_batch,
+            input_chunk_length=self.input_chunk_length,
+            output_chunk_length=self.output_chunk_length,
+            uses_past_covariates=self.uses_past_covariates,
+            uses_future_covariates=self.uses_future_covariates,
+            uses_static_covariates=self.uses_static_covariates,
+        )
+        export_kwargs = {
+            "input_names": bundle.input_names,
+            "output_names": bundle.output_names,
+            "external_data": False,
+            "dynamo": bundle.dynamic_axes is None,
+        }
+        if bundle.dynamic_axes is not None:
+            export_kwargs["dynamic_axes"] = bundle.dynamic_axes
+        export_kwargs.update(kwargs)
+        bundle.wrapper.eval()
+        torch.onnx.export(
+            model=bundle.wrapper,
+            args=bundle.example_inputs,
+            f=path,
+            **export_kwargs,
+        )
+        bundle.spec.save_json(f"{path}.spec.json")
+
+    def _onnx_dummy_input(self) -> PLModuleInput:
+        """Random example batch used to trace the ONNX graph."""
+
+        def _randomize(shape, *, time_dim: int | None = None) -> torch.Tensor | None:
+            if not shape:
+                return None
+            if time_dim is not None:
+                shape = (time_dim, shape[-1])
+            return torch.rand((1,) + shape, dtype=self.model.dtype)
 
         train_sample_shape = self.model.train_sample_shape
-        mock_batch = PLModuleInput(
-            past_target=_randomize(train_sample_shape["past_target"]),
-            past_covariates=_randomize(train_sample_shape.get("past_covariates")),
-            historic_future_covariates=_randomize(
-                train_sample_shape.get("historic_future_covariates")
+        return PLModuleInput(
+            past_target=_randomize(
+                train_sample_shape["past_target"],
+                time_dim=self.input_chunk_length,
             ),
-            future_covariates=_randomize(train_sample_shape.get("future_covariates")),
+            past_covariates=_randomize(
+                train_sample_shape.get("past_covariates"),
+                time_dim=self.input_chunk_length,
+            ),
+            historic_future_covariates=_randomize(
+                train_sample_shape.get("historic_future_covariates"),
+                time_dim=self.input_chunk_length,
+            ),
+            future_covariates=_randomize(
+                train_sample_shape.get("future_covariates"),
+                time_dim=self.output_chunk_length,
+            ),
             static_covariates=_randomize(train_sample_shape.get("static_covariates")),
             # future_target is excluded: ONNX export traces the inference path only
             future_target=None,
             stage=ModuleStage.PREDICT,
-        )
-
-        wrapper, example_inputs, input_names, output_names = prepare_onnx_export(
-            self.model, mock_batch
-        )
-        export_kwargs = {
-            "input_names": input_names,
-            "output_names": output_names,
-            **kwargs,
-        }
-
-        torch.onnx.export(
-            model=wrapper, args=example_inputs, f=path, dynamo=True, **export_kwargs
         )
 
     @random_method

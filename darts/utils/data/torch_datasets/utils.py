@@ -129,7 +129,7 @@ class PLModuleInput(_Replacable):
     Concatenation is optional and model-specific; use the helpers below when needed.
     ``state`` carries recurrent / cached values from a previous ``forward`` (hidden
     state, KV cache, ...). ``stage`` is the Lightning loop role (train / validate /
-    predict); it is a Python value, not an ONNX graph input.
+    predict); it is a Python value, not a graph tensor.
     """
 
     past_target: torch.Tensor
@@ -242,7 +242,7 @@ def _flatten_dataclass(obj):
     return [getattr(obj, f.name) for f in flds], [f.name for f in flds]
 
 
-# ``stage`` is a Python loop flag, not a graph tensor; keep it in pytree context.
+# ``stage`` is a Python loop flag, not a tracing leaf; keep it in pytree context.
 _PL_MODULE_INPUT_TENSOR_FIELDS: tuple[str, ...] = tuple(
     f.name for f in fields(PLModuleInput) if f.name != "stage"
 )
@@ -373,44 +373,6 @@ def _train_sample_from_shapes(
         name: np.zeros(shape, dtype=dtype) if shape else None
         for name, shape in shape_by_name.items()
     })
-
-
-def _flatten_state(state: Any) -> tuple[list[torch.Tensor], Any]:
-    """Flatten a nested tensor state into a list and a rebuild spec."""
-    if state is None:
-        return [], None
-    if isinstance(state, torch.Tensor):
-        return [state], "tensor"
-    if isinstance(state, tuple | list):
-        tensors: list[torch.Tensor] = []
-        child_specs = []
-        for item in state:
-            item_tensors, item_spec = _flatten_state(item)
-            tensors.extend(item_tensors)
-            child_specs.append(item_spec)
-        return tensors, (type(state).__name__, child_specs)
-    raise_log(
-        TypeError(
-            f"Unsupported module state type `{type(state).__name__}`; expected a "
-            "tensor or nested tuple/list of tensors."
-        ),
-    )
-
-
-def _unflatten_state(tensors: Sequence[torch.Tensor], spec: Any) -> Any:
-    """Rebuild a nested tensor state from a flat list and spec."""
-    if spec is None:
-        return None
-    tensors = list(tensors)
-    return _unflatten_state_from(tensors, spec)
-
-
-def _unflatten_state_from(tensors: list[torch.Tensor], spec: Any) -> Any:
-    if spec == "tensor":
-        return tensors.pop(0)
-    kind, child_specs = spec
-    children = [_unflatten_state_from(tensors, child) for child in child_specs]
-    return tuple(children) if kind == "tuple" else children
 
 
 # variable input chunk length
