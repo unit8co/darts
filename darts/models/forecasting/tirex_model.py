@@ -164,7 +164,6 @@ class TiRexModel(FoundationModel):
         tirex_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ):
-        # TODO: update fine-tuning recommendations in docstring
         # TODO: redirect to TiRex-2 for multivariate forecasting with covariates
         """
         TiRex foundation model for zero-shot time series forecasting.
@@ -191,12 +190,14 @@ class TiRexModel(FoundationModel):
         .. note::
             TiRex is distributed under the `NXAI Community License <https://github.com/NX-AI/tirex/blob/main/LICENSE>`_.
             You must explicitly acknowledge this license by passing ``accept_license=True`` when constructing the model.
+
         .. note::
-            Partial fine-tuning is supported via
-            ``enable_finetuning={"unfreeze": ["tirex.output_patch_embedding*", ...]}``. Fine-tuning requires
-            ``tirex_kwargs={"backend": "torch"}``; only the last sLSTM blocks and the output head are gradient-safe
-            (see notebook for recommended configurations). Full fine-tuning (``enable_finetuning=True``) is
-            **not supported** — backpropagation through the early sLSTM blocks produces NaN gradients.
+            TiRex supports partial fine-tuning of the last sLSTM blocks and the output head. To enable it, set
+            ``tirex_kwargs={"backend": "torch"}`` and select the layers to unfreeze with
+            ``enable_finetuning={"unfreeze": ["tirex.output_patch_embedding*", ...]}``.
+
+            Full fine-tuning (``enable_finetuning=True``) is **not supported** because backpropagation through
+            the early sLSTM blocks produces NaN gradients.
 
         Parameters
         ----------
