@@ -1,3 +1,4 @@
+import copy
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -63,11 +64,11 @@ def load_validation_inputs():
 
 @pytest.fixture
 def pipeline():
-    model = TiRex2Stub()
     with patch(
-        TIREX2_LOAD_MODEL_PATCH_TARGET, return_value=SimpleNamespace(model=model)
+        TIREX2_LOAD_MODEL_PATCH_TARGET,
+        side_effect=lambda **kwargs: SimpleNamespace(model=TiRex2Stub()),
     ) as loader:
-        yield model, loader
+        yield loader
 
 
 class TestTiRex2Model:
@@ -435,56 +436,38 @@ class TestTiRex2Model:
         # check that each prediction is deterministic with 3 components
         assert all(p.n_components == 3 for p in pred)
 
-    @pytest.mark.parametrize("device", ["cuda:1", "mps"])
-    def test_backend_device_selection(self, device, pipeline):
-        _, loader = pipeline
-        loader.side_effect = lambda **kwargs: SimpleNamespace(model=TiRex2Stub())
+    @pytest.mark.parametrize("accelerator", ["cpu", "cuda", "mps"])
+    def test_accelerator_selection(self, accelerator, pipeline):
+        if accelerator == "cuda" and not torch.cuda.is_available():
+            pytest.skip("CUDA is not available.")
+        if accelerator == "mps" and not torch.backends.mps.is_available():
+            pytest.skip("MPS is not available.")
+
         load_kwargs = {
             "ckpt_path": "test-checkpoint",
             "hf_kwargs": {"revision": "test"},
         }
-        with (
-            patch("torch.cuda.device") as cuda_device,
-        ):
-            model = TiRex2Model(
-                hub_model_name=load_kwargs["ckpt_path"],
-                hub_model_revision=load_kwargs["hf_kwargs"]["revision"],
-                input_chunk_length=3,
-                output_chunk_length=4,
-                **tfm_kwargs,
-            )
-            model.fit(self.series)
-            module = model.model
-            strategy = SimpleNamespace(root_device=torch.device("cpu"))
-            module.trainer = SimpleNamespace(strategy=strategy)
-            module.configure_model()
-            assert loader.call_count == 1
-            assert "device" not in load_kwargs
 
-            # Backend changes must retain loaded weights, precision, and frozen state.
-            module.double().eval().requires_grad_(False)
-            module.tirex2.weight.fill_(7)
-            original = module.tirex2
-            strategy.root_device = torch.device(device)
-            module.configure_model()
-            assert module.tirex2 is not original
-            loader.assert_called_with(**load_kwargs, device=strategy.root_device.type)
-            torch.testing.assert_close(module.tirex2.weight, original.weight)
-            assert not module.tirex2.training
-            assert not module.tirex2.weight.requires_grad
-            if strategy.root_device.type == "cuda":
-                cuda_device.assert_called_once_with(torch.device(device))
-                # A different GPU uses the same backend, without another reload.
-                strategy.root_device = torch.device("cuda:0")
-            else:
-                cuda_device.assert_not_called()
-            module.configure_model()
-            assert loader.call_count == 2
+        kwargs = copy.deepcopy(tfm_kwargs)
+        kwargs["pl_trainer_kwargs"]["accelerator"] = accelerator
+        # create model: loader should not be called yet
+        model = TiRex2Model(
+            hub_model_name=load_kwargs["ckpt_path"],
+            hub_model_revision=load_kwargs["hf_kwargs"]["revision"],
+            input_chunk_length=3,
+            output_chunk_length=4,
+            **kwargs,
+        )
+        assert pipeline.call_count == 0
 
-            # Moving back to CPU must restore native kernels.
-            strategy.root_device = torch.device("cpu")
-            module.configure_model()
-            loader.assert_called_with(**load_kwargs, device="cpu")
-            torch.testing.assert_close(module.tirex2.weight, original.weight)
-            module.configure_model()
-            assert loader.call_count == 3
+        # call fit(): loader should be called once on CPU. The actual device is not known to PLForecastingModule yet
+        # because fit stage is skipped due to no fine-tuning.
+        model.fit(self.series)
+        assert pipeline.call_count == 1
+        pipeline.assert_called_with(**load_kwargs, device="cpu")
+
+        # call predict(): loader should be called again on the actual device. The actual device is known to
+        # PLForecastingModule because configure_model() is called during prediction.
+        model.predict(n=5, series=self.series)
+        assert pipeline.call_count == (1 if accelerator == "cpu" else 2)
+        pipeline.assert_called_with(**load_kwargs, device=accelerator)

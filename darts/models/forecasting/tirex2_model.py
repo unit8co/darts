@@ -56,8 +56,11 @@ class _TiRex2Module(PLForecastingModule):
     def __init__(self, tirex2_kwargs: dict[str, Any], **kwargs):
         super().__init__(**kwargs)
 
-        # ForecastModel (tirex2) is not an nn.Module. Register its backbone directly so
-        # Lightning can move, freeze, and serialize all pretrained parameters.
+        # ForecastModel (tirex2) is not an nn.Module. Register its backbone (.model) directly so Lightning can move,
+        # freeze, and serialize all pretrained parameters.
+        # At this stage, self.device is set by Lightning to always be CPU, and the actual device is not known until the
+        # first call to configure_model() during training or prediction. So we must load the model on CPU first, then
+        # move it to the actual device later in configure_model().
         self._tirex2_kwargs = tirex2_kwargs
         self._tirex2_device = self.device.type
         self.tirex2: TiRex2 = self._load_tirex2_model(self.device)
