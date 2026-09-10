@@ -181,6 +181,7 @@ optional = [
     "plotly>=6.5.2",
     "neuralforecast>=3.0.0",
     "tirex-ts>=1.4.0",
+    # TODO: remove the git pin once tirex-2 is updated to allow gradient flows for fine-tuning
     "tirex-2 @ git+https://github.com/NX-AI/tirex-2.git ; python_version >= '3.11'",
 ]
 release = [
