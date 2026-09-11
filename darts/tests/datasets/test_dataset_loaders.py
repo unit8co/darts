@@ -167,6 +167,32 @@ class TestDatasetLoader:
             os.path.join(tmp_dir_dataset, wrong_hash_dataset._metadata.name)
         )
 
+    def test_http_404(self, tmp_dir_dataset):
+        from unittest import mock
+
+        import requests
+
+        dataset = DatasetLoaderCSV(
+            metadata=DatasetLoaderMetadata(
+                "http_404",
+                uri="https://example.com/does-not-exist.csv",
+                hash="will fail",
+                header_time="Month",
+                format_time="%Y-%m",
+            )
+        )
+
+        response = requests.Response()
+        response.status_code = 404
+        with mock.patch(
+            "darts.datasets.dataset_loaders.requests.get", return_value=response
+        ):
+            with pytest.raises(DatasetLoadingException, match="404"):
+                dataset.load()
+        assert not os.path.exists(
+            os.path.join(tmp_dir_dataset, dataset._metadata.name)
+        )
+
     def test_pre_process_fn(self, tmp_dir_dataset):
         with pytest.raises(DatasetLoadingException):
             no_pre_process_fn_dataset.load()

@@ -131,6 +131,7 @@ class DatasetLoader(ABC):
         os.makedirs(self._root_path, exist_ok=True)
         try:
             request = requests.get(self._metadata.uri)
+            request.raise_for_status()
             with open(self._get_path_dataset(), "wb") as f:
                 f.write(request.content)
         except Exception as e:
@@ -148,6 +149,7 @@ class DatasetLoader(ABC):
         os.makedirs(self._root_path, exist_ok=True)
         try:
             request = requests.get(self._metadata.uri)
+            request.raise_for_status()
             with tempfile.TemporaryFile() as tf:
                 tf.write(request.content)
                 with tempfile.TemporaryDirectory() as td:
