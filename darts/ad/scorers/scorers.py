@@ -424,7 +424,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         self,
         series: TimeSeriesLike,
         pred_series: TimeSeriesLike,
-    ):
+    ) -> Self:
         """Fits the scorer on the two (sequences of) series.
 
         The function `diff_fn` passed as a parameter to the scorer, will transform `pred_series` and `series`
@@ -456,6 +456,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         diff_series = self._diff_series(series, pred_series)
         self.fit(diff_series)
         self._fit_called = True
+        return self
 
     def score(
         self,
