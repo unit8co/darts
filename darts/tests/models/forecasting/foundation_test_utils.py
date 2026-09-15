@@ -8,6 +8,7 @@ from here instead of duplicating them.
 import contextlib
 import functools
 import shutil
+import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -26,6 +27,34 @@ PATCHTST_FM_TINY_CONTEXT_LENGTH = 128
 TIMESFM2P5_TINY_DIR = (ARTEFACTS_DIR / "timesfm2p5" / "tiny_timesfm2p5").absolute()
 TIMESFM2P5_TINY_MAX_CONTEXT_LENGTH = 64
 TIMESFM2P5_TINY_MAX_PREDICTION_LENGTH = 8
+
+
+# ── T0 tiny model ───────────────────────────────────────────────────────────
+# Create a local checkpoint for t0-alpha model.
+@functools.lru_cache(maxsize=1)
+def tiny_t0_dir() -> str:
+    """Build a tiny T0 model and save it to a temporary directory, returning the path.
+
+    ``T0Model`` loads through Darts' ``HuggingFaceConnector``, so the path is passed as
+    ``local_dir`` and the gated t0-alpha weights are never downloaded."""
+    from t0 import T0Config, T0Forecaster
+
+    directory = tempfile.mkdtemp(prefix="darts_tiny_t0_")
+    T0Forecaster.from_config(
+        T0Config(
+            embed_dim=32,
+            num_layers=2,
+            num_heads=4,
+            mlp_hidden_dim=64,
+            patch_size=8,
+            group_every_n=2,
+            dropout=0.0,
+            quantile_levels=(0.1, 0.25, 0.5, 0.75, 0.9),
+            scaler_use_arcsinh=True,
+        )
+    ).save_pretrained(directory)
+    return directory
+
 
 # ── HuggingFace mock download (Chronos-2 tiny artefact) ────────────────────
 HF_HUB_DOWNLOAD_PATCH_TARGET = (
@@ -72,6 +101,43 @@ class TiRexStub:
         for qi, q in enumerate(TIREX_QUANTILES):
             quantiles[:, :, qi] = mean + (float(q) - 0.5)
         return quantiles, mean
+
+
+# ── T0 tiny model ───────────────────────────────────────────────────────────
+# T0Model loads config.json + model.safetensors through Darts' shared HuggingFaceConnector,
+# like the other foundation models. We build a small real model, save it to a temp dir, and
+# point tests at it via ``local_dir`` (the gated t0-alpha weights are never downloaded).
+
+
+@functools.lru_cache(maxsize=1)
+def tiny_t0_dir() -> str:
+    """Build a tiny T0 model, save it (config.json + model.safetensors) to a temp dir, and return
+    the path — so tests load it via ``local_dir`` exactly like the other foundation models."""
+    from t0 import T0Config, T0Forecaster
+
+    directory = tempfile.mkdtemp(prefix="darts_tiny_t0_")
+    model = T0Forecaster.from_config(
+        T0Config(
+            embed_dim=64,
+            num_layers=4,
+            num_heads=8,
+            mlp_hidden_dim=128,
+            patch_size=8,
+            group_every_n=2,
+            dropout=0.0,
+            quantile_levels=(0.1, 0.25, 0.5, 0.75, 0.9),
+            scaler_use_arcsinh=True,
+        )
+    )
+    model.save_pretrained(directory)
+    return directory
+
+
+def tiny_t0():
+    """The tiny model the wrapper loads from ``tiny_t0_dir`` (identical weights)."""
+    from t0 import T0Forecaster
+
+    return T0Forecaster.from_pretrained(tiny_t0_dir())
 
 
 # ── TimesFM 2.5 tiny model ─────────────────────────────────────────────────
