@@ -2527,6 +2527,45 @@ class TestTorchForecastingModel:
             assert len(train_set) == len(val_set) == math.ceil(3 / stride)
             assert train_set.stride == val_set.stride == stride
 
+    @patch("darts.models.forecasting.torch_forecasting_model.logger.warning")
+    def test_encoders_ignored_in_from_dataset_warns(self, mock_warning):
+        """`fit_from_dataset`/`predict_from_dataset` warn that `add_encoders` is ignored."""
+        model = RNNModel(
+            12,
+            "RNN",
+            10,
+            10,
+            **tfm_kwargs,
+            add_encoders={"cyclic": {"future": ["month"]}},
+        )
+
+        with patch.object(model, "_setup_for_train", return_value={}):
+            with patch.object(model, "_train", return_value=model):
+                model.fit_from_dataset(train_dataset=object())
+        mock_warning.assert_called_once()
+        assert "fit_from_dataset" in mock_warning.call_args.args[0]
+        assert "add_encoders" in mock_warning.call_args.args[0]
+
+        mock_warning.reset_mock()
+        with patch.object(model, "_setup_for_predict", return_value={}):
+            with patch.object(model, "_predict", return_value=[]):
+                model.predict_from_dataset(n=1, dataset=object())
+        mock_warning.assert_called_once()
+        assert "predict_from_dataset" in mock_warning.call_args.args[0]
+        assert "add_encoders" in mock_warning.call_args.args[0]
+
+    def test_encoders_not_set_from_dataset_no_warn(self):
+        """`fit_from_dataset`/`predict_from_dataset` do not warn when no encoders are set."""
+        model = RNNModel(12, "RNN", 10, 10, **tfm_kwargs)
+        with patch("darts.models.forecasting.torch_forecasting_model.logger.warning") as mock_warning:
+            with patch.object(model, "_setup_for_train", return_value={}):
+                with patch.object(model, "_train", return_value=model):
+                    model.fit_from_dataset(train_dataset=object())
+            with patch.object(model, "_setup_for_predict", return_value={}):
+                with patch.object(model, "_predict", return_value=[]):
+                    model.predict_from_dataset(n=1, dataset=object())
+        mock_warning.assert_not_called()
+
     def test_predict_after_fit_from_dataset(self):
         """Test that the model can predict after being trained with `fit_from_dataset` using all covariates."""
         icl, ocl = kwargs["input_chunk_length"], kwargs["output_chunk_length"]

@@ -1279,7 +1279,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         -------
         self
             Fitted model.
+
+        Notes
+        -----
+        Encoders passed via ``add_encoders`` at model creation are ignored by this method. Encoders are only
+        applied when training with :func:`fit()`. If you need encoded covariates, the training datasets must
+        already contain them.
         """
+        if self.add_encoders:
+            logger.warning(
+                "Encoders (`add_encoders`) are ignored when training with `fit_from_dataset()`. "
+                "Encoders are only applied when calling `fit()`. If you need encoded covariates, "
+                "make sure the training datasets already contain them."
+            )
         self._train(
             **self._setup_for_train(
                 train_dataset=train_dataset,
@@ -2057,7 +2069,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         -------
         Sequence[TimeSeries]
             Returns one or more forecasts for time series.
+
+        Notes
+        -----
+        Encoders passed via ``add_encoders`` at model creation are ignored by this method. Encoders are only
+        applied when predicting with :func:`predict()`. If you need encoded covariates, the inference dataset must
+        already contain them.
         """
+        if self.add_encoders:
+            logger.warning(
+                "Encoders (`add_encoders`) are ignored when predicting with `predict_from_dataset()`. "
+                "Encoders are only applied when calling `predict()`. If you need encoded covariates, "
+                "make sure the inference dataset already contains them."
+            )
         return self._predict(
             **self._setup_for_predict(
                 n=n,
