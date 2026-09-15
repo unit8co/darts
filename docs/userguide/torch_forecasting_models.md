@@ -386,13 +386,14 @@ Feature inputs are named after the module fields (`past_target`, `past_covariate
 ```python
 model = SomeTorchForecastingModel(...)
 model.fit(...)
+horizon = model.output_chunk_length
 
 # export requires torch + onnx; produces `example.onnx` and `example.onnx.spec.json`
 onnx_filename = "example.onnx"
 model.to_onnx(onnx_filename, export_params=True)
 ```
 
-For multi-step forecasting (`n > output_chunk_length`), use the autoregressive runner (mirrors the torch predict loop, deterministic `num_samples=1` only):
+Now forecast using Darts' `run_onnx_prediction()` which mirrors `TorchForecastingModel.predict()` for deterministic models with ``num_samples=1`` and probabilistic models with ``predict_likelihood_parameters=True``.
 
 ```python
 import onnxruntime as ort
@@ -403,7 +404,7 @@ session = ort.InferenceSession(onnx_filename)
 
 # returns NumPy array shaped like `TimeSeries.all_values()` for the forecast horizon
 forecast = run_onnx_prediction(
-    n=12,
+    n=horizon,
     session=session,
     spec=spec,
     series=series,
@@ -412,7 +413,7 @@ forecast = run_onnx_prediction(
 )
 ```
 
-For a single ONNX step (advanced / custom loops), slice features with `prepare_onnx_inputs` using the spec:
+For a single ONNX step (advanced / custom loops), extract features with `prepare_onnx_inputs` using the spec:
 
 ```python
 from darts.utils.onnx.inference import OnnxModelSpec, prepare_onnx_inputs, extract_point_forecast
@@ -428,9 +429,7 @@ ort_out = session.run(spec.output_names, onnx_inputs)
 point_forecast = extract_point_forecast(ort_out)  # shape (time, components)
 ```
 
-Raw ONNX output tensors have shape `(batch, output_chunk_length, n_components, n_likelihood_params)`. Models trained with a `likelihood` export those raw parameters (sampling is not in the graph). `extract_point_forecast` and `run_onnx_prediction` keep the first parameter as the point forecast (e.g. Gaussian μ). That matches `predict(predict_likelihood_parameters=True)` for `n <= output_chunk_length`, not sampled `predict()` draws.
-
-`use_reversible_instance_norm=True` is part of `forward()` and is therefore included in the graph (normalize `past_target`, denormalize `prediction`).
+Raw ONNX output tensors have shape `(batch, output_chunk_length, n_components, n_likelihood_params)`. Models trained with a `likelihood` export those raw parameters (sampling is not in the graph).
 
 ### Callbacks
 

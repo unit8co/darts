@@ -1,5 +1,6 @@
 """
-ONNX utilities.
+ONNX Utilities
+--------------
 
 ONNX inference utilities for Darts torch forecasting models are torch-free (ONNX Runtime + NumPy).
 """

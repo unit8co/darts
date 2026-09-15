@@ -945,14 +945,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             path = self._default_save_path() + ".onnx"
 
         mock_batch = self._onnx_dummy_input()
+        likelihood = self.likelihood
+
         self.model.eval()
         bundle = self.model._onnx_wrapper(
             mock_batch,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             uses_past_covariates=self.uses_past_covariates,
             uses_future_covariates=self.uses_future_covariates,
             uses_static_covariates=self.uses_static_covariates,
+            likelihood_parameter_names=likelihood.parameter_names
+            if likelihood is not None
+            else None,
         )
         export_kwargs = {
             "input_names": bundle.input_names,

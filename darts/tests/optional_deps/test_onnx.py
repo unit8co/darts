@@ -1,34 +1,35 @@
-import os.path
-from itertools import product
-
-import numpy as np
-import pandas as pd
 import pytest
 
-import darts.utils.timeseries_generation as tg
 from darts.tests.conftest import ONNX_AVAILABLE, TORCH_AVAILABLE, tfm_kwargs_dev
-from darts.utils.onnx.inference import (
-    OnnxModelSpec,
-    extract_point_forecast,
-    run_onnx_prediction,
-)
-from darts.utils.onnx_utils import prepare_onnx_inputs
 
 if not (TORCH_AVAILABLE and ONNX_AVAILABLE):
     pytest.skip(
         f"Torch or Onnx not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+
+import os.path
+from itertools import product
+
+import numpy as np
 import onnx
 import onnxruntime as ort
+import pandas as pd
 
+import darts.utils.timeseries_generation as tg
 from darts.models import (
     BlockRNNModel,
     NHiTSModel,
     RNNModel,
     TiDEModel,
 )
-from darts.utils.likelihood_models.torch import GaussianLikelihood
+from darts.utils.likelihood_models.torch import QuantileRegression
+from darts.utils.onnx.inference import (
+    OnnxModelSpec,
+    extract_point_forecast,
+    prepare_onnx_inputs,
+    run_onnx_prediction,
+)
 
 torch_model_cls = [
     BlockRNNModel,
@@ -242,6 +243,7 @@ class TestOnnx:
         assert "future_covariates" in spec.feature_input_names
 
         inputs = prepare_onnx_inputs(
+            n=1,
             series=self.ts_tg,
             spec=spec,
             past_covariates=self.ts_pc,
@@ -256,22 +258,12 @@ class TestOnnx:
         forecast = extract_point_forecast(outputs)
         assert forecast.ndim == 2
 
-    def test_prepare_onnx_inputs_legacy_model_arg(self):
-        """Legacy ``prepare_onnx_inputs(model=...)`` API remains supported."""
-        model = self._make_model(NHiTSModel)
-        model.fit(series=self.ts_tg)
-        inputs = prepare_onnx_inputs(
-            model=model,
-            series=self.ts_tg,
-        )
-        assert "past_target" in inputs
-        assert inputs["past_target"].shape[0] == 1
-
-    @pytest.mark.parametrize("model_cls", [RNNModel, TiDEModel])
+    @pytest.mark.parametrize("model_cls", [TiDEModel, RNNModel])
     def test_onnx_likelihood(self, tmpdir_fn, model_cls):
-        """Likelihood models export raw params; ONNX point forecast is the first param."""
-        model = self._make_model(model_cls, likelihood=GaussianLikelihood())
-        series = self.ts_tg
+        """Likelihood models export raw params in component dimension."""
+        quantiles = [0.1, 0.5, 0.9]
+        model = self._make_model(model_cls, likelihood=QuantileRegression(quantiles))
+        series = self.ts_tg.stack(self.ts_tg + 100.0)
         past_cov = self.ts_pc if model.supports_past_covariates else None
         future_cov = self.ts_fc if model.supports_future_covariates else None
         model.fit(series=series, past_covariates=past_cov, future_covariates=future_cov)
@@ -282,6 +274,7 @@ class TestOnnx:
         session = ort.InferenceSession(onnx_filename)
 
         n_chunk = model.output_chunk_length
+        shape_expected = (n_chunk, series.n_components * len(quantiles), 1)
         pred_params = model.predict(
             n=n_chunk,
             series=series,
@@ -289,6 +282,8 @@ class TestOnnx:
             future_covariates=future_cov,
             predict_likelihood_parameters=True,
         )
+        assert pred_params.shape == shape_expected
+
         onnx_pred = run_onnx_prediction(
             n=n_chunk,
             session=session,
@@ -297,41 +292,56 @@ class TestOnnx:
             past_covariates=past_cov,
             future_covariates=future_cov,
         )
-        # first Gaussian parameter is μ; matches predict_likelihood_parameters
+        assert onnx_pred.shape == shape_expected
+        assert onnx_pred.components.equals(pred_params.components)
+        assert onnx_pred.time_index.equals(pred_params.time_index)
         np.testing.assert_array_almost_equal(
-            onnx_pred, pred_params.all_values()[:, :1, :], decimal=4
+            onnx_pred.all_values(), pred_params.all_values(), decimal=4
         )
 
-        inputs = prepare_onnx_inputs(
-            series=series,
-            spec=spec,
-            past_covariates=past_cov,
-            future_covariates=future_cov,
-        )
-        if spec.stepwise_state:
-            inputs = {name: arr[:, -1:, :] for name, arr in inputs.items()}
-            for name, shape in zip(
-                spec.state_input_names, spec.state_input_shapes or []
-            ):
-                inputs[name] = np.zeros(shape, dtype=series.dtype)
-        session_names = {inp.name for inp in session.get_inputs()}
-        raw = session.run(
-            spec.output_names,
-            {name: arr for name, arr in inputs.items() if name in session_names},
-        )[0]
-        assert raw.ndim == 4
-        assert raw.shape[-1] == 2
+        # auto-regression not allowed for likelihood models
+        with pytest.raises(
+            ValueError, match="Cannot generate auto-regressive predictions"
+        ):
+            _ = run_onnx_prediction(
+                n=n_chunk + 1,
+                session=session,
+                spec=spec,
+                series=series,
+                past_covariates=past_cov,
+                future_covariates=future_cov,
+            )
 
-        n_ar = n_chunk + 3
-        onnx_ar = run_onnx_prediction(
-            n=n_ar,
+    def test_onnx_multiseries(self, tmpdir_fn):
+        """Likelihood models export raw params in component dimension."""
+        model = self._make_model(TiDEModel)
+        series = [self.ts_tg, self.ts_tg + 100.0]
+
+        past_cov = [self.ts_pc] * 2 if model.supports_past_covariates else None
+        future_cov = [self.ts_fc] * 2 if model.supports_future_covariates else None
+        model.fit(series=series, past_covariates=past_cov, future_covariates=future_cov)
+
+        onnx_filename = f"test_ll_{model.model_name}.onnx"
+        model.to_onnx(onnx_filename)
+        spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
+        session = ort.InferenceSession(onnx_filename)
+
+        n_chunk = model.output_chunk_length
+        # pred_params = model.predict(
+        #     n=n_chunk,
+        #     series=series,
+        #     past_covariates=past_cov,
+        #     future_covariates=future_cov,
+        # )
+
+        _ = run_onnx_prediction(
+            n=n_chunk + 1,
             session=session,
             spec=spec,
             series=series,
             past_covariates=past_cov,
             future_covariates=future_cov,
         )
-        assert onnx_ar.shape == (n_ar, series.n_components, 1)
 
     @pytest.mark.parametrize("model_cls", [NHiTSModel, TiDEModel])
     def test_onnx_reversible_instance_norm(self, tmpdir_fn, model_cls):

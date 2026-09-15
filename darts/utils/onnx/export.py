@@ -176,7 +176,7 @@ class _ONNXExportWrapper(nn.Module):
         if self.state_spec is None:
             return out.prediction
         state_out, _ = flatten_module_state(out.state)
-        return (out.prediction, *state_out)
+        return out.prediction, *state_out
 
 
 def prepare_onnx_export(
@@ -185,9 +185,11 @@ def prepare_onnx_export(
     *,
     input_chunk_length: int,
     output_chunk_length: int,
+    output_chunk_shift: int,
     uses_past_covariates: bool,
     uses_future_covariates: bool,
     uses_static_covariates: bool,
+    likelihood_parameter_names: list[str],
 ) -> OnnxExportBundle:
     """Build the ONNX wrapper and example tensors from a module input.
 
@@ -208,12 +210,17 @@ def prepare_onnx_export(
         Target history length.
     output_chunk_length
         Steps produced per graph call.
+    output_chunk_shift
+        Steps that inference start is shifted into the future.
     uses_past_covariates
         Whether the fitted model uses past covariates.
     uses_future_covariates
         Whether the fitted model uses future covariates.
     uses_static_covariates
         Whether the fitted model uses static covariates.
+    likelihood_parameter_names
+        The likelihood parameter names if the model was trained with a
+        likelihood.
 
     Returns
     -------
@@ -241,9 +248,11 @@ def prepare_onnx_export(
     spec = OnnxModelSpec(
         input_chunk_length=input_chunk_length,
         output_chunk_length=output_chunk_length,
+        output_chunk_shift=output_chunk_shift,
         uses_past_covariates=uses_past_covariates,
         uses_future_covariates=uses_future_covariates,
         uses_static_covariates=uses_static_covariates,
+        likelihood_parameter_names=likelihood_parameter_names,
         feature_input_names=feature_names,
         input_names=input_names,
         output_names=output_names,
