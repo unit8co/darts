@@ -81,6 +81,7 @@ class TestOnnx:
             series=series if series is not None else self._series_for(model),
             past_covariates=self.ts_pc if model.uses_past_covariates else None,
             future_covariates=self.ts_fc if model.uses_future_covariates else None,
+            verbose=False,
         )
 
     def _assert_forecasts_equal(
@@ -204,6 +205,41 @@ class TestOnnx:
         pred_onnx = self._onnx_pred(onnx_filename, spec, model, n=2)
         self._assert_forecasts_equal(pred_onnx, pred)
 
+    def test_onnx_roll_size_smaller_than_output_chunk_length(self, tmpdir_fn):
+        """First autoregressive step must pass output_chunk_length future covariates."""
+        model = BlockRNNModel(
+            input_chunk_length=4,
+            output_chunk_length=2,
+            hidden_dim=4,
+            n_epochs=1,
+            **tfm_kwargs_dev,
+        )
+        series = self.ts_tg
+        future_cov = self.ts_fc
+        model.fit(series=series, future_covariates=future_cov)
+
+        n = 5
+        roll_size = 1
+        pred = model.predict(
+            n=n,
+            series=series,
+            future_covariates=future_cov,
+            roll_size=roll_size,
+        )
+        onnx_filename = f"test_roll_{model.model_name}.onnx"
+        model.to_onnx(onnx_filename)
+        spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
+        onnx_pred = run_onnx_prediction(
+            n=n,
+            session=ort.InferenceSession(onnx_filename),
+            spec=spec,
+            series=series,
+            future_covariates=future_cov,
+            roll_size=roll_size,
+            verbose=False,
+        )
+        self._assert_forecasts_equal(onnx_pred, pred)
+
     @pytest.mark.parametrize("model_cls", [RNNModel, TiDEModel])
     def test_onnx_autoregressive_horizon(self, tmpdir_fn, model_cls):
         """ONNX autoregression matches torch predict when n > output_chunk_length."""
@@ -227,6 +263,7 @@ class TestOnnx:
             series=series,
             past_covariates=past_cov,
             future_covariates=future_cov,
+            verbose=False,
         )
         self._assert_forecasts_equal(onnx_pred, pred)
 
@@ -300,6 +337,7 @@ class TestOnnx:
             series=series,
             past_covariates=past_cov,
             future_covariates=future_cov,
+            verbose=False,
         )
         assert onnx_pred.components.equals(pred_params.components)
         self._assert_forecasts_equal(onnx_pred, pred_params)
@@ -345,6 +383,7 @@ class TestOnnx:
             series=series,
             past_covariates=past_cov,
             future_covariates=future_cov,
+            verbose=False,
         )
         assert isinstance(onnx_pred, list)
         assert len(onnx_pred) == len(series)
@@ -378,6 +417,7 @@ class TestOnnx:
             series=series,
             past_covariates=past_cov,
             future_covariates=future_cov,
+            verbose=False,
         )
         # single window: norm + denorm must match torch (proves stats are not baked
         # from the dummy export batch and output is on the original scale)
@@ -397,6 +437,7 @@ class TestOnnx:
             series=series,
             past_covariates=past_cov,
             future_covariates=future_cov,
+            verbose=False,
         )
         # AR recomputes RINorm per window; untrained + RINorm can explode, so
         # compare relatively (float32 drift on O(1e6) values)

@@ -3242,6 +3242,32 @@ class TestTorchForecastingModelInputValidation:
         with pytest.raises(ValueError, match="roll_size"):
             model.predict_from_dataset(n=2, dataset=ds, roll_size=3)
 
+    def test_predict_roll_size_smaller_than_output_chunk_length_with_future_covariates(
+        self,
+    ):
+        """First autoregressive step must pass output_chunk_length future covariates."""
+        model = BlockRNNModel(
+            input_chunk_length=4,
+            output_chunk_length=2,
+            hidden_dim=4,
+            n_epochs=1,
+            **tfm_kwargs_dev,
+        )
+        future_cov = tg.sine_timeseries(
+            length=len(self.series) + 10,
+            start=self.series.start_time(),
+            freq=self.series.freq,
+        )
+        model.fit(series=self.series, future_covariates=future_cov)
+        n = 5
+        pred = model.predict(
+            n=n,
+            series=self.series,
+            future_covariates=future_cov,
+            roll_size=1,
+        )
+        assert len(pred) == n
+
     def test_predict_from_dataset_num_samples_zero(self):
         model = DLinearModel(
             input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs_dev

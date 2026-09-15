@@ -129,16 +129,19 @@ def prepare_onnx_inputs(
     Parameters
     ----------
     series
-        Target series; the last ``input_chunk_length`` values become
-        ``past_target``.
+        The series or sequence of series, representing the history of the target series whose
+        future is to be predicted. If specified, the method returns the forecasts of these
+        series. Otherwise, the method returns the forecast of the (single) training series.
     spec
-        Graph / window metadata.
+        Graph / window metadata, typically from ``*.onnx.spec.json``.
     past_covariates
-        Past covariates aligned with ``series``, if used.
+        Optionally, the past-observed covariates series needed as inputs for the model.
+        They must match the covariates used for training in terms of dimension.
     future_covariates
-        Future covariates covering the historic window and ``future_horizon``.
+        Optionally, the future-known covariates series needed as inputs for the model.
+        They must match the covariates used for training in terms of dimension.
     n
-        Forecast horizon.
+        The number of time steps after the end of the target series for which to produce predictions.
 
     Returns
     -------
@@ -205,7 +208,7 @@ def run_onnx_prediction(
     future_covariates: TimeSeriesLike | None = None,
     roll_size: int | None = None,
     verbose: bool = True,
-) -> np.ndarray:
+) -> TimeSeriesLike:
     """Run ONNX inference for ``n`` steps after ``series`` end.
 
     Mirrors ``TorchForecastingModel.predict()`` for deterministic models with
@@ -217,29 +220,33 @@ def run_onnx_prediction(
     Parameters
     ----------
     n
-        Forecast horizon (steps after ``series`` end).
+        The number of time steps after the end of the target series for which to produce predictions.
     session
         An ONNX Runtime ``InferenceSession`` for the exported graph.
     spec
         Graph / window metadata, typically from ``*.onnx.spec.json``.
     series
-        Target series; the last ``input_chunk_length`` values are consumed.
+        The series or sequence of series, representing the history of the target series whose
+        future is to be predicted. If specified, the method returns the forecasts of these
+        series. Otherwise, the method returns the forecast of the (single) training series.
     past_covariates
-        Past covariates aligned with ``series``, if the model uses them.
+        Optionally, the past-observed covariates series needed as inputs for the model.
+        They must match the covariates used for training in terms of dimension.
     future_covariates
-        Future covariates covering the historic window and the horizon, if used.
+        Optionally, the future-known covariates series needed as inputs for the model.
+        They must match the covariates used for training in terms of dimension.
     roll_size
-        Predicted steps committed per autoregressive iteration. Defaults to
-        ``output_chunk_length``. Forced to ``1`` for stepwise graphs.
+        For self-consuming predictions, i.e. ``n > output_chunk_length``, determines how many
+        outputs of the model are fed back into it at every iteration of feeding the predicted target
+        (and optionally future covariates) back into the model. If this parameter is not provided,
+        it will be set ``output_chunk_length`` by default. Forced to ``1`` for stepwise graphs.
     verbose
-        Whether to display the prediction progress.
+        Whether to display the forecast progress.
 
     Returns
     -------
-    np.ndarray
-        Point forecast of shape ``(n, n_components, 1)``, matching
-        :meth:`~darts.timeseries.TimeSeries.all_values` for a deterministic
-        series.
+    TimeSeriesLike
+        The forecasted series or sequence of series.
     """
     if roll_size is None:
         roll_size = spec.output_chunk_length
@@ -293,6 +300,7 @@ def run_onnx_prediction(
             if future_covariates is not None
             else None,
         )
+        # shape (batch size = 1, horizon, components * likelihood parameters)
         prediction_arr = _get_batch_prediction(
             n=n,
             feature_arrays=feature_arrays,
@@ -301,7 +309,7 @@ def run_onnx_prediction(
             roll_size=roll_size,
         )
         prediction_series = _build_forecast_series_from_schema(
-            values=prediction_arr,
+            values=prediction_arr[0],
             schema=series_i.schema(copy=False),
             pred_start=series_i.end_time() + (ocs + 1) * series_i.freq,
             predict_likelihood_parameters=likelihood is not None,
@@ -327,6 +335,7 @@ def _get_batch_prediction(
     """
     icl = spec.input_chunk_length
     ocl = spec.output_chunk_length
+    # predict at least `output_chunk_length` points, so that we use the most recent target values
     min_n = n if n >= ocl else ocl
 
     past_target = feature_arrays["past_target"]
@@ -388,11 +397,6 @@ def _get_batch_prediction(
                 state=state,
             )
 
-        if pred is None:
-            raise ValueError(
-                "`input_chunk_length` must be >= 1 for stepwise ONNX inference."
-            )
-
         # remaining steps use the last prediction and last historic covariate pads
         out = pred
         past_target = pred[:, -1:, :]
@@ -406,7 +410,7 @@ def _get_batch_prediction(
         prediction_length = roll_size
     else:
         future_cov_slice = (
-            future_covariates_arr[:, :roll_size, :]
+            future_covariates_arr[:, :ocl, :]
             if future_covariates_arr is not None
             else None
         )
@@ -415,12 +419,16 @@ def _get_batch_prediction(
         prediction_length = roll_size
 
     while prediction_length < min_n:
+        # we want the last prediction to end exactly at `min_n` into the future.
+        # this means we may have to truncate the previous prediction and step
+        # back the roll size for the last chunk
         if prediction_length + ocl > min_n:
             spillover = prediction_length + ocl - min_n
             roll_size -= spillover
             prediction_length -= spillover
             batch_predictions[-1] = batch_predictions[-1][:, :roll_size, :]
 
+        # roll over past input tensors to contain the latest target and covariates
         past_target = np.roll(past_target, -roll_size, axis=1)
         if past_covariates_arr is not None:
             past_covariates_arr = np.roll(past_covariates_arr, -roll_size, axis=1)
@@ -429,16 +437,19 @@ def _get_batch_prediction(
                 historic_future_covariates, -roll_size, axis=1
             )
 
+        # update target input to include next `roll_size` predictions
         if icl >= roll_size:
             past_target[:, -roll_size:, :] = out[:, :roll_size, :]
         else:
             past_target[:, :, :] = out[:, -icl:, :]
 
+        # set left and right boundaries for extracting future elements
         if icl >= roll_size:
             left_past, right_past = prediction_length - roll_size, prediction_length
         else:
             left_past, right_past = prediction_length - icl, prediction_length
 
+        # update past covariates to include next `roll_size` future past covariates elements
         if past_covariates_arr is not None and future_past_covariates is not None:
             if icl >= roll_size:
                 past_covariates_arr[:, -roll_size:, :] = future_past_covariates[
@@ -449,6 +460,7 @@ def _get_batch_prediction(
                     :, left_past:right_past, :
                 ]
 
+        # update historic future covariates to include next `roll_size` future covariates elements
         if (
             update_historic
             and historic_future_covariates is not None
@@ -480,12 +492,10 @@ def _get_batch_prediction(
         batch_predictions.append(out)
         prediction_length += ocl
 
-    # concatenate auto-regressive chunks and trim to ``(n, components, likelihood params)`
-    predictions = np.concatenate(batch_predictions, axis=1)
-    result = predictions[0, :n, :]
-    if result.ndim == 2:
-        result = result[:, :, np.newaxis]
-    return result
+    # bring predictions into desired format and drop unnecessary values
+    batch_predictions = np.concatenate(batch_predictions, axis=1)
+    batch_predictions = batch_predictions[:, :n, :]
+    return batch_predictions
 
 
 def _run_onnx_step(

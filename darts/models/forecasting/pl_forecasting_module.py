@@ -526,7 +526,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             )
 
         future_cov_slice = (
-            future_covariates[:, :roll_size, :]
+            future_covariates[:, : self.output_chunk_length, :]
             if future_covariates is not None
             else None
         )
