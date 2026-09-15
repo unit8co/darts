@@ -3,15 +3,14 @@ ONNX Inference
 --------------
 
 Torch-free ONNX inference utilities. Load a companion ``*.onnx.spec.json`` into
-:class:`OnnxModelSpec`, then either run a full horizon with
-:func:`run_onnx_prediction` or drive a custom loop with :func:`prepare_onnx_inputs`
-and :func:`extract_point_forecast`.
+:class:`OnnxModelSpec`, then either run a full horizon with :func:`run_onnx_prediction`
+or drive a custom loop with :func:`prepare_onnx_inputs`.
 """
 
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -24,7 +23,7 @@ from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import Likelihood, LikelihoodType
 from darts.utils.timeseries_generation import _build_forecast_series_from_schema
 from darts.utils.ts_utils import get_series_seq_type, series2seq
-from darts.utils.utils import _build_tqdm_iterator, _parallel_apply
+from darts.utils.utils import _build_tqdm_iterator
 
 
 @dataclass
@@ -114,11 +113,11 @@ class OnnxModelSpec:
 
 
 def prepare_onnx_inputs(
-    n: int,
     series: TimeSeries,
     spec: OnnxModelSpec,
     past_covariates: TimeSeries | None = None,
     future_covariates: TimeSeries | None = None,
+    n: int | None = None,
 ) -> dict[str, np.ndarray]:
     """Slice input features for a single ONNX inference window.
 
@@ -129,8 +128,6 @@ def prepare_onnx_inputs(
 
     Parameters
     ----------
-    n
-        Forecast horizon.
     series
         Target series; the last ``input_chunk_length`` values become
         ``past_target``.
@@ -140,6 +137,8 @@ def prepare_onnx_inputs(
         Past covariates aligned with ``series``, if used.
     future_covariates
         Future covariates covering the historic window and ``future_horizon``.
+    n
+        Forecast horizon.
 
     Returns
     -------
@@ -148,7 +147,10 @@ def prepare_onnx_inputs(
     """
     ocl = spec.output_chunk_length
     ocs = spec.output_chunk_shift
-    min_n = n if n >= ocl else ocl
+    if n is None or n < ocl:
+        min_n = ocl
+    else:
+        min_n = n
 
     freq = series.freq
     past_start = series.end_time() - (spec.input_chunk_length - 1) * freq
@@ -194,105 +196,135 @@ def prepare_onnx_inputs(
     return inputs
 
 
-def _np_roll(arr: np.ndarray, shift: int, axis: int) -> np.ndarray:
-    """NumPy equivalent of ``torch.roll`` used in ``_get_batch_prediction``."""
-    return np.roll(arr, -shift, axis=axis)
+def run_onnx_prediction(
+    n: int,
+    session: Any,
+    spec: OnnxModelSpec,
+    series: TimeSeriesLike,
+    past_covariates: TimeSeriesLike | None = None,
+    future_covariates: TimeSeriesLike | None = None,
+    roll_size: int | None = None,
+    verbose: bool = True,
+) -> np.ndarray:
+    """Run ONNX inference for ``n`` steps after ``series`` end.
 
+    Mirrors ``TorchForecastingModel.predict()`` for deterministic models with
+    ``num_samples=1`` and probabilistic models with
+    ``predict_likelihood_parameters=True``.
 
-def extract_point_forecast(ort_outputs: Sequence[np.ndarray]) -> np.ndarray:
-    """Extract a point forecast from raw ONNX output tensors.
-
-    Drops the batch dimension. If the prediction is
-    ``(batch, time, components, n_likelihood_params)``, keeps the first
-    likelihood parameter (e.g. Gaussian :math:`\\mu`).
+    Autoregressive forecasts are only supported for deterministic models.
 
     Parameters
     ----------
-    ort_outputs
-        Sequence returned by ``session.run``; ``ort_outputs[0]`` is
-        ``prediction``.
+    n
+        Forecast horizon (steps after ``series`` end).
+    session
+        An ONNX Runtime ``InferenceSession`` for the exported graph.
+    spec
+        Graph / window metadata, typically from ``*.onnx.spec.json``.
+    series
+        Target series; the last ``input_chunk_length`` values are consumed.
+    past_covariates
+        Past covariates aligned with ``series``, if the model uses them.
+    future_covariates
+        Future covariates covering the historic window and the horizon, if used.
+    roll_size
+        Predicted steps committed per autoregressive iteration. Defaults to
+        ``output_chunk_length``. Forced to ``1`` for stepwise graphs.
+    verbose
+        Whether to display the prediction progress.
 
     Returns
     -------
     np.ndarray
-        Array of shape ``(time, components)``.
+        Point forecast of shape ``(n, n_components, 1)``, matching
+        :meth:`~darts.timeseries.TimeSeries.all_values` for a deterministic
+        series.
     """
-    pred = np.asarray(ort_outputs[0])
-    if pred.ndim == 4:
-        pred = pred[0, ..., 0]
-    elif pred.ndim == 3:
-        pred = pred[0]
-    if pred.ndim == 1:
-        pred = pred[:, np.newaxis]
-    return pred
-
-
-def _squeeze_prediction_batch(pred: np.ndarray) -> np.ndarray:
-    """Convert raw ONNX prediction to ``(batch, time, components)``.
-
-    Raw prediction has shape ``(batch, time, components, n_likelihood_params)``.
-    """
-    # move likelihood parameters to component dimension (c1_p1, ..., c1_pn, ..., cn_p1, ..., cn_pn)
-    # auto-regression is not allowed with likelihood models; hence, no dimensionality issues
-    return np.asarray(pred).reshape(pred.shape[:2] + (-1,))
-
-
-def _zero_state(spec: OnnxModelSpec, dtype) -> list[np.ndarray]:
-    """Allocate zero tensors matching ``spec.state_input_shapes``."""
-    if spec.state_input_shapes is None:
+    if roll_size is None:
+        roll_size = spec.output_chunk_length
+    elif not 0 < roll_size <= spec.output_chunk_length:
         raise ValueError(
-            "`state_input_shapes` must be set on `OnnxModelSpec` for recurrent models."
+            "`roll_size` must be an integer between 1 and `output_chunk_length`."
         )
-    return [np.zeros(shape, dtype=dtype) for shape in spec.state_input_shapes]
+
+    ocl = spec.output_chunk_length
+    ocs = spec.output_chunk_shift
+
+    likelihood_parameters = spec.likelihood_parameter_names
+    likelihood = None
+    if likelihood_parameters is not None:
+        if n > ocl:
+            raise_log(
+                ValueError(
+                    "Cannot generate auto-regressive predictions `n > output_chunk_length` "
+                    "when model was fitted with a likelihood."
+                ),
+            )
+
+        # create a generic likelihood for component naming (the type is not important here)
+        likelihood = Likelihood(
+            likelihood_type=LikelihoodType.Quantile,
+            parameter_names=likelihood_parameters,
+        )
+
+    series_seq_type = get_series_seq_type(series)
+    series = series2seq(series)
+    past_covariates = series2seq(past_covariates)
+    future_covariates = series2seq(future_covariates)
+
+    iterator = _build_tqdm_iterator(
+        iterable=series,
+        verbose=verbose,
+        total=len(series),
+        desc="Generating Forecasts",
+    )
+    predictions: list[TimeSeries] = []
+    for idx, series_i in enumerate(iterator):
+        # create forecast `TimeSeries`
+        feature_arrays = prepare_onnx_inputs(
+            n=n,
+            series=series_i,
+            spec=spec,
+            past_covariates=past_covariates[idx]
+            if past_covariates is not None
+            else None,
+            future_covariates=future_covariates[idx]
+            if future_covariates is not None
+            else None,
+        )
+        prediction_arr = _get_batch_prediction(
+            n=n,
+            feature_arrays=feature_arrays,
+            session=session,
+            spec=spec,
+            roll_size=roll_size,
+        )
+        prediction_series = _build_forecast_series_from_schema(
+            values=prediction_arr,
+            schema=series_i.schema(copy=False),
+            pred_start=series_i.end_time() + (ocs + 1) * series_i.freq,
+            predict_likelihood_parameters=likelihood is not None,
+            likelihood_component_names_fn=likelihood.component_names
+            if likelihood is not None
+            else None,
+            copy=False,
+        )
+        predictions.append(prediction_series)
+    return series2seq(predictions, series_seq_type)
 
 
-def _run_onnx_step(
-    session: Any,
-    spec: OnnxModelSpec,
-    feature_arrays: Mapping[str, np.ndarray],
-    state: list[np.ndarray] | None = None,
-) -> tuple[np.ndarray, list[np.ndarray] | None]:
-    """Run one ONNX graph call and return the squeezed prediction plus next state.
-
-    Missing recurrent state is initialized to zeros (same as ``hx=None``).
-    """
-    session_input_names = [inp.name for inp in session.get_inputs()]
-    ort_inputs = {
-        name: feature_arrays[name]
-        for name in spec.feature_input_names
-        if name in feature_arrays and name in session_input_names
-    }
-    if spec.state_input_names:
-        if state is None:
-            state = _zero_state(spec, next(iter(feature_arrays.values())).dtype)
-        for name, value in zip(spec.state_input_names, state):
-            if name in session_input_names:
-                ort_inputs[name] = value
-    outputs = session.run(spec.output_names, ort_inputs)
-    prediction = _squeeze_prediction_batch(outputs[0])
-    next_state = None
-    if spec.state_output_names:
-        output_by_name = dict(zip(spec.output_names, outputs))
-        next_state = [output_by_name[name] for name in spec.state_output_names]
-    return prediction, next_state
-
-
-def _format_onnx_forecast(batch_predictions: list[np.ndarray], n: int) -> np.ndarray:
-    """Concatenate auto-regressive chunks and trim to ``(n, components, 1)``."""
-    predictions = np.concatenate(batch_predictions, axis=1)
-    result = predictions[0, :n, :]
-    if result.ndim == 2:
-        result = result[:, :, np.newaxis]
-    return result
-
-
-def _batch_prediction(
+def _get_batch_prediction(
     n: int,
     feature_arrays: dict[str, np.ndarray],
     session: Any,
     spec: OnnxModelSpec,
     roll_size: int,
 ) -> np.ndarray:
+    """Generate ONNX forecasts for one batch feature array.
+
+    Mirrors ``darts.models.forecasting.pl_forecasting_module.PLForecastingModule._get_batch_prediction``.
+    """
     icl = spec.input_chunk_length
     ocl = spec.output_chunk_length
     min_n = n if n >= ocl else ocl
@@ -326,6 +358,8 @@ def _batch_prediction(
     state = None
     update_historic = True
     if spec.stepwise_state:
+        # recurrent models work step-wise; first warm up over the input chunk,
+        # then follow the regular forecast path below
 
         def _warmup_future_cov(t: int) -> np.ndarray | None:
             if historic_future_covariates is not None and t + 1 < icl:
@@ -387,12 +421,12 @@ def _batch_prediction(
             prediction_length -= spillover
             batch_predictions[-1] = batch_predictions[-1][:, :roll_size, :]
 
-        past_target = _np_roll(past_target, roll_size, axis=1)
+        past_target = np.roll(past_target, -roll_size, axis=1)
         if past_covariates_arr is not None:
-            past_covariates_arr = _np_roll(past_covariates_arr, roll_size, axis=1)
+            past_covariates_arr = np.roll(past_covariates_arr, -roll_size, axis=1)
         if historic_future_covariates is not None:
-            historic_future_covariates = _np_roll(
-                historic_future_covariates, roll_size, axis=1
+            historic_future_covariates = np.roll(
+                historic_future_covariates, -roll_size, axis=1
             )
 
         if icl >= roll_size:
@@ -446,132 +480,47 @@ def _batch_prediction(
         batch_predictions.append(out)
         prediction_length += ocl
 
-    return _format_onnx_forecast(batch_predictions, n)
+    # concatenate auto-regressive chunks and trim to ``(n, components, likelihood params)`
+    predictions = np.concatenate(batch_predictions, axis=1)
+    result = predictions[0, :n, :]
+    if result.ndim == 2:
+        result = result[:, :, np.newaxis]
+    return result
 
 
-def run_onnx_prediction(
-    n: int,
+def _run_onnx_step(
     session: Any,
     spec: OnnxModelSpec,
-    series: TimeSeriesLike,
-    past_covariates: TimeSeriesLike | None = None,
-    future_covariates: TimeSeriesLike | None = None,
-    *,
-    roll_size: int | None = None,
-) -> np.ndarray:
-    """Run ONNX inference for ``n`` steps after ``series`` end.
+    feature_arrays: Mapping[str, np.ndarray],
+    state: list[np.ndarray] | None = None,
+) -> tuple[np.ndarray, list[np.ndarray] | None]:
+    """Run one ONNX graph call and return the squeezed prediction plus next state.
 
-    Mirrors ``TorchForecastingModel.predict()`` for deterministic models with
-    ``num_samples=1`` and probabilistic models with
-    ``predict_likelihood_parameters=True``.
-
-    Autoregressive forecasts are only supported for deterministic models.
-
-    Parameters
-    ----------
-    n
-        Forecast horizon (steps after ``series`` end).
-    session
-        An ONNX Runtime ``InferenceSession`` for the exported graph.
-    spec
-        Graph / window metadata, typically from ``*.onnx.spec.json``.
-    series
-        Target series; the last ``input_chunk_length`` values are consumed.
-    past_covariates
-        Past covariates aligned with ``series``, if the model uses them.
-    future_covariates
-        Future covariates covering the historic window and the horizon, if used.
-    roll_size
-        Predicted steps committed per autoregressive iteration. Defaults to
-        ``output_chunk_length``. Forced to ``1`` for stepwise graphs.
-
-    Returns
-    -------
-    np.ndarray
-        Point forecast of shape ``(n, n_components, 1)``, matching
-        :meth:`~darts.timeseries.TimeSeries.all_values` for a deterministic
-        series.
+    Missing recurrent state is initialized to zeros (same as ``hx=None``).
     """
-    if roll_size is None:
-        roll_size = spec.output_chunk_length
-    elif not 0 < roll_size <= spec.output_chunk_length:
-        raise ValueError(
-            "`roll_size` must be an integer between 1 and `output_chunk_length`."
-        )
+    session_input_names = [inp.name for inp in session.get_inputs()]
+    ort_inputs = {
+        name: feature_arrays[name]
+        for name in spec.feature_input_names
+        if name in feature_arrays and name in session_input_names
+    }
+    if spec.state_input_names:
+        if state is None:
+            # allocate zero tensors matching ``spec.state_input_shapes``
+            dtype = next(iter(feature_arrays.values())).dtype
+            state = [np.zeros(shape, dtype=dtype) for shape in spec.state_input_shapes]
+        for name, value in zip(spec.state_input_names, state):
+            if name in session_input_names:
+                ort_inputs[name] = value
+    outputs = session.run(spec.output_names, ort_inputs)
+    prediction = outputs[0]
 
-    ocl = spec.output_chunk_length
-    ocs = spec.output_chunk_shift
+    # move likelihood parameters to component dimension (c1_p1, ..., c1_pn, ..., cn_p1, ..., cn_pn)
+    # auto-regression is not allowed with likelihood models; hence, no dimensionality issues
+    prediction = np.asarray(prediction).reshape(prediction.shape[:2] + (-1,))
 
-    likelihood_parameters = spec.likelihood_parameter_names
-    likelihood = None
-    if likelihood_parameters is not None:
-        if n > ocl:
-            raise_log(
-                ValueError(
-                    "Cannot generate auto-regressive predictions `n > output_chunk_length` "
-                    "when model was fitted with a likelihood."
-                ),
-            )
-
-        # create a generic likelihood for component naming (the type is not important here)
-        likelihood = Likelihood(
-            likelihood_type=LikelihoodType.Quantile,
-            parameter_names=likelihood_parameters,
-        )
-
-    verbose = True
-    n_jobs = 1
-
-    series_seq_type = get_series_seq_type(series)
-    series = series2seq(series)
-    past_covariates = series2seq(past_covariates)
-    future_covariates = series2seq(future_covariates)
-
-    series_schemas, pred_starts = [], []
-    for s in series:
-        series_schemas.append(s.schema(copy=False))
-        pred_starts.append(s.end_time() + (ocs + 1) * s.freq)
-
-    predictions: list[np.ndarray] = []
-    for idx, series_i in enumerate(series):
-        # create forecast `TimeSeries`
-        feature_arrays = prepare_onnx_inputs(
-            n=n,
-            series=series_i,
-            spec=spec,
-            past_covariates=past_covariates[idx]
-            if past_covariates is not None
-            else None,
-            future_covariates=future_covariates[idx]
-            if future_covariates is not None
-            else None,
-        )
-        prediction = _batch_prediction(
-            n=n,
-            feature_arrays=feature_arrays,
-            session=session,
-            spec=spec,
-            roll_size=roll_size,
-        )
-        predictions.append(prediction)
-
-    iterator = _build_tqdm_iterator(
-        iterable=zip(predictions, series_schemas, pred_starts),
-        verbose=verbose,
-        total=len(predictions),
-        desc="Generating TimeSeries",
-    )
-    ts_forecasts = _parallel_apply(
-        iterator=iterator,
-        fn=_build_forecast_series_from_schema,
-        n_jobs=n_jobs,
-        fn_args=tuple(),
-        fn_kwargs={
-            "predict_likelihood_parameters": likelihood is not None,
-            "likelihood_component_names_fn": (
-                likelihood.component_names if likelihood is not None else None
-            ),
-            "copy": False,
-        },
-    )
-    return series2seq(ts_forecasts, series_seq_type)
+    next_state = None
+    if spec.state_output_names:
+        output_by_name = dict(zip(spec.output_names, outputs))
+        next_state = [output_by_name[name] for name in spec.state_output_names]
+    return prediction, next_state

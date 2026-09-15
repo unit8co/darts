@@ -416,7 +416,7 @@ forecast = run_onnx_prediction(
 For a single ONNX step (advanced / custom loops), extract features with `prepare_onnx_inputs` using the spec:
 
 ```python
-from darts.utils.onnx.inference import OnnxModelSpec, prepare_onnx_inputs, extract_point_forecast
+from darts.utils.onnx.inference import OnnxModelSpec, prepare_onnx_inputs
 
 spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
 onnx_inputs = prepare_onnx_inputs(

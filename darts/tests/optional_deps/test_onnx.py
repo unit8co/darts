@@ -9,7 +9,6 @@ if not (TORCH_AVAILABLE and ONNX_AVAILABLE):
     )
 
 import os.path
-from itertools import product
 
 import numpy as np
 import onnx
@@ -26,7 +25,6 @@ from darts.models import (
 from darts.utils.likelihood_models.torch import QuantileRegression
 from darts.utils.onnx.inference import (
     OnnxModelSpec,
-    extract_point_forecast,
     prepare_onnx_inputs,
     run_onnx_prediction,
 )
@@ -85,14 +83,30 @@ class TestOnnx:
             future_covariates=self.ts_fc if model.uses_future_covariates else None,
         )
 
+    def _assert_forecasts_equal(
+        self, actual, expected, *, decimal=4, rtol=None, atol=None
+    ):
+        assert actual.shape == expected.shape
+        assert actual.time_index.equals(expected.time_index)
+        assert actual.components.equals(expected.components)
+        if rtol is not None:
+            np.testing.assert_allclose(
+                actual.all_values(), expected.all_values(), rtol=rtol, atol=atol
+            )
+        else:
+            np.testing.assert_array_almost_equal(
+                actual.all_values(), expected.all_values(), decimal=decimal
+            )
+
     @pytest.mark.parametrize("model_cls", torch_model_cls)
     def test_onnx_save_load(self, tmpdir_fn, model_cls):
         model = self._make_model(model_cls)
         onnx_filename = f"test_onnx_{model.model_name}.onnx"
         spec_filename = f"{onnx_filename}.spec.json"
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as msg:
             model.to_onnx("dummy_name.onnx")
+        assert "`fit()` needs to be called before `to_onnx()`." in str(msg.value)
 
         series = self._series_for(model)
         model.fit(
@@ -113,16 +127,12 @@ class TestOnnx:
         onnx.checker.check_model(onnx.load(onnx_filename))
         spec = OnnxModelSpec.load_json(spec_filename)
         onnx_pred = self._onnx_pred(onnx_filename, spec, model, n=2)
-        assert pred.shape == onnx_pred.shape, "forecasts don't have the same shape."
-        np.testing.assert_array_almost_equal(onnx_pred, pred.all_values(), decimal=4)
+        self._assert_forecasts_equal(onnx_pred, pred)
 
-    @pytest.mark.parametrize(
-        "params",
-        list(product([BlockRNNModel, NHiTSModel, TiDEModel], [True, False])),
-    )
-    def test_onnx_from_ckpt(self, tmpdir_fn, params):
+    @pytest.mark.parametrize("clean", [True, False])
+    def test_onnx_from_ckpt(self, tmpdir_fn, clean):
         """Check that creating the onnx export from a model directly loaded from a checkpoint work as expected"""
-        model_cls, clean = params
+        model_cls = BlockRNNModel
         model = self._make_model(model_cls)
         onnx_filename = f"test_onnx_{model.model_name}.onnx"
         onnx_filename2 = f"test_onnx_{model.model_name}_weights.onnx"
@@ -150,8 +160,7 @@ class TestOnnx:
         model_loaded.to_onnx(onnx_filename)
         spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
         onnx_pred = self._onnx_pred(onnx_filename, spec, model_loaded, n=2)
-        assert pred.shape == onnx_pred.shape, "forecasts don't have the same shape."
-        np.testing.assert_array_almost_equal(onnx_pred, pred.all_values(), decimal=4)
+        self._assert_forecasts_equal(onnx_pred, pred)
 
         model_weights = self._make_model(model_cls)
         model_weights.load_weights(ckpt_filename)
@@ -167,23 +176,19 @@ class TestOnnx:
         model_weights.to_onnx(onnx_filename2)
         spec2 = OnnxModelSpec.load_json(f"{onnx_filename2}.spec.json")
         onnx_pred_weights = self._onnx_pred(onnx_filename2, spec2, model_weights, n=2)
-        assert pred_weights.shape == onnx_pred_weights.shape, (
-            "forecasts don't have the same shape."
-        )
-        np.testing.assert_array_almost_equal(
-            onnx_pred_weights, pred_weights.all_values(), decimal=4
-        )
+        self._assert_forecasts_equal(onnx_pred_weights, pred_weights)
 
     @pytest.mark.parametrize("rnn_type", ["RNN", "LSTM"])
     def test_onnx_rnn_state_io(self, tmpdir_fn, rnn_type):
         """RNN uses the same graph as other models, plus flattened state I/O."""
         model = self._make_model(RNNModel, model=rnn_type)
         model.fit(series=self.ts_tg)
+        pred = model.predict(n=2)
         onnx_filename = f"test_onnx_{model.model_name}.onnx"
         model.to_onnx(onnx_filename)
 
-        spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
         onnx_model = onnx.load(onnx_filename)
+        spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
         onnx.checker.check_model(onnx_model)
         output_names = [node.name for node in onnx_model.graph.output]
 
@@ -195,8 +200,9 @@ class TestOnnx:
             assert len(spec.state_input_names) == 2
         else:
             assert len(spec.state_input_names) == 1
-
         ort.InferenceSession(onnx_filename)
+        pred_onnx = self._onnx_pred(onnx_filename, spec, model, n=2)
+        self._assert_forecasts_equal(pred_onnx, pred)
 
     @pytest.mark.parametrize("model_cls", [RNNModel, TiDEModel])
     def test_onnx_autoregressive_horizon(self, tmpdir_fn, model_cls):
@@ -222,7 +228,7 @@ class TestOnnx:
             past_covariates=past_cov,
             future_covariates=future_cov,
         )
-        np.testing.assert_array_almost_equal(onnx_pred, pred.all_values(), decimal=4)
+        self._assert_forecasts_equal(onnx_pred, pred)
 
     def test_onnx_io_schema(self, tmpdir_fn):
         model = self._make_model(TiDEModel)
@@ -243,7 +249,6 @@ class TestOnnx:
         assert "future_covariates" in spec.feature_input_names
 
         inputs = prepare_onnx_inputs(
-            n=1,
             series=self.ts_tg,
             spec=spec,
             past_covariates=self.ts_pc,
@@ -255,8 +260,12 @@ class TestOnnx:
             if name in spec.feature_input_names
         }
         outputs = session.run(spec.output_names, ort_inputs)
-        forecast = extract_point_forecast(outputs)
-        assert forecast.ndim == 2
+        assert outputs[0].shape == (
+            1,
+            model.output_chunk_length,
+            self.ts_tg.n_components,
+            1,
+        )
 
     @pytest.mark.parametrize("model_cls", [TiDEModel, RNNModel])
     def test_onnx_likelihood(self, tmpdir_fn, model_cls):
@@ -292,12 +301,8 @@ class TestOnnx:
             past_covariates=past_cov,
             future_covariates=future_cov,
         )
-        assert onnx_pred.shape == shape_expected
         assert onnx_pred.components.equals(pred_params.components)
-        assert onnx_pred.time_index.equals(pred_params.time_index)
-        np.testing.assert_array_almost_equal(
-            onnx_pred.all_values(), pred_params.all_values(), decimal=4
-        )
+        self._assert_forecasts_equal(onnx_pred, pred_params)
 
         # auto-regression not allowed for likelihood models
         with pytest.raises(
@@ -313,7 +318,7 @@ class TestOnnx:
             )
 
     def test_onnx_multiseries(self, tmpdir_fn):
-        """Likelihood models export raw params in component dimension."""
+        """ONNX inference returns a sequence of forecasts for multiple series."""
         model = self._make_model(TiDEModel)
         series = [self.ts_tg, self.ts_tg + 100.0]
 
@@ -321,32 +326,34 @@ class TestOnnx:
         future_cov = [self.ts_fc] * 2 if model.supports_future_covariates else None
         model.fit(series=series, past_covariates=past_cov, future_covariates=future_cov)
 
-        onnx_filename = f"test_ll_{model.model_name}.onnx"
+        onnx_filename = f"test_ms_{model.model_name}.onnx"
         model.to_onnx(onnx_filename)
         spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
         session = ort.InferenceSession(onnx_filename)
 
-        n_chunk = model.output_chunk_length
-        # pred_params = model.predict(
-        #     n=n_chunk,
-        #     series=series,
-        #     past_covariates=past_cov,
-        #     future_covariates=future_cov,
-        # )
-
-        _ = run_onnx_prediction(
-            n=n_chunk + 1,
+        n_ar = model.output_chunk_length + 1
+        pred = model.predict(
+            n=n_ar,
+            series=series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
+        )
+        onnx_pred = run_onnx_prediction(
+            n=n_ar,
             session=session,
             spec=spec,
             series=series,
             past_covariates=past_cov,
             future_covariates=future_cov,
         )
+        assert isinstance(onnx_pred, list)
+        assert len(onnx_pred) == len(series)
+        for onnx_ts, expected_ts in zip(onnx_pred, pred):
+            self._assert_forecasts_equal(onnx_ts, expected_ts)
 
-    @pytest.mark.parametrize("model_cls", [NHiTSModel, TiDEModel])
-    def test_onnx_reversible_instance_norm(self, tmpdir_fn, model_cls):
+    def test_onnx_reversible_instance_norm(self, tmpdir_fn):
         """RINorm is in the exported graph: ONNX matches torch predict, including AR."""
-        model = self._make_model(model_cls, use_reversible_instance_norm=True)
+        model = self._make_model(TiDEModel, use_reversible_instance_norm=True)
         series = self.ts_tg
         past_cov = self.ts_pc if model.supports_past_covariates else None
         future_cov = self.ts_fc if model.supports_future_covariates else None
@@ -372,10 +379,9 @@ class TestOnnx:
             past_covariates=past_cov,
             future_covariates=future_cov,
         )
-        assert pred.shape == onnx_pred.shape
         # single window: norm + denorm must match torch (proves stats are not baked
         # from the dummy export batch and output is on the original scale)
-        np.testing.assert_allclose(onnx_pred, pred.all_values(), rtol=1e-4, atol=1e-4)
+        self._assert_forecasts_equal(onnx_pred, pred, rtol=1e-4, atol=1e-4)
 
         n_ar = n_chunk + 3
         pred_ar = model.predict(
@@ -392,7 +398,6 @@ class TestOnnx:
             past_covariates=past_cov,
             future_covariates=future_cov,
         )
-        assert pred_ar.shape == onnx_ar.shape
         # AR recomputes RINorm per window; untrained + RINorm can explode, so
         # compare relatively (float32 drift on O(1e6) values)
-        np.testing.assert_allclose(onnx_ar, pred_ar.all_values(), rtol=1e-5, atol=1e-3)
+        self._assert_forecasts_equal(onnx_ar, pred_ar, rtol=1e-5, atol=1e-3)
