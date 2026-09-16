@@ -1,5 +1,3 @@
-from itertools import product
-
 import matplotlib.collections as mcollections
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,6 +5,7 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries, option_context
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.utils import generate_index
 
 
@@ -35,12 +34,7 @@ class TestTimeSeriesPlot:
 
     @pytest.mark.parametrize(
         "config",
-        product(
-            ["dt", "ri"],
-            ["d", "p"],
-            [True, False],
-            [True, False],
-        ),
+        param_product(["dt", "ri"], ["d", "p"], [True, False], [True, False]),
     )
     def test_plot_single_series(self, config, mpl_safe_plotting):
         index_type, stoch_type, use_ax, use_darts_style = config
@@ -71,10 +65,7 @@ class TestTimeSeriesPlot:
 
     @pytest.mark.parametrize(
         "config",
-        product(
-            ["dt", "ri"],
-            ["d", "p"],
-        ),
+        param_product(["dt", "ri"], ["d", "p"]),
     )
     def test_plot_point_series(self, mpl_safe_plotting, config):
         index_type, stoch_type = config
@@ -115,10 +106,7 @@ class TestTimeSeriesPlot:
 
     @pytest.mark.parametrize(
         "config",
-        product(
-            ["dt", "ri"],
-            ["d", "p"],
-        ),
+        param_product(["dt", "ri"], ["d", "p"]),
     )
     def test_plot_empty_series(self, mpl_safe_plotting, config):
         index_type, stoch_type = config
@@ -151,7 +139,7 @@ class TestTimeSeriesPlot:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             ["dt", "ri"],
             ["d", "p"],
             [
@@ -173,7 +161,7 @@ class TestTimeSeriesPlot:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             ["dt", "ri"],
             [
                 {"central_quantile": "mean"},

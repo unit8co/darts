@@ -1,4 +1,3 @@
-import itertools
 from copy import deepcopy
 
 import numpy as np
@@ -7,6 +6,7 @@ import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import BoxCox, Mapper
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 
 
@@ -144,7 +144,7 @@ class TestBoxCox:
 
     @pytest.mark.parametrize(
         "dt_source, set_lmbda",
-        itertools.product(["float32", "float64"], [True, False]),
+        param_product(["float32", "float64"], [True, False]),
     )
     def test_dtype_conversion(self, dt_source, set_lmbda):
         series = self.sine_series.astype(dt_source)

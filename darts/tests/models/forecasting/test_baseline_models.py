@@ -1,5 +1,3 @@
-import itertools
-
 import numpy as np
 import pytest
 
@@ -10,6 +8,7 @@ from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
 )
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.parametrize_helpers import param_product
 from darts.utils import timeseries_generation as tg
 
 icl = 5
@@ -79,7 +78,7 @@ class TestBaselineModels:
         torch.manual_seed(42)
 
     @pytest.mark.parametrize(
-        "config", itertools.product(local_models + global_models, [False, True])
+        "config", param_product(local_models + global_models, [False, True])
     )
     def test_fit_predict(self, config):
         """Tests fit and predict for univariate and multivariate time series."""
