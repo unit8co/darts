@@ -278,6 +278,43 @@ register_pytree_node(
 )
 
 
+def _coerce_training_sample(sample: TorchTrainingSample | tuple) -> TorchTrainingSample:
+    """Normalize a stored ``train_sample`` after loading a saved model."""
+    if isinstance(sample, TorchTrainingSample):
+        return sample
+    if isinstance(sample, tuple):
+        # legacy tuple, try to convert it to a TorchTrainingSample
+        if len(sample) != 6:
+            raise_log(
+                ValueError(
+                    "Legacy `train_sample` tuple must have 6 elements; "
+                    f"got {len(sample)}."
+                ),
+            )
+        (
+            past_target,
+            past_covariates,
+            historic_future_covariates,
+            future_covariates,
+            static_covariates,
+            future_target,
+        ) = sample
+        return TorchTrainingSample(
+            past_target=past_target,
+            past_covariates=past_covariates,
+            historic_future_covariates=historic_future_covariates,
+            future_covariates=future_covariates,
+            static_covariates=static_covariates,
+            future_target=future_target,
+        )
+    raise_log(
+        ValueError(
+            f"Unsupported `train_sample` type {type(sample).__name__}; "
+            "expected `TorchTrainingSample` or legacy tuple."
+        ),
+    )
+
+
 def _as_training_sample(sample: Any) -> TorchTrainingSample:
     """Validate that a dataset sample is a :class:`TorchTrainingSample`."""
     if isinstance(sample, TorchTrainingSample):

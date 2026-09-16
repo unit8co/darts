@@ -3131,6 +3131,37 @@ class TestTorchForecastingModelFineTuning:
             atol=1e-6,
         )
 
+    def test_load_legacy_tuple_train_sample(self, tmpdir):
+        """Models saved before dataclass train_sample (darts<=0.47.0) must still work."""
+        legacy_model = DLinearModel(n_epochs=1, **self.base_kwargs)
+        legacy_model.fit(self.series)
+        pred_before = legacy_model.predict(n=2, series=self.series)
+
+        ts = legacy_model.train_sample
+        legacy_model.train_sample = (
+            ts.past_target,
+            ts.past_covariates,
+            ts.historic_future_covariates,
+            ts.future_covariates,
+            ts.static_covariates,
+            ts.future_target,
+        )
+        save_path = os.path.join(str(tmpdir), "legacy_model.pt")
+        legacy_model.save(save_path)
+
+        model_load = DLinearModel.load(save_path)
+        model_load_weights = legacy_model.untrained_model()
+        model_load_weights.load_weights(save_path)
+
+        for model in [model_load, model_load_weights]:
+            assert isinstance(model.train_sample, TorchTrainingSample)
+            pred_after = model.predict(n=2, series=self.series)
+            np.testing.assert_allclose(
+                pred_before.values(),
+                pred_after.values(),
+                atol=1e-6,
+            )
+
     def test_enable_finetuning_with_load_weights(self, tmpdir):
         # 1. Train and save a base model (no fine-tuning flags)
         base_model = DLinearModel(

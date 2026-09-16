@@ -65,6 +65,7 @@ from darts.utils.data.torch_datasets.utils import (
     _as_training_sample,
     _batch_collate_fn_predict,
     _batch_collate_fn_train,
+    _coerce_training_sample,
     _train_sample_from_shapes,
 )
 from darts.utils.historical_forecasts import (
@@ -2341,6 +2342,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             model.trainer_params = pl_trainer_kwargs
             model._model_params["pl_trainer_kwargs"] = copy.deepcopy(pl_trainer_kwargs)
 
+        # upgrade legacy tuple ``train_sample`` values from older saved models (darts<=0.47.0).
+        train_sample = model.train_sample
+        if train_sample is not None:
+            model.train_sample = _coerce_training_sample(train_sample)
         return model
 
     @staticmethod
@@ -2453,6 +2458,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # restore _fit_called attribute, set to False in load() if no .ckpt is found/provided
         model._fit_called = True
         model.load_ckpt_path = file_path
+
+        # upgrade legacy tuple ``train_sample`` values from older saved models (darts<=0.47.0).
+        train_sample = model.train_sample
+        if train_sample is not None:
+            model.train_sample = _coerce_training_sample(train_sample)
         return model
 
     def _load_from_checkpoint(self, file_path, **kwargs):
