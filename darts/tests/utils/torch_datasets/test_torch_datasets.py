@@ -1,4 +1,3 @@
-import itertools
 import math
 
 import numpy as np
@@ -15,6 +14,7 @@ if not TORCH_AVAILABLE:
         allow_module_level=True,
     )
 
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.data import (
     HorizonBasedTorchTrainingDataset,
     SequentialTorchInferenceDataset,
@@ -2308,7 +2308,7 @@ class TestDataset:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [
                 (SequentialTorchTrainingDataset, []),
                 (SequentialTorchTrainingDataset, ["past"]),

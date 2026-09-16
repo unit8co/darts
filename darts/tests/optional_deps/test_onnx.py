@@ -1,5 +1,4 @@
 import os.path
-from itertools import product
 
 import numpy as np
 import pandas as pd
@@ -23,6 +22,7 @@ from darts.models import (
     NHiTSModel,
     TiDEModel,
 )
+from darts.tests.parametrize_helpers import param_product
 
 # TODO: check how RINorm can be handled with respect to ONNX
 torch_model_cls = [
@@ -91,10 +91,7 @@ class TestOnnx:
 
     @pytest.mark.parametrize(
         "params",
-        product(
-            torch_model_cls,
-            [True, False],  # clean
-        ),
+        param_product(torch_model_cls, [True, False]),
     )
     def test_onnx_from_ckpt(self, tmpdir_fn, params):
         """Check that creating the onnx export from a model directly loaded from a checkpoint work as expected"""

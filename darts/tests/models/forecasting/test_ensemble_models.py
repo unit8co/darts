@@ -1,5 +1,4 @@
 import copy
-import itertools
 import os
 
 import numpy as np
@@ -19,6 +18,7 @@ from darts.models import (
 )
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.parametrize_helpers import param_product
 from darts.utils import timeseries_generation as tg
 
 if TORCH_AVAILABLE:
@@ -664,7 +664,7 @@ class TestEnsembleModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product([NaiveEnsembleModel, RegressionEnsembleModel], [True, False]),
+        param_product([NaiveEnsembleModel, RegressionEnsembleModel], [True, False]),
     )
     def test_sample_weight_global(self, config):
         """Check sample weights for ensemble models with global forecasting models.

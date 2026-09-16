@@ -1,4 +1,3 @@
-import itertools
 from datetime import timezone
 from zoneinfo import ZoneInfo
 
@@ -7,6 +6,7 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.timeseries_generation import (
     ONE_INDEXED_FREQS,
     _build_forecast_series_from_schema,
@@ -699,7 +699,7 @@ class TestTimeSeriesGeneration:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [np.float32, np.float64],
             [
                 (autoregressive_timeseries, {"coef": [1.0]}, False),

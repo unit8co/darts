@@ -1,5 +1,4 @@
 import copy
-import itertools
 import os
 from pathlib import Path
 
@@ -35,6 +34,7 @@ from darts.models import (
     TSMixerModel,
 )
 from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.likelihood_models.torch import (
     CauchyLikelihood,
     GaussianLikelihood,
@@ -688,7 +688,7 @@ class TestShapExplainer:
 
     @pytest.mark.parametrize(
         "shap_method,single_output",
-        itertools.product(SHAP_METHODS, [True, False]),
+        param_product(SHAP_METHODS, [True, False]),
     )
     def test_explain_shap_methods(
         self,
