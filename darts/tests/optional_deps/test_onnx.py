@@ -15,17 +15,25 @@ import onnx
 import onnxruntime as ort
 import pandas as pd
 import torch
+import torch.nn as nn
 
 import darts.utils.timeseries_generation as tg
 from darts.models import (
     BlockRNNModel,
     NHiTSModel,
+    NLinearModel,
     RNNModel,
     TCNModel,
     TFTModel,
     TiDEModel,
 )
 from darts.utils.likelihood_models.torch import QuantileRegression
+from darts.utils.onnx.export import (
+    OnnxExportBundle,
+    _flatten_module_state,
+    _save_onnx_export,
+    _unflatten_module_state,
+)
 from darts.utils.onnx.inference import (
     ONNX_SPEC_METADATA_KEY,
     OnnxModelSpec,
@@ -251,6 +259,53 @@ class TestOnnx:
         )
         self._assert_forecasts_equal(onnx_pred, pred)
 
+        with pytest.raises(ValueError) as msg:
+            _ = run_onnx_prediction(
+                n=n,
+                session=session,
+                series=series,
+                future_covariates=future_cov,
+                roll_size=model.output_chunk_length + 1,
+                verbose=False,
+            )
+        assert (
+            "`roll_size` must be an integer between 1 and `output_chunk_length`"
+            in str(msg.value)
+        )
+
+    def test_onnx_icl_smaller_than_roll_size_with_covariates(self, tmpdir_fn):
+        """Autoregression with `input_chunk_length < roll_size` must consume extra covariates."""
+        model = NLinearModel(
+            input_chunk_length=1,
+            output_chunk_length=4,
+            n_epochs=1,
+            **tfm_kwargs_dev,
+        )
+        series = self.ts_tg
+        past_cov = self.ts_pc
+        future_cov = self.ts_fc
+        model.fit(series=series, past_covariates=past_cov, future_covariates=future_cov)
+
+        n = 8
+        pred = model.predict(
+            n=n,
+            series=series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
+        )
+        onnx_filename = f"test_icl_lt_roll_{model.model_name}.onnx"
+        model.to_onnx(onnx_filename)
+        spec, session = self._load_spec(onnx_filename)
+        onnx_pred = run_onnx_prediction(
+            n=n,
+            session=session,
+            series=series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
+            verbose=False,
+        )
+        self._assert_forecasts_equal(onnx_pred, pred)
+
     @pytest.mark.parametrize("model_cls", [RNNModel, TiDEModel])
     def test_onnx_autoregressive_horizon(self, tmpdir_fn, model_cls):
         """ONNX autoregression matches torch predict when n > output_chunk_length."""
@@ -444,3 +499,48 @@ class TestOnnx:
         # AR recomputes RINorm per window; untrained + RINorm can explode, so
         # compare relatively (float32 drift on O(1e6) values)
         self._assert_forecasts_equal(onnx_ar, pred_ar, rtol=1e-5, atol=1e-3)
+
+    def test_flatten_unflatten_module_state(self):
+        tensor = torch.ones(2, 3)
+        tensors, spec = _flatten_module_state(tensor)
+        restored = _unflatten_module_state(tensors, spec)
+        assert torch.equal(restored, tensor)
+        assert _unflatten_module_state([], None) is None
+
+        with pytest.raises(ValueError, match="Unsupported module state type"):
+            _flatten_module_state({"hidden": tensor})
+
+    def test_onnx_export_with_dynamic_axes(self, tmpdir_fn):
+        """Legacy (non-dynamo) export is used when `dynamic_axes` is set."""
+
+        class _Tiny(nn.Module):
+            def forward(self, x):
+                return x
+
+        spec = OnnxModelSpec(
+            input_chunk_length=2,
+            output_chunk_length=1,
+            output_chunk_shift=0,
+            uses_past_covariates=False,
+            uses_future_covariates=False,
+            uses_static_covariates=False,
+            likelihood_parameter_names=None,
+            feature_input_names=["past_target"],
+            input_names=["past_target"],
+            output_names=["prediction"],
+        )
+        bundle = OnnxExportBundle(
+            wrapper=_Tiny(),
+            example_inputs=(torch.zeros(1, 2, 1),),
+            input_names=["past_target"],
+            output_names=["prediction"],
+            spec=spec,
+            dynamic_axes={
+                "past_target": {0: "batch"},
+                "prediction": {0: "batch"},
+            },
+        )
+        path = "tiny_dynamic.onnx"
+        _save_onnx_export(bundle, path)
+        assert os.path.exists(path)
+        onnx.checker.check_model(onnx.load(path))

@@ -30,6 +30,7 @@ from darts.utils.data import (
 from darts.utils.data.torch_datasets.utils import (
     ModuleStage,
     PLModuleInput,
+    PLModuleOutput,
     TorchInferenceBatch,
     TorchInferenceSample,
     TorchTrainingBatch,
@@ -38,6 +39,8 @@ from darts.utils.data.torch_datasets.utils import (
     _as_training_sample,
     _batch_collate_fn_predict,
     _batch_collate_fn_train,
+    _coerce_training_sample,
+    _train_sample_from_shapes,
 )
 
 
@@ -2862,6 +2865,33 @@ class TestDataset:
         assert isinstance(restored, PLModuleInput)
         assert restored.stage is ModuleStage.TRAIN
         assert restored.past_target is past
+
+    def test_pl_module_output_pytree(self):
+        """`PLModuleOutput` round-trips through torch pytree flatten/unflatten."""
+        prediction = torch.zeros(2, 3, 1, 1)
+        state = (torch.ones(2, 1, 4), torch.zeros(2, 1, 4))
+        out = PLModuleOutput(prediction=prediction, state=state)
+        leaves, spec = tree_flatten(out)
+        restored = tree_unflatten(leaves, spec)
+        assert isinstance(restored, PLModuleOutput)
+        assert restored.prediction is prediction
+        assert restored.state[0] is state[0]
+        assert restored.state[1] is state[1]
+
+    def test_coerce_training_sample_invalid(self):
+        """Legacy `train_sample` values must be a 6-tuple or `TorchTrainingSample`."""
+        sample = TorchTrainingSample(past_target=np.zeros((2, 1)))
+        assert _coerce_training_sample(sample) is sample
+
+        with pytest.raises(ValueError, match="must have 6 elements"):
+            _coerce_training_sample((np.zeros((2, 1)),))
+
+        with pytest.raises(ValueError, match="Unsupported `train_sample` type"):
+            _coerce_training_sample("not-a-sample")
+
+    def test_train_sample_from_shapes_none(self):
+        with pytest.raises(ValueError, match="must not be `None`"):
+            _train_sample_from_shapes(None, dtype=np.float32)
 
 
 def generate_series(n_variables: int, length: int, prefix: str):

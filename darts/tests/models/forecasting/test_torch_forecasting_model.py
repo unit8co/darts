@@ -3299,6 +3299,38 @@ class TestTorchForecastingModelInputValidation:
         )
         assert len(pred) == n
 
+    def test_predict_icl_smaller_than_roll_size_with_covariates(self):
+        """Autoregression with `input_chunk_length < roll_size` must consume extra covariates."""
+        model = NLinearModel(
+            input_chunk_length=1,
+            output_chunk_length=4,
+            n_epochs=1,
+            **tfm_kwargs_dev,
+        )
+        past_cov = tg.constant_timeseries(
+            length=len(self.series) + 10,
+            start=self.series.start_time(),
+            freq=self.series.freq,
+        )
+        future_cov = tg.sine_timeseries(
+            length=len(self.series) + 10,
+            start=self.series.start_time(),
+            freq=self.series.freq,
+        )
+        model.fit(
+            series=self.series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
+        )
+        n = 8
+        pred = model.predict(
+            n=n,
+            series=self.series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
+        )
+        assert len(pred) == n
+
     def test_predict_from_dataset_num_samples_zero(self):
         model = DLinearModel(
             input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs_dev
