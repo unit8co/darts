@@ -1,4 +1,4 @@
-from datetime import timezone
+from datetime import UTC
 from zoneinfo import ZoneInfo
 
 import numpy as np
@@ -396,7 +396,7 @@ class TestTimeSeriesGeneration:
         )
 
         # tz=timezone.utc is the same as tz=None
-        self.helper_routine(idx, "hour", vals_exp=vals, tz=timezone.utc)
+        self.helper_routine(idx, "hour", vals_exp=vals, tz=UTC)
 
         # tz="CET" is +1 hour to UTC
         vals = vals[1:] + [0]
