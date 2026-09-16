@@ -44,6 +44,7 @@ from darts.models.forecasting.pl_forecasting_module import (
 from darts.utils.data.torch_datasets.utils import (
     InputChunkLength,
     PLModuleInput,
+    PLModuleOutput,
     TorchTrainingSample,
     _parse_input_chunk_length,
 )
@@ -683,22 +684,7 @@ class _TimesFM3Module(PLForecastingModule):
         return horizon_logits
 
     @io_processor
-    def forward(self, x_in: PLModuleInput, *args, **kwargs) -> torch.Tensor:
-        """TimesFM 3.0 model forward pass.
-
-        Parameters
-        ----------
-        x_in
-            comes as a tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
-            `x_future` is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
-
-        Returns
-        -------
-        torch.Tensor
-            the output tensor in the shape `(n_samples, n_time_steps, n_targets, n_quantiles)` for
-            probabilistic forecasts, or `(n_samples, n_time_steps, n_targets, 1)` for
-            deterministic forecasts (median only).
-        """
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
         # Dimension notation in comments below:
         #   B: batch size
         #   L: input chunk length
@@ -714,7 +700,8 @@ class _TimesFM3Module(PLForecastingModule):
 
         # `x_past` is a stack of [past_target (C), past_covariates (P),
         # historic_future_covariates (W)], `x_future` is just future_covariates.
-        x_past, x_future, _, _ = x_in
+        x_past = x_in.concatenate_past_features()
+        x_future = x_in.future_covariates
         batch_size, past_length, n_variables = x_past.shape
         n_targets = self.n_targets
         n_future_covs = x_future.shape[-1] if x_future is not None else 0
@@ -785,7 +772,9 @@ class _TimesFM3Module(PLForecastingModule):
         # (B, C, T, Q) -> (B, T, C, Q)
         horizon_logits = horizon_logits.permute(0, 2, 1, 3)
         # select the user-specified quantiles: (B, T, C, N)
-        return horizon_logits[..., self.user_quantile_indices]
+        return PLModuleOutput(
+            prediction=horizon_logits[..., self.user_quantile_indices]
+        )
 
 
 class TimesFM3Model(FoundationModel):
@@ -1157,9 +1146,8 @@ class TimesFM3Model(FoundationModel):
         # is `(past_target, past_cov, historic_future_cov, future_cov, static_cov,
         # future_target)`; `historic_future_cov` and `future_cov` stem from the same
         # future covariates series, so its width must only be counted once
-        past_target, past_cov, _, future_cov = train_sample[:4]
-        n_variates = past_target.shape[1]
-        for variate in (past_cov, future_cov):
+        n_variates = train_sample.past_target.shape[1]
+        for variate in (train_sample.past_covariates, train_sample.future_covariates):
             if variate is not None:
                 n_variates += variate.shape[1]
         if n_variates > self._max_variates:
