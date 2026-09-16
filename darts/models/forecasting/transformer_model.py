@@ -311,9 +311,11 @@ class _TransformerModule(PLForecastingModule):
         # decoder
         if future_target is not None:
             # training: use teacher forcing where ground-truth future targets are fed to the decoder
-            if self.rin is not None:
+            if self.rin is not None and self.rin.has_series:
                 # with RIN, io_processor only normalized past targets; apply the same to future targets
-                future_target = self.rin.transform(future_target)
+                future_target, _, _ = self._rin_as_tuple(
+                    self.rin.transform(future_target)
+                )
             tgt = F.pad(future_target.permute(1, 0, 2), pad_size)
             tgt = torch.cat([start_token, tgt], dim=0)
             return self._decode(memory, self._embed(tgt))[:, :-1, :, :]
@@ -455,9 +457,22 @@ class TransformerModel(PastCovariatesTorchModel):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [3]_.
-            It is only applied to the features of the target series and not the covariates. If ``True``,
-            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
-            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
+            If ``True``, applies ``RINorm`` to the target `series` only, with default hyperparameters. If a
+            dictionary, defines which component groups to normalize and the `RINorm` hyperparameters; see
+            :meth:`RINorm.parse_config <darts.models.components.layer_norm_variants.RINorm.parse_config>` for the
+            supported dict format (``"params"``, ``"series"``, ``"past_covariates"``, ``"future_covariates"`` keys).
+            Default: ``False``. For example, to normalize all `series` components, two named
+            `past_covariates` components, and no `future_covariates`:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                use_reversible_instance_norm={
+                    "series": True,  # normalize all `series` components
+                    "past_covariates": ["comp1", "compx"],  # normalize only these components, by name
+                    "future_covariates": False,  # do not normalize `future_covariates` (also the default)
+                }
+            ..
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs

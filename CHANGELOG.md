@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- `use_reversible_instance_norm` now supports applying Reversible Instance Normalization (`RINorm`) to `past_covariates` and `future_covariates`, in addition to the target `series`. Pass a dict with `"series"`, `"past_covariates"`, `"future_covariates"` keys (each a `bool`, or a list of specific component names to normalize only a subset), and an optional `"params"` key for the `RINorm` hyperparameters (`affine`, `eps`). The existing `bool` / `{"affine": ..., "eps": ...}` forms remain supported unchanged, and continue to apply only to the target series. [#2758](https://github.com/unit8co/darts/issues/2758) by [Alain Gysi](https://github.com/agysi).
+
 **Fixed**
 
 **Dependencies**
