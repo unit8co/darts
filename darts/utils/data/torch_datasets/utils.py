@@ -6,7 +6,7 @@ Dataset Utils
 from collections.abc import Sequence
 from dataclasses import dataclass, fields, replace
 from enum import Enum
-from typing import Any, TypeAlias, overload
+from typing import Any, Self, TypeAlias, overload
 
 import numpy as np
 import pandas as pd
@@ -14,12 +14,6 @@ import torch
 from torch.utils._pytree import register_pytree_node
 
 from darts.logging import raise_log
-
-try:
-    from typing import Self
-except ImportError:  # pragma: no cover
-    from typing_extensions import Self
-
 
 # Feature slots used for model-init snapshots, dim inference, and checkpoint shapes.
 # Order matches the historical 6-element ``train_sample_shape`` list.

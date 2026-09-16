@@ -8,21 +8,10 @@ A collection of conformal prediction models for pre-trained global forecasting m
 import copy
 import math
 import os
-import sys
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
-from typing import Any, BinaryIO, Literal
+from typing import Any, BinaryIO, Literal, Self
 
-from darts.utils.likelihood_models.base import (
-    Likelihood,
-    LikelihoodType,
-    quantile_names,
-)
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
 import numpy as np
 import pandas as pd
 
@@ -37,6 +26,11 @@ from darts.utils import _build_tqdm_iterator, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _adjust_historical_forecasts_time_index,
     _slice_intersect_series,
+)
+from darts.utils.likelihood_models.base import (
+    Likelihood,
+    LikelihoodType,
+    quantile_names,
 )
 from darts.utils.timeseries_generation import _build_forecast_series
 from darts.utils.ts_utils import (
