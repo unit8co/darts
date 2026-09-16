@@ -9,13 +9,18 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 
-**Breaking changes** 🔴
-
-- Torch datasets now return `TorchTrainingSample` / `TorchInferenceSample` dataclasses (constructed by field name) instead of plain 7/8-tuples. Custom datasets must return these dataclasses. Module `forward()` now takes `PLModuleInput` and must return `PLModuleOutput` (`prediction` plus optional `state`). Recurrent hidden state is no longer an extra `forward` argument or tuple return. `train_sample_shape` is a field-name dict (old 6-element checkpoint lists still load). ONNX export uses named feature inputs (`past_target`, ...) and a `prediction` output, plus flattened `state_*` I/O when the module returns recurrent state. `RNNModel` exports a 1-step cell; `run_onnx_prediction` warms it up over the input window, then continues in the same auto-regressive loop as feed-forward models. Likelihood models export raw distribution parameters (first parameter is the point forecast). Reversible instance norm is included in the graph. Inference helpers in `darts.utils.onnx.inference` do not require PyTorch. `PLModuleInput.stage` (`ModuleStage`: train / validate / predict) is the loop role so `forward()` can branch without reading Lightning's trainer; it defaults to `predict` for ONNX and raw module calls.
-
 **Improved**
 
+- Improvements to `TorchForecastingModel` : [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader).
+  - 🚀🚀 ONNX export and inference are substantially more capable: train a model in PyTorch, export it once, then run forecasts in a lightweight environment with only ONNX Runtime, NumPy, and Darts — no PyTorch required. `run_onnx_prediction()` mirrors `predict()` (including auto-regressive horizons and RNN warm-up); `RNNModel` and probabilistic models are now supported as well.
+    - 🔴 Removed `darts.utils.onnx_utils`; use `darts.utils.onnx.inference` instead. Custom ONNX loops should load graph metadata via `OnnxModelSpec.from_session()`.
+  - Custom PyTorch datasets and Lightning modules are easier to read, extend, and debug: samples use named fields (`past_target`, `future_covariates`, ...) instead of positional tuples, modules receive each feature as a separate tensor rather than one concatenated input, and recurrent state is returned in a structured output. Models saved with previous Darts versions continue to load for inference.
+    - 🔴 Custom `TorchTrainingDataset` / `TorchInferenceDataset` implementations must return `TorchTrainingSample` / `TorchInferenceSample`.
+    - 🔴 Custom module `forward()` methods must accept `PLModuleInput` and return `PLModuleOutput`.
+
 **Fixed**
+
+- Fixed autoregressive `TorchForecastingModel.predict()` with `roll_size < output_chunk_length` and future covariates, where the first step passed too few future covariate values to the model. [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
 
