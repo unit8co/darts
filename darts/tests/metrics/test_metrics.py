@@ -1,6 +1,5 @@
 import copy
 import inspect
-import itertools
 import logging
 
 import numpy as np
@@ -10,6 +9,7 @@ import sklearn.metrics
 
 from darts import TimeSeries, concatenate
 from darts.metrics import metrics, utils
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.likelihood_models.base import (
     likelihood_component_names,
     quantile_names,
@@ -861,7 +861,7 @@ class TestMetrics:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [
                 # time dependent
                 (metrics.err, False),
@@ -2139,7 +2139,7 @@ class TestMetrics:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [
                 # time dependent but with time reduction
                 metrics.err,
@@ -2171,8 +2171,8 @@ class TestMetrics:
                 metrics.coefficient_of_variation,
                 metrics.mql,
             ],
-            [True, False],  # univariate series
-            [True, False],  # single series
+            [True, False],
+            [True, False],
         ),
     )
     def test_metric_quantiles(self, config):
@@ -2452,22 +2452,20 @@ class TestMetrics:
 
     @pytest.mark.parametrize(
         "config",
-        list(
-            itertools.product(
-                [
-                    # time dependent but with time reduction
-                    metrics.iw,
-                    metrics.miw,
-                    metrics.iws,
-                    metrics.miws,
-                    metrics.ic,
-                    metrics.mic,
-                    metrics.incs_qr,
-                    metrics.mincs_qr,
-                ],
-                [True, False],  # univariate series
-                [True, False],  # single series
-            )
+        param_product(
+            [
+                # time dependent but with time reduction
+                metrics.iw,
+                metrics.miw,
+                metrics.iws,
+                metrics.miws,
+                metrics.ic,
+                metrics.mic,
+                metrics.incs_qr,
+                metrics.mincs_qr,
+            ],
+            [True, False],
+            [True, False],
         ),
     )
     def test_metric_quantile_interval(self, config):

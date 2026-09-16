@@ -14,7 +14,6 @@ For detailed examples and tutorials, see:
 """
 
 import os
-from typing import Any
 
 import torch
 import torch.nn as nn
@@ -36,7 +35,9 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.utils.data.torch_datasets.utils import (
     InputChunkLength,
+    ModuleStage,
     PLModuleInput,
+    PLModuleOutput,
     TorchTrainingSample,
     _parse_input_chunk_length,
 )
@@ -232,23 +233,7 @@ class _PatchTSTFMModule(PLForecastingModule):
             self._finetuning_quantile_indices = None
 
     @io_processor
-    def forward(self, x_in: PLModuleInput, *args, **kwargs) -> Any:
-        """PatchTST-FM model forward pass adapted for Darts interface.
-
-        Parameters
-        ----------
-        x_in
-            Comes as tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk
-            and `x_future` is the output/future chunk. Input dimensions are
-            `(n_samples, n_time_steps, n_variables)`.
-
-        Returns
-        -------
-        torch.Tensor
-            Output tensor of shape `(n_samples, n_time_steps, n_targets, n_quantiles)` for
-            probabilistic forecasts, or `(n_samples, n_time_steps, n_targets, 1)` for
-            deterministic forecasts.
-        """
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
         # B: batch size
         # L: input chunk length
         # T: output chunk length
@@ -257,7 +242,7 @@ class _PatchTSTFMModule(PLForecastingModule):
         # N: likelihood quantiles (user-specified)
 
         # `x_past`: (B, L, C)
-        x_past, _, _, _ = x_in
+        x_past = x_in.past_target
         batch_size, past_length, n_variables = x_past.shape
         output_chunk_length = self.output_chunk_length or 0
         output_chunk_shift = self.output_chunk_shift
@@ -354,17 +339,17 @@ class _PatchTSTFMModule(PLForecastingModule):
         # during training, output all pre-trained quantiles for loss
         # during prediction, output only user-specified quantiles
         # -> (B, T, C, N)
-        if self.training:
+        if x_in.stage is ModuleStage.TRAIN:
             q_forecast = q_forecast[:, :, :, self._finetuning_quantile_indices]
         else:
             q_forecast = q_forecast[:, :, :, self.user_quantile_indices]
 
-        return q_forecast
+        return PLModuleOutput(prediction=q_forecast)
 
-    def _compute_loss(self, output, target, criterion, sample_weight):
+    def _compute_loss(self, output: PLModuleOutput, target, criterion, sample_weight):
         if self.training:
             return self._finetuning_likelihood.compute_loss(
-                output, target, sample_weight
+                output.prediction, target, sample_weight
             )
         else:
             return super()._compute_loss(output, target, criterion, sample_weight)

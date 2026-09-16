@@ -16,7 +16,7 @@ from darts.typing import TimeSeriesLike
 from darts.utils.data.torch_datasets.dataset import TorchDataset
 from darts.utils.data.torch_datasets.utils import (
     InputChunkLength,
-    TorchTrainingDatasetOutput,
+    TorchTrainingSample,
     _parse_input_chunk_length,
 )
 from darts.utils.data.utils import (
@@ -31,28 +31,30 @@ class TorchTrainingDataset(TorchDataset, ABC):
         """
         Abstract class for all training datasets that can be used with Darts' `TorchForecastingModel`.
 
-        Each sample drawn from this dataset must be a seven-element tuple extracted from a specific time window and
-        set of single input `TimeSeries`. The elements are:
+        Each sample drawn from this dataset must be a
+        :class:`~darts.utils.data.torch_datasets.utils.TorchTrainingSample` extracted from a specific time
+        window and set of single input `TimeSeries`. Construct the sample by field name and omit unused
+        optional slots. The fields are:
 
         - past_target: target `series` values in the input chunk
         - past_covariates: Optional `past_covariates` values in the input chunk
         - historic_future_covariates: Optional `future_covariates` values in the input chunk
         - future_covariates: Optional `future_covariates` values in the output chunk
         - static_covariates: Optional `static_covariates` values of the `series`
-        - sample_weight: Optional `sample_weight` values in the output chunk
         - future_target: `series` values in the output chunk
+        - sample_weight: Optional `sample_weight` values in the output chunk
 
         Darts `TorchForecastingModel` can be fit from instances of `TorchTrainingDataset` using the `fit_from_dataset()`
         method.
 
         `TorchTrainingDataset` inherits from torch `Dataset`; meaning that all subclasses must implement the
-        `__getitem__()` method. All returned elements must be of type `np.ndarray` (or `None` for optional covariates
+        `__getitem__()` method. All tensor fields must be of type `np.ndarray` (or `None` for optional covariates
         and sample weight).
         """
         super().__init__()
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> TorchTrainingDatasetOutput:
+    def __getitem__(self, index: int) -> TorchTrainingSample:
         """Returns a sample drawn from this dataset."""
 
 
@@ -72,16 +74,16 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
     ):
         """Shifted Training Dataset
 
-        Each sample drawn from this dataset is a seven-element tuple extracted from a specific time window and
-        set of single input `TimeSeries`. The elements are:
+        Each sample drawn from this dataset is a :class:`~darts.utils.data.torch_datasets.utils.TorchTrainingSample`
+        extracted from a specific time window and set of single input `TimeSeries`. The fields are:
 
         - past_target: target `series` values in the input chunk
         - past_covariates: `past_covariates` values in the input chunk (`None` if `past_covariates=None`)
         - historic_future_covariates: `future_covariates` values in the input chunk (`None` if `future_covariates=None`)
         - future_covariates: `future_covariates` values in the output chunk (`None` if `future_covariates=None`)
         - static_covariates: `static_covariates` values of the `series` (`None` if `use_static_covariates=False`)
-        - sample_weight: `sample_weight` values in the output chunk (`None` if `sample_weight=None`)
         - future_target: `series` values in the output chunk
+        - sample_weight: `sample_weight` values in the output chunk (`None` if `sample_weight=None`)
 
         The output chunk starts `shift` after the input chunk's start.
 
@@ -222,13 +224,13 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
     def __len__(self):
         return self.ideal_nr_samples
 
-    def __getitem__(self, idx) -> TorchTrainingDatasetOutput:
+    def __getitem__(self, index) -> TorchTrainingSample:
         # determine the index of the time series.
-        series_idx = idx // self.max_samples_per_ts
+        series_idx = index // self.max_samples_per_ts
         series = self.series[series_idx]
 
         # determine the index at the end of the output chunk
-        end_of_output_idx = self._get_end_of_output_idx(series, series_idx, idx)
+        end_of_output_idx = self._get_end_of_output_idx(series, series_idx, index)
 
         # load covariates
         past_covariates = (
@@ -306,18 +308,17 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         if self.uses_static_covariates_covariates:
             sc = series.static_covariates_values(copy=False)
 
-        # (
-        #     past target,
-        #     past cov,
-        #     historic future cov,
-        #     future cov,
-        #     static cov,
-        #     sample weight,
-        #     future target
-        # )
-        return pt, pc, hfc, fc, sc, sw, ft
+        return TorchTrainingSample(
+            past_target=pt,
+            past_covariates=pc,
+            historic_future_covariates=hfc,
+            future_covariates=fc,
+            static_covariates=sc,
+            future_target=ft,
+            sample_weight=sw,
+        )
 
-    def _get_end_of_output_idx(self, series, series_idx, idx):
+    def _get_end_of_output_idx(self, series, series_idx, index):
         # determine the actual number of possible samples in this time series
         n_samples_in_ts = ceil(
             (len(series) - self.size_of_both_chunks + 1) / self.stride
@@ -336,7 +337,7 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         # it is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)
         return (
             len(series)
-            - (idx - (series_idx * self.max_samples_per_ts))
+            - (index - (series_idx * self.max_samples_per_ts))
             % n_samples_in_ts
             * self.stride
         )
@@ -358,16 +359,16 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
     ):
         """Sequential Training Dataset
 
-        Each sample drawn from this dataset is a seven-element tuple extracted from a specific time window and
-        set of single input `TimeSeries`. The elements are:
+        Each sample drawn from this dataset is a :class:`~darts.utils.data.torch_datasets.utils.TorchTrainingSample`
+        extracted from a specific time window and set of single input `TimeSeries`. The fields are:
 
         - past_target: target `series` values in the input chunk
         - past_covariates: `past_covariates` values in the input chunk (`None` if `past_covariates=None`)
         - historic_future_covariates: `future_covariates` values in the input chunk (`None` if `future_covariates=None`)
         - future_covariates: `future_covariates` values in the output chunk (`None` if `future_covariates=None`)
         - static_covariates: `static_covariates` values of the `series` (`None` if `use_static_covariates=False`)
-        - sample_weight: `sample_weight` values in the output chunk (`None` if `sample_weight=None`)
         - future_target: `series` values in the output chunk
+        - sample_weight: `sample_weight` values in the output chunk (`None` if `sample_weight=None`)
 
         The output chunk starts `input_chunk_length + output_chunk_shift` after the input chunk's start.
 
@@ -463,16 +464,16 @@ class HorizonBasedTorchTrainingDataset(SequentialTorchTrainingDataset):
 
         A dataset inspired by the N-BEATS way of training on the M4 dataset: https://arxiv.org/abs/1905.10437.
 
-        Each sample drawn from this dataset is a seven-element tuple extracted from a specific time window and
-        set of single input `TimeSeries`. The elements are:
+        Each sample drawn from this dataset is a :class:`~darts.utils.data.torch_datasets.utils.TorchTrainingSample`
+        extracted from a specific time window and set of single input `TimeSeries`. The fields are:
 
         - past_target: target `series` values in the input chunk
         - past_covariates: `past_covariates` values in the input chunk (`None` if `past_covariates=None`)
         - historic_future_covariates: `future_covariates` values in the input chunk (`None` if `future_covariates=None`)
         - future_covariates: `future_covariates` values in the output chunk (`None` if `future_covariates=None`)
         - static_covariates: `static_covariates` values of the `series` (`None` if `use_static_covariates=False`)
-        - sample_weight: `sample_weight` values in the output chunk (`None` if `sample_weight=None`)
         - future_target: `series` values in the output chunk
+        - sample_weight: `sample_weight` values in the output chunk (`None` if `sample_weight=None`)
 
         Given the horizon `output_chunk_length` of a model, this dataset will compute some "past / future" input and
         output chunks as follows: First a "forecast point" is selected in the range of the last `(min_lh *
@@ -561,7 +562,7 @@ class HorizonBasedTorchTrainingDataset(SequentialTorchTrainingDataset):
         self.min_lh, self.max_lh = min_lh, max_lh
         self.lookback = lookback
 
-    def _get_end_of_output_idx(self, series, series_idx, idx):
+    def _get_end_of_output_idx(self, series, series_idx, index):
         # determine the actual number of possible samples in this time series
         min_length = (self.lookback + self.max_lh) * self.output_chunk_length
         if len(series) < min_length:
@@ -575,7 +576,7 @@ class HorizonBasedTorchTrainingDataset(SequentialTorchTrainingDataset):
 
         # determine the index lh_idx of the forecasting point (the last point of the input series, before the target)
         # lh_idx should be in [0, self.max_samples_per_ts)
-        lh_idx = (idx - (series_idx * self.max_samples_per_ts)) * self.stride
+        lh_idx = (index - (series_idx * self.max_samples_per_ts)) * self.stride
 
         # determine the index at the end of the output chunk
         return len(series) - ((self.min_lh - 1) * self.output_chunk_length + lh_idx)

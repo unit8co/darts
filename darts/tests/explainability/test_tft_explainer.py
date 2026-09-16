@@ -1,5 +1,3 @@
-import itertools
-
 import matplotlib.figure
 import numpy as np
 import pandas as pd
@@ -7,6 +5,7 @@ import pytest
 
 from darts import TimeSeries
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.parametrize_helpers import param_product
 from darts.utils import timeseries_generation as tg
 
 if not TORCH_AVAILABLE:
@@ -27,12 +26,12 @@ def helper_create_test_cases(series_options: list):
     ]
     relative_index_options = [False, True]
     use_encoders_options = [False, True]
-    return itertools.product(*[
+    return param_product(
         series_options,
         covariates_options,
         relative_index_options,
         use_encoders_options,
-    ])
+    )
 
 
 class TestTFTExplainer:

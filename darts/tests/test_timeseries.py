@@ -1,4 +1,3 @@
-import itertools
 import logging
 import math
 from tempfile import NamedTemporaryFile
@@ -13,6 +12,7 @@ from scipy.stats import kurtosis, skew
 
 from darts import TimeSeries, concatenate, slice_intersect
 from darts.tests.conftest import POLARS_AVAILABLE
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.likelihood_models.base import (
     likelihood_component_names,
     quantile_names,
@@ -177,7 +177,7 @@ class TestTimeSeries:
 
     @pytest.mark.parametrize(
         "backend,date_type",
-        itertools.product(
+        param_product(
             ["pandas"] + (["polars"] if POLARS_AVAILABLE else []),
             ["str", "date", "datetime"],
         ),
@@ -578,7 +578,7 @@ class TestTimeSeries:
 
     @pytest.mark.parametrize(
         "dt_source,dt_vals",
-        itertools.product(["float32", "float64"], ["float64", "float32"]),
+        param_product(["float32", "float64"], ["float64", "float32"]),
     )
     def test_rescale_dtype_conversion(self, dt_source, dt_vals):
         series_1 = linear_timeseries(
@@ -600,9 +600,7 @@ class TestTimeSeries:
         helper_test_drop_before(self.series1, keep_point=False)
         helper_test_drop_before(self.series1, keep_point=True)
 
-    @pytest.mark.parametrize(
-        "config", itertools.product(["D", "2D", 1, 2], [False, True])
-    )
+    @pytest.mark.parametrize("config", param_product(["D", "2D", 1, 2], [False, True]))
     def test_intersect(self, config):
         """Tests slice intersection between two series with datetime or range index with identical and
         mixed frequencies."""
@@ -611,7 +609,7 @@ class TestTimeSeries:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [
                 (False, 1, 1, 1),  # integer step
                 (False, 1, 2, 2),
@@ -730,7 +728,7 @@ class TestTimeSeries:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [
                 (  # univariate array
                     np.array([0, 1, 2]).reshape((3, 1, 1)),
@@ -851,7 +849,7 @@ class TestTimeSeries:
 
     @pytest.mark.parametrize(
         "dt_source,dt_vals",
-        itertools.product(["float32", "float64"], ["float64", "float32"]),
+        param_product(["float32", "float64"], ["float64", "float32"]),
     )
     def test_append_prepend_dtype_conversion(self, dt_source, dt_vals):
         series_1 = linear_timeseries(
@@ -929,7 +927,7 @@ class TestTimeSeries:
 
     @pytest.mark.parametrize(
         "dt_source,dt_vals",
-        itertools.product(["float32", "float64"], ["float64", "float32"]),
+        param_product(["float32", "float64"], ["float64", "float32"]),
     )
     def test_append_prepend_values_dtype_conversion(self, dt_source, dt_vals):
         series_1 = linear_timeseries(
@@ -987,7 +985,7 @@ class TestTimeSeries:
 
     @pytest.mark.parametrize(
         "dt_source,dt_vals",
-        itertools.product(["float32", "float64"], ["float64", "float32"]),
+        param_product(["float32", "float64"], ["float64", "float32"]),
     )
     def test_with_values_dtype_conversion(self, dt_source, dt_vals):
         series_1 = linear_timeseries(
@@ -1111,7 +1109,7 @@ class TestTimeSeries:
 
     @pytest.mark.parametrize(
         "broadcast_components,broadcast_samples",
-        itertools.product([True, False], [True, False]),
+        param_product([True, False], [True, False]),
     )
     def test_ops_broadcasting(self, broadcast_components, broadcast_samples):
         # generate random time-series
@@ -1146,7 +1144,7 @@ class TestTimeSeries:
 
     @pytest.mark.parametrize(
         "dt_source,dt_vals",
-        itertools.product(["float32", "float64"], ["float64", "float32"]),
+        param_product(["float32", "float64"], ["float64", "float32"]),
     )
     def test_ops_dtype_conversion(self, dt_source, dt_vals):
         series = linear_timeseries(
@@ -2934,7 +2932,7 @@ class TestTimeSeriesConcatenate:
 
     @pytest.mark.parametrize(
         "dt_source,dt_vals",
-        itertools.product(["float32", "float64"], ["float64", "float32"]),
+        param_product(["float32", "float64"], ["float64", "float32"]),
     )
     def test_concatenate_dtype_conversion(self, dt_source, dt_vals):
         series_1 = linear_timeseries(

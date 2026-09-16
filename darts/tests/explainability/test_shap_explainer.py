@@ -1,5 +1,4 @@
 import copy
-import itertools
 import logging
 from datetime import date, timedelta
 
@@ -31,6 +30,7 @@ from darts.tests.conftest import (
     GBM_AVAILABLE,
     LGBM_AVAILABLE,
 )
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 from darts.utils.utils import generate_index
 
@@ -1295,7 +1295,7 @@ class TestShapExplainer:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [[0.1, 0.5, 0.9], [0.5]],
             [(LinearRegressionModel, {})]
             + (
@@ -1405,7 +1405,7 @@ class TestShapExplainer:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [[0.1, 0.5, 0.9], [0.5]],
             [(LinearRegressionModel, {})]
             + (

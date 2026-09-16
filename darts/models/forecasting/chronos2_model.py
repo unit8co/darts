@@ -33,7 +33,9 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.utils.data.torch_datasets.utils import (
     InputChunkLength,
+    ModuleStage,
     PLModuleInput,
+    PLModuleOutput,
     TorchTrainingSample,
     _parse_input_chunk_length,
 )
@@ -471,27 +473,13 @@ class _Chronos2Module(PLForecastingModule):
     # We need to think about how best to implement Chronos-2 `RINorm` in `io_processor()` without
     # breaking existing behavior, while also allowing fine-tuning with normalized loss.
     @io_processor
-    def forward(self, x_in: PLModuleInput, *args, **kwargs) -> Any:
-        """Chronos-2 model forward pass.
-
-        Parameters
-        ----------
-        x_in
-            comes as a tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
-            `x_future` is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
-
-        Returns
-        -------
-        torch.Tensor
-            the output tensor in the shape `(n_samples, n_time_steps, n_targets, n_quantiles)` for
-            probabilistic forecasts, or `(n_samples, n_time_steps, n_targets, 1)` for
-            deterministic forecasts (median only).
-        """
-        x_past, x_future, _, _ = x_in
-        # x_past is a stack of [past_target, past_covariates, historic_future_covariates],
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
+        # x_past is a tuple of (past_target, past_covariates, historic_future_covariates),
         # x_future is just future_covariates.
-        # So here we need to create `future_covariates` in Chronos2's format that is
-        # a stack of [past_target (NaNs), past_covariates (NaNs), future_covariates].
+        x_past = x_in.concatenate_past_features()
+        x_future = x_in.future_covariates
+        # Chronos-2 future covariates are a stack of
+        # [past_target (NaNs), past_covariates (NaNs), future_covariates].
         batch_size, past_length, n_variables = x_past.shape
         output_chunk_length = self.output_chunk_length or 0
         output_chunk_shift = self.output_chunk_shift
@@ -561,18 +549,18 @@ class _Chronos2Module(PLForecastingModule):
 
         # during training (fine-tuning), output all pre-trained quantiles for loss;
         # during prediction, output only user-specified quantiles
-        if self.training:
+        if x_in.stage is ModuleStage.TRAIN:
             quantile_preds = quantile_preds[:, :, :, self._finetuning_quantile_indices]
         else:
             quantile_preds = quantile_preds[:, :, :, self.user_quantile_indices]
 
-        return quantile_preds
+        return PLModuleOutput(prediction=quantile_preds)
 
-    def _compute_loss(self, output, target, criterion, sample_weight):
+    def _compute_loss(self, output: PLModuleOutput, target, criterion, sample_weight):
         if self.training:
             # compute loss on pre-trained quantiles
             return self._finetuning_likelihood.compute_loss(
-                output, target, sample_weight
+                output.prediction, target, sample_weight
             )
         else:
             return super()._compute_loss(output, target, criterion, sample_weight)
