@@ -110,9 +110,9 @@ class CustomRNNModule(PLForecastingModule, ABC):
         """
         pass
 
-    def _onnx_wrapper(self, input_sample: PLModuleInput, **meta):
+    def _onnx_wrapper(self, input_sample: PLModuleInput):
         """Export a 1-step cell; inference warms up over the input window."""
-        from darts.utils.onnx.export import prepare_onnx_export
+        from darts.utils.onnx.export import _prepare_onnx_export
 
         def _last_step(tensor):
             return tensor[:, -1:] if tensor is not None else None
@@ -125,7 +125,7 @@ class CustomRNNModule(PLForecastingModule, ABC):
                 input_sample.historic_future_covariates
             ),
         )
-        bundle = prepare_onnx_export(self, input_sample, **meta)
+        bundle = _prepare_onnx_export(self, input_sample)
         bundle.spec.stepwise_state = True
         return bundle
 

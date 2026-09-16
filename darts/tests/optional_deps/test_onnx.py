@@ -14,16 +14,20 @@ import numpy as np
 import onnx
 import onnxruntime as ort
 import pandas as pd
+import torch
 
 import darts.utils.timeseries_generation as tg
 from darts.models import (
     BlockRNNModel,
     NHiTSModel,
     RNNModel,
+    TCNModel,
+    TFTModel,
     TiDEModel,
 )
 from darts.utils.likelihood_models.torch import QuantileRegression
 from darts.utils.onnx.inference import (
+    ONNX_SPEC_METADATA_KEY,
     OnnxModelSpec,
     prepare_onnx_inputs,
     run_onnx_prediction,
@@ -35,6 +39,8 @@ torch_model_cls = [
     RNNModel,
     TiDEModel,
 ]
+
+tfm_kwargs_dev = {**tfm_kwargs_dev, **{"random_state": 42}}
 
 
 def _onnx_files(directory: str) -> list[str]:
@@ -73,11 +79,16 @@ class TestOnnx:
             self.ts_tg_with_static if model.supports_static_covariates else self.ts_tg
         )
 
-    def _onnx_pred(self, onnx_filename, spec, model, n, series=None):
+    def _load_spec(self, onnx_filename, session=None):
+        if session is None:
+            session = ort.InferenceSession(onnx_filename)
+        return OnnxModelSpec.from_session(session), session
+
+    def _onnx_pred(self, onnx_filename, model, n, series=None, session=None):
+        spec, session = self._load_spec(onnx_filename, session=session)
         return run_onnx_prediction(
             n=n,
-            session=ort.InferenceSession(onnx_filename),
-            spec=spec,
+            session=session,
             series=series if series is not None else self._series_for(model),
             past_covariates=self.ts_pc if model.uses_past_covariates else None,
             future_covariates=self.ts_fc if model.uses_future_covariates else None,
@@ -103,7 +114,6 @@ class TestOnnx:
     def test_onnx_save_load(self, tmpdir_fn, model_cls):
         model = self._make_model(model_cls)
         onnx_filename = f"test_onnx_{model.model_name}.onnx"
-        spec_filename = f"{onnx_filename}.spec.json"
 
         with pytest.raises(ValueError) as msg:
             model.to_onnx("dummy_name.onnx")
@@ -119,15 +129,17 @@ class TestOnnx:
 
         model.to_onnx(onnx_filename)
         assert os.path.exists(onnx_filename)
-        assert os.path.exists(spec_filename)
+        assert not os.path.exists(f"{onnx_filename}.spec.json")
 
         n_onnx_files = len(_onnx_files(tmpdir_fn))
         model.to_onnx()
         assert len(_onnx_files(tmpdir_fn)) == n_onnx_files + 1
 
-        onnx.checker.check_model(onnx.load(onnx_filename))
-        spec = OnnxModelSpec.load_json(spec_filename)
-        onnx_pred = self._onnx_pred(onnx_filename, spec, model, n=2)
+        onnx_model = onnx.load(onnx_filename)
+        onnx.checker.check_model(onnx_model)
+        metadata = {prop.key: prop.value for prop in onnx_model.metadata_props}
+        assert ONNX_SPEC_METADATA_KEY in metadata
+        onnx_pred = self._onnx_pred(onnx_filename, model, n=2)
         self._assert_forecasts_equal(onnx_pred, pred)
 
     @pytest.mark.parametrize("clean", [True, False])
@@ -147,8 +159,10 @@ class TestOnnx:
         )
         model.save(ckpt_filename, clean=clean)
 
-        load_kwargs = tfm_kwargs_dev if clean else {}
-        model_loaded = model_cls.load(ckpt_filename, **load_kwargs)
+        pl_trainer_kwargs = tfm_kwargs_dev["pl_trainer_kwargs"] if clean else None
+        model_loaded = model_cls.load(
+            ckpt_filename, pl_trainer_kwargs=pl_trainer_kwargs
+        )
         pred = model_loaded.predict(
             n=2,
             series=self._series_for(model_loaded),
@@ -159,8 +173,7 @@ class TestOnnx:
         )
 
         model_loaded.to_onnx(onnx_filename)
-        spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
-        onnx_pred = self._onnx_pred(onnx_filename, spec, model_loaded, n=2)
+        onnx_pred = self._onnx_pred(onnx_filename, model_loaded, n=2)
         self._assert_forecasts_equal(onnx_pred, pred)
 
         model_weights = self._make_model(model_cls)
@@ -175,8 +188,7 @@ class TestOnnx:
         )
 
         model_weights.to_onnx(onnx_filename2)
-        spec2 = OnnxModelSpec.load_json(f"{onnx_filename2}.spec.json")
-        onnx_pred_weights = self._onnx_pred(onnx_filename2, spec2, model_weights, n=2)
+        onnx_pred_weights = self._onnx_pred(onnx_filename2, model_weights, n=2)
         self._assert_forecasts_equal(onnx_pred_weights, pred_weights)
 
     @pytest.mark.parametrize("rnn_type", ["RNN", "LSTM"])
@@ -189,7 +201,7 @@ class TestOnnx:
         model.to_onnx(onnx_filename)
 
         onnx_model = onnx.load(onnx_filename)
-        spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
+        spec, _ = self._load_spec(onnx_filename)
         onnx.checker.check_model(onnx_model)
         output_names = [node.name for node in onnx_model.graph.output]
 
@@ -202,7 +214,7 @@ class TestOnnx:
         else:
             assert len(spec.state_input_names) == 1
         ort.InferenceSession(onnx_filename)
-        pred_onnx = self._onnx_pred(onnx_filename, spec, model, n=2)
+        pred_onnx = self._onnx_pred(onnx_filename, model, n=2)
         self._assert_forecasts_equal(pred_onnx, pred)
 
     def test_onnx_roll_size_smaller_than_output_chunk_length(self, tmpdir_fn):
@@ -228,11 +240,10 @@ class TestOnnx:
         )
         onnx_filename = f"test_roll_{model.model_name}.onnx"
         model.to_onnx(onnx_filename)
-        spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
+        spec, session = self._load_spec(onnx_filename)
         onnx_pred = run_onnx_prediction(
             n=n,
-            session=ort.InferenceSession(onnx_filename),
-            spec=spec,
+            session=session,
             series=series,
             future_covariates=future_cov,
             roll_size=roll_size,
@@ -255,11 +266,10 @@ class TestOnnx:
         )
         onnx_filename = f"test_ar_{model.model_name}.onnx"
         model.to_onnx(onnx_filename)
-        spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
+        spec, session = self._load_spec(onnx_filename)
         onnx_pred = run_onnx_prediction(
             n=n,
-            session=ort.InferenceSession(onnx_filename),
-            spec=spec,
+            session=session,
             series=series,
             past_covariates=past_cov,
             future_covariates=future_cov,
@@ -276,8 +286,7 @@ class TestOnnx:
         )
         onnx_filename = "test_schema.onnx"
         model.to_onnx(onnx_filename)
-        spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
-        session = ort.InferenceSession(onnx_filename)
+        spec, session = self._load_spec(onnx_filename)
 
         assert spec.input_names == [inp.name for inp in session.get_inputs()]
         assert spec.output_names == [out.name for out in session.get_outputs()]
@@ -316,8 +325,7 @@ class TestOnnx:
 
         onnx_filename = f"test_ll_{model.model_name}.onnx"
         model.to_onnx(onnx_filename)
-        spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
-        session = ort.InferenceSession(onnx_filename)
+        spec, session = self._load_spec(onnx_filename)
 
         n_chunk = model.output_chunk_length
         shape_expected = (n_chunk, series.n_components * len(quantiles), 1)
@@ -333,7 +341,6 @@ class TestOnnx:
         onnx_pred = run_onnx_prediction(
             n=n_chunk,
             session=session,
-            spec=spec,
             series=series,
             past_covariates=past_cov,
             future_covariates=future_cov,
@@ -349,15 +356,15 @@ class TestOnnx:
             _ = run_onnx_prediction(
                 n=n_chunk + 1,
                 session=session,
-                spec=spec,
                 series=series,
                 past_covariates=past_cov,
                 future_covariates=future_cov,
             )
 
-    def test_onnx_multiseries(self, tmpdir_fn):
+    @pytest.mark.parametrize("model_cls", [TCNModel, TFTModel])
+    def test_onnx_multiseries(self, tmpdir_fn, model_cls):
         """ONNX inference returns a sequence of forecasts for multiple series."""
-        model = self._make_model(TiDEModel)
+        model = self._make_model(model_cls, loss_fn=torch.nn.L1Loss())
         series = [self.ts_tg, self.ts_tg + 100.0]
 
         past_cov = [self.ts_pc] * 2 if model.supports_past_covariates else None
@@ -366,8 +373,7 @@ class TestOnnx:
 
         onnx_filename = f"test_ms_{model.model_name}.onnx"
         model.to_onnx(onnx_filename)
-        spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
-        session = ort.InferenceSession(onnx_filename)
+        spec, session = self._load_spec(onnx_filename)
 
         n_ar = model.output_chunk_length + 1
         pred = model.predict(
@@ -379,7 +385,6 @@ class TestOnnx:
         onnx_pred = run_onnx_prediction(
             n=n_ar,
             session=session,
-            spec=spec,
             series=series,
             past_covariates=past_cov,
             future_covariates=future_cov,
@@ -400,8 +405,7 @@ class TestOnnx:
 
         onnx_filename = f"test_rin_{model.model_name}.onnx"
         model.to_onnx(onnx_filename)
-        spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
-        session = ort.InferenceSession(onnx_filename)
+        spec, session = self._load_spec(onnx_filename)
 
         n_chunk = model.output_chunk_length
         pred = model.predict(
@@ -413,7 +417,6 @@ class TestOnnx:
         onnx_pred = run_onnx_prediction(
             n=n_chunk,
             session=session,
-            spec=spec,
             series=series,
             past_covariates=past_cov,
             future_covariates=future_cov,
@@ -433,7 +436,6 @@ class TestOnnx:
         onnx_ar = run_onnx_prediction(
             n=n_ar,
             session=session,
-            spec=spec,
             series=series,
             past_covariates=past_cov,
             future_covariates=future_cov,

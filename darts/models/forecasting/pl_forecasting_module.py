@@ -225,11 +225,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
             tensor; ``state`` is carried to the next ``forward`` as ``PLModuleInput.state``.
         """
 
-    def _onnx_wrapper(self, input_sample: PLModuleInput, **meta):
+    def _onnx_wrapper(self, input_sample: PLModuleInput):
         """Build the generic ONNX export wrapper (features in, ``prediction`` out)."""
-        from darts.utils.onnx.export import prepare_onnx_export
+        from darts.utils.onnx.export import _prepare_onnx_export
 
-        return prepare_onnx_export(self, input_sample, **meta)
+        return _prepare_onnx_export(self, input_sample)
 
     def training_step(
         self, train_batch: TorchTrainingBatch, batch_idx: int

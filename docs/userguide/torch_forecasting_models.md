@@ -376,19 +376,14 @@ For a comprehensive walkthrough of fine-tuning Torch Forecasting Models and Foun
 
 Export requires PyTorch and the optional `onnx` dependency. After export, inference can run **without PyTorch** using only `onnxruntime`, NumPy, and Darts' torch-free helpers in `darts.utils.onnx.inference`.
 
-`to_onnx()` writes two artifacts:
-
-- the ONNX graph (`.onnx`)
-- a companion spec (`.onnx.spec.json`) describing input/output names, covariate usage, and (for RNNs) hidden-state shapes
-
-Feature inputs are named after the module fields (`past_target`, `past_covariates`, ...). Every model uses the same graph (`prediction` out). Recurrent models such as `RNNModel` export a 1-step cell with flattened `state_in_*` / `state_out_*` tensors (zeros on the first step). `run_onnx_prediction` warms that cell up over the input window, then keeps stepping — the same contract as `predict()`, reconstructed outside the graph.
+`to_onnx()` exports the model to ONNX format.
 
 ```python
 model = SomeTorchForecastingModel(...)
 model.fit(...)
 horizon = model.output_chunk_length
 
-# export requires torch + onnx; produces `example.onnx` and `example.onnx.spec.json`
+# export requires torch + onnx
 onnx_filename = "example.onnx"
 model.to_onnx(onnx_filename, export_params=True)
 ```
@@ -399,14 +394,12 @@ Now forecast using Darts' `run_onnx_prediction()` which mirrors `TorchForecastin
 import onnxruntime as ort
 from darts.utils.onnx.inference import OnnxModelSpec, run_onnx_prediction
 
-spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
 session = ort.InferenceSession(onnx_filename)
 
-# returns NumPy array shaped like `TimeSeries.all_values()` for the forecast horizon
+# returns forecasts as (a sequence of) `TimeSeries`
 forecast = run_onnx_prediction(
     n=horizon,
     session=session,
-    spec=spec,
     series=series,
     past_covariates=ts_past,
     future_covariates=ts_future,
@@ -418,7 +411,8 @@ For a single ONNX step (advanced / custom loops), extract features with `prepare
 ```python
 from darts.utils.onnx.inference import OnnxModelSpec, prepare_onnx_inputs
 
-spec = OnnxModelSpec.load_json(f"{onnx_filename}.spec.json")
+session = ort.InferenceSession(onnx_filename)
+spec = OnnxModelSpec.from_session(session)
 onnx_inputs = prepare_onnx_inputs(
     series=series,
     spec=spec,
@@ -429,7 +423,7 @@ ort_out = session.run(spec.output_names, onnx_inputs)
 point_forecast = extract_point_forecast(ort_out)  # shape (time, components)
 ```
 
-Raw ONNX output tensors have shape `(batch, output_chunk_length, n_components, n_likelihood_params)`. Models trained with a `likelihood` export those raw parameters (sampling is not in the graph).
+Raw ONNX output tensors (NumPy arrays) have shape `(batch, output_chunk_length, n_components, n_likelihood_params)`. Models trained with a `likelihood` export those raw parameters (sampling is not in the graph).
 
 ### Callbacks
 

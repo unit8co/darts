@@ -2,17 +2,17 @@
 ONNX Inference
 --------------
 
-Torch-free ONNX inference utilities. Load a companion ``*.onnx.spec.json`` into
-:class:`OnnxModelSpec`, then either run a full horizon with :func:`run_onnx_prediction`
-or drive a custom loop with :func:`prepare_onnx_inputs`.
+Torch-free ONNX inference utilities: Export a torch model to ONNX format and then:
+
+- run torch-free forecasting with :func:`run_onnx_prediction`
+- or drive a custom / advanced loop with :func:`prepare_onnx_inputs`
 """
 
 from __future__ import annotations
 
 import json
 from collections.abc import Mapping
-from dataclasses import asdict, dataclass, field
-from pathlib import Path
+from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
@@ -25,14 +25,16 @@ from darts.utils.timeseries_generation import _build_forecast_series_from_schema
 from darts.utils.ts_utils import get_series_seq_type, series2seq
 from darts.utils.utils import _build_tqdm_iterator
 
+ONNX_SPEC_METADATA_KEY = "darts.onnx_spec"
+
 
 @dataclass
 class OnnxModelSpec:
     """Metadata describing an exported ONNX graph and its forecasting windows.
 
-    Written next to the ``.onnx`` file as ``*.onnx.spec.json``. Feature names
-    match module fields (``past_target``, optional covariates). Recurrent graphs
-    add flattened ``state_in_*`` / ``state_out_*`` tensors.
+    Embedded in the exported ``.onnx`` file under ``darts.onnx_spec``.
+    Feature names match module fields (``past_target``, optional covariates).
+    Recurrent graphs add flattened ``state_in_*`` / ``state_out_*`` tensors.
 
     Parameters
     ----------
@@ -83,33 +85,28 @@ class OnnxModelSpec:
     state_input_shapes: list[list[int]] | None = None
     stepwise_state: bool = False
 
-    def save_json(self, path: str | Path) -> None:
-        """Write the spec to a JSON file.
-
-        Parameters
-        ----------
-        path
-            Destination path (typically ``<model>.onnx.spec.json``).
-        """
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(asdict(self), f, indent=2)
-
     @classmethod
-    def load_json(cls, path: str | Path) -> OnnxModelSpec:
-        """Load a spec from a JSON file.
+    def from_session(cls, session: Any) -> OnnxModelSpec:
+        """Load the spec embedded in an ONNX Runtime inference session.
 
         Parameters
         ----------
-        path
-            Path produced by :meth:`save_json`.
+        session
+            An ONNX Runtime ``InferenceSession`` for a model exported with
+            :meth:`~darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.to_onnx`.
 
         Returns
         -------
         OnnxModelSpec
             The deserialized spec.
+
+        Raises
+        ------
+        ValueError
+            If the model does not contain :data:`ONNX_SPEC_METADATA_KEY` metadata.
         """
-        with open(path, encoding="utf-8") as f:
-            return cls(**json.load(f))
+        meta = session.get_modelmeta().custom_metadata_map
+        return cls(**json.loads(meta[ONNX_SPEC_METADATA_KEY]))
 
 
 def prepare_onnx_inputs(
@@ -133,7 +130,7 @@ def prepare_onnx_inputs(
         future is to be predicted. If specified, the method returns the forecasts of these
         series. Otherwise, the method returns the forecast of the (single) training series.
     spec
-        Graph / window metadata, typically from ``*.onnx.spec.json``.
+        Graph / window metadata, typically from :meth:`OnnxModelSpec.from_session`.
     past_covariates
         Optionally, the past-observed covariates series needed as inputs for the model.
         They must match the covariates used for training in terms of dimension.
@@ -202,7 +199,6 @@ def prepare_onnx_inputs(
 def run_onnx_prediction(
     n: int,
     session: Any,
-    spec: OnnxModelSpec,
     series: TimeSeriesLike,
     past_covariates: TimeSeriesLike | None = None,
     future_covariates: TimeSeriesLike | None = None,
@@ -217,14 +213,35 @@ def run_onnx_prediction(
 
     Autoregressive forecasts are only supported for deterministic models.
 
+    Example for exporting a :class:`DLinearModel` to ONNX format and torch-free forcasting:
+
+    .. highlight:: python
+    .. code-block:: python
+
+        # train torch model and export to ONNX format
+        from darts.datasets import AirPassengersDataset
+        from darts.models import DLinearModel
+
+        series = AirPassengersDataset().load().astype("f")
+        model = DLinearModel(input_chunk_length=12, output_chunk_length=1)
+        model.fit(series, epochs=1)
+        onnx_filename = "my_model.onnx"
+        model.to_onnx(onnx_filename)
+
+        # run torch-free inference
+        import onnxruntime as ort
+        from darts.utils.onnx import run_onnx_prediction
+
+        session = ort.InferenceSession(onnx_filename)
+        forecast = run_onnx_prediction(n=3, session=session, series=series)
+    ..
+
     Parameters
     ----------
     n
         The number of time steps after the end of the target series for which to produce predictions.
     session
         An ONNX Runtime ``InferenceSession`` for the exported graph.
-    spec
-        Graph / window metadata, typically from ``*.onnx.spec.json``.
     series
         The series or sequence of series, representing the history of the target series whose
         future is to be predicted. If specified, the method returns the forecasts of these
@@ -248,6 +265,9 @@ def run_onnx_prediction(
     TimeSeriesLike
         The forecasted series or sequence of series.
     """
+    # model / graph metadata
+    spec = OnnxModelSpec.from_session(session)
+
     if roll_size is None:
         roll_size = spec.output_chunk_length
     elif not 0 < roll_size <= spec.output_chunk_length:

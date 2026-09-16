@@ -59,8 +59,6 @@ from darts.utils.data import (
 )
 from darts.utils.data.torch_datasets._data_module import TorchDataModule
 from darts.utils.data.torch_datasets.utils import (
-    ModuleStage,
-    PLModuleInput,
     TorchInferenceSample,
     TorchTrainingSample,
     _as_inference_sample,
@@ -894,34 +892,33 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def to_onnx(self, path: str | None = None, **kwargs):
         """Export model to ONNX format for optimized inference.
 
-        Exports a wrapper around the Lightning module so graphs use named feature
-        inputs (`past_target`, optional covariate tensors) and a ``prediction``
-        output. If the module returns recurrent state, flattened ``state_in_*`` /
-        ``state_out_*`` tensors are included (zeros on the first step).
-        Recurrent modules such as :class:`~darts.models.forecasting.rnn_model.RNNModel`
-        export a 1-step cell; :func:`~darts.utils.onnx.inference.run_onnx_prediction`
-        warms it up over the input window. Likelihood models export raw distribution
-        parameters (first parameter is used as the point forecast). Reversible
-        instance norm is included in the graph when enabled.
+        After exporting, use torch-free :func:`~darts.utils.onnx.inference.run_onnx_prediction`
+        to generate forecasts.
 
-        A companion JSON spec file (``*.onnx.spec.json``) is written next to the
-        ONNX file for torch-free inference via
-        :func:`~darts.utils.onnx.inference.run_onnx_prediction`.
-
-        Note: requires `onnx` library (optional dependency) to be installed.
+        .. note::
+            Requires `onnx>=1.0.0` (optional dependency) to be installed.
 
         Example for exporting a :class:`DLinearModel`:
 
         .. highlight:: python
         .. code-block:: python
 
+            # train torch model and export to ONNX format
             from darts.datasets import AirPassengersDataset
             from darts.models import DLinearModel
 
-            series = AirPassengersDataset().load()
-            model = DLinearModel(input_chunk_length=4, output_chunk_length=1)
+            series = AirPassengersDataset().load().astype("f")
+            model = DLinearModel(input_chunk_length=12, output_chunk_length=1)
             model.fit(series, epochs=1)
-            model.to_onnx("my_model.onnx")
+            onnx_filename = "my_model.onnx"
+            model.to_onnx(onnx_filename)
+
+            # run torch-free inference
+            import onnxruntime as ort
+            from darts.utils.onnx import run_onnx_prediction
+
+            session = ort.InferenceSession(onnx_filename)
+            forecast = run_onnx_prediction(n=3, session=session, series=series)
         ..
 
         Parameters
@@ -934,8 +931,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             the export destination). For more information, read the `official documentation
             <https://pytorch.org/docs/master/onnx.html#torch.onnx.export>`__.
         """
-        # TODO: LSTM model should be exported with a batch size of 1
-        # TODO: predictions with TFT and TCN models is incorrect, might be caused by helper function to process inputs
+        from darts.utils.onnx.export import to_onnx
+
         if not self._fit_called:
             raise_log(
                 ValueError("`fit()` needs to be called before `to_onnx()`."),
@@ -944,73 +941,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if path is None:
             path = self._default_save_path() + ".onnx"
 
-        mock_batch = self._onnx_dummy_input()
-        likelihood = self.likelihood
-
-        self.model.eval()
-        bundle = self.model._onnx_wrapper(
-            mock_batch,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
-            output_chunk_shift=self.output_chunk_shift,
-            uses_past_covariates=self.uses_past_covariates,
-            uses_future_covariates=self.uses_future_covariates,
-            uses_static_covariates=self.uses_static_covariates,
-            likelihood_parameter_names=likelihood.parameter_names
-            if likelihood is not None
-            else None,
-        )
-        export_kwargs = {
-            "input_names": bundle.input_names,
-            "output_names": bundle.output_names,
-            "external_data": False,
-            "dynamo": bundle.dynamic_axes is None,
-        }
-        if bundle.dynamic_axes is not None:
-            export_kwargs["dynamic_axes"] = bundle.dynamic_axes
-        export_kwargs.update(kwargs)
-        bundle.wrapper.eval()
-        torch.onnx.export(
-            model=bundle.wrapper,
-            args=bundle.example_inputs,
-            f=path,
-            **export_kwargs,
-        )
-        bundle.spec.save_json(f"{path}.spec.json")
-
-    def _onnx_dummy_input(self) -> PLModuleInput:
-        """Random example batch used to trace the ONNX graph."""
-
-        def _randomize(shape, *, time_dim: int | None = None) -> torch.Tensor | None:
-            if not shape:
-                return None
-            if time_dim is not None:
-                shape = (time_dim, shape[-1])
-            return torch.rand((1,) + shape, dtype=self.model.dtype)
-
-        train_sample_shape = self.model.train_sample_shape
-        return PLModuleInput(
-            past_target=_randomize(
-                train_sample_shape["past_target"],
-                time_dim=self.input_chunk_length,
-            ),
-            past_covariates=_randomize(
-                train_sample_shape.get("past_covariates"),
-                time_dim=self.input_chunk_length,
-            ),
-            historic_future_covariates=_randomize(
-                train_sample_shape.get("historic_future_covariates"),
-                time_dim=self.input_chunk_length,
-            ),
-            future_covariates=_randomize(
-                train_sample_shape.get("future_covariates"),
-                time_dim=self.output_chunk_length,
-            ),
-            static_covariates=_randomize(train_sample_shape.get("static_covariates")),
-            # future_target is excluded: ONNX export traces the inference path only
-            future_target=None,
-            stage=ModuleStage.PREDICT,
-        )
+        to_onnx(self.model, path, **kwargs)
 
     @random_method
     def fit(
