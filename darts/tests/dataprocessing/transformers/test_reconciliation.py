@@ -1,5 +1,3 @@
-import itertools
-
 import numpy as np
 import pytest
 from pandas import date_range
@@ -13,6 +11,7 @@ from darts.dataprocessing.transformers.reconciliation import (
     _get_summation_matrix,
 )
 from darts.models import LinearRegressionModel
+from darts.tests.parametrize_helpers import param_product
 from darts.utils import timeseries_generation as tg
 
 
@@ -218,7 +217,7 @@ class TestReconciliation:
 
     @pytest.mark.parametrize(
         "dt_source, transformer_cls",
-        itertools.product(
+        param_product(
             ["float32", "float64"],
             [TopDownReconciliator, MinTReconciliator, BottomUpReconciliator],
         ),

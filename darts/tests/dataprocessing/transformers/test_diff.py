@@ -1,4 +1,3 @@
-import itertools
 from collections.abc import Sequence
 from copy import deepcopy
 
@@ -9,6 +8,7 @@ import pytest
 from darts import TimeSeries
 from darts import concatenate as darts_concat
 from darts.dataprocessing.transformers import Diff
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 
 
@@ -203,11 +203,7 @@ class TestDiff:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [True, False],
-            [True, False],
-            [[1], [1, 2]],
-        ),
+        param_product([True, False], [True, False], [[1], [1, 2]]),
     )
     def test_diff_with_component_mask_or_columns(self, config):
         """

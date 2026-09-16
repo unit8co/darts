@@ -1,5 +1,3 @@
-import itertools
-
 import numpy as np
 import pytest
 import sklearn.metrics as sklearn_metrics
@@ -7,6 +5,7 @@ import sklearn.metrics as sklearn_metrics
 import darts.metrics.metrics as metrics
 import darts.metrics.utils as utils
 from darts import TimeSeries
+from darts.tests.parametrize_helpers import param_product
 
 
 class TestClassificationMetrics:
@@ -14,10 +13,10 @@ class TestClassificationMetrics:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [0, 1, 2],  # deterministic labels, class probabilities, sampled labels
-            [None, 4, [4, 1], [1, 2, 3, 4]],  # selected labels
-            ["weighted", "micro", "macro", None],  # label reduction
+        param_product(
+            [0, 1, 2],
+            [None, 4, [4, 1], [1, 2, 3, 4]],
+            ["weighted", "micro", "macro", None],
             [
                 (
                     metrics.accuracy,

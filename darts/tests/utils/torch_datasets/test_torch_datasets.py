@@ -1,4 +1,3 @@
-import itertools
 import math
 from dataclasses import fields
 
@@ -19,6 +18,7 @@ if not TORCH_AVAILABLE:
 import torch
 from torch.utils._pytree import tree_flatten, tree_unflatten
 
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.data import (
     HorizonBasedTorchTrainingDataset,
     SequentialTorchInferenceDataset,
@@ -2423,7 +2423,7 @@ class TestDataset:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [
                 (SequentialTorchTrainingDataset, []),
                 (SequentialTorchTrainingDataset, ["past"]),

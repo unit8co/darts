@@ -9,7 +9,6 @@ if not TORCH_AVAILABLE:
     )
 
 import copy
-import itertools
 import logging
 import math
 import os
@@ -59,6 +58,7 @@ from darts.models import (
 from darts.models.components.layer_norm_variants import RINorm
 from darts.models.forecasting.global_baseline_models import _GlobalNaiveModel
 from darts.tests.conftest import tfm_kwargs, tfm_kwargs_dev
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.data.torch_datasets._data_module import TorchDataModule
 from darts.utils.data.torch_datasets.inference_dataset import (
     SequentialTorchInferenceDataset,
@@ -216,7 +216,7 @@ class TestTorchForecastingModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [False, True],
             [(RNNModel, {"model": "RNN", "hidden_dim": 10, "n_rnn_layers": 10})]
             + ([(NeuralForecastModel, {})] if NF_AVAILABLE else []),
@@ -478,11 +478,11 @@ class TestTorchForecastingModel:
 
     @pytest.mark.parametrize(
         "params",
-        itertools.product(
-            [DLinearModel, NBEATSModel, RNNModel],  # model_cls
-            [True, False],  # past_covs
-            [True, False],  # future_covs
-            [True, False],  # static covs
+        param_product(
+            [DLinearModel, NBEATSModel, RNNModel],
+            [True, False],
+            [True, False],
+            [True, False],
         ),
     )
     def test_save_and_load_weights_covs_usage_attributes(self, tmpdir_fn, params):
@@ -2094,10 +2094,7 @@ class TestTorchForecastingModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            models,
-            [3, 7, 10],
-        ),
+        param_product(models, [3, 7, 10]),
     )
     def test_output_shift(self, config):
         """Tests shifted output for shift smaller than, equal to, and larger than output_chunk_length.
@@ -2225,7 +2222,7 @@ class TestTorchForecastingModel:
                 err.value
             )
 
-    @pytest.mark.parametrize("config", itertools.product(models, [2, 3, 4]))
+    @pytest.mark.parametrize("config", param_product(models, [2, 3, 4]))
     def test_multi_ts_prediction(self, config):
         (model_cls, model_kwargs), n = config
         model_kwargs = copy.deepcopy(model_kwargs)
@@ -2250,7 +2247,7 @@ class TestTorchForecastingModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(models, [True, False], [True, False], [True, False]),
+        param_product(models, [True, False], [True, False], [True, False]),
     )
     def test_weights(self, config):
         (model_cls, model_kwargs), built_in_weight, single_series, univ_series = config
