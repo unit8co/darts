@@ -213,6 +213,12 @@ def run_onnx_prediction(
 
     Autoregressive forecasts are only supported for deterministic models.
 
+    .. note::
+        Requires ONNX dependencies to be installed:
+
+        - `onnxruntime>=1.24.1` for inference
+        - `onnx>=1.0.0` and `onnxscript>=0.7.0` for exporting to ONNX
+
     Example for exporting a :class:`DLinearModel` to ONNX format and torch-free forcasting:
 
     .. highlight:: python

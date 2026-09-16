@@ -897,7 +897,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         to generate forecasts.
 
         .. note::
-            Requires `onnx>=1.0.0` (optional dependency) to be installed.
+            Requires ONNX dependencies to be installed:
+
+            - `onnx>=1.0.0` and `onnxscript>=0.7.0` for exporting to ONNX
+            - `onnxruntime>=1.24.1` for inference
 
         Example for exporting a :class:`DLinearModel`:
 

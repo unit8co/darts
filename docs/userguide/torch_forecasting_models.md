@@ -374,7 +374,7 @@ For a comprehensive walkthrough of fine-tuning Torch Forecasting Models and Foun
 
 #### Exporting model to ONNX format for inference
 
-Export requires PyTorch and the optional `onnx` dependency. After export, inference can run **without PyTorch** using only `onnxruntime`, NumPy, and Darts' torch-free helpers in `darts.utils.onnx.inference`.
+Exporting models to ONNX format and running inference optional dependencies `onnx>=1.0.0`, `onnxruntime>=1.24.1`, and `onnxscript>=0.7.0`. After export, inference can run **without PyTorch** using only `onnxruntime`, NumPy, and Darts' torch-free helpers in `darts.utils.onnx.inference`.
 
 `to_onnx()` exports the model to ONNX format.
 
