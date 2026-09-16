@@ -26,12 +26,7 @@ import sys
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from glob import glob
-from typing import Any, Literal
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+from typing import Any, Literal, Self
 
 import numpy as np
 import pandas as pd

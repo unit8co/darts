@@ -8,15 +8,9 @@ Base Scorer
 #     - add option to normalize the windows for kmeans? capture only the form and not the values.
 
 import copy
-import sys
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Literal
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+from typing import Literal, Self
 
 import numpy as np
 

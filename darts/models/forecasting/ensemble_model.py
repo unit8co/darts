@@ -5,18 +5,9 @@ Base Ensemble Model
 
 import copy
 import os
-import sys
 from abc import abstractmethod
 from collections import defaultdict
-from typing import BinaryIO
-
-from darts.models.forecasting.sklearn_model import SKLearnModel
-from darts.utils.likelihood_models.base import LikelihoodType
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+from typing import BinaryIO, Self
 
 from darts import TimeSeries, concatenate
 from darts.logging import get_logger, raise_log
@@ -25,7 +16,9 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
     LocalForecastingModel,
 )
+from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
+from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.ts_utils import series2seq
 from darts.utils.utils import TORCH_AVAILABLE
 

@@ -25,6 +25,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Dependencies**
 
+- 🔴 Python version update: Removed support for Python 3.10. The new minimum Python version is 3.11. [#3206](https://github.com/unit8co/darts/pull/3206) by [Dennis Bader](https://github.com/dennisbader).
+
 ### For developers of the library:
 
 ## [0.47.0](https://github.com/unit8co/darts/tree/0.47.0) (2026-09-04)
