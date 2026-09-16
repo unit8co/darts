@@ -15,7 +15,6 @@ For detailed examples and tutorials, see:
 
 import os
 from dataclasses import dataclass, field
-from typing import Any
 
 import torch
 import torch.nn.functional as F
@@ -39,7 +38,9 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.utils.data.torch_datasets.utils import (
     InputChunkLength,
+    ModuleStage,
     PLModuleInput,
+    PLModuleOutput,
     TorchTrainingSample,
     _parse_input_chunk_length,
 )
@@ -230,22 +231,7 @@ class _TimesFM2p5Module(PLForecastingModule):
         return output_ts
 
     @io_processor
-    def forward(self, x_in: PLModuleInput, *args, **kwargs) -> Any:
-        """TimesFM 2.5 model forward pass.
-
-        Parameters
-        ----------
-        x_in
-            comes as a tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
-            `x_future` is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
-
-        Returns
-        -------
-        torch.Tensor
-            the output tensor in the shape `(n_samples, n_time_steps, n_targets, n_quantiles)` for
-            probabilistic forecasts, or `(n_samples, n_time_steps, n_targets, 1)` for
-            deterministic forecasts (median only).
-        """
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
         # B: batch size
         # L: input chunk length
         # T: output chunk length
@@ -260,7 +246,7 @@ class _TimesFM2p5Module(PLForecastingModule):
         # N: likelihood quantiles (user-specified)
 
         # `x_past`: (B, L, C)
-        x_past, _, _, _ = x_in
+        x_past = x_in.past_target
 
         # TimesFM 2.5 is a univariate model and its inputs do not have a variable dimension,
         # so here we reshape `x_past` to (B * C, L)
@@ -329,20 +315,20 @@ class _TimesFM2p5Module(PLForecastingModule):
 
         # during training (fine-tuning), output all pre-trained quantiles for loss;
         # during prediction, output only user-specified quantiles
-        if self.training:
+        if x_in.stage is ModuleStage.TRAIN:
             renormed_outputs = renormed_outputs[
                 :, :, :, self._finetuning_quantile_indices
             ]
         else:
             renormed_outputs = renormed_outputs[:, :, :, self.user_quantile_indices]
 
-        return renormed_outputs
+        return PLModuleOutput(prediction=renormed_outputs)
 
-    def _compute_loss(self, output, target, criterion, sample_weight):
+    def _compute_loss(self, output: PLModuleOutput, target, criterion, sample_weight):
         if self.training:
             # compute loss on pre-trained quantiles
             return self._finetuning_likelihood.compute_loss(
-                output, target, sample_weight
+                output.prediction, target, sample_weight
             )
         else:
             return super()._compute_loss(output, target, criterion, sample_weight)

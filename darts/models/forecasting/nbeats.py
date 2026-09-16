@@ -16,7 +16,11 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    PLModuleInput,
+    PLModuleOutput,
+    TorchTrainingSample,
+)
 from darts.utils.torch import MonteCarloDropout
 
 ACTIVATIONS = [
@@ -490,8 +494,8 @@ class _NBEATSModule(PLForecastingModule):
         self.stacks_list[-1].blocks[-1].backcast_g.requires_grad_(False)
 
     @io_processor
-    def forward(self, x_in: PLModuleInput):
-        x, _, _, _ = x_in
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
+        x = x_in.concatenate_past_features()
 
         # if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts
         # we reshape into x1, y1, a1, x2, y2, a2... etc
@@ -526,7 +530,7 @@ class _NBEATSModule(PLForecastingModule):
             y.shape[0], self.output_chunk_length, self.input_dim, self.nr_params
         )[:, :, : self.output_dim, :]
 
-        return y
+        return PLModuleOutput(prediction=y)
 
 
 class NBEATSModel(PastCovariatesTorchModel):
@@ -823,8 +827,8 @@ class NBEATSModel(PastCovariatesTorchModel):
             self.layer_widths = [layer_widths] * self.num_stacks
 
     def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
-        # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
-        (past_target, past_covariates, _, _, _, _) = train_sample
+        past_target = train_sample.past_target
+        past_covariates = train_sample.past_covariates
         input_dim = past_target.shape[1] + (
             past_covariates.shape[1] if past_covariates is not None else 0
         )

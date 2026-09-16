@@ -18,7 +18,12 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.utils.data import ShiftedTorchTrainingDataset, TorchTrainingDataset
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    ModuleStage,
+    PLModuleInput,
+    PLModuleOutput,
+    TorchTrainingSample,
+)
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -237,8 +242,8 @@ class _TCNModule(PLForecastingModule):
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
     @io_processor
-    def forward(self, x_in: PLModuleInput):
-        x, _, _, _ = x_in
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
+        x = x_in.concatenate_past_features()
         # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
         x = x.transpose(1, 2)
@@ -251,11 +256,9 @@ class _TCNModule(PLForecastingModule):
             batch_size, self.input_chunk_length, self.target_size, self.nr_params
         )
 
-        return x
-
-    @property
-    def first_prediction_index(self) -> int:
-        return -self.output_chunk_length
+        if x_in.stage is ModuleStage.PREDICT:
+            x = x[:, -(self.output_chunk_length or 0) :, :]
+        return PLModuleOutput(prediction=x)
 
 
 class TCNModel(PastCovariatesTorchModel):
@@ -520,8 +523,8 @@ class TCNModel(PastCovariatesTorchModel):
         self.weight_norm = weight_norm
 
     def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
-        # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
-        (past_target, past_covariates, _, _, _, _) = train_sample
+        past_target = train_sample.past_target
+        past_covariates = train_sample.past_covariates
         input_dim = past_target.shape[1] + (
             past_covariates.shape[1] if past_covariates is not None else 0
         )

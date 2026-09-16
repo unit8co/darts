@@ -12,7 +12,11 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    PLModuleInput,
+    PLModuleOutput,
+    TorchTrainingSample,
+)
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -122,8 +126,8 @@ class _TideModule(PLForecastingModule):
         Inputs
         ------
         x
-            Tuple of Tensors `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
-            `x_future` is the output/future chunk. Input dimensions are `(batch_size, time_steps, components)`
+            Named module input with independent past, future, and static tensors.
+            Input dimensions are `(batch_size, time_steps, components)`.
         Outputs
         -------
         y
@@ -260,40 +264,14 @@ class _TideModule(PLForecastingModule):
         )
 
     @io_processor
-    def forward(self, x_in: PLModuleInput) -> torch.Tensor:
-        """TiDE model forward pass.
-        Parameters
-        ----------
-        x_in
-            comes as tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
-            `x_future` is the output/future chunk. Input dimensions are `(batch_size, time_steps, components)`
-        Returns
-        -------
-        torch.Tensor
-            The output Tensor of shape `(batch_size, output_chunk_length, output_dim, nr_params)`
-        """
-
-        # x has shape (batch_size, input_chunk_length, input_dim)
-        # x_future_covariates has shape (batch_size, input_chunk_length, future_cov_dim)
-        # x_static_covariates has shape (batch_size, static_cov_dim)
-        x, x_future_covariates, x_static_covariates, _ = x_in
-
-        x_lookback = x[:, :, : self.output_dim]
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
+        x_lookback = x_in.past_target
+        x_dynamic_past_covariates = x_in.past_covariates
+        x_static_covariates = x_in.static_covariates
 
         # future covariates: feature projection or raw features
-        # historical future covariates need to be extracted from x and stacked with part of future covariates
         if self.future_cov_dim:
-            x_dynamic_future_covariates = torch.cat(
-                [
-                    x[
-                        :,
-                        :,
-                        None if self.future_cov_dim == 0 else -self.future_cov_dim :,
-                    ],
-                    x_future_covariates,
-                ],
-                dim=1,
-            )
+            x_dynamic_future_covariates = x_in.concatenate_future_along_time()
             if self.temporal_width_future:
                 # project input features across all input and output time steps
                 x_dynamic_future_covariates = self.future_cov_projection(
@@ -303,13 +281,7 @@ class _TideModule(PLForecastingModule):
             x_dynamic_future_covariates = None
 
         # past covariates: feature projection or raw features
-        # the past covariates are embedded in `x`
         if self.past_cov_dim:
-            x_dynamic_past_covariates = x[
-                :,
-                :,
-                self.output_dim : self.output_dim + self.past_cov_dim,
-            ]
             if self.temporal_width_past:
                 # project input features across all input time steps
                 x_dynamic_past_covariates = self.past_cov_projection(
@@ -333,7 +305,7 @@ class _TideModule(PLForecastingModule):
         decoded = self.decoders(encoded)
 
         # get view that is batch size x output chunk length x self.decoder_output_dim x nr params
-        decoded = decoded.view(x.shape[0], self.output_chunk_length, -1)
+        decoded = decoded.view(x_lookback.shape[0], self.output_chunk_length, -1)
 
         # stack and temporally decode with future covariate last output steps
         temporal_decoder_input = [
@@ -360,7 +332,7 @@ class _TideModule(PLForecastingModule):
         )  # skip.view(temporal_decoded.shape)
 
         y = y.view(-1, self.output_chunk_length, self.output_dim, self.nr_params)
-        return y
+        return PLModuleOutput(prediction=y)
 
 
 class TiDEModel(MixedCovariatesTorchModel):
@@ -661,14 +633,12 @@ class TiDEModel(MixedCovariatesTorchModel):
         self.dropout = dropout
 
     def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
-        (
-            past_target,
-            past_covariates,
-            historic_future_covariates,
-            future_covariates,
-            static_covariates,
-            future_target,
-        ) = train_sample
+        past_target = train_sample.past_target
+        past_covariates = train_sample.past_covariates
+        historic_future_covariates = train_sample.historic_future_covariates
+        future_covariates = train_sample.future_covariates
+        static_covariates = train_sample.static_covariates
+        future_target = train_sample.future_target
 
         # target, past covariates, historic future covariates
         input_dim = (
