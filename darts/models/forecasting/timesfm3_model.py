@@ -53,19 +53,6 @@ from darts.utils.likelihood_models.torch import QuantileRegression
 
 
 class _TimesFM3Module(PLForecastingModule):
-    """PyTorch module implementing the TimesFM 3.0 model, ported from
-    `google-research/timesfm <https://github.com/google-research/timesfm/>`_ and
-    adapted for Darts :class:`PLForecastingModule` interface.
-
-    Multivariate inputs are supported natively: all target components form a single
-    multivariate context processed with variate attention. Past covariates are passed as
-    past-only channels, and future covariates as past-and-future channels of the model.
-
-    The total number of channels (targets + past covariates + future covariates) must not
-    exceed the ``max_variates`` of the checkpoint configuration (32 for the released
-    checkpoint).
-    """
-
     def __init__(
         self,
         # architecture parameters, extracted from the HuggingFace `config.json`
@@ -84,6 +71,45 @@ class _TimesFM3Module(PLForecastingModule):
         input_transform: str = "identity",
         **kwargs,
     ):
+        """PyTorch module implementing the TimesFM 3.0 model, ported from
+        `google-research/timesfm <https://github.com/google-research/timesfm/>`_ and
+        adapted for Darts :class:`PLForecastingModule` interface.
+
+        Multivariate inputs are supported natively: all target components form a single
+        multivariate context processed with variate attention. Past covariates are passed as
+        past-only channels, and future covariates as past-and-future channels of the model.
+
+        The total number of channels (targets + past covariates + future covariates) must not
+        exceed the ``max_variates`` of the checkpoint configuration (32 for the released
+        checkpoint).
+
+        Parameters
+        ----------
+        input_patch_len
+            The length of each input patch.
+        output_patch_len
+            The length of the output forecast for each patch.
+        quantiles
+            A list of quantiles to predict.
+        residual_block_config
+            Configuration for the pre-transformer residual block.
+        transformer_config
+            Configuration for the stacked transformers.
+        use_variate_attention
+            Whether to use variate attention.
+        value_clip
+            Absolute value to clip input values to.
+        use_stitching
+            Whether to use stitching for predictions.
+        use_linear_detrending
+            Whether to apply linear detrending on context.
+        linear_detrending_threshold
+            Ratio threshold for applying linear detrending.
+        use_iterative_cpm_revin
+            Whether to use iterative RevIN refinement.
+        use_frozen_running_stats
+            Whether running stats freeze at context boundary.
+        """
         enable_finetuning = kwargs.pop("enable_finetuning", False)
         super().__init__(**kwargs)
 
@@ -98,6 +124,7 @@ class _TimesFM3Module(PLForecastingModule):
             )
         else:
             residual_block_config = build_residual_block_config(residual_block_config)
+
         if transformer_config is None:
             transformer_config = _StackedTransformersConfig(
                 num_layers=20,
@@ -411,6 +438,7 @@ class _TimesFM3Module(PLForecastingModule):
         -------
             Logits of shape ``(batch, num_variates, horizon, num_quantiles)``.
         """
+        dtype = target.dtype
         device = target.device
         batch_size, num_target, context = target.shape
 
@@ -488,7 +516,7 @@ class _TimesFM3Module(PLForecastingModule):
         ctx_masks = torch.cat(all_ctx_masks, dim=1)
 
         if self.use_linear_detrending:
-            t_ctx = torch.arange(-(context - 1), 1, dtype=torch.float32, device=device)
+            t_ctx = torch.arange(-(context - 1), 1, dtype=dtype, device=device)
             t_ctx_bvc = t_ctx[None, None, :]
             t_ctx_bvc_normalized = t_ctx_bvc / context
 
@@ -542,10 +570,10 @@ class _TimesFM3Module(PLForecastingModule):
         else:
             num_variates = ctx_vals.shape[1]
             m_trend = torch.zeros(
-                (batch_size, num_variates, 1), dtype=torch.float32, device=device
+                (batch_size, num_variates, 1), dtype=dtype, device=device
             )
             c_trend = torch.zeros(
-                (batch_size, num_variates, 1), dtype=torch.float32, device=device
+                (batch_size, num_variates, 1), dtype=dtype, device=device
             )
             apply_detrend = torch.zeros(
                 (batch_size, num_variates, 1), dtype=torch.bool, device=device
@@ -585,9 +613,9 @@ class _TimesFM3Module(PLForecastingModule):
                 m_pf = m_trend[:, num_target + num_past_only :, :]
                 c_pf = c_trend[:, num_target + num_past_only :, :]
                 apply_detrend_pf = apply_detrend[:, num_target + num_past_only :, :]
-                t_hor_pf = torch.arange(
-                    1, horizon + 1, dtype=torch.float32, device=device
-                )[None, None, :]
+                t_hor_pf = torch.arange(1, horizon + 1, dtype=dtype, device=device)[
+                    None, None, :
+                ]
                 t_hor_pf_normalized = t_hor_pf / context
                 pf_trend_hor = m_pf * t_hor_pf_normalized + c_pf
                 pf_future_vals = torch.where(
@@ -669,9 +697,7 @@ class _TimesFM3Module(PLForecastingModule):
             )[:, :, :horizon, :]
 
         if self.use_linear_detrending:
-            t_forecast = torch.arange(
-                1, horizon + 1, dtype=torch.float32, device=device
-            )
+            t_forecast = torch.arange(1, horizon + 1, dtype=dtype, device=device)
             t_forecast_normalized = t_forecast / context
             trend_forecast = (
                 m_trend[:, :, 0, None] * t_forecast_normalized[None, None, :]
@@ -686,47 +712,29 @@ class _TimesFM3Module(PLForecastingModule):
 
     @io_processor
     def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
-        # Dimension notation in comments below:
-        #   B: batch size
-        #   L: input chunk length
-        #   T: output chunk length
-        #   S: output chunk shift
-        #   H = T + S: forecast horizon delegated to the model per chunk
-        #   C: target components
-        #   P: past covariates (past-only channels)
-        #   W: future covariates (past-and-future channels)
-        #   V = C + P + W: total variates (must be <= max_variates of the config)
-        #   Q = 9: pre-trained quantiles returned by the model
-        #   N: likelihood quantiles (user-specified, 1 if deterministic)
-
-        # `x_past` is a stack of [past_target (C), past_covariates (P),
-        # historic_future_covariates (W)], `x_future` is just future_covariates.
-        x_past = x_in.concatenate_past_features()
-        x_future = x_in.future_covariates
-        batch_size, past_length, n_variables = x_past.shape
-        n_targets = self.n_targets
-        n_future_covs = x_future.shape[-1] if x_future is not None else 0
-        n_past_covs = n_variables - n_targets - n_future_covs
-
-        if n_variables > self.max_variates:
-            raise_log(
-                ValueError(
-                    f"The total number of target components and covariates {n_variables} "
-                    f"exceeds the maximum number of variates {self.max_variates} "
-                    f"supported by the TimesFM 3.0 checkpoint."
-                ),
-            )
+        # B: batch size
+        # L: input chunk length
+        # T: output chunk length
+        # S: output chunk shift
+        # H = T + S: forecast horizon delegated to the model per chunk
+        # C: target components
+        # P: past covariates (past-only channels)
+        # W: future covariates (past-and-future channels)
+        # V = C + P + W: total variates (must be <= max_variates of the config)
+        # Q = 9: pre-trained quantiles returned by the model
+        # N: likelihood quantiles (user-specified, 1 if deterministic)
 
         # targets: (B, L, C) -> (B, C, L); missing values are handled with masks
-        target = x_past[:, :, :n_targets].transpose(1, 2)
+        target = x_in.past_target
+        batch_size, _, n_targets = target.shape
+        target = target.transpose(1, 2)
         target_mask = torch.isnan(target)
         target = torch.nan_to_num(target, nan=0.0)
 
         # past covariates: (B, L, P) -> (B, P, L)
-        past_only_covariates = None
+        past_only_covariates = x_in.past_covariates
         past_only_mask = None
-        if n_past_covs > 0:
-            past_only_covariates = x_past[:, :, n_targets : n_targets + n_past_covs]
+        if past_only_covariates is not None:
             past_only_covariates = past_only_covariates.transpose(1, 2)
             past_only_mask = torch.isnan(past_only_covariates)
             past_only_covariates = torch.nan_to_num(past_only_covariates, nan=0.0)
@@ -736,21 +744,23 @@ class _TimesFM3Module(PLForecastingModule):
         # `output_chunk_shift` are unknown and are masked out.
         past_future_covariates = None
         past_future_mask = None
-        if n_future_covs > 0:
-            historic_fc = x_past[:, :, n_targets + n_past_covs :].transpose(1, 2)
-            future_fc = x_future.transpose(1, 2)
-            if self.output_chunk_shift > 0:
+        historic_future_covariates = x_in.historic_future_covariates
+        future_covariates = x_in.future_covariates
+        if historic_future_covariates is not None and future_covariates is not None:
+            if self.output_chunk_shift == 0:
+                past_future_covariates = x_in.concatenate_future_along_time()
+            else:
+                n_future_covs = future_covariates.shape[-1]
                 gap = torch.full(
-                    (batch_size, n_future_covs, self.output_chunk_shift),
+                    (batch_size, self.output_chunk_shift, n_future_covs),
                     float("nan"),
-                    device=x_past.device,
-                    dtype=x_past.dtype,
+                    device=target.device,
+                    dtype=target.dtype,
                 )
                 past_future_covariates = torch.cat(
-                    [historic_fc, gap, future_fc], dim=-1
+                    [historic_future_covariates, gap, future_covariates], dim=1
                 )
-            else:
-                past_future_covariates = torch.cat([historic_fc, future_fc], dim=-1)
+            past_future_covariates = past_future_covariates.transpose(1, 2)
             past_future_mask = torch.isnan(past_future_covariates)
             past_future_covariates = torch.nan_to_num(past_future_covariates, nan=0.0)
 
@@ -1157,19 +1167,19 @@ class TimesFM3Model(FoundationModel):
         super().__init__(**kwargs)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
-        # validate the number of variates early, at fit time; `_TimesFM3Module`
-        # additionally validates at prediction time in `forward()`. The train sample
-        # is `(past_target, past_cov, historic_future_cov, future_cov, static_cov,
-        # future_target)`; `historic_future_cov` and `future_cov` stem from the same
-        # future covariates series, so its width must only be counted once
-        n_variates = train_sample.past_target.shape[1]
-        for variate in (train_sample.past_covariates, train_sample.future_covariates):
-            if variate is not None:
-                n_variates += variate.shape[1]
+        n_variates = sum(
+            el.shape[1]
+            for el in [
+                train_sample.past_target,
+                train_sample.past_covariates,
+                train_sample.future_covariates,
+            ]
+            if el is not None
+        )
         if n_variates > self._max_variates:
             raise_log(
                 ValueError(
-                    f"The total number of target components and covariates {n_variates} "
+                    f"The total number of target and covariate components {n_variates} "
                     f"exceeds the maximum number of variates {self._max_variates} "
                     f"supported by the TimesFM 3.0 checkpoint."
                 ),

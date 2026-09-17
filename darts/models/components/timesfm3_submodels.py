@@ -276,12 +276,12 @@ class _RotaryPositionalEmbedding(nn.Module):
                     "must match the hidden dimension of the inputs."
                 ),
             )
-        timescale = self.timescale.to(inputs.device)
+        timescale = self.timescale.to(device=inputs.device, dtype=inputs.dtype)
 
         if position is None:
             seq_length = inputs.shape[1]
             position = torch.arange(
-                seq_length, device=inputs.device, dtype=torch.float32
+                seq_length, device=inputs.device, dtype=inputs.dtype
             ).unsqueeze(0)
 
         if inputs.dim() == 4:
@@ -822,10 +822,11 @@ def _get_running_stats(
     """
     b, v, n, _ = values.shape
     device = values.device
+    dtype = values.dtype
 
-    init_n = torch.zeros((b, v), dtype=torch.float32, device=device)
-    init_mu = torch.zeros((b, v), dtype=torch.float32, device=device)
-    init_sigma = torch.zeros((b, v), dtype=torch.float32, device=device)
+    init_n = torch.zeros((b, v), dtype=dtype, device=device)
+    init_mu = torch.zeros((b, v), dtype=dtype, device=device)
+    init_sigma = torch.zeros((b, v), dtype=dtype, device=device)
 
     all_n = []
     all_mu = []
@@ -1069,6 +1070,7 @@ def _cpm_iterative_revin_refine(
     """
     b, v, n_patches, _ = raw_logits.shape
     device = raw_logits.device
+    dtype = raw_logits.dtype
 
     # Reshape and slice raw_logits to keep only the median quantile.
     # (b, v, n, oq) -> (b, v, n, rolls, patch_len, num_quantiles)
@@ -1078,11 +1080,11 @@ def _cpm_iterative_revin_refine(
     )[:, :, :, :, :, median_q_idx]
 
     # Initialise carry with zeros.
-    carry_n = torch.zeros((b, v), dtype=torch.float32, device=device)
-    carry_mu = torch.zeros((b, v), dtype=torch.float32, device=device)
-    carry_sigma = torch.zeros((b, v), dtype=torch.float32, device=device)
+    carry_n = torch.zeros((b, v), dtype=dtype, device=device)
+    carry_mu = torch.zeros((b, v), dtype=dtype, device=device)
+    carry_sigma = torch.zeros((b, v), dtype=dtype, device=device)
     anchor_predicted_values = torch.zeros(
-        (b, v, rolls, patch_len), dtype=torch.float32, device=device
+        (b, v, rolls, patch_len), dtype=dtype, device=device
     )
     block_offset = torch.zeros((b,), dtype=torch.long, device=device)
 
