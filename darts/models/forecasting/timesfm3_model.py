@@ -807,9 +807,6 @@ class TimesFM3Model(FoundationModel):
     # upstream `TimesFM3Forecaster` and are not part of the HuggingFace `config.json`
     # (which only carries the architecture parameters read by `_create_model()`).
     _MAX_CONTEXT_LENGTH = 15360
-    # no upstream limit exists (stitching supports arbitrarily long horizons); this
-    # is a conservative cap aligned with the 1024-step long head of TimesFM 2.5
-    _MAX_PREDICTION_LENGTH = 1024
 
     def __init__(
         self,
@@ -882,7 +879,6 @@ class TimesFM3Model(FoundationModel):
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
-            For TimesFM 3.0, `output_chunk_length + output_chunk_shift` must be less than or equal to 1024.
         output_chunk_shift
             Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
             input chunk end). This will create a gap between the input and output. If the model supports
@@ -1119,17 +1115,6 @@ class TimesFM3Model(FoundationModel):
                 ValueError(
                     f"`input_chunk_length` {max_icl} cannot be greater than model's "
                     f"maximum context length {self._MAX_CONTEXT_LENGTH}"
-                ),
-            )
-
-        # validate `output_chunk_length` and `output_chunk_shift` against the model's
-        # maximum prediction length
-        if output_chunk_length + output_chunk_shift > self._MAX_PREDICTION_LENGTH:
-            raise_log(
-                ValueError(
-                    f"`output_chunk_length` {output_chunk_length} plus `output_chunk_shift` "
-                    f"{output_chunk_shift} cannot be greater than model's maximum prediction "
-                    f"length {self._MAX_PREDICTION_LENGTH}"
                 ),
             )
 
