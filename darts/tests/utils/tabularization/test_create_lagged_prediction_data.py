@@ -1,4 +1,3 @@
-import itertools
 import warnings
 from collections.abc import Sequence
 from itertools import product
@@ -10,6 +9,7 @@ import pytest
 from darts import TimeSeries
 from darts import concatenate as darts_concatenate
 from darts.logging import raise_log
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.timeseries_generation import linear_timeseries
 from darts.utils.utils import n_steps_between
@@ -639,7 +639,7 @@ class TestCreateLaggedPredictionData:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(["datetime", "integer"], [False, True]),
+        param_product(["datetime", "integer"], [False, True]),
     )
     def test_lagged_prediction_data_single_lag_single_component_same_series(
         self, config
@@ -689,7 +689,7 @@ class TestCreateLaggedPredictionData:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(["datetime", "integer"], [False, True]),
+        param_product(["datetime", "integer"], [False, True]),
     )
     def test_lagged_prediction_data_extend_past_and_future_covariates(self, config):
         """
@@ -757,7 +757,7 @@ class TestCreateLaggedPredictionData:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(["datetime", "integer"], [False, True]),
+        param_product(["datetime", "integer"], [False, True]),
     )
     def test_lagged_prediction_data_single_point(self, config):
         """
@@ -790,7 +790,7 @@ class TestCreateLaggedPredictionData:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(["datetime", "integer"], [False, True]),
+        param_product(["datetime", "integer"], [False, True]),
     )
     def test_lagged_prediction_data_zero_lags(self, config):
         """
@@ -833,7 +833,7 @@ class TestCreateLaggedPredictionData:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(["datetime", "integer"], [False, True]),
+        param_product(["datetime", "integer"], [False, True]),
     )
     def test_lagged_prediction_data_positive_lags(self, config):
         """

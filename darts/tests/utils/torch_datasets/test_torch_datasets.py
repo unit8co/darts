@@ -1,5 +1,5 @@
-import itertools
 import math
+from dataclasses import fields
 
 import numpy as np
 import pandas as pd
@@ -15,11 +15,32 @@ if not TORCH_AVAILABLE:
         allow_module_level=True,
     )
 
+import torch
+from torch.utils._pytree import tree_flatten, tree_unflatten
+
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.data import (
     HorizonBasedTorchTrainingDataset,
     SequentialTorchInferenceDataset,
     SequentialTorchTrainingDataset,
     ShiftedTorchTrainingDataset,
+    TorchInferenceDataset,
+    TorchTrainingDataset,
+)
+from darts.utils.data.torch_datasets.utils import (
+    ModuleStage,
+    PLModuleInput,
+    PLModuleOutput,
+    TorchInferenceBatch,
+    TorchInferenceSample,
+    TorchTrainingBatch,
+    TorchTrainingSample,
+    _as_inference_sample,
+    _as_training_sample,
+    _batch_collate_fn_predict,
+    _batch_collate_fn_train,
+    _coerce_training_sample,
+    _train_sample_from_shapes,
 )
 
 
@@ -42,28 +63,35 @@ class TestDataset:
             for k, v in left.items()
         ])
 
-    def _assert_eq(self, lefts: tuple, rights: tuple):
-        for left, right in zip(lefts, rights):
-            left = left.values() if isinstance(left, TimeSeries) else left
-            right = right.values() if isinstance(right, TimeSeries) else right
-            assert type(left) is type(right)
-            assert (
-                isinstance(
-                    left,
-                    TimeSeries | pd.Series | pd.DataFrame | np.ndarray | list | dict,
-                )
-                or left is None
+    def _assert_field(self, actual, expected):
+        expected = expected.values() if isinstance(expected, TimeSeries) else expected
+        if expected is None:
+            assert actual is None
+            return
+        if isinstance(expected, pd.Series | pd.DataFrame):
+            assert actual.equals(expected)
+        elif isinstance(expected, np.ndarray):
+            np.testing.assert_array_equal(actual, expected)
+        elif isinstance(expected, dict):
+            self._assert_eq_schema(actual, expected)
+        else:
+            assert actual == expected
+
+    def _assert_training_output(self, sample: TorchTrainingSample, **sample_expected):
+        assert isinstance(sample, TorchTrainingSample)
+        sample_expected = TorchTrainingSample(**sample_expected)
+        for f in fields(sample):
+            self._assert_field(
+                getattr(sample, f.name), getattr(sample_expected, f.name)
             )
-            if isinstance(left, pd.Series | pd.DataFrame):
-                assert left.equals(right)
-            elif isinstance(left, np.ndarray):
-                np.testing.assert_array_equal(left, right)
-            elif isinstance(left, list):
-                assert left == right
-            elif isinstance(left, dict):
-                self._assert_eq_schema(left, right)
-            else:
-                assert right is None
+
+    def _assert_inference_output(self, sample: TorchInferenceSample, **sample_expected):
+        assert isinstance(sample, TorchInferenceSample)
+        sample_expected = TorchInferenceSample(**sample_expected)
+        for f in fields(sample):
+            self._assert_field(
+                getattr(sample, f.name), getattr(sample_expected, f.name)
+            )
 
     def _check_ds_stride(self, ds_regular, ds_stride, stride: int):
         """
@@ -73,21 +101,30 @@ class TestDataset:
         if len(ds_regular) % stride == 0:
             assert len(ds_regular) == len(ds_stride) * stride
 
-        for idx, batch_str in enumerate(ds_stride):
-            for entry_s, entry_r in zip(batch_str, ds_regular[idx * stride]):
-                if entry_s is not None and entry_r is not None:
-                    np.testing.assert_almost_equal(entry_s, entry_r)
-                else:
-                    assert entry_s == entry_r
+        for idx, sample_stride in enumerate(ds_stride):
+            sample_regular = ds_regular[idx * stride]
+            assert type(sample_stride) is type(sample_regular)
+            for f in fields(sample_stride):
+                name = f.name
+                self._assert_field(
+                    getattr(sample_stride, name), getattr(sample_regular, name)
+                )
 
     def test_past_covariates_inference_dataset(self):
         # one target series
         ds = SequentialTorchInferenceDataset(
             series=self.target1, input_chunk_length=len(self.target1)
         )
-        np.testing.assert_almost_equal(ds[0][0], self.vals1)
-        self._assert_eq(
-            ds[0][1:], (None, None, None, None, self.cov_st1, self.target1.schema())
+        self._assert_inference_output(
+            ds[0],
+            past_target=self.vals1,
+            past_covariates=None,
+            future_past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            series_schema=self.target1.schema(),
+            pred_time=self.target1.end_time() + self.target1.freq,
         )
 
         # two target series
@@ -95,9 +132,16 @@ class TestDataset:
             series=[self.target1, self.target2],
             input_chunk_length=max(len(self.target1), len(self.target2)),
         )
-        np.testing.assert_almost_equal(ds[1][0], self.vals2)
-        self._assert_eq(
-            ds[1][1:], (None, None, None, None, self.cov_st2, self.target2.schema())
+        self._assert_inference_output(
+            ds[1],
+            past_target=self.vals2,
+            past_covariates=None,
+            future_past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            series_schema=self.target2.schema(),
+            pred_time=self.target2.end_time() + self.target2.freq,
         )
 
         # fail if covariates do not have same size
@@ -115,10 +159,16 @@ class TestDataset:
             past_covariates=[self.cov1, self.cov2],
             input_chunk_length=max(len(self.target1), len(self.target2)),
         )
-        np.testing.assert_almost_equal(ds[1][0], self.vals2)
-        np.testing.assert_almost_equal(ds[1][1], self.cov2.values())
-        self._assert_eq(
-            ds[1][2:], (None, None, None, self.cov_st2, self.target2.schema())
+        self._assert_inference_output(
+            ds[1],
+            past_target=self.vals2,
+            past_covariates=self.cov2.values(),
+            future_past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            series_schema=self.target2.schema(),
+            pred_time=self.target2.end_time() + self.target2.freq,
         )  # no "future past" covariate here
 
         # more complex case with future past covariates:
@@ -164,13 +214,17 @@ class TestDataset:
             n=30,
         )
 
-        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
-        np.testing.assert_almost_equal(ds[0][1], long_cov.values()[-60:-50])
-        np.testing.assert_almost_equal(ds[0][2], long_cov.values()[-50:-30])
-        assert ds[0][3] is None
-        assert ds[0][4] is None
-        np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        self._assert_eq_schema(ds[0][6], target.schema())
+        np.testing.assert_almost_equal(ds[0].past_target, target.values()[-10:])
+        np.testing.assert_almost_equal(
+            ds[0].past_covariates, long_cov.values()[-60:-50]
+        )
+        np.testing.assert_almost_equal(
+            ds[0].future_past_covariates, long_cov.values()[-50:-30]
+        )
+        assert ds[0].historic_future_covariates is None
+        assert ds[0].future_covariates is None
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        self._assert_eq_schema(ds[0].series_schema, target.schema())
 
         # Should also work for integer-indexed series
         target = TimeSeries.from_times_and_values(
@@ -188,22 +242,31 @@ class TestDataset:
             n=20,
         )
 
-        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
-        np.testing.assert_almost_equal(ds[0][1], covariate.values()[20:30])
-        np.testing.assert_almost_equal(ds[0][2], covariate.values()[30:40])
-        assert ds[0][3] is None
-        assert ds[0][4] is None
-        np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        self._assert_eq_schema(ds[0][6], target.schema())
+        np.testing.assert_almost_equal(ds[0].past_target, target.values()[-10:])
+        np.testing.assert_almost_equal(ds[0].past_covariates, covariate.values()[20:30])
+        np.testing.assert_almost_equal(
+            ds[0].future_past_covariates, covariate.values()[30:40]
+        )
+        assert ds[0].historic_future_covariates is None
+        assert ds[0].future_covariates is None
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        self._assert_eq_schema(ds[0].series_schema, target.schema())
 
     def test_future_covariates_inference_dataset(self):
         # one target series
         ds = SequentialTorchInferenceDataset(
             series=self.target1, input_chunk_length=len(self.target1)
         )
-        np.testing.assert_almost_equal(ds[0][0], self.vals1)
-        self._assert_eq(
-            ds[0][1:], (None, None, None, None, self.cov_st1, self.target1.schema())
+        self._assert_inference_output(
+            ds[0],
+            past_target=self.vals1,
+            past_covariates=None,
+            future_past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            series_schema=self.target1.schema(),
+            pred_time=self.target1.end_time() + self.target1.freq,
         )
 
         # two target series
@@ -211,9 +274,16 @@ class TestDataset:
             series=[self.target1, self.target2],
             input_chunk_length=max(len(self.target1), len(self.target2)),
         )
-        np.testing.assert_almost_equal(ds[1][0], self.vals2)
-        self._assert_eq(
-            ds[1][1:], (None, None, None, None, self.cov_st2, self.target2.schema())
+        self._assert_inference_output(
+            ds[1],
+            past_target=self.vals2,
+            past_covariates=None,
+            future_past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            series_schema=self.target2.schema(),
+            pred_time=self.target2.end_time() + self.target2.freq,
         )
 
         # fail if covariates do not have same size
@@ -267,13 +337,17 @@ class TestDataset:
             n=30,
         )
 
-        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
-        assert ds[0][1] is None
-        assert ds[0][2] is None
-        np.testing.assert_almost_equal(ds[0][3], long_cov.values()[-60:-50])
-        np.testing.assert_almost_equal(ds[0][4], long_cov.values()[-50:-20])
-        np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        self._assert_eq_schema(ds[0][6], target.schema())
+        np.testing.assert_almost_equal(ds[0].past_target, target.values()[-10:])
+        assert ds[0].past_covariates is None
+        assert ds[0].future_past_covariates is None
+        np.testing.assert_almost_equal(
+            ds[0].historic_future_covariates, long_cov.values()[-60:-50]
+        )
+        np.testing.assert_almost_equal(
+            ds[0].future_covariates, long_cov.values()[-50:-20]
+        )
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        self._assert_eq_schema(ds[0].series_schema, target.schema())
 
         # Should also work for integer-indexed series
         target = TimeSeries.from_times_and_values(
@@ -290,22 +364,33 @@ class TestDataset:
             n=20,
         )
 
-        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
-        assert ds[0][1] is None
-        assert ds[0][2] is None
-        np.testing.assert_almost_equal(ds[0][3], covariate.values()[20:30])
-        np.testing.assert_almost_equal(ds[0][4], covariate.values()[30:50])
-        np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        self._assert_eq_schema(ds[0][6], target.schema())
+        np.testing.assert_almost_equal(ds[0].past_target, target.values()[-10:])
+        assert ds[0].past_covariates is None
+        assert ds[0].future_past_covariates is None
+        np.testing.assert_almost_equal(
+            ds[0].historic_future_covariates, covariate.values()[20:30]
+        )
+        np.testing.assert_almost_equal(
+            ds[0].future_covariates, covariate.values()[30:50]
+        )
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        self._assert_eq_schema(ds[0].series_schema, target.schema())
 
     def test_dual_covariates_inference_dataset(self):
         # one target series
         ds = SequentialTorchInferenceDataset(
             series=self.target1, input_chunk_length=len(self.target1)
         )
-        np.testing.assert_almost_equal(ds[0][0], self.vals1)
-        self._assert_eq(
-            ds[0][1:], (None, None, None, None, self.cov_st1, self.target1.schema())
+        self._assert_inference_output(
+            ds[0],
+            past_target=self.vals1,
+            past_covariates=None,
+            future_past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            series_schema=self.target1.schema(),
+            pred_time=self.target1.end_time() + self.target1.freq,
         )
 
         # two target series
@@ -313,9 +398,16 @@ class TestDataset:
             series=[self.target1, self.target2],
             input_chunk_length=max(len(self.target1), len(self.target2)),
         )
-        np.testing.assert_almost_equal(ds[1][0], self.vals2)
-        self._assert_eq(
-            ds[1][1:], (None, None, None, None, self.cov_st2, self.target2.schema())
+        self._assert_inference_output(
+            ds[1],
+            past_target=self.vals2,
+            past_covariates=None,
+            future_past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            series_schema=self.target2.schema(),
+            pred_time=self.target2.end_time() + self.target2.freq,
         )
 
         # fail if covariates do not have same size
@@ -362,13 +454,17 @@ class TestDataset:
             n=30,
         )
 
-        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
-        assert ds[0][1] is None
-        assert ds[0][2] is None
-        np.testing.assert_almost_equal(ds[0][3], long_cov.values()[-60:-50])
-        np.testing.assert_almost_equal(ds[0][4], long_cov.values()[-50:-20])
-        np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        self._assert_eq_schema(ds[0][6], target.schema())
+        np.testing.assert_almost_equal(ds[0].past_target, target.values()[-10:])
+        assert ds[0].past_covariates is None
+        assert ds[0].future_past_covariates is None
+        np.testing.assert_almost_equal(
+            ds[0].historic_future_covariates, long_cov.values()[-60:-50]
+        )
+        np.testing.assert_almost_equal(
+            ds[0].future_covariates, long_cov.values()[-50:-20]
+        )
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        self._assert_eq_schema(ds[0].series_schema, target.schema())
 
         # Should also work for integer-indexed series
         target = TimeSeries.from_times_and_values(
@@ -386,13 +482,17 @@ class TestDataset:
             n=20,
         )
 
-        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
-        assert ds[0][1] is None
-        assert ds[0][2] is None
-        np.testing.assert_almost_equal(ds[0][3], covariate.values()[20:30])
-        np.testing.assert_almost_equal(ds[0][4], covariate.values()[30:50])
-        np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        self._assert_eq_schema(ds[0][6], target.schema())
+        np.testing.assert_almost_equal(ds[0].past_target, target.values()[-10:])
+        assert ds[0].past_covariates is None
+        assert ds[0].future_past_covariates is None
+        np.testing.assert_almost_equal(
+            ds[0].historic_future_covariates, covariate.values()[20:30]
+        )
+        np.testing.assert_almost_equal(
+            ds[0].future_covariates, covariate.values()[30:50]
+        )
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        self._assert_eq_schema(ds[0].series_schema, target.schema())
 
     def test_mixed_covariates_inference_dataset(self):
         # With future past covariates:
@@ -439,13 +539,21 @@ class TestDataset:
 
         # It should contain:
         # past_target, past_covariates, future_past_covariates, historic_future_covariates, future_covariates
-        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
-        np.testing.assert_almost_equal(ds[0][1], long_past_cov.values()[-60:-50])
-        np.testing.assert_almost_equal(ds[0][2], long_past_cov.values()[-50:-30])
-        np.testing.assert_almost_equal(ds[0][3], future_cov.values()[-60:-50])
-        np.testing.assert_almost_equal(ds[0][4], future_cov.values()[-50:-20])
-        np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        self._assert_eq_schema(ds[0][6], target.schema())
+        np.testing.assert_almost_equal(ds[0].past_target, target.values()[-10:])
+        np.testing.assert_almost_equal(
+            ds[0].past_covariates, long_past_cov.values()[-60:-50]
+        )
+        np.testing.assert_almost_equal(
+            ds[0].future_past_covariates, long_past_cov.values()[-50:-30]
+        )
+        np.testing.assert_almost_equal(
+            ds[0].historic_future_covariates, future_cov.values()[-60:-50]
+        )
+        np.testing.assert_almost_equal(
+            ds[0].future_covariates, future_cov.values()[-50:-20]
+        )
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        self._assert_eq_schema(ds[0].series_schema, target.schema())
 
         # Should also work for integer-indexed series
         target = TimeSeries.from_times_and_values(
@@ -467,13 +575,19 @@ class TestDataset:
             n=20,
         )
 
-        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
-        np.testing.assert_almost_equal(ds[0][1], past_cov.values()[20:30])
-        np.testing.assert_almost_equal(ds[0][2], past_cov.values()[30:40])
-        np.testing.assert_almost_equal(ds[0][3], future_cov.values()[10:20])
-        np.testing.assert_almost_equal(ds[0][4], future_cov.values()[20:40])
-        np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        self._assert_eq_schema(ds[0][6], target.schema())
+        np.testing.assert_almost_equal(ds[0].past_target, target.values()[-10:])
+        np.testing.assert_almost_equal(ds[0].past_covariates, past_cov.values()[20:30])
+        np.testing.assert_almost_equal(
+            ds[0].future_past_covariates, past_cov.values()[30:40]
+        )
+        np.testing.assert_almost_equal(
+            ds[0].historic_future_covariates, future_cov.values()[10:20]
+        )
+        np.testing.assert_almost_equal(
+            ds[0].future_covariates, future_cov.values()[20:40]
+        )
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        self._assert_eq_schema(ds[0].series_schema, target.schema())
 
     def test_split_covariates_inference_dataset(self):
         # With future past covariates:
@@ -521,13 +635,21 @@ class TestDataset:
         # It should contain:
         # past_target, past_covariates, future_past_covariates, historic_future_covariates,
         # future_covariates, future_past_covariates
-        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
-        np.testing.assert_almost_equal(ds[0][1], long_past_cov.values()[-60:-50])
-        np.testing.assert_almost_equal(ds[0][2], long_past_cov.values()[-50:-30])
-        np.testing.assert_almost_equal(ds[0][3], future_cov.values()[-60:-50])
-        np.testing.assert_almost_equal(ds[0][4], future_cov.values()[-50:-20])
-        np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        self._assert_eq_schema(ds[0][6], target.schema())
+        np.testing.assert_almost_equal(ds[0].past_target, target.values()[-10:])
+        np.testing.assert_almost_equal(
+            ds[0].past_covariates, long_past_cov.values()[-60:-50]
+        )
+        np.testing.assert_almost_equal(
+            ds[0].future_past_covariates, long_past_cov.values()[-50:-30]
+        )
+        np.testing.assert_almost_equal(
+            ds[0].historic_future_covariates, future_cov.values()[-60:-50]
+        )
+        np.testing.assert_almost_equal(
+            ds[0].future_covariates, future_cov.values()[-50:-20]
+        )
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        self._assert_eq_schema(ds[0].series_schema, target.schema())
 
         # Should also work for integer-indexed series
         target = TimeSeries.from_times_and_values(
@@ -549,13 +671,19 @@ class TestDataset:
             n=20,
         )
 
-        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
-        np.testing.assert_almost_equal(ds[0][1], past_cov.values()[20:30])
-        np.testing.assert_almost_equal(ds[0][2], past_cov.values()[30:40])
-        np.testing.assert_almost_equal(ds[0][3], future_cov.values()[10:20])
-        np.testing.assert_almost_equal(ds[0][4], future_cov.values()[20:40])
-        np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        self._assert_eq_schema(ds[0][6], target.schema())
+        np.testing.assert_almost_equal(ds[0].past_target, target.values()[-10:])
+        np.testing.assert_almost_equal(ds[0].past_covariates, past_cov.values()[20:30])
+        np.testing.assert_almost_equal(
+            ds[0].future_past_covariates, past_cov.values()[30:40]
+        )
+        np.testing.assert_almost_equal(
+            ds[0].historic_future_covariates, future_cov.values()[10:20]
+        )
+        np.testing.assert_almost_equal(
+            ds[0].future_covariates, future_cov.values()[20:40]
+        )
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        self._assert_eq_schema(ds[0].series_schema, target.schema())
 
     @pytest.mark.parametrize(
         "config",
@@ -609,23 +737,31 @@ class TestDataset:
         )
 
         batch_reg, batch_shift = ds_reg[0], ds_shift[0]
+        assert isinstance(batch_reg, TorchInferenceSample)
+        assert isinstance(batch_shift, TorchInferenceSample)
 
         # shifted prediction starts 2 steps after regular prediction
-        assert batch_reg[-1] == batch_shift[-1] - ocs * target.freq
+        assert batch_reg.pred_time == batch_shift.pred_time - ocs * target.freq
 
         if future_idx is not None:
             # 3rd future values of regular ds must be identical to the 1st future values of shifted dataset
             np.testing.assert_array_equal(
-                batch_reg[future_idx][ocs:], batch_shift[future_idx]
+                batch_reg.future_covariates[ocs:], batch_shift.future_covariates
             )
-            batch_reg = batch_reg[:future_idx] + batch_reg[future_idx + 1 :]
-            batch_shift = batch_shift[:future_idx] + batch_shift[future_idx + 1 :]
 
-        # without future part, the input will be identical between regular, and shifted dataset
-        assert all([
-            np.all(el_reg == el_shift)
-            for el_reg, el_shift in zip(batch_reg[:-1], batch_shift[:-1])
-        ])
+        skip = {"pred_time", "series_schema"}
+        if future_idx is not None:
+            skip.add("future_covariates")
+        for f in fields(batch_reg):
+            name = f.name
+            if name in skip:
+                continue
+            el_reg, el_shift = getattr(batch_reg, name), getattr(batch_shift, name)
+            if el_reg is None:
+                assert el_shift is None
+            else:
+                np.testing.assert_array_equal(el_reg, el_shift)
+        self._assert_eq_schema(batch_reg.series_schema, batch_shift.series_schema)
 
     def test_inference_dataset_bounds(self):
         # target1 has length 100
@@ -654,21 +790,29 @@ class TestDataset:
         # length 98
         assert len(ds) == 100 - 3 + 1
         # first two sample are from beginning of the target with stride 1
-        np.testing.assert_array_almost_equal(ds[0][0], self.target1.values()[:3])
-        self._assert_eq_schema(ds[0][-2], self.target1.schema())
-        assert ds[0][-1] == self.target1._time_index[3]
+        np.testing.assert_array_almost_equal(
+            ds[0].past_target, self.target1.values()[:3]
+        )
+        self._assert_eq_schema(ds[0].series_schema, self.target1.schema())
+        assert ds[0].pred_time == self.target1._time_index[3]
 
-        np.testing.assert_array_almost_equal(ds[1][0], self.target1.values()[1:4])
-        self._assert_eq_schema(ds[1][-2], self.target1.schema())
-        assert ds[1][-1] == self.target1._time_index[4]
+        np.testing.assert_array_almost_equal(
+            ds[1].past_target, self.target1.values()[1:4]
+        )
+        self._assert_eq_schema(ds[1].series_schema, self.target1.schema())
+        assert ds[1].pred_time == self.target1._time_index[4]
 
         # last two sample are from end of the target with stride 1
-        np.testing.assert_array_almost_equal(ds[96][0], self.target1.values()[-4:-1])
-        self._assert_eq_schema(ds[96][-2], self.target1.schema())
-        assert ds[96][-1] == self.target1._time_index[-1]
-        np.testing.assert_array_almost_equal(ds[97][0], self.target1.values()[-3:])
-        self._assert_eq_schema(ds[97][-2], self.target1.schema())
-        assert ds[97][-1] == self.target1._time_index[-1] + self.target1.freq
+        np.testing.assert_array_almost_equal(
+            ds[96].past_target, self.target1.values()[-4:-1]
+        )
+        self._assert_eq_schema(ds[96].series_schema, self.target1.schema())
+        assert ds[96].pred_time == self.target1._time_index[-1]
+        np.testing.assert_array_almost_equal(
+            ds[97].past_target, self.target1.values()[-3:]
+        )
+        self._assert_eq_schema(ds[97].series_schema, self.target1.schema())
+        assert ds[97].pred_time == self.target1._time_index[-1] + self.target1.freq
 
         # stride = 2, setting bounds upper limit as `100` can still only compute until `99` since starting
         # at `3` with stride
@@ -679,15 +823,23 @@ class TestDataset:
         # length 49
         assert len(ds) == math.ceil((100 - 3 + 1) / 2)
         # first two sample are from beginning of the target
-        np.testing.assert_array_almost_equal(ds[0][0], self.target1.values()[:3])
-        assert ds[0][-1] == self.target1._time_index[3]
-        np.testing.assert_array_almost_equal(ds[1][0], self.target1.values()[2:5])
-        assert ds[1][-1] == self.target1._time_index[5]
+        np.testing.assert_array_almost_equal(
+            ds[0].past_target, self.target1.values()[:3]
+        )
+        assert ds[0].pred_time == self.target1._time_index[3]
+        np.testing.assert_array_almost_equal(
+            ds[1].past_target, self.target1.values()[2:5]
+        )
+        assert ds[1].pred_time == self.target1._time_index[5]
         # last two sample are from end of the target
-        np.testing.assert_array_almost_equal(ds[47][0], self.target1.values()[-6:-3])
-        assert ds[47][-1] == self.target1._time_index[-3]
-        np.testing.assert_array_almost_equal(ds[48][0], self.target1.values()[-4:-1])
-        assert ds[48][-1] == self.target1._time_index[-1]
+        np.testing.assert_array_almost_equal(
+            ds[47].past_target, self.target1.values()[-6:-3]
+        )
+        assert ds[47].pred_time == self.target1._time_index[-3]
+        np.testing.assert_array_almost_equal(
+            ds[48].past_target, self.target1.values()[-4:-1]
+        )
+        assert ds[48].pred_time == self.target1._time_index[-1]
 
         # stride = 2, output_chunk_shift = 1, same past target values but pred time is shifted by `+1`
         ds = SequentialTorchInferenceDataset(
@@ -700,14 +852,22 @@ class TestDataset:
 
         # length 49
         assert len(ds) == math.ceil((100 - 3 + 1 - 1) / 2)
-        np.testing.assert_array_almost_equal(ds[0][0], self.target1.values()[:3])
-        assert ds[0][-1] == self.target1._time_index[4]
-        np.testing.assert_array_almost_equal(ds[1][0], self.target1.values()[2:5])
-        assert ds[1][-1] == self.target1._time_index[6]
-        np.testing.assert_array_almost_equal(ds[47][0], self.target1.values()[-6:-3])
-        assert ds[47][-1] == self.target1._time_index[-2]
-        np.testing.assert_array_almost_equal(ds[48][0], self.target1.values()[-4:-1])
-        assert ds[48][-1] == self.target1._time_index[-1] + self.target1.freq
+        np.testing.assert_array_almost_equal(
+            ds[0].past_target, self.target1.values()[:3]
+        )
+        assert ds[0].pred_time == self.target1._time_index[4]
+        np.testing.assert_array_almost_equal(
+            ds[1].past_target, self.target1.values()[2:5]
+        )
+        assert ds[1].pred_time == self.target1._time_index[6]
+        np.testing.assert_array_almost_equal(
+            ds[47].past_target, self.target1.values()[-6:-3]
+        )
+        assert ds[47].pred_time == self.target1._time_index[-2]
+        np.testing.assert_array_almost_equal(
+            ds[48].past_target, self.target1.values()[-4:-1]
+        )
+        assert ds[48].pred_time == self.target1._time_index[-1] + self.target1.freq
 
         # stride = 2, setting bounds upper limit as `101` will result in an index error for sample 50
         ds = SequentialTorchInferenceDataset(
@@ -717,14 +877,22 @@ class TestDataset:
         # length 50
         assert len(ds) == math.ceil((101 - 3 + 1) / 2)
         # getting the samples from before works
-        np.testing.assert_array_almost_equal(ds[0][0], self.target1.values()[:3])
-        assert ds[0][-1] == self.target1._time_index[3]
-        np.testing.assert_array_almost_equal(ds[1][0], self.target1.values()[2:5])
-        assert ds[1][-1] == self.target1._time_index[5]
-        np.testing.assert_array_almost_equal(ds[47][0], self.target1.values()[-6:-3])
-        assert ds[47][-1] == self.target1._time_index[-3]
-        np.testing.assert_array_almost_equal(ds[48][0], self.target1.values()[-4:-1])
-        assert ds[48][-1] == self.target1._time_index[-1]
+        np.testing.assert_array_almost_equal(
+            ds[0].past_target, self.target1.values()[:3]
+        )
+        assert ds[0].pred_time == self.target1._time_index[3]
+        np.testing.assert_array_almost_equal(
+            ds[1].past_target, self.target1.values()[2:5]
+        )
+        assert ds[1].pred_time == self.target1._time_index[5]
+        np.testing.assert_array_almost_equal(
+            ds[47].past_target, self.target1.values()[-6:-3]
+        )
+        assert ds[47].pred_time == self.target1._time_index[-3]
+        np.testing.assert_array_almost_equal(
+            ds[48].past_target, self.target1.values()[-4:-1]
+        )
+        assert ds[48].pred_time == self.target1._time_index[-1]
 
         # but sample at index 50 raises an error
         with pytest.raises(IndexError):
@@ -953,17 +1121,15 @@ class TestDataset:
             output_chunk_length=10,
         )
         assert len(ds) == 81
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[75:85],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[75:85],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
 
         # two target series
@@ -973,29 +1139,25 @@ class TestDataset:
             output_chunk_length=10,
         )
         assert len(ds) == 262
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[75:85],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[75:85],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[136],
-            (
-                self.target2[125:135],
-                None,
-                None,
-                None,
-                self.cov_st2,
-                None,
-                self.target2[135:145],
-            ),
+            past_target=self.target2[125:135],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            sample_weight=None,
+            future_target=self.target2[135:145],
         )
 
         # two target series with custom max_nr_samples
@@ -1006,29 +1168,25 @@ class TestDataset:
             max_samples_per_ts=50,
         )
         assert len(ds) == 100
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[75:85],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[75:85],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[55],
-            (
-                self.target2[125:135],
-                None,
-                None,
-                None,
-                self.cov_st2,
-                None,
-                self.target2[135:145],
-            ),
+            past_target=self.target2[125:135],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            sample_weight=None,
+            future_target=self.target2[135:145],
         )
 
         # two targets and one covariate
@@ -1047,29 +1205,25 @@ class TestDataset:
             input_chunk_length=10,
             output_chunk_length=10,
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[75:85],
-                self.cov1[75:85],
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[75:85],
+            past_covariates=self.cov1[75:85],
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[136],
-            (
-                self.target2[125:135],
-                self.cov2[125:135],
-                None,
-                None,
-                self.cov_st2,
-                None,
-                self.target2[135:145],
-            ),
+            past_target=self.target2[125:135],
+            past_covariates=self.cov2[125:135],
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            sample_weight=None,
+            future_target=self.target2[135:145],
         )
 
         # should fail if covariates do not have the required time span, even though covariates are longer
@@ -1126,21 +1280,21 @@ class TestDataset:
             output_chunk_length=10,
         )
 
-        np.testing.assert_almost_equal(ds[0][0], target.values()[-20:-10])
-        np.testing.assert_almost_equal(ds[0][1], cov.values()[-25:-15])
-        assert ds[0][2] is None  # historic future cov
-        assert ds[0][3] is None  # future cov
-        np.testing.assert_almost_equal(ds[0][4], self.cov_st2)
-        assert ds[0][5] is None  # sample weight
-        np.testing.assert_almost_equal(ds[0][6], target.values()[-10:])
+        np.testing.assert_almost_equal(ds[0].past_target, target.values()[-20:-10])
+        np.testing.assert_almost_equal(ds[0].past_covariates, cov.values()[-25:-15])
+        assert ds[0].historic_future_covariates is None  # historic future cov
+        assert ds[0].future_covariates is None  # future cov
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        assert ds[0].sample_weight is None  # sample weight
+        np.testing.assert_almost_equal(ds[0].future_target, target.values()[-10:])
 
-        np.testing.assert_almost_equal(ds[5][0], target.values()[-25:-15])
-        np.testing.assert_almost_equal(ds[5][1], cov.values()[-30:-20])
-        assert ds[5][2] is None  # historic future cov
-        assert ds[5][3] is None  # future cov
-        np.testing.assert_almost_equal(ds[5][4], self.cov_st2)
-        assert ds[5][5] is None  # sample weight
-        np.testing.assert_almost_equal(ds[5][6], target.values()[-15:-5])
+        np.testing.assert_almost_equal(ds[5].past_target, target.values()[-25:-15])
+        np.testing.assert_almost_equal(ds[5].past_covariates, cov.values()[-30:-20])
+        assert ds[5].historic_future_covariates is None  # historic future cov
+        assert ds[5].future_covariates is None  # future cov
+        np.testing.assert_almost_equal(ds[5].static_covariates, self.cov_st2)
+        assert ds[5].sample_weight is None  # sample weight
+        np.testing.assert_almost_equal(ds[5].future_target, target.values()[-15:-5])
 
         # This should also be the case when series are integer indexed
         times1 = pd.RangeIndex(start=100, stop=200, step=1)
@@ -1156,21 +1310,21 @@ class TestDataset:
             output_chunk_length=10,
         )
 
-        np.testing.assert_almost_equal(ds[0][0], target.values()[-20:-10])
-        np.testing.assert_almost_equal(ds[0][1], cov.values()[-70:-60])
-        assert ds[0][2] is None  # historic future cov
-        assert ds[0][3] is None  # future cov
-        np.testing.assert_almost_equal(ds[0][4], self.cov_st2)
-        assert ds[0][5] is None  # sample weight
-        np.testing.assert_almost_equal(ds[0][6], target.values()[-10:])
+        np.testing.assert_almost_equal(ds[0].past_target, target.values()[-20:-10])
+        np.testing.assert_almost_equal(ds[0].past_covariates, cov.values()[-70:-60])
+        assert ds[0].historic_future_covariates is None  # historic future cov
+        assert ds[0].future_covariates is None  # future cov
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        assert ds[0].sample_weight is None  # sample weight
+        np.testing.assert_almost_equal(ds[0].future_target, target.values()[-10:])
 
-        np.testing.assert_almost_equal(ds[5][0], target.values()[-25:-15])
-        np.testing.assert_almost_equal(ds[5][1], cov.values()[-75:-65])
-        assert ds[5][2] is None  # historic future cov
-        assert ds[5][3] is None  # future cov
-        np.testing.assert_almost_equal(ds[5][4], self.cov_st2)
-        assert ds[5][5] is None  # sample weight
-        np.testing.assert_almost_equal(ds[5][6], target.values()[-15:-5])
+        np.testing.assert_almost_equal(ds[5].past_target, target.values()[-25:-15])
+        np.testing.assert_almost_equal(ds[5].past_covariates, cov.values()[-75:-65])
+        assert ds[5].historic_future_covariates is None  # historic future cov
+        assert ds[5].future_covariates is None  # future cov
+        np.testing.assert_almost_equal(ds[5].static_covariates, self.cov_st2)
+        assert ds[5].sample_weight is None  # sample weight
+        np.testing.assert_almost_equal(ds[5].future_target, target.values()[-15:-5])
 
     def test_future_covariates_sequential_dataset(self):
         # one target series
@@ -1180,17 +1334,15 @@ class TestDataset:
             output_chunk_length=10,
         )
         assert len(ds) == 81
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[75:85],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[75:85],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
 
         # two target series
@@ -1200,29 +1352,25 @@ class TestDataset:
             output_chunk_length=10,
         )
         assert len(ds) == 262
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[75:85],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[75:85],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[136],
-            (
-                self.target2[125:135],
-                None,
-                None,
-                None,
-                self.cov_st2,
-                None,
-                self.target2[135:145],
-            ),
+            past_target=self.target2[125:135],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            sample_weight=None,
+            future_target=self.target2[135:145],
         )
 
         # two target series with custom max_nr_samples
@@ -1233,29 +1381,25 @@ class TestDataset:
             max_samples_per_ts=50,
         )
         assert len(ds) == 100
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[75:85],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[75:85],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[55],
-            (
-                self.target2[125:135],
-                None,
-                None,
-                None,
-                self.cov_st2,
-                None,
-                self.target2[135:145],
-            ),
+            past_target=self.target2[125:135],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            sample_weight=None,
+            future_target=self.target2[135:145],
         )
 
         # two targets and one covariate
@@ -1285,21 +1429,27 @@ class TestDataset:
             output_chunk_length=10,
         )
 
-        np.testing.assert_almost_equal(ds[0][0], target1.values()[-20:-10])
-        assert ds[0][1] is None  # past cov
-        np.testing.assert_almost_equal(ds[0][2], cov1.values()[-40:-30])
-        np.testing.assert_almost_equal(ds[0][3], cov1.values()[-30:-20])
-        np.testing.assert_almost_equal(ds[0][4], self.cov_st2)
-        assert ds[0][5] is None  # sample weight
-        np.testing.assert_almost_equal(ds[0][6], target1.values()[-10:])
+        np.testing.assert_almost_equal(ds[0].past_target, target1.values()[-20:-10])
+        assert ds[0].past_covariates is None  # past cov
+        np.testing.assert_almost_equal(
+            ds[0].historic_future_covariates, cov1.values()[-40:-30]
+        )
+        np.testing.assert_almost_equal(ds[0].future_covariates, cov1.values()[-30:-20])
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        assert ds[0].sample_weight is None  # sample weight
+        np.testing.assert_almost_equal(ds[0].future_target, target1.values()[-10:])
 
-        np.testing.assert_almost_equal(ds[101][0], target2.values()[-40:-30])
-        assert ds[0][1] is None  # past cov
-        np.testing.assert_almost_equal(ds[101][2], cov2.values()[-70:-60])
-        np.testing.assert_almost_equal(ds[101][3], cov2.values()[-60:-50])
-        np.testing.assert_almost_equal(ds[101][4], self.cov_st2)
-        assert ds[0][5] is None
-        np.testing.assert_almost_equal(ds[101][6], target2.values()[-30:-20])
+        np.testing.assert_almost_equal(ds[101].past_target, target2.values()[-40:-30])
+        assert ds[0].past_covariates is None  # past cov
+        np.testing.assert_almost_equal(
+            ds[101].historic_future_covariates, cov2.values()[-70:-60]
+        )
+        np.testing.assert_almost_equal(
+            ds[101].future_covariates, cov2.values()[-60:-50]
+        )
+        np.testing.assert_almost_equal(ds[101].static_covariates, self.cov_st2)
+        assert ds[0].sample_weight is None
+        np.testing.assert_almost_equal(ds[101].future_target, target2.values()[-30:-20])
 
         # Should also contain correct values when time-indexed with covariates not aligned
         times1 = pd.date_range(start="20090201", end="20090220", freq="D")
@@ -1316,13 +1466,15 @@ class TestDataset:
             output_chunk_length=2,
         )
 
-        np.testing.assert_almost_equal(ds[0][0], target1.values()[-4:-2])
-        assert ds[0][1] is None
-        np.testing.assert_almost_equal(ds[0][2], cov1.values()[-6:-4])
-        np.testing.assert_almost_equal(ds[0][3], cov1.values()[-4:-2])
-        np.testing.assert_almost_equal(ds[0][4], self.cov_st2)
-        assert ds[0][5] is None
-        np.testing.assert_almost_equal(ds[0][6], target1.values()[-2:])
+        np.testing.assert_almost_equal(ds[0].past_target, target1.values()[-4:-2])
+        assert ds[0].past_covariates is None
+        np.testing.assert_almost_equal(
+            ds[0].historic_future_covariates, cov1.values()[-6:-4]
+        )
+        np.testing.assert_almost_equal(ds[0].future_covariates, cov1.values()[-4:-2])
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        assert ds[0].sample_weight is None
+        np.testing.assert_almost_equal(ds[0].future_target, target1.values()[-2:])
 
         # Should fail if covariates are not long enough
         target1 = TimeSeries.from_values(np.random.randn(8)).with_static_covariates(
@@ -1355,17 +1507,15 @@ class TestDataset:
             output_chunk_length=10,
         )
         assert len(ds) == 81
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[75:85],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[75:85],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
 
         # two target series
@@ -1375,29 +1525,25 @@ class TestDataset:
             output_chunk_length=10,
         )
         assert len(ds) == 262
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[75:85],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[75:85],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[136],
-            (
-                self.target2[125:135],
-                None,
-                None,
-                None,
-                self.cov_st2,
-                None,
-                self.target2[135:145],
-            ),
+            past_target=self.target2[125:135],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            sample_weight=None,
+            future_target=self.target2[135:145],
         )
 
         # two target series with custom max_nr_samples
@@ -1408,29 +1554,25 @@ class TestDataset:
             max_samples_per_ts=50,
         )
         assert len(ds) == 100
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[75:85],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[75:85],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[55],
-            (
-                self.target2[125:135],
-                None,
-                None,
-                None,
-                self.cov_st2,
-                None,
-                self.target2[135:145],
-            ),
+            past_target=self.target2[125:135],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            sample_weight=None,
+            future_target=self.target2[135:145],
         )
 
         # two targets and one covariate
@@ -1457,21 +1599,27 @@ class TestDataset:
             output_chunk_length=10,
         )
 
-        np.testing.assert_almost_equal(ds[0][0], target1.values()[-20:-10])
-        assert ds[0][1] is None
-        np.testing.assert_almost_equal(ds[0][2], cov1.values()[-40:-30])
-        np.testing.assert_almost_equal(ds[0][3], cov1.values()[-30:-20])
-        np.testing.assert_almost_equal(ds[0][4], self.cov_st2)
-        assert ds[0][5] is None
-        np.testing.assert_almost_equal(ds[0][6], target1.values()[-10:])
+        np.testing.assert_almost_equal(ds[0].past_target, target1.values()[-20:-10])
+        assert ds[0].past_covariates is None
+        np.testing.assert_almost_equal(
+            ds[0].historic_future_covariates, cov1.values()[-40:-30]
+        )
+        np.testing.assert_almost_equal(ds[0].future_covariates, cov1.values()[-30:-20])
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        assert ds[0].sample_weight is None
+        np.testing.assert_almost_equal(ds[0].future_target, target1.values()[-10:])
 
-        np.testing.assert_almost_equal(ds[101][0], target2.values()[-40:-30])
-        assert ds[0][1] is None
-        np.testing.assert_almost_equal(ds[101][2], cov2.values()[-70:-60])
-        np.testing.assert_almost_equal(ds[101][3], cov2.values()[-60:-50])
-        np.testing.assert_almost_equal(ds[101][4], self.cov_st2)
-        assert ds[101][5] is None
-        np.testing.assert_almost_equal(ds[101][6], target2.values()[-30:-20])
+        np.testing.assert_almost_equal(ds[101].past_target, target2.values()[-40:-30])
+        assert ds[0].past_covariates is None
+        np.testing.assert_almost_equal(
+            ds[101].historic_future_covariates, cov2.values()[-70:-60]
+        )
+        np.testing.assert_almost_equal(
+            ds[101].future_covariates, cov2.values()[-60:-50]
+        )
+        np.testing.assert_almost_equal(ds[101].static_covariates, self.cov_st2)
+        assert ds[101].sample_weight is None
+        np.testing.assert_almost_equal(ds[101].future_target, target2.values()[-30:-20])
 
         # Should also contain correct values when time-indexed with covariates not aligned
         times1 = pd.date_range(start="20090201", end="20090220", freq="D")
@@ -1488,13 +1636,15 @@ class TestDataset:
             output_chunk_length=2,
         )
 
-        np.testing.assert_almost_equal(ds[0][0], target1.values()[-4:-2])
-        assert ds[0][1] is None
-        np.testing.assert_almost_equal(ds[0][2], cov1.values()[-6:-4])
-        np.testing.assert_almost_equal(ds[0][3], cov1.values()[-4:-2])
-        np.testing.assert_almost_equal(ds[0][4], self.cov_st2)
-        assert ds[0][5] is None
-        np.testing.assert_almost_equal(ds[0][6], target1.values()[-2:])
+        np.testing.assert_almost_equal(ds[0].past_target, target1.values()[-4:-2])
+        assert ds[0].past_covariates is None
+        np.testing.assert_almost_equal(
+            ds[0].historic_future_covariates, cov1.values()[-6:-4]
+        )
+        np.testing.assert_almost_equal(ds[0].future_covariates, cov1.values()[-4:-2])
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        assert ds[0].sample_weight is None
+        np.testing.assert_almost_equal(ds[0].future_target, target1.values()[-2:])
 
         # Should fail if covariates are not long enough
         target1 = TimeSeries.from_values(np.random.randn(8)).with_static_covariates(
@@ -1521,17 +1671,15 @@ class TestDataset:
             shift=5,
         )
         assert len(ds) == 86
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[80:90],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[80:90],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
 
         # two target series
@@ -1542,29 +1690,25 @@ class TestDataset:
             shift=5,
         )
         assert len(ds) == 272
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[80:90],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[80:90],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[141],
-            (
-                self.target2[130:140],
-                None,
-                None,
-                None,
-                self.cov_st2,
-                None,
-                self.target2[135:145],
-            ),
+            past_target=self.target2[130:140],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            sample_weight=None,
+            future_target=self.target2[135:145],
         )
 
         # two target series with custom max_nr_samples
@@ -1576,29 +1720,25 @@ class TestDataset:
             max_samples_per_ts=50,
         )
         assert len(ds) == 100
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[80:90],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[80:90],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[55],
-            (
-                self.target2[130:140],
-                None,
-                None,
-                None,
-                self.cov_st2,
-                None,
-                self.target2[135:145],
-            ),
+            past_target=self.target2[130:140],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            sample_weight=None,
+            future_target=self.target2[135:145],
         )
 
         # two targets and one covariate
@@ -1647,29 +1787,25 @@ class TestDataset:
             output_chunk_length=10,
             shift=5,
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[80:90],
-                self.cov1[80:90],
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[80:90],
+            past_covariates=self.cov1[80:90],
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[141],
-            (
-                self.target2[130:140],
-                self.cov2[130:140],
-                None,
-                None,
-                self.cov_st2,
-                None,
-                self.target2[135:145],
-            ),
+            past_target=self.target2[130:140],
+            past_covariates=self.cov2[130:140],
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            sample_weight=None,
+            future_target=self.target2[135:145],
         )
 
         # Should contain correct values even when covariates are not aligned
@@ -1684,13 +1820,13 @@ class TestDataset:
             output_chunk_length=3,
             shift=2,
         )
-        np.testing.assert_almost_equal(ds[0][0], target1.values()[-5:-2])
-        np.testing.assert_almost_equal(ds[0][1], cov1.values()[-7:-4])
-        assert ds[0][2] is None
-        assert ds[0][3] is None
-        np.testing.assert_almost_equal(ds[0][4], self.cov_st2)
-        assert ds[0][5] is None
-        np.testing.assert_almost_equal(ds[0][6], target1.values()[-3:])
+        np.testing.assert_almost_equal(ds[0].past_target, target1.values()[-5:-2])
+        np.testing.assert_almost_equal(ds[0].past_covariates, cov1.values()[-7:-4])
+        assert ds[0].historic_future_covariates is None
+        assert ds[0].future_covariates is None
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        assert ds[0].sample_weight is None
+        np.testing.assert_almost_equal(ds[0].future_target, target1.values()[-3:])
 
         # Should also contain correct values when time-indexed with covariates not aligned
         times1 = pd.date_range(start="20090201", end="20090220", freq="D")
@@ -1706,13 +1842,13 @@ class TestDataset:
             output_chunk_length=3,
             shift=2,
         )
-        np.testing.assert_almost_equal(ds[0][0], target1.values()[-5:-2])
-        np.testing.assert_almost_equal(ds[0][1], cov1.values()[-7:-4])
-        assert ds[0][2] is None
-        assert ds[0][3] is None
-        np.testing.assert_almost_equal(ds[0][4], self.cov_st2)
-        assert ds[0][5] is None
-        np.testing.assert_almost_equal(ds[0][6], target1.values()[-3:])
+        np.testing.assert_almost_equal(ds[0].past_target, target1.values()[-5:-2])
+        np.testing.assert_almost_equal(ds[0].past_covariates, cov1.values()[-7:-4])
+        assert ds[0].historic_future_covariates is None
+        assert ds[0].future_covariates is None
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        assert ds[0].sample_weight is None
+        np.testing.assert_almost_equal(ds[0].future_target, target1.values()[-3:])
 
         # Should fail if covariates are too short
         target1 = TimeSeries.from_values(np.random.randn(8)).with_static_covariates(
@@ -1738,17 +1874,15 @@ class TestDataset:
             shift=5,
         )
         assert len(ds) == 86
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[80:90],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[80:90],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
 
         # two target series
@@ -1759,29 +1893,25 @@ class TestDataset:
             shift=5,
         )
         assert len(ds) == 272
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[80:90],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[80:90],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[141],
-            (
-                self.target2[130:140],
-                None,
-                None,
-                None,
-                self.cov_st2,
-                None,
-                self.target2[135:145],
-            ),
+            past_target=self.target2[130:140],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            sample_weight=None,
+            future_target=self.target2[135:145],
         )
 
         # two target series with custom max_nr_samples
@@ -1793,29 +1923,25 @@ class TestDataset:
             max_samples_per_ts=50,
         )
         assert len(ds) == 100
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[80:90],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[80:90],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[55],
-            (
-                self.target2[130:140],
-                None,
-                None,
-                None,
-                self.cov_st2,
-                None,
-                self.target2[135:145],
-            ),
+            past_target=self.target2[130:140],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            sample_weight=None,
+            future_target=self.target2[135:145],
         )
 
         # two targets and one covariate
@@ -1865,29 +1991,25 @@ class TestDataset:
             output_chunk_length=10,
             shift=5,
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[80:90],
-                None,
-                self.cov1[80:90],
-                self.cov1[85:95],
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[80:90],
+            past_covariates=None,
+            historic_future_covariates=self.cov1[80:90],
+            future_covariates=self.cov1[85:95],
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[141],
-            (
-                self.target2[130:140],
-                None,
-                self.cov2[130:140],
-                self.cov2[135:145],
-                self.cov_st2,
-                None,
-                self.target2[135:145],
-            ),
+            past_target=self.target2[130:140],
+            past_covariates=None,
+            historic_future_covariates=self.cov2[130:140],
+            future_covariates=self.cov2[135:145],
+            static_covariates=self.cov_st2,
+            sample_weight=None,
+            future_target=self.target2[135:145],
         )
 
         # Should contain correct values even when covariates are not aligned
@@ -1902,13 +2024,15 @@ class TestDataset:
             output_chunk_length=3,
             shift=2,
         )
-        np.testing.assert_almost_equal(ds[0][0], target1.values()[-5:-2])
-        assert ds[0][1] is None
-        np.testing.assert_almost_equal(ds[0][2], cov1.values()[-7:-4])
-        np.testing.assert_almost_equal(ds[0][3], cov1.values()[-5:-2])
-        np.testing.assert_almost_equal(ds[0][4], self.cov_st2)
-        assert ds[0][5] is None
-        np.testing.assert_almost_equal(ds[0][6], target1.values()[-3:])
+        np.testing.assert_almost_equal(ds[0].past_target, target1.values()[-5:-2])
+        assert ds[0].past_covariates is None
+        np.testing.assert_almost_equal(
+            ds[0].historic_future_covariates, cov1.values()[-7:-4]
+        )
+        np.testing.assert_almost_equal(ds[0].future_covariates, cov1.values()[-5:-2])
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        assert ds[0].sample_weight is None
+        np.testing.assert_almost_equal(ds[0].future_target, target1.values()[-3:])
 
         # Should also contain correct values when time-indexed with covariates not aligned
         times1 = pd.date_range(start="20090201", end="20090220", freq="D")
@@ -1924,13 +2048,15 @@ class TestDataset:
             output_chunk_length=3,
             shift=2,
         )
-        np.testing.assert_almost_equal(ds[0][0], target1.values()[-5:-2])
-        assert ds[0][1] is None
-        np.testing.assert_almost_equal(ds[0][2], cov1.values()[-7:-4])
-        np.testing.assert_almost_equal(ds[0][3], cov1.values()[-5:-2])
-        np.testing.assert_almost_equal(ds[0][4], self.cov_st2)
-        assert ds[0][5] is None
-        np.testing.assert_almost_equal(ds[0][6], target1.values()[-3:])
+        np.testing.assert_almost_equal(ds[0].past_target, target1.values()[-5:-2])
+        assert ds[0].past_covariates is None
+        np.testing.assert_almost_equal(
+            ds[0].historic_future_covariates, cov1.values()[-7:-4]
+        )
+        np.testing.assert_almost_equal(ds[0].future_covariates, cov1.values()[-5:-2])
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        assert ds[0].sample_weight is None
+        np.testing.assert_almost_equal(ds[0].future_target, target1.values()[-3:])
 
         # Should fail if covariates are too short
         target1 = TimeSeries.from_values(np.random.randn(8)).with_static_covariates(
@@ -1956,17 +2082,15 @@ class TestDataset:
             shift=5,
         )
         assert len(ds) == 86
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[80:90],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[80:90],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
 
         # two target series
@@ -1977,29 +2101,25 @@ class TestDataset:
             shift=5,
         )
         assert len(ds) == 272
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[80:90],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[80:90],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[141],
-            (
-                self.target2[130:140],
-                None,
-                None,
-                None,
-                self.cov_st2,
-                None,
-                self.target2[135:145],
-            ),
+            past_target=self.target2[130:140],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            sample_weight=None,
+            future_target=self.target2[135:145],
         )
 
         # two target series with custom max_nr_samples
@@ -2011,29 +2131,25 @@ class TestDataset:
             max_samples_per_ts=50,
         )
         assert len(ds) == 100
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[80:90],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[80:90],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[55],
-            (
-                self.target2[130:140],
-                None,
-                None,
-                None,
-                self.cov_st2,
-                None,
-                self.target2[135:145],
-            ),
+            past_target=self.target2[130:140],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            sample_weight=None,
+            future_target=self.target2[135:145],
         )
 
         # two targets and one covariate
@@ -2051,29 +2167,25 @@ class TestDataset:
             output_chunk_length=10,
             shift=5,
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[80:90],
-                None,
-                self.cov1[80:90],
-                self.cov1[85:95],
-                self.cov_st1,
-                None,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[80:90],
+            past_covariates=None,
+            historic_future_covariates=self.cov1[80:90],
+            future_covariates=self.cov1[85:95],
+            static_covariates=self.cov_st1,
+            sample_weight=None,
+            future_target=self.target1[85:95],
         )
-        self._assert_eq(
+        self._assert_training_output(
             ds[141],
-            (
-                self.target2[130:140],
-                None,
-                self.cov2[130:140],
-                self.cov2[135:145],
-                self.cov_st2,
-                None,
-                self.target2[135:145],
-            ),
+            past_target=self.target2[130:140],
+            past_covariates=None,
+            historic_future_covariates=self.cov2[130:140],
+            future_covariates=self.cov2[135:145],
+            static_covariates=self.cov_st2,
+            sample_weight=None,
+            future_target=self.target2[135:145],
         )
 
         # Should contain correct values even when covariates are not aligned
@@ -2088,13 +2200,15 @@ class TestDataset:
             output_chunk_length=3,
             shift=2,
         )
-        np.testing.assert_almost_equal(ds[0][0], target1.values()[-5:-2])
-        assert ds[0][1] is None
-        np.testing.assert_almost_equal(ds[0][2], cov1.values()[-7:-4])
-        np.testing.assert_almost_equal(ds[0][3], cov1.values()[-5:-2])
-        np.testing.assert_almost_equal(ds[0][4], self.cov_st2)
-        assert ds[0][5] is None
-        np.testing.assert_almost_equal(ds[0][6], target1.values()[-3:])
+        np.testing.assert_almost_equal(ds[0].past_target, target1.values()[-5:-2])
+        assert ds[0].past_covariates is None
+        np.testing.assert_almost_equal(
+            ds[0].historic_future_covariates, cov1.values()[-7:-4]
+        )
+        np.testing.assert_almost_equal(ds[0].future_covariates, cov1.values()[-5:-2])
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        assert ds[0].sample_weight is None
+        np.testing.assert_almost_equal(ds[0].future_target, target1.values()[-3:])
 
         # Should also contain correct values when time-indexed with covariates not aligned
         times1 = pd.date_range(start="20090201", end="20090220", freq="D")
@@ -2110,13 +2224,15 @@ class TestDataset:
             output_chunk_length=3,
             shift=2,
         )
-        np.testing.assert_almost_equal(ds[0][0], target1.values()[-5:-2])
-        assert ds[0][1] is None
-        np.testing.assert_almost_equal(ds[0][2], cov1.values()[-7:-4])
-        np.testing.assert_almost_equal(ds[0][3], cov1.values()[-5:-2])
-        np.testing.assert_almost_equal(ds[0][4], self.cov_st2)
-        assert ds[0][5] is None
-        np.testing.assert_almost_equal(ds[0][6], target1.values()[-3:])
+        np.testing.assert_almost_equal(ds[0].past_target, target1.values()[-5:-2])
+        assert ds[0].past_covariates is None
+        np.testing.assert_almost_equal(
+            ds[0].historic_future_covariates, cov1.values()[-7:-4]
+        )
+        np.testing.assert_almost_equal(ds[0].future_covariates, cov1.values()[-5:-2])
+        np.testing.assert_almost_equal(ds[0].static_covariates, self.cov_st2)
+        assert ds[0].sample_weight is None
+        np.testing.assert_almost_equal(ds[0].future_target, target1.values()[-3:])
 
         # Should fail if covariates are too short
         target1 = TimeSeries.from_values(np.random.randn(8)).with_static_covariates(
@@ -2150,17 +2266,15 @@ class TestDataset:
         ds = HorizonBasedTorchTrainingDataset(**ds_kwargs)
         # 21 as both `lh` bounds are inclusive
         assert len(ds) == 21
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[65:85],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                weight_exp,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[65:85],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=weight_exp,
+            future_target=self.target1[85:95],
         )
         # one target series, with stride
         ds_stride = HorizonBasedTorchTrainingDataset(**ds_kwargs, stride=3)
@@ -2174,30 +2288,26 @@ class TestDataset:
         ds = HorizonBasedTorchTrainingDataset(**ds_kwargs)
         # 42 as both `lh` bounds are inclusive per series
         assert len(ds) == 42
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[65:85],
-                None,
-                None,
-                None,
-                self.cov_st1,
-                weight_exp1,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[65:85],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=weight_exp1,
+            future_target=self.target1[85:95],
         )
         # 21 samples after comes the second series
-        self._assert_eq(
+        self._assert_training_output(
             ds[26],
-            (
-                self.target2[115:135],
-                None,
-                None,
-                None,
-                self.cov_st2,
-                weight_exp2,
-                self.target2[135:145],
-            ),
+            past_target=self.target2[115:135],
+            past_covariates=None,
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            sample_weight=weight_exp2,
+            future_target=self.target2[135:145],
         )
         # two target series, with stride
         ds_stride = HorizonBasedTorchTrainingDataset(**ds_kwargs, stride=3)
@@ -2216,30 +2326,26 @@ class TestDataset:
         ds_kwargs["past_covariates"] = [self.cov1, self.cov2]
         ds_kwargs["sample_weight"] = [weight1, weight2] if use_weight else None
         ds = HorizonBasedTorchTrainingDataset(**ds_kwargs)
-        self._assert_eq(
+        self._assert_training_output(
             ds[5],
-            (
-                self.target1[65:85],
-                self.cov1[65:85],
-                None,
-                None,
-                self.cov_st1,
-                weight_exp1,
-                self.target1[85:95],
-            ),
+            past_target=self.target1[65:85],
+            past_covariates=self.cov1[65:85],
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st1,
+            sample_weight=weight_exp1,
+            future_target=self.target1[85:95],
         )
         # 21 samples after comes the second series
-        self._assert_eq(
+        self._assert_training_output(
             ds[26],
-            (
-                self.target2[115:135],
-                self.cov2[115:135],
-                None,
-                None,
-                self.cov_st2,
-                weight_exp2,
-                self.target2[135:145],
-            ),
+            past_target=self.target2[115:135],
+            past_covariates=self.cov2[115:135],
+            historic_future_covariates=None,
+            future_covariates=None,
+            static_covariates=self.cov_st2,
+            sample_weight=weight_exp2,
+            future_target=self.target2[135:145],
         )
         # two targets and two covariates, with stride
         ds_stride = HorizonBasedTorchTrainingDataset(**ds_kwargs, stride=3)
@@ -2287,28 +2393,37 @@ class TestDataset:
         )
 
         batch_reg, batch_shift = ds_reg[0], ds_shift[0]
+        assert isinstance(batch_reg, TorchTrainingSample)
+        assert isinstance(batch_shift, TorchTrainingSample)
 
         if future_idx is not None:
             # 3rd future values of regular ds must be identical to the 1st future values of shifted dataset
             np.testing.assert_array_equal(
-                batch_reg[future_idx][-1:], batch_shift[future_idx]
+                batch_reg.future_covariates[-1:], batch_shift.future_covariates
             )
-            batch_reg = batch_reg[:future_idx] + batch_reg[future_idx + 1 :]
-            batch_shift = batch_shift[:future_idx] + batch_shift[future_idx + 1 :]
+
+        skip = {"sample_weight", "future_target"}
+        if future_idx is not None:
+            skip.add("future_covariates")
+        for f in fields(batch_reg):
+            name = f.name
+            if name in skip:
+                continue
+            el_reg, el_shift = getattr(batch_reg, name), getattr(batch_shift, name)
+            if el_reg is None:
+                assert el_shift is None
+            else:
+                np.testing.assert_array_equal(el_reg, el_shift)
 
         # last two elements are (sample weight, output chunk of the target series).
         # 3rd future values of regular ds must be identical to the 1st future values of shifted dataset
-        batch_reg = batch_reg[:-2] + (batch_reg[-2][ocs:], batch_reg[-1][ocs:])
-
-        # without future part, the input will be identical between regular, and shifted dataset
-        assert all([
-            np.all(el_reg == el_shift)
-            for el_reg, el_shift in zip(batch_reg[:-1], batch_shift[:-1])
-        ])
+        np.testing.assert_array_equal(
+            batch_reg.sample_weight[ocs:], batch_shift.sample_weight
+        )
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [
                 (SequentialTorchTrainingDataset, []),
                 (SequentialTorchTrainingDataset, ["past"]),
@@ -2347,7 +2462,7 @@ class TestDataset:
             sample_weight=None,
             **ds_covs,
         )
-        assert ds[0][-2] is None
+        assert ds[0].sample_weight is None
 
         # whenever we use sample weight, the weight are extracted from the same time frame as the target labels
         # since we set the weight to be `target + 1`, the returned batch weight must also be `batch_target_label + 1`
@@ -2362,8 +2477,10 @@ class TestDataset:
             sample_weight=weight,
             **ds_covs,
         )
-        weight_exp = ds[0][-1] + 1 if manual_weight else get_built_in_weigths(target)
-        assert np.all(ds[0][-2] == weight_exp)
+        weight_exp = (
+            ds[0].future_target + 1 if manual_weight else get_built_in_weigths(target)
+        )
+        assert np.all(ds[0].sample_weight == weight_exp)
 
         # single univariate with longer weight
         target = target1
@@ -2379,8 +2496,10 @@ class TestDataset:
             sample_weight=weight,
             **ds_covs,
         )
-        weight_exp = ds[0][-1] + 1 if manual_weight else get_built_in_weigths(target)
-        assert np.all(ds[0][-2] == weight_exp)
+        weight_exp = (
+            ds[0].future_target + 1 if manual_weight else get_built_in_weigths(target)
+        )
+        assert np.all(ds[0].sample_weight == weight_exp)
 
         # single multivariate with multivariate weight
         target = target1.stack(target1 + 1)
@@ -2392,8 +2511,10 @@ class TestDataset:
             sample_weight=weight,
             **ds_covs,
         )
-        weight_exp = ds[0][-1] + 1 if manual_weight else get_built_in_weigths(target)
-        assert np.all(ds[0][-2] == weight_exp)
+        weight_exp = (
+            ds[0].future_target + 1 if manual_weight else get_built_in_weigths(target)
+        )
+        assert np.all(ds[0].sample_weight == weight_exp)
 
         # single multivariate with univariate (global) weight
         target = target1.stack(target1 + 1)
@@ -2407,9 +2528,11 @@ class TestDataset:
         )
         # output weight corresponds to first target component + 1 (e.g. weight1)
         weight_exp = (
-            ds[0][-1][:, 0:1] + 1 if manual_weight else get_built_in_weigths(target)
+            ds[0].future_target[:, 0:1] + 1
+            if manual_weight
+            else get_built_in_weigths(target)
         )
-        assert np.all(ds[0][-2] == weight_exp)
+        assert np.all(ds[0].sample_weight == weight_exp)
 
         # single univariate and list of single weight
         target = target1
@@ -2421,8 +2544,10 @@ class TestDataset:
             sample_weight=weight,
             **ds_covs,
         )
-        weight_exp = ds[0][-1] + 1 if manual_weight else get_built_in_weigths(target)
-        assert np.all(ds[0][-2] == weight_exp)
+        weight_exp = (
+            ds[0].future_target + 1 if manual_weight else get_built_in_weigths(target)
+        )
+        assert np.all(ds[0].sample_weight == weight_exp)
 
         # multiple univariate
         target = [target1, target2]
@@ -2434,8 +2559,10 @@ class TestDataset:
             sample_weight=weight,
             **{k: [v] * 2 for k, v in ds_covs.items()},
         )
-        weight_exp = ds[0][-1] + 1 if manual_weight else get_built_in_weigths(target)
-        assert np.all(ds[0][-2] == weight_exp)
+        weight_exp = (
+            ds[0].future_target + 1 if manual_weight else get_built_in_weigths(target)
+        )
+        assert np.all(ds[0].sample_weight == weight_exp)
 
         # multiple multivariate
         target = [target1.stack(target1 + 1), target2.stack(target2 + 1)]
@@ -2451,8 +2578,10 @@ class TestDataset:
             sample_weight=weight,
             **{k: [v] * 2 for k, v in ds_covs.items()},
         )
-        weight_exp = ds[0][-1] + 1 if manual_weight else get_built_in_weigths(target)
-        assert np.all(ds[0][-2] == weight_exp)
+        weight_exp = (
+            ds[0].future_target + 1 if manual_weight else get_built_in_weigths(target)
+        )
+        assert np.all(ds[0].sample_weight == weight_exp)
 
     def test_sequential_training_dataset_invalid_weight(self):
         ds_cls = SequentialTorchTrainingDataset
@@ -2569,6 +2698,123 @@ class TestDataset:
         assert len(ds_stride) * 3 == len(ds_reg) == nb_samples
         self._check_ds_stride(ds_regular=ds_reg, ds_stride=ds_stride, stride=3)
 
+    def test_custom_training_dataset_named_sample(self):
+        """Custom training datasets must return a `TorchTrainingSample` (unused fields can be omitted)."""
+
+        class NamedTrainingDataset(TorchTrainingDataset):
+            def __init__(self, wrapped):
+                super().__init__()
+                self._wrapped = wrapped
+
+            def __len__(self):
+                return len(self._wrapped)
+
+            def __getitem__(self, index):
+                sample = self._wrapped[index]
+                return TorchTrainingSample(
+                    past_target=sample.past_target,
+                    past_covariates=sample.past_covariates,
+                    historic_future_covariates=sample.historic_future_covariates,
+                    future_covariates=sample.future_covariates,
+                    static_covariates=sample.static_covariates,
+                    future_target=sample.future_target,
+                )
+
+        wrapped = SequentialTorchTrainingDataset(
+            series=self.target1,
+            past_covariates=self.cov1,
+            future_covariates=self.cov1,
+            input_chunk_length=4,
+            output_chunk_length=3,
+        )
+        ds = NamedTrainingDataset(wrapped)
+
+        sample = ds[0]
+        assert isinstance(sample, TorchTrainingSample)
+        expected = wrapped[0]
+        self._assert_training_output(
+            _as_training_sample(sample),
+            past_target=expected.past_target,
+            past_covariates=expected.past_covariates,
+            historic_future_covariates=expected.historic_future_covariates,
+            future_covariates=expected.future_covariates,
+            static_covariates=expected.static_covariates,
+            sample_weight=None,
+            future_target=expected.future_target,
+        )
+
+        batch = _batch_collate_fn_train([ds[0], ds[1]])
+        assert isinstance(batch, TorchTrainingBatch)
+        assert batch.past_target.shape[0] == 2
+        np.testing.assert_array_equal(
+            batch.past_target[0].numpy(), expected.past_target
+        )
+        np.testing.assert_array_equal(
+            batch.future_target[0].numpy(), expected.future_target
+        )
+
+        with pytest.raises(ValueError, match="must return a `TorchTrainingSample`"):
+            _as_training_sample((expected.past_target, expected.future_target))
+
+    def test_custom_inference_dataset_named_sample(self):
+        """Custom inference datasets must return a `TorchInferenceSample`."""
+
+        class NamedInferenceDataset(TorchInferenceDataset):
+            def __init__(self, wrapped):
+                super().__init__()
+                self._wrapped = wrapped
+
+            def __len__(self):
+                return len(self._wrapped)
+
+            def __getitem__(self, index):
+                sample = self._wrapped[index]
+                return TorchInferenceSample(
+                    past_target=sample.past_target,
+                    past_covariates=sample.past_covariates,
+                    future_past_covariates=sample.future_past_covariates,
+                    historic_future_covariates=sample.historic_future_covariates,
+                    future_covariates=sample.future_covariates,
+                    static_covariates=sample.static_covariates,
+                    series_schema=sample.series_schema,
+                    pred_time=sample.pred_time,
+                )
+
+        wrapped = SequentialTorchInferenceDataset(
+            series=[self.target1, self.target2],
+            past_covariates=[self.cov1, self.cov2],
+            input_chunk_length=4,
+            output_chunk_length=3,
+            n=1,
+        )
+        ds = NamedInferenceDataset(wrapped)
+
+        sample = ds[0]
+        assert isinstance(sample, TorchInferenceSample)
+        expected = wrapped[0]
+        self._assert_inference_output(
+            _as_inference_sample(sample),
+            past_target=expected.past_target,
+            past_covariates=expected.past_covariates,
+            future_past_covariates=expected.future_past_covariates,
+            historic_future_covariates=expected.historic_future_covariates,
+            future_covariates=expected.future_covariates,
+            static_covariates=expected.static_covariates,
+            series_schema=expected.series_schema,
+            pred_time=expected.pred_time,
+        )
+
+        batch = _batch_collate_fn_predict([ds[0], ds[1]])
+        assert isinstance(batch, TorchInferenceBatch)
+        assert batch.past_target.shape[0] == 2
+        np.testing.assert_array_equal(
+            batch.past_target[0].numpy(), expected.past_target
+        )
+        assert batch.pred_time[0] == expected.pred_time
+
+        with pytest.raises(ValueError, match="must return a `TorchInferenceSample`"):
+            _as_inference_sample((expected.past_target, expected.pred_time))
+
     def test_get_matching_index(self):
         from darts.utils.data.utils import _get_matching_index
 
@@ -2597,6 +2843,55 @@ class TestDataset:
         )
         cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
         assert _get_matching_index(target, cov, idx=15) == 5
+
+    def test_pl_module_input_stage(self):
+        """`stage` defaults to predict, is set on train batches, and is not a pytree leaf."""
+        past = torch.zeros(2, 3, 1)
+        x_default = PLModuleInput(past_target=past)
+        assert x_default.stage is ModuleStage.PREDICT
+
+        batch = TorchTrainingBatch(past_target=past, future_target=torch.zeros(2, 1, 1))
+        assert batch.to_module_input().stage is ModuleStage.TRAIN
+        assert (
+            batch.to_module_input(stage=ModuleStage.VALIDATE).stage
+            is ModuleStage.VALIDATE
+        )
+
+        x_train = PLModuleInput(past_target=past, stage=ModuleStage.TRAIN)
+        leaves, spec = tree_flatten(x_train)
+        assert ModuleStage.TRAIN not in leaves
+        assert all(leaf is None or torch.is_tensor(leaf) for leaf in leaves)
+        restored = tree_unflatten(leaves, spec)
+        assert isinstance(restored, PLModuleInput)
+        assert restored.stage is ModuleStage.TRAIN
+        assert restored.past_target is past
+
+    def test_pl_module_output_pytree(self):
+        """`PLModuleOutput` round-trips through torch pytree flatten/unflatten."""
+        prediction = torch.zeros(2, 3, 1, 1)
+        state = (torch.ones(2, 1, 4), torch.zeros(2, 1, 4))
+        out = PLModuleOutput(prediction=prediction, state=state)
+        leaves, spec = tree_flatten(out)
+        restored = tree_unflatten(leaves, spec)
+        assert isinstance(restored, PLModuleOutput)
+        assert restored.prediction is prediction
+        assert restored.state[0] is state[0]
+        assert restored.state[1] is state[1]
+
+    def test_coerce_training_sample_invalid(self):
+        """Legacy `train_sample` values must be a 6-tuple or `TorchTrainingSample`."""
+        sample = TorchTrainingSample(past_target=np.zeros((2, 1)))
+        assert _coerce_training_sample(sample) is sample
+
+        with pytest.raises(ValueError, match="must have 6 elements"):
+            _coerce_training_sample((np.zeros((2, 1)),))
+
+        with pytest.raises(ValueError, match="Unsupported `train_sample` type"):
+            _coerce_training_sample("not-a-sample")
+
+    def test_train_sample_from_shapes_none(self):
+        with pytest.raises(ValueError, match="must not be `None`"):
+            _train_sample_from_shapes(None, dtype=np.float32)
 
 
 def generate_series(n_variables: int, length: int, prefix: str):
@@ -2627,13 +2922,17 @@ class TestVariableICLDataset:
         assert len(ds) == 18
 
         # rightmost sample (idx 0): past_start = 25 - 6 - 14 = 5, no padding
-        pt, pc, hfc, fc, sc, sw, ft = ds[0]
+        sample = ds[0]
+        assert isinstance(sample, TorchTrainingSample)
+        pt, ft = sample.past_target, sample.future_target
         assert pt.shape == (icl, 1)
         assert ft.shape == (ocl, 1)
         assert not np.isnan(pt).any()
 
         # leftmost sample (idx 17): past_start = 8 - 6 - 14 = -12, pad_len = 12
-        pt, pc, hfc, fc, sc, sw, ft = ds[17]
+        sample = ds[17]
+        assert isinstance(sample, TorchTrainingSample)
+        pt, ft = sample.past_target, sample.future_target
         assert pt.shape == (icl, 1)
         assert ft.shape == (ocl, 1)
         pad_len = np.isnan(pt[:, 0]).sum()
@@ -2654,7 +2953,9 @@ class TestVariableICLDataset:
         )
         assert len(ds) == 1
 
-        pt, pc, fpc, hfc, fc, sc, schema, pred_start = ds[0]
+        sample = ds[0]
+        assert isinstance(sample, TorchInferenceSample)
+        pt = sample.past_target
         assert pt.shape == (icl, 1)
         # first (icl - len(series)) = 9 values should be NaN
         pad_len = icl - len(series)
@@ -2680,8 +2981,8 @@ class TestVariableICLDataset:
 
         # no NaN padding in any sample
         for i in range(len(ds_default)):
-            pt_d, *_ = ds_default[i]
-            pt_e, *_ = ds_explicit[i]
+            pt_d = ds_default[i].past_target
+            pt_e = ds_explicit[i].past_target
             assert not np.isnan(pt_d).any()
             np.testing.assert_array_equal(pt_d, pt_e)
 
@@ -2701,7 +3002,7 @@ class TestVariableICLDataset:
         # each sample should produce a different future_target window
         ft_windows = []
         for i in range(len(ds)):
-            _, _, _, _, _, _, ft = ds[i]
+            ft = ds[i].future_target
             ft_windows.append(tuple(ft[:, 0].tolist()))
         assert len(set(ft_windows)) == len(ds)
 
@@ -2721,7 +3022,14 @@ class TestVariableICLDataset:
         )
 
         # leftmost sample (most padding)
-        pt, pc, hfc, fc, sc, sw, ft = ds[len(ds) - 1]
+        sample = ds[len(ds) - 1]
+        assert isinstance(sample, TorchTrainingSample)
+        pt, pc, hfc, fc = (
+            sample.past_target,
+            sample.past_covariates,
+            sample.historic_future_covariates,
+            sample.future_covariates,
+        )
 
         assert pt.shape == (icl, 1)
         assert pc.shape == (icl, 2)

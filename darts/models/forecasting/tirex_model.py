@@ -25,7 +25,9 @@ from darts.models.forecasting.foundation_model import FoundationModel
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.utils.data.torch_datasets.utils import (
     InputChunkLength,
+    ModuleStage,
     PLModuleInput,
+    PLModuleOutput,
     TorchTrainingSample,
 )
 from darts.utils.likelihood_models.torch import QuantileRegression
@@ -84,22 +86,7 @@ class _TiRexModule(PLForecastingModule):
         else:
             self._finetuning_likelihood = None
 
-    def forward(self, x_in: PLModuleInput, *args, **kwargs):
-        """Forward pass returning quantile predictions shaped ``(batch, time, n_targets, n_quantiles)``.
-
-        During training with fine-tuning enabled, all 9 pre-trained quantiles are returned
-        for the loss. At prediction time, only user-specified quantiles are returned.
-
-        Parameters
-        ----------
-        x_in
-            ``(x_past, x_future, x_static, future_target)`` the past, future, and static features, as well as
-            the future target.
-        *args
-            Positional arguments passed to the forward method.
-        **kwargs
-            Optional keyword arguments.
-        """
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
         # Dimension notation in comments below:
         #   B: batch size
         #   L: input chunk length
@@ -111,11 +98,11 @@ class _TiRexModule(PLForecastingModule):
         #   N: likelihood quantiles (user-specified, 1 if deterministic)
 
         # `x_past`: (B, L, C)
-        x_past, _, _, _ = x_in
+        x_past = x_in.past_target
         # fold target components into batch dim for multivariate support: (B, L, C) -> (B*C, L)
         x_past = x_past.transpose(1, 2).flatten(start_dim=0, end_dim=1)
 
-        if self.training and self._enable_finetuning:
+        if x_in.stage is ModuleStage.TRAIN and self._enable_finetuning:
             # call _forecast_tensor directly to keep gradients flowing — _forecast_quantiles
             # is decorated with @torch.inference_mode() which would block backprop
             # output: (B*C, Q, H) -> swapaxes -> (B*C, H, Q) -> slice output shift -> (B*C, T, Q)
@@ -135,13 +122,17 @@ class _TiRexModule(PLForecastingModule):
             )
 
         # unfold batch dim and permute to Darts' output shape: (B, T, C, N or Q)
-        return q_sel.unflatten(dim=0, sizes=(-1, self.n_targets)).permute(0, 2, 1, 3)
+        return PLModuleOutput(
+            prediction=q_sel.unflatten(dim=0, sizes=(-1, self.n_targets)).permute(
+                0, 2, 1, 3
+            )
+        )
 
-    def _compute_loss(self, output, target, criterion, sample_weight):
+    def _compute_loss(self, output: PLModuleOutput, target, criterion, sample_weight):
         if self.training and self._enable_finetuning:
             # compute loss on pre-trained quantiles
             return self._finetuning_likelihood.compute_loss(
-                output, target, sample_weight
+                output.prediction, target, sample_weight
             )
         return super()._compute_loss(output, target, criterion, sample_weight)
 

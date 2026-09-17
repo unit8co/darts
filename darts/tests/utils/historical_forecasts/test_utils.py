@@ -1,10 +1,9 @@
-import itertools
-
 import pandas as pd
 import pytest
 
 import darts.utils.historical_forecasts.utils as hfc_utils
 from darts.models import LinearRegressionModel
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.timeseries_generation import linear_timeseries
 
 
@@ -32,11 +31,11 @@ class TestHistoricalForecastsUtils:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [True, False],  # retrain
-            [True, False],  # show warnings
-            [{}, {"some_fit_param": 0}],  # fit kwargs
-            [{}, {"some_predict_param": 0}],  # predict kwargs
+        param_product(
+            [True, False],
+            [True, False],
+            [{}, {"some_fit_param": 0}],
+            [{}, {"some_predict_param": 0}],
         ),
     )
     def test_historical_forecasts_sanitize_kwargs(self, config):

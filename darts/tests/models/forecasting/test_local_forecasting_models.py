@@ -1,5 +1,4 @@
 import copy
-import itertools
 import math
 import os
 import pathlib
@@ -54,6 +53,7 @@ from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
     TransferableFutureCovariatesLocalForecastingModel,
 )
+from darts.tests.parametrize_helpers import param_product
 from darts.utils import timeseries_generation as tg
 from darts.utils.utils import (
     ModelMode,
@@ -342,7 +342,7 @@ class TestLocalForecastingModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             encoder_support_models, [ts_gaussian, None]
         ),  # tuple of (model class, future covs)
     )

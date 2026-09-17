@@ -1,6 +1,5 @@
 import builtins
 import logging
-from itertools import product
 from unittest.mock import patch
 
 _real_import = builtins.__import__
@@ -20,6 +19,8 @@ if not PLOTLY_AVAILABLE:
     )
 
 import plotly.graph_objects as go
+
+from darts.tests.parametrize_helpers import param_product
 
 
 class TestTimeSeriesPlotly:
@@ -49,12 +50,7 @@ class TestTimeSeriesPlotly:
 
     @pytest.mark.parametrize(
         "config",
-        product(
-            ["dt", "ri"],
-            ["d", "p"],
-            [True, False],
-            [True, False],
-        ),
+        param_product(["dt", "ri"], ["d", "p"], [True, False], [True, False]),
     )
     def test_plotly_single_series(self, config):
         index_type, stoch_type, use_fig, use_darts_style = config
@@ -95,10 +91,7 @@ class TestTimeSeriesPlotly:
 
     @pytest.mark.parametrize(
         "config",
-        product(
-            ["dt", "ri"],
-            ["d", "p"],
-        ),
+        param_product(["dt", "ri"], ["d", "p"]),
     )
     def test_plotly_point_series(self, config):
         index_type, stoch_type = config
@@ -139,10 +132,7 @@ class TestTimeSeriesPlotly:
 
     @pytest.mark.parametrize(
         "config",
-        product(
-            ["dt", "ri"],
-            ["d", "p"],
-        ),
+        param_product(["dt", "ri"], ["d", "p"]),
     )
     def test_plotly_empty_series(self, config):
         index_type, stoch_type = config
@@ -165,7 +155,7 @@ class TestTimeSeriesPlotly:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             ["dt", "ri"],
             ["d", "p"],
             [
@@ -224,7 +214,7 @@ class TestTimeSeriesPlotly:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             ["dt", "ri"],
             [
                 {"central_quantile": "mean"},
