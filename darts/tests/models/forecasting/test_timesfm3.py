@@ -2,7 +2,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
-import pandas as pd
 import pytest
 
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
@@ -34,14 +33,20 @@ def load_validation_inputs():
     """
     # convert to float32 due to MPS not supporting float64
     ts_energy = ElectricityConsumptionZurichDataset().load().astype(np.float32)
+    input_chunk_length, prediction_length = 2048, 1024
+    ts_energy = ts_energy[: input_chunk_length + prediction_length]
 
-    # extract households energy consumption
-    ts_energy = ts_energy[["Value_NE5", "Value_NE7"]]
+    # extract past covariates including humidity, wind direction, wind speed and air pressure
+    ts_other = ts_energy[:input_chunk_length][
+        ["Hr [%Hr]", "WD [°]", "WVs [m/s]", "WVv [m/s]", "p [hPa]"]
+    ]
 
-    # create train and validation splits
-    validation_cutoff = pd.Timestamp("2022-01-01")
-    ts_energy_train, ts_energy_val = ts_energy.split_after(validation_cutoff)
-    return ts_energy_train, ts_energy_val
+    # extract future covariates including temperature, solar irradiation and rain duration
+    ts_weather = ts_energy[["T [°C]", "StrGlo [W/m2]", "RainDur [min]"]]
+
+    # extract target households energy consumption
+    ts_energy = ts_energy[:input_chunk_length][["Value_NE5", "Value_NE7"]]
+    return ts_energy, ts_other, ts_weather
 
 
 def generate_series(n_variables: int, length: int, prefix: str):
@@ -69,7 +74,7 @@ class TestTimesFM3Model:
 
     # ---- Fidelity Tests ---- #
     # load validation inputs once for fidelity tests
-    ts_energy_train, ts_energy_val = load_validation_inputs()
+    ts_energy_train, ts_other, ts_weather = load_validation_inputs()
     # maximum context length of the model
     max_context_length = 15360
     # maximum prediction length supported in Darts (upstream has no hard limit,
@@ -110,20 +115,24 @@ class TestTimesFM3Model:
 
         ```python
         import numpy as np
-        import pandas as pd
-
-        from darts.datasets import ElectricityConsumptionZurichDataset
         from timesfm3 import ModelConfig, TimesFM3Forecaster
+        from darts.datasets import ElectricityConsumptionZurichDataset
 
         # adapted from `20-SKLearnModel-examples` notebook
         ts_energy = ElectricityConsumptionZurichDataset().load().astype(np.float32)
+        input_chunk_length, prediction_length = 2048, 1024
+        ts_energy = ts_energy[:input_chunk_length + prediction_length]
 
-        # extract households energy consumption
-        ts_energy = ts_energy[["Value_NE5", "Value_NE7"]]
+        # extract past covariates including humidity, wind direction, wind speed and air pressure
+        ts_other = ts_energy[:input_chunk_length][
+            ["Hr [%Hr]", "WD [°]", "WVs [m/s]", "WVv [m/s]", "p [hPa]"]
+        ]
 
-        # create train and validation splits
-        validation_cutoff = pd.Timestamp("2022-01-01")
-        ts_energy_train, ts_energy_val = ts_energy.split_after(validation_cutoff)
+        # extract future covariates including temperature, solar irradiation and rain duration
+        ts_weather = ts_energy[["T [°C]", "StrGlo [W/m2]", "RainDur [min]"]]
+
+        # extract target households energy consumption
+        ts_energy = ts_energy[:input_chunk_length][["Value_NE5", "Value_NE7"]]
 
         # load TimesFM 3.0 forecaster with the original implementation
         forecaster = TimesFM3Forecaster(
@@ -131,12 +140,13 @@ class TestTimesFM3Model:
         )
 
         # forecast with a multivariate context of the two energy consumption series,
-        # truncated to the last 1024 points to match the Darts `input_chunk_length`
-        context = ts_energy_train.values().T[:, -1024:].astype(np.float32)
+        # including past and future covariates
         out = list(
             forecaster.predict_batch(
-                contexts=[context],
-                horizon=128,
+                contexts=[ts_energy.values().T],
+                past_only_covariates=[ts_other.values().T],
+                past_future_covariates=[ts_weather.values().T],
+                horizon=prediction_length,
                 return_quantiles=True,
                 sort_quantiles=False,
             )
@@ -145,7 +155,7 @@ class TestTimesFM3Model:
         # convert to numpy array with shape (time, variables, quantiles)
         quantile_forecast = out.quantiles.transpose(1, 0, 2)
 
-        # save quantiles to a npz file
+        # save quantiles to a npz fil
         np.savez_compressed("timesfm3.npz", pred=quantile_forecast)
         ```
 
@@ -153,10 +163,11 @@ class TestTimesFM3Model:
         on 8th September 2026.
 
         """
+        prediction_length = 1024
         # load model
         model = TimesFM3Model(
-            input_chunk_length=1024,  # context length used to generate the reference
-            output_chunk_length=128,  # prevent auto-regressive forecasting
+            input_chunk_length=2048,  # context length used to generate the reference
+            output_chunk_length=prediction_length,  # prevent auto-regressive forecasting
             accept_license=True,
             likelihood=(
                 QuantileRegression(quantiles=all_quantiles) if probabilistic else None
@@ -164,16 +175,24 @@ class TestTimesFM3Model:
             **tfm_kwargs,
         )
         # fit model w/o fine-tuning
-        model.fit(series=self.ts_energy_train)
+        model.fit(
+            series=self.ts_energy_train,
+            past_covariates=self.ts_other,
+            future_covariates=self.ts_weather,
+        )
 
         # predict on the validation inputs
         pred = model.predict(
-            n=128,
+            n=prediction_length,
+            past_covariates=self.ts_other,
+            future_covariates=self.ts_weather,
             predict_likelihood_parameters=probabilistic,
         )
         assert isinstance(pred, TimeSeries)
         # reshape to (time, variables, quantiles)
-        pred_np = pred.values().reshape(128, self.ts_energy_train.n_components, -1)
+        pred_np = pred.values().reshape(
+            prediction_length, self.ts_energy_train.n_components, -1
+        )
 
         # load the original predictions
         path = (
