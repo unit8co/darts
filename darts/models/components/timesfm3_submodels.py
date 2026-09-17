@@ -38,8 +38,8 @@ Adapted for Darts with custom `PLForecastingModule` and `FoundationModel` integr
   `TimesFM3Forecaster`: missing values are handled through the masking logic of `decode()`.
 - Only the `identity` input transformation is supported (the one used by the released
   checkpoint).
-- Support the `swiglu` feed-forward activation (mapped to plain SiLU, matching the released
-  `timesfm` PyPI package, which implements no gated FFN in its PyTorch backend). This keeps
+- `swiglu` feed-forward activation is mapped to plain SiLU, matching the released
+  `timesfm` PyPI package, which implements no gated FFN in its PyTorch backend. This keeps
   configurations of checkpoints published with earlier `timesfm` releases loadable.
 - Configurations can be built directly from the dictionaries stored in the HuggingFace
   `config.json` using `build_residual_block_config()` and `build_stacked_transformers_config()`.
