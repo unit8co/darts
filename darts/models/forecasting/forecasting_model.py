@@ -919,6 +919,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "must be passed to `historical_forecasts()`."
                 )
             )
+        # when covariates are provided, they must cover the entire `series` time range,
+        # otherwise the lagged-data machinery fails deep in the call stack with cryptic
+        # errors (e.g. ``TypeError`` or a misleading "0 time steps" ``ValueError``).
+        self._check_covariates_span_series(series, past_covariates, future_covariates)
         sample_weight = (
             sample_weight
             if isinstance(sample_weight, str)
@@ -1264,6 +1268,63 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         else:
             forecasts = forecasts_list
         return series2seq(forecasts, seq_type_out=sequence_type_in)
+
+    def _check_covariates_span_series(
+        self,
+        series: Sequence[TimeSeries],
+        past_covariates: Sequence[TimeSeries] | None,
+        future_covariates: Sequence[TimeSeries] | None,
+    ) -> None:
+        """Raise a clear error when provided covariates do not cover the series' time range.
+
+        Missing covariates are handled separately (see :meth:`historical_forecasts`). This helper
+        only validates the time span of covariates that were actually passed, so that a user who
+        supplies too-short or too-late covariates gets an actionable message instead of a cryptic
+        ``TypeError``/``ValueError`` raised deep inside the lagged-data machinery.
+        """
+
+        def _cov_at(covs, idx):
+            if covs is None:
+                return None
+            if len(covs) == 1:
+                return covs[0]
+            if len(covs) == len(series):
+                return covs[idx]
+            return None
+
+        for idx, ts in enumerate(series):
+            label = f" (series at index {idx})" if len(series) > 1 else ""
+            for name, covs, used in (
+                ("past_covariates", past_covariates, self.uses_past_covariates),
+                (
+                    "future_covariates",
+                    future_covariates,
+                    self.uses_future_covariates,
+                ),
+            ):
+                if not used:
+                    continue
+                cov = _cov_at(covs, idx)
+                if cov is None:
+                    continue
+                if cov.start_time() > ts.start_time():
+                    raise_log(
+                        ValueError(
+                            f"The model was trained with {name}. The provided `{name}`{label} "
+                            f"start at {cov.start_time()}, after the `series` start at "
+                            f"{ts.start_time()}. `{name}` must cover the entire `series` "
+                            "time range."
+                        )
+                    )
+                if cov.end_time() < ts.end_time():
+                    raise_log(
+                        ValueError(
+                            f"The model was trained with {name}. The provided `{name}`{label} "
+                            f"end at {cov.end_time()}, before the `series` end at "
+                            f"{ts.end_time()}. `{name}` must cover the entire `series` "
+                            "time range."
+                        )
+                    )
 
     def backtest(
         self,

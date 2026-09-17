@@ -1136,6 +1136,54 @@ class TestBacktesting:
             "must be passed to `historical_forecasts()`."
         )
 
+    def test_backtest_covariates_too_short(self):
+        """`backtest()`/`historical_forecasts()` should raise a clear error when the provided
+        `future_covariates` end before the `series` (previously a cryptic ``ValueError``)."""
+        series = AirPassengersDataset().load().astype("float32")
+        features = TimeSeries.from_times_and_values(
+            series.time_index, np.arange(len(series)).reshape(-1, 1).astype("float32")
+        )
+        model = LinearRegressionModel(
+            lags=6, lags_future_covariates=(0, 1), output_chunk_length=1
+        )
+        model.fit(series, future_covariates=features)
+
+        too_short = features[:10]
+        bt_kwargs = {"start": 0.7, "forecast_horizon": 1, "retrain": False}
+        with pytest.raises(ValueError) as msg:
+            model.backtest(series=series, future_covariates=too_short, **bt_kwargs)
+        assert "must cover the entire `series` time range" in str(msg.value)
+
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(
+                series=series, future_covariates=too_short, **bt_kwargs
+            )
+        assert "must cover the entire `series` time range" in str(msg.value)
+
+    def test_backtest_covariates_start_too_late(self):
+        """`backtest()`/`historical_forecasts()` should raise a clear error when the provided
+        `future_covariates` start after the `series` (previously a cryptic ``TypeError``)."""
+        series = AirPassengersDataset().load().astype("float32")
+        features = TimeSeries.from_times_and_values(
+            series.time_index, np.arange(len(series)).reshape(-1, 1).astype("float32")
+        )
+        model = LinearRegressionModel(
+            lags=6, lags_future_covariates=(0, 1), output_chunk_length=1
+        )
+        model.fit(series, future_covariates=features)
+
+        too_late = features[-30:]
+        bt_kwargs = {"start": 0.7, "forecast_horizon": 1, "retrain": False}
+        with pytest.raises(ValueError) as msg:
+            model.backtest(series=series, future_covariates=too_late, **bt_kwargs)
+        assert "must cover the entire `series` time range" in str(msg.value)
+
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(
+                series=series, future_covariates=too_late, **bt_kwargs
+            )
+        assert "must cover the entire `series` time range" in str(msg.value)
+
     def test_gridsearch(self):
         np.random.seed(1)
 
