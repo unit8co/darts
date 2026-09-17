@@ -11,9 +11,20 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Improvements to `TorchForecastingModel` : [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader).
+  - 🚀🚀 ONNX export and inference are substantially more capable: train a model in PyTorch, export it once, then run forecasts in a lightweight environment with only ONNX Runtime, NumPy, and Darts — no PyTorch required. `run_onnx_prediction()` mirrors `predict()` (including auto-regressive horizons and RNN warm-up); `RNNModel` and probabilistic models are now supported as well.
+    - 🔴 Removed `darts.utils.onnx_utils`; use `darts.utils.onnx.inference` instead. Custom ONNX loops should load graph metadata via `OnnxModelSpec.from_session()`.
+  - Custom PyTorch datasets and Lightning modules are easier to read, extend, and debug: samples use named fields (`past_target`, `future_covariates`, ...) instead of positional tuples, modules receive each feature as a separate tensor rather than one concatenated input, and recurrent state is returned in a structured output. Models saved with previous Darts versions continue to load for inference.
+    - 🔴 Custom `TorchTrainingDataset` / `TorchInferenceDataset` implementations must return `TorchTrainingSample` / `TorchInferenceSample`.
+    - 🔴 Custom module `forward()` methods must accept `PLModuleInput` and return `PLModuleOutput`.
+
 **Fixed**
 
+- Fixed autoregressive `TorchForecastingModel.predict()` with `roll_size < output_chunk_length` and future covariates, where the first step passed too few future covariate values to the model. [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader).
+
 **Dependencies**
+
+- 🔴 Python version update: Removed support for Python 3.10. The new minimum Python version is 3.11. [#3206](https://github.com/unit8co/darts/pull/3206) by [Dennis Bader](https://github.com/dennisbader).
 
 ### For developers of the library:
 

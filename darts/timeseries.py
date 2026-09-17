@@ -46,14 +46,13 @@ import json
 import math
 import pickle
 import re
-import sys
 from collections import defaultdict
 from collections.abc import Callable, Sequence
 from copy import deepcopy
 from inspect import signature
 from io import StringIO
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, Self
 
 import narwhals as nw
 import numpy as np
@@ -80,11 +79,6 @@ from darts.utils.utils import (
     infer_freq_intersection,
     n_steps_between,
 )
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
 
 if TYPE_CHECKING:
     import matplotlib.axes

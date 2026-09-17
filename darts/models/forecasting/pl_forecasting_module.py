@@ -19,10 +19,12 @@ import torchmetrics
 from darts.logging import raise_log
 from darts.models.components.layer_norm_variants import RINorm
 from darts.utils.data.torch_datasets.utils import (
+    ModuleStage,
     PLModuleInput,
-    TorchBatch,
+    PLModuleOutput,
     TorchInferenceBatch,
     TorchTrainingBatch,
+    _normalize_train_sample_shape,
 )
 from darts.utils.likelihood_models.torch import TorchLikelihood
 from darts.utils.torch import MonteCarloDropout
@@ -38,7 +40,7 @@ def io_processor(forward):
     .. code-block:: python
 
         @io_processor
-        def forward(self, *args, **kwargs)
+        def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
             pass
     ..
 
@@ -53,22 +55,11 @@ def io_processor(forward):
         if not self.use_reversible_instance_norm:
             return forward(self, x_in, *args, **kwargs)
 
-        # `x_in` is input batch tuple which by definition has the past features in the first element
-        # starting with the first n target features; clone it to prevent target re-normalization
-        past_features = x_in[0].clone()
-        # apply reversible instance normalization
-        past_features[:, :, : self.n_targets] = self.rin(
-            past_features[:, :, : self.n_targets]
-        )
-        # run the forward pass
-        out = forward(self, *((past_features, *x_in[1:]), *args), **kwargs)
+        # apply reversible instance normalization to past target only; clone to prevent re-normalization
+        x_in = x_in.replace(past_target=self.rin(x_in.past_target.clone()))
+        out = forward(self, x_in, *args, **kwargs)
         # inverse transform target output back to original scale
-        if isinstance(out, tuple):
-            # RNNModel return tuple with hidden state
-            return self.rin.inverse(out[0]), *out[1:]
-        else:
-            # all other models return only the prediction
-            return self.rin.inverse(out)
+        return out.replace(prediction=self.rin.inverse(out.prediction))
 
     return forward_wrapper
 
@@ -80,7 +71,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        train_sample_shape: tuple | None = None,
+        train_sample_shape: dict[str, tuple | None] | tuple | None = None,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
         torch_metrics: torchmetrics.Metric
         | torchmetrics.MetricCollection
@@ -102,9 +93,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         - :func:`PLForecastingModule.__init__()`
         - :func:`PLForecastingModule.forward()`
-        - :func:`PLForecastingModule._process_input_batch()`
-        - :func:`PLForecastingModule._produce_train_output()`
-        - :func:`PLForecastingModule._get_batch_prediction()`
 
         In subclass `MyModel`'s :func:`__init__` function call ``super(MyModel, self).__init__(**kwargs)`` where
         ``kwargs`` are the parameters of :class:`PLForecastingModule`.
@@ -180,10 +168,12 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.likelihood = likelihood
 
         # saved in checkpoint to be able to instantiate a model without calling fit_from_dataset
-        self.train_sample_shape = train_sample_shape
-        self.n_targets = (
-            train_sample_shape[0][1] if train_sample_shape is not None else 1
-        )
+        self.train_sample_shape = _normalize_train_sample_shape(train_sample_shape)
+        if self.train_sample_shape is not None:
+            past_shape = self.train_sample_shape.get("past_target")
+            self.n_targets = past_shape[1] if past_shape is not None else 1
+        else:
+            self.n_targets = 1
 
         # persist optimiser and LR scheduler parameters
         self.optimizer_cls = optimizer_cls
@@ -215,32 +205,31 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.predict_likelihood_parameters: bool | None = None
         self.pred_mc_dropout: bool | None = None
 
-    @property
-    def first_prediction_index(self) -> int:
-        """
-        Returns the index of the first predicted within the output of self.model.
-        """
-        return 0
-
     @abstractmethod
-    def forward(self, x_in: PLModuleInput, *args, **kwargs) -> Any:
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
         """Same as :meth:`torch.nn.Module.forward`.
 
         Parameters
         ----------
         x_in
-            ``(x_past, x_future, x_static, future_target)`` the past, future, and static features, as well as
-            the future target.
-        *args
-            Whatever you decide to pass into the forward method.
-        **kwargs
-            Keyword arguments are also possible.
+            Named module input with independent past, future, and static tensors.
+            Recurrent / cached values from a previous call are in ``x_in.state``.
+            ``x_in.stage`` is the loop role (train / validate / predict); branch on
+            it instead of ``self.trainer``. Keep ``self.training`` for dropout /
+            BatchNorm.
 
         Returns
         -------
-        Any
-            The module's output.
+        PLModuleOutput
+            Named module output. ``prediction`` is the forecast / likelihood-parameter
+            tensor; ``state`` is carried to the next ``forward`` as ``PLModuleInput.state``.
         """
+
+    def _onnx_wrapper(self, input_sample: PLModuleInput):
+        """Build the generic ONNX export wrapper (features in, ``prediction`` out)."""
+        from darts.utils.onnx.export import _prepare_onnx_export
+
+        return _prepare_onnx_export(self, input_sample)
 
     def training_step(
         self, train_batch: TorchTrainingBatch, batch_idx: int
@@ -248,7 +237,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         """performs the training step"""
         return self._train_val_step(
             batch=train_batch,
-            name="train",
+            stage=ModuleStage.TRAIN,
             criterion=self.train_criterion,
             metrics=self.train_metrics,
         )
@@ -259,7 +248,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         """performs the validation step"""
         return self._train_val_step(
             batch=val_batch,
-            name="val",
+            stage=ModuleStage.VALIDATE,
             criterion=self.val_criterion,
             metrics=self.val_metrics,
         )
@@ -267,40 +256,23 @@ class PLForecastingModule(pl.LightningModule, ABC):
     def _train_val_step(
         self,
         batch: TorchTrainingBatch,
-        name: str,
+        stage: ModuleStage,
         criterion,
         metrics,
     ) -> torch.Tensor:
         """performs a training or validation step"""
-        (
-            past_target,
-            past_covariates,
-            historic_future_covariates,
-            future_covariates,
-            static_covariates,
-            sample_weight,
-            future_target,
-        ) = batch
-
-        output = self._produce_train_output(
-            (
-                past_target,
-                past_covariates,
-                historic_future_covariates,
-                future_covariates,
-                static_covariates,
-                future_target if name == "train" else None,
-            ),
+        output = self(batch.to_module_input(stage=stage))
+        loss = self._compute_loss(
+            output, batch.future_target, criterion, batch.sample_weight
         )
-        loss = self._compute_loss(output, future_target, criterion, sample_weight)
         self.log(
-            f"{name}_loss",
+            f"{stage.value}_loss",
             loss,
-            batch_size=past_target.shape[0],
+            batch_size=batch.past_target.shape[0],
             prog_bar=True,
             sync_dist=True,
         )
-        self._update_metrics(output, future_target, metrics)
+        self._update_metrics(output, batch.future_target, metrics)
         return loss
 
     def on_fit_end(self) -> None:
@@ -339,24 +311,15 @@ class PLForecastingModule(pl.LightningModule, ABC):
         """performs the prediction step
 
         batch
-            output of Darts' :class:`TorchInferenceDataset` - tuple of ``(past target, past cov,
-            future past cov, historic future cov, future cov, static cov, target series schema,
-            prediction start time step)``
+            Collated :class:`~darts.utils.data.torch_datasets.utils.TorchInferenceBatch` from
+            Darts' :class:`TorchInferenceDataset`.
         batch_idx
             the batch index of the current batch
         dataloader_idx
             the dataloader index
         """
-        # batch has elements (past target, past cov, future past cov, historic future cov, future cov,
-        # static cov, target series schema, pred start time)
-        input_data_tuple, batch_series_schemas, batch_pred_starts = (
-            batch[:-2],
-            batch[-2],
-            batch[-1],
-        )
-
         # number of individual series to be predicted in current batch
-        num_series = input_data_tuple[0].shape[0]
+        num_series = batch.past_target.shape[0]
 
         # number of times the input tensor should be tiled to produce predictions for multiple samples
         # this variable is larger than 1 only if the batch_size is at least twice as large as the number
@@ -376,14 +339,12 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 batch_sample_size = self.pred_num_samples - sample_count
 
             # stack multiple copies of the tensors to produce probabilistic forecasts
-            input_data_tuple_samples = self._sample_tiling(
-                input_data_tuple, batch_sample_size
-            )
+            input_batch_samples = batch.tile_tensors(batch_sample_size)
 
             # get predictions for 1 whole batch (can include predictions of multiple series
             # and for multiple samples if a probabilistic forecast is produced)
             batch_prediction = self._get_batch_prediction(
-                self.pred_n, input_data_tuple_samples, self.pred_roll_size
+                self.pred_n, input_batch_samples, self.pred_roll_size
             )
 
             # reshape from 3d tensor (num_series x batch_sample_size, ...)
@@ -405,8 +366,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
         batch_predictions = torch.cat(batch_predictions, dim=0)
         return (
             batch_predictions,
-            batch_series_schemas,
-            batch_pred_starts,
+            batch.series_schema,
+            batch.pred_time,
         )
 
     def set_predict_parameters(
@@ -426,37 +387,39 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.predict_likelihood_parameters = predict_likelihood_parameters
         self.pred_mc_dropout = mc_dropout
 
-    def _compute_loss(self, output, target, criterion, sample_weight):
-        # output is of shape (batch_size, n_timesteps, n_components, n_params)
+    def _compute_loss(self, output: PLModuleOutput, target, criterion, sample_weight):
+        # prediction is of shape (batch_size, n_timesteps, n_components, n_params)
+        prediction = output.prediction
         if self.likelihood:
-            loss = self.likelihood.compute_loss(output, target, sample_weight)
+            loss = self.likelihood.compute_loss(prediction, target, sample_weight)
         else:
             # If there's no likelihood, nr_params=1, and we need to squeeze out the
-            # last dimension of model output, for properly computing the loss.
-            loss = criterion(output.squeeze(dim=-1), target)
+            # last dimension of model prediction, for properly computing the loss.
+            loss = criterion(prediction.squeeze(dim=-1), target)
             if sample_weight is not None:
                 loss = (loss * sample_weight).mean()
         return loss
 
-    def _update_metrics(self, output, target, metrics):
+    def _update_metrics(self, output: PLModuleOutput, target: torch.Tensor, metrics):
         if not len(metrics):
             return
 
+        prediction = output.prediction
         if self.likelihood:
-            pred = self.likelihood.sample(output)
+            prediction = self.likelihood.sample(prediction)
         else:
             # If there's no likelihood, nr_params=1, and we need to squeeze out the
-            # last dimension of model output, for properly computing the metric.
-            pred = output.squeeze(dim=-1)
+            # last dimension of model prediction, for properly computing the metric.
+            prediction = prediction.squeeze(dim=-1)
 
         # torch metrics require 2D targets of shape (batch size * ocl, num targets)
         # contiguous() is needed because model outputs can be non-contiguous views
         # (e.g. NBEATS slices the last dimension), and some torchmetrics implementations
         # call .view() internally which requires a contiguous tensor.
         target = target.reshape(-1, self.n_targets).contiguous()
-        pred = pred.reshape(-1, self.n_targets).contiguous()
+        prediction = prediction.reshape(-1, self.n_targets).contiguous()
 
-        metrics.update(pred, target)
+        metrics.update(prediction, target)
 
     def _compute_metrics(self, metrics):
         if not len(metrics):
@@ -524,62 +487,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
         else:
             return optimizer
 
-    def _produce_train_output(self, input_batch: TorchBatch):
-        """Generates train output.
-
-        Feeds `PLForecastingModule` with (past target + past cov + historic future cov (concatenated), future cov,
-        static cov)
-
-        Parameters
-        ----------
-        input_batch
-            ``(past target, past cov, historic future cov, future cov, static cov, future target)``.
-        """
-        return self(self._process_input_batch(input_batch))
-
-    def _process_input_batch(self, input_batch: TorchBatch) -> PLModuleInput:
-        """Processes module input batch.
-
-        Converts output of a dataset into a tuple of tensors (past target + past cov + historic future cov
-        (concatenated), future cov, static cov)
-
-        Parameters
-        ----------
-        input_batch
-            ``(past target, past cov, historic future cov, future cov, static cov, future target)``.
-
-        Returns
-        -------
-        tuple
-            ``(x_past, x_future, x_static, future_target)`` the past, future, and static features, as well as
-            the future target.
-        """
-        (
-            past_target,
-            past_covariates,
-            historic_future_covariates,
-            future_covariates,
-            static_covariates,
-            future_target,
-        ) = input_batch
-        dim_comp = 2
-
-        x_past = torch.cat(
-            [
-                tensor
-                for tensor in [
-                    past_target,
-                    past_covariates,
-                    historic_future_covariates,
-                ]
-                if tensor is not None
-            ],
-            dim=dim_comp,
-        )
-        return x_past, future_covariates, static_covariates, future_target
-
     def _get_batch_prediction(
-        self, n: int, input_batch: tuple[torch.Tensor | None, ...], roll_size: int
+        self, n: int, input_batch: TorchInferenceBatch, roll_size: int
     ) -> torch.Tensor:
         """Generates batch predictions.
 
@@ -591,48 +500,40 @@ class PLForecastingModule(pl.LightningModule, ABC):
         n
             prediction length
         input_batch
-            (past target, past cov, future past cov, historic future cov, future cov, static cov)
+            Collated inference batch (tensors may already be tiled for multi-sample prediction).
         roll_size
             roll input arrays after every sequence by ``roll_size``. Initially, ``roll_size`` is equivalent to
             ``self.output_chunk_length``
         """
 
-        dim_component = 2
-        (
-            past_target,
-            past_covariates,
-            future_past_covariates,
-            historic_future_covariates,
-            future_covariates,
-            static_covariates,
-        ) = input_batch
+        past_target = input_batch.past_target
+        past_covariates = input_batch.past_covariates
+        future_past_covariates = input_batch.future_past_covariates
+        historic_future_covariates = input_batch.historic_future_covariates
+        future_covariates = input_batch.future_covariates
+        static_covariates = input_batch.static_covariates
 
-        n_targets = past_target.shape[dim_component]
-        n_past_covs = (
-            past_covariates.shape[dim_component] if past_covariates is not None else 0
-        )
-        n_future_covs = (
-            future_covariates.shape[dim_component]
+        def _build_pl_input(future_cov_slice, state=None):
+            return PLModuleInput(
+                past_target=past_target,
+                past_covariates=past_covariates,
+                historic_future_covariates=historic_future_covariates,
+                future_covariates=future_cov_slice,
+                static_covariates=static_covariates,
+                future_target=None,
+                state=state,
+                stage=ModuleStage.PREDICT,
+            )
+
+        future_cov_slice = (
+            future_covariates[:, : self.output_chunk_length, :]
             if future_covariates is not None
-            else 0
+            else None
         )
-
-        input_past, input_future, input_static, _ = self._process_input_batch((
-            past_target,
-            past_covariates,
-            historic_future_covariates,
-            (
-                future_covariates[:, :roll_size, :]
-                if future_covariates is not None
-                else None
-            ),
-            static_covariates,
-            None,  # future target
-        ))
-
-        out = self._produce_predict_output(
-            x=(input_past, input_future, input_static, None)
-        )[:, self.first_prediction_index :, :]
+        pl_input = _build_pl_input(future_cov_slice)
+        module_out = self._produce_predict_output(x=pl_input)
+        out = module_out.prediction
+        state = module_out.state
 
         batch_prediction = [out[:, :roll_size, :]]
         prediction_length = roll_size
@@ -651,15 +552,20 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 prediction_length -= spillover_prediction_length
                 batch_prediction[-1] = batch_prediction[-1][:, :roll_size, :]
 
-            # ==========> PAST INPUT <==========
-            # roll over input series to contain the latest target and covariates
-            input_past = torch.roll(input_past, -roll_size, 1)
+            # roll over past input tensors to contain the latest target and covariates
+            past_target = torch.roll(past_target, -roll_size, 1)
+            if past_covariates is not None:
+                past_covariates = torch.roll(past_covariates, -roll_size, 1)
+            if historic_future_covariates is not None:
+                historic_future_covariates = torch.roll(
+                    historic_future_covariates, -roll_size, 1
+                )
 
             # update target input to include next `roll_size` predictions
             if self.input_chunk_length >= roll_size:
-                input_past[:, -roll_size:, :n_targets] = out[:, :roll_size, :]
+                past_target[:, -roll_size:, :] = out[:, :roll_size, :]
             else:
-                input_past[:, :, :n_targets] = out[:, -self.input_chunk_length :, :]
+                past_target[:, :, :] = out[:, -self.input_chunk_length :, :]
 
             # set left and right boundaries for extracting future elements
             if self.input_chunk_length >= roll_size:
@@ -671,38 +577,41 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 )
 
             # update past covariates to include next `roll_size` future past covariates elements
-            if n_past_covs and self.input_chunk_length >= roll_size:
-                input_past[:, -roll_size:, n_targets : n_targets + n_past_covs] = (
-                    future_past_covariates[:, left_past:right_past, :]
-                )
-            elif n_past_covs:
-                input_past[:, :, n_targets : n_targets + n_past_covs] = (
-                    future_past_covariates[:, left_past:right_past, :]
-                )
+            if past_covariates is not None and future_past_covariates is not None:
+                if self.input_chunk_length >= roll_size:
+                    past_covariates[:, -roll_size:, :] = future_past_covariates[
+                        :, left_past:right_past, :
+                    ]
+                else:
+                    past_covariates[:, :, :] = future_past_covariates[
+                        :, left_past:right_past, :
+                    ]
 
             # update historic future covariates to include next `roll_size` future covariates elements
-            if n_future_covs and self.input_chunk_length >= roll_size:
-                input_past[:, -roll_size:, n_targets + n_past_covs :] = (
-                    future_covariates[:, left_past:right_past, :]
-                )
-            elif n_future_covs:
-                input_past[:, :, n_targets + n_past_covs :] = future_covariates[
-                    :, left_past:right_past, :
-                ]
+            if historic_future_covariates is not None and future_covariates is not None:
+                if self.input_chunk_length >= roll_size:
+                    historic_future_covariates[:, -roll_size:, :] = future_covariates[
+                        :, left_past:right_past, :
+                    ]
+                else:
+                    historic_future_covariates[:, :, :] = future_covariates[
+                        :, left_past:right_past, :
+                    ]
 
-            # ==========> FUTURE INPUT <==========
             left_future, right_future = (
                 right_past,
                 right_past + self.output_chunk_length,
             )
-            # update future covariates to include next `roll_size` future covariates elements
-            if n_future_covs:
-                input_future = future_covariates[:, left_future:right_future, :]
+            future_cov_slice = (
+                future_covariates[:, left_future:right_future, :]
+                if future_covariates is not None
+                else None
+            )
 
-            # take only last part of the output sequence where needed
-            out = self._produce_predict_output(
-                x=(input_past, input_future, input_static, None)
-            )[:, self.first_prediction_index :, :]
+            pl_input = _build_pl_input(future_cov_slice, state=state)
+            module_out = self._produce_predict_output(x=pl_input)
+            out = module_out.prediction
+            state = module_out.state
 
             batch_prediction.append(out)
             prediction_length += self.output_chunk_length
@@ -711,18 +620,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
         batch_prediction = torch.cat(batch_prediction, dim=1)
         batch_prediction = batch_prediction[:, :n, :]
         return batch_prediction
-
-    @staticmethod
-    def _sample_tiling(
-        input_data_tuple: tuple[torch.Tensor | None, ...], batch_sample_size
-    ) -> tuple[torch.Tensor | None, ...]:
-        tiled_input_data = []
-        for tensor in input_data_tuple:
-            if tensor is not None:
-                tiled_input_data.append(tensor.tile((batch_sample_size, 1, 1)))
-            else:
-                tiled_input_data.append(None)
-        return tuple(tiled_input_data)
 
     def _get_mc_dropout_modules(self) -> set:
         def recurse_children(children, acc):
@@ -743,15 +640,17 @@ class PLForecastingModule(pl.LightningModule, ABC):
     def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None or len(self._get_mc_dropout_modules()) > 0
 
-    def _produce_predict_output(self, x: PLModuleInput) -> torch.Tensor:
+    def _produce_predict_output(self, x: PLModuleInput) -> PLModuleOutput:
+        output = self(x)
+        prediction = output.prediction
         if self.likelihood:
-            output = self(x)
             if self.predict_likelihood_parameters:
-                return self.likelihood.predict_likelihood_parameters(output)
+                prediction = self.likelihood.predict_likelihood_parameters(prediction)
             else:
-                return self.likelihood.sample(output)
+                prediction = self.likelihood.sample(prediction)
         else:
-            return self(x).squeeze(dim=-1)
+            prediction = prediction.squeeze(dim=-1)
+        return output.replace(prediction=prediction)
 
     def on_save_checkpoint(self, checkpoint: dict[str, Any]) -> None:
         # we must save the dtype for correct parameter precision at loading time
