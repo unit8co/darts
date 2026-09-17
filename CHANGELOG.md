@@ -17,6 +17,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Custom PyTorch datasets and Lightning modules are easier to read, extend, and debug: samples use named fields (`past_target`, `future_covariates`, ...) instead of positional tuples, modules receive each feature as a separate tensor rather than one concatenated input, and recurrent state is returned in a structured output. Models saved with previous Darts versions continue to load for inference.
     - 🔴 Custom `TorchTrainingDataset` / `TorchInferenceDataset` implementations must return `TorchTrainingSample` / `TorchInferenceSample`.
     - 🔴 Custom module `forward()` methods must accept `PLModuleInput` and return `PLModuleOutput`.
+- `FittableAnomalyScorer.fit_from_prediction()` now returns the fitted scorer object similar to `fit()`. [#3202](https://github.com/unit8co/darts/pull/3202) by [Venish Paneliya](https://github.com/VenishPaneliya).
 
 **Fixed**
 
