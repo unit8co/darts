@@ -261,16 +261,6 @@ class TestTimesFM3Model:
                 local_dir=TIMESFM3_TINY_DIR,
             )
 
-        # cannot enable fine-tuning (not supported yet)
-        with pytest.raises(ValueError, match="Fine-tuning is not yet supported"):
-            TimesFM3Model(
-                input_chunk_length=8,
-                output_chunk_length=4,
-                accept_license=True,
-                enable_finetuning=True,
-                local_dir=TIMESFM3_TINY_DIR,
-            )
-
     def test_default(self):
         # default model is deterministic
         model = TimesFM3Model(

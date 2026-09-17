@@ -43,6 +43,7 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.utils.data.torch_datasets.utils import (
     InputChunkLength,
+    ModuleStage,
     PLModuleInput,
     PLModuleOutput,
     TorchTrainingSample,
@@ -83,15 +84,7 @@ class _TimesFM3Module(PLForecastingModule):
         input_transform: str = "identity",
         **kwargs,
     ):
-        # fine-tuning is not supported yet: the PL module would require a
-        # gradient-enabled (non `@torch.no_grad()`) forecast path
         enable_finetuning = kwargs.pop("enable_finetuning", False)
-        if enable_finetuning:
-            raise_log(
-                ValueError(
-                    "Fine-tuning is not yet supported for TimesFM 3.0 in Darts."
-                ),
-            )
         super().__init__(**kwargs)
 
         if quantiles is None:
@@ -196,6 +189,15 @@ class _TimesFM3Module(PLForecastingModule):
         self.user_quantile_indices = [
             self.model_quantiles.index(q) for q in user_quantiles
         ]
+
+        # during fine-tuning, train on ALL pre-trained quantiles to preserve the
+        # full distribution; prediction uses only user-specified quantiles
+        if enable_finetuning:
+            self._finetuning_likelihood = QuantileRegression(quantiles)
+            self._finetuning_quantile_indices = list(range(self.num_quantiles))
+        else:
+            self._finetuning_likelihood = None
+            self._finetuning_quantile_indices = None
 
     def _preprocess(
         self,
@@ -373,7 +375,6 @@ class _TimesFM3Module(PLForecastingModule):
             b, v, n_patches, self.output_patch_len, self.num_quantiles
         )
 
-    @torch.no_grad()
     def _decode(
         self,
         target: torch.Tensor,
@@ -771,10 +772,24 @@ class _TimesFM3Module(PLForecastingModule):
         horizon_logits = horizon_logits[:, :n_targets, :, :]
         # (B, C, T, Q) -> (B, T, C, Q)
         horizon_logits = horizon_logits.permute(0, 2, 1, 3)
-        # select the user-specified quantiles: (B, T, C, N)
-        return PLModuleOutput(
-            prediction=horizon_logits[..., self.user_quantile_indices]
-        )
+
+        # during training (fine-tuning), output all pre-trained quantiles for loss;
+        # during prediction, output only user-specified quantiles
+        if x_in.stage is ModuleStage.TRAIN:
+            quantile_preds = horizon_logits[..., self._finetuning_quantile_indices]
+        else:
+            quantile_preds = horizon_logits[..., self.user_quantile_indices]
+
+        return PLModuleOutput(prediction=quantile_preds)
+
+    def _compute_loss(self, output: PLModuleOutput, target, criterion, sample_weight):
+        if self.training:
+            # compute loss on pre-trained quantiles
+            return self._finetuning_likelihood.compute_loss(
+                output.prediction, target, sample_weight
+            )
+        else:
+            return super()._compute_loss(output, target, criterion, sample_weight)
 
 
 class TimesFM3Model(FoundationModel):
@@ -794,54 +809,52 @@ class TimesFM3Model(FoundationModel):
         accept_license: bool = False,
         likelihood: QuantileRegression | None = None,
         hub_model_name: str = "google/timesfm-3.0-pytorch",
-        hub_model_revision: str | None = "43046b85ec22d584a13f8098c2ed39c889e129c2",
+        hub_model_revision: str | None = None,
         local_dir: str | os.PathLike | None = None,
         **kwargs,
     ):
         """
         TimesFM 3.0 foundation model for zero-shot time series forecasting.
 
-        This is an implementation of Google's TimesFM 3.0 model, ported from
-        `google-research/timesfm <https://github.com/google-research/timesfm>`_ with
-        adaptations to use the Darts API.
+        This is an implementation of Google's TimesFM 3.0 model [1]_, [2]_, ported from
+        `google-research/timesfm <https://github.com/google-research/timesfm>`_ with adaptations to use the Darts API.
 
-        TimesFM 3.0 is a pre-trained foundation model designed for zero-shot forecasting
-        across both short and long horizons. Unlike previous versions, it natively supports
-        multivariate time series (with variate attention), past covariates, and future
-        covariates.
+        TimesFM 3.0 is a pre-trained foundation model designed for zero-shot forecasting across both short and long
+        horizons. Unlike previous versions, it natively supports multivariate time series (with variate attention),
+        past covariates, and future covariates.
 
-        Using this model will automatically download and cache the pre-trained model from
-        HuggingFace Hub
-        (`google/timesfm-3.0-pytorch <https://huggingface.co/google/timesfm-3.0-pytorch>`_).
-        Alternatively, you can specify a local directory containing the model config and
-        weights using the ``local_dir`` parameter.
+        Using this model will automatically download and cache the pre-trained model from HuggingFace Hub
+        (`google/timesfm-3.0-pytorch <https://huggingface.co/google/timesfm-3.0-pytorch>`_). Alternatively, you can
+        specify a local directory containing the model config and weights using the ``local_dir`` parameter.
 
-        By default, the model is deterministic (median forecast only). To enable
-        probabilistic forecasts, pass a
-        :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the
-        ``likelihood`` parameter. It is recommended to call :func:`predict()` with
-        ``predict_likelihood_parameters=True`` or ``num_samples >> 1`` to get meaningful
-        results.
+        By default, this model is deterministic and outputs only the median (0.5 quantile). To enable probabilistic
+        forecasts, pass a :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the
+        ``likelihood`` parameter. The quantiles used must be a subset of those used during TimesFM 3.0 pre-training, see
+        below for details. It is recommended to call :func:`predict()` with ``predict_likelihood_parameters=True``
+        or ``num_samples >> 1`` to get meaningful results.
 
+        .. tip::
+            You can perform full or partial fine-tuning of the model by setting the ``enable_finetuning`` parameter.
+            Read more in the parameter description below and in the `Fine-Tuning Examples
+            <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__.
         .. note::
-            The TimesFM 3.0 pre-trained weights are distributed under the
-            `TimesFM Non-Commercial License v1.0
-            <https://huggingface.co/google/timesfm-3.0-pytorch/blob/main/LICENSE>`_
-            and are restricted to non-commercial, non-production use. You must explicitly
-            acknowledge this license by passing ``accept_license=True`` when constructing
-            the model. The model code is licensed under the Apache-2.0 License.
+            The TimesFM 3.0 pre-trained weights are distributed under the `TimesFM Non-Commercial License v1.0
+            <https://huggingface.co/google/timesfm-3.0-pytorch/blob/main/LICENSE>`_ and are restricted to
+            non-commercial, non-production use. You must explicitly acknowledge this license by passing
+            ``accept_license=True`` when constructing the model. The model code is licensed under the Apache-2.0
+            License.
         .. note::
-            Fine-tuning is not supported yet.
+            The total number of target components and covariates must not exceed 32 (the maximum number of variates
+            supported by the checkpoint).
         .. note::
-            The total number of target components and covariates must not exceed 32 (the
-            maximum number of variates supported by the checkpoint).
+            Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from
+            those obtained using the original implementation when prediction horizon `n` is larger than 1024.
         .. note::
             Zero-shot forecasts match the original implementation when the forecast
             horizon ``n`` is smaller than or equal to ``output_chunk_length``. For longer
-            horizons, Darts auto-regressively applies the model on
-            ``output_chunk_length``-sized chunks, which may produce slightly different
-            results than the original single-pass decoding. Set
-            ``output_chunk_length >= n`` to obtain a single-pass forecast.
+            horizons, Darts auto-regressively applies the model on ``output_chunk_length``-sized chunks, which may
+            produce slightly different results than the original single-pass decoding. Set ``output_chunk_length >= n``
+            to obtain a single-pass forecast.
 
         Parameters
         ----------
@@ -873,15 +886,17 @@ class TimesFM3Model(FoundationModel):
             the quantiles must be a subset of those used during TimesFM 3.0 pre-training:
             [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].
             Default: ``None``, which will make the model deterministic (median quantile only).
+            When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to
+            preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood`` parameter
+            only affects prediction output.
         accept_license
-            Must be set to ``True`` to confirm acceptance of the TimesFM Non-Commercial
-            License v1.0 for the pre-trained weights. Default: ``False``.
+            Must be set to ``True`` to confirm acceptance of the TimesFM Non-Commercial License v1.0 for the
+            pre-trained weights. Default: ``False``.
         hub_model_name
             The model ID on HuggingFace Hub. Default: ``"google/timesfm-3.0-pytorch"``.
         hub_model_revision
-            The model version to use. This can be a branch name, tag name, or commit hash. Default is
-            ``43046b85ec22d584a13f8098c2ed39c889e129c2``, which pins the current version of the
-            ``google/timesfm-3.0-pytorch`` repository.
+            The model version to use. This can be a branch name, tag name, or commit hash. Default is ``None``, which
+            will use the default branch from ``hub_model_name``.
         local_dir
             Optional local directory to load the pre-downloaded model. If specified and the directory is empty, the
             model will be downloaded from HuggingFace Hub and saved to this directory. Default is ``None``, which will
@@ -1010,8 +1025,17 @@ class TimesFM3Model(FoundationModel):
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
         enable_finetuning
-            Not supported for TimesFM 3.0 in Darts. Setting it to anything other than ``None``/``False``
-            will raise an exception.
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         References
         ----------
@@ -1031,7 +1055,7 @@ class TimesFM3Model(FoundationModel):
         >>> model = TimesFM3Model(
         ...     input_chunk_length=12,
         ...     output_chunk_length=6,
-        ...     accept_license=True,
+        ...     accept_license=False,
         ... )
         >>> model.fit(series)
         >>> pred = model.predict(n=6)
@@ -1053,7 +1077,7 @@ class TimesFM3Model(FoundationModel):
         ...     input_chunk_length=12,
         ...     output_chunk_length=6,
         ...     likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
-        ...     accept_license=True,
+        ...     accept_license=False,
         ... )
         >>> model.fit(series)
         >>> pred = model.predict(n=6, predict_likelihood_parameters=True)
@@ -1129,14 +1153,6 @@ class TimesFM3Model(FoundationModel):
                         f"{self._model_quantiles}."
                     ),
                 )
-
-        # fine-tuning is not supported yet
-        if kwargs.get("enable_finetuning", None):
-            raise_log(
-                ValueError(
-                    "Fine-tuning is not yet supported for TimesFM 3.0 in Darts."
-                ),
-            )
 
         super().__init__(**kwargs)
 

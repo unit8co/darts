@@ -414,6 +414,11 @@ class TestFoundationModel:
                 {"hub_model_name": "google/timesfm-2.5-200m-pytorch"},
             ),
             (
+                TimesFM3Model,
+                "output_head.weight",
+                {"local_dir": TIMESFM3_TINY_DIR, "accept_license": True},
+            ),
+            (
                 Chronos2Model,
                 "output_patch_embedding.*",
                 {"hub_model_name": "autogluon/chronos-2-small"},
@@ -961,9 +966,7 @@ class TestVariableInputChunkLength:
                 TimesFM3Model,
                 {"accept_license": True, "local_dir": TIMESFM3_TINY_DIR},
                 contextlib.nullcontext,
-                # fine-tuning (required for load_from_checkpoint) is not
-                # supported yet for TimesFM3
-                False,
+                True,
                 id="TimesFM3",
             ),
         ]
