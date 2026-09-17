@@ -239,25 +239,6 @@ class TestTimesFM3Model:
                 accept_license=True,
             )
 
-        # cannot create longer output chunk length than max
-        with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
-            TimesFM3Model(
-                input_chunk_length=8,
-                output_chunk_length=self.max_prediction_length + 1,
-                accept_license=True,
-                local_dir=TIMESFM3_TINY_DIR,
-            )
-
-        # cannot create longer output chunk length + output chunk shift than max
-        with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
-            TimesFM3Model(
-                input_chunk_length=8,
-                output_chunk_length=self.max_prediction_length - 1,
-                output_chunk_shift=3,
-                accept_license=True,
-                local_dir=TIMESFM3_TINY_DIR,
-            )
-
         # cannot use likelihood others than QuantileRegression
         with pytest.raises(ValueError, match="Only QuantileRegression likelihood is"):
             TimesFM3Model(

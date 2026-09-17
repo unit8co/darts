@@ -2,8 +2,7 @@
 TimesFM 3.0
 -----------
 
-TimesFM 3.0 can be used the same way as other foundation models (e.g. Chronos2), with the
-exception that it natively supports multivariate series as well as past and future covariates.
+TimesFM 3.0 can be used the same way as other foundation models (e.g. Chronos2).
 
 For detailed examples and tutorials, see:
 
@@ -853,9 +852,6 @@ class TimesFM3Model(FoundationModel):
         .. note::
             The total number of target components and covariates must not exceed 32 (the maximum number of variates
             supported by the checkpoint).
-        .. note::
-            Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from
-            those obtained using the original implementation when prediction horizon `n` is larger than 1024.
         .. note::
             Zero-shot forecasts match the original implementation when the forecast
             horizon ``n`` is smaller than or equal to ``output_chunk_length``. For longer
