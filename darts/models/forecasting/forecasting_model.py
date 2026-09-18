@@ -1838,6 +1838,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ),
             )
 
+        for series_ in [series, val_series, past_covariates, future_covariates]:
+            if get_series_seq_type(series_) > SeriesType.SINGLE:
+                raise_log(
+                    ValueError(
+                        "All input series must be single (univariate or multivariate) `TimeSeries`."
+                    ),
+                )
+
         if use_fitted_values:
             if not hasattr(
                 model_class(**{k: v[0] for k, v in parameters.items()}),
