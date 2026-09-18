@@ -19,6 +19,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
     - 🔴 Custom module `forward()` methods must accept `PLModuleInput` and return `PLModuleOutput`.
 - 🚀🚀 Added new forecasting model `TimesFM3Model` : Google's pre-trained 330M-parameter foundation model for zero-shot forecasting. Unlike previous versions, it natively supports multivariate time series, past covariates, and future covariates, and can output deterministic or probabilistic forecasts without training. The TimesFM 3.0 pre-trained weights are non-commercial: users must accept the license with `accept_license=True` when creating the model. [#3199](https://github.com/unit8co/darts/pull/3199) by [JuanCruzC97](https://github.com/JuanCruzC97).
 - `FittableAnomalyScorer.fit_from_prediction()` now returns the fitted scorer object similar to `fit()`. [#3202](https://github.com/unit8co/darts/pull/3202) by [Venish Paneliya](https://github.com/VenishPaneliya).
+- Calling `ForecastingModel.historical_forecasts()` with a `start` value that is later than what is forecastable given the supplied covariates now raises an informative exception. [#3207](https://github.com/unit8co/darts/pull/3207) by [Dennis Bader](https://github.com/dennisbader).
 
 **Fixed**
 
