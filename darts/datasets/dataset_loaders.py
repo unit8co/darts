@@ -136,7 +136,7 @@ class DatasetLoader(ABC):
                 f.write(request.content)
         except Exception as e:
             raise DatasetLoadingException(
-                "Could not download the dataset. Reason:" + e.__repr__()
+                "Could not download the dataset. Reason: " + e.__repr__()
             ) from None
 
         if self._metadata.pre_process_csv_fn is not None:
@@ -160,7 +160,7 @@ class DatasetLoader(ABC):
                         )
         except Exception as e:
             raise DatasetLoadingException(
-                "Could not download the dataset. Reason:" + e.__repr__()
+                "Could not download the dataset. Reason: " + e.__repr__()
             ) from None
 
     @abstractmethod
