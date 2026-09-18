@@ -1444,6 +1444,28 @@ class TestHistoricalforecast:
             assert warning_short not in caplog.text
             assert pred.start_time() == start_expected
 
+    def test_historical_forecasts_start_too_late_with_too_short_covariates(self):
+        """`backtest()`/`historical_forecasts()` should raise a clear error when the provided
+        `future_covariates` end before the `series` (previously a cryptic ``ValueError``)."""
+        series = tg.linear_timeseries(length=20, dtype="float32")
+        covs = series
+        model = LinearRegressionModel(
+            lags=6, lags_future_covariates=(0, 1), output_chunk_length=1
+        )
+        model.fit(series, future_covariates=covs)
+
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(
+                series=series,
+                future_covariates=covs[:10],
+                start=0.7,
+                retrain=False,
+            )
+        assert str(msg.value).startswith(
+            "`start` position `0.7` corresponding to time `2000-01-14 00:00:00` is after "
+            "the last historical forecastable time index `2000-01-10 00:00:00`"
+        )
+
     @pytest.mark.parametrize("config", models_reg_no_cov_cls_kwargs)
     def test_regression_auto_start_multiple_no_cov(self, config):
         # minimum required train length (+1 since sklearn models require 2 samples)
