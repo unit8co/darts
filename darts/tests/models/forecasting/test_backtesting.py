@@ -1319,6 +1319,19 @@ class TestBacktesting:
                 "Model cannot be fit/trained with `future_covariates`."
             )
 
+    def test_gridsearch_multiple_series_raises(self):
+        """`gridsearch` only supports single `TimeSeries` objects"""
+        dummy_series = get_dummy_series(ts_length=20)
+        with pytest.raises(ValueError) as msg:
+            Theta.gridsearch(
+                parameters={"theta": [1, 2]},
+                series=[dummy_series] * 2,
+                forecast_horizon=1,
+            )
+        assert str(msg.value).startswith(
+            "All input series must be single (univariate or multivariate) `TimeSeries`."
+        )
+
     @pytest.mark.parametrize(
         "config",
         param_product([True, False], [True, False]),
