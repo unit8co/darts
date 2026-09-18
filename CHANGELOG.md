@@ -21,10 +21,13 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - 🚀🚀 Added new forecasting model `TimesFM3Model` : Google's pre-trained 330M-parameter foundation model for zero-shot forecasting. Unlike previous versions, it natively supports multivariate time series, past covariates, and future covariates, and can output deterministic or probabilistic forecasts without training. The TimesFM 3.0 pre-trained weights are non-commercial: users must accept the license with `accept_license=True` when creating the model. [#3199](https://github.com/unit8co/darts/pull/3199) by [JuanCruzC97](https://github.com/JuanCruzC97).
 - `FittableAnomalyScorer.fit_from_prediction()` now returns the fitted scorer object similar to `fit()`. [#3202](https://github.com/unit8co/darts/pull/3202) by [Venish Paneliya](https://github.com/VenishPaneliya).
 - Calling `ForecastingModel.historical_forecasts()` with a `start` value that is later than what is forecastable given the supplied covariates now raises an informative exception. [#3207](https://github.com/unit8co/darts/pull/3207) by [Dennis Bader](https://github.com/dennisbader).
+- Calling `ForecastingModel.gridsearch()` with a sequence of `TimeSeries` now raises an informative exception. [#3191](https://github.com/unit8co/darts/pull/3191) by [Geovanny Basantes](https://github.com/COMPUMAX-EC).
 
 **Fixed**
 
+- Fixed dataset downloads failing with a misleading MD5 hash-check error when the source URI returned an HTTP error (e.g. 404); non-2xx responses are now reported as a `DatasetLoadingException` with the HTTP status and reason. [#3201](https://github.com/unit8co/darts/pull/3201) by [webzuweb](https://github.com/webzuweb).
 - Fixed autoregressive `TorchForecastingModel.predict()` with `roll_size < output_chunk_length` and future covariates, where the first step passed too few future covariate values to the model. [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed incorrect return type annotations for several functions in `darts.utils.statistics`. [#3185](https://github.com/unit8co/darts/pull/3185) by [Alejandro Coronado](https://github.com/AlejandroCoronadoN).
 
 **Dependencies**
 

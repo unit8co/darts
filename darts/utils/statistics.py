@@ -452,7 +452,7 @@ def stationarity_tests(
 
 def stationarity_test_kpss(
     ts: TimeSeries, regression: str = "c", nlags: str | int = "auto"
-) -> set:
+) -> tuple:
     """
     Provides Kwiatkowski-Phillips-Schmidt-Shin test for stationarity for a time series,
     using :func:`statsmodels.tsa.stattools.kpss`. See [1]_.
@@ -473,7 +473,7 @@ def stationarity_test_kpss(
 
     Returns
     -------
-    set
+    tuple
         | kpss_stat: The test statistic.
         | pvalue: The p-value of the test. The p-value is interpolated from Table 1 in [2]_,
         | and a boundary point is returned if the test statistic is outside the table of critical values,
@@ -497,7 +497,7 @@ def stationarity_test_adf(
     maxlag: None | int = None,
     regression: str = "c",
     autolag: None | str = "AIC",
-) -> set:
+) -> tuple:
     """
     Provides Augmented Dickey-Fuller unit root test for a time series,
     using :func:`statsmodels.tsa.stattools.adfuller`. See [1]_.
@@ -524,7 +524,7 @@ def stationarity_test_adf(
 
     Returns
     -------
-    set
+    tuple
         | adf: The test statistic.
         | pvalue: MacKinnon's approximate p-value based on [2]_.
         | usedlag: The number of lags used.
@@ -549,7 +549,7 @@ def granger_causality_tests(
     ts_effect: TimeSeries,
     maxlag: int,
     addconst: bool = True,
-) -> None:
+) -> dict:
     """
     Provides four tests for granger non causality of 2 time series using
     :func:`statsmodels.tsa.stattools.grangercausalitytests`.
