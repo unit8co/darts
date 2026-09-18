@@ -189,9 +189,7 @@ class TestDatasetLoader:
         ):
             with pytest.raises(DatasetLoadingException, match="404"):
                 dataset.load()
-        assert not os.path.exists(
-            os.path.join(tmp_dir_dataset, dataset._metadata.name)
-        )
+        assert not os.path.exists(os.path.join(tmp_dir_dataset, dataset._metadata.name))
 
     def test_pre_process_fn(self, tmp_dir_dataset):
         with pytest.raises(DatasetLoadingException):
