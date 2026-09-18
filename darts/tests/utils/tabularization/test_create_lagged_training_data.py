@@ -11,6 +11,7 @@ import pytest
 from darts import TimeSeries
 from darts import concatenate as darts_concatenate
 from darts.logging import raise_log
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.data.tabularization import (
     create_lagged_component_names,
     create_lagged_training_data,
@@ -660,10 +661,7 @@ class TestCreateLaggedTrainingData:
 
     @pytest.mark.parametrize(
         "params",
-        product(
-            ["datetime", "integer"],  # series_type
-            [1, 3],  # stride
-        ),
+        param_product(["datetime", "integer"], [1, 3]),
     )
     def test_lagged_training_data_equal_freq(self, params):
         """
@@ -801,10 +799,7 @@ class TestCreateLaggedTrainingData:
 
     @pytest.mark.parametrize(
         "params",
-        product(
-            ["datetime", "integer"],  # series_type
-            [1, 3],  # stride
-        ),
+        param_product(["datetime", "integer"], [1, 3]),
     )
     def test_lagged_training_data_unequal_freq(self, params):
         """
@@ -931,10 +926,7 @@ class TestCreateLaggedTrainingData:
 
     @pytest.mark.parametrize(
         "params",
-        product(
-            ["datetime", "integer"],  # series_type
-            [1, 3],  # stride
-        ),
+        param_product(["datetime", "integer"], [1, 3]),
     )
     def test_lagged_training_data_method_consistency(self, params):
         """
@@ -1052,12 +1044,7 @@ class TestCreateLaggedTrainingData:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [0, 1, 3],
-            [False, True],
-            ["datetime", "integer"],
-            [1, 3],  # stride
-        ),
+        param_product([0, 1, 3], [False, True], ["datetime", "integer"], [1, 3]),
     )
     def test_lagged_training_data_single_lag_single_component_same_series(self, config):
         """
@@ -1145,7 +1132,7 @@ class TestCreateLaggedTrainingData:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [0, 1, 3],
             [False, True],
             list(itertools.product(["datetime"], ["D", "2D", "ms", "YE"]))
@@ -1255,7 +1242,7 @@ class TestCreateLaggedTrainingData:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [0, 1, 3], [False, True], ["datetime", "integer"], [False, True], [1, 3]
         ),
     )
@@ -1331,7 +1318,7 @@ class TestCreateLaggedTrainingData:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [0, 1, 3], [False, True], ["datetime", "integer"], [False, True], [1, 3]
         ),
     )
@@ -1424,7 +1411,7 @@ class TestCreateLaggedTrainingData:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [0, 1, 3],
             [False, True],
             ["datetime", "integer"],
@@ -1532,7 +1519,7 @@ class TestCreateLaggedTrainingData:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [0, 1, 3],
             [False, True],
             ["datetime", "integer"],
@@ -1639,7 +1626,7 @@ class TestCreateLaggedTrainingData:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [0, 1, 3], [False, True], ["datetime", "integer"], [False, True], [1, 3]
         ),
     )
@@ -1732,12 +1719,8 @@ class TestCreateLaggedTrainingData:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [0, 1, 3],
-            [1, 2],
-            [True, False],
-            ["datetime", "integer"],
-            [1, 3],
+        param_product(
+            [0, 1, 3], [1, 2], [True, False], ["datetime", "integer"], [1, 3]
         ),
     )
     def test_lagged_training_data_comp_wise_lags(self, config):
@@ -2812,7 +2795,7 @@ class TestCreateLaggedTrainingData:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [10, 50],
             [True, False],
             ["linear", "exponential"],
@@ -2863,7 +2846,7 @@ class TestCreateLaggedTrainingData:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [10, 20],
             [True, False],
             [True, False],

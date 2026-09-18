@@ -1,5 +1,4 @@
 import builtins
-import itertools
 from unittest.mock import patch
 
 import numpy as np
@@ -9,6 +8,7 @@ from pandas.tseries.offsets import CustomBusinessDay
 
 from darts import TimeSeries
 from darts.tests.conftest import IPYTHON_AVAILABLE
+from darts.tests.parametrize_helpers import param_product
 from darts.utils import _with_sanity_checks
 from darts.utils.likelihood_models.base import (
     likelihood_component_names,
@@ -749,11 +749,7 @@ class TestUtils:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [1, 2],  # n times
-            [2, 3],  # ndim
-            [1, 2],  # n components
-        ),
+        param_product([1, 2], [2, 3], [1, 2]),
     )
     def test_generate_samples_output(self, config):
         """Tests sample generation from quantiles and quantile predictions for:

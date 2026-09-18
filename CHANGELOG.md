@@ -5,31 +5,61 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.46.1...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.47.0...master)
 
 ### For users of the library:
 
 **Improved**
 
-- Added support for per-timestep (non-aggregated) encoder and decoder variable importances in `TFTExplainer`, exposed as `TimeSeries` via `TFTExplainabilityResult.get_encoder_importance_over_time()` and `get_decoder_importance_over_time()`. [#3170](https://github.com/unit8co/darts/pull/3170) by [exactml](https://github.com/exactml).
-- Calling `TFTModel.fit_from_dataset()` on a dataset that does not have future covariates now raises an informative exception. [#3149](https://github.com/unit8co/darts/pull/3149) by [YOON KIWOONG](https://github.com/kiwoongyoon).
-- 🔴 Percentage and range-based metrics (`ape`, `mape`, `sape`, `smape`, `wmape`, `ope`, `arre`, `marre`, `coefficient_of_variation`) no longer raise a hard `ValueError` when the denominator is exactly zero. A new `zero_division` parameter controls the behavior: [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
-  - `"warn"` (default) raises a warning and returns `0.0` when the numerator is also zero (typically meaning perfect forecasts) or `np.nan` otherwise
-  - `"raise"` preserves the legacy error.
-- Added an optional `min_train_length` parameter to third-party local forecasting models (StatsForecast models such as `StatsForecastingModel`, `AutoETS`, ... and other models such as `ExponentialSmoothing`, `*ARIMA`, `*Theta`, `Prophet`, `FFT`, and `KalmanForecaster`) to override the conservative default minimum training series length and allow fitting on shorter series. Note that lowering this value might raise exceptions from the third-party models themselves if their internal input requirements are not met. [#3167](https://github.com/unit8co/darts/pull/3167) by [Haibin Yu](https://github.com/haiiibin).
+- Improvements to `TorchForecastingModel` : [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader).
+  - 🚀🚀 ONNX export and inference are substantially more capable: train a model in PyTorch, export it once, then run forecasts in a lightweight environment with only ONNX Runtime, NumPy, and Darts — no PyTorch required. `run_onnx_prediction()` mirrors `predict()` (including auto-regressive horizons and RNN warm-up); `RNNModel` and probabilistic models are now supported as well.
+    - 🔴 Removed `darts.utils.onnx_utils`; use `darts.utils.onnx.inference` instead. Custom ONNX loops should load graph metadata via `OnnxModelSpec.from_session()`.
+  - Custom PyTorch datasets and Lightning modules are easier to read, extend, and debug: samples use named fields (`past_target`, `future_covariates`, ...) instead of positional tuples, modules receive each feature as a separate tensor rather than one concatenated input, and recurrent state is returned in a structured output. Models saved with previous Darts versions continue to load for inference.
+    - 🔴 Custom `TorchTrainingDataset` / `TorchInferenceDataset` implementations must return `TorchTrainingSample` / `TorchInferenceSample`.
+    - 🔴 Custom module `forward()` methods must accept `PLModuleInput` and return `PLModuleOutput`.
+- 🚀🚀 Added new forecasting model `TimesFM3Model` : Google's pre-trained 330M-parameter foundation model for zero-shot forecasting. Unlike previous versions, it natively supports multivariate time series, past covariates, and future covariates, and can output deterministic or probabilistic forecasts without training. The TimesFM 3.0 pre-trained weights are non-commercial: users must accept the license with `accept_license=True` when creating the model. [#3199](https://github.com/unit8co/darts/pull/3199) by [JuanCruzC97](https://github.com/JuanCruzC97).
+- `FittableAnomalyScorer.fit_from_prediction()` now returns the fitted scorer object similar to `fit()`. [#3202](https://github.com/unit8co/darts/pull/3202) by [Venish Paneliya](https://github.com/VenishPaneliya).
+- Calling `ForecastingModel.historical_forecasts()` with a `start` value that is later than what is forecastable given the supplied covariates now raises an informative exception. [#3207](https://github.com/unit8co/darts/pull/3207) by [Dennis Bader](https://github.com/dennisbader).
 
 **Fixed**
 
-- Fixed a deprecation warning from `lightgbm>=4.7.0` when training a `LightGBMModel` with validation series. [#3186](https://github.com/unit8co/darts/pull/3186) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed autoregressive `TorchForecastingModel.predict()` with `roll_size < output_chunk_length` and future covariates, where the first step passed too few future covariate values to the model. [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed incorrect return type annotations in `darts.utils.statistics`: `stationarity_test_kpss` and `stationarity_test_adf` now annotate `tuple` (they wrap statsmodels `kpss`/`adfuller`), and `granger_causality_tests` annotates `dict` instead of `None` (matching its docstring). [#3185](https://github.com/unit8co/darts/pull/3185) by [Alejandro Coronado](https://github.com/AlejandroCoronadoN).
-- Fixed `extract_subseries` returning a single `TimeSeries` instead of a `list[TimeSeries]` when the series has no gap under the selected `mode`. [#3184](https://github.com/unit8co/darts/pull/3184) by [Alejandro Coronado](https://github.com/AlejandroCoronadoN).
-- Fixed metrics `arre` and `marre` rejecting an entire input when any component of `actual_series` is constant; the zero-range denominator is now handled element-wise, so an exact prediction yields `0.0` and only undefined entries become `np.nan`. [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
-- Fixed metric `ope` to accept an `actual_series` with a strictly negative sum (the previous `sum > 0` check rejected valid inputs such as financial return series). [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
-- Fixed metric `wmape` docstring which inaccurately claimed it raised on zeros in `actual_series`. [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
 
 **Dependencies**
 
+- 🔴 Python version update: Removed support for Python 3.10. The new minimum Python version is 3.11. [#3206](https://github.com/unit8co/darts/pull/3206) by [Dennis Bader](https://github.com/dennisbader).
+
 ### For developers of the library:
+
+## [0.47.0](https://github.com/unit8co/darts/tree/0.47.0) (2026-09-04)
+
+### For users of the library:
+
+**Improved**
+
+- 🚀🚀 Added MLflow integration to Darts for automated tracking, comparing, and persisting of your Darts forecasting model experiments; including full support for local and global forecasting. [#3022](https://github.com/unit8co/darts/pull/3022) by [Jakub Chłapek](https://github.com/jakubchlapek), [Zhihao Dai](https://github.com/daidahao), [Michel Zeller](https://github.com/mizeller), and [Dennis Bader](https://github.com/dennisbader).
+  - `autolog()` automatically logs everything that is important for experimenting, comparing model runs, and model persistence for later registration and loading of production models: model parameters, model artifacts, rich standalone and backtest metric results, target and covariate series info, as well as PyTorch-related training metrics.
+  - Metrics use shape-aware keys preserving time-, component-, and quantile / label dimensions based on the metric configuration. Depending on the metric and evaluation technique (e.g. `model.backtest()`) we either log aggregated scalar metrics or stepped metrics that track performance over time. Per-series and window-level backtest details are stored in a `metrics_per_series.json` artifact for multi-series / windowed evaluations.
+  - `save_model()`, `load_model()`, and `log_model()` allow to manually persist and load models as MLflow artifacts.
+  - See the [MLflow quickstart notebook](https://unit8co.github.io/darts/examples/29-MLflow-examples.html) for step-by-step examples of going from experimenting to registering and loading production models, and the [API reference](https://unit8co.github.io/darts/generated_api/darts.utils.mlflow.html) for configuration options.
+- Improvements to metrics:
+  - 🔴 Percentage and range-based metrics (`ape`, `mape`, `sape`, `smape`, `wmape`, `ope`, `arre`, `marre`, `coefficient_of_variation`) no longer raise a hard `ValueError` when the denominator is exactly zero. A new `zero_division` parameter controls the behavior: [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
+    - `"warn"` (default) raises a warning and returns `0.0` when the numerator is also zero (typically meaning perfect forecasts) or `np.nan` otherwise
+    - `"raise"` preserves the legacy error.
+- Improvements to model explainability:
+  - Added support for per-timestep (non-aggregated) encoder and decoder variable importances in `TFTExplainer`, exposed as `TimeSeries` via `TFTExplainabilityResult.get_encoder_importance_over_time()` and `get_decoder_importance_over_time()`. [#3170](https://github.com/unit8co/darts/pull/3170) by [exactml](https://github.com/exactml).
+- Improvements to forecasting models:
+  - Added an optional `min_train_length` parameter to third-party local forecasting models (StatsForecast models such as `StatsForecastingModel`, `AutoETS`, ... and other models such as `ExponentialSmoothing`, `*ARIMA`, `*Theta`, `Prophet`, `FFT`, and `KalmanForecaster`) to override the conservative default minimum training series length and allow fitting on shorter series. Note that lowering this value might raise exceptions from the third-party models themselves if their internal input requirements are not met. [#3167](https://github.com/unit8co/darts/pull/3167) by [Haibin Yu](https://github.com/haiiibin).
+  - Calling `TFTModel.fit_from_dataset()` on a dataset that does not have future covariates now raises an informative exception. [#3149](https://github.com/unit8co/darts/pull/3149) by [YOON KIWOONG](https://github.com/kiwoongyoon).
+
+**Fixed**
+
+- Fixed metrics `arre` and `marre` rejecting an entire input when any component of `actual_series` is constant; the zero-range denominator is now handled element-wise, so an exact prediction yields `0.0` and only undefined entries become `np.nan`. [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
+- Fixed metric `ope` to accept an `actual_series` with a strictly negative sum (the previous `sum > 0` check rejected valid inputs such as financial return series). [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
+- Fixed metric `wmape` docstring which inaccurately claimed it raised on zeros in `actual_series`. [#3122](https://github.com/unit8co/darts/pull/3122) by [Mahimn](https://github.com/mahimn01).
+- Fixed `extract_subseries` returning a single `TimeSeries` instead of a `list[TimeSeries]` when the series has no gap under the selected `mode`. [#3184](https://github.com/unit8co/darts/pull/3184) by [Alejandro Coronado](https://github.com/AlejandroCoronadoN).
+- Fixed a deprecation warning from `lightgbm>=4.7.0` when training a `LightGBMModel` with validation series. [#3186](https://github.com/unit8co/darts/pull/3186) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.46.1](https://github.com/unit8co/darts/tree/0.46.1) (2026-07-20)
 

@@ -256,6 +256,16 @@ Explainability example notebook showcasing the use of Darts' explainability modu
 
    examples/28-Explainability-examples.ipynb
 
+MLflow Integration
+==================
+
+MLflow integration example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/29-MLflow-examples.ipynb
+
 Kalman Filter Model
 ===================
 

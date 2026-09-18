@@ -34,7 +34,11 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    PLModuleInput,
+    PLModuleOutput,
+    TorchTrainingSample,
+)
 from darts.utils.torch import MonteCarloDropout
 
 ACTIVATIONS = [
@@ -448,22 +452,7 @@ class _TSMixerModule(PLForecastingModule):
         return mixer_layers
 
     @io_processor
-    def forward(self, x_in: PLModuleInput) -> torch.Tensor:
-        # x_hist contains the historical time series data and the historical
-        """TSMixer model forward pass.
-
-        Parameters
-        ----------
-        x_in
-            comes as Tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
-            `x_future` is the output/future chunk. Input dimensions are `(batch_size, time_steps,
-            components)`.
-
-        Returns
-        -------
-        torch.torch.Tensor
-            The output Tensor of shape `(batch_size, output_chunk_length, output_dim, nr_params)`.
-        """
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
         # B: batch size
         # L: input chunk length
         # T: output chunk length
@@ -476,7 +465,9 @@ class _TSMixerModule(PLForecastingModule):
         # N_P: likelihood parameters
 
         # `x`: (B, L, H), `x_future`: (B, T, F), `x_static`: (B, C or 1, S)
-        x, x_future, x_static, _ = x_in
+        x = x_in.concatenate_past_features()
+        x_future = x_in.future_covariates
+        x_static = x_in.static_covariates
 
         # swap feature and time dimensions (B, L, H) -> (B, H, L)
         x = _time_to_feature(x)
@@ -507,7 +498,7 @@ class _TSMixerModule(PLForecastingModule):
         x = self.fc_out(x)
         # (B, T, C * N_P) -> (B, T, C, N_P)
         x = x.view(-1, self.output_chunk_length, self.output_dim, self.nr_params)
-        return x
+        return PLModuleOutput(prediction=x)
 
 
 class TSMixerModel(MixedCovariatesTorchModel):
@@ -790,14 +781,11 @@ class TSMixerModel(MixedCovariatesTorchModel):
             - future torch.Tensors have shape (output_chunk_length, n_variables)
             - static covariates have shape (component, static variable)
         """
-        (
-            past_target,
-            past_covariates,
-            historic_future_covariates,
-            future_covariates,
-            static_covariates,
-            future_target,
-        ) = train_sample
+        past_target = train_sample.past_target
+        past_covariates = train_sample.past_covariates
+        future_covariates = train_sample.future_covariates
+        static_covariates = train_sample.static_covariates
+        future_target = train_sample.future_target
 
         input_dim = past_target.shape[1]
         output_dim = future_target.shape[1]

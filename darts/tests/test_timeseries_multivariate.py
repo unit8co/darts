@@ -1,11 +1,10 @@
-import itertools
-
 import numpy as np
 import pandas as pd
 import pytest
 
 from darts import TimeSeries
 from darts.tests.conftest import POLARS_AVAILABLE
+from darts.tests.parametrize_helpers import param_product
 from darts.tests.test_timeseries import (
     helper_test_append,
     helper_test_append_values,
@@ -134,9 +133,7 @@ class TestTimeSeriesMultivariate:
         helper_test_drop_before(self.series1, keep_point=False)
         helper_test_drop_before(self.series1, keep_point=True)
 
-    @pytest.mark.parametrize(
-        "config", itertools.product(["D", "2D", 1, 2], [False, True])
-    )
+    @pytest.mark.parametrize("config", param_product(["D", "2D", 1, 2], [False, True]))
     def test_intersect(self, config):
         freq, mixed_freq = config
         helper_test_intersect(freq, mixed_freq, is_univariate=False)

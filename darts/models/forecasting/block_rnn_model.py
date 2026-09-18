@@ -22,7 +22,11 @@ from darts.models.forecasting.pl_forecasting_module import (
 from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
 )
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    PLModuleInput,
+    PLModuleOutput,
+    TorchTrainingSample,
+)
 
 
 class CustomBlockRNNModule(PLForecastingModule, ABC):
@@ -93,20 +97,20 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
 
     @io_processor
     @abstractmethod
-    def forward(self, x_in: PLModuleInput) -> torch.Tensor:
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
         """BlockRNN Module forward.
 
         Parameters
         ----------
         x_in
-            Tuple of Tensors containing the features of the input sequence. The tuple has elements
-            (past target, historic future covariates, future covariates, static covariates).
+            Named module input with independent past, future, and static tensors.
             The shape of the past target is `(batch_size, input_length, input_size)`.
 
         Returns
         -------
-        torch.Tensor
-            The BlockRNN output Tensor with shape `(batch_size, output_chunk_length, target_size, nr_params)`.
+        PLModuleOutput
+            The BlockRNN output with ``prediction`` of shape
+            `(batch_size, output_chunk_length, target_size, nr_params)`.
             It contains the prediction at the last time step of the sequence.
         """
 
@@ -197,7 +201,7 @@ class _BlockRNNModule(CustomBlockRNNModule):
         self.fc = nn.Sequential(*feats)
 
     @io_processor
-    def forward(self, x_in: PLModuleInput):
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
         # B: batch size
         # L: input chunk length
         # T: output chunk length
@@ -210,7 +214,9 @@ class _BlockRNNModule(CustomBlockRNNModule):
         # N_P: likelihood parameters
 
         # `x_past`: (B, L, H), `x_future`: (B, T, F), `x_static`: (B, C or 1 = C1, S)
-        x_past, x_future, x_static, _ = x_in
+        x_past = x_in.concatenate_past_features()
+        x_future = x_in.future_covariates
+        x_static = x_in.static_covariates
 
         batch_size = x_past.shape[0]
 
@@ -253,7 +259,7 @@ class _BlockRNNModule(CustomBlockRNNModule):
         predictions = predictions.view(
             batch_size, self.output_chunk_length, self.target_size, self.nr_params
         )
-        return predictions
+        return PLModuleOutput(prediction=predictions)
 
 
 class BlockRNNModel(MixedCovariatesTorchModel):
@@ -532,10 +538,10 @@ class BlockRNNModel(MixedCovariatesTorchModel):
         self._considers_static_covariates = use_static_covariates
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
-        # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
-        (past_target, past_covariates, _, future_covariates, static_covariates, _) = (
-            train_sample
-        )
+        past_target = train_sample.past_target
+        past_covariates = train_sample.past_covariates
+        future_covariates = train_sample.future_covariates
+        static_covariates = train_sample.static_covariates
         past_cov_dim = past_covariates.shape[1] if past_covariates is not None else 0
         future_cov_dim = (
             future_covariates.shape[1] if future_covariates is not None else 0

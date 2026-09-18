@@ -1,5 +1,4 @@
 import os
-from itertools import product
 
 import numpy as np
 import pytest
@@ -18,6 +17,8 @@ if not OPTUNA_AVAILABLE:
     )
 
 import optuna
+
+from darts.tests.parametrize_helpers import param_product
 
 if TORCH_AVAILABLE:
     import torch
@@ -125,10 +126,7 @@ class TestOptuna:
 
     @pytest.mark.parametrize(
         "params",
-        product(
-            [True, False],  # multi_models
-            [1, 3],  # ocl
-        ),
+        param_product([True, False], [1, 3]),
     )
     def test_optuna_regression_model(self, params):
         """Check that optuna works as expected with a regression model"""
