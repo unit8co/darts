@@ -62,17 +62,17 @@ class _StubT0Forecaster(torch.nn.Module):
         # a parameter so `next(self.parameters()).device` works like the real model
         self._p = torch.nn.Parameter(torch.zeros(1))
 
-    def predict(self, context, horizon, quantiles, future_covariates=None):
+    def predict(self, context, horizon, quantile_levels, future_covariates=None):
         assert torch.is_tensor(context) and context.ndim == 3  # (B, V, T)
         batch, n_variates, _ = context.shape
-        n_q = len(quantiles)
+        n_q = len(quantile_levels)
         if future_covariates is not None:
             # covariates must span context + horizon
             assert future_covariates.shape[0] == batch
             assert future_covariates.shape[2] == context.shape[-1] + horizon
         base = torch.arange(1, horizon + 1, dtype=torch.float32, device=context.device)
         quantile_offsets = torch.tensor(
-            [float(q) - 0.5 for q in quantiles], device=context.device
+            [float(q) - 0.5 for q in quantile_levels], device=context.device
         )
         # (B, V, horizon, Q)
         out = base.view(1, 1, horizon, 1) + quantile_offsets.view(1, 1, 1, n_q)

@@ -29,6 +29,7 @@ from darts.logging import get_logger, raise_log
 from darts.models.components.huggingface_connector import HuggingFaceConnector
 from darts.models.forecasting.foundation_model import FoundationModel
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
+from darts.utils.data import ModuleStage, PLModuleOutput, TorchTrainingSample
 from darts.utils.data.torch_datasets.utils import PLModuleInput
 from darts.utils.likelihood_models.torch import QuantileRegression
 
@@ -123,37 +124,36 @@ class _T0Module(PLForecastingModule):
         #   Qp: pre-trained quantiles (returned during fine-tuning)
         #   N: likelihood quantiles (user-specified, 1 if deterministic)
 
-        # `x_past`: (B, L, C + P + F) stack of [past_target, past_covariates, historic_future_covariates];
-        # `x_future`: (B, T, F) future covariates, or None.
-        x_past, x_future, _, _ = x_in
-        batch_size = x_past.shape[0]
-
-        # Past covariates are forecast jointly with the target (T0 is variate-agnostic) and dropped from the
-        # output. Future covariates are the trailing columns of `x_past` (their historic part) and are passed to
-        # T0's covariate branch instead. `x_future` width gives the number of future covariates.
-        n_future_covs = x_future.shape[-1] if x_future is not None else 0
-        n_context = x_past.shape[-1] - n_future_covs
-
+        # Past covariates are forecast jointly with the target (T0 is variate-agnostic) and dropped from the output.
         # context: (B, V, L)
-        context = x_past[:, :, :n_context].transpose(1, 2)
+        context = torch.cat(
+            [el for el in [x_in.past_target, x_in.past_covariates] if el is not None],
+            dim=2,
+        ).transpose(1, 2)
+        batch_size, n_context, _ = context.shape
 
-        # T0 expects covariates over context + horizon. Re-assemble them from the historic part (in `x_past`)
-        # and the future chunk (`x_future`); the `output_chunk_shift` gap is left NaN (T0 treats NaN as missing).
-        future_covariates = None
-        if n_future_covs > 0:
-            historic = x_past[:, :, n_context:]  # (B, L, F)
-            future = torch.full(
-                (batch_size, self.future_len, n_future_covs),
-                torch.nan,
-                device=x_past.device,
-                dtype=x_past.dtype,
-            )
-            if x_future is not None:
-                future[:, -(self.output_chunk_length or 0) :, :] = x_future
-            # (B, L + H, F) -> (B, F, L + H)
-            future_covariates = torch.cat([historic, future], dim=1).transpose(1, 2)
+        # Future covariates and their historic part are passed to T0's covariate branch instead.
+        # T0 expects covariates over context (historic) + horizon (future);
+        # the `output_chunk_shift` gap is left NaN (T0 treats NaN as missing).
+        historic_future_covariates = x_in.historic_future_covariates
+        future_covariates = x_in.future_covariates
+        if historic_future_covariates is not None and future_covariates is not None:
+            if self.output_chunk_shift == 0:
+                future_covariates = x_in.concatenate_future_along_time()
+            else:
+                n_future_covs = future_covariates.shape[-1]
+                gap = torch.full(
+                    (batch_size, self.output_chunk_shift, n_future_covs),
+                    torch.nan,
+                    device=context.device,
+                    dtype=context.dtype,
+                )
+                future_covariates = torch.cat(
+                    [historic_future_covariates, gap, future_covariates], dim=1
+                )
+            future_covariates = future_covariates.transpose(1, 2)
 
-        if self.training and self._enable_finetuning:
+        if x_in.stage is ModuleStage.TRAIN:
             # scale the input, run one forward pass, and rescale the predictions
             patch_size = self.t0.patch_size
             context_length = context.shape[-1]
@@ -188,21 +188,23 @@ class _T0Module(PLForecastingModule):
             quantiles = self.t0.predict(
                 context,
                 horizon=self.future_len,
-                quantiles=user_q,
+                quantile_levels=user_q,
                 future_covariates=future_covariates,
             ).quantiles
         # drop the past-covariate variates, keep targets: (B, V, H, N) -> (B, C, H, N)
         quantiles = quantiles[:, : self.n_targets]
         # (B, C, H, N) -> (B, H, C, N) -> slice output shift -> (B, T, C, N)
-        return quantiles.permute(0, 2, 1, 3)[:, self.output_chunk_shift :, :, :]
+        quantiles = quantiles.permute(0, 2, 1, 3)[:, self.output_chunk_shift :, :, :]
+        return PLModuleOutput(prediction=quantiles)
 
     def _compute_loss(self, output, target, criterion, sample_weight):
-        if self.training and self._enable_finetuning:
+        if self.training:
             # compute loss on pre-trained quantiles
             return self._finetuning_likelihood.compute_loss(
-                output, target, sample_weight
+                output.prediction, target, sample_weight
             )
-        return super()._compute_loss(output, target, criterion, sample_weight)
+        else:
+            return super()._compute_loss(output, target, criterion, sample_weight)
 
 
 class T0Model(FoundationModel):
@@ -413,7 +415,7 @@ class T0Model(FoundationModel):
     def supports_future_covariates(self) -> bool:
         return True
 
-    def _create_model(self, train_sample) -> PLForecastingModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         # enable_finetuning is injected into pl_module_params by the base class;
         # _T0Module accepts it as an explicit parameter and converts dict form to bool
         return _T0Module(
