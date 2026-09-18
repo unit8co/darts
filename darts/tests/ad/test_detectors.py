@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from itertools import product
 
 import numpy as np
 import pytest
@@ -9,6 +8,7 @@ from darts.ad.detectors.detectors import FittableDetector
 from darts.ad.detectors.iqr_detector import IQRDetector
 from darts.ad.detectors.quantile_detector import QuantileDetector
 from darts.ad.detectors.threshold_detector import ThresholdDetector
+from darts.tests.parametrize_helpers import param_product
 
 list_Detector = [(ThresholdDetector, {"low_threshold": 0.2})]
 
@@ -51,7 +51,7 @@ class TestAnomalyDetectionDetector:
 
     @pytest.mark.parametrize(
         "detector_config,series",
-        product(list_detectors, [(train, test), (mts_train, mts_test)]),
+        param_product(list_detectors, [(train, test), (mts_train, mts_test)]),
     )
     def test_detect_return_type(self, detector_config, series):
         """Check that detect() behave as expected"""

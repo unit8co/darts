@@ -8,14 +8,8 @@ scorer(s) to compute anomaly scores by comparing how actuals deviate from the mo
 
 # TODO:
 #     - put start default value to its minimal value (wait for the release of historical_forecast)
-import sys
 from collections.abc import Sequence
-from typing import Literal
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+from typing import Literal, Self
 
 import pandas as pd
 

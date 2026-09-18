@@ -21,6 +21,7 @@ from darts.logging import get_logger
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
+from darts.utils._statsmodels_utils import SM_RNG_KWARG
 from darts.utils.utils import random_method
 
 logger = get_logger(__name__)
@@ -219,11 +220,11 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 nsimulations=n,
                 repetitions=num_samples,
                 initial_state=self.model.states.predicted[-1, :],
-                random_state=rng,
                 anchor="end",
                 exog=(
                     future_covariates.values(copy=False) if future_covariates else None
                 ),
+                **{SM_RNG_KWARG: rng},
             )
 
         # restoring statsmodels results object state

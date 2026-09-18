@@ -26,12 +26,7 @@ import sys
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from glob import glob
-from typing import Any, Literal
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+from typing import Any, Literal, Self
 
 import numpy as np
 import pandas as pd
@@ -59,10 +54,14 @@ from darts.utils.data import (
 )
 from darts.utils.data.torch_datasets._data_module import TorchDataModule
 from darts.utils.data.torch_datasets.utils import (
-    TorchBatch,
-    TorchInferenceDatasetOutput,
-    TorchTrainingDatasetOutput,
+    TorchInferenceSample,
     TorchTrainingSample,
+    _as_inference_sample,
+    _as_training_sample,
+    _batch_collate_fn_predict,
+    _batch_collate_fn_train,
+    _coerce_training_sample,
+    _train_sample_from_shapes,
 )
 from darts.utils.historical_forecasts import (
     _check_optimizable_historical_forecasts_global_models,
@@ -489,10 +488,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 ),
             )
 
-        self.pl_module_params["train_sample_shape"] = [
-            variate.shape if variate is not None else None
-            for variate in self.train_sample
-        ]
+        self.pl_module_params["train_sample_shape"] = self.train_sample.sample_shapes()
         # the tensors have shape (chunk_length, nr_dimensions)
         model = self._create_model(self.train_sample)
         self._module_name = model.__class__.__name__
@@ -505,7 +501,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             if trainer is None
             else trainer.precision
         )
-        dtype = self.train_sample[0].dtype
+        dtype = self.train_sample.past_target.dtype
         if precision_user is not None:
             logger.info(
                 f"Using user-defined precision: {precision_user}. The model output will have the same dtype. If you "
@@ -707,10 +703,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         _raise_if_wrong_type(inference_dataset, TorchInferenceDataset)
 
-    def _validate_predict_sample(
+    def _validate_predict_ds_output(
         self,
         train_sample: TorchTrainingSample,
-        predict_sample: TorchInferenceDatasetOutput,
+        inference_sample: TorchInferenceSample,
     ):
         """Validates that the predict sample matches a sample that the model was trained on.
 
@@ -719,42 +715,28 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         train_sample
-            (past target, past covariates, historic future covariates, future covariates, static covariates,
-            future target)
-        predict_sample
-            (past target, past covariates, future past covariates, historic future covariates, future covariates,
-            static covariates, target series schema, prediction start time)
+            Stored model snapshot (``TorchTrainingSample``) or a training dataset sample.
+        inference_sample
+            Inference dataset sample. Malformed outputs will raise an exception.
         """
-        # datasets; we skip future target for train and predict, and skip future past covariates for predict datasets
+        # skip future_target (train labels) and future_past_covariates (inference-only AR)
+        train_sample = _as_training_sample(train_sample)
+        inference_sample = _as_inference_sample(inference_sample)
+
+        # mind the order for more intuitive error messages (dataset name)
         ds_names = [
-            "series",
-            "past_covariates",
-            "historic_future_covariates",
-            "future_covariates",
-            "static_covariates",
+            ("past_covariates", "past_covariates"),
+            ("future_covariates", "future_covariates"),
+            ("static_covariates", "static_covariates"),
+            ("past_target", "series"),
+            ("historic_future_covariates", "future_covariates"),
         ]
+        for ds_name, series_name in ds_names:
+            ds_train = getattr(train_sample, ds_name)
+            ds_inference = getattr(inference_sample, ds_name)
 
-        # ignore sample weight and future target from train sample
-        train_features = train_sample[:-1]
-        train_has_ds = [ds is not None for ds in train_features]
-
-        # ignore future past covariates, target schema, and prediction start time from predict sample
-        predict_features = predict_sample[:2] + predict_sample[3:-2]
-        predict_has_ds = [ds is not None for ds in predict_features]
-
-        if len(train_features) != len(predict_features):
-            raise_log(
-                ValueError(
-                    f"Mismatch between number of training features `{len(train_features)}` "
-                    f"and prediction features `{len(predict_features)}`. Make sure your prediction "
-                    f"dataset's `__getitem__` method returns the same output type as given in "
-                    f"`darts.utils.data.inference_dataset.TorchInferenceDataset`."
-                ),
-            )
-
-        for idx, (ds_in_train, ds_in_predict, ds_name) in enumerate(
-            zip(train_has_ds, predict_has_ds, ds_names)
-        ):
+            ds_in_train = ds_train is not None
+            ds_in_predict = ds_inference is not None
             if ds_in_train and not ds_in_predict:
                 raise_log(
                     ValueError(
@@ -770,8 +752,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     ),
                 )
             if ds_in_train and ds_in_predict:
-                train_shape = train_features[idx].shape
-                preds_shape = predict_features[idx].shape
+                train_shape = ds_train.shape
+                preds_shape = ds_inference.shape
 
                 if ds_name == "static_covariates":
                     train_n_comp = train_shape[0] * train_shape[1]
@@ -783,14 +765,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 if train_n_comp != preds_n_comp:
                     raise_log(
                         ValueError(
-                            f"The provided `{ds_name}` must have equal number of components as the "
-                            f"`{ds_name}` used to train the model. Received number of components: "
+                            f"The provided `{series_name}` must have equal number of components as the "
+                            f"`{series_name}` used to train the model. Received number of components: "
                             f"`{preds_n_comp}`, expected: `{train_n_comp}`.",
                         ),
                     )
 
         # check dtype consistency within predict sample
-        self._verify_dtypes(predict_sample)
+        self._verify_dtypes(inference_sample)
 
     def _verify_past_future_covariates(self, past_covariates, future_covariates):
         """
@@ -851,14 +833,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _verify_dtypes(
         self,
-        sample: TorchTrainingDatasetOutput | TorchInferenceDatasetOutput,
+        ds_output: TorchTrainingSample | TorchInferenceSample,
     ):
         """Dataset output dtype checks.
 
         Checks that all dataset output arrays have the same dtype, and whether the dtype matches
         the one of the training dataset
         """
-        observed_dtypes = set([el.dtype for el in sample if isinstance(el, np.ndarray)])
+        observed_dtypes = set(el.dtype for el in ds_output.iter_arrays())
         if len(observed_dtypes) != 1:
             logger.warning(
                 f"Observed mixed data types in the dataset output: {observed_dtypes}. "
@@ -869,8 +851,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         if self.train_sample is not None:
             expected_dtype = (
-                self.train_sample[0].dtype
-                if isinstance(self.train_sample[0], np.ndarray)
+                self.train_sample.past_target.dtype
+                if isinstance(self.train_sample.past_target, np.ndarray)
                 else None
             )
             current_dtype = observed_dtypes.pop()
@@ -886,7 +868,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _update_covariates_use(self):
         """Based on the Forecasting class and the training_sample attribute, update the
         uses_[past/future/static]_covariates attributes."""
-        _, past_cov, historic_future_cov, future_cov, static_cov, _ = self.train_sample
+        past_cov = self.train_sample.past_covariates
+        future_cov = self.train_sample.future_covariates
+        static_cov = self.train_sample.static_covariates
 
         self._uses_past_covariates = past_cov is not None
         self._expect_past_covariates = (
@@ -902,24 +886,38 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     def to_onnx(self, path: str | None = None, **kwargs):
-        """Export model to ONNX format for optimized inference, wrapping around PyTorch Lightning's
-        :func:`torch.onnx.export` method (`official documentation <https://lightning.ai/docs/pytorch/
-        stable/common/lightning_module.html#to-onnx>`__).
+        """Export model to ONNX format for optimized inference.
 
-        Note: requires `onnx` library (optional dependency) to be installed.
+        After exporting, use torch-free :func:`~darts.utils.onnx.inference.run_onnx_prediction`
+        to generate forecasts.
+
+        .. note::
+            Requires ONNX dependencies to be installed:
+
+            - `onnx>=1.0.0` and `onnxscript>=0.7.0` for exporting to ONNX
+            - `onnxruntime>=1.24.1` for inference
 
         Example for exporting a :class:`DLinearModel`:
 
         .. highlight:: python
         .. code-block:: python
 
+            # train torch model and export to ONNX format
             from darts.datasets import AirPassengersDataset
             from darts.models import DLinearModel
 
-            series = AirPassengersDataset().load()
-            model = DLinearModel(input_chunk_length=4, output_chunk_length=1)
+            series = AirPassengersDataset().load().astype("f")
+            model = DLinearModel(input_chunk_length=12, output_chunk_length=1)
             model.fit(series, epochs=1)
-            model.to_onnx("my_model.onnx")
+            onnx_filename = "my_model.onnx"
+            model.to_onnx(onnx_filename)
+
+            # run torch-free inference
+            import onnxruntime as ort
+            from darts.utils.onnx import run_onnx_prediction
+
+            session = ort.InferenceSession(onnx_filename)
+            forecast = run_onnx_prediction(n=3, session=session, series=series)
         ..
 
         Parameters
@@ -928,12 +926,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Path under which to save the model at its current state. If no path is specified, the model
             is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.onnx"``.
         **kwargs
-            Additional kwargs for PyTorch's :func:`torch.onnx.export` method (except parameters ``file_path``,
-            ``input_sample``, ``input_name``). For more information, read the `official documentation
+            Additional kwargs for PyTorch's :func:`torch.onnx.export` method (except ``args`` and
+            the export destination). For more information, read the `official documentation
             <https://pytorch.org/docs/master/onnx.html#torch.onnx.export>`__.
         """
-        # TODO: LSTM model should be exported with a batch size of 1
-        # TODO: predictions with TFT and TCN models is incorrect, might be caused by helper function to process inputs
+        from darts.utils.onnx.export import to_onnx
+
         if not self._fit_called:
             raise_log(
                 ValueError("`fit()` needs to be called before `to_onnx()`."),
@@ -942,39 +940,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if path is None:
             path = self._default_save_path() + ".onnx"
 
-        # last dimension in train_sample_shape is the expected target
-        def _randomize(shape) -> torch.Tensor | None:
-            return torch.rand((1,) + shape, dtype=self.model.dtype) if shape else None
-
-        # type warning if we do not create the mocked `mock_batch` explicitly
-        train_sample_shape = self.model.train_sample_shape
-        mock_batch: TorchBatch = (
-            _randomize(train_sample_shape[0]),
-            _randomize(train_sample_shape[1]),
-            _randomize(train_sample_shape[2]),
-            _randomize(train_sample_shape[3]),
-            _randomize(train_sample_shape[4]),
-            # future_target is excluded: ONNX export traces the inference path only
-            None,
-        )
-        input_sample = self.model._process_input_batch(mock_batch)
-
-        # torch models necessarily use historic target values as features in current implementation
-        input_names = ["x_past"]
-        if self.uses_future_covariates:
-            input_names.append("x_future")
-        if self.uses_static_covariates:
-            input_names.append("x_static")
-
-        # TODO: `dynamo=True` should be the way to go since PyTorch 2.9; we have to wait until RNN module onnx exports
-        #  are  fixed
-        self.model.to_onnx(
-            file_path=path,
-            input_sample=(input_sample,),
-            input_names=input_names,
-            dynamo=False,
-            **kwargs,
-        )
+        to_onnx(self.model, path, **kwargs)
 
     @random_method
     def fit(
@@ -1333,42 +1299,27 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 ),
             )
 
-        train_sample = train_dataset[0]
-        # ignore sample weights [-2] for model dimensions
-        train_sample_no_weight = train_sample[:-2] + train_sample[-1:]
+        train_sample = _as_training_sample(train_dataset[0])
 
         # Test dtypes of sample
         self._verify_dtypes(train_sample)
 
         if self.model is None:
             # build model based on the dimensions of the first series in the train set.
-            self.train_sample = train_sample_no_weight
-            self.output_dim = train_sample[-1].shape[1]
+            self.train_sample = train_sample
+            self.output_dim = train_sample.future_target.shape[1]
             model = self._init_model(trainer)
         else:
             model = self.model
-            # check existing model has input/output dims matching what's provided in the training set.
-            if len(train_sample_no_weight) != len(self.train_sample):
-                raise_log(
-                    ValueError(
-                        "The size of the training set samples (tuples) does not match what the model has been"
-                        f" previously trained on. Trained on tuples of length {len(self.train_sample)},"
-                        f" received tuples of length {len(train_sample_no_weight)}."
-                    ),
-                )
-            sample_shapes_last = [
-                s.shape[1] if s is not None else None for s in self.train_sample
-            ]
-            sample_shapes = [
-                s.shape[1] if s is not None else None for s in train_sample_no_weight
-            ]
-            if sample_shapes != sample_shapes_last:
+            component_dims_last = self.train_sample.component_dims()
+            component_dims = train_sample.component_dims()
+            if component_dims != component_dims_last:
                 raise_log(
                     ValueError(
                         "The dimensionality of the series in the training set do not match the dimensionality"
                         " of the series the model has previously been trained on. "
-                        f"Model input/output dimensions = {sample_shapes_last},"
-                        f" provided input/output dimensions = {sample_shapes}."
+                        f"Model input/output dimensions = {component_dims_last},"
+                        f" provided input/output dimensions = {component_dims}."
                     ),
                 )
 
@@ -1377,8 +1328,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self._update_covariates_use()
 
         # loss must not reduce the output when using sample weight
-        train_sample_weight = train_sample[-2]
-        val_sample_weight = val_dataset[0][-2] if val_dataset is not None else None
+        train_sample_weight = train_sample.sample_weight
+        val_sample_weight = (
+            _as_training_sample(val_dataset[0]).sample_weight
+            if val_dataset is not None
+            else None
+        )
         for sample_weight, criterion, set_name in [
             (train_sample_weight, model.train_criterion, "train"),
             (val_sample_weight, model.val_criterion, "val"),
@@ -1420,7 +1375,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             train_dataset=train_dataset,
             val_dataset=val_dataset,
             batch_size=self.batch_size,
-            collate_fn=self._batch_collate_fn,
+            collate_fn=_batch_collate_fn_train,
             dataloader_kwargs=dataloader_kwargs,
         )
 
@@ -2101,8 +2056,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self._verify_inference_dataset_type(dataset)
 
         # check that covariates and dimensions are matching what we had during training
-        self._validate_predict_sample(
-            train_sample=self.train_sample, predict_sample=dataset[0]
+        self._validate_predict_ds_output(
+            train_sample=self.train_sample,
+            inference_sample=dataset[0],
         )
 
         if roll_size is None:
@@ -2146,7 +2102,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         datamodule = TorchDataModule(
             predict_dataset=dataset,
             batch_size=batch_size,
-            collate_fn=self._batch_collate_fn,
+            collate_fn=_batch_collate_fn_predict,
             dataloader_kwargs=dataloader_kwargs,
         )
 
@@ -2230,25 +2186,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             self.min_input_chunk_length,
             self.output_chunk_length + self.output_chunk_shift,
         )
-
-    @staticmethod
-    def _batch_collate_fn(batch: list[tuple]) -> tuple:
-        """
-        Returns a batch Tuple from a list of samples
-        """
-        aggregated = []
-        first_sample = batch[0]
-        for i in range(len(first_sample)):
-            elem = first_sample[i]
-            if isinstance(elem, np.ndarray):
-                aggregated.append(
-                    torch.from_numpy(np.stack([sample[i] for sample in batch], axis=0))
-                )
-            elif elem is None:
-                aggregated.append(None)
-            else:
-                aggregated.append([sample[i] for sample in batch])
-        return tuple(aggregated)
 
     def _clean(self) -> Self:
         """Returns a cleaned model, keeping only the necessary attributes for prediction."""
@@ -2403,6 +2340,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             model.trainer_params = pl_trainer_kwargs
             model._model_params["pl_trainer_kwargs"] = copy.deepcopy(pl_trainer_kwargs)
 
+        # upgrade legacy tuple ``train_sample`` values from older saved models (darts<=0.47.0).
+        train_sample = model.train_sample
+        if train_sample is not None:
+            model.train_sample = _coerce_training_sample(train_sample)
         return model
 
     @staticmethod
@@ -2515,6 +2456,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # restore _fit_called attribute, set to False in load() if no .ckpt is found/provided
         model._fit_called = True
         model.load_ckpt_path = file_path
+
+        # upgrade legacy tuple ``train_sample`` values from older saved models (darts<=0.47.0).
+        train_sample = model.train_sample
+        if train_sample is not None:
+            model.train_sample = _coerce_training_sample(train_sample)
         return model
 
     def _load_from_checkpoint(self, file_path, **kwargs):
@@ -2630,11 +2576,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # pl_forecasting module saves the train_sample shape, must recreate one
         np_dtype = TORCH_NP_DTYPES[ckpt["model_dtype"]]
-        mock_train_sample = [
-            np.zeros(sample_shape, dtype=np_dtype) if sample_shape else None
-            for sample_shape in ckpt["train_sample_shape"]
-        ]
-        self.train_sample = tuple(mock_train_sample)
+        self.train_sample = _train_sample_from_shapes(
+            ckpt["train_sample_shape"], dtype=np_dtype
+        )
 
         if not skip_checks:
             # path to the tfm checkpoint (darts model, .pt extension)

@@ -11,7 +11,11 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    PLModuleInput,
+    PLModuleOutput,
+    TorchTrainingSample,
+)
 
 
 class _MovingAvg(nn.Module):
@@ -149,14 +153,10 @@ class _DLinearModule(PLForecastingModule):
             )
 
     @io_processor
-    def forward(self, x_in: PLModuleInput):
-        """
-        x_in
-            comes as tuple `(x_past, x_future, x_static, future_target)` where `x_past` is the input/past chunk and
-            `x_future` is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
-        """
-
-        x, x_future, x_static, _ = x_in  # x: (batch, in_len, in_dim)
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
+        x = x_in.concatenate_past_features()  # x: (batch, in_len, in_dim)
+        x_future = x_in.future_covariates
+        x_static = x_in.static_covariates
         batch, _, _ = x.shape
 
         if self.shared_weights:
@@ -217,7 +217,7 @@ class _DLinearModule(PLForecastingModule):
             # extract nr_params
             x = x.view(batch, self.output_chunk_length, self.output_dim, self.nr_params)
 
-        return x
+        return PLModuleOutput(prediction=x)
 
 
 class DLinearModel(MixedCovariatesTorchModel):
@@ -474,10 +474,10 @@ class DLinearModel(MixedCovariatesTorchModel):
         self._considers_static_covariates = use_static_covariates
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
-        # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
-        (past_target, past_covariates, _, future_covariates, static_covariates, _) = (
-            train_sample
-        )
+        past_target = train_sample.past_target
+        past_covariates = train_sample.past_covariates
+        future_covariates = train_sample.future_covariates
+        static_covariates = train_sample.static_covariates
 
         input_dim = past_target.shape[1] + sum(
             # add past covariates dim and historic future covariates dim, if present

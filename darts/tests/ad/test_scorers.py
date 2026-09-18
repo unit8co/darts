@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from itertools import product
 
 import numpy as np
 import pytest
@@ -23,6 +22,7 @@ from darts.ad.scorers import DifferenceScorer as Difference
 from darts.ad.scorers import NormScorer as Norm
 from darts.ad.scorers.scorers import NLLScorer
 from darts.models import MovingAverageFilter
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.timeseries_generation import linear_timeseries
 
 list_NonFittableAnomalyScorer = [
@@ -475,6 +475,17 @@ class TestAnomalyDetectionScorer:
             scorer.score_from_prediction(
                 [self.train, self.train[:50]], [self.train, self.train[55:]]
             )
+
+    @pytest.mark.parametrize("scorer_config", list_FittableAnomalyScorer)
+    def test_fit_from_prediction_returns_self(self, scorer_config):
+        """`fit_from_prediction()` documents returning the fitted scorer, as `fit()` does."""
+        scorer_cls, scorer_kwargs = scorer_config
+        scorer = scorer_cls(**scorer_kwargs)
+
+        assert scorer.fit(self.train) is scorer
+
+        scorer = scorer_cls(**scorer_kwargs)
+        assert scorer.fit_from_prediction(self.train, self.modified_train) is scorer
 
     @pytest.mark.parametrize("scorer_config", list_FittableAnomalyScorer)
     def test_FittableAnomalyScorer(self, scorer_config):
@@ -1618,7 +1629,7 @@ class TestAnomalyDetectionScorer:
 
     @pytest.mark.parametrize(
         "model,series",
-        product(
+        param_product(
             [(KMeansScorer, {"random_state": 42}), (PyODScorer, {"model": KNN()})],
             [(train, test), (mts_train, mts_test)],
         ),
@@ -1641,7 +1652,7 @@ class TestAnomalyDetectionScorer:
 
     @pytest.mark.parametrize(
         "window,model,series",
-        product(
+        param_product(
             [2, 10, 39],
             [
                 (KMeansScorer, {"random_state": 42}),

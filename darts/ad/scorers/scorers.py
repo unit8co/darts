@@ -8,15 +8,9 @@ Base Scorer
 #     - add option to normalize the windows for kmeans? capture only the form and not the values.
 
 import copy
-import sys
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Literal
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+from typing import Literal, Self
 
 import numpy as np
 
@@ -424,7 +418,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         self,
         series: TimeSeriesLike,
         pred_series: TimeSeriesLike,
-    ):
+    ) -> Self:
         """Fits the scorer on the two (sequences of) series.
 
         The function `diff_fn` passed as a parameter to the scorer, will transform `pred_series` and `series`
@@ -456,6 +450,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         diff_series = self._diff_series(series, pred_series)
         self.fit(diff_series)
         self._fit_called = True
+        return self
 
     def score(
         self,

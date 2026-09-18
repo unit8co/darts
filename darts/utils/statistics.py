@@ -79,7 +79,7 @@ def check_seasonality(
         return False, 0
 
     r = acf(
-        ts.values(), nlags=max_lag, fft=False
+        ts.univariate_values(), nlags=max_lag, fft=False
     )  # In case user wants to check for seasonality higher than 24 steps.
 
     # Finds local maxima of Auto-Correlation Function
@@ -489,7 +489,7 @@ def stationarity_test_kpss(
     ts._assert_univariate()
     ts._assert_deterministic()
 
-    return kpss(ts.values(copy=False), regression, nlags)
+    return kpss(ts.univariate_values(copy=False), regression, nlags)
 
 
 def stationarity_test_adf(
@@ -541,7 +541,7 @@ def stationarity_test_adf(
     ts._assert_univariate()
     ts._assert_deterministic()
 
-    return adfuller(ts.values(copy=False), maxlag, regression, autolag)
+    return adfuller(ts.univariate_values(copy=False), maxlag, regression, autolag)
 
 
 def granger_causality_tests(
@@ -680,7 +680,7 @@ def plot_acf(
         raise_log(ValueError("alpha must be greater than 0 and less than 1."))
 
     r, confint = acf(
-        ts.values(),
+        ts.univariate_values(),
         nlags=max_lag,
         fft=False,
         alpha=alpha,
@@ -784,7 +784,7 @@ def plot_pacf(
     if alpha is None or not (0 < alpha < 1):
         raise_log(ValueError("alpha must be greater than 0 and less than 1."))
 
-    r, confint = pacf(ts.values(), nlags=max_lag, method=method, alpha=alpha)
+    r, confint = pacf(ts.univariate_values(), nlags=max_lag, method=method, alpha=alpha)
 
     if axis is None:
         plt.figure(figsize=fig_size)
@@ -889,8 +889,8 @@ def plot_ccf(
             ValueError("`ts_other` must contain at least the full time index of `ts`."),
         )
 
-    x = ts.values()
-    y = ts_other.values()
+    x = ts.univariate_values()
+    y = ts_other.univariate_values()
     cvf = ccovf(x=x, y=y, adjusted=True, demean=True, fft=False)
 
     ccf = cvf / (np.std(x) * np.std(y))
@@ -1071,13 +1071,14 @@ def plot_residuals_analysis(
     ax1.set_title("Residual values")
 
     # plot histogram and distribution
+    res_values = residuals.univariate_values(copy=False)
     res_mean, res_std = (
-        np.mean(residuals.univariate_values()),
-        np.std(residuals.univariate_values()),
+        np.mean(res_values),
+        np.std(res_values),
     )
     res_min, res_max = (
-        min(residuals.univariate_values()),
-        max(residuals.univariate_values()),
+        min(res_values),
+        max(res_values),
     )
     x = np.linspace(res_min, res_max, 100)
     ax2 = fig.add_subplot(gs[1:, 1:])
