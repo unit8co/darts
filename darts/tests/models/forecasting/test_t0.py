@@ -79,6 +79,13 @@ class _StubT0Forecaster(torch.nn.Module):
         return _StubForecast(out.expand(batch, n_variates, horizon, n_q).contiguous())
 
 
+def series_with_nans(series: TimeSeries, start: int, end: int | None) -> TimeSeries:
+    """Returns a copy of `series` with the values in [start, end) set to NaN."""
+    values = series.values(copy=True).astype(np.float32)
+    values[start:end, :] = np.nan
+    return TimeSeries.from_times_and_values(series.time_index, values)
+
+
 class TestT0Model:
     np.random.seed(42)
 
@@ -118,6 +125,8 @@ class TestT0Model:
         )
         with _stub_t0():
             model.fit(self.series)
+        assert model.model_created
+        assert not model.supports_probabilistic_prediction
 
         # deterministic, single component
         pred = model.predict(n=10, series=self.series)
@@ -127,7 +136,9 @@ class TestT0Model:
 
         # autoregressive prediction (n > output_chunk_length)
         pred_ar = model.predict(n=20, series=self.series)
+        assert isinstance(pred_ar, TimeSeries)
         assert len(pred_ar) == 20
+        assert pred_ar.n_components == 1
 
     def test_probabilistic(self):
         model = T0Model(
@@ -145,7 +156,20 @@ class TestT0Model:
         pred = model.predict(
             n=6, series=self.series, predict_likelihood_parameters=True
         )
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 6
         assert pred.n_components == 3  # 3 quantiles
+
+        # probabilistic model allows autoregressive predictions (8 > 6)
+        pred_ar = model.predict(
+            n=14,
+            series=self.series,
+            num_samples=10,
+        )
+        assert isinstance(pred_ar, TimeSeries)
+        assert len(pred_ar) == 14
+        assert pred_ar.n_components == 1  # sampling yields single component
+        assert pred_ar.n_samples == 10
 
     @pytest.mark.parametrize("probabilistic", [True, False])
     def test_multivariate(self, probabilistic: bool):
@@ -193,6 +217,75 @@ class TestT0Model:
         assert len(pred) == 12
         # only the single target component is returned, never the past covariate
         assert pred.n_components == 1
+
+    def test_missing_values(self):
+        """NaNs in target and covariates are handled via the masking logic of the
+        ported `decode()`, instead of the linear interpolation applied by the
+        upstream `TimesFM3Forecaster.predict_batch()`. Predictions must not
+        contain NaNs for any of the missing value locations.
+        """
+
+        def make_model() -> T0Model:
+            return T0Model(
+                input_chunk_length=8,
+                output_chunk_length=4,
+                **_LOCAL,
+                **tfm_kwargs,
+            )
+
+        # NaNs inside the target series, incl. autoregressive prediction
+        series_nan = series_with_nans(self.series, 20, 26)
+        model = make_model()
+        model.fit(series=series_nan)
+        pred = model.predict(n=6, series=series_nan)
+        assert isinstance(pred, TimeSeries)
+        assert not np.isnan(pred.all_values(copy=False)).any()
+
+        # NaNs at the end of the target series (trailing missing values)
+        series_trailing_nan = series_with_nans(self.series, len(self.series) - 3, None)
+        model = make_model()
+        model.fit(series=series_trailing_nan)
+        pred = model.predict(n=4, series=series_trailing_nan)
+        assert isinstance(pred, TimeSeries)
+        assert not np.isnan(pred.all_values(copy=False)).any()
+
+        # NaNs in the past covariates
+        past_cov_nan = series_with_nans(self.cov, 5, 10)
+        model = make_model()
+        model.fit(series=self.series, past_covariates=past_cov_nan)
+        pred = model.predict(n=4, series=self.series, past_covariates=past_cov_nan)
+        assert isinstance(pred, TimeSeries)
+        assert not np.isnan(pred.all_values(copy=False)).any()
+
+        # NaNs in the future covariates
+        future_cov_nan = series_with_nans(self.cov, 204, 208)
+        model = make_model()
+        model.fit(series=self.series, future_covariates=future_cov_nan)
+        pred = model.predict(n=4, series=self.series, future_covariates=future_cov_nan)
+        assert isinstance(pred, TimeSeries)
+        assert not np.isnan(pred.all_values(copy=False)).any()
+
+    def test_output_chunk_shift(self):
+        """With `output_chunk_shift`, predictions start after the shifted gap and
+        auto-regressive prediction (`n > output_chunk_length`) is not allowed."""
+        model = T0Model(
+            input_chunk_length=8,
+            output_chunk_length=4,
+            output_chunk_shift=2,
+            **_LOCAL,
+            **tfm_kwargs,
+        )
+        model.fit(series=self.series, future_covariates=self.cov)
+        pred = model.predict(n=4, series=self.series, future_covariates=self.cov)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 4
+        # predictions start `output_chunk_shift + 1` steps after the end of the series
+        assert pred.start_time() == self.series.end_time() + self.series.freq * 3
+        assert not np.isnan(pred.all_values(copy=False)).any()
+
+        # auto-regression is not allowed with an output chunk shift
+        with pytest.raises(ValueError, match="output_chunk_shift > 0"):
+            model.predict(n=5, series=self.series, future_covariates=self.cov)
 
     def test_multiple_series(self):
         model = T0Model(
