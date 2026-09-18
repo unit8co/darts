@@ -28,6 +28,8 @@ TIMESFM2P5_TINY_DIR = (ARTEFACTS_DIR / "timesfm2p5" / "tiny_timesfm2p5").absolut
 TIMESFM2P5_TINY_MAX_CONTEXT_LENGTH = 64
 TIMESFM2P5_TINY_MAX_PREDICTION_LENGTH = 8
 
+TIMESFM3_TINY_DIR = (ARTEFACTS_DIR / "timesfm3" / "tiny_timesfm3").absolute()
+
 
 # ── T0 tiny model ───────────────────────────────────────────────────────────
 # Create a local checkpoint for t0-alpha model.

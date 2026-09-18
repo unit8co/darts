@@ -683,6 +683,12 @@ Our regression models are designed to predict continuous numerical values, makin
      - ✅ ✅
      - ✅
      - `TimesFM 1.0 paper <https://arxiv.org/abs/2310.10688>`_, `Google blog post <https://research.google/blog/a-decoder-only-foundation-model-for-time-series-forecasting>`_
+   * - `TimesFM3Model <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.timesfm3_model.html#darts.models.forecasting.timesfm3_model.TimesFM3Model>`_
+     - ✅ ✅
+     - ✅ ✅ 🔴
+     - ✅ ✅
+     - ✅
+     - `TimesFM 1.0 paper <https://arxiv.org/abs/2310.10688>`_, `TimesFM 3.0 model card <https://huggingface.co/google/timesfm-3.0-pytorch>`_
    * - `TiRexModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tirex_model.html#darts.models.forecasting.tirex_model.TiRexModel>`_
      - ✅ ✅
      - 🔴 🔴 🔴

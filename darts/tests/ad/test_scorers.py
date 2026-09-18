@@ -477,6 +477,17 @@ class TestAnomalyDetectionScorer:
             )
 
     @pytest.mark.parametrize("scorer_config", list_FittableAnomalyScorer)
+    def test_fit_from_prediction_returns_self(self, scorer_config):
+        """`fit_from_prediction()` documents returning the fitted scorer, as `fit()` does."""
+        scorer_cls, scorer_kwargs = scorer_config
+        scorer = scorer_cls(**scorer_kwargs)
+
+        assert scorer.fit(self.train) is scorer
+
+        scorer = scorer_cls(**scorer_kwargs)
+        assert scorer.fit_from_prediction(self.train, self.modified_train) is scorer
+
+    @pytest.mark.parametrize("scorer_config", list_FittableAnomalyScorer)
     def test_FittableAnomalyScorer(self, scorer_config):
         scorer_cls, scorer_kwargs = scorer_config
         fittable_scorer = scorer_cls(**scorer_kwargs)

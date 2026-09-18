@@ -115,6 +115,9 @@ if TYPE_CHECKING:
     from darts.models.forecasting.timesfm2p5_model import (
         TimesFM2p5Model as TimesFM2p5Model,
     )
+    from darts.models.forecasting.timesfm3_model import (
+        TimesFM3Model as TimesFM3Model,
+    )
     from darts.models.forecasting.tirex_model import TiRexModel as TiRexModel
     from darts.models.forecasting.transformer_model import (
         TransformerModel as TransformerModel,
@@ -191,6 +194,7 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     "Chronos2Model": ("darts.models.forecasting.chronos2_model", "(Py)Torch"),
     "PatchTSTFMModel": ("darts.models.forecasting.patchtst_fm_model", "(Py)Torch"),
     "TimesFM2p5Model": ("darts.models.forecasting.timesfm2p5_model", "(Py)Torch"),
+    "TimesFM3Model": ("darts.models.forecasting.timesfm3_model", "(Py)Torch"),
     "TiRexModel": ("darts.models.forecasting.tirex_model", "(Py)Torch and/or TiRex-TS"),
     "T0Model": ("darts.models.forecasting.t0_model", "(Py)Torch and/or tfc-t0"),
     # --- Forecasting: NeuralForecast ---
