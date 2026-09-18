@@ -31,10 +31,10 @@ Some optional integrations also require additional dependencies:
 
 
 ## From conda-forge
-Create a conda environment (e.g., for Python 3.11):
+Create a conda environment (e.g., for Python 3.12):
 (after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
 
-    conda create --name <env-name> python=3.11
+    conda create --name <env-name> python=3.12
 
 Activate the environment
 

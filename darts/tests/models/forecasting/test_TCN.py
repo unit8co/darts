@@ -12,6 +12,7 @@ if not TORCH_AVAILABLE:
 import torch
 
 from darts.models.forecasting.tcn_model import TCNModel
+from darts.utils.data.torch_datasets.utils import PLModuleInput
 
 
 class TestTCNModel:
@@ -116,19 +117,16 @@ class TestTCNModel:
                     input_tensor = torch.zeros(
                         [1, input_chunk_length, 1], dtype=torch.float64
                     )
-                    zero_output = model.model.forward((input_tensor, None, None, None))[
-                        0, -1, 0
-                    ]
+                    zero_output = model.model.forward(
+                        PLModuleInput(past_target=input_tensor)
+                    ).prediction[0, -1, 0]
 
                     # test for full coverage
                     for i in range(input_chunk_length):
                         input_tensor[0, i, 0] = 1
-                        curr_output = model.model.forward((
-                            input_tensor,
-                            None,
-                            None,
-                            None,
-                        ))[0, -1, 0]
+                        curr_output = model.model.forward(
+                            PLModuleInput(past_target=input_tensor)
+                        ).prediction[0, -1, 0]
                         assert zero_output != curr_output
                         input_tensor[0, i, 0] = 0
 
@@ -167,12 +165,9 @@ class TestTCNModel:
                     input_tensor = torch.zeros(
                         [1, input_chunk_length, 1], dtype=torch.float64
                     )
-                    zero_output = model_2.model.forward((
-                        input_tensor,
-                        None,
-                        None,
-                        None,
-                    ))[0, -1, 0]
+                    zero_output = model_2.model.forward(
+                        PLModuleInput(past_target=input_tensor)
+                    ).prediction[0, -1, 0]
 
                     # test for incomplete coverage
                     uncovered_input_found = False
@@ -180,12 +175,9 @@ class TestTCNModel:
                         continue
                     for i in range(input_chunk_length):
                         input_tensor[0, i, 0] = 1
-                        curr_output = model_2.model.forward((
-                            input_tensor,
-                            None,
-                            None,
-                            None,
-                        ))[0, -1, 0]
+                        curr_output = model_2.model.forward(
+                            PLModuleInput(past_target=input_tensor)
+                        ).prediction[0, -1, 0]
                         if zero_output == curr_output:
                             uncovered_input_found = True
                             break

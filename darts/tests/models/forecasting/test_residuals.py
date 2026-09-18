@@ -1,5 +1,3 @@
-import itertools
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -9,6 +7,7 @@ from darts import TimeSeries, concatenate
 from darts.datasets import AirPassengersDataset
 from darts.models import LinearRegressionModel, NaiveDrift, NaiveSeasonal
 from darts.tests.models.forecasting.test_sklearn_models import dummy_timeseries
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.likelihood_models.base import (
     likelihood_component_names,
     quantile_interval_names,
@@ -26,7 +25,7 @@ class TestResiduals:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [True, False],
             [False, True],
             [(metrics.err, (-1.0, -2.0)), (metrics.ape, (100.0, 100.0))],
@@ -80,7 +79,7 @@ class TestResiduals:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [True, False],
             [False, True],
             [
@@ -148,9 +147,9 @@ class TestResiduals:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [True, False],  # is univariate
-            [True, False],  # same lengths
+        param_product(
+            [True, False],
+            [True, False],
             [
                 (metrics.err, ((0.0, 0.0), (-1.0, -2.0))),
                 (metrics.ape, ((0.0, 0.0), (100.0, 100.0))),
@@ -210,9 +209,9 @@ class TestResiduals:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [True, False],  # is univariate
-            [True, False],  # same lengths
+        param_product(
+            [True, False],
+            [True, False],
             [
                 (metrics.err, ((0.0, 0.0), (-1.0, -2.0))),
                 (metrics.ape, ((0.0, 0.0), (100.0, 100.0))),
@@ -274,7 +273,7 @@ class TestResiduals:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [True, False],
             [
                 (metrics.err, ((0.0, 0.0), (-1.0, -2.0))),
@@ -518,7 +517,7 @@ class TestResiduals:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [
                 metrics.ase,
                 metrics.sse,
@@ -592,7 +591,7 @@ class TestResiduals:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product([True, False], [True, False]),
+        param_product([True, False], [True, False]),
     )
     def test_sample_weight(self, config):
         """check that passing sample weights work and that it yields different results than without sample weights."""
@@ -628,11 +627,7 @@ class TestResiduals:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [metrics.ae, metrics.iw],  # quantile (interval) metrics
-            [True, False],  # last_points_only
-            [False, True],  # from stochastic predictions (or predicted quantiles)
-        ),
+        param_product([metrics.ae, metrics.iw], [True, False], [False, True]),
     )
     def test_residuals_with_quantiles_metrics(self, config):
         """Tests residuals with quantile metrics from expected probabilistic or quantile historical forecasts."""
@@ -735,12 +730,7 @@ class TestResiduals:
 
     @pytest.mark.parametrize(
         "config",
-        list(
-            itertools.product(
-                [metrics.ae, metrics.iw],  # quantile (interval) metrics
-                [True, False],  # last_points_only
-            )
-        ),
+        param_product([metrics.ae, metrics.iw], [True, False]),
     )
     def test_quantiles_from_model(self, config):
         """Tests residuals from quantile regression model works for both direct likelihood parameter prediction or
@@ -885,7 +875,7 @@ class TestResiduals:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product([True, False], [True, False]),
+        param_product([True, False], [True, False]),
     )
     def test_residuals_start_end(self, config):
         """residuals with start='end' returns NaN residuals since forecasts are beyond the series end."""

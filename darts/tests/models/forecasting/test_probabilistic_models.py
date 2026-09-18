@@ -1,5 +1,4 @@
 import copy
-import itertools
 import platform
 
 import numpy as np
@@ -35,6 +34,7 @@ from darts.tests.conftest import (
     XGB_AVAILABLE,
     tfm_kwargs,
 )
+from darts.tests.parametrize_helpers import param_product
 from darts.utils import timeseries_generation as tg
 
 if TORCH_AVAILABLE:
@@ -602,19 +602,19 @@ class TestProbabilisticModels:
     @pytest.mark.slow
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [(LinearRegressionModel, False, {})]
             + ([(XGBModel, False, xgb_test_params)] if XGB_AVAILABLE else [])
             + ([(LightGBMModel, False, lgbm_test_params)] if LGBM_AVAILABLE else [])
             + ([(CatBoostModel, True, cb_test_params)] if CB_AVAILABLE else []),
-            [1, 3],  # n components
+            [1, 3],
             [
                 "quantile",
                 "poisson",
                 "gaussian",
-            ],  # likelihood
-            [True, False],  # multi models
-            [1, 2],  # horizon
+            ],
+            [True, False],
+            [1, 2],
         ),
     )
     def test_predict_likelihood_parameters_regression_models(self, config):
