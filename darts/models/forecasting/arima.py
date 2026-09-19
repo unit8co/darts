@@ -17,7 +17,7 @@ from sklearn.utils import check_random_state
 from statsmodels.tsa.arima.model import ARIMA as staARIMA
 
 from darts import TimeSeries
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
@@ -239,6 +239,20 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
             )
 
         return self._build_forecast_series(forecast)
+
+    def summary(self) -> str:
+        """Print the summary of the underlying statsmodels model.
+
+        Returns
+        -------
+        str
+            The summary of the underlying statsmodels model.
+        """
+        if not self._fit_called:
+            raise_log(
+                ValueError("The model must be fit before calling summary()."),
+            )
+        return self.model.summary()
 
     @property
     def supports_probabilistic_prediction(self) -> bool:

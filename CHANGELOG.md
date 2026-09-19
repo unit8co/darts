@@ -21,6 +21,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - `FittableAnomalyScorer.fit_from_prediction()` now returns the fitted scorer object similar to `fit()`. [#3202](https://github.com/unit8co/darts/pull/3202) by [Venish Paneliya](https://github.com/VenishPaneliya).
 - Calling `ForecastingModel.historical_forecasts()` with a `start` value that is later than what is forecastable given the supplied covariates now raises an informative exception. [#3207](https://github.com/unit8co/darts/pull/3207) by [Dennis Bader](https://github.com/dennisbader).
 - Calling `ForecastingModel.gridsearch()` with a sequence of `TimeSeries` now raises an informative exception. [#3191](https://github.com/unit8co/darts/pull/3191) by [Geovanny Basantes](https://github.com/COMPUMAX-EC).
+- Added a `summary()` method to `ARIMA`, `VARIMA`, and `ExponentialSmoothing` to expose the summary of the underlying statsmodels model. [#3030](https://github.com/unit8co/darts/issues/3030) by [Boubker Bennani](https://github.com/Boubker10).
 
 **Fixed**
 
