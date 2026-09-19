@@ -10,6 +10,7 @@ import statsmodels.tsa.holtwinters as hw
 from sklearn.utils import check_random_state
 
 from darts import TimeSeries
+from darts.logging import raise_log
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
 from darts.utils._statsmodels_utils import SM_RNG_KWARG
 from darts.utils.utils import ModelMode, SeasonalityMode, random_method
@@ -185,6 +186,20 @@ class ExponentialSmoothing(LocalForecastingModel):
             )
 
         return self._build_forecast_series(forecast)
+
+    def summary(self) -> str:
+        """Print the summary of the underlying statsmodels model.
+
+        Returns
+        -------
+        str
+            The summary of the underlying statsmodels model.
+        """
+        if not self._fit_called:
+            raise_log(
+                ValueError("The model must be fit before calling summary()."),
+            )
+        return self.model.summary()
 
     @property
     def supports_multivariate(self) -> bool:

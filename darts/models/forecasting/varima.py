@@ -274,6 +274,20 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
             series_df = self._last_values + series_df.cumsum(axis=0)
         return series_df
 
+    def summary(self) -> str:
+        """Print the summary of the underlying statsmodels model.
+
+        Returns
+        -------
+        str
+            The summary of the underlying statsmodels model.
+        """
+        if not self._fit_called:
+            raise_log(
+                ValueError("The model must be fit before calling summary()."),
+            )
+        return self.model.summary()
+
     @property
     def supports_multivariate(self) -> bool:
         return True

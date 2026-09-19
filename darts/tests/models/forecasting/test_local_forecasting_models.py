@@ -218,6 +218,25 @@ class TestLocalForecastingModels:
         for loaded_model in loaded_models:
             assert model_prediction == loaded_model.predict(self.forecasting_horizon)
 
+    @pytest.mark.parametrize(
+        "model,series",
+        [
+            (ARIMA(1, 1, 1), "ts_gaussian"),
+            (VARIMA(1, 0, 0), "ts_ice_heater_train"),
+        ],
+    )
+    def test_summary(self, model, series):
+        series = getattr(self, series)
+
+        # summary is not available before fitting the model
+        with pytest.raises(ValueError, match="must be fit before calling summary"):
+            model.summary()
+
+        model.fit(series)
+        summary = model.summary()
+        assert summary is not None
+        assert "Results" in str(summary)
+
     def test_save_load_model_invalid_path(self):
         # check if save and load methods raise an error when given an invalid path
         model = ARIMA(1, 1, 1)

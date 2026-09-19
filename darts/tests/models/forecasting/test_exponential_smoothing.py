@@ -119,6 +119,18 @@ class TestExponentialSmoothing:
         # methods with different error set should yield different forecasts
         assert not np.allclose(pred.values(), pred_boot.values(), atol=1e-5)
 
+    def test_summary(self):
+        model = ExponentialSmoothing()
+
+        # summary is not available before fitting the model
+        with pytest.raises(ValueError, match="must be fit before calling summary"):
+            model.summary()
+
+        model.fit(self.series)
+        summary = model.summary()
+        assert summary is not None
+        assert "Results" in str(summary)
+
     def test_min_train_length(self):
         # default requirement for a non-seasonal model
         assert ExponentialSmoothing().min_train_series_length == 3
