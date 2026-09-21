@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- 🔴 Safe-by-default model loading against malicious checkpoints (CWE-502): on PyTorch/Lightning >= 2.6, the Lightning `.ckpt` used by `TorchForecastingModel` loading (`load_weights`, `load_weights_from_checkpoint`, `load_from_checkpoint`, and internal Trainer loads via the checkpoint plugin) now defaults to `torch.load(weights_only=True)`, restricting deserialization to a small, load-scoped allow-list of Darts/torch classes (plus a tiny audited set of `torchmetrics` reduction helpers) so a crafted `.ckpt` cannot execute arbitrary code on load. Pass `weights_only=False` to restore full unpickling for checkpoints you trust (e.g. models with custom classes not covered by the allow-list); the training-resume path (`fit(ckpt_path=...)`) still uses full unpickling as it needs the optimizer state. NOTE: this protects the `.ckpt` only — the Darts base model file (`.pt`) is still fully unpickled, so loading a malicious `.pt` remains unsafe and is out of scope. Partially addresses [#3177](https://github.com/unit8co/darts/issues/3177). [#3183](https://github.com/unit8co/darts/pull/3183) by [hackchang](https://github.com/hackchang).
+
 **Fixed**
 
 **Dependencies**
