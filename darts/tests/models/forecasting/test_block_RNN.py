@@ -18,6 +18,7 @@ from darts.models.forecasting.block_rnn_model import (
     CustomBlockRNNModule,
     _BlockRNNModule,
 )
+from darts.utils.data.torch_datasets.utils import PLModuleOutput
 
 
 class ModuleValid1(_BlockRNNModule):
@@ -35,8 +36,10 @@ class ModuleValid2(CustomBlockRNNModule):
         self.linear = nn.Linear(self.input_size, self.target_size)
 
     def forward(self, x_in):
-        x = self.linear(x_in[0])
-        return x.view(len(x), -1, self.target_size, self.nr_params)
+        x = self.linear(x_in.past_target)
+        return PLModuleOutput(
+            prediction=x.view(len(x), -1, self.target_size, self.nr_params)
+        )
 
 
 class TestBlockRNNModel:

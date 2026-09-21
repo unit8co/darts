@@ -1,4 +1,3 @@
-import itertools
 import logging
 import random
 from itertools import product
@@ -24,6 +23,7 @@ from darts.models import (
     Theta,
 )
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.parametrize_helpers import param_product, param_zip
 from darts.utils.likelihood_models.base import (
     likelihood_component_names,
     quantile_names,
@@ -102,7 +102,7 @@ def compare_best_against_random(model_class, params, series, stride=1):
 class TestBacktesting:
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [True, False],
             [False, True],
             [
@@ -196,7 +196,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [True, False],
             [False, True],
             [
@@ -310,7 +310,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [True, False],
             [
                 ([metrics.mape], [0.0, 100.0]),
@@ -407,7 +407,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [True, False],
             [
                 ([metrics.mape], [0.0, 100.0]),
@@ -499,7 +499,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [True, False],
             [
                 ([metrics.mape], [0.0, 100.0]),
@@ -954,14 +954,14 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [
                 "det",
                 "sampled",
                 "lkl_params",
-            ],  # prediction method
-            [False, True],  # is multivariate
-            [True, False],  # auto-regression
+            ],
+            [False, True],
+            [True, False],
         ),
     )
     def test_backtest_classification(self, config, caplog):
@@ -1278,7 +1278,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "model_cls,parameters",
-        zip([NaiveSeasonal, ARIMA], [{"K": [1, 2]}, {"p": [18, 4]}]),
+        param_zip([NaiveSeasonal, ARIMA], [{"K": [1, 2]}, {"p": [18, 4]}]),
     )
     def test_gridsearch_bad_covariates(self, model_cls, parameters):
         """Passing unsupported covariate should raise an exception"""
@@ -1319,9 +1319,22 @@ class TestBacktesting:
                 "Model cannot be fit/trained with `future_covariates`."
             )
 
+    def test_gridsearch_multiple_series_raises(self):
+        """`gridsearch` only supports single `TimeSeries` objects"""
+        dummy_series = get_dummy_series(ts_length=20)
+        with pytest.raises(ValueError) as msg:
+            Theta.gridsearch(
+                parameters={"theta": [1, 2]},
+                series=[dummy_series] * 2,
+                forecast_horizon=1,
+            )
+        assert str(msg.value).startswith(
+            "All input series must be single (univariate or multivariate) `TimeSeries`."
+        )
+
     @pytest.mark.parametrize(
         "config",
-        itertools.product([True, False], [True, False]),
+        param_product([True, False], [True, False]),
     )
     def test_gridsearch_sample_weight(self, config):
         """check that passing sample weights work and that it yields different results than without sample weights."""
@@ -1353,7 +1366,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [
                 metrics.ase,
                 metrics.mase,
@@ -1466,14 +1479,14 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [
                 [metrics.mae],  # mae does not support time_reduction
                 [metrics.mae, metrics.ae],  # ae supports time_reduction
                 [metrics.miw],  # quantile interval metric
                 [metrics.miw, metrics.iw],
             ],
-            [True, False],  # last_points_only
+            [True, False],
         ),
     )
     def test_metric_quantiles_lpo(self, config):
@@ -1660,11 +1673,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [1, 2],  # number of target components (uni / multivariate)
-            [[0.1, 0.5, 0.9], [0.5]],  # quantiles (multiple / single)
-            [None, np.nanmean],  # component_reduction
-        ),
+        param_product([1, 2], [[0.1, 0.5, 0.9], [0.5]], [None, np.nanmean]),
     )
     def test_backtest_overlap_end_empty_intersection(self, config):
         """When overlap_end=True and predict_likelihood_parameters=True, the
@@ -1725,7 +1734,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        product([True, False], [True, False]),
+        param_product([True, False], [True, False]),
     )
     def test_backtest_sample_weight(self, config):
         """check that passing sample weights work and that it yields different results than without sample weights."""
@@ -1760,7 +1769,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        product([True, False], [True, False]),
+        param_product([True, False], [True, False]),
     )
     def test_backtest_start_end(self, config):
         """backtest with start='end' produces nan since forecasts don't overlap with the series."""
@@ -1782,7 +1791,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        product([True, False], [True, False]),
+        param_product([True, False], [True, False]),
     )
     def test_backtest_start_end_reduction_none(self, config):
         """backtest with start='end' and reduction=None returns per-forecast nan arrays."""

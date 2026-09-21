@@ -1,4 +1,3 @@
-import itertools
 import warnings
 from collections.abc import Sequence
 from itertools import product
@@ -8,6 +7,7 @@ import pytest
 
 from darts import TimeSeries
 from darts.logging import raise_log
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.data.tabularization import _get_feature_times
 from darts.utils.timeseries_generation import linear_timeseries
 
@@ -205,10 +205,7 @@ class TestGetFeatureTimes:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            ["datetime", "integer"],
-            [0, 1, 3],
-        ),
+        param_product(["datetime", "integer"], [0, 1, 3]),
     )
     def test_feature_times_training(self, config):
         """
@@ -264,10 +261,7 @@ class TestGetFeatureTimes:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            ["datetime", "integer"],
-            [0, 1, 3],
-        ),
+        param_product(["datetime", "integer"], [0, 1, 3]),
     )
     def test_feature_times_prediction(self, config):
         """
@@ -322,7 +316,7 @@ class TestGetFeatureTimes:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(["datetime", "integer"], [0, 1, 3]),
+        param_product(["datetime", "integer"], [0, 1, 3]),
     )
     def test_feature_times_output_chunk_length_output_chunk_shift(self, config):
         """
@@ -356,7 +350,7 @@ class TestGetFeatureTimes:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(["datetime", "integer"], [0, 1, 3]),
+        param_product(["datetime", "integer"], [0, 1, 3]),
     )
     def test_feature_times_lags(self, config):
         """
@@ -390,7 +384,7 @@ class TestGetFeatureTimes:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(["datetime", "integer"], [0, 1, 3]),
+        param_product(["datetime", "integer"], [0, 1, 3]),
     )
     def test_feature_times_training_single_time(self, config):
         """
@@ -446,7 +440,7 @@ class TestGetFeatureTimes:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(["datetime", "integer"], [0, 1, 3]),
+        param_product(["datetime", "integer"], [0, 1, 3]),
     )
     def test_feature_times_prediction_single_time(self, config):
         """
@@ -501,7 +495,7 @@ class TestGetFeatureTimes:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(["datetime", "integer"], [0, 1, 3]),
+        param_product(["datetime", "integer"], [0, 1, 3]),
     )
     def test_feature_times_extend_time_index_range_idx(self, config):
         """
@@ -560,7 +554,7 @@ class TestGetFeatureTimes:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(["datetime", "integer"], [0, 1, 3]),
+        param_product(["datetime", "integer"], [0, 1, 3]),
     )
     def test_feature_times_future_lags(self, config):
         """

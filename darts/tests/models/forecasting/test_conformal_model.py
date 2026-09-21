@@ -1,5 +1,4 @@
 import copy
-import itertools
 import math
 import os
 
@@ -20,6 +19,7 @@ from darts.models import (
 from darts.models.forecasting.conformal_models import _get_calibration_hfc_start
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.parametrize_helpers import param_product
 from darts.utils import n_steps_between
 from darts.utils import timeseries_generation as tg
 from darts.utils.likelihood_models.base import (
@@ -268,7 +268,7 @@ class TestConformalModel:
             assert val == model_fresh._model_params[param]
 
     @pytest.mark.parametrize(
-        "config", itertools.product(models_cls_kwargs_errs, [{}, pred_lklp])
+        "config", param_product(models_cls_kwargs_errs, [{}, pred_lklp])
     )
     def test_save_load_model(self, tmpdir_fn, config):
         # check if save and load methods work and if loaded model creates same forecasts as original model
@@ -457,7 +457,7 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [(ConformalNaiveModel, {"quantiles": [0.1, 0.5, 0.9]}, "regression")],
             [
                 {"lags_past_covariates": IN_LEN},
@@ -620,7 +620,7 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config,ts",
-        itertools.product(
+        param_product(
             models_cls_kwargs_errs,
             [ts_w_static_cov, ts_shared_static_cov, ts_comps_static_cov],
         ),
@@ -644,12 +644,8 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [True, False],  # univariate series
-            [True, False],  # single series
-            [True, False],  # use covariates
-            [True, False],  # datetime index
-            [1, 3, 5],  # different horizons
+        param_product(
+            [True, False], [True, False], [True, False], [True, False], [1, 3, 5]
         ),
     )
     def test_predict(self, config):
@@ -730,18 +726,18 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [1, 3, 5],  # horizon
-            [True, False],  # univariate series
-            [True, False],  # single series
+        param_product(
+            [1, 3, 5],
+            [True, False],
+            [True, False],
             [q, [0.2, 0.3, 0.5, 0.7, 0.8]],
             [
                 (ConformalNaiveModel, "regression"),
                 (ConformalNaiveModel, "regression_prob"),
                 (ConformalQRModel, "regression_qr"),
-            ],  # model type
-            [True, False],  # symmetric non-conformity score
-            [None, 1],  # train length
+            ],
+            [True, False],
+            [None, 1],
         ),
     )
     def test_conformal_model_predict_accuracy(self, config):
@@ -837,14 +833,14 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [1, 3, 5],  # horizon
-            [True, False],  # univariate series
-            [True, False],  # single series,
-            [0, 1],  # output chunk shift
-            [None, 1],  # train length
-            [False, True],  # use covariates
-            [q, [0.2, 0.3, 0.5, 0.7, 0.8]],  # quantiles
+        param_product(
+            [1, 3, 5],
+            [True, False],
+            [True, False],
+            [0, 1],
+            [None, 1],
+            [False, True],
+            [q, [0.2, 0.3, 0.5, 0.7, 0.8]],
         ),
     )
     def test_naive_conformal_model_historical_forecasts(self, config):
@@ -964,13 +960,7 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [1, 3, 5],  # horizon
-            [0, 1],  # output chunk shift
-            [None, 1],  # cal length,
-            [1, 2],  # cal stride
-            [False, True],  # use start
-        ),
+        param_product([1, 3, 5], [0, 1], [None, 1], [1, 2], [False, True]),
     )
     def test_stridden_conformal_model(self, config):
         """Checks correctness of naive conformal model historical forecasts for:
@@ -1320,11 +1310,7 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [1, 3, 5],  # horizon
-            [0, 1],  # output chunk shift
-            [False, True],  # use covariates
-        ),
+        param_product([1, 3, 5], [0, 1], [False, True]),
     )
     def test_too_short_input_predict(self, config):
         """Checks conformal model predict with minimum required input and too short input."""
@@ -1380,13 +1366,8 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [False, True],  # last points only
-            [False, True],  # overlap end
-            [None, 2],  # train length
-            [0, 1],  # output chunk shift
-            [1, 3, 5],  # horizon
-            [True, False],  # use covs
+        param_product(
+            [False, True], [False, True], [None, 2], [0, 1], [1, 3, 5], [True, False]
         ),
     )
     def test_too_short_input_hfc(self, config):

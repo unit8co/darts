@@ -1,7 +1,6 @@
 import copy
 import os
 from copy import deepcopy
-from itertools import product
 from unittest.mock import ANY, patch
 
 import numpy as np
@@ -44,6 +43,7 @@ from darts.models.forecasting.torch_forecasting_model import (
     PastCovariatesTorchModel,
     TorchForecastingModel,
 )
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.likelihood_models.torch import GaussianLikelihood
 
 IN_LEN = 24
@@ -677,7 +677,7 @@ class TestGlobalForecastingModels:
 
     @pytest.mark.parametrize(
         "model_cls,ts",
-        product(
+        param_product(
             [TFTModel, DLinearModel, NLinearModel, TiDEModel, TSMixerModel],
             [ts_w_static_cov, ts_shared_static_cov, ts_comps_static_cov],
         ),

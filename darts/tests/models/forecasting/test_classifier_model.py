@@ -1,5 +1,4 @@
 import logging
-from itertools import product
 from unittest.mock import patch
 
 import numpy as np
@@ -26,6 +25,7 @@ from darts.models import (
 )
 from darts.models.forecasting.sklearn_model import SKLearnModelWithCategoricalFeatures
 from darts.tests.conftest import CB_AVAILABLE, LGBM_AVAILABLE, XGB_AVAILABLE
+from darts.tests.parametrize_helpers import param_list, param_product, param_zip
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
 from darts.utils.likelihood_models.base import LikelihoodType
@@ -183,7 +183,7 @@ class TestClassifierModel:
         models_accuracies.append(1)
         models_multioutput.append(False)
 
-    @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
+    @pytest.mark.parametrize("clf_params", param_list(process_model_list(classifiers)))
     def test_init_classifier(self, clf_params):
         clf, kwargs = clf_params
         model = clf(lags_past_covariates=5, **kwargs)
@@ -198,7 +198,7 @@ class TestClassifierModel:
             == "`SKLearnClassifierModel` must be initialized with a classifier `model`."
         )
 
-    @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
+    @pytest.mark.parametrize("clf_params", param_list(process_model_list(classifiers)))
     def test_univariate_class_labels(self, clf_params):
         clf, kwargs = clf_params
         model = clf(lags_past_covariates=5, **kwargs)
@@ -217,7 +217,7 @@ class TestClassifierModel:
         assert set(np.unique(self.sine_univariate1_cat.values())) == {0, 1, 2}
         assert (model.class_labels[0] == [0, 1, 2]).all()
 
-    @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
+    @pytest.mark.parametrize("clf_params", param_list(process_model_list(classifiers)))
     def test_multiclass_class_labels(self, clf_params):
         clf, kwargs = clf_params
         model = clf(lags_past_covariates=5, **kwargs)
@@ -292,7 +292,7 @@ class TestClassifierModel:
         series = TimeSeries.from_values(np.array([0, 0, 0, 1, 1]), columns=["comp1"])
         model.fit(series=series)
 
-    @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
+    @pytest.mark.parametrize("clf_params", param_list(process_model_list(classifiers)))
     def test_optional_static_covariates(self, clf_params):
         """adding static covariates to lagged data logic is tested in
         `darts.tests.utils.data.tabularization.test_add_static_covariates`
@@ -371,7 +371,7 @@ class TestClassifierModel:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             zip(
                 process_model_list(classifiers),
                 range(len(list(process_model_list(classifiers)))),
@@ -396,7 +396,7 @@ class TestClassifierModel:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             zip(
                 process_model_list(classifiers),
                 range(len(list(process_model_list(classifiers)))),
@@ -421,7 +421,7 @@ class TestClassifierModel:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             zip(
                 process_model_list(classifiers),
                 range(len(list(process_model_list(classifiers)))),
@@ -446,7 +446,7 @@ class TestClassifierModel:
 
     @pytest.mark.parametrize(
         "model_params",
-        zip(process_model_list(classifiers), models_multioutput),
+        param_zip(process_model_list(classifiers), models_multioutput),
     )
     def test_multioutput_wrapper(self, model_params):
         """Check that with output_chunk_length=1, wrapping in MultiOutputClassifier occurs only when necessary"""
@@ -502,7 +502,7 @@ class TestClassifierModel:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [
                 model_config
                 for multi_out, model_config in zip(
@@ -528,7 +528,7 @@ class TestClassifierModel:
             assert not isinstance(model.model, MultiOutputClassifier)
 
     @pytest.mark.parametrize(
-        "config", product(process_model_list(classifiers), [True, False])
+        "config", param_product(process_model_list(classifiers), [True, False])
     )
     def test_models_runnability(self, config):
         (model_cls, kwargs), multi_models = config
@@ -632,7 +632,7 @@ class TestClassifierModel:
             "The number of components of the target series and the covariates"
         )
 
-    @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
+    @pytest.mark.parametrize("clf_params", param_list(process_model_list(classifiers)))
     def test_labels_constraints(self, clf_params):
         clf, kwargs = clf_params
         model = clf(lags_past_covariates=2, **kwargs)
@@ -675,7 +675,7 @@ class TestClassifierModel:
                     past_covariates=self.sine_univariate1,
                 )
 
-    @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
+    @pytest.mark.parametrize("clf_params", param_list(process_model_list(classifiers)))
     def test_warning_raised_on_lags_and_target_not_cat(self, clf_params, caplog):
         clf, kwargs = clf_params
         with caplog.at_level(logging.WARNING):
@@ -695,7 +695,7 @@ class TestClassifierModel:
         "clf_params",
         [
             (model, config)
-            for model, config in process_model_list(classifiers)
+            for model, config in param_list(process_model_list(classifiers))
             if issubclass(model, SKLearnModelWithCategoricalFeatures)
         ],
     )
@@ -912,7 +912,7 @@ class TestProbabilisticClassifierModels:
 
     @pytest.mark.parametrize(
         "clf_params",
-        process_model_list(probabilistic_classifiers),
+        param_list(process_model_list(probabilistic_classifiers)),
     )
     def test_wrong_likelihood(self, clf_params):
         clf, kwargs = clf_params
@@ -936,7 +936,7 @@ class TestProbabilisticClassifierModels:
 
     @pytest.mark.parametrize(
         "clf_params",
-        product(
+        param_product(
             process_model_list(probabilistic_classifiers), [False, True], [False, True]
         ),
     )
@@ -1007,7 +1007,7 @@ class TestProbabilisticClassifierModels:
 
     @pytest.mark.parametrize(
         "clf_params",
-        product(
+        param_product(
             zip(process_model_list(probabilistic_classifiers), rmse_class_proba),
             [True, False],
             [True, False],
@@ -1260,7 +1260,7 @@ class TestProbabilisticClassifierModels:
 
     @pytest.mark.parametrize(
         "clf_params",
-        product(
+        param_product(
             zip(process_model_list(probabilistic_classifiers), rmse_class_sample),
             [False, True],
         ),
@@ -1331,10 +1331,7 @@ class TestProbabilisticClassifierModels:
 
     @pytest.mark.parametrize(
         "params",
-        product(
-            [True, False],  # multi_variate
-            [True, False],  # multi_model
-        ),
+        param_product([True, False], [True, False]),
     )
     def test_historical_forecast(self, params):
         multi_model, multi_variate = params

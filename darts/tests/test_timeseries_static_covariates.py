@@ -1,5 +1,4 @@
 import copy
-import itertools
 import logging
 import os
 
@@ -11,6 +10,7 @@ import pytest
 from darts import TimeSeries, concatenate, to_group_dataframe
 from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.tests.conftest import PANDAS_30_OR_GREATER, POLARS_AVAILABLE
+from darts.tests.parametrize_helpers import param_product
 from darts.timeseries import (
     DEFAULT_GLOBAL_STATIC_COV_NAME,
     METADATA_TAG,
@@ -276,7 +276,7 @@ class TestTimeSeriesStaticCovariate:
         )
 
     @pytest.mark.parametrize(
-        "config", itertools.product(["int", "dt", "str"], TEST_BACKENDS)
+        "config", param_product(["int", "dt", "str"], TEST_BACKENDS)
     )
     def test_from_group_dataframe(self, config):
         """Tests correct extract of TimeSeries groups from a long DataFrame with unsorted (time/integer) index"""
@@ -313,10 +313,7 @@ class TestTimeSeriesStaticCovariate:
 
     @pytest.mark.parametrize(
         "backend,time_as_index",
-        itertools.product(
-            TEST_BACKENDS,
-            [True, False],
-        ),
+        param_product(TEST_BACKENDS, [True, False]),
     )
     def test_to_group_dataframe_creation(self, backend, time_as_index):
         df_pd = pd.DataFrame(

@@ -19,29 +19,13 @@ import inspect
 import io
 import os
 import pickle
-import sys
 import time
 from abc import ABC, ABCMeta, abstractmethod
 from collections import OrderedDict
 from collections.abc import Callable, Sequence
 from itertools import product
 from random import sample
-from typing import Any, BinaryIO, Literal
-
-from darts.metrics import CLASSIFICATION_METRICS
-from darts.metrics.utils import _PARAM_LABEL_REDUCTION, _PARAM_LABELS
-from darts.typing import TimeSeriesLike
-from darts.utils.likelihood_models.base import (
-    Likelihood,
-    likelihood_component_names,
-    quantile_interval_names,
-    quantile_names,
-)
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+from typing import Any, BinaryIO, Literal, Self
 
 import numpy as np
 import pandas as pd
@@ -51,8 +35,14 @@ from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger, raise_log
-from darts.metrics.utils import METRIC_OUTPUT_TYPE, METRIC_TYPE
-from darts.typing import TimeIndex
+from darts.metrics import CLASSIFICATION_METRICS
+from darts.metrics.utils import (
+    _PARAM_LABEL_REDUCTION,
+    _PARAM_LABELS,
+    METRIC_OUTPUT_TYPE,
+    METRIC_TYPE,
+)
+from darts.typing import TimeIndex, TimeSeriesLike
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _apply_data_transformers,
@@ -64,6 +54,12 @@ from darts.utils.historical_forecasts.utils import (
     _pack_series_in_list,
     _process_historical_forecast_for_backtest,
     _slice_intersect_series,
+)
+from darts.utils.likelihood_models.base import (
+    Likelihood,
+    likelihood_component_names,
+    quantile_interval_names,
+    quantile_names,
 )
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
@@ -1841,6 +1837,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "Every value in the `parameters` dictionary should be a list or a np.ndarray."
                 ),
             )
+
+        for series_ in [series, val_series, past_covariates, future_covariates]:
+            if get_series_seq_type(series_) > SeriesType.SINGLE:
+                raise_log(
+                    ValueError(
+                        "All input series must be single (univariate or multivariate) `TimeSeries`."
+                    ),
+                )
 
         if use_fitted_values:
             if not hasattr(

@@ -16,7 +16,7 @@ from darts.typing import TimeSeriesLike
 from darts.utils.data.torch_datasets.dataset import TorchDataset
 from darts.utils.data.torch_datasets.utils import (
     InputChunkLength,
-    TorchInferenceDatasetOutput,
+    TorchInferenceSample,
     _parse_input_chunk_length,
 )
 from darts.utils.data.utils import FeatureType
@@ -31,8 +31,10 @@ class TorchInferenceDataset(TorchDataset, ABC):
 
         Provides samples to compute forecasts using a `TorchForecastingModel`.
 
-        Each sample drawn from this dataset is an eight-element tuple extracted from a specific time window and
-        set of single input `TimeSeries`. The elements are:
+        Each sample drawn from this dataset is a
+        :class:`~darts.utils.data.torch_datasets.utils.TorchInferenceSample` extracted from a specific time
+        window and set of single input `TimeSeries`. Construct the sample by field name and omit unused
+        optional slots. The fields are:
 
         - past_target: target `series` values in the input chunk
         - past_covariates: Optional `past_covariates` values in the input chunk
@@ -41,20 +43,20 @@ class TorchInferenceDataset(TorchDataset, ABC):
         - historic_future_covariates: Optional `future_covariates` values in the input chunk
         - future_covariates: Optional `future_covariates` values in the output chunk and forecast horizon
         - static_covariates: Optional `static_covariates` values of the `series`
-        - target_series: the target `TimeSeries`
+        - series_schema: the target series schema (for reconstructing a `TimeSeries`)
         - pred_time: the time of the first point in the forecast horizon
 
         Darts `TorchForecastingModel` can predict from instances of `TorchInferenceDataset` using the
         `predict_from_dataset()` method.
 
         `TorchInferenceDataset` inherits from torch `Dataset`; meaning that all subclasses must implement the
-        `__getitem__()` method. All returned elements except `target_series` (`TimeSeries`) and `pred_time`
-        (`pd.Timestamp` or `int`) must be of type `np.ndarray` (or `None` for optional covariates).
+        `__getitem__()` method. All tensor fields must be of type `np.ndarray` (or `None` for optional covariates).
+        ``series_schema`` is a ``dict`` and ``pred_time`` is a ``pd.Timestamp`` or ``int``.
         """
         super().__init__()
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> TorchInferenceDatasetOutput:
+    def __getitem__(self, index: int) -> TorchInferenceSample:
         """Returns a sample drawn from this dataset."""
 
 
@@ -74,8 +76,8 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
     ):
         """Sequential Inference Dataset
 
-        Each sample drawn from this dataset is an eight-element tuple extracted from a specific time window and
-        set of single input `TimeSeries`. The elements are:
+        Each sample drawn from this dataset is a :class:`~darts.utils.data.torch_datasets.utils.TorchInferenceSample`
+        extracted from a specific time window and set of single input `TimeSeries`. The fields are:
 
         - past_target: target `series` values in the input chunk
         - past_covariates: `past_covariates` values in the input chunk (`None` if `past_covariates=None`)
@@ -84,7 +86,7 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
         - historic_future_covariates: `future_covariates` values in the input chunk (`None` if `future_covariates=None`)
         - future_covariates: `future_covariates` values in the forecast horizon (`None` if `future_covariates=None`)
         - static_covariates: `static_covariates` values of the `series` (`None` if `use_static_covariates=False`)
-        - target_series: the target `TimeSeries`
+        - series_schema: the target series schema (for reconstructing a `TimeSeries`)
         - pred_time: the time of the first point in the forecast horizon
 
         The output chunk / forecast horizon starts `output_chunk_length + output_chunk_shift` after the input chunk's
@@ -221,14 +223,14 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
             stride_idx = (index - cumulative_lengths[list_index - 1]) * stride
         return list_index, bound_left + stride_idx
 
-    def __getitem__(self, idx: int) -> TorchInferenceDatasetOutput:
+    def __getitem__(self, index: int) -> TorchInferenceSample:
         # determine the series index, and the index + 1 (exclusive range) of the output chunk end within that series
         if self.bounds is None:
-            series_idx = idx
-            series_end_idx = len(self.series[idx])
+            series_idx = index
+            series_end_idx = len(self.series[index])
         else:
             series_idx, series_end_idx = self._find_list_index(
-                idx,
+                index,
                 self.cum_lengths,
                 self.bounds,
                 self.stride,
@@ -314,23 +316,13 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
         if self.uses_static_covariates_covariates:
             sc = series.static_covariates_values(copy=False)
 
-        # (
-        #     past target,
-        #     past cov,
-        #     future past cov,
-        #     historic future cov,
-        #     future cov,
-        #     static cov,
-        #     target series schema,
-        #     prediction start time,
-        # )
-        return (
-            pt,
-            pc,
-            fpc,
-            hfc,
-            fc,
-            sc,
-            series.schema(copy=False),
-            pred_start,
+        return TorchInferenceSample(
+            past_target=pt,
+            past_covariates=pc,
+            future_past_covariates=fpc,
+            historic_future_covariates=hfc,
+            future_covariates=fc,
+            static_covariates=sc,
+            series_schema=series.schema(copy=False),
+            pred_time=pred_start,
         )
