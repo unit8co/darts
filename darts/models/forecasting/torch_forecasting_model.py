@@ -99,10 +99,6 @@ TFM_ATTRS_NO_PICKLE = {"model": None, "trainer": None}
 
 logger = get_logger(__name__)
 
-# lightning 2.6.0 introduced `weights_only` loading to API
-_PL_2_6_OR_ABOVE = tuple(int(el) for el in pl.__version__.split(".")[:2]) >= (2, 6)
-
-
 # Trusted package prefixes used by the checkpoint-driven allow-list below. A global
 # referenced by a checkpoint is only auto-allow-listed for a ``weights_only=True`` load if it
 # is a CLASS (never a function/callable) that lives under one of these packages AND subclasses
@@ -277,8 +273,6 @@ class _DartsCheckpointIO(TorchCheckpointIO):
     """
 
     def load_checkpoint(self, path, map_location=None, weights_only=None, **kwargs):
-        if not _PL_2_6_OR_ABOVE:
-            return super().load_checkpoint(path, map_location=map_location, **kwargs)
         effective = True if weights_only is None else weights_only
 
         def _do_load():
@@ -1613,7 +1607,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         if self._requires_training:
             weights_only_kwargs = dict()
-            if ckpt_path is not None and _PL_2_6_OR_ABOVE:
+            if ckpt_path is not None:
                 # Training-resume path: `ckpt_path` is a checkpoint the user explicitly
                 # provides to resume/continue training. It carries full optimizer *state*
                 # (not just the allow-listed classes), so it requires full unpickling.
@@ -1852,14 +1846,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model = params["model"]
         datamodule = params["datamodule"]
 
-        tune_kwargs: dict[str, Any] = dict()
-        if _PL_2_6_OR_ABOVE:
-            tune_kwargs.update(
-                dict(
-                    margin=margin,
-                    max_val=max_val,
-                )
-            )
+        tune_kwargs: dict[str, Any] = dict(
+            margin=margin,
+            max_val=max_val,
+        )
 
         batch_size = Tuner(trainer).scale_batch_size(
             model=model,
@@ -2686,8 +2676,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         pl_module_cls: PLForecastingModule = getattr(
             sys.modules[self._module_path], self._module_name
         )
-        if not _PL_2_6_OR_ABOVE:
-            return pl_module_cls.load_from_checkpoint(file_path, **kwargs)
+
         # safe-by-default: load a legitimate Darts `.ckpt` under `weights_only=True` with a
         # load-scoped allow-list (see `_load_ckpt_safely`). Callers can override via `kwargs`
         # (e.g. `load()` / `load_from_checkpoint(..., weights_only=False)` for trusted files).
@@ -2809,7 +2798,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # safe-by-default: load the `.ckpt` under `weights_only=True` with a load-scoped
         # allow-list (see `_load_ckpt_safely`); pass `weights_only=False` only for trusted
         # checkpoints. NOTE: the Darts base model (`.pt`) loaded below is still fully unpickled.
-        if _PL_2_6_OR_ABOVE and weights_only:
+        if weights_only:
             ckpt = _load_ckpt_safely(
                 lambda: torch.load(ckpt_path, weights_only=weights_only, **kwargs),
                 ckpt_path,

@@ -61,8 +61,8 @@ Repository = "https://github.com/unit8co/darts"
 [project.optional-dependencies]
 # Main feature sets - pip installable with: pip install "darts[torch]"
 torch = [
-    "torch>=2.0.0",
-    "pytorch-lightning>=2.0.0",
+    "torch>=2.6.0",
+    "pytorch-lightning>=2.6.6",
     "tensorboardx>=2.1",
     "huggingface-hub>=0.35.3",
     "safetensors>=0.6.2",
@@ -178,7 +178,7 @@ optional = [
     "pydantic>=2.12.5",
     "ray>=2.53.0",
     "plotly>=6.5.2",
-    "neuralforecast>=3.0.0",
+#    "neuralforecast>=3.0.0",
     "tirex-ts>=1.4.0",
 ]
 release = [

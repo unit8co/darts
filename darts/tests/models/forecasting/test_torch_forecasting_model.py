@@ -946,9 +946,7 @@ class TestTorchForecastingModel:
         code, while still (a) loading legitimate models and (b) allowing an explicit
         ``weights_only=False`` opt-out for trusted files.
         """
-        from darts.models.forecasting.torch_forecasting_model import _PL_2_6_OR_ABOVE
-
-        if not _PL_2_6_OR_ABOVE or not hasattr(torch.serialization, "safe_globals"):
+        if not hasattr(torch.serialization, "safe_globals"):
             pytest.skip(
                 "requires torch/lightning >= 2.6 with `weights_only` load support"
             )
@@ -1034,11 +1032,6 @@ class TestTorchForecastingModel:
         allow-listed classes). After flipping the internal ``weights_only`` default to True,
         the trusted resume path must keep full unpickling and continue training successfully.
         """
-        from darts.models.forecasting.torch_forecasting_model import _PL_2_6_OR_ABOVE
-
-        if not _PL_2_6_OR_ABOVE:
-            pytest.skip("requires lightning >= 2.6")
-
         model_name = "resume_optstate"
         model = DLinearModel(
             input_chunk_length=4,
