@@ -706,7 +706,7 @@ Our regression models are designed to predict continuous numerical values, makin
      - ✅ ✅ 🔴
      - ✅ ✅
      - ✅
-     - `T0 model card <https://huggingface.co/theforecastingcompany/t0-alpha>`_, `tfc-t0 GitHub <https://github.com/theforecastingcompany/tfc-t0>`_
+     - `T0 report <https://www.theforecastingcompany.com/papers/files/t0-technical-report.pdf>`_, `tfc-t0 GitHub <https://github.com/theforecastingcompany/tfc-t0>`_
    * - **Ensemble Models** (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_): Model support is dependent on ensembled forecasting models and the ensemble model itself
      -
      -
