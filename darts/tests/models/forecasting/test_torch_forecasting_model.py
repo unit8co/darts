@@ -159,6 +159,27 @@ class NumsCalled(Metric):
         return len(self.preds)
 
 
+class CustomCallback(Callback):
+    def on_train_epoch_end(self, trainer, pl_module):
+        pass
+
+
+class InterruptTrainingAfterNEpochsCallback(Callback):
+    """Lightning callback that simulates an interrupted training run.
+
+    Uses ``trainer.should_stop`` so that PyTorch Lightning still flushes the latest
+    checkpoint to disk (an unhandled exception would abort training before that).
+    """
+
+    def __init__(self, interrupt_after_epoch: int):
+        self.interrupt_after_epoch = interrupt_after_epoch
+
+    def on_train_epoch_end(self, trainer, pl_module):
+        # ModelCheckpoint runs before user callbacks, so the latest epoch is saved.
+        if trainer.current_epoch + 1 == self.interrupt_after_epoch:
+            trainer.should_stop = True
+
+
 class TestTorchForecastingModel:
     times = pd.date_range("20130101", "20130410")
     pd_series = pd.Series(range(100), index=times)
@@ -218,17 +239,14 @@ class TestTorchForecastingModel:
         "config",
         param_product(
             [False, True],
+            [False, True],
             [(RNNModel, {"model": "RNN", "hidden_dim": 10, "n_rnn_layers": 10})]
             + ([(NeuralForecastModel, {})] if NF_AVAILABLE else []),
         ),
     )
     def test_manual_save_and_load(self, tmpdir_fn, config):
         """validate manual save with automatic save files by comparing output between the two"""
-        clean, (model_cls, model_kwargs) = config
-
-        class CustomCallback(Callback):
-            def on_train_epoch_end(self, trainer, pl_module):
-                pass
+        clean, probabilistic, (model_cls, model_kwargs) = config
 
         kwargs = copy.deepcopy(tfm_kwargs)
         kwargs = dict(
@@ -239,6 +257,9 @@ class TestTorchForecastingModel:
                 "n_epochs": 5,
                 "random_state": 42,
                 "work_dir": tmpdir_fn,
+                "likelihood": QuantileRegression([0.1, 0.5, 0.9])
+                if probabilistic
+                else None,
             },
             **model_kwargs,
         )
@@ -259,7 +280,7 @@ class TestTorchForecastingModel:
         model_auto_save = model_cls(
             model_name=auto_name,
             save_checkpoints=True,
-            **kwargs,
+            **kwargs_with_callback,
         )
 
         # save model without training
@@ -327,7 +348,9 @@ class TestTorchForecastingModel:
 
             # Predicting without giving the series in args
             with pytest.raises(ValueError) as err:
-                model_manual_save.predict(n=4)
+                model_cls.load(
+                    model_path_manual, pl_trainer_kwargs=pl_kwargs_load
+                ).predict(n=4)
             assert str(err.value) == (
                 "Input `series` must be provided. This is the result either from fitting on multiple series, "
                 "from fitting with `fit_from_dataset()`, from not having fit the model yet, or from loading a "
@@ -393,10 +416,16 @@ class TestTorchForecastingModel:
             model_path_manual_2, pl_trainer_kwargs=pl_kwargs_load
         )
 
-        # compare chained load_from_checkpoint() save() with manual save
+        # compare chained load_from_checkpoint() save() with manual save.
+        # reload from the original manual checkpoint so both models are at the same
+        # point in the internal random sequence (probabilistic models advance it on
+        # every `predict()` call).
+        model_manual_save_fresh = model_cls.load(
+            model_path_manual, pl_trainer_kwargs=pl_kwargs_load
+        )
         assert model_chained_load_save.predict(
             n=4, series=self.series
-        ) == model_manual_save.predict(n=4, series=self.series)
+        ) == model_manual_save_fresh.predict(n=4, series=self.series)
 
     @pytest.mark.parametrize("clean", [False, True])
     def test_manual_save_and_load_precision(self, tmpdir_fn, clean):
@@ -1570,6 +1599,59 @@ class TestTorchForecastingModel:
         # calling fit() should not impact the loss function
         for attr in loss_fn_attrs:
             assert isinstance(getattr(loaded_model.model, attr), torch.nn.L1Loss)
+
+    def test_load_from_checkpoint_identical_predictions_after_crash(self, tmpdir_fn):
+        """Predictions must match whether training completes uninterrupted or is interrupted
+        mid-run and resumes from the latest checkpoint via `load_from_checkpoint()`.
+        """
+        n_epochs = 5
+        interrupt_after_epoch = 2
+        n_pred = 4
+
+        common_kwargs = {
+            "input_chunk_length": 12,
+            "model": "RNN",
+            "hidden_dim": 10,
+            "n_rnn_layers": 10,
+            "n_epochs": n_epochs,
+            "random_state": 42,
+            "work_dir": tmpdir_fn,
+            "save_checkpoints": True,
+            **tfm_kwargs,
+        }
+
+        model_clean = RNNModel(
+            model_name="clean_run", force_reset=True, **common_kwargs
+        )
+        model_clean.fit(self.series)
+        assert model_clean.epochs_trained == n_epochs
+        pred_clean = model_clean.predict(n=n_pred)
+
+        kwargs_interrupted = copy.deepcopy(common_kwargs)
+        kwargs_interrupted["pl_trainer_kwargs"] = dict(
+            common_kwargs["pl_trainer_kwargs"],
+            callbacks=[InterruptTrainingAfterNEpochsCallback(interrupt_after_epoch)],
+        )
+        model_interrupted = RNNModel(
+            model_name="interrupted_run", force_reset=True, **kwargs_interrupted
+        )
+        model_interrupted.fit(self.series)
+        assert model_interrupted.epochs_trained == interrupt_after_epoch
+        pred_at_interrupt = model_interrupted.predict(n=n_pred)
+
+        model_resumed = RNNModel.load_from_checkpoint(
+            model_name="interrupted_run",
+            work_dir=tmpdir_fn,
+            best=False,
+            map_location="cpu",
+        )
+        assert pred_at_interrupt == model_resumed.predict(n=n_pred)
+
+        model_resumed.fit(self.series)
+        assert model_resumed.epochs_trained == n_epochs
+
+        pred_resumed = model_resumed.predict(n=n_pred)
+        assert pred_clean == pred_resumed
 
     def test_load_from_checkpoint_w_metrics(self, tmpdir_fn):
         model_name = "pretraining_metrics"

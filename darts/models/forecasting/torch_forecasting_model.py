@@ -467,51 +467,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model = self._create_model(self.train_sample)
         self._module_name = model.__class__.__name__
 
-        # we should determine the precision based on time series data type
-        # however if user has defined a precision, we should follow that
-        precision = None
-        precision_user = (
-            self.trainer_params.get("precision", None)
-            if trainer is None
-            else trainer.precision
+        self.trainer_params["precision"] = self._get_trainer_precision(
+            trainer=trainer, verbose=True
         )
-        dtype = self.train_sample.past_target.dtype
-        if precision_user is not None:
-            logger.info(
-                f"Using user-defined precision: {precision_user}. The model output will have the same dtype. If you "
-                f"encounter issues, it's usually due to a conflict between input series data type and precision, or an "
-                f"unsupported precision for the given device or model. For more information, see "
-                f"https://github.com/unit8co/darts/pull/2883 for a discussion on low precision options across hardware "
-                f"platforms."
-            )
-            if "16" in str(precision_user):
-                logger.warning(
-                    "Detected user-defined float16-like precision. For mixed precision training, recommended "
-                    "options are 'bf16-mixed' and '16-mixed'."
-                )
-            precision = precision_user
-        elif np.issubdtype(dtype, np.float32):
-            logger.info("Time series values are 32-bits; casting model to float32.")
-            precision = "32-true"
-        elif np.issubdtype(dtype, np.float64):
-            logger.info("Time series values are 64-bits; casting model to float64.")
-            precision = "64-true"
-        elif np.issubdtype(dtype, np.float16):
-            logger.warning(
-                "Time series values are 16-bits; casting model to bfloat16 and model output will have dtype float32. "
-                "Training with 16-bit time series may lead to numerical instability "
-                "in some models. If you encounter issues, consider casting your data "
-                "to 32-bit, e.g. with `TimeSeries.astype(np.float32)`."
-            )
-            precision = "bf16-true"
-        else:
-            raise_log(
-                ValueError(
-                    f"Invalid time series data type `{dtype}`. Cast your data to `np.float32` "
-                    f"or `np.float64` or `np.float16`, e.g. with `TimeSeries.astype(np.float32)`."
-                ),
-            )
-        self.trainer_params["precision"] = precision
 
         # we need to save the initialized TorchForecastingModel as PyTorch-Lightning only saves module checkpoints
         if self.save_checkpoints:
@@ -522,6 +480,59 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
         self._setup_finetuning(model)
         return model
+
+    def _get_trainer_precision(self, trainer: pl.Trainer | None, verbose: bool = False):
+        """Get the trainer precision from ``train_sample`` when missing."""
+        # we should determine the precision based on time series data type
+        # however if user has defined a precision, we should follow that
+        precision_user = (
+            self.trainer_params.get("precision", None)
+            if trainer is None
+            else trainer.precision
+        )
+        dtype = self.train_sample.past_target.dtype
+        if precision_user is not None:
+            if verbose:
+                logger.info(
+                    f"Using user-defined precision: {precision_user}. The model output will have the "
+                    f"same dtype. If you encounter issues, it's usually due to a conflict between input "
+                    f"series data type and precision, or an unsupported precision for the given device or "
+                    f"model. For more information, see https://github.com/unit8co/darts/pull/2883 for a "
+                    f"discussion on low precision options across hardware platforms."
+                )
+                if "16" in str(precision_user):
+                    logger.warning(
+                        "Detected user-defined float16-like precision. For mixed precision training, recommended "
+                        "options are 'bf16-mixed' and '16-mixed'."
+                    )
+            return precision_user
+
+        if np.issubdtype(dtype, np.float32):
+            if verbose:
+                logger.info("Time series values are 32-bits; casting model to float32.")
+            return "32-true"
+
+        if np.issubdtype(dtype, np.float64):
+            if verbose:
+                logger.info("Time series values are 64-bits; casting model to float64.")
+            return "64-true"
+
+        if np.issubdtype(dtype, np.float16):
+            if verbose:
+                logger.warning(
+                    "Time series values are 16-bits; casting model to bfloat16 and model output will have "
+                    "dtype float32. Training with 16-bit time series may lead to numerical instability "
+                    "in some models. If you encounter issues, consider casting your data to 32-bit, e.g. "
+                    "with `TimeSeries.astype(np.float32)`."
+                )
+            return "bf16-true"
+
+        raise_log(
+            ValueError(
+                f"Invalid time series data type `{dtype}`. Cast your data to `np.float32` "
+                f"or `np.float64` or `np.float16`, e.g. with `TimeSeries.astype(np.float32)`."
+            ),
+        )
 
     def _setup_finetuning(self, model: PLForecastingModule):
         """
@@ -559,6 +570,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """Sets up a PyTorch-Lightning trainer (if not already provided) for training or prediction."""
         if trainer is not None:
             return trainer
+
+        self.trainer_params["precision"] = self._get_trainer_precision(
+            trainer=trainer, verbose=False
+        )
 
         trainer_params = {key: val for key, val in self.trainer_params.items()}
         has_progress_bar = any([
@@ -2569,10 +2584,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             For more information, read the `official documentation <https://pytorch.org/docs/stable/generated/
             torch.load.html>`__.
         """
-        # `weights_only` is now an explicit parameter; disallow a conflicting value in kwargs.
-        if "weights_only" in kwargs.keys():
-            weights_only = kwargs.pop("weights_only")
-
         if skip_checks and load_encoders:
             raise_log(
                 ValueError(

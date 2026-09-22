@@ -88,6 +88,14 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
         if store_instance:
             self._random_instance = random_instance
 
+        # When resuming from a checkpoint, PyTorch Lightning restores the training
+        # state (including loop progress) from the `.ckpt`. Reseeding torch here would
+        # break continuity with an uninterrupted `fit()` run.
+        if getattr(
+            self, "load_ckpt_path", None
+        ) is not None and decorated.__name__.startswith("fit"):
+            return decorated(self, *args, **kwargs)
+
         # handle the randomness
         with fork_rng():
             manual_seed(random_instance.randint(0, high=MAX_TORCH_SEED_VALUE))
