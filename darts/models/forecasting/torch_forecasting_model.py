@@ -172,10 +172,6 @@ def _safe_globals_for_checkpoint(path) -> list:
     left blocked so the load fails loudly instead of silently trusting an attacker-chosen global.
     Best-effort: returns ``[]`` on torch versions without the inspection API, or on any error.
     """
-    get_unsafe = getattr(torch.serialization, "get_unsafe_globals_in_checkpoint", None)
-    if get_unsafe is None:
-        return []
-
     import importlib
     import inspect
 
@@ -205,7 +201,7 @@ def _safe_globals_for_checkpoint(path) -> list:
     safe_bases = tuple(b for b in bases if inspect.isclass(b))
 
     try:
-        names = list(get_unsafe(path))
+        names = list(torch.serialization.get_unsafe_globals_in_checkpoint(path))
     except Exception as e:  # pragma: no cover - torch/version dependent
         logger.debug(f"Could not inspect checkpoint globals in '{path}': {e}")
         return []
@@ -246,13 +242,10 @@ def _load_ckpt_safely(load_fn, path):
     extra is imported/registered unless a checkpoint is actually loaded. On torch < 2.6 (no
     ``safe_globals``) it just calls ``load_fn`` directly.
     """
-    safe_globals_cm = getattr(torch.serialization, "safe_globals", None)
-    if safe_globals_cm is None:
-        return load_fn()
     allow = _darts_safe_globals() + _safe_globals_for_checkpoint(path)
     seen = set()
     allow = [g for g in allow if not (id(g) in seen or seen.add(id(g)))]
-    with safe_globals_cm(allow):
+    with torch.serialization.safe_globals(allow):
         return load_fn()
 
 
