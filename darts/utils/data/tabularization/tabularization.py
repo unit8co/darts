@@ -19,6 +19,10 @@ from numpy.lib.stride_tricks import as_strided
 from darts import TimeSeries
 from darts.logging import raise_log
 from darts.typing import TimeIndex, TimeSeriesLike
+from darts.utils.data.tabularization.stepwise import (
+    StepwiseLaggedFeatures,
+    concatenate_lagged_features,
+)
 from darts.utils.data.utils import _process_sample_weight
 from darts.utils.ts_utils import get_single_series, series2seq
 from darts.utils.utils import n_steps_between
@@ -27,6 +31,8 @@ NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
 STABLE_SORT_KWARGS = {"stable": True} if NP_2_OR_ABOVE else {"kind": "stable"}
 
 ArrayOrArraySequence = np.ndarray | Sequence[np.ndarray]
+FeaturesArray = np.ndarray | StepwiseLaggedFeatures
+FeaturesArrayOrSequence = FeaturesArray | Sequence[FeaturesArray]
 
 
 def create_lagged_data(
@@ -49,8 +55,9 @@ def create_lagged_data(
     sample_weight: str | TimeSeriesLike | None = None,
     stride: int = 1,
     show_warnings: bool = True,
+    lags_future_covariates_stepwise: dict[str, bool] | None = None,
 ) -> tuple[
-    ArrayOrArraySequence,
+    FeaturesArrayOrSequence,
     None | ArrayOrArraySequence,
     Sequence[pd.Index],
     tuple[int, int] | None,
@@ -253,6 +260,18 @@ def create_lagged_data(
         be used with caution as it might introduce bias in the forecasts.
     show_warnings
         Whether to show warnings.
+    lags_future_covariates_stepwise
+        Optionally, a dictionary mapping future covariates component names to a boolean specifying whether the
+        `lags_future_covariates` of that component are relative to the forecasted step of the output chunk
+        ("step-wise" lags) rather than to the first step of the output chunk. Requires `lags_future_covariates` to be
+        a dictionary, `use_moving_windows=True`, and all series to have the same frequency. A `"default_lags"` key
+        applies to all components not explicitly listed. For a step-wise component with lag `k`, the features for
+        horizon `h` (`0 <= h < output_chunk_length`) are the values at time `t + output_chunk_shift + h + k`,
+        which requires `output_chunk_length - 1` additional future covariates values at the end of the series and
+        excludes the last `output_chunk_length - 1` feature times. When any component is step-wise and
+        `output_chunk_length > 1`, `X` is returned as a `StepwiseLaggedFeatures` container (see Returns); otherwise
+        this argument has no effect. Not supported when `is_training=True` and `multi_models=False` (in which case
+        the step-wise shift should be applied to the lags themselves).
 
     Returns
     -------
@@ -260,6 +279,10 @@ def create_lagged_data(
         The constructed features array(s), with shape `(n_observations, n_lagged_features, n_samples)`.
         If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `X`
         is returned as a `Sequence[np.array]`; otherwise, `X` is returned as a single `np.array`.
+        If step-wise future covariates lags are in use (see `lags_future_covariates_stepwise`), each features array
+        is returned as a `StepwiseLaggedFeatures` container instead of a `np.array`: `X.horizon(h)` gives the
+        features array for the `h`-th step of the output chunk, all of them sharing the same layout as described
+        above.
     y
         The constructed labels array. If `multi_models = True`, then `y` is a
         `(n_observations, output_chunk_length, n_samples)`-shaped array; conversely, if
@@ -342,14 +365,32 @@ def create_lagged_data(
             ),
         )
 
+    # resolve the step-wise future covariates mask; `None` when the feature is inactive
+    stepwise_future = _get_stepwise_future_mask(
+        lags_future_covariates=lags_future_covariates,
+        lags_future_covariates_stepwise=lags_future_covariates_stepwise,
+        output_chunk_length=output_chunk_length,
+        multi_models=multi_models,
+        is_training=is_training,
+        future_covariates_specified=future_covariates is not None,
+    )
+    if (not use_moving_windows) and (stepwise_future is not None):
+        raise_log(
+            ValueError(
+                "`use_moving_windows=False` is not supported with step-wise future covariates lags "
+                "(`lags_future_covariates_stepwise`)."
+            ),
+        )
+
     if max_samples_per_ts is None:
         max_samples_per_ts = inf
 
     # lags are identical for multiple series: pre-compute lagged features and reordered lagged features
-    lags_extract, lags_order = _get_lagged_indices(
+    lags_extract, lags_order, stepwise_extract = _get_lagged_indices(
         lags,
         lags_past_covariates,
         lags_future_covariates,
+        stepwise_future=stepwise_future,
     )
     X, y, times, sample_weights = [], [], [], []
     for i in range(max(seq_ts_lens)):
@@ -367,6 +408,14 @@ def create_lagged_data(
                     "series or change the lags definition."
                 ),
             )
+        if (stepwise_future is not None) and (not series_equal_freq):
+            raise_log(
+                ValueError(
+                    f"Cannot create tabularized data for the {i}th series because target and covariates don't have "
+                    "the same frequency and some future covariates lags are step-wise "
+                    "(`lags_future_covariates_stepwise`). Either resample the series or disable step-wise lags."
+                ),
+            )
         if use_moving_windows and series_equal_freq:
             X_i, y_i, times_i, weights_i = _create_lagged_data_by_moving_window(
                 target_series=target_i,
@@ -380,6 +429,7 @@ def create_lagged_data(
                 lags_future_covariates=lags_future_covariates,
                 lags_extract=lags_extract,
                 lags_order=lags_order,
+                stepwise_extract=stepwise_extract,
                 max_samples_per_ts=max_samples_per_ts,
                 multi_models=multi_models,
                 check_inputs=check_inputs,
@@ -418,7 +468,7 @@ def create_lagged_data(
             sample_weights.append(weights_i)
 
     if concatenate:
-        X = np.concatenate(X, axis=0)
+        X = concatenate_lagged_features(X)
     if not is_training:
         y = None
     elif concatenate:
@@ -449,8 +499,9 @@ def create_lagged_training_data(
     concatenate: bool = True,
     stride: int = 1,
     sample_weight: TimeSeries | str | None = None,
+    lags_future_covariates_stepwise: dict[str, bool] | None = None,
 ) -> tuple[
-    ArrayOrArraySequence,
+    FeaturesArrayOrSequence,
     None | ArrayOrArraySequence,
     Sequence[pd.Index],
     tuple[int, int] | None,
@@ -594,6 +645,7 @@ def create_lagged_training_data(
         concatenate=concatenate,
         stride=stride,
         sample_weight=sample_weight,
+        lags_future_covariates_stepwise=lags_future_covariates_stepwise,
     )
 
 
@@ -612,7 +664,9 @@ def create_lagged_prediction_data(
     concatenate: bool = True,
     stride: int = 1,
     show_warnings: bool = True,
-) -> tuple[ArrayOrArraySequence, Sequence[pd.Index]]:
+    lags_future_covariates_stepwise: dict[str, bool] | None = None,
+    output_chunk_length: int = 1,
+) -> tuple[FeaturesArrayOrSequence, Sequence[pd.Index]]:
     """
     Creates the features array `X` to produce a series of prediction from an already-trained `SKLearnModel`; the
     time index values of each observation is also returned.
@@ -681,6 +735,14 @@ def create_lagged_prediction_data(
         be used with caution as it will cause gaps in the forecasts.
     show_warnings
         Whether to show warnings.
+    lags_future_covariates_stepwise
+        Optionally, a dictionary mapping future covariates component names to a boolean specifying whether the
+        `lags_future_covariates` of that component are relative to the forecasted step of the output chunk
+        ("step-wise" lags). See `create_lagged_data` for details. When active, `X` is returned as a
+        `StepwiseLaggedFeatures` container.
+    output_chunk_length
+        Optionally, the number of time steps ahead into the future the `SKLearnModel` predicts. Only used with
+        step-wise future covariates lags, to build the features of every step of the output chunk.
 
     Returns
     -------
@@ -688,6 +750,8 @@ def create_lagged_prediction_data(
         The constructed features array(s), with shape `(n_observations, n_lagged_features, n_samples)`.
         If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `X`
         is returned as a `Sequence[np.array]`; otherwise, `X` is returned as a single `np.array`.
+        If step-wise future covariates lags are in use, each features array is returned as a
+        `StepwiseLaggedFeatures` container instead of a `np.array`.
     times
         The `time_index` of each observation in `X` and `y`, returned as a `Sequence` of `pd.Index`es.
         If the series inputs were specified as `Sequence[TimeSeries]`, then the `i`th list element
@@ -723,16 +787,18 @@ def create_lagged_prediction_data(
         concatenate=concatenate,
         stride=stride,
         show_warnings=show_warnings,
+        lags_future_covariates_stepwise=lags_future_covariates_stepwise,
+        output_chunk_length=output_chunk_length,
     )
     return X, times
 
 
 def add_static_covariates_to_lagged_data(
-    features: np.ndarray | Sequence[np.ndarray],
+    features: FeaturesArrayOrSequence,
     target_series: TimeSeriesLike,
     uses_static_covariates: bool = True,
     last_shape: tuple[int, int] | None = None,
-) -> np.ndarray | Sequence[np.ndarray]:
+) -> FeaturesArrayOrSequence:
     """
     Add static covariates to the features' table for SKLearnModels.
     If `uses_static_covariates=True`, all target series used in `fit()` and `predict()` must have static
@@ -802,17 +868,22 @@ def add_static_covariates_to_lagged_data(
                 )
             # flatten static covariates along columns -> results in [scov0_comp0, scov0_comp1, scov1_comp0, ...]
             static_covs = ts.static_covariates.values.flatten(order="F")
+            # step-wise containers: the static covariates go to the right of `base`; `step_cols` are unaffected
+            features_idx = features[idx]
+            is_stepwise = isinstance(features_idx, StepwiseLaggedFeatures)
+            base = features_idx.base if is_stepwise else features_idx
             # we stack the static covariates to the right of lagged features
             # the broadcasting repeats the static covariates along axis=0 to match the number of feature rows
             shape_out = (
-                (len(features[idx]), len(static_covs))
-                if len(features[idx].shape) == 2
-                else (len(features[idx]), len(static_covs), 1)
+                (len(base), len(static_covs))
+                if len(base.shape) == 2
+                else (len(base), len(static_covs), 1)
             )
-            features[idx] = np.hstack([
-                features[idx],
+            base = np.hstack([
+                base,
                 np.broadcast_to(static_covs, shape_out[:2]).reshape(shape_out),
             ])
+            features[idx] = features_idx.with_base(base) if is_stepwise else base
 
     if input_not_list:
         features = features[0]
@@ -984,15 +1055,85 @@ def create_lagged_component_names(
     return lagged_feature_names, label_feature_names
 
 
+def _get_stepwise_future_mask(
+    lags_future_covariates: Sequence[int] | dict[str, list[int]] | None,
+    lags_future_covariates_stepwise: dict[str, bool] | None,
+    output_chunk_length: int,
+    multi_models: bool,
+    is_training: bool,
+    future_covariates_specified: bool,
+) -> list[bool] | None:
+    """
+    Validates `lags_future_covariates_stepwise` and resolves it into a list of booleans aligned with the components
+    (keys) of `lags_future_covariates`. Returns `None` when step-wise lags are inactive: no component is flagged,
+    `output_chunk_length == 1` (every horizon is the first one), or no future covariates features are created.
+    """
+    if lags_future_covariates_stepwise is None:
+        return None
+    if not isinstance(lags_future_covariates_stepwise, dict):
+        raise_log(
+            ValueError(
+                "`lags_future_covariates_stepwise` must be a dictionary mapping future covariates component names "
+                f"to booleans; received {type(lags_future_covariates_stepwise)}."
+            ),
+        )
+    if not any(lags_future_covariates_stepwise.values()):
+        return None
+    if (
+        output_chunk_length == 1
+        or lags_future_covariates is None
+        or not future_covariates_specified
+    ):
+        return None
+    if is_training and not multi_models:
+        raise_log(
+            ValueError(
+                "`lags_future_covariates_stepwise` is not supported with `multi_models=False` when creating training "
+                "data; shift the lags by `output_chunk_length - 1` instead."
+            ),
+        )
+    if not isinstance(lags_future_covariates, dict):
+        raise_log(
+            ValueError(
+                "`lags_future_covariates` must be provided as a dictionary (component-specific lags) when "
+                "`lags_future_covariates_stepwise` is used."
+            ),
+        )
+    default = lags_future_covariates_stepwise.get("default_lags", False)
+    unknown = (
+        set(lags_future_covariates_stepwise)
+        - {"default_lags"}
+        - set(lags_future_covariates)
+    )
+    if unknown:
+        raise_log(
+            ValueError(
+                "`lags_future_covariates_stepwise` contains components that are not present in "
+                f"`lags_future_covariates`: {sorted(unknown)}."
+            ),
+        )
+    mask = [
+        bool(lags_future_covariates_stepwise.get(comp, default))
+        for comp in lags_future_covariates
+    ]
+    return mask if any(mask) else None
+
+
 def _get_lagged_indices(
     lags,
     lags_past_covariates,
     lags_future_covariates,
+    stepwise_future: list[bool] | None = None,
 ):
     """Computes and returns:
 
     - the lagged feature indices for extraction from windows
     - the reordered indices to apply after the window extraction (in case of component specific lags)
+    - the step-wise extraction info for the future covariates (or `None`), as a tuple of:
+        - the indices of the step-wise components
+        - the lags of each step-wise component
+        - the (sorted) positions of the step-wise columns within the reordered future covariates block
+        - the column order to apply to the step-wise extraction so that it is aligned with these positions
 
     Assumes that all input series share identical component order.
     """
@@ -1019,7 +1160,29 @@ def _get_lagged_indices(
             lags_order_i = np.concatenate(lags_extract_i).argsort(**STABLE_SORT_KWARGS)
         lags_extract.append(lags_extract_i)
         lags_order.append(lags_order_i)
-    return lags_extract, lags_order
+
+    stepwise_extract = None
+    if stepwise_future is not None:
+        # `stepwise_future` is aligned with the (component-specific) future covariates lags
+        comp_lags = lags_extract[2]
+        comp_idx = [i for i, flag in enumerate(stepwise_future) if flag]
+        # mask of the step-wise columns before reordering (grouped by component)
+        is_stepwise_col = np.concatenate([
+            np.full(len(c_lags), flag)
+            for c_lags, flag in zip(comp_lags, stepwise_future)
+        ])
+        stepwise_cols_orig = np.flatnonzero(is_stepwise_col)
+        # positions of the step-wise columns after reordering (sorted lags across components)
+        step_cols = np.flatnonzero(is_stepwise_col[lags_order[2]])
+        # the step-wise extraction is grouped by component: map it onto the reordered positions
+        step_order = np.searchsorted(stepwise_cols_orig, lags_order[2][step_cols])
+        stepwise_extract = (
+            comp_idx,
+            [comp_lags[i] for i in comp_idx],
+            step_cols,
+            step_order,
+        )
+    return lags_extract, lags_order, stepwise_extract
 
 
 def _create_lagged_data_by_moving_window(
@@ -1040,7 +1203,8 @@ def _create_lagged_data_by_moving_window(
     is_training: bool,
     stride: int,
     show_warnings: bool = True,
-) -> tuple[np.ndarray, np.ndarray | None, pd.Index, np.ndarray | None]:
+    stepwise_extract: tuple | None = None,
+) -> tuple[FeaturesArray, np.ndarray | None, pd.Index, np.ndarray | None]:
     """
     Helper function called by `create_lagged_data` that computes `X`, `y`, and `times` by
     extracting 'moving windows' from each series using the `strided_moving_window`
@@ -1054,8 +1218,14 @@ def _create_lagged_data_by_moving_window(
     windows can then be reshaped into the correct shape. This approach can only be used if
     we *can* assume that the specified series are all of the same frequency.
 
+    If `stepwise_extract` is specified (see `_get_lagged_indices`), the future covariates window is
+    extended by `output_chunk_length - 1` values so that, for the step-wise components, the lagged
+    values of every step of the output chunk can be extracted; `X` is then returned as a
+    `StepwiseLaggedFeatures` container.
+
     Assumes that all the lags are sorted in ascending order.
     """
+    stepwise_extension = output_chunk_length - 1 if stepwise_extract is not None else 0
     feature_times, min_lags, max_lags = _get_feature_times(
         target_series=target_series,
         past_covariates=past_covariates,
@@ -1069,6 +1239,7 @@ def _create_lagged_data_by_moving_window(
         return_min_and_max_lags=True,
         check_inputs=check_inputs,
         show_warnings=show_warnings,
+        stepwise_extension=stepwise_extension,
     )
     if check_inputs:
         series_and_lags_not_specified = [max_lag is None for max_lag in max_lags]
@@ -1110,6 +1281,7 @@ def _create_lagged_data_by_moving_window(
     start_time = times[0]
     # Construct features array X:
     X = []
+    step_values = None
     start_time_idx = None
     target_start_time_idx = None
     for i, (series_i, lags_extract_i, lags_order_i, min_lag_i, max_lag_i) in enumerate(
@@ -1156,10 +1328,24 @@ def _create_lagged_data_by_moving_window(
             )
             # extract and append the reordered lagged values
             X.append(lagged_vals[:, lags_order_i])
+            if i == 2 and stepwise_extract is not None:
+                # step-wise future covariates: also extract, for every step `h` of the output chunk, the
+                # values at times `t + lag + h` of the flagged components
+                step_values = _extract_stepwise_vals_from_windows(
+                    windows,
+                    stepwise_extract,
+                    lags_shift=min_lag_i - 1,
+                    output_chunk_length=output_chunk_length,
+                )
         # Cache `start_time_idx` for label creation:
         if is_target_series:
             target_start_time_idx = start_time_idx
+    if step_values is not None:
+        # positions of the step-wise columns in `X`: offset by the target / past covariates features
+        step_cols = stepwise_extract[2] + sum(X_i.shape[1] for X_i in X[:-1])
     X = np.concatenate(X, axis=1)
+    if step_values is not None:
+        X = StepwiseLaggedFeatures(base=X, step_values=step_values, step_cols=step_cols)
     # Construct labels array `y`:
     if is_training:
         # All values between times `t` and `t + output_chunk_length` used as labels / weights:
@@ -1246,6 +1432,36 @@ def _extract_lagged_vals_from_windows(
         # lagged_vals.shape = (num_windows, num_components*window_len, num_samples):
         lagged_vals = windows.reshape((windows.shape[0], -1, windows.shape[-1]))
     return lagged_vals
+
+
+def _extract_stepwise_vals_from_windows(
+    windows: np.ndarray,
+    stepwise_extract: tuple,
+    lags_shift: int,
+    output_chunk_length: int,
+) -> np.ndarray:
+    """
+    Helper function called by `_create_lagged_data_by_moving_window` that extracts, for the step-wise future
+    covariates components, the lagged values of every step of the output chunk. For a component with lags
+    `lags_c`, the values at (negative) window indices `lags_c + h + lags_shift` are extracted for every
+    `h` in `[0, output_chunk_length)`.
+
+    The returned array has shape `(output_chunk_length, num_windows, num_stepwise_cols, num_samples)`, with the
+    step-wise columns ordered as in the reordered future covariates block (see `_get_lagged_indices`).
+    """
+    comp_idx, comp_lags, _, step_order = stepwise_extract
+    horizons = np.arange(output_chunk_length)
+    step_vals = []
+    for c, lags_c in zip(comp_idx, comp_lags):
+        # idx.shape = (num_lags_c, output_chunk_length)
+        idx = lags_c[:, None] + horizons[None, :] + lags_shift
+        # windows.shape = (num_windows, num_components, num_samples, window_len)
+        # vals.shape = (num_lags_c, output_chunk_length, num_windows, num_samples)
+        vals = windows[:, c, :, idx]
+        # -> (output_chunk_length, num_windows, num_lags_c, num_samples)
+        step_vals.append(np.moveaxis(vals, (0, 1, 2, 3), (2, 0, 1, 3)))
+    step_vals = np.concatenate(step_vals, axis=2)
+    return step_vals[:, :, step_order]
 
 
 def _create_lagged_data_by_intersecting_times(
@@ -1535,6 +1751,7 @@ def _get_feature_times(
     return_min_and_max_lags: bool = False,
     check_inputs: bool = True,
     show_warnings: bool = True,
+    stepwise_extension: int = 0,
 ) -> FeatureTimes | tuple[FeatureTimes, MinLags, MaxLags]:
     """
     Returns a tuple containing the times in `target_series`, the times in `past_covariates`, and the times in
@@ -1648,6 +1865,11 @@ def _get_feature_times(
         the 'eligible' feature times
     show_warnings
         Whether to show warnings.
+    stepwise_extension
+        Optionally, the number of additional future covariates values required after the largest
+        `lags_future_covariates` value (i.e. `output_chunk_length - 1` when step-wise future covariates lags are
+        used). It extends the `min_lag` of `future_covariates` accordingly, which excludes the last
+        `stepwise_extension` feature times of the series.
 
     Note: if the lags are provided as a dictionary for the target series or any of the covariates series, the
     component-specific lags are grouped into a single list to compute the corresponding feature time.
@@ -1701,6 +1923,8 @@ def _get_feature_times(
         if isinstance(lags_i, dict):
             lags_i = list(set(chain(*lags_i.values())))
 
+        # step-wise future covariates lags require `stepwise_extension` more values after the largest lag
+        extension_i = stepwise_extension if name_i == "future_covariates" else 0
         if check_inputs and (series_i is not None):
             _check_series_length(
                 series=series_i,
@@ -1709,13 +1933,14 @@ def _get_feature_times(
                 output_chunk_shift=output_chunk_shift,
                 is_training=is_training,
                 name=name_i,
+                stepwise_extension=extension_i,
             )
         series_specified = series_i is not None
         lags_specified = lags_i is not None
         is_label_series = is_training and name_i == "target_series"
         times_i = series_i.time_index if series_specified else None
         max_lag_i = -min(lags_i) if lags_specified else None
-        min_lag_i = -max(lags_i) if lags_specified else None
+        min_lag_i = -(max(lags_i) + extension_i) if lags_specified else None
         if is_label_series:
             # Exclude last `output_chunk_length - 1` times:
             if not output_chunk_shift:
@@ -2109,9 +2334,12 @@ def _check_series_length(
     output_chunk_shift: int,
     is_training: bool,
     name: Literal["target_series", "past_covariates", "future_covariates"],
+    stepwise_extension: int = 0,
 ) -> None:
     """
     Throws `ValueError` if `series` is too short for specified `lags` and, when `is_training`, `output_chunk_length`.
+    `stepwise_extension` is the number of additional values required after the largest lag (step-wise future
+    covariates lags).
     """
     is_target = name == "target_series"
     is_label_series = is_training and is_target
@@ -2132,6 +2360,9 @@ def _check_series_length(
         lags_name = "lags" if name == "target_series" else f"lags_{name}"
         minimum_len_str = f"-min({lags_name}) + max({lags_name}) + 1"
         minimum_len = -min(lags) + max(lags) + 1
+        if stepwise_extension:
+            minimum_len_str += " + (output_chunk_length - 1)"
+            minimum_len += stepwise_extension
     if lags_specified:
         if series.n_timesteps < minimum_len:
             raise_log(
