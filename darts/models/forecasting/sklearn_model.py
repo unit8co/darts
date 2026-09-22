@@ -860,6 +860,12 @@ class SKLearnModel(GlobalForecastingModel):
             estimator (``likelihood="multiquantile"``) do not use this extra quantile grouping, and ``quantile``
             must be set to ``None`` to obtain the correct estimator.
 
+        .. note::
+            With step-wise `future_covariates` lags (``lags_future_covariates_stepwise``), each horizon is trained
+            on its own features array: the estimator returned for ``horizon`` reads the flagged components
+            ``horizon + lag`` steps after the first predicted step, although ``lagged_feature_names`` only shows
+            ``lag``.
+
         Parameters
         ----------
         horizon

@@ -269,6 +269,75 @@ class TestStepwiseFutureLags:
             atol=1e-8,
         )
 
+    @pytest.mark.parametrize(
+        "lags_fc,flag",
+        [
+            # component-wise lags of different lengths, mixing step-wise and absolute components
+            (
+                {"fc0": [-1, 2], "fc1": [0], "fc2": [-2, 0, 1]},
+                {"fc0": True, "fc1": False, "fc2": True},
+            ),
+            # global lags, which the flag converts to the component-wise representation
+            ([-1, 0, 2], True),
+            ((1, 3), True),
+        ],
+    )
+    def test_feature_names_match_the_columns_of_every_horizon(self, lags_fc, flag):
+        """
+        `create_lagged_component_names()` is unchanged by step-wise lags: the names still describe the columns of
+        every horizon, with `{comp}_futcov_lag{k}` read at `t + h + k` for a step-wise component and at `t + k`
+        for an absolute one.
+        """
+        n_fc = N_TARGET + 20
+        offsets = {"fc0": 1000.0, "fc1": 2000.0, "fc2": 3000.0}
+        # each value identifies the (component, time) pair it comes from
+        fc = TimeSeries.from_times_and_values(
+            pd.RangeIndex(n_fc),
+            np.column_stack([
+                offset + np.arange(n_fc, dtype=float) for offset in offsets.values()
+            ]),
+            columns=list(offsets),
+        )
+        series = _target()
+        model = LinearRegressionModel(
+            lags=None,
+            lags_future_covariates=lags_fc,
+            lags_future_covariates_stepwise=flag,
+            output_chunk_length=OCL,
+        )
+        model.fit(series, future_covariates=fc)
+
+        X, y, _ = model._create_lagged_data([series], None, [fc], None)
+        # `y[0, 0]` is the label of horizon 0, i.e. `series` at the first anchor
+        first_anchor = int(y[0, 0])
+        for horizon in range(OCL):
+            row = X.horizon(horizon)[0]
+            assert len(row) == len(model.lagged_feature_names)
+            for col, name in enumerate(model.lagged_feature_names):
+                comp, _, lag = name.split("_")
+                lag = int(lag.removeprefix("lag"))
+                shift = horizon if model.component_lags_stepwise[comp] else 0
+                assert row[col] == offsets[comp] + first_anchor + lag + shift, (
+                    f"horizon {horizon}, column {col} ({name})"
+                )
+
+    @pytest.mark.parametrize("lags_fc", [[-1, 0, 2], (1, 3), {"fc0": [0], "fc1": [1]}])
+    def test_feature_names_are_not_changed_by_the_flag(self, lags_fc):
+        series = _target()
+        fc = _covariates(N_TARGET + 20, ["fc0", "fc1"])
+        common = dict(lags=2, lags_future_covariates=lags_fc, output_chunk_length=OCL)
+
+        absolute = LinearRegressionModel(**common)
+        absolute.fit(series, future_covariates=fc)
+        stepwise = LinearRegressionModel(**common, lags_future_covariates_stepwise=True)
+        stepwise.fit(series, future_covariates=fc)
+
+        assert stepwise.lagged_feature_names == absolute.lagged_feature_names
+        # the horizon 0 features are the absolute ones, on the anchors both models share
+        X_abs, _, _ = absolute._create_lagged_data([series], None, [fc], None)
+        X_sw, _, _ = stepwise._create_lagged_data([series], None, [fc], None)
+        np.testing.assert_array_equal(X_sw.horizon(0), X_abs[: len(X_sw)])
+
     def test_stepwise_flags_are_resolved_against_the_series_components(self):
         series = _target()
         fc = _covariates(N_TARGET + 40, ["fc0", "fc1", "fc2"])

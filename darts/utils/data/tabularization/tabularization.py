@@ -968,6 +968,13 @@ def create_lagged_component_names(
     - ``{name}`` the component name of the (first) series
     - ``{i}`` is the step in the forecast horizon
 
+    .. note::
+        The feature names do not carry the forecasted step, so they are identical with and without step-wise
+        `future_covariates` lags (see `lags_future_covariates_stepwise` in `SKLearnModel`). For a step-wise
+        component, ``"{name}_futcov_lag{i}"`` is lag ``i`` relative to the step forecasted by the estimator the
+        features are given to: the same name refers to `output_chunk_length` different time steps, one per
+        horizon. The horizon is the one of the estimator, see `SKLearnModel.get_estimator()`.
+
     Returns
     -------
     features_cols_name
