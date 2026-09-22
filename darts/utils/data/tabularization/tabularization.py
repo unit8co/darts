@@ -1253,7 +1253,13 @@ def _create_lagged_data_by_moving_window(
             )
     sample_weight_vals = _extract_sample_weight(sample_weight, target_series)
 
-    time_bounds = get_shared_times_bounds(*feature_times)
+    # a specified series whose feature times are empty shares no time with the others, but
+    # `get_shared_times_bounds()` ignores empty entries: check them here to report it as such
+    time_bounds = (
+        None
+        if any(times_i is not None and not len(times_i) for times_i in feature_times)
+        else get_shared_times_bounds(*feature_times)
+    )
     if time_bounds is None:
         raise_log(
             ValueError(
