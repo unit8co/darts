@@ -1861,10 +1861,6 @@ class SKLearnModel(GlobalForecastingModel):
         retrain: bool | int | Callable[..., bool],
     ) -> bool:
         """Historical forecast can be optimized if no re-training is involved"""
-        if self._uses_stepwise_future_lags:
-            # the optimized routine builds a single features array, which cannot carry the per-horizon
-            # features of the step-wise components; fall back to the `predict()` loop
-            return False
         return _check_optimizable_historical_forecasts_global_models(retrain)
 
     def _optimized_historical_forecasts(
