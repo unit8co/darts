@@ -1617,10 +1617,11 @@ class TestTorchForecastingModel:
             "random_state": 42,
             "work_dir": tmpdir_fn,
             "save_checkpoints": True,
+            "likelihood": QuantileRegression([0.1, 0.5, 0.9]),
             **tfm_kwargs,
         }
-
-        model_clean = RNNModel(
+        model_cls = RNNModel
+        model_clean = model_cls(
             model_name="clean_run", force_reset=True, **common_kwargs
         )
         model_clean.fit(self.series)
@@ -1629,17 +1630,17 @@ class TestTorchForecastingModel:
 
         kwargs_interrupted = copy.deepcopy(common_kwargs)
         kwargs_interrupted["pl_trainer_kwargs"] = dict(
-            common_kwargs["pl_trainer_kwargs"],
+            **common_kwargs["pl_trainer_kwargs"],
             callbacks=[InterruptTrainingAfterNEpochsCallback(interrupt_after_epoch)],
         )
-        model_interrupted = RNNModel(
+        model_interrupted = model_cls(
             model_name="interrupted_run", force_reset=True, **kwargs_interrupted
         )
         model_interrupted.fit(self.series)
         assert model_interrupted.epochs_trained == interrupt_after_epoch
         pred_at_interrupt = model_interrupted.predict(n=n_pred)
 
-        model_resumed = RNNModel.load_from_checkpoint(
+        model_resumed = model_cls.load_from_checkpoint(
             model_name="interrupted_run",
             work_dir=tmpdir_fn,
             best=False,
@@ -1647,6 +1648,12 @@ class TestTorchForecastingModel:
         )
         assert pred_at_interrupt == model_resumed.predict(n=n_pred)
 
+        model_resumed = model_cls.load_from_checkpoint(
+            model_name="interrupted_run",
+            work_dir=tmpdir_fn,
+            best=False,
+            map_location="cpu",
+        )
         model_resumed.fit(self.series)
         assert model_resumed.epochs_trained == n_epochs
 

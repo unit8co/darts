@@ -3045,3 +3045,36 @@ class TestVariableICLDataset:
 
         # future covariates in the output chunk are never padded
         assert not np.isnan(fc).any()
+
+
+class TestTorchDataModule:
+    def test_train_generator_state_dict_round_trip(self):
+        from darts.utils.data.torch_datasets._data_module import TorchDataModule
+
+        target = gaussian_timeseries(length=50)
+        dataset = SequentialTorchTrainingDataset(
+            series=target,
+            input_chunk_length=12,
+            output_chunk_length=3,
+        )
+        datamodule = TorchDataModule(
+            train_dataset=dataset,
+            batch_size=4,
+            shuffle_seed=42,
+        )
+        assert datamodule._train_generator is not None
+
+        _ = torch.rand(1, generator=datamodule._train_generator)
+        state = datamodule.state_dict()
+        assert "train_generator_state" in state
+
+        datamodule_restored = TorchDataModule(
+            train_dataset=dataset,
+            batch_size=4,
+            shuffle_seed=42,
+        )
+        datamodule_restored.load_state_dict(state)
+        assert torch.equal(
+            datamodule._train_generator.get_state(),
+            datamodule_restored._train_generator.get_state(),
+        )

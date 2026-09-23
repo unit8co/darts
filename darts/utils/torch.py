@@ -10,6 +10,7 @@ from typing import TypeVar
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
+from numpy.random import SeedSequence
 from sklearn.utils import check_random_state
 from torch import Tensor
 from torch.random import fork_rng, manual_seed
@@ -18,6 +19,16 @@ from darts.logging import raise_log
 from darts.utils.utils import MAX_NUMPY_SEED_VALUE, MAX_TORCH_SEED_VALUE, _is_method
 
 T = TypeVar("T")
+
+_DATALOADER_SHUFFLE_ENTROPY = sum(map(ord, "dataloader_shuffle"))
+
+
+def _derive_dataloader_shuffle_seed(seed_key: int | np.random.RandomState) -> int:
+    """Derive a stable torch DataLoader shuffle seed without advancing ``_random_instance``."""
+    if isinstance(seed_key, np.random.RandomState):
+        seed_key = seed_key.get_state()[1][0]
+    entropy = [int(seed_key), _DATALOADER_SHUFFLE_ENTROPY]
+    return int(SeedSequence(entropy).generate_state(1)[0]) % MAX_TORCH_SEED_VALUE
 
 
 class MonteCarloDropout(nn.Dropout):
@@ -68,6 +79,7 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
     def decorator(self, *args, **kwargs) -> T:
         store_instance = False
         random_instance = None
+        dataloader_seed_key = kwargs.get("random_state")
         if "random_state" in kwargs.keys() and kwargs["random_state"] is not None:
             # get random state from model constructor or `predict()`
             random_instance = check_random_state(kwargs["random_state"])
@@ -77,9 +89,8 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
         elif not hasattr(self, "_random_instance"):
             # get random state for first time from other method
             store_instance = True
-            random_instance = check_random_state(
-                np.random.randint(0, high=MAX_NUMPY_SEED_VALUE)
-            )
+            dataloader_seed_key = np.random.randint(0, high=MAX_NUMPY_SEED_VALUE)
+            random_instance = check_random_state(dataloader_seed_key)
 
         # if no random instance is provided, use the one stored in the class
         if random_instance is None:
@@ -87,6 +98,13 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
 
         if store_instance:
             self._random_instance = random_instance
+            if (
+                not hasattr(self, "_dataloader_shuffle_seed")
+                and dataloader_seed_key is not None
+            ):
+                self._dataloader_shuffle_seed = _derive_dataloader_shuffle_seed(
+                    dataloader_seed_key
+                )
 
         # When resuming from a checkpoint, PyTorch Lightning restores the training
         # state (including loop progress) from the `.ckpt`. Reseeding torch here would

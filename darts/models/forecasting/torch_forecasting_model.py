@@ -1367,6 +1367,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             batch_size=self.batch_size,
             collate_fn=_batch_collate_fn_train,
             dataloader_kwargs=dataloader_kwargs,
+            shuffle_seed=getattr(self, "_dataloader_shuffle_seed", None),
         )
 
         # if user wants to train the model for more epochs, ignore the n_epochs parameter

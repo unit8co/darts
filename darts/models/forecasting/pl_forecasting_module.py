@@ -662,6 +662,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # we must save the metrics to continue logging them when resuming training
         checkpoint["torch_metrics_train"] = self.train_metrics
         checkpoint["torch_metrics_val"] = self.val_metrics
+        # store the random state for resuming from checkpoint (dataloader rng)
+        checkpoint["torch_rng_state"] = torch.get_rng_state()
 
     def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
         # by default our models are initialized as float32. For other dtypes, we need to cast to the correct precision
@@ -673,6 +675,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.criterion = checkpoint["loss_fn"]
         self.train_metrics = checkpoint["torch_metrics_train"]
         self.val_metrics = checkpoint["torch_metrics_val"]
+        rng_state = checkpoint.get("torch_rng_state")
+        if rng_state is not None:
+            torch.set_rng_state(rng_state)
 
     def to_dtype(self, dtype):
         """Cast module precision (float32 by default) to another precision."""

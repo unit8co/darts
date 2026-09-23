@@ -113,3 +113,17 @@ class TestRandomMethod:
         model.fit()
 
         assert torch.equal(model.fit_value, fit_value)
+
+    def test_fit_skips_reseed_when_resuming_from_checkpoint(self):
+        torch.manual_seed(999)
+        model = TorchModelMock(random_state=42)
+        model.load_ckpt_path = "/tmp/fake.ckpt"
+        model.fit()
+        with_load_ckpt = model.fit_value.clone()
+
+        torch.manual_seed(999)
+        model = TorchModelMock(random_state=42)
+        model.fit()
+        without_load_ckpt = model.fit_value.clone()
+
+        assert not torch.equal(with_load_ckpt, without_load_ckpt)
