@@ -24,6 +24,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed two error messages that showed raw placeholders: `generate_index()` printed `Observed parameters: {constructors}` instead of the parameters it received, and the fallback in `darts.utils.likelihood_models.sklearn` printed `{likelihood}`. [#3211](https://github.com/unit8co/darts/pull/3211) by [Yanze (David) Wu](https://github.com/David-Wu1119).
 - Fixed dataset downloads failing with a misleading MD5 hash-check error when the source URI returned an HTTP error (e.g. 404); non-2xx responses are now reported as a `DatasetLoadingException` with the HTTP status and reason. [#3201](https://github.com/unit8co/darts/pull/3201) by [webzuweb](https://github.com/webzuweb).
 - Fixed autoregressive `TorchForecastingModel.predict()` with `roll_size < output_chunk_length` and future covariates, where the first step passed too few future covariate values to the model. [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed incorrect return type annotations for several functions in `darts.utils.statistics`. [#3185](https://github.com/unit8co/darts/pull/3185) by [Alejandro Coronado](https://github.com/AlejandroCoronadoN).
