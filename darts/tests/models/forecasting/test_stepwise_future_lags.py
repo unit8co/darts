@@ -743,6 +743,30 @@ class TestStepwiseFutureLags:
                     forecast.all_values(), expected.all_values()
                 )
 
+    def test_shap_explainer_rejects_stepwise_lags(self):
+        """SHAP cannot explain the per-horizon features; it must fail early with a clear error."""
+        pytest.importorskip("shap")
+        from darts.explainability.shap_explainer import ShapExplainer
+
+        series = _target()
+        fc = _covariates(N_TARGET + 40, ["fc0"])
+        model = LinearRegressionModel(
+            lags=2,
+            lags_future_covariates={"fc0": [0]},
+            lags_future_covariates_stepwise=True,
+            output_chunk_length=OCL,
+        )
+        model.fit(series, future_covariates=fc)
+        with pytest.raises(
+            ValueError, match="does not support SKLearnModels with step-wise"
+        ):
+            ShapExplainer(
+                model=model,
+                background_series=series,
+                background_future_covariates=fc,
+                test_stationarity=False,
+            )
+
     def test_predict_with_static_covariates_and_multiple_series(self):
         """The per-horizon container keeps its rows aligned across series and static covariates."""
         fc = _covariates(N_TARGET + 3 * OCL, ["fc0"])
