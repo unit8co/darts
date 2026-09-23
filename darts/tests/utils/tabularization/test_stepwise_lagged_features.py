@@ -308,19 +308,31 @@ class TestStepwiseTabularization:
         assert X.n_horizons == output_chunk_length
         assert X.shape[1:] == X_legacy.shape[1:]
         times, times_legacy = times[0], times_legacy[0]
-        # the last anchor `t` requires `future[t + shift + max_lag + output_chunk_length - 1]` for the
-        # step-wise components (versus `future[t + shift + max_lag]` with legacy lags)
+        # the last anchor `t` requires `future[t + shift + k + output_chunk_length - 1]` for a step-wise lag
+        # `k` (versus `future[t + shift + k]` for an absolute one), and the labels up to
+        # `target[t + shift + output_chunk_length - 1]`; a component with a large absolute lag can be the
+        # constraint on its own, in which case the step-wise ones cost no anchor at all
         max_lag = max(max(lags) for lags in self.lags_future.values())
+        max_stepwise_lag = max(
+            max(lags)
+            for comp, lags in self.lags_future.items()
+            if stepwise.get(comp, stepwise.get("default_lags", False))
+        )
+        last_target_anchor = len(target) - output_chunk_length - output_chunk_shift
         if max_samples_per_ts is None:
-            last_anchor = (
+            last_anchor = min(
+                last_target_anchor,
                 len(future)
                 - 1
                 - output_chunk_shift
-                - max_lag
-                - (output_chunk_length - 1)
+                - max(max_lag, max_stepwise_lag + output_chunk_length - 1),
+            )
+            last_legacy_anchor = min(
+                last_target_anchor,
+                len(future) - 1 - output_chunk_shift - max_lag,
             )
             assert times[-1] == future.time_index[last_anchor]
-            assert times_legacy[-1] == future.time_index[last_anchor + max_lag]
+            assert times_legacy[-1] == future.time_index[last_legacy_anchor]
         else:
             assert len(times) == max_samples_per_ts
         # base features and labels are identical to the legacy ones for the shared anchors (with a
@@ -355,7 +367,10 @@ class TestStepwiseTabularization:
         "config",
         list(
             product(
-                [1, 3], ["integer", "datetime"], [{"f0": True}, {"default_lags": True}]
+                [1, 3],
+                ["integer", "datetime"],
+                # `f1` is the case where the absolute `f0` already reaches further than the step-wise lags
+                [{"f0": True}, {"f1": True}, {"default_lags": True}],
             )
         ),
     )
@@ -382,13 +397,19 @@ class TestStepwiseTabularization:
         assert isinstance(X, StepwiseLaggedFeatures)
         assert X.n_horizons == output_chunk_length
         times, times_legacy = times[0], times_legacy[0]
-        # the future covariates are the constraint at the end: `output_chunk_length - 1` anchors are lost
+        # the future covariates are the constraint at the end: the anchors are limited by the largest of the
+        # absolute lags and of the step-wise lags, the latter read `output_chunk_length - 1` steps further
         max_lag = max(max(lags) for lags in self.lags_future.values())
-        last_anchor = len(future) - 1 - max_lag - (output_chunk_length - 1)
-        assert times[-1] == future.time_index[last_anchor]
-        assert (
-            times_legacy[-1] == future.time_index[last_anchor + output_chunk_length - 1]
+        max_stepwise_lag = max(
+            max(lags)
+            for comp, lags in self.lags_future.items()
+            if stepwise.get(comp, stepwise.get("default_lags", False))
         )
+        last_anchor = (
+            len(future) - 1 - max(max_lag, max_stepwise_lag + output_chunk_length - 1)
+        )
+        assert times[-1] == future.time_index[last_anchor]
+        assert times_legacy[-1] == future.time_index[len(future) - 1 - max_lag]
         shared = times_legacy.get_indexer(times)
         overlap = shared >= 0
         if stride == 1:

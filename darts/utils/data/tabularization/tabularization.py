@@ -267,8 +267,8 @@ def create_lagged_data(
         a dictionary, `use_moving_windows=True`, and all series to have the same frequency. A `"default_lags"` key
         applies to all components not explicitly listed. For a step-wise component with lag `k`, the features for
         horizon `h` (`0 <= h < output_chunk_length`) are the values at time `t + output_chunk_shift + h + k`,
-        which requires `output_chunk_length - 1` additional future covariates values at the end of the series and
-        excludes the last `output_chunk_length - 1` feature times. When any component is step-wise and
+        so that the last feature time is limited by the largest of the non step-wise lags and of the step-wise
+        lags extended by `output_chunk_length - 1`. When any component is step-wise and
         `output_chunk_length > 1`, `X` is returned as a `StepwiseLaggedFeatures` container (see Returns); otherwise
         this argument has no effect. Not supported when `is_training=True` and `multi_models=False` (in which case
         the step-wise shift should be applied to the lags themselves).
@@ -1226,13 +1226,22 @@ def _create_lagged_data_by_moving_window(
     we *can* assume that the specified series are all of the same frequency.
 
     If `stepwise_extract` is specified (see `_get_lagged_indices`), the future covariates window is
-    extended by `output_chunk_length - 1` values so that, for the step-wise components, the lagged
-    values of every step of the output chunk can be extracted; `X` is then returned as a
+    extended up to `max(step-wise lags) + output_chunk_length - 1` so that, for the step-wise components,
+    the lagged values of every step of the output chunk can be extracted; the window already reaches the
+    largest of the lags, so only the difference is added. `X` is then returned as a
     `StepwiseLaggedFeatures` container.
 
     Assumes that all the lags are sorted in ascending order.
     """
-    stepwise_extension = output_chunk_length - 1 if stepwise_extract is not None else 0
+    stepwise_extension = 0
+    if stepwise_extract is not None:
+        # only the step-wise components are read further into the future: the extension is relative to the
+        # largest future covariates lag, which a non step-wise component may already reach
+        max_stepwise_lag = max(lag for c_lags in stepwise_extract[1] for lag in c_lags)
+        max_future_lag = max(chain(*lags_future_covariates.values()))
+        stepwise_extension = max(
+            0, max_stepwise_lag + output_chunk_length - 1 - max_future_lag
+        )
     feature_times, min_lags, max_lags = _get_feature_times(
         target_series=target_series,
         past_covariates=past_covariates,
@@ -1941,8 +1950,9 @@ def _get_feature_times(
         Whether to show warnings.
     stepwise_extension
         Optionally, the number of additional future covariates values required after the largest
-        `lags_future_covariates` value (i.e. `output_chunk_length - 1` when step-wise future covariates lags are
-        used). It extends the `min_lag` of `future_covariates` accordingly, which excludes the last
+        `lags_future_covariates` value (step-wise future covariates lags are read up to
+        `output_chunk_length - 1` steps further into the future, which the largest lag may already reach).
+        It extends the `min_lag` of `future_covariates` accordingly, which excludes the last
         `stepwise_extension` feature times of the series.
 
     Note: if the lags are provided as a dictionary for the target series or any of the covariates series, the
@@ -2435,7 +2445,10 @@ def _check_series_length(
         minimum_len_str = f"-min({lags_name}) + max({lags_name}) + 1"
         minimum_len = -min(lags) + max(lags) + 1
         if stepwise_extension:
-            minimum_len_str += " + (output_chunk_length - 1)"
+            minimum_len_str = (
+                f"-min({lags_name}) + max(max({lags_name}), "
+                "max(step-wise lags) + output_chunk_length - 1) + 1"
+            )
             minimum_len += stepwise_extension
     if lags_specified:
         if series.n_timesteps < minimum_len:
