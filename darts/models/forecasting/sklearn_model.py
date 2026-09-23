@@ -692,6 +692,22 @@ class SKLearnModel(GlobalForecastingModel):
             max_lag = lags_[-1] if max_lag is None else max(max_lag, lags_[-1])
         return max_lag if max_lag is not None else self.lags["future"][-1]
 
+    @property
+    def _max_future_cov_lag(self) -> int | None:
+        """The largest `future_covariates` lag the model requires (`None` when it doesn't use them).
+
+        Step-wise components are read up to `output_chunk_length - 1` steps further into the future, since the
+        estimator of the horizon `h` reads them at `t + s + h + lag`.
+        """
+        if "future" not in self.lags:
+            return None
+        max_lag = self.lags["future"][-1]
+        if not self._uses_stepwise_future_lags:
+            return max_lag
+        return max(
+            max_lag, self._max_stepwise_future_lag + self.output_chunk_length - 1
+        )
+
     def _get_lagged_features(
         self,
         series: TimeSeries,
@@ -777,7 +793,7 @@ class SKLearnModel(GlobalForecastingModel):
             lags_future_covariates = [
                 min(lags_future_covariates)
                 - int(not self.multi_models) * (self.output_chunk_length - 1),
-                max(lags_future_covariates),
+                self._max_future_cov_lag,
             ]
         return (
             abs(min(target_lags)),
@@ -805,7 +821,7 @@ class SKLearnModel(GlobalForecastingModel):
         min_past_cov_lag = self.lags["past"][0] if "past" in self.lags else None
         max_past_cov_lag = self.lags["past"][-1] if "past" in self.lags else None
         min_future_cov_lag = self.lags["future"][0] if "future" in self.lags else None
-        max_future_cov_lag = self.lags["future"][-1] if "future" in self.lags else None
+        max_future_cov_lag = self._max_future_cov_lag
         return (
             min_target_lag,
             max_target_lag,
@@ -1591,11 +1607,21 @@ class SKLearnModel(GlobalForecastingModel):
                 continue
 
             relative_cov_lags[cov_type] = np.array(lags) - lags[0]
+            # step-wise `future_covariates` components are read up to `output_chunk_length - 1` steps further
+            # into the future; the extension is over-required when `n < output_chunk_length`, since all the
+            # horizons of the output chunk are predicted even though only the first `n` are kept
+            max_lag = self._max_future_cov_lag if cov_type == "future" else max(lags)
+            max_lag_text = f"`max(lags_{cov_type}_covariates)={lags[-1]}`"
+            if max_lag > lags[-1]:
+                max_lag_text += (
+                    f" (read up to {max_lag} by the step-wise components of "
+                    f"`lags_future_covariates_stepwise`)"
+                )
             covariate_matrices[cov_type] = []
             for idx, (ts, cov) in enumerate(zip(series, covs)):
                 # how many steps to go back from end of target series for start of covariates
                 steps_back = -(min(lags) + 1) + shift
-                lags_diff = max(lags) - min(lags) + 1
+                lags_diff = max_lag - min(lags) + 1
                 # over how many steps the covariates range
                 n_steps = lags_diff + max(0, n - self.output_chunk_length) + shift
 
@@ -1614,7 +1640,7 @@ class SKLearnModel(GlobalForecastingModel):
                         ValueError(
                             f"The `{cov_type}_covariates`{index_text}are not long enough. "
                             f"Given horizon `n={n}`, `min(lags_{cov_type}_covariates)={lags[0]}`, "
-                            f"`max(lags_{cov_type}_covariates)={lags[-1]}` and "
+                            f"{max_lag_text} and "
                             f"`output_chunk_length={self.output_chunk_length}`, the `{cov_type}_covariates` have to "
                             f"range from {start_ts} until {end_ts} (inclusive), but they only range from "
                             f"{cov.start_time()} until {cov.end_time()}."
@@ -1685,6 +1711,8 @@ class SKLearnModel(GlobalForecastingModel):
                 num_samples=num_samples,
                 uses_static_covariates=self.uses_static_covariates,
                 last_static_covariates_shape=self._static_covariates_shape,
+                lags_future_covariates_stepwise=self._stepwise_future_lags,
+                output_chunk_length=self.output_chunk_length,
             )
 
             # X has shape (n_series * n_samples, n_regression_features)
