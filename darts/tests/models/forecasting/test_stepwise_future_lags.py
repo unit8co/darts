@@ -3,6 +3,8 @@ Tests for `lags_future_covariates_stepwise` at the model level: lags normalizati
 wrapper and per-horizon training (issue #2968).
 """
 
+from itertools import product
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -605,27 +607,64 @@ class TestStepwiseFutureLags:
         with pytest.raises(ValueError, match=r"read up to " + str(OCL - 1)):
             stepwise.predict(OCL, future_covariates=short_fc)
 
-    def test_historical_forecasts_fall_back_to_the_predict_loop(self):
-        """The optimized routine cannot carry the per-horizon features yet, so it must not be used."""
+    @pytest.mark.parametrize(
+        ("lags_fc", "stepwise_flag"),
+        [
+            ({"fc0": [-1, 0], "fc1": [-1, 0]}, True),
+            ({"fc0": [-1, 0], "fc1": [-1, 0]}, {"fc0": True, "default_lags": False}),
+            # the absolute `fc1` is read further into the future than the step-wise `fc0`, so the
+            # covariates window is the one of the absolute lags and no anchor is lost
+            ({"fc0": [-1, 0], "fc1": [0, 2]}, {"fc0": True, "default_lags": False}),
+        ],
+        ids=["all-stepwise", "mixed-absolute", "absolute-reaches-further"],
+    )
+    def test_historical_forecasts_optimized_match_the_predict_loop(
+        self, lags_fc, stepwise_flag
+    ):
+        """The optimized routine produces the same forecasts as the `predict()` loop."""
         rng = np.random.default_rng(0)
         series = TimeSeries.from_times_and_values(
             pd.RangeIndex(N_TARGET), rng.normal(size=N_TARGET)
         )
-        fc = TimeSeries.from_times_and_values(
-            pd.RangeIndex(N_TARGET + 40),
-            rng.normal(size=(N_TARGET + 40, 1)),
-            columns=["fc0"],
-        )
+        fc = _covariates(N_TARGET + 40, ["fc0", "fc1"], offset=1000.0)
         model = LinearRegressionModel(
             lags=2,
-            lags_future_covariates={"fc0": [-1, 0]},
-            lags_future_covariates_stepwise=True,
+            lags_future_covariates=lags_fc,
+            lags_future_covariates_stepwise=stepwise_flag,
             output_chunk_length=OCL,
         )
         model.fit(series, future_covariates=fc)
-        assert not model._check_optimizable_historical_forecasts(retrain=False)
+        assert model._check_optimizable_historical_forecasts(retrain=False)
 
-        kwargs = dict(
+        # forecast horizon below, equal to and above `output_chunk_length` (auto-regression),
+        # with and without stride, and both `last_points_only` modes
+        for forecast_horizon, stride, last_points_only in product(
+            (1, OCL - 1, OCL, OCL + 3), (1, 2), (True, False)
+        ):
+            kwargs = dict(
+                series=series,
+                future_covariates=fc,
+                retrain=False,
+                forecast_horizon=forecast_horizon,
+                stride=stride,
+                last_points_only=last_points_only,
+                start=N_TARGET - 20,
+                start_format="value",
+            )
+            optimized = model.historical_forecasts(enable_optimization=True, **kwargs)
+            reference = model.historical_forecasts(enable_optimization=False, **kwargs)
+            if last_points_only:
+                optimized, reference = [optimized], [reference]
+            assert len(optimized) == len(reference)
+            for forecast, expected in zip(optimized, reference):
+                np.testing.assert_array_almost_equal(
+                    forecast.values(), expected.values()
+                )
+                assert forecast.time_index.equals(expected.time_index)
+
+        # the last forecast is the one of a plain `predict()` on the truncated series
+        reference = model.historical_forecasts(
+            enable_optimization=False,
             series=series,
             future_covariates=fc,
             retrain=False,
@@ -634,12 +673,6 @@ class TestStepwiseFutureLags:
             start=N_TARGET - 20,
             start_format="value",
         )
-        optimized = model.historical_forecasts(enable_optimization=True, **kwargs)
-        reference = model.historical_forecasts(enable_optimization=False, **kwargs)
-        assert len(optimized) == len(reference)
-        for forecast, expected in zip(optimized, reference):
-            np.testing.assert_array_almost_equal(forecast.values(), expected.values())
-        # the last forecast is the one of a plain `predict()` on the truncated series
         np.testing.assert_array_almost_equal(
             reference[-1].values(),
             model.predict(
@@ -648,6 +681,67 @@ class TestStepwiseFutureLags:
                 future_covariates=fc,
             ).values(),
         )
+
+        # with re-training, the non-optimized predict loop covers the same forecastable span
+        retrained = model.historical_forecasts(
+            series=series,
+            future_covariates=fc,
+            forecast_horizon=OCL,
+            last_points_only=True,
+            start=N_TARGET - 20,
+            start_format="value",
+        )
+        reference_last_points = model.historical_forecasts(
+            series=series,
+            future_covariates=fc,
+            retrain=False,
+            forecast_horizon=OCL,
+            last_points_only=True,
+            start=N_TARGET - 20,
+            start_format="value",
+        )
+        assert retrained.time_index.equals(reference_last_points.time_index)
+        assert np.isfinite(retrained.values()).all()
+
+    def test_historical_forecasts_with_quantile_likelihood(self):
+        """The optimized routine routes the per-horizon features of every quantile model."""
+        series = _target()
+        fc = _covariates(N_TARGET + 40, ["fc0"])
+        model = LinearRegressionModel(
+            lags=2,
+            lags_future_covariates={"fc0": [0]},
+            lags_future_covariates_stepwise=True,
+            output_chunk_length=OCL,
+            likelihood="quantile",
+            quantiles=[0.1, 0.5, 0.9],
+        )
+        model.fit(series, future_covariates=fc)
+        for kwargs in (
+            dict(forecast_horizon=OCL, num_samples=1),
+            # auto-regression with sampled forecasts: exercises `repeat()` on the container
+            dict(forecast_horizon=OCL + 3, num_samples=4),
+        ):
+            hf_kwargs = dict(
+                series=series,
+                future_covariates=fc,
+                retrain=False,
+                last_points_only=False,
+                start=N_TARGET - 20,
+                start_format="value",
+                random_state=42,
+                **kwargs,
+            )
+            optimized = model.historical_forecasts(
+                enable_optimization=True, **hf_kwargs
+            )
+            reference = model.historical_forecasts(
+                enable_optimization=False, **hf_kwargs
+            )
+            assert len(optimized) == len(reference)
+            for forecast, expected in zip(optimized, reference):
+                np.testing.assert_array_almost_equal(
+                    forecast.all_values(), expected.all_values()
+                )
 
     def test_predict_with_static_covariates_and_multiple_series(self):
         """The per-horizon container keeps its rows aligned across series and static covariates."""
