@@ -1640,12 +1640,28 @@ def _create_lagged_data_autoregression(
     uses_static_covariates: bool,
     last_static_covariates_shape: tuple[int, int] | None,
     num_samples: int,
-) -> np.ndarray:
+    lags_future_covariates_stepwise: dict[str, bool] | None = None,
+    output_chunk_length: int = 1,
+) -> FeaturesArray:
     """Extract lagged data from target, past covariates and future covariates for auto-regression
     with SKLearnModels.
+
+    If some `future_covariates` components use lags relative to the forecasted step
+    (`lags_future_covariates_stepwise`), the features of every horizon of the output chunk are extracted and
+    returned as a `StepwiseLaggedFeatures` instead of a `np.ndarray`.
     """
+    stepwise_future = _get_stepwise_future_mask(
+        lags_future_covariates=component_lags.get("future"),
+        lags_future_covariates_stepwise=lags_future_covariates_stepwise,
+        output_chunk_length=output_chunk_length,
+        multi_models=True,
+        is_training=False,
+        future_covariates_specified="future" in lags,
+    )
     series_length = len(target_series)
     X = []
+    step_values = None
+    step_cols = None
     for series_type in ["target", "past", "future"]:
         if series_type not in lags:
             continue
@@ -1671,37 +1687,49 @@ def _create_lagged_data_autoregression(
             )
         else:
             # for component-specific lags, sort by lags and components and then extract
-            tmp_X = _extract_component_lags_autoregression(
-                series_type=series_type,
-                values_matrix=values_matrix,
-                shift=shift,
-                last_step_shift=last_step_shift,
-                t_pred=t_pred,
-                lags=lags,
-                component_lags=component_lags,
+            tmp_X, block_step_values, block_step_cols = (
+                _extract_component_lags_autoregression(
+                    series_type=series_type,
+                    values_matrix=values_matrix,
+                    shift=shift,
+                    last_step_shift=last_step_shift,
+                    t_pred=t_pred,
+                    lags=lags,
+                    component_lags=component_lags,
+                    stepwise_future=(
+                        stepwise_future if series_type == "future" else None
+                    ),
+                    output_chunk_length=output_chunk_length,
+                )
             )
+            if block_step_cols is not None:
+                # offset the positions by the features of the preceding blocks
+                step_values = block_step_values
+                step_cols = block_step_cols + sum(X_i.shape[1] for X_i in X)
             lagged_data = tmp_X.reshape(series_length * num_samples, -1)
         X.append(lagged_data)
     # concatenate retrieved lags
     X = np.concatenate(X, axis=1)
 
-    if not uses_static_covariates:
+    if uses_static_covariates:
+        # Need to split up `X` into three equally-sized sub-blocks
+        # corresponding to each timeseries in `series`, so that
+        # static covariates can be added to each block; valid since
+        # each block contains same number of observations:
+        X_blocks = np.split(X, series_length, axis=0)
+        X_blocks, _ = add_static_covariates_to_lagged_data(
+            features=X_blocks,
+            target_series=target_series,
+            uses_static_covariates=uses_static_covariates,
+            last_shape=last_static_covariates_shape,
+        )
+        # concatenate retrieved lags; the static covariates go to the right of the lagged features, and the
+        # blocks keep their order, so the positions of the step-wise columns are unaffected
+        X = np.concatenate(X_blocks, axis=0)
+
+    if step_values is None:
         return X
-
-    # Need to split up `X` into three equally-sized sub-blocks
-    # corresponding to each timeseries in `series`, so that
-    # static covariates can be added to each block; valid since
-    # each block contains same number of observations:
-    X = np.split(X, series_length, axis=0)
-    X, _ = add_static_covariates_to_lagged_data(
-        features=X,
-        target_series=target_series,
-        uses_static_covariates=uses_static_covariates,
-        last_shape=last_static_covariates_shape,
-    )
-
-    # concatenate retrieved lags
-    return np.concatenate(X, axis=0)
+    return StepwiseLaggedFeatures(base=X, step_values=step_values, step_cols=step_cols)
 
 
 def _extract_component_lags_autoregression(
@@ -1712,14 +1740,20 @@ def _extract_component_lags_autoregression(
     t_pred: int,
     lags: dict[str, list[int]],
     component_lags: dict[str, dict[str, list[int]]],
-) -> np.ndarray:
+    stepwise_future: list[bool] | None = None,
+    output_chunk_length: int = 1,
+) -> tuple[np.ndarray, np.ndarray | None, np.ndarray | None]:
     """Extract, concatenate and reorder component-wise lags to obtain a feature order
     identical to tabularization.
+
+    Returns the features of the horizon `0`, and, when `stepwise_future` is specified (only for
+    `series_type="future"`), the values of the flagged components at every step of the output chunk with shape
+    `(output_chunk_length, n_observations, n_stepwise_cols)`, together with the positions of the step-wise
+    columns within the reordered block. Both are `None` when no component is step-wise.
     """
+    comp_lags_list = list(component_lags[series_type].values())
     # prepare index to reorder features by lags across components
-    comp_lags_reordered = np.concatenate([
-        comp_lags for comp_lags in component_lags[series_type].values()
-    ]).argsort(**STABLE_SORT_KWARGS)
+    comp_lags_reordered = np.concatenate(comp_lags_list).argsort(**STABLE_SORT_KWARGS)
 
     # convert relative lags to absolute
     if series_type == "target":
@@ -1734,11 +1768,38 @@ def _extract_component_lags_autoregression(
             [lag + lags_shift for lag in comp_lags],
             comp_i,
         ]
-        for comp_i, comp_lags in enumerate(component_lags[series_type].values())
+        for comp_i, comp_lags in enumerate(comp_lags_list)
     ]
 
     # concatenate on features dimension and reorder
-    return np.concatenate(tmp_X, axis=1)[:, comp_lags_reordered]
+    X = np.concatenate(tmp_X, axis=1)[:, comp_lags_reordered]
+    if stepwise_future is None:
+        return X, None, None
+
+    # positions of the step-wise columns, before and after the reordering
+    is_stepwise_col = np.concatenate([
+        np.full(len(comp_lags), flag)
+        for comp_lags, flag in zip(comp_lags_list, stepwise_future)
+    ])
+    stepwise_cols_orig = np.flatnonzero(is_stepwise_col)
+    step_cols = np.flatnonzero(is_stepwise_col[comp_lags_reordered])
+    # the step-wise extraction is grouped by component: map it onto the reordered positions
+    step_order = np.searchsorted(stepwise_cols_orig, comp_lags_reordered[step_cols])
+
+    # for every flagged component, extract the values at `lag + h` for every step `h` of the output chunk
+    horizons = np.arange(output_chunk_length)
+    step_vals = []
+    for comp_i, (comp_lags, flag) in enumerate(zip(comp_lags_list, stepwise_future)):
+        if not flag:
+            continue
+        # idx.shape = (n_lags_c, output_chunk_length)
+        idx = np.asarray(comp_lags)[:, None] + horizons[None, :] + lags_shift
+        # vals.shape = (n_observations, n_lags_c, output_chunk_length)
+        vals = values_matrix[:, idx, comp_i]
+        # -> (output_chunk_length, n_observations, n_lags_c)
+        step_vals.append(np.transpose(vals, (2, 0, 1)))
+    step_values = np.concatenate(step_vals, axis=2)[:, :, step_order]
+    return X, step_values, step_cols
 
 
 # For convenience, define following types for `_get_feature_times`:
