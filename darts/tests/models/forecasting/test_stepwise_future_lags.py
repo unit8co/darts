@@ -484,6 +484,218 @@ class TestStepwiseFutureLags:
             ]),
         )
 
+    # ------------------------------------------------------------------ prediction
+    @pytest.mark.parametrize("multi_models", [True, False])
+    def test_extreme_lags_cover_the_forecasted_steps(self, multi_models):
+        """A step-wise component is read up to `output_chunk_length - 1` steps further into the future."""
+        common = dict(
+            lags=2,
+            lags_future_covariates={"fc0": [-2, 1], "fc1": [0]},
+            output_chunk_length=OCL,
+            multi_models=multi_models,
+        )
+        absolute = LinearRegressionModel(**common)
+        stepwise = LinearRegressionModel(
+            **common,
+            lags_future_covariates_stepwise={"fc1": True, "default_lags": False},
+        )
+        # the minimum is unchanged (the extension only applies to the forecasted steps, `h >= 0`)
+        assert stepwise.extreme_lags[4] == absolute.extreme_lags[4] == -2
+        # `fc1` is read up to `0 + OCL - 1`, beyond the largest absolute lag. With `multi_models=False` the
+        # lags of the flagged components are shifted instead, which gives the same requirement.
+        assert absolute.extreme_lags[5] == 1
+        assert stepwise.extreme_lags[5] == OCL - 1
+
+    def test_encoders_generate_the_forecasted_steps(self):
+        """The encoder settings must cover the last step the estimators read, or `predict()` would fail."""
+        common = dict(lags=2, lags_future_covariates=[0], output_chunk_length=OCL)
+        assert LinearRegressionModel(**common)._model_encoder_settings[-1] == [0, 0]
+        assert LinearRegressionModel(
+            **common, lags_future_covariates_stepwise=True
+        )._model_encoder_settings[-1] == [0, OCL - 1]
+
+        series = TimeSeries.from_times_and_values(
+            pd.date_range("2000-01-01", periods=N_TARGET, freq="D"),
+            np.arange(N_TARGET, dtype=float),
+        )
+        model = LinearRegressionModel(
+            **common,
+            lags_future_covariates_stepwise=True,
+            add_encoders={"datetime_attribute": {"future": ["dayofweek"]}},
+        )
+        model.fit(series)
+        assert len(model.predict(OCL)) == OCL
+
+    @pytest.mark.parametrize("n", [1, OCL - 1, OCL, OCL + 1, 2 * OCL + 1])
+    def test_predict_reads_the_covariates_of_the_forecasted_step(self, n):
+        """With `y[t] = t` and `fc[t] = 1000 + t`, every estimator recovers `y` exactly from its own step."""
+        series = _target()
+        fc = _covariates(N_TARGET + 3 * OCL, ["fc0"])
+        model = LinearRegressionModel(
+            lags=None,
+            lags_future_covariates={"fc0": [0]},
+            lags_future_covariates_stepwise=True,
+            output_chunk_length=OCL,
+        )
+        model.fit(series, future_covariates=fc)
+        for horizon in range(OCL):
+            coefs, intercept = _horizon_params(model, horizon, 0, 1)
+            np.testing.assert_array_almost_equal(coefs, [1.0])
+            np.testing.assert_almost_equal(intercept, -1000.0)
+
+        pred = model.predict(n, future_covariates=fc)
+        np.testing.assert_array_almost_equal(
+            pred.values().ravel(), np.arange(N_TARGET, N_TARGET + n, dtype=float)
+        )
+
+    @pytest.mark.parametrize("lag", [-1, 0, 1])
+    def test_predict_matches_the_legacy_shifted_lags_per_horizon(self, lag):
+        """The forecast of the horizon `h` is the one of a legacy model whose lag is shifted by `h`."""
+        rng = np.random.default_rng(42)
+        series = TimeSeries.from_times_and_values(
+            pd.RangeIndex(N_TARGET), rng.normal(size=N_TARGET)
+        )
+        fc = TimeSeries.from_times_and_values(
+            pd.RangeIndex(N_TARGET + 40),
+            rng.normal(size=(N_TARGET + 40, 1)),
+            columns=["fc0"],
+        )
+        stepwise = LinearRegressionModel(
+            lags=2,
+            lags_future_covariates={"fc0": [lag]},
+            lags_future_covariates_stepwise=True,
+            output_chunk_length=OCL,
+        )
+        stepwise.fit(series, future_covariates=fc)
+        forecast = stepwise.predict(OCL, future_covariates=fc).values().ravel()
+
+        for horizon in range(OCL):
+            legacy = LinearRegressionModel(
+                lags=2,
+                lags_future_covariates={"fc0": [lag + horizon]},
+                output_chunk_length=OCL,
+            )
+            # the step-wise model loses the last `OCL - 1` anchors, so the covariates of the legacy model
+            # are trimmed to train both of them on the same samples
+            legacy.fit(series, future_covariates=fc[: len(fc) - (OCL - 1 - horizon)])
+            np.testing.assert_almost_equal(
+                forecast[horizon],
+                legacy.predict(OCL, future_covariates=fc).values().ravel()[horizon],
+            )
+
+    def test_predict_requires_the_forecasted_steps_of_the_covariates(self):
+        """Covariates that are long enough for the absolute lags can be too short for the step-wise ones."""
+        series = _target()
+        fc = _covariates(N_TARGET + 3 * OCL, ["fc0"])
+        common = dict(
+            lags=2, lags_future_covariates={"fc0": [0]}, output_chunk_length=OCL
+        )
+        absolute = LinearRegressionModel(**common)
+        absolute.fit(series, future_covariates=fc)
+        stepwise = LinearRegressionModel(**common, lags_future_covariates_stepwise=True)
+        stepwise.fit(series, future_covariates=fc)
+
+        # exactly the single step the absolute lag `0` requires: it is read once per sample, at the first
+        # step of the output chunk, whereas the step-wise model reads it at every one of the `OCL` steps
+        short_fc = fc[: N_TARGET + 1]
+        assert len(absolute.predict(OCL, future_covariates=short_fc)) == OCL
+        with pytest.raises(ValueError, match="are not long enough"):
+            stepwise.predict(OCL, future_covariates=short_fc)
+        # the message reports the declared lag and the step it is actually read at
+        with pytest.raises(ValueError, match=r"read up to " + str(OCL - 1)):
+            stepwise.predict(OCL, future_covariates=short_fc)
+
+    def test_historical_forecasts_fall_back_to_the_predict_loop(self):
+        """The optimized routine cannot carry the per-horizon features yet, so it must not be used."""
+        rng = np.random.default_rng(0)
+        series = TimeSeries.from_times_and_values(
+            pd.RangeIndex(N_TARGET), rng.normal(size=N_TARGET)
+        )
+        fc = TimeSeries.from_times_and_values(
+            pd.RangeIndex(N_TARGET + 40),
+            rng.normal(size=(N_TARGET + 40, 1)),
+            columns=["fc0"],
+        )
+        model = LinearRegressionModel(
+            lags=2,
+            lags_future_covariates={"fc0": [-1, 0]},
+            lags_future_covariates_stepwise=True,
+            output_chunk_length=OCL,
+        )
+        model.fit(series, future_covariates=fc)
+        assert not model._check_optimizable_historical_forecasts(retrain=False)
+
+        kwargs = dict(
+            series=series,
+            future_covariates=fc,
+            retrain=False,
+            forecast_horizon=OCL,
+            last_points_only=False,
+            start=N_TARGET - 20,
+            start_format="value",
+        )
+        optimized = model.historical_forecasts(enable_optimization=True, **kwargs)
+        reference = model.historical_forecasts(enable_optimization=False, **kwargs)
+        assert len(optimized) == len(reference)
+        for forecast, expected in zip(optimized, reference):
+            np.testing.assert_array_almost_equal(forecast.values(), expected.values())
+        # the last forecast is the one of a plain `predict()` on the truncated series
+        np.testing.assert_array_almost_equal(
+            reference[-1].values(),
+            model.predict(
+                OCL,
+                series=series[: len(series) - OCL],
+                future_covariates=fc,
+            ).values(),
+        )
+
+    def test_predict_with_static_covariates_and_multiple_series(self):
+        """The per-horizon container keeps its rows aligned across series and static covariates."""
+        fc = _covariates(N_TARGET + 3 * OCL, ["fc0"])
+        series = [
+            _target().with_static_covariates(pd.DataFrame({"sc": [value]}))
+            for value in (1.0, 2.0)
+        ]
+        model = LinearRegressionModel(
+            lags=2,
+            lags_future_covariates={"fc0": [0]},
+            lags_future_covariates_stepwise=True,
+            output_chunk_length=OCL,
+        )
+        model.fit(series, future_covariates=[fc, fc])
+        assert model.uses_static_covariates
+
+        forecasts = model.predict(OCL, series=series, future_covariates=[fc, fc])
+        for idx, forecast in enumerate(forecasts):
+            np.testing.assert_array_almost_equal(
+                forecast.values(),
+                model.predict(OCL, series=series[idx], future_covariates=fc).values(),
+            )
+
+    def test_predict_with_quantile_likelihood(self):
+        """Sampling and likelihood parameters go through the per-horizon routing of every quantile model."""
+        series = _target()
+        fc = _covariates(N_TARGET + 3 * OCL, ["fc0"])
+        model = LinearRegressionModel(
+            lags=2,
+            lags_future_covariates={"fc0": [0]},
+            lags_future_covariates_stepwise=True,
+            output_chunk_length=OCL,
+            likelihood="quantile",
+            quantiles=[0.1, 0.5, 0.9],
+        )
+        model.fit(series, future_covariates=fc)
+
+        sampled = model.predict(OCL, future_covariates=fc, num_samples=50)
+        assert sampled.n_samples == 50
+        assert len(sampled) == OCL
+
+        params = model.predict(
+            OCL, future_covariates=fc, predict_likelihood_parameters=True
+        )
+        assert len(params) == OCL
+        assert params.width == 3
+
     # ------------------------------------------------------------------ other estimators
     @pytest.mark.skipif(not LGBM_AVAILABLE, reason="requires lightgbm")
     def test_lgbm_with_validation_set(self):
