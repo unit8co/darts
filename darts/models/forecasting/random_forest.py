@@ -99,6 +99,9 @@ class RandomForestModel(SKLearnModel):
             samples are dropped at training time, and `predict()` requires that many extra values (also when
             `n < output_chunk_length`). With `multi_models=False`, step-wise lags are equivalent to shifting the
             lags by `output_chunk_length - 1`.
+            The components of `future_covariates` must keep the same order between `fit()` and `predict()`:
+            the lags are matched to the covariates components by position (this already holds for any
+            component-wise `lags_future_covariates`).
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
             horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
@@ -286,6 +289,9 @@ class RandomForest(RandomForestModel):
             samples are dropped at training time, and `predict()` requires that many extra values (also when
             `n < output_chunk_length`). With `multi_models=False`, step-wise lags are equivalent to shifting the
             lags by `output_chunk_length - 1`.
+            The components of `future_covariates` must keep the same order between `fit()` and `predict()`:
+            the lags are matched to the covariates components by position (this already holds for any
+            component-wise `lags_future_covariates`).
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
             horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
