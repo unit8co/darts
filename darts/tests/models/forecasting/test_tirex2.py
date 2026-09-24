@@ -478,3 +478,22 @@ class TestTiRex2Model:
         model.predict(n=5, series=self.series)
         pipeline.assert_called_once()
         pipeline.assert_called_with(**load_kwargs, device=accelerator)
+
+    def test_predict_kwargs(self, pipeline):
+        predict_kwargs = {"tta_diff": False}
+        stub = TiRex2Stub()
+        pipeline.side_effect = lambda **kwargs: SimpleNamespace(model=stub)
+
+        model = TiRex2Model(
+            input_chunk_length=3,
+            output_chunk_length=4,
+            predict_kwargs=predict_kwargs,
+            **tfm_kwargs,
+        )
+        model.fit(self.series)
+        with patch.object(stub, "_predict_once", wraps=stub._predict_once) as predict:
+            model.predict(n=4, series=self.series)
+            predict.assert_called_once()
+            _, kwargs = predict.call_args
+            assert kwargs["prediction_length"] == 4
+            assert kwargs["tta_diff"] is False

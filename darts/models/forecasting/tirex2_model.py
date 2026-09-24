@@ -54,10 +54,13 @@ if TYPE_CHECKING:
 class _TiRex2Module(PLForecastingModule):
     """Adapt TiRex-2's native multivariate inputs and quantiles to Darts."""
 
-    def __init__(self, tirex2_kwargs: dict[str, Any], **kwargs):
+    def __init__(
+        self, tirex2_kwargs: dict[str, Any], predict_kwargs: dict[str, Any], **kwargs
+    ):
         super().__init__(**kwargs)
 
         self._tirex2_kwargs = tirex2_kwargs
+        self._predict_kwargs = predict_kwargs
         self._tirex2_device = None
 
     def configure_model(self) -> None:
@@ -148,7 +151,9 @@ class _TiRex2Module(PLForecastingModule):
         # Each sample remains a joint multivariate task, independent of other
         # samples in the batch. Native output: B tensors of shape
         # (C, Q, H + S), with all pretrained quantiles.
-        forecasts = self.tirex2.predict(timeseries, prediction_length=self._future_len)
+        forecasts = self.tirex2._predict_once(
+            timeseries, prediction_length=self._future_len, **self._predict_kwargs
+        )
         # Stack and permute the forecasts: (B, H + S, C, Q)
         output = torch.stack(forecasts).permute(0, 3, 1, 2)
         # Select the requested horizon and likelihood parameters: (B, H, C, N).
@@ -170,6 +175,7 @@ class TiRex2Model(FoundationModel):
         hub_model_revision: str | None = None,
         local_dir: str | os.PathLike | None = None,
         tirex2_kwargs: dict[str, Any] | None = None,
+        predict_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ):
         """TiRex-2 foundation model for zero-shot multivariate forecasting.
@@ -241,6 +247,8 @@ class TiRex2Model(FoundationModel):
             directory as ``hub_model_name`` instead.
         tirex2_kwargs
             Additional arguments to ``tirex2.load_model()``, such as ``use_flex_attention`` and ``hf_kwargs``.
+        predict_kwargs
+            Optional arguments to ``tirex2.TiRex2._predict_once()``, such as ``tta_diff``.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`. Training-related options below are inherited from the
@@ -451,17 +459,20 @@ class TiRex2Model(FoundationModel):
             hf_kwargs["revision"] = hub_model_revision
         if local_dir is not None:
             hf_kwargs["local_dir"] = local_dir
-        self.tirex2_kwargs = {
+        self._tirex2_kwargs = {
             "ckpt_path": hub_model_name,
             **load_kwargs,
         }
         if hf_kwargs:
-            self.tirex2_kwargs["hf_kwargs"] = hf_kwargs
+            self._tirex2_kwargs["hf_kwargs"] = hf_kwargs
+
+        self._predict_kwargs = predict_kwargs or {}
 
         super().__init__(**kwargs)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         return _TiRex2Module(
-            tirex2_kwargs=self.tirex2_kwargs,
+            tirex2_kwargs=self._tirex2_kwargs,
+            predict_kwargs=self._predict_kwargs,
             **self.pl_module_params,
         )

@@ -86,7 +86,7 @@ class TiRex2Stub(torch.nn.Module):
     """Lightweight stub emulating the ``tirex2`` pipeline API so that
     ``TiRex2Model`` can run without downloading the real weights.
 
-    Provides ``predict(timeseries, prediction_length)`` which
+    Provides ``_predict_once(timeseries, prediction_length)`` which
     returns deterministic quantile forecasts based on simple arithmetic.
     """
 
@@ -97,7 +97,7 @@ class TiRex2Stub(torch.nn.Module):
         super().__init__()
         self.weight = torch.nn.Parameter(torch.ones(1))
 
-    def predict(self, timeseries, prediction_length: int, **_kwargs):
+    def _predict_once(self, timeseries, prediction_length: int, **_kwargs):
         target0 = timeseries[0].target
         B, C, P = (
             len(timeseries),
