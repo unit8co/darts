@@ -251,3 +251,12 @@ class SKLearnShapAdapter(ShapAdapter):
                     "with `multi_models=True`."
                 )
             )
+
+        if model._uses_stepwise_future_lags:
+            raise_log(
+                ValueError(
+                    "Invalid `lags_future_covariates_stepwise` value. Currently, "
+                    "ShapExplainer does not support SKLearnModels with "
+                    "step-wise future covariates lags."
+                )
+            )

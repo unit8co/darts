@@ -72,7 +72,9 @@ from darts.logging import get_logger, raise_deprecation_warning, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.typing import TimeSeriesLike
 from darts.utils.data.tabularization import (
+    StepwiseLaggedFeatures,
     _create_lagged_data_autoregression,
+    concatenate_lagged_features,
     create_lagged_component_names,
     create_lagged_training_data,
 )
@@ -98,6 +100,96 @@ LAGS_TYPE = int | list[int] | dict[str, int | list[int]]
 FUTURE_LAGS_TYPE = tuple[int, int] | list[int] | dict[str, tuple[int, int] | list[int]]
 
 
+def _has_stepwise_future_lags(
+    lags_future_covariates_stepwise: bool | dict[str, bool] | None,
+) -> bool:
+    """Whether at least one `future_covariates` component is flagged as step-wise."""
+    if isinstance(lags_future_covariates_stepwise, dict):
+        return any(lags_future_covariates_stepwise.values())
+    return bool(lags_future_covariates_stepwise)
+
+
+def _generate_stepwise_future_lags(
+    processed_lags: dict[str, list[int]],
+    processed_component_lags: dict[str, dict[str, list[int]]],
+    lags_future_covariates_stepwise: bool | dict[str, bool],
+    output_chunk_length: int,
+    multi_models: bool,
+) -> dict[str, bool] | None:
+    """
+    Resolves the step-wise flags of the `future_covariates` lags, modifying `processed_lags` and
+    `processed_component_lags` in place when required.
+
+    When at least one component is step-wise, the future lags are always converted into the component-wise
+    representation, so that the entire downstream logic uses a single code path.
+
+    With `multi_models=False` a single estimator predicts the last step of the output chunk, so step-wise lags
+    are a constant shift of `output_chunk_length - 1` that is pre-added to the lags of the flagged components
+    (as done for `output_chunk_shift`); `None` is returned in that case.
+
+    Returns `None` when step-wise lags are inactive (no component flagged, `output_chunk_length == 1`, or no
+    `lags_future_covariates`), leaving both dictionaries untouched.
+    """
+    if not _has_stepwise_future_lags(lags_future_covariates_stepwise):
+        return None
+    if "future" not in processed_lags or output_chunk_length == 1:
+        return None
+
+    # always use the component-wise representation of the future lags
+    if "future" not in processed_component_lags:
+        future_lags = processed_lags["future"]
+        processed_component_lags["future"] = {"default_lags": future_lags}
+        processed_lags["future"] = [future_lags[0], future_lags[-1]]
+
+    comp_lags = processed_component_lags["future"]
+    if isinstance(lags_future_covariates_stepwise, bool):
+        stepwise = {"default_lags": lags_future_covariates_stepwise}
+    else:
+        stepwise = dict(lags_future_covariates_stepwise)
+
+    # components that are flagged but have no dedicated lags must be covered by the default lags
+    missing_lags = [
+        comp_name
+        for comp_name, is_stepwise in stepwise.items()
+        if is_stepwise and comp_name not in comp_lags and comp_name != "default_lags"
+    ]
+    if missing_lags and "default_lags" not in comp_lags:
+        raise_log(
+            ValueError(
+                "The `lags_future_covariates_stepwise` dictionary flags components for which "
+                f"`lags_future_covariates` does not define any lags: {sorted(missing_lags)}. Either add them to "
+                "`lags_future_covariates` or provide its 'default_lags' key."
+            ),
+        )
+
+    if multi_models:
+        return stepwise
+
+    # `multi_models=False`: a single estimator predicts the last step of the output chunk
+    default_stepwise = stepwise.get("default_lags", False)
+    shift = output_chunk_length - 1
+    shifted_lags = {}
+    extra_comps = [
+        comp_name
+        for comp_name in stepwise
+        if comp_name not in comp_lags and comp_name != "default_lags"
+    ]
+    for comp_name in list(comp_lags) + extra_comps:
+        lags_ = (
+            comp_lags[comp_name]
+            if comp_name in comp_lags
+            else comp_lags["default_lags"]
+        )
+        is_stepwise = stepwise.get(comp_name, default_stepwise)
+        shifted_lags[comp_name] = (
+            [lag_ + shift for lag_ in lags_] if is_stepwise else list(lags_)
+        )
+    processed_component_lags["future"] = shifted_lags
+    all_lags = [lag_ for lags_ in shifted_lags.values() for lag_ in lags_]
+    processed_lags["future"] = [min(all_lags), max(all_lags)]
+    return None
+
+
 class SKLearnModel(GlobalForecastingModel):
     @random_method
     def __init__(
@@ -105,6 +197,7 @@ class SKLearnModel(GlobalForecastingModel):
         lags: LAGS_TYPE | None = None,
         lags_past_covariates: LAGS_TYPE | None = None,
         lags_future_covariates: FUTURE_LAGS_TYPE | None = None,
+        lags_future_covariates_stepwise: bool | dict[str, bool] = False,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         add_encoders: dict | None = None,
@@ -151,6 +244,27 @@ class SKLearnModel(GlobalForecastingModel):
             using multiple series) and the values correspond to the component lags (tuple or list of integers). The key
             'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
             components are missing and the 'default_lags' key is not provided.
+        lags_future_covariates_stepwise
+            Whether the `lags_future_covariates` of a component are relative to the step forecasted by each
+            estimator ("step-wise" lags) instead of the first predicted time step of the sample. Only effective
+            with `output_chunk_length > 1`.
+            With the default ``False``, lag `k` of a component is always read `k` steps after the first predicted
+            step. With ``True``, the estimator predicting horizon `h` reads it `h + k` steps after the first
+            predicted step. This allows e.g. `lags_future_covariates={"holiday": [0]}` to give each estimator the
+            covariate value of the very step it forecasts, using a single feature per component instead of the
+            `output_chunk_length` correlated features that `list(range(output_chunk_length))` would create.
+            If a dictionary, the keys correspond to the `future_covariates` component names (of the first series
+            when using multiple series) and the values are booleans. The key 'default_lags' can be used for the
+            un-specified components (including the ones generated by `add_encoders`). Raises an error if some
+            components are missing and the 'default_lags' key is not provided.
+            Requires `lags_future_covariates` to be set. Step-wise components require `future_covariates` to be
+            known `output_chunk_length - 1` steps further than absolute lags do: the last `output_chunk_length - 1`
+            samples are dropped at training time, and `predict()` requires that many extra values (also when
+            `n < output_chunk_length`). With `multi_models=False`, step-wise lags are equivalent to shifting the
+            lags by `output_chunk_length - 1`.
+            The components of `future_covariates` must keep the same order between `fit()` and `predict()`:
+            the lags are matched to the covariates components by position (this already holds for any
+            component-wise `lags_future_covariates`).
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
             horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
@@ -245,6 +359,8 @@ class SKLearnModel(GlobalForecastingModel):
         self.model = model
         self.lags: dict[str, list[int]] = {}
         self.component_lags: dict[str, dict[str, list[int]]] = {}
+        # component-wise step-wise flags for the future covariates lags; `None` when step-wise lags are inactive
+        self.component_lags_stepwise: dict[str, bool] | None = None
         self.input_dim = None
         self.multi_models = True if multi_models or output_chunk_length == 1 else False
         self._considers_static_covariates = use_static_covariates
@@ -283,15 +399,23 @@ class SKLearnModel(GlobalForecastingModel):
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
+            lags_future_covariates_stepwise=lags_future_covariates_stepwise,
         )
 
         # convert lags arguments to list of int
         # lags attribute should always be accessed with self._get_lags(), not self.lags.get()
-        self.lags, self.component_lags = self._generate_lags(
+        (
+            self.lags,
+            self.component_lags,
+            self.component_lags_stepwise,
+        ) = self._generate_lags(
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
+            lags_future_covariates_stepwise=lags_future_covariates_stepwise,
             output_chunk_shift=output_chunk_shift,
+            output_chunk_length=output_chunk_length,
+            multi_models=self.multi_models,
         )
 
         self.pred_dim = self.output_chunk_length if self.multi_models else 1
@@ -301,6 +425,7 @@ class SKLearnModel(GlobalForecastingModel):
         lags: LAGS_TYPE | None,
         lags_past_covariates: LAGS_TYPE | None,
         lags_future_covariates: FUTURE_LAGS_TYPE | None,
+        lags_future_covariates_stepwise: bool | dict[str, bool] = False,
     ):
         if (
             (lags is None)
@@ -313,13 +438,54 @@ class SKLearnModel(GlobalForecastingModel):
                 ),
             )
 
+        if not isinstance(lags_future_covariates_stepwise, bool | dict):
+            raise_log(
+                ValueError(
+                    "`lags_future_covariates_stepwise` must be a boolean or a dictionary mapping "
+                    "`future_covariates` component names to booleans. Given: "
+                    f"{type(lags_future_covariates_stepwise)}."
+                ),
+            )
+        if isinstance(lags_future_covariates_stepwise, dict):
+            if len(lags_future_covariates_stepwise) == 0:
+                raise_log(
+                    ValueError(
+                        "When passed as a dictionary, `lags_future_covariates_stepwise` must contain at least "
+                        "one key."
+                    ),
+                )
+            for comp_name, is_stepwise in lags_future_covariates_stepwise.items():
+                if not isinstance(is_stepwise, bool):
+                    raise_log(
+                        ValueError(
+                            f"`lags_future_covariates_stepwise` - `{comp_name}`: must be a boolean. "
+                            f"Given: {type(is_stepwise)}."
+                        ),
+                    )
+        if (
+            _has_stepwise_future_lags(lags_future_covariates_stepwise)
+            and lags_future_covariates is None
+        ):
+            raise_log(
+                ValueError(
+                    "`lags_future_covariates_stepwise` requires `lags_future_covariates` to be not None."
+                ),
+            )
+
     @staticmethod
     def _generate_lags(
         lags: LAGS_TYPE | None,
         lags_past_covariates: LAGS_TYPE | None,
         lags_future_covariates: FUTURE_LAGS_TYPE | None,
+        lags_future_covariates_stepwise: bool | dict[str, bool],
         output_chunk_shift: int,
-    ) -> tuple[dict[str, list[int]], dict[str, dict[str, list[int]]]]:
+        output_chunk_length: int,
+        multi_models: bool,
+    ) -> tuple[
+        dict[str, list[int]],
+        dict[str, dict[str, list[int]]],
+        dict[str, bool] | None,
+    ]:
         """
         Based on the type of the argument and the nature of the covariates, perform some sanity checks before
         converting the lags to a list of integer.
@@ -330,6 +496,11 @@ class SKLearnModel(GlobalForecastingModel):
         values are contained in the self.lags attribute and the self.component_lags is an empty dictionary.
 
         If `output_chunk_shift > 0`, the `lags_future_covariates` are shifted into the future.
+
+        If some `future_covariates` components have step-wise lags, the future lags are always converted into the
+        component-wise representation, and the third returned value holds the (unresolved) step-wise flags per
+        component. With `multi_models=False` the step-wise lags are a constant shift of
+        `output_chunk_length - 1`: they are pre-added to the lags and `None` is returned instead.
         """
         processed_lags: dict[str, list[int]] = dict()
         processed_component_lags: dict[str, dict[str, list[int]]] = dict()
@@ -475,7 +646,15 @@ class SKLearnModel(GlobalForecastingModel):
                             lags_abbrev
                         ].items()
                     }
-        return processed_lags, processed_component_lags
+
+        stepwise_future = _generate_stepwise_future_lags(
+            processed_lags=processed_lags,
+            processed_component_lags=processed_component_lags,
+            lags_future_covariates_stepwise=lags_future_covariates_stepwise,
+            output_chunk_length=output_chunk_length,
+            multi_models=multi_models,
+        )
+        return processed_lags, processed_component_lags, stepwise_future
 
     def _get_lags(self, lags_type: str):
         """
@@ -486,6 +665,51 @@ class SKLearnModel(GlobalForecastingModel):
             return self.component_lags[lags_type]
         else:
             return self.lags.get(lags_type, None)
+
+    @property
+    def _stepwise_future_lags(self) -> dict[str, bool] | None:
+        """The component-wise step-wise flags of the `future_covariates` lags (`None` when inactive).
+
+        Read through `getattr()` so that models saved before this parameter existed can still be loaded.
+        """
+        return getattr(self, "component_lags_stepwise", None)
+
+    @property
+    def _uses_stepwise_future_lags(self) -> bool:
+        """Whether at least one `future_covariates` component uses lags relative to the forecasted step."""
+        return _has_stepwise_future_lags(self._stepwise_future_lags)
+
+    @property
+    def _max_stepwise_future_lag(self) -> int | None:
+        """The largest `future_covariates` lag among the step-wise components (`None` when inactive)."""
+        if not self._uses_stepwise_future_lags:
+            return None
+        comp_lags = self.component_lags.get("future", {})
+        max_lag = None
+        for comp_name, is_stepwise in self._stepwise_future_lags.items():
+            if not is_stepwise:
+                continue
+            lags_ = comp_lags.get(comp_name, comp_lags.get("default_lags"))
+            if lags_ is None:
+                continue
+            max_lag = lags_[-1] if max_lag is None else max(max_lag, lags_[-1])
+        return max_lag if max_lag is not None else self.lags["future"][-1]
+
+    @property
+    def _max_future_cov_lag(self) -> int | None:
+        """The largest `future_covariates` lag the model requires (`None` when it doesn't use them).
+
+        Step-wise components are read up to `output_chunk_length - 1` steps further into the future, since the
+        estimator of the horizon `h` reads them at `t + s + h + lag`.
+        """
+        if "future" not in self.lags:
+            return None
+        max_lag = self.lags["future"][-1]
+        if not self._uses_stepwise_future_lags:
+            return max_lag
+        return max(
+            max_lag, self._max_stepwise_future_lag + self.output_chunk_length - 1
+        )
 
     def _get_lagged_features(
         self,
@@ -572,7 +796,7 @@ class SKLearnModel(GlobalForecastingModel):
             lags_future_covariates = [
                 min(lags_future_covariates)
                 - int(not self.multi_models) * (self.output_chunk_length - 1),
-                max(lags_future_covariates),
+                self._max_future_cov_lag,
             ]
         return (
             abs(min(target_lags)),
@@ -600,7 +824,7 @@ class SKLearnModel(GlobalForecastingModel):
         min_past_cov_lag = self.lags["past"][0] if "past" in self.lags else None
         max_past_cov_lag = self.lags["past"][-1] if "past" in self.lags else None
         min_future_cov_lag = self.lags["future"][0] if "future" in self.lags else None
-        max_future_cov_lag = self.lags["future"][-1] if "future" in self.lags else None
+        max_future_cov_lag = self._max_future_cov_lag
         return (
             min_target_lag,
             max_target_lag,
@@ -654,6 +878,12 @@ class SKLearnModel(GlobalForecastingModel):
             abstraction layer, grouping the estimators by ``quantile``. Models using a single native multi-quantile
             estimator (``likelihood="multiquantile"``) do not use this extra quantile grouping, and ``quantile``
             must be set to ``None`` to obtain the correct estimator.
+
+        .. note::
+            With step-wise `future_covariates` lags (``lags_future_covariates_stepwise``), each horizon is trained
+            on its own features array: the estimator returned for ``horizon`` reads the flagged components
+            ``horizon + lag`` steps after the first predicted step, although ``lagged_feature_names`` only shows
+            ``lag``.
 
         Parameters
         ----------
@@ -791,6 +1021,7 @@ class SKLearnModel(GlobalForecastingModel):
             lags=self._get_lags("target"),
             lags_past_covariates=self._get_lags("past"),
             lags_future_covariates=self._get_lags("future"),
+            lags_future_covariates_stepwise=self._stepwise_future_lags,
             uses_static_covariates=self.uses_static_covariates,
             last_static_covariates_shape=last_static_covariates_shape,
             max_samples_per_ts=max_samples_per_ts,
@@ -826,7 +1057,7 @@ class SKLearnModel(GlobalForecastingModel):
             if sample_weights is not None:
                 sample_weights[i] = sample_weights[i][:, :, 0]
 
-        features = np.concatenate(features, axis=0)
+        features = concatenate_lagged_features(features)
         labels = np.concatenate(labels, axis=0)
         if sample_weights is not None:
             sample_weights = np.concatenate(sample_weights, axis=0)
@@ -841,9 +1072,34 @@ class SKLearnModel(GlobalForecastingModel):
         ):
             sample_weights = sample_weights.ravel()
 
-        features, labels = self._format_samples(features, labels)
+        features, labels = self._format_lagged_features(features, labels)
 
         return features, labels, sample_weights
+
+    def _horizon_samples(self, samples: Any, output_idx: int) -> Any:
+        """
+        Materializes the features array of the horizon that the estimator at `output_idx` is trained on, when the
+        horizons have dedicated features arrays (step-wise future covariates lags). Returns `samples` unchanged
+        otherwise.
+        """
+        if not isinstance(samples, StepwiseLaggedFeatures):
+            return samples
+        return samples.horizon(output_idx // self.input_dim["target"])
+
+    def _format_lagged_features(
+        self, samples: Any, labels: np.ndarray | None = None
+    ) -> tuple[Any, Any]:
+        """
+        Applies `_format_samples()`, supporting the compact per-horizon features container used with step-wise
+        future covariates lags. In that case the features array of each horizon is formatted lazily, when the
+        multi-output wrapper materializes it; only the labels are formatted eagerly (`_format_samples()` is
+        still called once on the horizon `0` features to surface formatting errors before training).
+        """
+        if isinstance(samples, StepwiseLaggedFeatures):
+            _, labels = self._format_samples(samples.base, labels)
+            samples.format_fn = lambda x: self._format_samples(x)[0]
+            return samples, labels
+        return self._format_samples(samples, labels)
 
     def _format_samples(
         self, samples: np.ndarray, labels: np.ndarray | None = None
@@ -1069,6 +1325,8 @@ class SKLearnModel(GlobalForecastingModel):
                 not self._supports_native_multioutput
                 or sample_weight
                 is not None  # we have 2D sample (and time) weights, only supported in Darts
+                # each horizon is trained on its own features array, which only the wrapper can route
+                or self._uses_stepwise_future_lags
             )
         ):
             val_set_name, val_weight_name = self.val_set_params
@@ -1138,6 +1396,35 @@ class SKLearnModel(GlobalForecastingModel):
                         else self.component_lags[variate_type]["default_lags"]
                     )
                     for comp_name in variate[0].components
+                }
+
+        # if provided, the step-wise flags must be defined for all the future covariates components
+        if self._uses_stepwise_future_lags and future_covariates is not None:
+            stepwise = self._stepwise_future_lags
+            provided_components = set(stepwise.keys())
+            required_components = set(future_covariates[0].components)
+
+            wrong_components = list(
+                provided_components - {"default_lags"} - required_components
+            )
+            missing_keys = list(required_components - provided_components)
+            if len(wrong_components) > 0:
+                component_lags_error_msg.append(
+                    "The `lags_future_covariates_stepwise` dictionary specifies flags for components that are not "
+                    f"present in the series : {wrong_components}. They must be removed to avoid any ambiguity."
+                )
+            elif len(missing_keys) > 0 and "default_lags" not in provided_components:
+                component_lags_error_msg.append(
+                    "The lags_future_covariates_stepwise dictionary is missing the flags for the following "
+                    f"components present in the series: {missing_keys}. The key 'default_lags' can be used to "
+                    "provide flags for all the non-explicitely defined components."
+                )
+            else:
+                # reorder the components based on the input series, insert the default when necessary
+                default_stepwise = stepwise.get("default_lags", False)
+                self.component_lags_stepwise = {
+                    comp_name: bool(stepwise.get(comp_name, default_stepwise))
+                    for comp_name in future_covariates[0].components
                 }
 
         # single error message for all the lags arguments
@@ -1323,11 +1610,21 @@ class SKLearnModel(GlobalForecastingModel):
                 continue
 
             relative_cov_lags[cov_type] = np.array(lags) - lags[0]
+            # step-wise `future_covariates` components are read up to `output_chunk_length - 1` steps further
+            # into the future; the extension is over-required when `n < output_chunk_length`, since all the
+            # horizons of the output chunk are predicted even though only the first `n` are kept
+            max_lag = self._max_future_cov_lag if cov_type == "future" else max(lags)
+            max_lag_text = f"`max(lags_{cov_type}_covariates)={lags[-1]}`"
+            if max_lag > lags[-1]:
+                max_lag_text += (
+                    f" (read up to {max_lag} by the step-wise components of "
+                    f"`lags_future_covariates_stepwise`)"
+                )
             covariate_matrices[cov_type] = []
             for idx, (ts, cov) in enumerate(zip(series, covs)):
                 # how many steps to go back from end of target series for start of covariates
                 steps_back = -(min(lags) + 1) + shift
-                lags_diff = max(lags) - min(lags) + 1
+                lags_diff = max_lag - min(lags) + 1
                 # over how many steps the covariates range
                 n_steps = lags_diff + max(0, n - self.output_chunk_length) + shift
 
@@ -1346,7 +1643,7 @@ class SKLearnModel(GlobalForecastingModel):
                         ValueError(
                             f"The `{cov_type}_covariates`{index_text}are not long enough. "
                             f"Given horizon `n={n}`, `min(lags_{cov_type}_covariates)={lags[0]}`, "
-                            f"`max(lags_{cov_type}_covariates)={lags[-1]}` and "
+                            f"{max_lag_text} and "
                             f"`output_chunk_length={self.output_chunk_length}`, the `{cov_type}_covariates` have to "
                             f"range from {start_ts} until {end_ts} (inclusive), but they only range from "
                             f"{cov.start_time()} until {cov.end_time()}."
@@ -1417,6 +1714,8 @@ class SKLearnModel(GlobalForecastingModel):
                 num_samples=num_samples,
                 uses_static_covariates=self.uses_static_covariates,
                 last_static_covariates_shape=self._static_covariates_shape,
+                lags_future_covariates_stepwise=self._stepwise_future_lags,
+                output_chunk_length=self.output_chunk_length,
             )
 
             # X has shape (n_series * n_samples, n_regression_features)
@@ -1475,7 +1774,7 @@ class SKLearnModel(GlobalForecastingModel):
         Otherwise, generates probabilistic predictions. Either sampled from the predicted distribution,
         or the predicted distribution parameters directly.
         """
-        x, _ = self._format_samples(x)
+        x, _ = self._format_lagged_features(x)
         if self.likelihood is not None:
             return self.likelihood.predict(
                 model=self,
@@ -1647,6 +1946,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
         lags: LAGS_TYPE | None = None,
         lags_past_covariates: LAGS_TYPE | None = None,
         lags_future_covariates: FUTURE_LAGS_TYPE | None = None,
+        lags_future_covariates_stepwise: bool | dict[str, bool] = False,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         add_encoders: dict | None = None,
@@ -1699,6 +1999,27 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
             using multiple series) and the values correspond to the component lags (tuple or list of integers). The key
             'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
             components are missing and the 'default_lags' key is not provided.
+        lags_future_covariates_stepwise
+            Whether the `lags_future_covariates` of a component are relative to the step forecasted by each
+            estimator ("step-wise" lags) instead of the first predicted time step of the sample. Only effective
+            with `output_chunk_length > 1`.
+            With the default ``False``, lag `k` of a component is always read `k` steps after the first predicted
+            step. With ``True``, the estimator predicting horizon `h` reads it `h + k` steps after the first
+            predicted step. This allows e.g. `lags_future_covariates={"holiday": [0]}` to give each estimator the
+            covariate value of the very step it forecasts, using a single feature per component instead of the
+            `output_chunk_length` correlated features that `list(range(output_chunk_length))` would create.
+            If a dictionary, the keys correspond to the `future_covariates` component names (of the first series
+            when using multiple series) and the values are booleans. The key 'default_lags' can be used for the
+            un-specified components (including the ones generated by `add_encoders`). Raises an error if some
+            components are missing and the 'default_lags' key is not provided.
+            Requires `lags_future_covariates` to be set. Step-wise components require `future_covariates` to be
+            known `output_chunk_length - 1` steps further than absolute lags do: the last `output_chunk_length - 1`
+            samples are dropped at training time, and `predict()` requires that many extra values (also when
+            `n < output_chunk_length`). With `multi_models=False`, step-wise lags are equivalent to shifting the
+            lags by `output_chunk_length - 1`.
+            The components of `future_covariates` must keep the same order between `fit()` and `predict()`:
+            the lags are matched to the covariates components by position (this already holds for any
+            component-wise `lags_future_covariates`).
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
             horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
@@ -1765,6 +2086,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
+            lags_future_covariates_stepwise=lags_future_covariates_stepwise,
             output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
@@ -1963,6 +2285,7 @@ class RegressionModel(SKLearnModel):
         lags: LAGS_TYPE | None = None,
         lags_past_covariates: LAGS_TYPE | None = None,
         lags_future_covariates: FUTURE_LAGS_TYPE | None = None,
+        lags_future_covariates_stepwise: bool | dict[str, bool] = False,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         add_encoders: dict | None = None,
@@ -2012,6 +2335,27 @@ class RegressionModel(SKLearnModel):
             using multiple series) and the values correspond to the component lags (tuple or list of integers). The key
             'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
             components are missing and the 'default_lags' key is not provided.
+        lags_future_covariates_stepwise
+            Whether the `lags_future_covariates` of a component are relative to the step forecasted by each
+            estimator ("step-wise" lags) instead of the first predicted time step of the sample. Only effective
+            with `output_chunk_length > 1`.
+            With the default ``False``, lag `k` of a component is always read `k` steps after the first predicted
+            step. With ``True``, the estimator predicting horizon `h` reads it `h + k` steps after the first
+            predicted step. This allows e.g. `lags_future_covariates={"holiday": [0]}` to give each estimator the
+            covariate value of the very step it forecasts, using a single feature per component instead of the
+            `output_chunk_length` correlated features that `list(range(output_chunk_length))` would create.
+            If a dictionary, the keys correspond to the `future_covariates` component names (of the first series
+            when using multiple series) and the values are booleans. The key 'default_lags' can be used for the
+            un-specified components (including the ones generated by `add_encoders`). Raises an error if some
+            components are missing and the 'default_lags' key is not provided.
+            Requires `lags_future_covariates` to be set. Step-wise components require `future_covariates` to be
+            known `output_chunk_length - 1` steps further than absolute lags do: the last `output_chunk_length - 1`
+            samples are dropped at training time, and `predict()` requires that many extra values (also when
+            `n < output_chunk_length`). With `multi_models=False`, step-wise lags are equivalent to shifting the
+            lags by `output_chunk_length - 1`.
+            The components of `future_covariates` must keep the same order between `fit()` and `predict()`:
+            the lags are matched to the covariates components by position (this already holds for any
+            component-wise `lags_future_covariates`).
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
             horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
@@ -2110,6 +2454,7 @@ class RegressionModel(SKLearnModel):
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
+            lags_future_covariates_stepwise=lags_future_covariates_stepwise,
             output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
@@ -2193,11 +2538,13 @@ class _ClassifierMixin:
         lags: LAGS_TYPE | None,
         lags_past_covariates: LAGS_TYPE | None,
         lags_future_covariates: FUTURE_LAGS_TYPE | None,
+        lags_future_covariates_stepwise: bool | dict[str, bool] = False,
     ):
         super()._validate_lags(
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
+            lags_future_covariates_stepwise=lags_future_covariates_stepwise,
         )
 
         if lags is not None and not isinstance(
@@ -2220,6 +2567,7 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
         lags: int | list | None = None,
         lags_past_covariates: int | list[int] | None = None,
         lags_future_covariates: tuple[int, int] | list[int] | None = None,
+        lags_future_covariates_stepwise: bool | dict[str, bool] = False,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         add_encoders: dict | None = None,
@@ -2280,6 +2628,27 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
             using multiple series) and the values correspond to the component lags (tuple or list of integers). The key
             'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
             components are missing and the 'default_lags' key is not provided.
+        lags_future_covariates_stepwise
+            Whether the `lags_future_covariates` of a component are relative to the step forecasted by each
+            estimator ("step-wise" lags) instead of the first predicted time step of the sample. Only effective
+            with `output_chunk_length > 1`.
+            With the default ``False``, lag `k` of a component is always read `k` steps after the first predicted
+            step. With ``True``, the estimator predicting horizon `h` reads it `h + k` steps after the first
+            predicted step. This allows e.g. `lags_future_covariates={"holiday": [0]}` to give each estimator the
+            covariate value of the very step it forecasts, using a single feature per component instead of the
+            `output_chunk_length` correlated features that `list(range(output_chunk_length))` would create.
+            If a dictionary, the keys correspond to the `future_covariates` component names (of the first series
+            when using multiple series) and the values are booleans. The key 'default_lags' can be used for the
+            un-specified components (including the ones generated by `add_encoders`). Raises an error if some
+            components are missing and the 'default_lags' key is not provided.
+            Requires `lags_future_covariates` to be set. Step-wise components require `future_covariates` to be
+            known `output_chunk_length - 1` steps further than absolute lags do: the last `output_chunk_length - 1`
+            samples are dropped at training time, and `predict()` requires that many extra values (also when
+            `n < output_chunk_length`). With `multi_models=False`, step-wise lags are equivalent to shifting the
+            lags by `output_chunk_length - 1`.
+            The components of `future_covariates` must keep the same order between `fit()` and `predict()`:
+            the lags are matched to the covariates components by position (this already holds for any
+            component-wise `lags_future_covariates`).
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
             horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
@@ -2392,6 +2761,7 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
+            lags_future_covariates_stepwise=lags_future_covariates_stepwise,
             output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
