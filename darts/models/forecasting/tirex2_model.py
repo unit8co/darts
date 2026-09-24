@@ -42,6 +42,7 @@ from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.utils.data.torch_datasets.utils import (
     InputChunkLength,
     PLModuleInput,
+    PLModuleOutput,
     TorchTrainingSample,
 )
 from darts.utils.likelihood_models.torch import QuantileRegression
@@ -107,15 +108,16 @@ class _TiRex2Module(PLForecastingModule):
             torch.tensor([all_quantiles.index(q) for q in user_quantiles]),
         )
 
-    def forward(self, x_in: PLModuleInput, *args, **kwargs):
-        # x_past: (B, L, C + X + F); x_future: (B, H, F)
-        x_past, x_future, _, _ = x_in
-        B = x_past.shape[0]
-        C = self.n_targets
+    def forward(self, x_in: PLModuleInput, *args, **kwargs) -> PLModuleOutput:
+        # target: (B, L, C); past_covariates: (B, L, X);
+        # historic_future_covariates: (B, L, F); future_covariates: (B, H, F)
+        target = x_in.past_target
+        past_covariates = x_in.past_covariates
+        historic_future_covariates = x_in.historic_future_covariates
+        future_covariates = x_in.future_covariates
+        B = target.shape[0]
         S = self.output_chunk_shift
-        # Darts concatenates target, past covariates, then historic future covariates.
-        F = x_future.shape[-1] if x_future is not None else 0
-        X = x_past.shape[-1] - C - F
+        F = future_covariates.shape[-1] if future_covariates is not None else 0
 
         # Prepare future covariates (if any)
         future = None
@@ -123,20 +125,24 @@ class _TiRex2Module(PLForecastingModule):
             # Darts does not supply future covariates inside the output shift.
             # Mark that gap as missing, preserving alignment with target history.
             # gap: (B, S, F) filled with NaN
-            gap = x_past.new_full((B, S, F), float("nan"))
+            gap = target.new_full((B, S, F), float("nan"))
             # future: (B, L + S + H, F)
-            future = torch.cat((x_past[:, :, -F:], gap, x_future), dim=1)
+            future = torch.cat(
+                (historic_future_covariates, gap, future_covariates), dim=1
+            )
 
         # Prepare TiRex-2's native multivariate inputs: a list of TimeseriesType objects.
         # Each object contains a single multivariate sample with optional past and future covariates:
         # target: (C, L), past_covariates: (X, L), future_covariates: (F, L + S + H)
         timeseries = [
             TimeseriesType(
-                target=past[:, :C].T,
-                past_covariates=past[:, C : C + X].T if X else None,
+                target=past.T,
+                past_covariates=past_covariates[i].T
+                if past_covariates is not None
+                else None,
                 future_covariates=future[i].T if future is not None else None,
             )
-            for i, past in enumerate(x_past)
+            for i, past in enumerate(target)
         ]
 
         # Each sample remains a joint multivariate task, independent of other
@@ -146,7 +152,11 @@ class _TiRex2Module(PLForecastingModule):
         # Stack and permute the forecasts: (B, H + S, C, Q)
         output = torch.stack(forecasts).permute(0, 3, 1, 2)
         # Select the requested horizon and likelihood parameters: (B, H, C, N).
-        return output[:, S:].index_select(-1, self._user_quantile_indices).to(x_past)
+        return PLModuleOutput(
+            prediction=output[:, S:]
+            .index_select(-1, self._user_quantile_indices)
+            .to(target)
+        )
 
 
 class TiRex2Model(FoundationModel):

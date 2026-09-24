@@ -71,6 +71,12 @@ def pipeline():
         yield loader
 
 
+@pytest.fixture
+def pl_trainer_fit():
+    with patch("pytorch_lightning.Trainer.fit") as fit:
+        yield fit
+
+
 class TestTiRex2Model:
     # set random seed
     np.random.seed(42)
@@ -211,7 +217,7 @@ class TestTiRex2Model:
         np.testing.assert_allclose(pred_np, original, rtol=1.6e-2, atol=1e-5)
 
     @pytest.mark.slow
-    def test_creation(self):
+    def test_creation(self, pl_trainer_fit):
         kwargs = tfm_kwargs
 
         # ----- Input/output chunk length checks ----- #
@@ -222,8 +228,9 @@ class TestTiRex2Model:
             **kwargs,
         )
         model.fit(self.series)
+        pl_trainer_fit.assert_not_called()
 
-        # creation-time check: cannot create longer output chunk length than max
+        # loading-time check: cannot use a longer output chunk length than max
         with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
             model = TiRex2Model(
                 input_chunk_length=19,
@@ -231,8 +238,9 @@ class TestTiRex2Model:
                 **kwargs,
             )
             model.fit(self.series)
+            _ = model.predict(n=5, series=self.series)
 
-        # creation-time check: cannot create longer output chunk length + output chunk shift than max
+        # loading-time check: output chunk length plus shift cannot exceed max
         with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
             model = TiRex2Model(
                 input_chunk_length=23,
@@ -241,6 +249,7 @@ class TestTiRex2Model:
                 **kwargs,
             )
             model.fit(self.series)
+            _ = model.predict(n=5, series=self.series)
 
         # ----- Likelihood checks ----- #
         # can use likelihood QuantileRegression with supported quantiles
@@ -260,7 +269,7 @@ class TestTiRex2Model:
                 **kwargs,
             )
 
-        # creation-time check: cannot use quantiles other than those used in pre-training
+        # loading-time check: quantiles must match those used in pre-training
         with pytest.raises(
             ValueError, match="does not support the requested quantiles"
         ):
@@ -271,6 +280,7 @@ class TestTiRex2Model:
                 **kwargs,
             )
             model.fit(self.series)
+            _ = model.predict(n=5, series=self.series)
 
         # ----- Checkpoint path checks ----- #
         # can use `hub_model_name` and `hub_model_revision` to specify checkpoint path
