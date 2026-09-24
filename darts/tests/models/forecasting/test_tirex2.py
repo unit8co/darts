@@ -458,16 +458,13 @@ class TestTiRex2Model:
             output_chunk_length=4,
             **kwargs,
         )
-        assert pipeline.call_count == 0
+        pipeline.assert_not_called()
 
-        # call fit(): loader should be called once on CPU. The actual device is not known to PLForecastingModule yet
-        # because fit stage is skipped due to no fine-tuning.
+        # fit() skips the Lightning stage when there is no fine-tuning.
         model.fit(self.series)
-        assert pipeline.call_count == 1
-        pipeline.assert_called_with(**load_kwargs, device="cpu")
+        pipeline.assert_not_called()
 
-        # call predict(): loader should be called again on the actual device. The actual device is known to
-        # PLForecastingModule because configure_model() is called during prediction.
+        # predict() loads the model on the execution device in configure_model().
         model.predict(n=5, series=self.series)
-        assert pipeline.call_count == (1 if accelerator == "cpu" else 2)
+        pipeline.assert_called_once()
         pipeline.assert_called_with(**load_kwargs, device=accelerator)
