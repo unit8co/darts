@@ -359,17 +359,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # save best epoch on val_loss and last epoch under 'darts_logs/model_name/checkpoints/'
         if save_checkpoints:
-            last_checkpoint_callback = pl.callbacks.ModelCheckpoint(
-                dirpath=checkpoints_folder,
-                filename="last-{epoch}",
-                monitor=None,
-                save_last=False,
-                save_top_k=1,
-            )
             best_checkpoint_callback = pl.callbacks.ModelCheckpoint(
                 dirpath=checkpoints_folder,
                 filename="best-{epoch}-{val_loss:.4f}",
                 monitor="val_loss",
+                save_last=False,
+                save_top_k=1,
+            )
+            last_checkpoint_callback = pl.callbacks.ModelCheckpoint(
+                dirpath=checkpoints_folder,
+                filename="last-{epoch}",
+                monitor=None,
                 save_last=False,
                 save_top_k=1,
             )

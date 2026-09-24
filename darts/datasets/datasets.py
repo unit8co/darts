@@ -528,7 +528,7 @@ class ElectricityDataset(DatasetLoaderCSV):
 
     References
     ----------
-    .. [1] https://archive-beta.ics.uci.edu/dataset/321/electricityloaddiagrams20112014
+    .. [1] https://archive.ics.uci.edu/dataset/321/electricityloaddiagrams20112014
 
     """
 
@@ -550,8 +550,7 @@ class ElectricityDataset(DatasetLoaderCSV):
         super().__init__(
             metadata=DatasetLoaderMetadata(
                 "Electricity.csv",
-                uri="https://cdn.uci-ics-mlr-prod.aws.uci.edu/321/electricityloaddiagrams20112014.zip",
-                # uri="https://archive.ics.uci.edu/static/public/321/electricityloaddiagrams20112014.zip",
+                uri="https://archive.ics.uci.edu/static/public/321/electricityloaddiagrams20112014.zip",
                 hash="acfe6783eea43905e510f537add940fd",
                 header_time="Unnamed: 0",
                 format_time="%Y-%m-%d %H:%M:%S",
