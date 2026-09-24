@@ -359,15 +359,26 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # save best epoch on val_loss and last epoch under 'darts_logs/model_name/checkpoints/'
         if save_checkpoints:
-            checkpoint_callback = pl.callbacks.ModelCheckpoint(
+            best_checkpoint_callback = pl.callbacks.ModelCheckpoint(
                 dirpath=checkpoints_folder,
-                save_last=True,
+                filename="best-{epoch}-{val_loss:.4f}",
                 monitor="val_loss",
-                filename="best-{epoch}-{val_loss:.2f}",
+                save_last=False,
+                save_top_k=1,
             )
-            checkpoint_callback.CHECKPOINT_NAME_LAST = "last-{epoch}"
+            last_checkpoint_callback = pl.callbacks.ModelCheckpoint(
+                dirpath=checkpoints_folder,
+                filename="last-{epoch}",
+                monitor=None,
+                save_last=False,
+                save_top_k=1,
+            )
+            checkpoint_callbacks = [
+                best_checkpoint_callback,
+                last_checkpoint_callback,
+            ]
         else:
-            checkpoint_callback = None
+            checkpoint_callbacks = []
 
         # save tensorboard under 'darts_logs/model_name/logs/'
         model_logger = (
@@ -382,7 +393,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "max_epochs": n_epochs,
             "check_val_every_n_epoch": nr_epochs_val_period,
             "enable_checkpointing": save_checkpoints,
-            "callbacks": [cb for cb in [checkpoint_callback] if cb is not None],
+            "callbacks": checkpoint_callbacks,
         }
 
         # update trainer parameters with user defined `pl_trainer_kwargs`
@@ -1425,26 +1436,26 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # if model was loaded from checkpoint (when `load_ckpt_path is not None`) and model.fit() is called,
         # we resume training
+        ckpt_callback: pl.callbacks.ModelCheckpoint | None = None
         ckpt_path = self.load_ckpt_path
         self.load_ckpt_path = None
-
         if load_best:
-            ckpt_callback: pl.callbacks.ModelCheckpoint | None = (
-                trainer.checkpoint_callback
-            )
-            ckpt_activated = ckpt_callback is not None and hasattr(
-                ckpt_callback, "best_model_path"
-            )
-            if not ckpt_activated or len(datamodule.val_dataloader()) == 0:
+            for cb in trainer.checkpoint_callbacks:
+                if (
+                    isinstance(cb, pl.callbacks.ModelCheckpoint)
+                    and cb.monitor is not None
+                ):
+                    ckpt_callback = cb
+                    break
+
+            if ckpt_callback is None or len(datamodule.val_dataloader()) == 0:
                 logger.warning(
                     "Loading the best model will be skipped (`load_best` is ignored), as it requires "
                     "active checkpointing and a validation set to be provided to the current fit method."
                     "If not using a custom `trainer`, make sure to set `save_checkpoints=True` at model creation. "
                     "Otherwise, make sure the custom `trainer` uses a pytorch-lightning `ModelCheckpoint` callback."
                 )
-                load_best = False
-        else:
-            ckpt_callback = None
+                ckpt_callback = None
 
         if self._requires_training:
             weights_only_kwargs = dict()
@@ -1457,7 +1468,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 ckpt_path=ckpt_path,
                 **weights_only_kwargs,
             )
-            if load_best:
+            if ckpt_callback is not None:
                 best_model_path = ckpt_callback.best_model_path
                 logger.info(
                     f"Loading best model from checkpoint: '{os.path.basename(best_model_path)}'"
