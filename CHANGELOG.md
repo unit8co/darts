@@ -21,6 +21,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - `FittableAnomalyScorer.fit_from_prediction()` now returns the fitted scorer object similar to `fit()`. [#3202](https://github.com/unit8co/darts/pull/3202) by [Venish Paneliya](https://github.com/VenishPaneliya).
 - Calling `ForecastingModel.historical_forecasts()` with a `start` value that is later than what is forecastable given the supplied covariates now raises an informative exception. [#3207](https://github.com/unit8co/darts/pull/3207) by [Dennis Bader](https://github.com/dennisbader).
 - Calling `ForecastingModel.gridsearch()` with a sequence of `TimeSeries` now raises an informative exception. [#3191](https://github.com/unit8co/darts/pull/3191) by [Geovanny Basantes](https://github.com/COMPUMAX-EC).
+- `TFTExplainer` can now explain more series than the model's batch size. [#3182](https://github.com/unit8co/darts/pull/3182) by [Mahimn](https://github.com/mahimn01).
 
 **Fixed**
 
