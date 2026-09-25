@@ -998,6 +998,57 @@ class TestTorchForecastingModel:
         assert np.isfinite(prediction.all_values()).all()
         assert prediction.n_components == len(quantiles)
 
+    def test_load_checkpoint_weights_blocks_malicious_payload(self, tmpdir_fn):
+        """Security regression test (CWE-502): the checkpoint loading paths must default to
+        ``weights_only=True`` so that a maliciously crafted ``.ckpt`` cannot execute arbitrary
+        code, while still (a) loading legitimate models and (b) allowing an explicit
+        ``weights_only=False`` opt-out for trusted files.
+        """
+        # 1) a normally-saved model still loads with the safe default -------------------
+        model_name = "wo_safe"
+        ckpt_path = os.path.join(tmpdir_fn, f"{model_name}.pt")
+        model_kwargs = dict(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            n_epochs=1,
+            **tfm_kwargs,
+        )
+        model = DLinearModel(**model_kwargs)
+        model.fit(self.series[:20])
+        model.save(ckpt_path)
+
+        # default `load_weights` uses `weights_only=True` and must succeed via the
+        # registered safe globals
+        reloaded = DLinearModel(**model_kwargs)
+        reloaded.load_weights(ckpt_path)
+        reloaded.predict(n=2, series=self.series[:20])
+
+        # 2) craft a malicious checkpoint whose `__reduce__` writes a marker file --------
+        marker_path = os.path.join(tmpdir_fn, "cwe502_marker.txt")
+        if os.path.exists(marker_path):
+            os.remove(marker_path)
+
+        class _MaliciousPayload:
+            # benign PoC standing in for arbitrary code execution: write a marker file
+            def __reduce__(self):
+                return os.system, (f'echo pwned > "{marker_path}"',)
+
+        # build a checkpoint dict that mimics a real one but embeds the payload
+        real_ckpt = torch.load(ckpt_path + ".ckpt", weights_only=False)
+        real_ckpt["cwe502_payload"] = _MaliciousPayload()
+        torch.save(real_ckpt, ckpt_path + ".ckpt")
+
+        # SAFE default (`weights_only=True`) must REFUSE the payload -> marker NOT created
+        with pytest.raises(Exception):
+            reloaded.load_weights(ckpt_path)
+        assert not os.path.exists(marker_path)
+
+        # explicit opt-out (`weights_only=False`) still loads (and here executes) the
+        # payload, confirming the opt-out path is preserved
+        reloaded.load_weights(ckpt_path, weights_only=False)
+        assert os.path.exists(marker_path)
+        os.remove(marker_path)
+
     def test_load_weights_params_check(self, tmpdir_fn):
         """
         Verify that the method comparing the parameters between the saved model and the loading model
