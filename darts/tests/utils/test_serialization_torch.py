@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from darts.tests.conftest import TORCH_AVAILABLE
-from darts.utils.serialization.base import dedupe_by_identity
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -16,6 +15,7 @@ from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
 
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.torch import GaussianLikelihood, TorchLikelihood
+from darts.utils.serialization.base import dedupe_by_identity
 from darts.utils.serialization.torch import (
     DartsCheckpointIO,
     likelihood_safe_globals,

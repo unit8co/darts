@@ -15,7 +15,7 @@ from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
 from darts.logging import get_logger
 from darts.utils.serialization.base import (
     TrustedPrefixPolicy,
-    all_subclasses,
+    all_imported_subclasses,
     dedupe_by_identity,
     resolve_reference,
 )
@@ -94,7 +94,7 @@ def likelihood_safe_globals() -> list:
         from darts.utils.likelihood_models.base import LikelihoodType
         from darts.utils.likelihood_models.torch import TorchLikelihood
 
-        out = [LikelihoodType, *all_subclasses(TorchLikelihood)]
+        out = [LikelihoodType, *all_imported_subclasses(TorchLikelihood)]
     except Exception as e:  # pragma: no cover - defensive only
         logger.debug(f"Could not collect Darts likelihood safe globals: {e}")
     return out

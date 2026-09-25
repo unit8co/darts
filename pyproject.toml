@@ -86,6 +86,9 @@ required-environments = [
     "sys_platform == 'linux'",
     "sys_platform == 'win32'",
 ]
+# TODO: remove once neuralforecast>3.2.2 is released
+# override neuralforecast's (v3.2.2) lightning cap
+override-dependencies = ["pytorch-lightning>=2.6.6"]
 
 [tool.uv.pip]
 # Use only binary dependency wheels to prevent arbitrary code execution
@@ -178,7 +181,7 @@ optional = [
     "pydantic>=2.12.5",
     "ray>=2.53.0",
     "plotly>=6.5.2",
-#    "neuralforecast>=3.0.0",
+    "neuralforecast>=3.0.0",
     "tirex-ts>=1.4.0",
 ]
 release = [

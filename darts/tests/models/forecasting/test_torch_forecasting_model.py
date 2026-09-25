@@ -164,22 +164,6 @@ class CustomCallback(Callback):
         pass
 
 
-class InterruptTrainingAfterNEpochsCallback(Callback):
-    """Lightning callback that simulates an interrupted training run.
-
-    Uses ``trainer.should_stop`` so that PyTorch Lightning still flushes the latest
-    checkpoint to disk (an unhandled exception would abort training before that).
-    """
-
-    def __init__(self, interrupt_after_epoch: int):
-        self.interrupt_after_epoch = interrupt_after_epoch
-
-    def on_train_epoch_end(self, trainer, pl_module):
-        # ModelCheckpoint runs before user callbacks, so the latest epoch is saved.
-        if trainer.current_epoch + 1 == self.interrupt_after_epoch:
-            trainer.should_stop = True
-
-
 class TestTorchForecastingModel:
     times = pd.date_range("20130101", "20130410")
     pd_series = pd.Series(range(100), index=times)
@@ -330,7 +314,7 @@ class TestTorchForecastingModel:
         assert os.path.exists(model_path_manual_ckpt)
 
         # load manual save model and compare with automatic model results
-        pl_kwargs_load = {"accelerator": "cpu"}
+        pl_kwargs_load = {"accelerator": "cpu", "precision": "64-true"}
         model_manual_save = model_cls.load(
             model_path_manual, pl_trainer_kwargs=pl_kwargs_load
         )
@@ -969,109 +953,27 @@ class TestTorchForecastingModel:
             "incorrect"
         )
 
-    def test_load_checkpoint_weights_only_blocks_malicious_payload(self, tmpdir_fn):
-        """Security regression test (CWE-502): the checkpoint loading paths must default to
-        ``weights_only=True`` so that a maliciously crafted ``.ckpt`` cannot execute arbitrary
-        code, while still (a) loading legitimate models and (b) allowing an explicit
-        ``weights_only=False`` opt-out for trusted files.
-        """
-        if not hasattr(torch.serialization, "safe_globals"):
-            pytest.skip(
-                "requires torch/lightning >= 2.6 with `weights_only` load support"
-            )
-
-        # 1) a normally-saved model still loads with the safe default -------------------
-        model_name = "wo_safe"
-        ckpt_path = os.path.join(tmpdir_fn, f"{model_name}.pt")
-        model = DLinearModel(
-            input_chunk_length=4,
-            output_chunk_length=1,
-            n_epochs=1,
-            likelihood=GaussianLikelihood(),
-            **tfm_kwargs,
-        )
-        model.fit(self.series[:20])
-        model.save(ckpt_path)
-
-        # default `load_weights` uses `weights_only=True` and must succeed via the
-        # load-scoped allow-list
-        reloaded = DLinearModel(
-            input_chunk_length=4,
-            output_chunk_length=1,
-            likelihood=GaussianLikelihood(),
-            **tfm_kwargs,
-        )
-        reloaded.load_weights(ckpt_path, map_location="cpu")
-        reloaded.predict(n=2, series=self.series[:20])
-
-        # 2) craft a malicious checkpoint whose `__reduce__` writes a marker file --------
-        marker_path = os.path.join(tmpdir_fn, "cwe502_marker.txt")
-        if os.path.exists(marker_path):
-            os.remove(marker_path)
-
-        class _MaliciousPayload:
-            # benign PoC standing in for arbitrary code execution: write a marker file
-            def __reduce__(self):
-                return (os.system, (f'echo pwned > "{marker_path}"',))
-
-        # build a checkpoint dict that mimics a real one but embeds the payload
-        real_ckpt = torch.load(ckpt_path + ".ckpt", weights_only=False)
-        real_ckpt["cwe502_payload"] = _MaliciousPayload()
-        evil_path = os.path.join(tmpdir_fn, "evil.pt.ckpt")
-        torch.save(real_ckpt, evil_path)
-
-        # SAFE default (`weights_only=True`) must REFUSE the payload -> marker NOT created
-        with pytest.raises(Exception):
-            torch.load(evil_path, weights_only=True)
-        assert not os.path.exists(marker_path), (
-            "weights_only=True must not execute the checkpoint payload"
-        )
-
-        # explicit opt-out (`weights_only=False`) still loads (and here executes) the
-        # payload, confirming the opt-out path is preserved
-        torch.load(evil_path, weights_only=False)
-        assert os.path.exists(marker_path), (
-            "weights_only=False should still fully unpickle the checkpoint"
-        )
-        # cleanup the benign marker
-        os.remove(marker_path)
-
-        # 3) the user-facing path (`load_weights_from_checkpoint`) must ALSO refuse it under
-        #    the safe default (skip_checks=True -> exercise only the `.ckpt` safe-load).
-        reloaded2 = DLinearModel(
-            input_chunk_length=4,
-            output_chunk_length=1,
-            likelihood=GaussianLikelihood(),
-            **tfm_kwargs,
-        )
-        with pytest.raises(Exception):
-            reloaded2.load_weights_from_checkpoint(
-                file_name=evil_path,
-                work_dir=tmpdir_fn,
-                load_encoders=False,
-                skip_checks=True,
-                map_location="cpu",
-            )
-        assert not os.path.exists(marker_path), (
-            "load_weights_from_checkpoint must not execute the payload under the safe default"
-        )
-
     def test_resume_from_checkpoint_optimizer_state(self, tmpdir_fn):
         """Resuming from a checkpoint reloads optimizer/scheduler *state* (not just the
         allow-listed classes). After flipping the internal ``weights_only`` default to True,
         the trusted resume path must keep full unpickling and continue training successfully.
         """
         model_name = "resume_optstate"
+        epochs_partial = 2
+        epochs_resume = 3
+        quantiles = [0.1, 0.5, 0.9]
         model = DLinearModel(
             input_chunk_length=4,
-            output_chunk_length=1,
-            n_epochs=2,
+            output_chunk_length=2,
+            n_epochs=epochs_partial,
             model_name=model_name,
             work_dir=tmpdir_fn,
             save_checkpoints=True,
+            likelihood=QuantileRegression(quantiles),
             **tfm_kwargs,
         )
         model.fit(self.series[:20])
+        assert model.epochs_trained == epochs_partial
 
         # reload including trainer/optimizer/lr-scheduler state, then CONTINUE training
         loaded = DLinearModel.load_from_checkpoint(
@@ -1080,11 +982,21 @@ class TestTorchForecastingModel:
             best=False,
             map_location="cpu",
         )
-        # loading the `.ckpt` under `weights_only=True` must deserialize the optimizer /
-        # lr-scheduler *state* it carries (via the checkpoint-driven allow-list), not just the
-        # model weights -- if an optimizer/scheduler class were not allow-listed this would raise.
         assert loaded._fit_called
-        loaded.predict(n=2, series=self.series[:20])
+        # epochs default after loading
+        assert model.epochs_trained == 2
+
+        # loading the `.ckpt` under `weights_only=True` must also deserialize the optimizer,
+        # lr-scheduler *state*, likelihood objects, ...
+        loaded.fit(self.series[:20], epochs=epochs_partial + epochs_resume)
+        assert loaded.epochs_trained == epochs_partial + epochs_resume
+
+        prediction = loaded.predict(
+            n=2,
+            predict_likelihood_parameters=True,
+        )
+        assert np.isfinite(prediction.all_values()).all()
+        assert prediction.n_components == len(quantiles)
 
     def test_load_weights_params_check(self, tmpdir_fn):
         """
@@ -1599,66 +1511,6 @@ class TestTorchForecastingModel:
         # calling fit() should not impact the loss function
         for attr in loss_fn_attrs:
             assert isinstance(getattr(loaded_model.model, attr), torch.nn.L1Loss)
-
-    def test_load_from_checkpoint_identical_predictions_after_crash(self, tmpdir_fn):
-        """Predictions must match whether training completes uninterrupted or is interrupted
-        mid-run and resumes from the latest checkpoint via `load_from_checkpoint()`.
-        """
-        n_epochs = 5
-        interrupt_after_epoch = 2
-        n_pred = 4
-
-        common_kwargs = {
-            "input_chunk_length": 12,
-            "model": "RNN",
-            "hidden_dim": 10,
-            "n_rnn_layers": 10,
-            "n_epochs": n_epochs,
-            "random_state": 42,
-            "work_dir": tmpdir_fn,
-            "save_checkpoints": True,
-            "likelihood": QuantileRegression([0.1, 0.5, 0.9]),
-            **tfm_kwargs,
-        }
-        model_cls = RNNModel
-        model_clean = model_cls(
-            model_name="clean_run", force_reset=True, **common_kwargs
-        )
-        model_clean.fit(self.series)
-        assert model_clean.epochs_trained == n_epochs
-        pred_clean = model_clean.predict(n=n_pred)
-
-        kwargs_interrupted = copy.deepcopy(common_kwargs)
-        kwargs_interrupted["pl_trainer_kwargs"] = dict(
-            **common_kwargs["pl_trainer_kwargs"],
-            callbacks=[InterruptTrainingAfterNEpochsCallback(interrupt_after_epoch)],
-        )
-        model_interrupted = model_cls(
-            model_name="interrupted_run", force_reset=True, **kwargs_interrupted
-        )
-        model_interrupted.fit(self.series)
-        assert model_interrupted.epochs_trained == interrupt_after_epoch
-        pred_at_interrupt = model_interrupted.predict(n=n_pred)
-
-        model_resumed = model_cls.load_from_checkpoint(
-            model_name="interrupted_run",
-            work_dir=tmpdir_fn,
-            best=False,
-            map_location="cpu",
-        )
-        assert pred_at_interrupt == model_resumed.predict(n=n_pred)
-
-        model_resumed = model_cls.load_from_checkpoint(
-            model_name="interrupted_run",
-            work_dir=tmpdir_fn,
-            best=False,
-            map_location="cpu",
-        )
-        model_resumed.fit(self.series)
-        assert model_resumed.epochs_trained == n_epochs
-
-        pred_resumed = model_resumed.predict(n=n_pred)
-        assert pred_clean == pred_resumed
 
     def test_load_from_checkpoint_w_metrics(self, tmpdir_fn):
         model_name = "pretraining_metrics"

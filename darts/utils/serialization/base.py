@@ -10,9 +10,6 @@ Security model:
   registration at import time.
 - When an inspection API exists, derive the allow-list **from the specific artifact** being
   loaded (checkpoint-driven registration) rather than pre-registering entire libraries.
-- Be explicit about scope: safe loading for Lightning ``.ckpt`` files does **not** protect
-  the Darts base model ``.pt`` shell or general ``.pkl`` pickles, which remain full unpickling
-  surfaces (CWE-502) until a future general serialization revamp addresses them.
 """
 
 import importlib
@@ -29,11 +26,11 @@ T = TypeVar("T")
 TrustedPrefixPolicy = tuple[str, ...]
 
 
-def all_subclasses(cls: type) -> set[type]:
+def all_imported_subclasses(cls: type) -> set[type]:
     """Gives all currently imported subclasses for `cls` (including `cls`)."""
     found = {cls}
     for sub in cls.__subclasses__():
-        found |= all_subclasses(sub)
+        found |= all_imported_subclasses(sub)
     return found
 
 
