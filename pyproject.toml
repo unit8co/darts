@@ -61,8 +61,8 @@ Repository = "https://github.com/unit8co/darts"
 [project.optional-dependencies]
 # Main feature sets - pip installable with: pip install "darts[torch]"
 torch = [
-    "torch>=2.0.0",
-    "pytorch-lightning>=2.0.0",
+    "torch>=2.6.0",
+    "pytorch-lightning>=2.6.6",
     "tensorboardx>=2.1",
     "huggingface-hub>=0.35.3",
     "safetensors>=0.6.2",
@@ -86,6 +86,9 @@ required-environments = [
     "sys_platform == 'linux'",
     "sys_platform == 'win32'",
 ]
+# TODO: remove once neuralforecast>3.2.2 is released
+# override neuralforecast's (v3.2.2) lightning cap
+override-dependencies = ["pytorch-lightning>=2.6.6"]
 
 [tool.uv.pip]
 # Use only binary dependency wheels to prevent arbitrary code execution
