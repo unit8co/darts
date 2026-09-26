@@ -247,8 +247,10 @@ class T0Model(FoundationModel):
         By default, the model is deterministic (median forecast only). To enable probabilistic forecasts, pass a
         :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the ``likelihood`` parameter.
         It is recommended to call :func:`predict()` with ``predict_likelihood_parameters=True`` or ``num_samples >> 1``
-        to get meaningful results. T0 was trained on quantile levels [0.1, 0.25, 0.5, 0.75, 0.9]; other levels are
-        interpolated, so any quantiles in the open interval (0, 1) may be requested.
+        to get meaningful results. ``t0-alpha`` was trained on quantile levels [0.1, 0.25, 0.5, 0.75, 0.9], ``t0-beta``
+        was trained on [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8,
+        0.85, 0.9, 0.95, 0.99]; other levels are interpolated, so any quantiles in the open interval (0, 1) may be
+        requested.
 
         .. tip::
             You can perform full or partial fine-tuning of the model by setting the ``enable_finetuning`` parameter.
@@ -284,7 +286,7 @@ class T0Model(FoundationModel):
             gap are unknown to the model and are masked out.
         likelihood
             The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of
-            :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. For zero-shot predicitons, any quantiles
+            :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. For zero-shot predictions, any quantiles
             in the open interval (0, 1) are supported (T0 interpolates levels it was not trained on).
             Default: ``None``, which will make the model deterministic (median quantile only).
             When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to
