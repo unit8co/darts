@@ -558,7 +558,7 @@ def generate_index(
         raise_log(
             ValueError(
                 "index can only be generated with exactly two of the following parameters: "
-                "[`start`, `end`, `length`]. Observed parameters: {constructors}. For generating "
+                f"[`start`, `end`, `length`]. Observed parameters: {constructors}. For generating "
                 "an index with `end` and `length` consider setting `start` to None."
             ),
         )

@@ -483,6 +483,18 @@ class TestUtils:
         assert idx.equals(idx_expected)
 
     @pytest.mark.parametrize(
+        "kwargs,observed",
+        [
+            ({"start": 0, "end": 5, "length": 6}, "['start', 'end', 'length']"),
+            ({"length": 6}, "['length']"),
+        ],
+    )
+    def test_generate_index_invalid_parameters(self, kwargs, observed):
+        with pytest.raises(ValueError) as exc:
+            generate_index(**kwargs)
+        assert f"Observed parameters: {observed}." in str(exc.value)
+
+    @pytest.mark.parametrize(
         "freq,other,expected",
         [
             (1, 1, 1),  # integer step
