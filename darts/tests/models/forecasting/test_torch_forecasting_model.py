@@ -1049,6 +1049,46 @@ class TestTorchForecastingModel:
         assert os.path.exists(marker_path)
         os.remove(marker_path)
 
+    def test_load_wrapper_blocks_malicious_payload(self, tmpdir_fn):
+        """Security regression test (CWE-502): ``TorchForecastingModel.load()`` must default to
+        safe wrapper loading so a maliciously crafted ``.pt`` cannot execute arbitrary code.
+        """
+        model_name = "pt_safe"
+        ckpt_path = os.path.join(tmpdir_fn, f"{model_name}.pt")
+        model_kwargs = dict(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            n_epochs=1,
+            **tfm_kwargs,
+        )
+        model = DLinearModel(**model_kwargs)
+        model.fit(self.series[:20])
+        model.save(ckpt_path)
+
+        # default load must succeed for a legitimate save
+        reloaded = DLinearModel.load(ckpt_path)
+        reloaded.predict(n=2, series=self.series[:20])
+
+        marker_path = os.path.join(tmpdir_fn, "cwe502_pt_marker.txt")
+        if os.path.exists(marker_path):
+            os.remove(marker_path)
+
+        class _MaliciousPayload:
+            def __reduce__(self):
+                return os.system, (f'echo pwned > "{marker_path}"',)
+
+        real_pt = torch.load(ckpt_path, weights_only=False)
+        real_pt._cwe502_payload = _MaliciousPayload()
+        torch.save(real_pt, ckpt_path)
+
+        with pytest.raises(Exception):
+            DLinearModel.load(ckpt_path)
+        assert not os.path.exists(marker_path)
+
+        DLinearModel.load(ckpt_path, weights_only=False)
+        assert os.path.exists(marker_path)
+        os.remove(marker_path)
+
     def test_load_weights_params_check(self, tmpdir_fn):
         """
         Verify that the method comparing the parameters between the saved model and the loading model
