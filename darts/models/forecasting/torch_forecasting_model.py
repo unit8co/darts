@@ -71,6 +71,7 @@ from darts.utils.historical_forecasts.optimized_historical_forecasts_torch impor
     _optimized_historical_forecasts,
 )
 from darts.utils.likelihood_models.torch import TorchLikelihood
+from darts.utils.serialization.torch import DartsCheckpointIO, load_torch_safely
 from darts.utils.timeseries_generation import _build_forecast_series_from_schema
 from darts.utils.torch import random_method
 from darts.utils.ts_utils import (
@@ -98,33 +99,6 @@ TORCH_NP_DTYPES = {
 TFM_ATTRS_NO_PICKLE = {"model": None, "trainer": None}
 
 logger = get_logger(__name__)
-
-# lightning 2.6.0 introduced `weights_only` loading to API
-_PL_2_6_OR_ABOVE = tuple(int(el) for el in pl.__version__.split(".")[:2]) >= (2, 6)
-
-
-class _DartsCheckpointIO(TorchCheckpointIO):
-    """Custom CheckpointIO that defaults ``weights_only`` to ``False``.
-
-    PyTorch >= 2.6 changed ``torch.load`` to default to ``weights_only=True``.
-    Darts checkpoints contain non-tensor objects (optimizer state, hparams, etc.)
-    that require full unpickling. By injecting this plugin into the Trainer, all
-    internal checkpoint loading paths (resume training, Tuner, etc.) automatically
-    use ``weights_only=False`` without having to patch each call site.
-    """
-
-    def load_checkpoint(self, path, map_location=None, weights_only=None, **kwargs):
-        weights_only_kwargs = dict()
-        if _PL_2_6_OR_ABOVE:
-            weights_only_kwargs["weights_only"] = (
-                False if weights_only is None else weights_only
-            )
-        return super().load_checkpoint(
-            path,
-            map_location=map_location,
-            **weights_only_kwargs,
-            **kwargs,
-        )
 
 
 def _get_checkpoint_folder(work_dir, model_name):
@@ -359,15 +333,26 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # save best epoch on val_loss and last epoch under 'darts_logs/model_name/checkpoints/'
         if save_checkpoints:
-            checkpoint_callback = pl.callbacks.ModelCheckpoint(
+            best_checkpoint_callback = pl.callbacks.ModelCheckpoint(
                 dirpath=checkpoints_folder,
-                save_last=True,
+                filename="best-{epoch}-{val_loss:.4f}",
                 monitor="val_loss",
-                filename="best-{epoch}-{val_loss:.2f}",
+                save_last=False,
+                save_top_k=1,
             )
-            checkpoint_callback.CHECKPOINT_NAME_LAST = "last-{epoch}"
+            last_checkpoint_callback = pl.callbacks.ModelCheckpoint(
+                dirpath=checkpoints_folder,
+                filename="last-{epoch}",
+                monitor=None,
+                save_last=False,
+                save_top_k=1,
+            )
+            checkpoint_callbacks = [
+                best_checkpoint_callback,
+                last_checkpoint_callback,
+            ]
         else:
-            checkpoint_callback = None
+            checkpoint_callbacks = []
 
         # save tensorboard under 'darts_logs/model_name/logs/'
         model_logger = (
@@ -382,7 +367,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "max_epochs": n_epochs,
             "check_val_every_n_epoch": nr_epochs_val_period,
             "enable_checkpointing": save_checkpoints,
-            "callbacks": [cb for cb in [checkpoint_callback] if cb is not None],
+            "callbacks": checkpoint_callbacks,
         }
 
         # update trainer parameters with user defined `pl_trainer_kwargs`
@@ -611,13 +596,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # prevent lightning from adding callbacks to the callbacks list in `self.trainer_params`
         callbacks = trainer_params_copy.pop("callbacks", None)
 
-        # ensure internal checkpoint loading (e.g. resuming training, Tuner) uses
-        # weights_only=False so that non-tensor objects (optimizer state, hparams, etc.)
-        # can be deserialized (PyTorch >= 2.6 defaults to weights_only=True)
+        # ensure internal checkpoint loading (Tuner, plugin-routed loads, etc.) is
+        # safe-by-default: `DartsCheckpointIO` loads `.ckpt` files with `weights_only=True`
+        # (load-scoped allow-list).
         plugins = list(trainer_params_copy.pop("plugins", None) or [])
         has_checkpoint_io = any(isinstance(p, TorchCheckpointIO) for p in plugins)
         if not has_checkpoint_io:
-            plugins.append(_DartsCheckpointIO())
+            plugins.append(DartsCheckpointIO())
 
         return pl.Trainer(
             callbacks=[cb for cb in callbacks] if callbacks is not None else callbacks,
@@ -1425,39 +1410,34 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # if model was loaded from checkpoint (when `load_ckpt_path is not None`) and model.fit() is called,
         # we resume training
+        ckpt_callback: pl.callbacks.ModelCheckpoint | None = None
         ckpt_path = self.load_ckpt_path
         self.load_ckpt_path = None
-
         if load_best:
-            ckpt_callback: pl.callbacks.ModelCheckpoint | None = (
-                trainer.checkpoint_callback
-            )
-            ckpt_activated = ckpt_callback is not None and hasattr(
-                ckpt_callback, "best_model_path"
-            )
-            if not ckpt_activated or len(datamodule.val_dataloader()) == 0:
+            for cb in trainer.checkpoint_callbacks:
+                if (
+                    isinstance(cb, pl.callbacks.ModelCheckpoint)
+                    and cb.monitor is not None
+                ):
+                    ckpt_callback = cb
+                    break
+
+            if ckpt_callback is None or len(datamodule.val_dataloader()) == 0:
                 logger.warning(
                     "Loading the best model will be skipped (`load_best` is ignored), as it requires "
                     "active checkpointing and a validation set to be provided to the current fit method."
                     "If not using a custom `trainer`, make sure to set `save_checkpoints=True` at model creation. "
                     "Otherwise, make sure the custom `trainer` uses a pytorch-lightning `ModelCheckpoint` callback."
                 )
-                load_best = False
-        else:
-            ckpt_callback = None
+                ckpt_callback = None
 
         if self._requires_training:
-            weights_only_kwargs = dict()
-            if ckpt_path is not None and _PL_2_6_OR_ABOVE:
-                weights_only_kwargs["weights_only"] = False
-
             trainer.fit(
                 model=model,
                 datamodule=datamodule,
                 ckpt_path=ckpt_path,
-                **weights_only_kwargs,
             )
-            if load_best:
+            if ckpt_callback is not None:
                 best_model_path = ckpt_callback.best_model_path
                 logger.info(
                     f"Loading best model from checkpoint: '{os.path.basename(best_model_path)}'"
@@ -1682,15 +1662,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model = params["model"]
         datamodule = params["datamodule"]
 
-        tune_kwargs: dict[str, Any] = dict()
-        if _PL_2_6_OR_ABOVE:
-            tune_kwargs.update(
-                dict(
-                    margin=margin,
-                    max_val=max_val,
-                )
-            )
-
         batch_size = Tuner(trainer).scale_batch_size(
             model=model,
             datamodule=datamodule,
@@ -1700,7 +1671,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             init_val=init_val,
             max_trials=max_trials,
             batch_arg_name="batch_size",
-            **tune_kwargs,
+            margin=margin,
+            max_val=max_val,
         )
 
         if batch_size is None:
@@ -2267,10 +2239,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @staticmethod
     def load(
-        path: str, pl_trainer_kwargs: dict | None = None, **kwargs
+        path: str,
+        pl_trainer_kwargs: dict | None = None,
+        weights_only: bool = False,
+        **kwargs,
     ) -> "TorchForecastingModel":
         """
         Loads a model from a given file path.
+
+        .. warning::
+            SECURITY: Only load ``.pt``/``.ckpt`` files from trusted sources. A malicious
+            file can execute arbitrary code while being deserialized (CWE-502). Loading the
+            full model object (the ``.pt`` file) relies on Python's ``pickle`` and cannot be
+            fully sandboxed. Pass ``weights_only=True`` to restrict deserialization of the
+            ``.pt`` object graph to the allow-listed (Darts/torch) types only.
 
         Example for loading a general save from :class:`RNNModel`:
 
@@ -2313,6 +2295,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
             `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__
             for more information about the supported kwargs.
+        weights_only
+            Security-relevant option controlling how the full model object (``.pt`` file) is deserialized.
+            If ``False`` (default), the object is loaded with full unpickling (``torch.load(..., weights_only=False)``),
+            which supports Darts' arbitrary object graph (encoders, pipelines, etc.) but can execute arbitrary code if
+            the file is malicious. Only use ``False`` with files from trusted sources.
+            If ``True``, deserialization is restricted to a load-scoped allow-list of Darts/torch classes
+            (see :func:`load_torch_safely`); this is safer but only works for models whose object graph is
+            fully covered by the allow-list and may fail for models with custom/complex components. The Lightning
+            ``.ckpt`` companion file is always loaded with ``weights_only=True`` unless overridden via ``kwargs``.
+            Default: ``False``.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one on which it was saved.
@@ -2322,7 +2314,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule)
         with open(path, "rb") as fin:
             model: TorchForecastingModel = torch.load(
-                fin, weights_only=False, map_location=kwargs.get("map_location", None)
+                fin,
+                weights_only=weights_only,
+                map_location=kwargs.get("map_location", None),
             )
 
         # if a checkpoint was saved, we also load the PyTorch LightningModule from checkpoint
@@ -2352,11 +2346,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         work_dir: str | None = None,
         file_name: str | None = None,
         best: bool = True,
+        weights_only: bool = True,
         **kwargs,
     ) -> "TorchForecastingModel":
         """
         Load the model from automatically saved checkpoints under '{work_dir}/darts_logs/{model_name}/checkpoints/'.
         This method is used for models that were created with ``save_checkpoints=True``.
+
+        .. warning::
+            SECURITY: Only load checkpoint files from trusted sources. A malicious file can execute arbitrary
+            code while being deserialized (CWE-502). This method loads the Lightning checkpoint with
+            ``weights_only=True`` by default, restricting deserialization to allow-listed types. The base model
+            object (the ``_model.pth.tar`` file, a full pickled object graph) is always loaded with full
+            unpickling and cannot be sandboxed - do not point this at untrusted ``darts_logs`` folders.
 
         If you manually saved your model, consider using :meth:`load() <TorchForecastingModel.load()>`.
 
@@ -2399,6 +2401,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         best
             If set, will retrieve the best model (according to validation loss) instead of the most recent one. Only
             is ignored when ``file_name`` is given.
+        weights_only
+            Security-relevant option (CWE-502) controlling how the Lightning ``.ckpt`` checkpoint is deserialized.
+            If ``True`` (default), deserialization of the ``.ckpt`` is restricted to a load-scoped allow-list of
+            Darts/torch classes (see :func:`load_torch_safely`), which blocks arbitrary-code execution from a
+            maliciously crafted ``.ckpt``. This protects the ``.ckpt`` only -- the Darts base model file is still
+            fully unpickled (see the security warning above), so only load files from trusted sources.
+            If ``False``, the checkpoint is fully unpickled, which can execute arbitrary code - only use this with
+            checkpoints from trusted sources (e.g. when loading a checkpoint with custom classes that are not
+            covered by the allow-list). Note that the base model object is always fully unpickled regardless of this
+            flag. Default: ``True``.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one from which it was saved.
@@ -2418,7 +2430,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         checkpoint_dir = _get_checkpoint_folder(work_dir, model_name)
         model_dir = _get_runs_folder(work_dir, model_name)
 
-        # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule)
+        # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule).
+        # This is a full object graph that cannot be loaded under `weights_only=True`; only load
+        # from trusted `darts_logs` folders.
         base_model_path = os.path.join(model_dir, INIT_MODEL_NAME)
         if not os.path.exists(base_model_path):
             raise_log(
@@ -2438,7 +2452,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         file_path = os.path.join(checkpoint_dir, file_name)
         logger.info(f"loading {file_name}")
 
-        model.model = model._load_from_checkpoint(file_path, **kwargs)
+        model.model = model._load_from_checkpoint(
+            file_path, weights_only=weights_only, **kwargs
+        )
 
         # loss_fn is excluded from pl_forecasting_module ckpt, must be restored
         loss_fn = model.model_params.get("loss_fn")
@@ -2463,7 +2479,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             model.train_sample = _coerce_training_sample(train_sample)
         return model
 
-    def _load_from_checkpoint(self, file_path, **kwargs):
+    def _load_from_checkpoint(self, file_path, weights_only=True, **kwargs):
         """Loads a checkpoint for the underlying :class:`PLForecastingModule` (PLM) model.
         The PLM object is not stored when saving a :class:`TorchForecastingModel` (TFM) to avoid saving
         the model twice. Instead, we recover the module class with the module path and class name stored
@@ -2472,9 +2488,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         pl_module_cls: PLForecastingModule = getattr(
             sys.modules[self._module_path], self._module_name
         )
-        if _PL_2_6_OR_ABOVE:
-            kwargs.setdefault("weights_only", False)
-        return pl_module_cls.load_from_checkpoint(file_path, **kwargs)
+
+        # safe-by-default: load a legitimate Darts `.ckpt` under `weights_only=True` with a
+        # load-scoped allow-list (see `load_torch_safely`). Callers can override via `kwargs`
+        # (e.g. `load()` / `load_from_checkpoint(..., weights_only=False)` for trusted files).
+        return load_torch_safely(
+            load_fn=pl_module_cls.load_from_checkpoint,
+            path=file_path,
+            weights_only=weights_only,
+            **kwargs,
+        )
 
     def load_weights_from_checkpoint(
         self,
@@ -2485,6 +2508,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         strict: bool = True,
         load_encoders: bool = True,
         skip_checks: bool = False,
+        weights_only: bool = True,
         **kwargs,
     ):
         """
@@ -2492,6 +2516,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         checkpoints/'. This method is used for models that were created with ``save_checkpoints=True`` and
         that need to be re-trained or fine-tuned with different optimizer or learning rate scheduler. However,
         it can also be used to load weights for inference.
+
+        .. warning::
+            SECURITY: Only load checkpoint files from trusted sources. A malicious file can execute arbitrary
+            code while being deserialized (CWE-502). The Lightning checkpoint is loaded with ``weights_only=True``
+            by default (restricting deserialization to allow-listed types). The Darts base model (``.pt``) used
+            for the encoders / sanity checks is loaded with full unpickling unless ``skip_checks=True``.
 
         To resume an interrupted training, please consider using :meth:`load_from_checkpoint()
         <TorchForecastingModel.load_from_checkpoint()>` which also reload the trainer, optimizer and
@@ -2525,20 +2555,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         skip_checks
             If set, will disable the loading of the encoders and the sanity checks on model parameters
             (not recommended). Cannot be used with `load_encoders=True`. Default: ``False``.
+        weights_only
+            Security-relevant option (CWE-502) controlling how the Lightning ``.ckpt`` checkpoint is deserialized.
+            If ``True`` (default), deserialization of the ``.ckpt`` is restricted to a load-scoped allow-list of
+            Darts/torch classes (see :func:`load_torch_safely`), which blocks arbitrary-code execution from a
+            maliciously crafted ``.ckpt``. This protects the ``.ckpt`` only -- the Darts base model file is still
+            fully unpickled (see the security warning above), so only load files from trusted sources.
+            If ``False``, the checkpoint is fully unpickled, which can execute arbitrary code - only use this with
+            checkpoints from trusted sources. Default: ``True``.
         **kwargs
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
             For more information, read the `official documentation <https://pytorch.org/docs/stable/generated/
             torch.load.html>`__.
         """
-        if "weights_only" in kwargs.keys() and kwargs["weights_only"]:
-            raise_log(
-                ValueError(
-                    "Passing `weights_only=True` to `torch.load` will disrupt this"
-                    " method sanity checks."
-                ),
-            )
-
         if skip_checks and load_encoders:
             raise_log(
                 ValueError(
@@ -2571,8 +2601,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             # remove the .ckpt added in TorchForecastingModel.save()
             tfm_save_file_name = file_name[:-5]
 
+        # safe-by-default: load the `.ckpt` under `weights_only=True` with a load-scoped
+        # allow-list (see `load_torch_safely`); pass `weights_only=False` only for trusted
+        # checkpoints. NOTE: the Darts base model (`.pt`) loaded below is still fully unpickled.
         ckpt_path = os.path.join(checkpoint_dir, file_name)
-        ckpt = torch.load(ckpt_path, weights_only=False, **kwargs)
+        ckpt = load_torch_safely(
+            load_fn=torch.load, path=ckpt_path, weights_only=weights_only, **kwargs
+        )
 
         # pl_forecasting module saves the train_sample shape, must recreate one
         np_dtype = TORCH_NP_DTYPES[ckpt["model_dtype"]]
@@ -2591,7 +2626,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     ),
                 )
 
-            # updating model attributes before self._init_model() which create new tfm ckpt
+            # updating model attributes before self._init_model() which create new tfm ckpt.
+            # The Darts base model (.pt) is a full object graph (encoders, pipelines, ...) that
+            # cannot be loaded under `weights_only=True`; only load models from trusted sources.
             with open(tfm_save_file_path, "rb") as tfm_save_file:
                 tfm_save: TorchForecastingModel = torch.load(
                     tfm_save_file,
@@ -2620,13 +2657,24 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self._update_covariates_use()
 
     def load_weights(
-        self, path: str, load_encoders: bool = True, skip_checks: bool = False, **kwargs
+        self,
+        path: str,
+        load_encoders: bool = True,
+        skip_checks: bool = False,
+        weights_only: bool = True,
+        **kwargs,
     ):
         """
         Loads the weights from a manually saved model (saved with :meth:`save() <TorchForecastingModel.save()>`).
 
         Note: This method needs to be able to access the darts model checkpoint (.pt) in order to load the encoders
         and perform sanity checks on the model parameters.
+
+        .. warning::
+            SECURITY: Only load model files from trusted sources. A malicious file can execute arbitrary code
+            while being deserialized (CWE-502). The Lightning ``.ckpt`` checkpoint is loaded with
+            ``weights_only=True`` by default; the Darts base model (``.pt``) used for the encoders / sanity checks
+            is loaded with full unpickling unless ``skip_checks=True``.
 
         Parameters
         ----------
@@ -2639,6 +2687,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         skip_checks
             If set, will disable the loading of the encoders and the sanity checks on model parameters
             (not recommended). Cannot be used with `load_encoders=True`. Default: ``False``.
+        weights_only
+            Security-relevant option (CWE-502) controlling how the Lightning ``.ckpt`` checkpoint is deserialized.
+            If ``True`` (default), deserialization is restricted to the allow-listed (Darts/torch) types, which is
+            safe against maliciously crafted checkpoints. If ``False``, the checkpoint is fully unpickled, which can
+            execute arbitrary code - only use this with checkpoints from trusted sources. Default: ``True``.
         **kwargs
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
@@ -2658,6 +2711,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             file_name=path_ptl_ckpt,
             load_encoders=load_encoders,
             skip_checks=skip_checks,
+            weights_only=weights_only,
             **kwargs,
         )
 
