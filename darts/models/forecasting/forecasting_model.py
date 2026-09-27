@@ -19,6 +19,7 @@ import inspect
 import io
 import os
 import pickle
+import threading
 import time
 from abc import ABC, ABCMeta, abstractmethod
 from collections import OrderedDict
@@ -77,6 +78,16 @@ from darts.utils.utils import (
 
 logger = get_logger(__name__)
 
+_MODEL_CALL_STORE = threading.local()
+
+
+def _model_call_stack() -> list:
+    """Per-thread stack of model creation parameters captured by `ModelMeta`."""
+    stack = getattr(_MODEL_CALL_STORE, "stack", None)
+    if stack is None:
+        stack = _MODEL_CALL_STORE.stack = []
+    return stack
+
 
 class ModelMeta(ABCMeta):
     """Meta class to store parameters used at model creation.
@@ -119,11 +130,17 @@ class ModelMeta(ABCMeta):
         # 4) update defaults with actual model call parameters and store
         all_params.update(kwargs)
 
-        # 5) save parameters in model
-        cls._model_call = all_params
+        # 5) save parameters for the model's `__init__()`; the store is thread-local so that models can be
+        #    created concurrently (e.g. optuna with `n_jobs>1`), and a stack so that models created inside
+        #    another model's `__init__()` don't overwrite the outer model's parameters
+        stack = _model_call_stack()
+        stack.append(all_params)
 
         # 6) call model
-        return super().__call__(**all_params)
+        try:
+            return super().__call__(**all_params)
+        finally:
+            stack.pop()
 
 
 class ForecastingModel(ABC, metaclass=ModelMeta):
@@ -2662,9 +2679,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def _extract_model_creation_params(self):
         """extracts immutable model creation parameters from `ModelMeta` and deletes reference."""
-        model_params = copy.deepcopy(self._model_call)
-        del self.__class__._model_call
-        return model_params
+        return copy.deepcopy(_model_call_stack()[-1])
 
     def untrained_model(self):
         """Returns a new (untrained) model instance created with the same parameters."""
@@ -2672,9 +2687,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @property
     def model_params(self) -> dict:
-        return (
-            self._model_params if hasattr(self, "_model_params") else self._model_call
-        )
+        if hasattr(self, "_model_params"):
+            return self._model_params
+        # still inside `__init__()`: return the parameters captured by `ModelMeta` for this thread
+        return _model_call_stack()[-1]
 
     @classmethod
     def _default_save_path(cls) -> str:
