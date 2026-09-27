@@ -94,7 +94,6 @@ _NF_MODEL_IGNORED_PARAMS = {
     "futr_exog_list",  # prepared by Darts
     "hist_exog_list",  # prepared by Darts
     "stat_exog_list",  # prepared by Darts
-    "exclude_insample_y",
     "drop_last_loader",
     "random_seed",
     "alias",
@@ -231,6 +230,9 @@ class _NeuralForecastModule(PLForecastingModule):
         # - `stat_exog`: (C, S) or None
 
         insample_y = past_target
+        if self.nf.exclude_insample_y:
+            # same as NeuralForecast: the model only sees the covariates, not the past target values
+            insample_y = torch.zeros_like(insample_y)
         insample_mask = torch.ones_like(past_target[:, :, 0])
         hist_exog, futr_exog, stat_exog = None, None, None
 
