@@ -30,6 +30,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed autoregressive `TorchForecastingModel.predict()` with `roll_size < output_chunk_length` and future covariates, where the first step passed too few future covariate values to the model. [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed incorrect return type annotations for several functions in `darts.utils.statistics`. [#3185](https://github.com/unit8co/darts/pull/3185) by [Alejandro Coronado](https://github.com/AlejandroCoronadoN).
 - Fixed `TorchForecastingModel` last-epoch checkpoint not being saved at the end of every training epoch when validation loss stopped improving (PyTorch Lightning >= 2.6); last and best checkpoints are now updated independently. [#3212](https://github.com/unit8co/darts/pull/3212) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed `NeuralForecastModel` ignoring the NeuralForecast `exclude_insample_y` parameter, so the base model kept using the past target values. [#3216](https://github.com/unit8co/darts/pull/3216) by [Pranav Negi](https://github.com/825pranav).
 
 **Dependencies**
 
