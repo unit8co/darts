@@ -142,6 +142,19 @@ class TestUtils:
         assert len(subseries_no_gap) == 1
         assert subseries_no_gap[0] == no_gap_series
 
+    @pytest.mark.parametrize("start,step", [(0, 1), (10, 2)])
+    def test_extract_subseries_range_index(self, start, step):
+        # integer-indexed series must keep the last value before each gap
+        values = np.array([1.0, 2.0, np.nan, np.nan, 5.0, 6.0, np.nan, 8.0])
+        times = pd.RangeIndex(start, start + len(values) * step, step)
+        series = TimeSeries.from_times_and_values(times, values)
+
+        subseries = extract_subseries(series)
+        assert len(subseries) == 3
+        assert subseries[0] == series[:2]
+        assert subseries[1] == series[4:6]
+        assert subseries[2] == series[-1]
+
     @pytest.mark.parametrize(
         "config",
         [

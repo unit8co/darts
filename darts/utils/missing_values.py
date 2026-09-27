@@ -103,11 +103,16 @@ def extract_subseries(
     else:
         gaps_df = gaps_df.query(f"gap_size>={min_gap_size}")
         start_times = [series.start_time()] + (gaps_df["gap_end"] + freq).to_list()
-        end_times = (gaps_df["gap_start"] - freq).to_list() + [series.end_time() + freq]
+        end_times = (gaps_df["gap_start"] - freq).to_list() + [series.end_time()]
 
+        # slice by position (inclusive end), as integer slices of integer-indexed
+        # series are positional rather than label-based
+        time_index = series.time_index
         subseries = []
         for start, end in zip(start_times, end_times):
-            subseries.append(series[start:end])
+            subseries.append(
+                series[time_index.get_loc(start) : time_index.get_loc(end) + 1]
+            )
 
         return subseries
 
