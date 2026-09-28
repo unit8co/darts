@@ -2107,6 +2107,36 @@ class TestTimeSeries:
         assert len(series1.longest_contiguous_slice()) == 3
         assert len(series1.longest_contiguous_slice(2)) == 6
 
+    @pytest.mark.parametrize(
+        "times",
+        [
+            pd.RangeIndex(9),
+            pd.RangeIndex(10, 28, 2),
+            pd.date_range("20130101", periods=9, freq="D"),
+        ],
+    )
+    def test_longest_contiguous_slice_index_types(self, times):
+        values = np.array([1, 2, np.nan, 3, 4, 5, 6, np.nan, 7.0])
+        series = TimeSeries(times, values)
+
+        # longest slice is at the center
+        result = series.longest_contiguous_slice()
+        np.testing.assert_array_equal(result.values().flatten(), [3, 4, 5, 6])
+        assert result.time_index.equals(times[3:7])
+
+        # longest slice is at the end, and trailing NaNs are stripped
+        series = TimeSeries(times, np.array([1, np.nan] + [2] * 6 + [np.nan]))
+        result = series.longest_contiguous_slice()
+        assert result.time_index.equals(times[2:8])
+
+        # only leading and trailing NaNs
+        series = TimeSeries(times, np.array([np.nan] + [1] * 7 + [np.nan]))
+        assert series.longest_contiguous_slice().time_index.equals(times[1:8])
+
+        # all slices of length one
+        series = TimeSeries(times, np.array([1, np.nan] * 4 + [1]))
+        assert series.longest_contiguous_slice().time_index.equals(times[:1])
+
     def test_with_columns_renamed(self):
         series1 = linear_timeseries(
             start_value=1,

@@ -2864,6 +2864,8 @@ class TimeSeries:
             return self.copy()
         stripped_series = self.strip()
         gaps = stripped_series.gaps(mode=mode)
+        if gaps.empty:
+            return stripped_series
         relevant_gaps = gaps[gaps["gap_size"] > max_gap_size]
 
         curr_slice_start = stripped_series.start_time()
@@ -2874,17 +2876,26 @@ class TimeSeries:
             # evaluate size of the current slice. the slice ends one time step before row['gap_start']
             curr_slice_end = row["gap_start"] - self.freq
             size = curr_slice_end - curr_slice_start
-            if size > max_size:
+            if max_slice_start is None or size > max_size:
                 max_size = size
                 max_slice_start = curr_slice_start
                 max_slice_end = row["gap_start"] - self._freq
             curr_slice_start = row["gap_end"] + self._freq
 
-        if stripped_series.end_time() - curr_slice_start > max_size:
+        if (
+            max_slice_start is None
+            or stripped_series.end_time() - curr_slice_start > max_size
+        ):
             max_slice_start = curr_slice_start
-            max_slice_end = self.end_time()
+            max_slice_end = stripped_series.end_time()
 
-        return stripped_series[max_slice_start:max_slice_end]
+        # slice by position (inclusive end), as integer slices of integer-indexed
+        # series are positional rather than label-based
+        return stripped_series[
+            stripped_series.get_index_at_point(
+                max_slice_start
+            ) : stripped_series.get_index_at_point(max_slice_end) + 1
+        ]
 
     def rescale_with_value(self, value_at_first_step: float) -> Self:
         """Return a new series, which is a multiple of this series such that the first value is `value_at_first_step`.
