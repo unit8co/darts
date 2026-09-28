@@ -260,13 +260,8 @@ class TiRex2Model(FoundationModel):
             the license.
 
         .. note::
-            TiRex-2 supports partial fine-tuning of the output head. To enable it, select the layers to unfreeze with
-            ``enable_finetuning={"unfreeze": ["*.output_patch_embedding.*"]}``.
-
-            Full fine-tuning (``enable_finetuning=True``) is **not supported** because backpropagation through
-            the early sLSTM blocks produces NaN gradients. See the `Fine-Tuning Examples
-            <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__
-            notebook for more details.
+            TiRex-2 supports full or partial fine-tuning. For small datasets, fine-tune only the final decoder layer
+            and output head with ``enable_finetuning={"unfreeze": ["*.stack.11.*", "*.output_patch_embedding.*"]}``.
 
         Parameters
         ----------
