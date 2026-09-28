@@ -14,6 +14,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 - Fixed compatibility with pandas 3.1: fitting and predicting models on series with a daily frequency failed with a `TypeError`, and `MIDAS` accepted a series whose frequency was already the target low frequency. [#3289](https://github.com/unit8co/darts/pull/3289) by [Nicolò Angileri](https://github.com/nicoloangileri).
+- Fixed two error messages that showed raw placeholders: `generate_index()` printed `Observed parameters: {constructors}` instead of the parameters it received, and the fallback in `darts.utils.likelihood_models.sklearn` printed `{likelihood}`. [#3211](https://github.com/unit8co/darts/pull/3211) by [Yanze (David) Wu](https://github.com/David-Wu1119).
 
 **Dependencies**
 
