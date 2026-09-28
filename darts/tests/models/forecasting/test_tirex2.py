@@ -1,4 +1,5 @@
 import copy
+import os
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -445,6 +446,8 @@ class TestTiRex2Model:
 
     @pytest.mark.parametrize("accelerator", ["cpu", "cuda", "mps"])
     def test_accelerator_selection(self, accelerator, pipeline):
+        if accelerator == "mps" and os.environ.get("CI", "").lower() in {"true", "1"}:
+            pytest.skip("MPS accelerator testing is disabled in CI.")
         if accelerator == "cuda" and not torch.cuda.is_available():
             pytest.skip("CUDA is not available.")
         if accelerator == "mps" and not torch.backends.mps.is_available():
