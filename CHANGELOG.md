@@ -11,7 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- 🚀🚀 Added `TiRex2Model`, NXAI's new xLSTM-based foundation model for zero-shot multivariate forecasting. TiRex-2 extends TiRex to support joint multivariate forecasting with past and future covariates, without requiring training. It can produce deterministic or probabilistic forecasts. [#](https://github.com/unit8co/darts/pull/) by [Zhihao Dai](https://github.com/daidahao)
+- 🚀🚀 Added `TiRex2Model`, NXAI's new xLSTM-based foundation model for zero-shot multivariate forecasting. TiRex-2 extends TiRex to support joint multivariate forecasting with past and future covariates, without requiring training. It can produce deterministic or probabilistic forecasts. [#3222](https://github.com/unit8co/darts/pull/3222) by [Zhihao Dai](https://github.com/daidahao)
 - Improvements to `TorchForecastingModel` : [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader).
   - 🚀🚀 ONNX export and inference are substantially more capable: train a model in PyTorch, export it once, then run forecasts in a lightweight environment with only ONNX Runtime, NumPy, and Darts — no PyTorch required. `run_onnx_prediction()` mirrors `predict()` (including auto-regressive horizons and RNN warm-up); `RNNModel` and probabilistic models are now supported as well.
     - 🔴 Removed `darts.utils.onnx_utils`; use `darts.utils.onnx.inference` instead. Custom ONNX loops should load graph metadata via `OnnxModelSpec.from_session()`.
