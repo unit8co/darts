@@ -23,6 +23,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Calling `ForecastingModel.historical_forecasts()` with a `start` value that is later than what is forecastable given the supplied covariates now raises an informative exception. [#3207](https://github.com/unit8co/darts/pull/3207) by [Dennis Bader](https://github.com/dennisbader).
 - Calling `ForecastingModel.gridsearch()` with a sequence of `TimeSeries` now raises an informative exception. [#3191](https://github.com/unit8co/darts/pull/3191) by [Geovanny Basantes](https://github.com/COMPUMAX-EC).
 - 🔴 Safe-by-default model loading against malicious checkpoints (CWE-502): on PyTorch/Lightning >= 2.6, the Lightning `.ckpt` used by `TorchForecastingModel` loading (`load_weights`, `load_weights_from_checkpoint`, `load_from_checkpoint`, and internal Trainer loads via the checkpoint plugin) now defaults to `torch.load(weights_only=True)`, restricting deserialization to a small, load-scoped allow-list of Darts/torch classes (plus a tiny audited set of `torchmetrics` reduction helpers) so a crafted `.ckpt` cannot execute arbitrary code on load. Pass `weights_only=False` to restore full unpickling for checkpoints you trust (e.g. models with custom classes not covered by the allow-list). NOTE: this protects the `.ckpt` only — the Darts base model file (`.pt`) is still fully unpickled, so loading a malicious `.pt` remains unsafe and is out of scope. Partially addresses [#3177](https://github.com/unit8co/darts/issues/3177). [#3183](https://github.com/unit8co/darts/pull/3183) by [hackchang](https://github.com/hackchang).
+- `NeuralForecastModel` now supports the `exclude_insample_y` parameter to ignore the past target values and only use covariate data. [#3216](https://github.com/unit8co/darts/pull/3216) by [Pranav Negi](https://github.com/825pranav).
 
 **Fixed**
 
@@ -30,7 +31,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed autoregressive `TorchForecastingModel.predict()` with `roll_size < output_chunk_length` and future covariates, where the first step passed too few future covariate values to the model. [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed incorrect return type annotations for several functions in `darts.utils.statistics`. [#3185](https://github.com/unit8co/darts/pull/3185) by [Alejandro Coronado](https://github.com/AlejandroCoronadoN).
 - Fixed `TorchForecastingModel` last-epoch checkpoint not being saved at the end of every training epoch when validation loss stopped improving (PyTorch Lightning >= 2.6); last and best checkpoints are now updated independently. [#3212](https://github.com/unit8co/darts/pull/3212) by [Dennis Bader](https://github.com/dennisbader).
-- Fixed `NeuralForecastModel` ignoring the NeuralForecast `exclude_insample_y` parameter, so the base model kept using the past target values. [#3216](https://github.com/unit8co/darts/pull/3216) by [Pranav Negi](https://github.com/825pranav).
 
 **Dependencies**
 

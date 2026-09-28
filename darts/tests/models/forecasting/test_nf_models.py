@@ -656,20 +656,18 @@ class TestNeuralForecastModel:
         assert "learning_rate" in caplog.text
 
     def test_exclude_insample_y(self, caplog):
-        with caplog.at_level(logging.WARNING):
-            model = NeuralForecastModel(
-                model="MLP",
-                input_chunk_length=9,
-                output_chunk_length=3,
-                model_kwargs={"exclude_insample_y": True, "hidden_size": 8},
-                **kwargs,
-            )
-        assert "exclude_insample_y" not in caplog.text
+        model = NeuralForecastModel(
+            model="MLP",
+            input_chunk_length=9,
+            output_chunk_length=3,
+            model_kwargs={"exclude_insample_y": True, "hidden_size": 8},
+            **kwargs,
+        )
 
         model.fit(series=self.univariate_series, past_covariates=self.past_cov)
         assert model.model.nf.exclude_insample_y
 
-        # past target values are excluded, so shifting them must not change the forecast
+        # past target values are excluded, different values must not change the forecast
         pred = model.predict(
             n=3, series=self.univariate_series, past_covariates=self.past_cov
         )
