@@ -43,18 +43,18 @@ class HuggingFaceConnector:
         Parameters
         ----------
         model_name
-             The HuggingFace repository name where the model is stored, e.g., "amazon/chronos-2".
+            The HuggingFace repository name where the model is stored, e.g., "amazon/chronos-2".
         model_revision
-             The revision of the model in the HuggingFace repository. Must be a branch name, tag name, or commit hash.
-                If not provided, the default branch and the latest commit will be used.
+            The revision of the model in the HuggingFace repository. Must be a branch name, tag name, or commit hash.
+            If not provided, the default branch and the latest commit will be used.
         local_dir
             Optional local directory to load the pre-downloaded model. If specified and the directory is empty, the
             model will be downloaded from HuggingFace Hub and saved to this directory. Default is ``None``, which will
             use a cache directory managed by ``huggingface_hub`` instead.
         config_file
-             The name of the configuration file. Default is "config.json".
+            The name of the configuration file. Default is "config.json".
         model_file
-             The name of the model weight file. Default is "model.safetensors".
+            The name of the model weight file. Default is "model.safetensors".
         """
         if local_dir is not None:
             local_dir_path = Path(local_dir)

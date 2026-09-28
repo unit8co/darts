@@ -2,7 +2,9 @@ import copy
 import math
 import os
 import pathlib
+import threading
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 
 import numpy as np
@@ -31,6 +33,7 @@ from darts.models import (
     NaiveMovingAverage,
     NaiveSeasonal,
     RandomForestModel,
+    RegressionEnsembleModel,
     SKLearnModel,
     Theta,
 )
@@ -818,3 +821,62 @@ class TestForecastingModelInputValidation:
         # invalid values are rejected
         with pytest.raises(ValueError, match="`min_train_length` must be"):
             model_cls(min_train_length=0)
+
+
+class TestModelCreationParams:
+    def test_concurrent_model_creation_is_thread_safe(self):
+        barrier = threading.Barrier(2, timeout=10)
+
+        barrier_enabled = [True]
+
+        class _SlowNaiveSeasonal(NaiveSeasonal):
+            def __init__(self, K: int = 1):
+                if barrier_enabled[0]:
+                    barrier.wait()
+                super().__init__(K=K)
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            future1 = executor.submit(lambda: _SlowNaiveSeasonal(K=1))
+            future2 = executor.submit(lambda: _SlowNaiveSeasonal(K=2))
+            model1 = future1.result()
+            model2 = future2.result()
+
+        assert model1.model_params["K"] == 1
+        assert model1.K == 1
+        barrier_enabled[0] = False
+        assert model1.untrained_model().model_params["K"] == 1
+
+        assert model2.model_params["K"] == 2
+        assert model2.K == 2
+        assert model2.untrained_model().model_params["K"] == 2
+
+    def test_nested_model_creation_keeps_outer_params(self):
+        class _Outer(NaiveSeasonal):
+            def __init__(self, K: int = 1):
+                self.inner = NaiveSeasonal(K=2)
+                super().__init__(K=K)
+
+        outer = _Outer(K=3)
+        assert outer.model_params == {"K": 3}
+        assert outer.inner.model_params == {"K": 2}
+
+        ensemble = RegressionEnsembleModel(
+            [NaiveSeasonal(K=1), NaiveSeasonal(K=2)], regression_train_n_points=10
+        )
+        assert "forecasting_models" in ensemble.model_params
+        assert ensemble.model_params["regression_train_n_points"] == 10
+        assert ensemble.forecasting_models[0].model_params["K"] == 1
+        assert ensemble.forecasting_models[1].model_params["K"] == 2
+        assert "lags" not in ensemble.model_params
+
+    def test_failed_model_creation_does_not_leak_params(self):
+        class _FailingModel(NaiveSeasonal):
+            def __init__(self, K: int = 1):
+                raise ValueError("Fail")
+
+        with pytest.raises(ValueError):
+            _FailingModel(K=4)
+
+        subsequent = NaiveSeasonal(K=5)
+        assert subsequent.model_params == {"K": 5}
+        assert subsequent.untrained_model().model_params == {"K": 5}

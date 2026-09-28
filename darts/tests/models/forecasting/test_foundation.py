@@ -8,7 +8,12 @@ import numpy as np
 import pytest
 
 from darts import TimeSeries, concatenate
-from darts.tests.conftest import TIREX_AVAILABLE, TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.conftest import (
+    T0_AVAILABLE,
+    TIREX_AVAILABLE,
+    TORCH_AVAILABLE,
+    tfm_kwargs,
+)
 from darts.utils.likelihood_models import QuantileRegression
 from darts.utils.timeseries_generation import linear_timeseries
 
@@ -21,6 +26,7 @@ if not TORCH_AVAILABLE:
 from darts.models import (
     Chronos2Model,
     PatchTSTFMModel,
+    T0Model,
     TimesFM2p5Model,
     TimesFM3Model,
     TiRexModel,
@@ -34,6 +40,7 @@ from darts.tests.models.forecasting.foundation_test_utils import (
     TiRexStub,
     mock_hf_hub_download,
     timesfm2p5_tiny_context,
+    tiny_t0_dir,
 )
 
 
@@ -438,6 +445,17 @@ class TestFoundationModel:
                 )
             ]
             if TIREX_AVAILABLE
+            else []
+        )
+        + (
+            [
+                (
+                    T0Model,
+                    "*decoder*",
+                    {"local_dir": tiny_t0_dir()},
+                )
+            ]
+            if T0_AVAILABLE
             else []
         ),
     )
