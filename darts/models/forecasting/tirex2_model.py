@@ -122,7 +122,7 @@ class _TiRex2Module(PLForecastingModule):
         # tensors later does not switch backends. Lightning knows the actual
         # execution device here, before moving the model or restoring weights.
         device = self.trainer.strategy.root_device
-        if device.type != self.tirex2.device.type:
+        if device.type != self.tirex2.device:
             # The loader accepts "cuda", not "cuda:N". Select the correct GPU for
             # its allocations, including when running one process per GPU.
             context = (
