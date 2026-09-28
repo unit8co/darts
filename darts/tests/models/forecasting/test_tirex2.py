@@ -238,7 +238,6 @@ class TestTiRex2Model:
                 **kwargs,
             )
             model.fit(self.series)
-            _ = model.predict(n=5, series=self.series)
 
         # loading-time check: output chunk length plus shift cannot exceed max
         with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
@@ -249,7 +248,6 @@ class TestTiRex2Model:
                 **kwargs,
             )
             model.fit(self.series)
-            _ = model.predict(n=5, series=self.series)
 
         # ----- Likelihood checks ----- #
         # can use likelihood QuantileRegression with supported quantiles
@@ -280,7 +278,6 @@ class TestTiRex2Model:
                 **kwargs,
             )
             model.fit(self.series)
-            _ = model.predict(n=5, series=self.series)
 
         # ----- Checkpoint path checks ----- #
         # can use `hub_model_name` and `hub_model_revision` to specify checkpoint path
@@ -470,14 +467,19 @@ class TestTiRex2Model:
         )
         pipeline.assert_not_called()
 
-        # fit() skips the Lightning stage when there is no fine-tuning.
+        # fit() loads the model on CPU, regardless of the execution device
         model.fit(self.series)
-        pipeline.assert_not_called()
+        pipeline.assert_called_once()
+        pipeline.assert_called_with(**load_kwargs, device="cpu")
+        pipeline.reset_mock()
 
         # predict() loads the model on the execution device in configure_model().
         model.predict(n=5, series=self.series)
-        pipeline.assert_called_once()
-        pipeline.assert_called_with(**load_kwargs, device=accelerator)
+        if accelerator != "cpu":
+            pipeline.assert_called_once()
+            pipeline.assert_called_with(**load_kwargs, device=accelerator)
+        else:
+            pipeline.assert_not_called()
 
     def test_predict_kwargs(self, pipeline):
         predict_kwargs = {"tta_diff": False}

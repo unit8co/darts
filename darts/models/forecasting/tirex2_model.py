@@ -133,6 +133,7 @@ class _TiRex2Module(PLForecastingModule):
                     **self._tirex2_kwargs, device=device.type
                 ).model
             model.to(dtype=self.dtype)
+            # restore the weights and training mode from the original model, which was loaded on CPU
             model.load_state_dict(self.tirex2.state_dict())
             model.train(self.tirex2.training)
             for name, parameter in model.named_parameters():
