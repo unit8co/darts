@@ -119,6 +119,11 @@ class _TiRex2Module(PLForecastingModule):
         return model.to(dtype=self.dtype)
 
     def configure_model(self) -> None:
+        # Lightning also calls this hook during checkpoint loading without a
+        # Trainer. Keep the CPU model until a Trainer supplies the execution device.
+        if self._trainer is None:
+            return
+
         # TiRex-2 chooses its recurrent kernels at construction; moving its
         # tensors later does not switch backends. Lightning knows the actual
         # execution device here, before moving the model or restoring weights.
