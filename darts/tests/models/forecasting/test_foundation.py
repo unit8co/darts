@@ -10,6 +10,7 @@ import pytest
 
 from darts import TimeSeries, concatenate
 from darts.tests.conftest import (
+    T0_AVAILABLE,
     TIREX2_AVAILABLE,
     TIREX_AVAILABLE,
     TORCH_AVAILABLE,
@@ -27,6 +28,7 @@ if not TORCH_AVAILABLE:
 from darts.models import (
     Chronos2Model,
     PatchTSTFMModel,
+    T0Model,
     TimesFM2p5Model,
     TimesFM3Model,
     TiRex2Model,
@@ -43,6 +45,7 @@ from darts.tests.models.forecasting.foundation_test_utils import (
     TiRexStub,
     mock_hf_hub_download,
     timesfm2p5_tiny_context,
+    tiny_t0_dir,
 )
 
 
@@ -458,6 +461,17 @@ class TestFoundationModel:
                 )
             ]
             if TIREX2_AVAILABLE
+            else []
+        )
+        + (
+            [
+                (
+                    T0Model,
+                    "*decoder*",
+                    {"local_dir": tiny_t0_dir()},
+                )
+            ]
+            if T0_AVAILABLE
             else []
         ),
     )

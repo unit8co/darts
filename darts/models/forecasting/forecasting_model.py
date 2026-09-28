@@ -13,6 +13,7 @@ one or several time series. The function `predict()` applies `f()` on one or sev
 to obtain forecasts for a desired number of time stamps into the future.
 """
 
+import contextvars
 import copy
 import datetime
 import inspect
@@ -77,6 +78,18 @@ from darts.utils.utils import (
 
 logger = get_logger(__name__)
 
+_MODEL_CALL_STACK_VAR: contextvars.ContextVar[tuple[OrderedDict, ...]] = (
+    contextvars.ContextVar("_model_call_stack", default=())
+)
+
+
+def _model_call_stack_top() -> OrderedDict:
+    """Top of the model creation stack for the current context."""
+    stack = _MODEL_CALL_STACK_VAR.get()
+    if not stack:
+        raise_log(ValueError("No model creation parameters on the context stack."))
+    return stack[-1]
+
 
 class ModelMeta(ABCMeta):
     """Meta class to store parameters used at model creation.
@@ -119,11 +132,17 @@ class ModelMeta(ABCMeta):
         # 4) update defaults with actual model call parameters and store
         all_params.update(kwargs)
 
-        # 5) save parameters in model
-        cls._model_call = all_params
+        # 5) save parameters for the model's `__init__()`; a context-local immutable stack so models can be
+        #    created concurrently (e.g. optuna with `n_jobs>1` or asyncio tasks) and nested construction
+        #    inside another model's `__init__()` keeps separate frames for outer and inner models
+        stack = _MODEL_CALL_STACK_VAR.get()
+        token = _MODEL_CALL_STACK_VAR.set(stack + (all_params,))
 
         # 6) call model
-        return super().__call__(**all_params)
+        try:
+            return super().__call__(**all_params)
+        finally:
+            _MODEL_CALL_STACK_VAR.reset(token)
 
 
 class ForecastingModel(ABC, metaclass=ModelMeta):
@@ -2661,10 +2680,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             return sample(params, int(n_random_samples * len(params)))
 
     def _extract_model_creation_params(self):
-        """extracts immutable model creation parameters from `ModelMeta` and deletes reference."""
-        model_params = copy.deepcopy(self._model_call)
-        del self.__class__._model_call
-        return model_params
+        """Extracts immutable model creation parameters captured by `ModelMeta`."""
+        return copy.deepcopy(_model_call_stack_top())
 
     def untrained_model(self):
         """Returns a new (untrained) model instance created with the same parameters."""
@@ -2672,9 +2689,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @property
     def model_params(self) -> dict:
-        return (
-            self._model_params if hasattr(self, "_model_params") else self._model_call
-        )
+        if hasattr(self, "_model_params"):
+            return self._model_params
+        # still inside `__init__()`: return the parameters captured by `ModelMeta` for this context
+        return _model_call_stack_top()
 
     @classmethod
     def _default_save_path(cls) -> str:

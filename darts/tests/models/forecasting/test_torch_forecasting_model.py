@@ -159,6 +159,11 @@ class NumsCalled(Metric):
         return len(self.preds)
 
 
+class CustomCallback(Callback):
+    def on_train_epoch_end(self, trainer, pl_module):
+        pass
+
+
 class TestTorchForecastingModel:
     times = pd.date_range("20130101", "20130410")
     pd_series = pd.Series(range(100), index=times)
@@ -218,17 +223,14 @@ class TestTorchForecastingModel:
         "config",
         param_product(
             [False, True],
+            [False, True],
             [(RNNModel, {"model": "RNN", "hidden_dim": 10, "n_rnn_layers": 10})]
             + ([(NeuralForecastModel, {})] if NF_AVAILABLE else []),
         ),
     )
     def test_manual_save_and_load(self, tmpdir_fn, config):
         """validate manual save with automatic save files by comparing output between the two"""
-        clean, (model_cls, model_kwargs) = config
-
-        class CustomCallback(Callback):
-            def on_train_epoch_end(self, trainer, pl_module):
-                pass
+        clean, probabilistic, (model_cls, model_kwargs) = config
 
         kwargs = copy.deepcopy(tfm_kwargs)
         kwargs = dict(
@@ -239,6 +241,9 @@ class TestTorchForecastingModel:
                 "n_epochs": 5,
                 "random_state": 42,
                 "work_dir": tmpdir_fn,
+                "likelihood": QuantileRegression([0.1, 0.5, 0.9])
+                if probabilistic
+                else None,
             },
             **model_kwargs,
         )
@@ -259,7 +264,7 @@ class TestTorchForecastingModel:
         model_auto_save = model_cls(
             model_name=auto_name,
             save_checkpoints=True,
-            **kwargs,
+            **kwargs_with_callback,
         )
 
         # save model without training
@@ -309,7 +314,7 @@ class TestTorchForecastingModel:
         assert os.path.exists(model_path_manual_ckpt)
 
         # load manual save model and compare with automatic model results
-        pl_kwargs_load = {"accelerator": "cpu"}
+        pl_kwargs_load = {"accelerator": "cpu", "precision": "64-true"}
         model_manual_save = model_cls.load(
             model_path_manual, pl_trainer_kwargs=pl_kwargs_load
         )
@@ -327,7 +332,9 @@ class TestTorchForecastingModel:
 
             # Predicting without giving the series in args
             with pytest.raises(ValueError) as err:
-                model_manual_save.predict(n=4)
+                model_cls.load(
+                    model_path_manual, pl_trainer_kwargs=pl_kwargs_load
+                ).predict(n=4)
             assert str(err.value) == (
                 "Input `series` must be provided. This is the result either from fitting on multiple series, "
                 "from fitting with `fit_from_dataset()`, from not having fit the model yet, or from loading a "
@@ -393,10 +400,16 @@ class TestTorchForecastingModel:
             model_path_manual_2, pl_trainer_kwargs=pl_kwargs_load
         )
 
-        # compare chained load_from_checkpoint() save() with manual save
+        # compare chained load_from_checkpoint() save() with manual save.
+        # reload from the original manual checkpoint so both models are at the same
+        # point in the internal random sequence (probabilistic models advance it on
+        # every `predict()` call).
+        model_manual_save_fresh = model_cls.load(
+            model_path_manual, pl_trainer_kwargs=pl_kwargs_load
+        )
         assert model_chained_load_save.predict(
             n=4, series=self.series
-        ) == model_manual_save.predict(n=4, series=self.series)
+        ) == model_manual_save_fresh.predict(n=4, series=self.series)
 
     @pytest.mark.parametrize("clean", [False, True])
     def test_manual_save_and_load_precision(self, tmpdir_fn, clean):
@@ -940,6 +953,102 @@ class TestTorchForecastingModel:
             "incorrect"
         )
 
+    def test_resume_from_checkpoint_optimizer_state(self, tmpdir_fn):
+        """Resuming from a checkpoint reloads optimizer/scheduler *state* (not just the
+        allow-listed classes). After flipping the internal ``weights_only`` default to True,
+        the trusted resume path must keep full unpickling and continue training successfully.
+        """
+        model_name = "resume_optstate"
+        epochs_partial = 2
+        epochs_resume = 3
+        quantiles = [0.1, 0.5, 0.9]
+        model = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=2,
+            n_epochs=epochs_partial,
+            model_name=model_name,
+            work_dir=tmpdir_fn,
+            save_checkpoints=True,
+            likelihood=QuantileRegression(quantiles),
+            **tfm_kwargs,
+        )
+        model.fit(self.series[:20])
+        assert model.epochs_trained == epochs_partial
+
+        # reload including trainer/optimizer/lr-scheduler state, then CONTINUE training
+        loaded = DLinearModel.load_from_checkpoint(
+            model_name=model_name,
+            work_dir=tmpdir_fn,
+            best=False,
+            map_location="cpu",
+        )
+        assert loaded._fit_called
+        # epochs default after loading
+        assert model.epochs_trained == 2
+
+        # loading the `.ckpt` under `weights_only=True` must also deserialize the optimizer,
+        # lr-scheduler *state*, likelihood objects, ...
+        loaded.fit(self.series[:20], epochs=epochs_partial + epochs_resume)
+        assert loaded.epochs_trained == epochs_partial + epochs_resume
+
+        prediction = loaded.predict(
+            n=2,
+            predict_likelihood_parameters=True,
+        )
+        assert np.isfinite(prediction.all_values()).all()
+        assert prediction.n_components == len(quantiles)
+
+    def test_load_checkpoint_weights_blocks_malicious_payload(self, tmpdir_fn):
+        """Security regression test (CWE-502): the checkpoint loading paths must default to
+        ``weights_only=True`` so that a maliciously crafted ``.ckpt`` cannot execute arbitrary
+        code, while still (a) loading legitimate models and (b) allowing an explicit
+        ``weights_only=False`` opt-out for trusted files.
+        """
+        # 1) a normally-saved model still loads with the safe default -------------------
+        model_name = "wo_safe"
+        ckpt_path = os.path.join(tmpdir_fn, f"{model_name}.pt")
+        model_kwargs = dict(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            n_epochs=1,
+            **tfm_kwargs,
+        )
+        model = DLinearModel(**model_kwargs)
+        model.fit(self.series[:20])
+        model.save(ckpt_path)
+
+        # default `load_weights` uses `weights_only=True` and must succeed via the
+        # registered safe globals
+        reloaded = DLinearModel(**model_kwargs)
+        reloaded.load_weights(ckpt_path)
+        reloaded.predict(n=2, series=self.series[:20])
+
+        # 2) craft a malicious checkpoint whose `__reduce__` writes a marker file --------
+        marker_path = os.path.join(tmpdir_fn, "cwe502_marker.txt")
+        if os.path.exists(marker_path):
+            os.remove(marker_path)
+
+        class _MaliciousPayload:
+            # benign PoC standing in for arbitrary code execution: write a marker file
+            def __reduce__(self):
+                return os.system, (f'echo pwned > "{marker_path}"',)
+
+        # build a checkpoint dict that mimics a real one but embeds the payload
+        real_ckpt = torch.load(ckpt_path + ".ckpt", weights_only=False)
+        real_ckpt["cwe502_payload"] = _MaliciousPayload()
+        torch.save(real_ckpt, ckpt_path + ".ckpt")
+
+        # SAFE default (`weights_only=True`) must REFUSE the payload -> marker NOT created
+        with pytest.raises(Exception):
+            reloaded.load_weights(ckpt_path)
+        assert not os.path.exists(marker_path)
+
+        # explicit opt-out (`weights_only=False`) still loads (and here executes) the
+        # payload, confirming the opt-out path is preserved
+        reloaded.load_weights(ckpt_path, weights_only=False)
+        assert os.path.exists(marker_path)
+        os.remove(marker_path)
+
     def test_load_weights_params_check(self, tmpdir_fn):
         """
         Verify that the method comparing the parameters between the saved model and the loading model
@@ -1279,16 +1388,18 @@ class TestTorchForecastingModel:
                 map_location="cpu",
             )
 
-        # raise Exception when trying to pass `weights_only`=True to `torch.load()`
-        with pytest.raises(ValueError):
-            model_rt = RNNModel(12, "RNN", 5, 5, **tfm_kwargs)
-            model_rt.load_weights_from_checkpoint(
-                model_name=original_model_name,
-                work_dir=tmpdir_fn,
-                best=False,
-                weights_only=True,
-                map_location="cpu",
-            )
+        # `weights_only=True` is now the safe DEFAULT and must SUCCEED on a legitimate
+        # checkpoint via the load-scoped allow-list (the old block expected a ValueError; that
+        # guard was removed, so an explicit `weights_only=True` now loads the real checkpoint).
+        model_wo = RNNModel(12, "RNN", 5, 1, **tfm_kwargs)
+        model_wo.load_weights_from_checkpoint(
+            model_name=original_model_name,
+            work_dir=tmpdir_fn,
+            best=False,
+            weights_only=True,
+            map_location="cpu",
+        )
+        assert model_wo._fit_called
 
     @pytest.mark.parametrize(
         "config",

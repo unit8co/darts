@@ -33,6 +33,7 @@ PLOTLY_AVAILABLE = _package_available("plotly")
 IPYTHON_AVAILABLE = _package_available("IPython")
 TIREX_AVAILABLE = _package_available("tirex")
 TIREX2_AVAILABLE = _package_available("tirex2")
+T0_AVAILABLE = _package_available("t0")
 MLFLOW_AVAILABLE = _package_available("mlflow")
 
 tfm_kwargs: dict[str, Any] = {
