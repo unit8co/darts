@@ -304,6 +304,18 @@ class TestTiRex2Model:
                 **kwargs,
             )
 
+        # cannot use `device` in `tirex2_kwargs`
+        with pytest.raises(
+            ValueError,
+            match='Pass `device` via `pl_trainer_kwargs\\["accelerator"\\]`',
+        ):
+            TiRex2Model(
+                input_chunk_length=7,
+                output_chunk_length=6,
+                tirex2_kwargs={"device": "cpu"},
+                **kwargs,
+            )
+
     def test_default(self, pipeline):
         model = TiRex2Model(
             input_chunk_length=3,
