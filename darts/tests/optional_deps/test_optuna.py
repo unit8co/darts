@@ -172,3 +172,23 @@ class TestOptuna:
         # optimize hyperparameters by minimizing the sMAPE on the validation set
         study = optuna.create_study(direction="minimize")
         study.optimize(objective, n_trials=3)
+
+    def test_optuna_regression_model_n_jobs(self):
+        """Check that optuna works as expected with a regression model using n_jobs>1"""
+
+        def objective(trial):
+            target_lags = trial.suggest_int("lags", 1, 12)
+
+            model = LinearRegressionModel(lags=target_lags)
+            assert model.model_params["lags"] == trial.params["lags"]
+
+            model.fit(series=self.train)
+
+            preds = model.predict(n=self.val_length)
+            return smape(self.val, preds)
+
+        study = optuna.create_study(direction="minimize")
+        study.optimize(objective, n_trials=6, n_jobs=2)
+
+        for trial in study.trials:
+            assert trial.state == optuna.trial.TrialState.COMPLETE
