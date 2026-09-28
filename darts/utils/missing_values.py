@@ -107,11 +107,13 @@ def extract_subseries(
 
         # slice by position (inclusive end), as integer slices of integer-indexed
         # series are positional rather than label-based
-        time_index = series.time_index
         subseries = []
         for start, end in zip(start_times, end_times):
             subseries.append(
-                series[time_index.get_loc(start) : time_index.get_loc(end) + 1]
+                series[
+                    series.get_index_at_point(start) : series.get_index_at_point(end)
+                    + 1
+                ]
             )
 
         return subseries
