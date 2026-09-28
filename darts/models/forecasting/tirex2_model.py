@@ -65,8 +65,9 @@ class _TiRex2Module(PLForecastingModule):
         self._tirex2_kwargs = tirex2_kwargs
         self._predict_kwargs = predict_kwargs
 
-        # Always load the model on CPU first, then move to the actual device during
-        # configure_model(). This allows
+        # Always load the model on CPU first, then move to the execution device during
+        # configure_model(). This is because Trainer is not yet set up during __init__(),
+        # so we cannot know the execution device.
         self.tirex2: TiRex2 = load_model(**self._tirex2_kwargs, device="cpu").model
         self.tirex2.to(dtype=self.dtype)
 
