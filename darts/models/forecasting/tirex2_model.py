@@ -110,7 +110,7 @@ class _TiRex2Module(PLForecastingModule):
         else:
             self._finetuning_likelihood = None
 
-    def _load_tirex2_model(self, device: torch.device) -> TiRex2:
+    def _load_tirex2_model(self, device: torch.device) -> "TiRex2":
         # The loader accepts "cuda", not "cuda:N". Select the correct GPU for
         # its allocations, including when running one process per GPU.
         context = torch.cuda.device(device) if device.type == "cuda" else nullcontext()
