@@ -195,7 +195,6 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     "PatchTSTFMModel": ("darts.models.forecasting.patchtst_fm_model", "(Py)Torch"),
     "TimesFM2p5Model": ("darts.models.forecasting.timesfm2p5_model", "(Py)Torch"),
     "TimesFM3Model": ("darts.models.forecasting.timesfm3_model", "(Py)Torch"),
-    "TiRex2Model": ("darts.models.forecasting.tirex2_model", "(Py)Torch and/or TiRex-2"),
     "TiRex2Model": (
         "darts.models.forecasting.tirex2_model",
         "(Py)Torch and/or TiRex-2",
