@@ -168,6 +168,10 @@ class CustomCallback(Callback):
         pass
 
 
+class _UserDLinear(DLinearModel):
+    """Module-level subclass. Save/load imports it by qualname."""
+
+
 class TestTorchForecastingModel:
     times = pd.date_range("20130101", "20130410")
     pd_series = pd.Series(range(100), index=times)
@@ -1058,7 +1062,7 @@ class TestTorchForecastingModel:
         safe wrapper loading so a maliciously crafted ``.pt`` cannot execute arbitrary code.
         """
         model_name = "pt_safe"
-        ckpt_path = os.path.join(tmpdir_fn, f"{model_name}.pt")
+        model_path = os.path.join(tmpdir_fn, f"{model_name}.pt")
         model_kwargs = dict(
             input_chunk_length=4,
             output_chunk_length=1,
@@ -1067,12 +1071,12 @@ class TestTorchForecastingModel:
         )
         model = DLinearModel(**model_kwargs)
         model.fit(self.series[:20])
-        model.save(ckpt_path)
+        model.save(model_path)
 
         # a legitimate save is a state dict and loads with no extra globals
-        payload = torch.load(ckpt_path, weights_only=True, map_location="cpu")
+        payload = torch.load(model_path, weights_only=True, map_location="cpu")
         assert payload["darts_wrapper"] == 1
-        reloaded = DLinearModel.load(ckpt_path)
+        reloaded = DLinearModel.load(model_path)
         reloaded.predict(n=2, series=self.series[:20])
 
         marker_path = os.path.join(tmpdir_fn, "cwe502_pt_marker.txt")
@@ -1083,14 +1087,14 @@ class TestTorchForecastingModel:
             def __reduce__(self):
                 return os.system, (f'echo pwned > "{marker_path}"',)
 
-        torch.save({"payload": _MaliciousPayload()}, ckpt_path)
+        torch.save({"payload": _MaliciousPayload()}, model_path)
 
         with pytest.raises(LegacyModelFormatError):
-            DLinearModel.load(ckpt_path)
+            DLinearModel.load(model_path)
         assert not os.path.exists(marker_path)
 
         try:
-            DLinearModel.load(ckpt_path, weights_only=False)
+            DLinearModel.load(model_path, weights_only=False)
         except Exception:
             pass
         assert os.path.exists(marker_path)
@@ -1157,6 +1161,38 @@ class TestTorchForecastingModel:
         )
         path = os.path.join(tmpdir_fn, "custom_fn.pt")
         with pytest.raises(UnencodableObjectError, match="encode_year"):
+            model.save(path)
+        assert not os.path.exists(path)
+
+    def test_save_load_user_model_from_module(self, tmpdir_fn):
+        model = _UserDLinear(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            n_epochs=1,
+            random_state=0,
+            **tfm_kwargs,
+        )
+        model.fit(self.series[:20])
+        before = model.predict(n=2)
+        path = os.path.join(tmpdir_fn, "user_model.pt")
+        model.save(path)
+        loaded = _UserDLinear.load(path)
+        assert type(loaded) is _UserDLinear
+        after = loaded.predict(n=2)
+        np.testing.assert_allclose(before.values(), after.values(), atol=1e-6)
+
+    def test_save_rejects_model_class_defined_in_function(self, tmpdir_fn):
+        class LocalDLinear(DLinearModel):
+            pass
+
+        model = LocalDLinear(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            n_epochs=1,
+            **tfm_kwargs,
+        )
+        path = os.path.join(tmpdir_fn, "local_model.pt")
+        with pytest.raises(UnencodableObjectError, match="LocalDLinear"):
             model.save(path)
         assert not os.path.exists(path)
 

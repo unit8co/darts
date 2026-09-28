@@ -478,6 +478,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # the tensors have shape (chunk_length, nr_dimensions)
         model = self._create_model(self.train_sample)
         self._module_name = model.__class__.__name__
+        # The forecasting subclass may live in the user's module while the
+        # Lightning module class lives next to the base model. Store the class
+        # that `_create_model` actually returned.
+        self._module_path = model.__class__.__module__
 
         # we should determine the precision based on time series data type
         # however if user has defined a precision, we should follow that
@@ -2299,11 +2303,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for more information about the supported kwargs.
         weights_only
             Security-relevant option (CWE-502).
-            If ``True`` (default), the wrapper is loaded from the safe state-dict format and the
-            ``.ckpt`` is loaded with a load-scoped allow-list. Legacy pickle wrappers raise an
-            error asking you to re-save or pass ``weights_only=False``.
-            If ``False``, files are fully unpickled, which can execute arbitrary code. Only use
-            this with files you trust. Default: ``True``.
+            If ``True`` (default), the wrapper is loaded from the safe state-dict format and the ``.ckpt`` is loaded
+            with a load-scoped allow-list. Legacy pickle wrappers raise an error asking you to re-save or pass
+            ``weights_only=False``.
+            If ``False``, files are fully unpickled, which can execute arbitrary code. Only use this with files you
+            trust. Default: ``True``.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one on which it was saved.
@@ -2403,11 +2407,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             is ignored when ``file_name`` is given.
         weights_only
             Security-relevant option (CWE-502).
-            If ``True`` (default), the wrapper is loaded from the safe state-dict format and the
-            ``.ckpt`` is loaded with a load-scoped allow-list. Legacy pickle wrappers raise an
-            error asking you to re-save or pass ``weights_only=False``.
-            If ``False``, files are fully unpickled, which can execute arbitrary code. Only use
-            this with files you trust. Default: ``True``.
+            If ``True`` (default), the wrapper is loaded from the safe state-dict format and the ``.ckpt`` is loaded
+            with a load-scoped allow-list. Legacy pickle wrappers raise an error asking you to re-save or pass
+            ``weights_only=False``.
+            If ``False``, files are fully unpickled, which can execute arbitrary code. Only use this with files you
+            trust. Default: ``True``.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one from which it was saved.
@@ -2555,11 +2559,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             (not recommended). Cannot be used with `load_encoders=True`. Default: ``False``.
         weights_only
             Security-relevant option (CWE-502).
-            If ``True`` (default), the wrapper is loaded from the safe state-dict format and the
-            ``.ckpt`` is loaded with a load-scoped allow-list. Legacy pickle wrappers raise an
-            error asking you to re-save or pass ``weights_only=False``.
-            If ``False``, files are fully unpickled, which can execute arbitrary code. Only use
-            this with files you trust. Default: ``True``.
+            If ``True`` (default), the wrapper is loaded from the safe state-dict format and the ``.ckpt`` is loaded
+            with a load-scoped allow-list. Legacy pickle wrappers raise an error asking you to re-save or pass
+            ``weights_only=False``.
+            If ``False``, files are fully unpickled, which can execute arbitrary code. Only use this with files you
+            trust. Default: ``True``.
         **kwargs
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
@@ -2686,11 +2690,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             (not recommended). Cannot be used with `load_encoders=True`. Default: ``False``.
         weights_only
             Security-relevant option (CWE-502).
-            If ``True`` (default), the wrapper is loaded from the safe state-dict format and the
-            ``.ckpt`` is loaded with a load-scoped allow-list. Legacy pickle wrappers raise an
-            error asking you to re-save or pass ``weights_only=False``.
-            If ``False``, files are fully unpickled, which can execute arbitrary code. Only use
-            this with files you trust. Default: ``True``.
+            If ``True`` (default), the wrapper is loaded from the safe state-dict format and the ``.ckpt`` is loaded
+            with a load-scoped allow-list. Legacy pickle wrappers raise an error asking you to re-save or pass
+            ``weights_only=False``.
+            If ``False``, files are fully unpickled, which can execute arbitrary code. Only use this with files you
+            trust. Default: ``True``.
         **kwargs
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
