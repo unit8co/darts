@@ -110,14 +110,6 @@ class _TiRex2Module(PLForecastingModule):
         else:
             self._finetuning_likelihood = None
 
-    def _load_tirex2_model(self, device: torch.device) -> "TiRex2":
-        # The loader accepts "cuda", not "cuda:N". Select the correct GPU for
-        # its allocations, including when running one process per GPU.
-        context = torch.cuda.device(device) if device.type == "cuda" else nullcontext()
-        with context:
-            model = load_model(**self._tirex2_kwargs, device=device.type).model
-        return model.to(dtype=self.dtype)
-
     def configure_model(self) -> None:
         # Lightning also calls this hook during checkpoint loading without a
         # Trainer. Keep the CPU model until a Trainer supplies the execution device.
