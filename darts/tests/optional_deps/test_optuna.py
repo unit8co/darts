@@ -179,20 +179,13 @@ class TestOptuna:
         def objective(trial):
             target_lags = trial.suggest_int("lags", 1, 12)
 
-            model = LinearRegressionModel(
-                lags=target_lags,
-            )
+            model = LinearRegressionModel(lags=target_lags)
             assert model.model_params["lags"] == trial.params["lags"]
 
-            model.fit(
-                series=self.train,
-            )
+            model.fit(series=self.train)
 
-            preds = model.predict(series=self.train, n=self.val_length)
-            smapes = smape(self.val, preds)
-            smape_val = np.mean(smapes)
-
-            return smape_val if not np.isnan(smape_val) else float("inf")
+            preds = model.predict(n=self.val_length)
+            return smape(self.val, preds)
 
         study = optuna.create_study(direction="minimize")
         study.optimize(objective, n_trials=6, n_jobs=2)

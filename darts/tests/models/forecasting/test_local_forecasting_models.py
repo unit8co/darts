@@ -841,53 +841,35 @@ class TestModelCreationParams:
             model1 = future1.result()
             model2 = future2.result()
 
-        models = [model1, model2]
-        m1 = next(
-            m
-            for m in models
-            if getattr(m, "K", None) == 1 or m.model_params.get("K") == 1
-        )
-        m2 = next(
-            m
-            for m in models
-            if getattr(m, "K", None) == 2 or m.model_params.get("K") == 2
-        )
-
-        assert m1.model_params["K"] == 1
-        assert m1.K == 1
+        assert model1.model_params["K"] == 1
+        assert model1.K == 1
         barrier_enabled[0] = False
-        assert m1.untrained_model().model_params["K"] == 1
+        assert model1.untrained_model().model_params["K"] == 1
 
-        assert m2.model_params["K"] == 2
-        assert m2.K == 2
-        assert m2.untrained_model().model_params["K"] == 2
+        assert model2.model_params["K"] == 2
+        assert model2.K == 2
+        assert model2.untrained_model().model_params["K"] == 2
 
     def test_nested_model_creation_keeps_outer_params(self):
         class _Outer(NaiveSeasonal):
             def __init__(self, K: int = 1):
-                self.inner = NaiveDrift()
+                self.inner = NaiveSeasonal(K=2)
                 super().__init__(K=K)
 
         outer = _Outer(K=3)
         assert outer.model_params == {"K": 3}
-        assert outer.inner.model_params == {}
+        assert outer.inner.model_params == {"K": 2}
 
         ensemble = RegressionEnsembleModel(
-            [NaiveDrift(), NaiveSeasonal(K=2)], regression_train_n_points=10
+            [NaiveSeasonal(K=1), NaiveSeasonal(K=2)], regression_train_n_points=10
         )
         assert "forecasting_models" in ensemble.model_params
+        assert ensemble.model_params["regression_train_n_points"] == 10
+        assert ensemble.forecasting_models[0].model_params["K"] == 1
+        assert ensemble.forecasting_models[1].model_params["K"] == 2
         assert "lags" not in ensemble.model_params
 
     def test_failed_model_creation_does_not_leak_params(self):
-        # We handle this correctly after the fix, but wait, if we run it before the fix,
-        # it will fail because `_model_call_stack` is not imported yet.
-        # But this test is only supposed to pass *after* the fix, so we can mock or wait.
-        # Actually, let's just make sure it's valid.
-        try:
-            from darts.models.forecasting.forecasting_model import _model_call_stack
-        except ImportError:
-            _model_call_stack = lambda: []
-
         class _FailingModel(NaiveSeasonal):
             def __init__(self, K: int = 1):
                 raise ValueError("Fail")
@@ -897,4 +879,4 @@ class TestModelCreationParams:
 
         subsequent = NaiveSeasonal(K=5)
         assert subsequent.model_params == {"K": 5}
-        assert _model_call_stack() == []
+        assert subsequent.untrained_model().model_params == {"K": 5}
