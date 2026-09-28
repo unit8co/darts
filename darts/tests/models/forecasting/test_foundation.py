@@ -8,7 +8,12 @@ import numpy as np
 import pytest
 
 from darts import TimeSeries, concatenate
-from darts.tests.conftest import TIREX_AVAILABLE, TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.conftest import (
+    TIREX2_AVAILABLE,
+    TIREX_AVAILABLE,
+    TORCH_AVAILABLE,
+    tfm_kwargs,
+)
 from darts.utils.likelihood_models import QuantileRegression
 from darts.utils.timeseries_generation import linear_timeseries
 
@@ -23,6 +28,7 @@ from darts.models import (
     PatchTSTFMModel,
     TimesFM2p5Model,
     TimesFM3Model,
+    TiRex2Model,
     TiRexModel,
 )
 from darts.tests.models.forecasting.foundation_test_utils import (
@@ -35,8 +41,6 @@ from darts.tests.models.forecasting.foundation_test_utils import (
     mock_hf_hub_download,
     timesfm2p5_tiny_context,
 )
-
-# TODO: add TiRex2Model tests
 
 
 def generate_series(n_variables: int, length: int, prefix: str):
@@ -440,6 +444,17 @@ class TestFoundationModel:
                 )
             ]
             if TIREX_AVAILABLE
+            else []
+        )
+        + (
+            [
+                (
+                    TiRex2Model,
+                    "*output_patch_embedding.*",
+                    {"hub_model_name": "NX-AI/TiRex-2"},
+                )
+            ]
+            if TIREX2_AVAILABLE
             else []
         ),
     )

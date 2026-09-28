@@ -41,6 +41,7 @@ from darts.models.forecasting.foundation_model import FoundationModel
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.utils.data.torch_datasets.utils import (
     InputChunkLength,
+    ModuleStage,
     PLModuleInput,
     PLModuleOutput,
     TorchTrainingSample,
@@ -57,31 +58,17 @@ class _TiRex2Module(PLForecastingModule):
     def __init__(
         self, tirex2_kwargs: dict[str, Any], predict_kwargs: dict[str, Any], **kwargs
     ):
+        # for fine-tuning, model should be trained on pre-trained quantiles
+        self._enable_finetuning = kwargs.pop("enable_finetuning", False)
         super().__init__(**kwargs)
 
         self._tirex2_kwargs = tirex2_kwargs
         self._predict_kwargs = predict_kwargs
-        self._tirex2_device = None
 
-    def configure_model(self) -> None:
-        # TiRex-2 chooses its recurrent kernels at construction; moving its
-        # tensors later does not switch backends. Lightning knows the actual
-        # execution device here, before moving the model or restoring weights.
-        device = self.trainer.strategy.root_device
-        if device.type == self._tirex2_device:
-            return
-
-        # ForecastModel (tirex2) is not an nn.Module. Register its backbone
-        # directly so Lightning can move, freeze, and serialize its parameters.
-        # The loader accepts "cuda", not "cuda:N". Select the correct GPU for
-        # its allocations, including when running one process per GPU.
-        context = torch.cuda.device(device) if device.type == "cuda" else nullcontext()
-        with context:
-            self.tirex2: TiRex2 = load_model(
-                **self._tirex2_kwargs, device=device.type
-            ).model
+        # Always load the model on CPU first, then move to the actual device during
+        # configure_model(). This allows
+        self.tirex2: TiRex2 = load_model(**self._tirex2_kwargs, device="cpu").model
         self.tirex2.to(dtype=self.dtype)
-        self._tirex2_device = device.type
 
         # Validate against the checkpoint's maximum prediction length
         self._future_len = self.output_chunk_length + self.output_chunk_shift
@@ -110,6 +97,50 @@ class _TiRex2Module(PLForecastingModule):
             "_user_quantile_indices",
             torch.tensor([all_quantiles.index(q) for q in user_quantiles]),
         )
+        self.register_buffer(
+            "_finetuning_quantile_indices",
+            torch.tensor(list(range(len(all_quantiles)))),
+        )
+
+        # during fine-tuning, train on ALL pre-trained quantiles to preserve the
+        # full distribution; prediction uses only user-specified quantiles
+        if self._enable_finetuning:
+            self._finetuning_likelihood = QuantileRegression(all_quantiles)
+        else:
+            self._finetuning_likelihood = None
+
+    def _load_tirex2_model(self, device: torch.device) -> TiRex2:
+        # The loader accepts "cuda", not "cuda:N". Select the correct GPU for
+        # its allocations, including when running one process per GPU.
+        context = torch.cuda.device(device) if device.type == "cuda" else nullcontext()
+        with context:
+            model = load_model(**self._tirex2_kwargs, device=device.type).model
+        return model.to(dtype=self.dtype)
+
+    def configure_model(self) -> None:
+        # TiRex-2 chooses its recurrent kernels at construction; moving its
+        # tensors later does not switch backends. Lightning knows the actual
+        # execution device here, before moving the model or restoring weights.
+        device = self.trainer.strategy.root_device
+        if device.type != self.tirex2.device.type:
+            # The loader accepts "cuda", not "cuda:N". Select the correct GPU for
+            # its allocations, including when running one process per GPU.
+            context = (
+                torch.cuda.device(device) if device.type == "cuda" else nullcontext()
+            )
+            with context:
+                model: TiRex2 = load_model(
+                    **self._tirex2_kwargs, device=device.type
+                ).model
+            model.to(dtype=self.dtype)
+            model.load_state_dict(self.tirex2.state_dict())
+            model.train(self.tirex2.training)
+            for name, parameter in model.named_parameters():
+                parameter.requires_grad_(self.tirex2.get_parameter(name).requires_grad)
+            self.tirex2 = model
+
+        if self._enable_finetuning:
+            self.tirex2.train(self.training)
 
     def forward(self, x_in: PLModuleInput, *args, **kwargs) -> PLModuleOutput:
         # target: (B, L, C); past_covariates: (B, L, X);
@@ -151,17 +182,34 @@ class _TiRex2Module(PLForecastingModule):
         # Each sample remains a joint multivariate task, independent of other
         # samples in the batch. Native output: B tensors of shape
         # (C, Q, H + S), with all pretrained quantiles.
+        predict_kwargs = self._predict_kwargs
+        if x_in.stage is ModuleStage.TRAIN:
+            predict_kwargs = {**predict_kwargs, "preserve_grad": True}
         forecasts = self.tirex2._predict_once(
-            timeseries, prediction_length=self._future_len, **self._predict_kwargs
+            timeseries, prediction_length=self._future_len, **predict_kwargs
         )
-        # Stack and permute the forecasts: (B, H + S, C, Q)
+        # Stack and permute the forecasts: (B, S + H, C, Q)
         output = torch.stack(forecasts).permute(0, 3, 1, 2)
-        # Select the requested horizon and likelihood parameters: (B, H, C, N).
-        return PLModuleOutput(
-            prediction=output[:, S:]
-            .index_select(-1, self._user_quantile_indices)
-            .to(target)
-        )
+        # Select the requested horizon: (B, H, C, Q).
+        prediction = output[:, S:]
+
+        # during training (fine-tuning), output all pre-trained quantiles for loss;
+        # during prediction, output only user-specified quantiles
+        if x_in.stage is ModuleStage.TRAIN:
+            prediction = prediction.index_select(-1, self._finetuning_quantile_indices)
+        else:
+            prediction = prediction.index_select(-1, self._user_quantile_indices)
+
+        return PLModuleOutput(prediction=prediction)
+
+    def _compute_loss(self, output: PLModuleOutput, target, criterion, sample_weight):
+        if self.training:
+            # compute loss on pre-trained quantiles
+            return self._finetuning_likelihood.compute_loss(
+                output.prediction, target, sample_weight
+            )
+        else:
+            return super()._compute_loss(output, target, criterion, sample_weight)
 
 
 class TiRex2Model(FoundationModel):
@@ -203,8 +251,6 @@ class TiRex2Model(FoundationModel):
             TiRex-2 is licensed under the `Apache-2.0 License <https://github.com/NX-AI/tirex-2/blob/main/LICENSE>`_,
             copyright NXAI GmbH or its affiliates. By using this model, you agree to the terms and conditions of
             the license.
-        .. note::
-            Fine-tuning is not currently supported in this wrapper.
 
         Parameters
         ----------
@@ -375,8 +421,17 @@ class TiRex2Model(FoundationModel):
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
         enable_finetuning
-            Must be ``False`` or ``None``. Fine-tuning is not currently supported. Default: ``None``,
-            which disables fine-tuning for foundation models.
+            Enables model fine-tuning. Only effective if not ``None``.
+            If a bool, specifies whether to perform full fine-tuning / training (all parameters are updated) or keep
+            all parameters frozen. If a dict, specifies which parameters to fine-tune. Must only contain one key-value
+            record. Can be used to:
+
+            - Unfreeze specific parameters, while keeping everything else frozen:
+              ``{"unfreeze": ["param.name.patterns.*"]}``
+            - Freeze specific parameters, while keeping everything else unfrozen:
+              ``{"freeze": ["param.name.patterns.*"]}``
+
+            Default: ``None``.
 
         References
         ----------
@@ -426,10 +481,6 @@ class TiRex2Model(FoundationModel):
         1961-05-01          338.307678          463.061127          626.979980
         1961-06-01          333.445587          462.221680          630.935303
         """
-        # TODO: enable fine-tuning
-        if kwargs.get("enable_finetuning"):
-            raise_log(ValueError("TiRex2Model does not support fine-tuning."))
-
         # Validate likelihood argument
         if likelihood is not None:
             if not isinstance(likelihood, QuantileRegression):
