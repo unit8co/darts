@@ -220,7 +220,6 @@ class _TiRex2Module(PLForecastingModule):
 
 
 class TiRex2Model(FoundationModel):
-    # TODO: test full fine-tuning with enable_finetuning=True
     def __init__(
         self,
         input_chunk_length: InputChunkLength,
