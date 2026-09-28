@@ -81,6 +81,10 @@ from darts.utils.likelihood_models.torch import (
     QuantileRegression,
     TorchLikelihood,
 )
+from darts.utils.serialization.wrapper import (
+    LegacyModelFormatError,
+    UnencodableObjectError,
+)
 
 kwargs = {
     "input_chunk_length": 10,
@@ -1065,7 +1069,9 @@ class TestTorchForecastingModel:
         model.fit(self.series[:20])
         model.save(ckpt_path)
 
-        # default load must succeed for a legitimate save
+        # a legitimate save is a state dict and loads with no extra globals
+        payload = torch.load(ckpt_path, weights_only=True, map_location="cpu")
+        assert payload["darts_wrapper"] == 1
         reloaded = DLinearModel.load(ckpt_path)
         reloaded.predict(n=2, series=self.series[:20])
 
@@ -1077,17 +1083,82 @@ class TestTorchForecastingModel:
             def __reduce__(self):
                 return os.system, (f'echo pwned > "{marker_path}"',)
 
-        real_pt = torch.load(ckpt_path, weights_only=False)
-        real_pt._cwe502_payload = _MaliciousPayload()
-        torch.save(real_pt, ckpt_path)
+        torch.save({"payload": _MaliciousPayload()}, ckpt_path)
 
-        with pytest.raises(Exception):
+        with pytest.raises(LegacyModelFormatError):
             DLinearModel.load(ckpt_path)
         assert not os.path.exists(marker_path)
 
-        DLinearModel.load(ckpt_path, weights_only=False)
+        try:
+            DLinearModel.load(ckpt_path, weights_only=False)
+        except Exception:
+            pass
         assert os.path.exists(marker_path)
         os.remove(marker_path)
+
+    def test_legacy_wrapper_requires_weights_only_false(self, tmpdir_fn):
+        model = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            n_epochs=1,
+            **tfm_kwargs,
+        )
+        model.fit(self.series[:20])
+        path = os.path.join(tmpdir_fn, "legacy.pt")
+        model.save(path)
+        before = model.predict(n=2, series=self.series[:20])
+
+        # overwrite the wrapper with a pre-format object pickle; keep the .ckpt
+        torch.save(model, path)
+        with pytest.raises(LegacyModelFormatError, match="weights_only=False"):
+            DLinearModel.load(path)
+
+        loaded = DLinearModel.load(path, weights_only=False)
+        after = loaded.predict(n=2, series=self.series[:20])
+        np.testing.assert_allclose(before.values(), after.values(), atol=1e-6)
+
+    def test_save_load_keeps_early_stopping(self, tmpdir_fn):
+        stopper = pl.callbacks.EarlyStopping(
+            monitor="val_loss", patience=5, min_delta=0.05
+        )
+        model = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            n_epochs=1,
+            pl_trainer_kwargs={
+                **tfm_kwargs["pl_trainer_kwargs"],
+                "callbacks": [stopper],
+            },
+        )
+        model.fit(self.series[:20], val_series=self.series[:20])
+        path = os.path.join(tmpdir_fn, "early.pt")
+        model.save(path)
+        loaded = DLinearModel.load(path)
+        stoppers = [
+            cb
+            for cb in loaded.trainer_params["callbacks"]
+            if isinstance(cb, pl.callbacks.EarlyStopping)
+        ]
+        assert len(stoppers) == 1
+        assert stoppers[0].monitor == "val_loss"
+        assert stoppers[0].patience == 5
+        assert abs(stoppers[0].min_delta) == pytest.approx(0.05)
+
+    def test_save_rejects_custom_encoder_function(self, tmpdir_fn):
+        def encode_year(idx):
+            return (idx.year - 1950) / 50
+
+        model = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            n_epochs=1,
+            add_encoders={"custom": {"past": [encode_year]}},
+            **tfm_kwargs,
+        )
+        path = os.path.join(tmpdir_fn, "custom_fn.pt")
+        with pytest.raises(UnencodableObjectError, match="encode_year"):
+            model.save(path)
+        assert not os.path.exists(path)
 
     def test_load_weights_params_check(self, tmpdir_fn):
         """

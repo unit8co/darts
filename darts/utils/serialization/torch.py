@@ -2,13 +2,11 @@
 Torch Checkpoint Serialization
 ----------------------------
 
-Safe-by-default loading for PyTorch Lightning ``.ckpt`` files and Darts ``.pt`` wrapper files.
+Safe-by-default loading for PyTorch Lightning ``.ckpt`` files used by Darts torch models.
 """
 
-import enum
 import inspect
 from collections.abc import Callable
-from functools import partial
 from typing import Any
 
 import torch
@@ -16,21 +14,26 @@ from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
 
 from darts.logging import get_logger
 from darts.utils.serialization.base import (
-    CHECKPOINT_TRUSTED_PREFIXES,
-    WRAPPER_SAFE_FUNCTIONS,
-    LoadScope,
+    TrustedPrefixPolicy,
     all_imported_subclasses,
     dedupe_by_identity,
-    format_unpickling_error,
-    is_allowed_global,
-    is_blocked_global,
     resolve_reference,
 )
 
 logger = get_logger(__name__)
 
-# Backward-compatible alias for callers/tests that import this name directly.
-TRUSTED_PREFIXES = CHECKPOINT_TRUSTED_PREFIXES
+# Trusted package prefixes used by the checkpoint-driven allow-list below. A global
+# referenced by a checkpoint is only auto-allow-listed for a ``weights_only=True`` load if it
+# is a CLASS (never a function/callable) that lives under one of these packages AND subclasses
+# one of the known-safe bases. This lets a legitimate Darts ``.ckpt`` load without
+# pre-registering all of torch/torchmetrics at import time, while still refusing arbitrary,
+# attacker-chosen globals.
+TRUSTED_PREFIXES: TrustedPrefixPolicy = (
+    "torch.",
+    "torchmetrics.",
+    "darts.",
+    "neuralforecast.",
+)
 
 # ``torchmetrics`` metrics store references to a few of their own tensor-reduction / distributed
 # helper *functions* in their pickled state (e.g. ``dim_zero_sum``), so a ``weights_only=True``
@@ -82,7 +85,7 @@ def likelihood_safe_globals() -> list:
     in a checkpoint's ``hyper_parameters`` are listed. These are plain ``type`` objects (never
     callables), so allow-listing them does not re-open the code-execution surface that
     ``weights_only=True`` closes. Everything else a legitimate checkpoint needs is added on
-    demand, per file, by :func:`safe_globals_for_torch_file` -- we deliberately do NOT
+    demand, per file, by :func:`safe_globals_for_checkpoint` -- we deliberately do NOT
     mass-scan/allow-list all of ``torch``/``torchmetrics`` at import time.
     """
     out: list = []
@@ -97,9 +100,28 @@ def likelihood_safe_globals() -> list:
     return out
 
 
-def _checkpoint_safe_bases() -> tuple[type, ...]:
-    """Known-safe base classes for Lightning ``.ckpt`` deserialization."""
+def safe_globals_for_checkpoint(path) -> list:
+    """Inspect ``path`` and return the subset of its referenced globals that are safe to
+    allow-list for a ``weights_only=True`` load.
+
+    Uses ``torch.serialization.get_unsafe_globals_in_checkpoint`` (torch >= 2.6) to see which
+    globals the specific file needs, then keeps only those that:
+
+    - Are a class; never a function/callable, which PyTorch may *call* during unpickling
+    - Live under a trusted package (torch/torchmetrics/darts/neuralforecast)
+    - Subclass a known-safe base (``nn.Module``, ``Optimizer``, an LR scheduler, a ``torchmetrics``
+      metric/collection, or a Darts likelihood), OR is one of the exact, audited ``torchmetrics`` reduction functions
+      in :data:`TORCHMETRICS_SAFE_FUNCTIONS` (metrics pickle references to these).
+
+    Anything else is left blocked so the load fails loudly instead of silently trusting an attacker-chosen global.
+    Best-effort: returns ``[]`` on torch versions without the inspection API, or on any error.
+    """
+    unsafe_globals = torch.serialization.get_unsafe_globals_in_checkpoint(path)
+    if not unsafe_globals:
+        return []
+
     bases: list = []
+    # torch safe globals
     try:
         from torch.nn.modules.module import Module as _Mod
         from torch.optim import Optimizer as _Opt
@@ -110,6 +132,7 @@ def _checkpoint_safe_bases() -> tuple[type, ...]:
     except Exception as e:  # pragma: no cover - defensive only
         logger.debug(f"Could not collect PyTorch safe globals: {e}")
 
+    # torchmetrics safe globals
     try:
         import torchmetrics
 
@@ -117,157 +140,30 @@ def _checkpoint_safe_bases() -> tuple[type, ...]:
     except Exception as e:  # pragma: no cover - defensive only
         logger.debug(f"Could not collect TorchMetrics safe globals: {e}")
 
+    # Darts likelihood safe globals
     bases += likelihood_safe_globals()
-    return tuple(b for b in bases if inspect.isclass(b))
 
-
-def wrapper_safe_bases() -> tuple[type, ...]:
-    """Known-safe base classes for Darts ``.pt`` wrapper deserialization."""
-    bases: list = list(_checkpoint_safe_bases())
-
-    try:
-        from darts import TimeSeries
-        from darts.dataprocessing.encoders.encoder_base import Encoder, SingleEncoder
-        from darts.dataprocessing.encoders.encoders import SequentialEncoder
-        from darts.dataprocessing.transformers.base_data_transformer import (
-            BaseDataTransformer,
-        )
-        from darts.dataprocessing.transformers.fittable_data_transformer import (
-            FittableDataTransformer,
-        )
-        from darts.dataprocessing.transformers.invertible_data_transformer import (
-            InvertibleDataTransformer,
-        )
-        from darts.models.forecasting.forecasting_model import (
-            ForecastingModel,
-            GlobalForecastingModel,
-        )
-        from darts.models.forecasting.torch_forecasting_model import (
-            TorchForecastingModel,
-        )
-        from darts.utils.data.torch_datasets.utils import (
-            TorchInferenceSample,
-            TorchSample,
-            TorchTrainingSample,
-        )
-
-        bases += [
-            ForecastingModel,
-            GlobalForecastingModel,
-            TorchForecastingModel,
-            *all_imported_subclasses(TorchForecastingModel),
-            TimeSeries,
-            Encoder,
-            SingleEncoder,
-            SequentialEncoder,
-            *all_imported_subclasses(Encoder),
-            BaseDataTransformer,
-            FittableDataTransformer,
-            InvertibleDataTransformer,
-            *all_imported_subclasses(BaseDataTransformer),
-            TorchSample,
-            TorchTrainingSample,
-            TorchInferenceSample,
-        ]
-    except Exception as e:  # pragma: no cover - defensive only
-        logger.debug(f"Could not collect Darts wrapper safe globals: {e}")
-
-    try:
-        from pytorch_lightning.callbacks import Callback
-
-        bases += [Callback, *all_imported_subclasses(Callback)]
-    except Exception as e:  # pragma: no cover - defensive only
-        logger.debug(f"Could not collect PyTorch Lightning callback safe globals: {e}")
-
-    return tuple(b for b in bases if inspect.isclass(b))
-
-
-def _safe_bases_for_scope(scope: LoadScope) -> tuple[type, ...]:
-    if scope == "wrapper":
-        return wrapper_safe_bases()
-    return _checkpoint_safe_bases()
-
-
-def wrapper_seed_globals() -> list:
-    """Return wrapper-scope globals not always reported by the torch inspection API.
-
-    Nested numpy/pandas/sklearn objects inside a ``.pt`` file can reference dtype classes,
-    ``enum.Enum``, or random-state types that ``get_unsafe_globals_in_checkpoint`` omits.
-    These are seeded for every wrapper load so legitimate Darts saves succeed without
-    requiring full unpickling.
-    """
-    out: list = [enum.Enum]
-    try:
-        import numpy.dtypes as _dtypes
-        import numpy.random.mtrand as _mtrand
-
-        out += [
-            getattr(_dtypes, name)
-            for name in dir(_dtypes)
-            if name.endswith("DType") and not name.startswith("_")
-        ]
-        out.append(_mtrand.RandomState)
-    except Exception as e:  # pragma: no cover - defensive only
-        logger.debug(f"Could not collect wrapper seed globals: {e}")
-
-    try:
-        from lightning_fabric.utilities.data import AttributeDict
-
-        out.append(AttributeDict)
-    except Exception as e:  # pragma: no cover - defensive only
-        logger.debug(f"Could not collect Lightning Fabric seed globals: {e}")
-
-    return out
-
-
-def safe_globals_for_torch_file(path, *, scope: LoadScope = "checkpoint") -> list:
-    """Inspect ``path`` and return referenced globals safe to allow-list for ``scope``.
-
-    Uses ``torch.serialization.get_unsafe_globals_in_checkpoint`` (torch >= 2.6) to see which
-    globals the specific file needs, then keeps only those that pass :func:`is_allowed_global`.
-
-    Anything else is left blocked so the load fails loudly instead of silently trusting an
-    attacker-chosen global. Best-effort: returns ``[]`` when the file has no unsafe globals.
-    """
-    unsafe_globals = torch.serialization.get_unsafe_globals_in_checkpoint(path)
-    if not unsafe_globals:
-        return []
-
-    safe_bases = _safe_bases_for_scope(scope)
-    checkpoint_safe_functions = TORCHMETRICS_SAFE_FUNCTIONS
-    wrapper_safe_functions = WRAPPER_SAFE_FUNCTIONS if scope == "wrapper" else None
-
+    safe_bases = tuple(b for b in bases if inspect.isclass(b))
     resolved: list = []
-    blocked: list[str] = []
     for name in unsafe_globals:
         if not isinstance(name, str):
             continue
 
-        if is_blocked_global(name):
-            raise UnpicklingError(format_unpickling_error(name, path, scope=scope))
+        # (a) exact, audited torchmetrics reduction *functions* the metrics store in their state
+        if name in TORCHMETRICS_SAFE_FUNCTIONS:
+            obj = resolve_reference(name)
+            if callable(obj):
+                resolved.append(obj)
+            continue
+
+        # (b) classes under a trusted package that subclass a known-safe base
+        if not name.startswith(TRUSTED_PREFIXES):
+            continue
 
         obj = resolve_reference(name)
-        if is_allowed_global(
-            name,
-            obj,
-            scope=scope,
-            safe_bases=safe_bases,
-            checkpoint_safe_functions=checkpoint_safe_functions,
-            wrapper_safe_functions=wrapper_safe_functions,
-        ):
+        if inspect.isclass(obj) and (not safe_bases or issubclass(obj, safe_bases)):
             resolved.append(obj)
-        else:
-            blocked.append(name)
-
-    if blocked:
-        raise UnpicklingError(format_unpickling_error(blocked[0], path, scope=scope))
-
     return resolved
-
-
-def safe_globals_for_checkpoint(path) -> list:
-    """Backward-compatible alias for :func:`safe_globals_for_torch_file` with checkpoint scope."""
-    return safe_globals_for_torch_file(path, scope="checkpoint")
 
 
 def load_torch_safely(
@@ -275,34 +171,24 @@ def load_torch_safely(
     path,
     *,
     extra_globals: list | None = None,
-    scope: LoadScope = "checkpoint",
     weights_only: bool | None = True,
     **kwargs,
 ):
     """Run ``load_fn`` (a ``weights_only=True`` ``torch.load``-backed call) inside a *scoped*
-    ``torch.serialization.safe_globals`` context seeded with the checkpoint-driven safe subset
-    for ``path``.
+    ``torch.serialization.safe_globals`` context seeded with Darts' minimal allow-list plus the
+    checkpoint-driven safe subset for ``path``.
 
     Scoped (a context manager around this one load) rather than a process-wide, import-time
     ``add_safe_globals`` registration: it only affects this call and auto-reverts, and nothing
-    extra is imported/registered unless a file is actually loaded.
+    extra is imported/registered unless a checkpoint is actually loaded. On torch < 2.6 (no
+    ``safe_globals``) it just calls ``load_fn`` directly.
     """
     weights_only = True if weights_only is None else weights_only
     if not weights_only:
         return load_fn(path, weights_only=weights_only, **kwargs)
 
-    seed_globals = wrapper_seed_globals() if scope == "wrapper" else []
     allow = dedupe_by_identity(
-        (extra_globals or [])
-        + seed_globals
-        + safe_globals_for_torch_file(path, scope=scope)
+        (extra_globals or []) + safe_globals_for_checkpoint(path)
     )
     with torch.serialization.safe_globals(allow):
         return load_fn(path, weights_only=weights_only, **kwargs)
-
-
-load_torch_wrapper_safely = partial(load_torch_safely, scope="wrapper")
-
-
-class UnpicklingError(RuntimeError):
-    """Raised when a global referenced by a serialized file is not allow-listed."""
