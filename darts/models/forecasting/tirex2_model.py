@@ -214,6 +214,7 @@ class _TiRex2Module(PLForecastingModule):
 
 
 class TiRex2Model(FoundationModel):
+    # TODO: test full fine-tuning with enable_finetuning=True
     def __init__(
         self,
         input_chunk_length: InputChunkLength,
@@ -237,8 +238,7 @@ class TiRex2Model(FoundationModel):
         - A permissive Apache 2.0 license, which allows commercial use.
 
         This wraps the pretrained xLSTM model from Podest et al. (2026) [1]_ using the `tirex-2
-        <https://pypi.org/project/tirex-2/>`_ package (Python 3.11 or newer). Please install it alongside
-        ``darts[torch]``.
+        <https://pypi.org/project/tirex-2/>`_ package. Please install it alongside ``darts[torch]``.
 
         TiRex-2 jointly forecasts all target components and supports past and future covariates. The default
         forecast is the median; pass :class:`~darts.utils.likelihood_models.torch.QuantileRegression` to
@@ -252,6 +252,15 @@ class TiRex2Model(FoundationModel):
             TiRex-2 is licensed under the `Apache-2.0 License <https://github.com/NX-AI/tirex-2/blob/main/LICENSE>`_,
             copyright NXAI GmbH or its affiliates. By using this model, you agree to the terms and conditions of
             the license.
+
+        .. note::
+            TiRex-2 supports partial fine-tuning of the output head. To enable it, select the layers to unfreeze with
+            ``enable_finetuning={"unfreeze": ["*.output_patch_embedding.*"]}``.
+
+            Full fine-tuning (``enable_finetuning=True``) is **not supported** because backpropagation through
+            the early sLSTM blocks produces NaN gradients. See the `Fine-Tuning Examples
+            <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__
+            notebook for more details.
 
         Parameters
         ----------
