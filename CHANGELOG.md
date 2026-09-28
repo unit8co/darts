@@ -13,6 +13,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed two error messages that showed raw placeholders: `generate_index()` printed `Observed parameters: {constructors}` instead of the parameters it received, and the fallback in `darts.utils.likelihood_models.sklearn` printed `{likelihood}`. [#3211](https://github.com/unit8co/darts/pull/3211) by [Yanze (David) Wu](https://github.com/David-Wu1119).
+
 **Dependencies**
 
 ### For developers of the library:
