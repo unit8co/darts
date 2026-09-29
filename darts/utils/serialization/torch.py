@@ -5,17 +5,19 @@ Torch Checkpoint Serialization
 Safe-by-default loading for PyTorch Lightning ``.ckpt`` files and Darts ``.pt`` wrapper
 files used by ``TorchForecastingModel``.
 
-Two scopes share the same :func:`~darts.utils.serialization.base.is_allowed_global` filter:
+Two loading strategies, both guarded by the same
+:func:`~darts.utils.serialization.base.is_allowed_global` filter:
 
-* **checkpoint** — Lightning ``.ckpt`` checkpoints (modules, optimizers, metrics).
-  Uses ``torch.serialization.get_unsafe_globals_in_checkpoint`` to discover referenced
-  globals, then filters them.
-* **wrapper** — Darts ``.pt`` model wrapper files (the full ``TorchForecastingModel``
-  object graph including encoders, transformers, sklearn estimators, etc.).
-  Same discovery + filter approach, with a broader set of known-safe base classes.
+* **checkpoint** (``.ckpt``) — Uses ``torch.load(weights_only=True)`` with a *scoped*
+  ``safe_globals`` context seeded from the file's own referenced globals.
+* **wrapper** (``.pt``) — Uses ``torch.load(weights_only=False,
+  pickle_module=<restricted>)`` so that every ``find_class`` call flows through
+  :class:`~darts.utils.serialization.base.RestrictedUnpickler`.  This avoids the
+  ``SETITEMS`` limitation of ``weights_only=True`` (which cannot reconstruct
+  ``AttributeDict`` and other dict subclasses used by Lightning callbacks) while
+  still blocking arbitrary-code-execution (CWE-502).
 """
 
-import enum
 import inspect
 from collections.abc import Callable
 from typing import Any, Literal
@@ -26,6 +28,7 @@ from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
 from darts.logging import get_logger
 from darts.utils.serialization.base import (
     SAFE_PICKLE_FUNCTIONS,
+    RestrictedUnpickler,
     UnpicklingError,
     all_imported_subclasses,
     dedupe_by_identity,
@@ -33,12 +36,11 @@ from darts.utils.serialization.base import (
     is_allowed_global,
     is_blocked_global,
     resolve_reference,
-    safe_base_classes,
 )
 
 logger = get_logger(__name__)
 
-LoadScope = Literal["checkpoint", "wrapper"]
+LoadScope = Literal["checkpoint"]
 
 # ``torchmetrics`` metrics store references to a few of their own tensor-reduction /
 # distributed helper *functions* in their pickled state (e.g. ``dim_zero_sum``), so a
@@ -65,14 +67,14 @@ class DartsCheckpointIO(TorchCheckpointIO):
 
     PyTorch >= 2.6 changed ``torch.load`` to default to ``weights_only=True`` as a
     mitigation against CWE-502 (arbitrary code execution when unpickling an untrusted
-    checkpoint).  Darts ``.ckpt`` files contain a few non-tensor objects (likelihoods,
-    optimizer / scheduler classes, hparams, …); the classes required to deserialize a
+    checkpoint). Darts ``.ckpt`` files contain a few non-tensor objects (likelihoods,
+    optimizer / scheduler classes, hparams, ...); the classes required to deserialize a
     *legitimate* Darts checkpoint under ``weights_only=True`` are allow-listed **at load
     time** and scoped to the load itself (see :func:`load_torch_safely`), not registered
     process-wide at import.
 
     By injecting this plugin into the Trainer, internal checkpoint-loading paths that go
-    through the CheckpointIO plugin inherit the safe default.  Callers that trust a
+    through the CheckpointIO plugin inherit the safe default. Callers that trust a
     checkpoint and need full unpickling can still pass ``weights_only=False`` explicitly.
     """
 
@@ -80,7 +82,6 @@ class DartsCheckpointIO(TorchCheckpointIO):
         return load_torch_safely(
             load_fn=super().load_checkpoint,
             path=path,
-            scope="checkpoint",
             weights_only=weights_only,
             map_location=map_location,
             **kwargs,
@@ -132,62 +133,10 @@ def _checkpoint_safe_bases() -> tuple[type, ...]:
     return tuple(b for b in bases if inspect.isclass(b))
 
 
-def _wrapper_safe_bases() -> tuple[type, ...]:
-    """Known-safe base classes for Darts ``.pt`` wrapper deserialization.
-
-    Extends the checkpoint bases with the full Darts / sklearn / Lightning class
-    hierarchy.  Uses :func:`safe_base_classes` from ``base.py``, which already
-    collects sklearn ``BaseEstimator``, Darts ``Encoder`` / ``BaseDataTransformer``,
-    Lightning ``Callback``, etc.
-    """
-    return safe_base_classes()
-
-
-def _safe_bases_for_scope(scope: LoadScope) -> tuple[type, ...]:
-    """Return the appropriate safe-base tuple for ``scope``."""
-    if scope == "wrapper":
-        return _wrapper_safe_bases()
-    return _checkpoint_safe_bases()
-
-
-# ---------------------------------------------------------------------------
-# Seed globals (types the inspection API may miss)
-# ---------------------------------------------------------------------------
-def _wrapper_seed_globals() -> list:
-    """Globals not always reported by ``get_unsafe_globals_in_checkpoint``.
-
-    Nested numpy / pandas / sklearn objects inside a ``.pt`` file can reference
-    dtype classes, ``enum.Enum``, or random-state types that the inspection API
-    omits.  Seeded for every wrapper load so legitimate Darts saves succeed.
-    """
-    out: list = [enum.Enum]
-    try:
-        import numpy.dtypes as _dtypes
-        import numpy.random.mtrand as _mtrand
-
-        out += [
-            getattr(_dtypes, name)
-            for name in dir(_dtypes)
-            if name.endswith("DType") and not name.startswith("_")
-        ]
-        out.append(_mtrand.RandomState)
-    except Exception as e:  # pragma: no cover - defensive only
-        logger.debug(f"Could not collect wrapper seed globals: {e}")
-
-    try:
-        from lightning_fabric.utilities.data import AttributeDict
-
-        out.append(AttributeDict)
-    except Exception as e:  # pragma: no cover - defensive only
-        logger.debug(f"Could not collect Lightning Fabric seed globals: {e}")
-
-    return out
-
-
 # ---------------------------------------------------------------------------
 # File-inspection-driven safe globals (per scope)
 # ---------------------------------------------------------------------------
-def safe_globals_for_torch_file(path, *, scope: LoadScope = "checkpoint") -> list:
+def safe_globals_for_torch_file(path) -> list:
     """Inspect ``path`` and return referenced globals safe to allow-list for ``scope``.
 
     Uses ``torch.serialization.get_unsafe_globals_in_checkpoint`` (torch >= 2.6) to
@@ -202,7 +151,7 @@ def safe_globals_for_torch_file(path, *, scope: LoadScope = "checkpoint") -> lis
     if not unsafe_globals:
         return []
 
-    safe_bases = _safe_bases_for_scope(scope)
+    safe_bases = _checkpoint_safe_bases()
     extra_safe_callables = _ALL_SAFE_CALLABLES
 
     resolved: list = []
@@ -231,11 +180,6 @@ def safe_globals_for_torch_file(path, *, scope: LoadScope = "checkpoint") -> lis
     return resolved
 
 
-def safe_globals_for_checkpoint(path) -> list:
-    """Backward-compatible alias: checkpoint scope."""
-    return safe_globals_for_torch_file(path, scope="checkpoint")
-
-
 # ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
@@ -244,29 +188,26 @@ def load_torch_safely(
     path,
     *,
     extra_globals: list | None = None,
-    scope: LoadScope = "checkpoint",
     weights_only: bool | None = True,
     **kwargs,
 ):
     """Run ``load_fn`` inside a *scoped* ``torch.serialization.safe_globals`` context
     seeded with the checkpoint-driven safe subset for ``path``.
 
-    Scoped (a context manager around this one load) rather than a process-wide,
-    import-time ``add_safe_globals`` registration: it only affects this call and
-    auto-reverts, and nothing extra is imported / registered unless a file is
-    actually loaded.
+    This function is used for Lightning ``.ckpt`` files (checkpoint scope) which
+    contain actual tensor storages and benefit from ``torch.load``'s
+    ``weights_only=True`` mode.
+
+    For Darts ``.pt`` wrapper files use :func:`load_wrapper_safely` instead.
 
     Parameters
     ----------
     load_fn
         A ``torch.load``-backed callable.
     path
-        Filesystem path to the ``.pt`` or ``.ckpt`` file.
+        Filesystem path to the ``.ckpt`` file.
     extra_globals
         Additional globals to allow-list for this load only.
-    scope
-        ``"checkpoint"`` for Lightning ``.ckpt`` files; ``"wrapper"`` for Darts
-        ``.pt`` model wrapper files.
     weights_only
         Security-relevant flag forwarded to ``load_fn``.  ``True`` by default.
     **kwargs
@@ -276,11 +217,61 @@ def load_torch_safely(
     if not weights_only:
         return load_fn(path, weights_only=weights_only, **kwargs)
 
-    seed_globals = _wrapper_seed_globals() if scope == "wrapper" else []
     allow = dedupe_by_identity(
-        (extra_globals or [])
-        + seed_globals
-        + safe_globals_for_torch_file(path, scope=scope)
+        (extra_globals or []) + safe_globals_for_torch_file(path)
     )
     with torch.serialization.safe_globals(allow):
         return load_fn(path, weights_only=weights_only, **kwargs)
+
+
+# ---------------------------------------------------------------------------
+# Wrapper (.pt) loading via pickle_module=RestrictedUnpickler
+# ---------------------------------------------------------------------------
+
+
+class _RestrictedPickleModule:
+    """Module-like object injected as ``pickle_module`` into ``torch.load``.
+
+    ``torch.load(weights_only=False, pickle_module=...)`` expects the module to
+    expose an ``Unpickler`` class.  Its internal ``UnpicklerWrapper`` subclasses
+    that class and delegates ``find_class`` via ``super()``, so every global in
+    the pickle stream passes through our :class:`RestrictedUnpickler` filter.
+    """
+
+    Unpickler = RestrictedUnpickler
+
+
+def load_wrapper_safely(
+    path,
+    *,
+    trusted: bool = False,
+    **kwargs,
+):
+    """Load a Darts ``.pt`` wrapper file with CWE-502 protection.
+
+    Uses ``torch.load(weights_only=False, pickle_module=<restricted>)`` so that
+    every ``find_class`` call flows through
+    :class:`~darts.utils.serialization.base.RestrictedUnpickler`.  This avoids
+    the ``SETITEMS`` limitation of ``weights_only=True`` (which cannot
+    reconstruct ``AttributeDict`` and other dict subclasses used internally by
+    Lightning callbacks) while still blocking arbitrary-code-execution.
+
+    Parameters
+    ----------
+    path
+        Filesystem path to the ``.pt`` wrapper file.
+    trusted
+        If ``True``, loads with unrestricted ``pickle`` (no ``find_class``
+        filtering).  Only use for files from trusted sources.
+    **kwargs
+        Passed through to ``torch.load`` (e.g. ``map_location``).
+    """
+    if trusted:
+        return torch.load(path, weights_only=False, **kwargs)
+
+    return torch.load(
+        path,
+        weights_only=False,
+        pickle_module=_RestrictedPickleModule,
+        **kwargs,
+    )

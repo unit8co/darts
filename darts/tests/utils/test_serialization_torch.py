@@ -20,7 +20,7 @@ from darts.utils.serialization.torch import (
     DartsCheckpointIO,
     likelihood_safe_globals,
     load_torch_safely,
-    safe_globals_for_checkpoint,
+    safe_globals_for_torch_file,
 )
 
 
@@ -54,13 +54,13 @@ class TestDartsSafeGlobals:
 class TestSafeGlobalsForCheckpoint:
     def test_missing_file_raises(self):
         with pytest.raises(FileNotFoundError):
-            assert safe_globals_for_checkpoint("/nonexistent/path.ckpt") == []
+            assert safe_globals_for_torch_file("/nonexistent/path.ckpt") == []
 
     def test_allow_lists_referenced_darts_likelihood(self, tmp_path):
         ckpt_path = tmp_path / "likelihood.ckpt"
         torch.save({"likelihood": GaussianLikelihood()}, ckpt_path)
 
-        resolved = safe_globals_for_checkpoint(ckpt_path)
+        resolved = safe_globals_for_torch_file(ckpt_path)
         assert GaussianLikelihood in resolved
 
     def test_rejects_untrusted_global(self, tmp_path):
@@ -68,7 +68,7 @@ class TestSafeGlobalsForCheckpoint:
         torch.save({"payload": _UntrustedCheckpointClass()}, ckpt_path)
 
         with pytest.raises(UnpicklingError):
-            safe_globals_for_checkpoint(ckpt_path)
+            safe_globals_for_torch_file(ckpt_path)
 
 
 class TestLoadCkptSafely:

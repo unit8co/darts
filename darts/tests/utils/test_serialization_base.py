@@ -13,7 +13,6 @@ from darts.utils.serialization.base import (
     is_blocked_global,
     restricted_pickle_load,
     safe_base_classes,
-    sanitize_for_wrapper_save,
 )
 
 
@@ -67,21 +66,6 @@ class TestIsAllowedGlobal:
 
     def test_rejects_none_obj(self, bases):
         assert not is_allowed_global("numpy.float64", None, safe_bases=bases)
-
-
-class TestSanitizeForWrapperSave:
-    def test_plain_dict_unchanged(self):
-        d = {"a": 1, "b": [2, 3]}
-        assert sanitize_for_wrapper_save(d) == d
-
-    def test_nested_dict(self):
-        d = {"outer": {"inner": 42}}
-        assert sanitize_for_wrapper_save(d) == {"outer": {"inner": 42}}
-
-    def test_tuple_and_list(self):
-        data = ([1, 2], (3, 4))
-        result = sanitize_for_wrapper_save(data)
-        assert result == ([1, 2], (3, 4))
 
 
 class TestRestrictedUnpickler:

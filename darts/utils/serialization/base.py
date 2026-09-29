@@ -141,8 +141,6 @@ EXACT_ALLOWED_CLASSES: frozenset[str] = frozenset({
     "types.SimpleNamespace",
     # sklearn helper
     "sklearn.utils._random.MTRandState",
-    # lightning
-    "lightning_fabric.utilities.data.AttributeDict",
 })
 
 # Pickle reconstruction helpers referenced by numpy/pandas/pyarrow in serialized
@@ -171,7 +169,7 @@ SAFE_PICKLE_FUNCTIONS: frozenset[str] = frozenset({
 # Allowlist: trusted package prefixes + class hierarchy
 # ---------------------------------------------------------------------------
 # A class under one of these prefixes is allowed if it subclasses a known-safe
-# base (see :func:`safe_base_classes`).  This is NOT a blanket trust — the
+# base (see :func:`safe_base_classes`). This is NOT a blanket trust — the
 # class must pass the hierarchy check.
 TRUSTED_PREFIXES: TrustedPrefixPolicy = (
     "torch.",
@@ -201,12 +199,16 @@ _SAFE_PACKAGE_PREFIXES: tuple[str, ...] = (
     "numpy.",
     "pandas.",
     "pyarrow.",
+    "torch.",
+    "torchmetrics.",
     "lightning.",
     "lightning_fabric.",
     "pytorch_lightning.",
     "statsmodels.",
     "statsforecast.",
+    "neuralforecast.",
     "scipy.",
+    "fsspec.",
 )
 
 
@@ -407,32 +409,6 @@ def format_unpickling_error(qualname: str, path: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# State sanitisation
-# ---------------------------------------------------------------------------
-def sanitize_for_wrapper_save(value: Any) -> Any:
-    """Return a ``weights_only``-friendly copy of ``value`` for wrapper (``.pt``) saves.
-
-    Converts Lightning ``AttributeDict`` instances (and other mapping types that
-    break PyTorch's ``weights_only`` unpickler) into plain ``dict`` objects
-    recursively.
-    """
-    if isinstance(value, dict):
-        return {k: sanitize_for_wrapper_save(v) for k, v in value.items()}
-
-    if isinstance(value, list):
-        return [sanitize_for_wrapper_save(v) for v in value]
-
-    if isinstance(value, tuple):
-        return tuple(sanitize_for_wrapper_save(v) for v in value)
-
-    type_name = type(value).__name__
-    if type_name == "AttributeDict" and hasattr(value, "items"):
-        return {k: sanitize_for_wrapper_save(v) for k, v in value.items()}
-
-    return value
-
-
-# ---------------------------------------------------------------------------
 # Restricted Unpickler (for non-torch .pkl files)
 # ---------------------------------------------------------------------------
 class RestrictedUnpickler(pickle.Unpickler):
@@ -456,6 +432,11 @@ class RestrictedUnpickler(pickle.Unpickler):
         self._extra_allowed = extra_allowed
 
     def find_class(self, module: str, name: str):
+        # Normalize Python-2-era module name emitted by torch.save's pickle
+        # protocol so that lookups hit the ``builtins.*`` entries in our
+        # allowlists.
+        if module == "__builtin__":
+            module = "builtins"
         qualname = f"{module}.{name}"
 
         if is_blocked_global(qualname):

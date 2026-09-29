@@ -1116,12 +1116,7 @@ class TestTorchForecastingModel:
         np.testing.assert_allclose(before.values(), after.values(), atol=1e-6)
 
     def test_safe_load_with_early_stopping(self, tmpdir_fn):
-        """Verify that a model with EarlyStopping can be saved/loaded safely.
-
-        Callbacks embed Lightning-internal state (AttributeDict) that cannot
-        survive ``weights_only=True`` loading, so they are stripped at save
-        time.  The loaded model can still be used for inference.
-        """
+        """Verify callbacks survive the safe save/load roundtrip."""
         stopper = pl.callbacks.EarlyStopping(
             monitor="val_loss", patience=5, min_delta=0.05
         )
@@ -1139,8 +1134,17 @@ class TestTorchForecastingModel:
         path = os.path.join(tmpdir_fn, "early.pt")
         model.save(path)
         loaded = DLinearModel.load(path)
-        # Callbacks are stripped from the saved state; model still works
-        assert "callbacks" not in loaded.trainer_params
+        # Callbacks are preserved across save/load
+        stoppers = [
+            cb
+            for cb in loaded.trainer_params["callbacks"]
+            if isinstance(cb, pl.callbacks.EarlyStopping)
+        ]
+        assert len(stoppers) == 1
+        assert stoppers[0].monitor == "val_loss"
+        assert stoppers[0].patience == 5
+        assert abs(stoppers[0].min_delta) == pytest.approx(0.05)
+        # Predictions are identical
         after = loaded.predict(n=2, series=self.series[:20])
         np.testing.assert_allclose(before.values(), after.values(), atol=1e-6)
 
