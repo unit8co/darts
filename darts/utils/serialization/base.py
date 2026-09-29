@@ -20,6 +20,7 @@ import enum
 import importlib
 import inspect
 import pickle
+from collections import OrderedDict
 from collections.abc import Sequence
 from typing import Any, TypeVar
 
@@ -139,6 +140,9 @@ EXACT_ALLOWED_CLASSES: frozenset[str] = frozenset({
     "builtins.range",
     "builtins.slice",
     "types.SimpleNamespace",
+    "pathlib.PosixPath",
+    "pathlib.WindowsPath",
+    "pathlib.Path",
     # sklearn helper
     "sklearn.utils._random.MTRandState",
 })
@@ -163,6 +167,7 @@ SAFE_PICKLE_FUNCTIONS: frozenset[str] = frozenset({
     "builtins.getattr",
     "copyreg._reconstructor",
     "_codecs.encode",
+    "darts.logging.execute_and_suppress_output",
 })
 
 # ---------------------------------------------------------------------------
@@ -187,6 +192,14 @@ TRUSTED_PREFIXES: TrustedPrefixPolicy = (
     "statsmodels.",
     "statsforecast.",
     "scipy.",
+    "lightgbm.",
+    "xgboost.",
+    "catboost.",
+    "prophet.",
+    "cmdstanpy.",
+    "stanio.",
+    "nfoursid.",
+    "pathlib.",
 )
 
 # Packages whose internal classes and callables are considered safe for
@@ -209,6 +222,16 @@ _SAFE_PACKAGE_PREFIXES: tuple[str, ...] = (
     "neuralforecast.",
     "scipy.",
     "fsspec.",
+    # Trained estimators and their internal C-extension nodes (no code-exec surface).
+    "sklearn.",
+    "lightgbm.",
+    "xgboost.",
+    "catboost.",
+    "prophet.",
+    "cmdstanpy.",
+    "stanio.",
+    "nfoursid.",
+    "pathlib.",
 )
 
 
@@ -260,7 +283,7 @@ def safe_base_classes() -> tuple[type, ...]:
     deserialization.  Covers the Darts ecosystem: models, encoders,
     transformers, sklearn estimators, PyTorch modules, Lightning callbacks, etc.
     """
-    bases: list[type] = []
+    bases: list[type] = [OrderedDict]
 
     # sklearn
     try:
@@ -330,10 +353,26 @@ def safe_base_classes() -> tuple[type, ...]:
 
     # Darts likelihoods
     try:
-        from darts.utils.likelihood_models.base import LikelihoodType
+        from darts.utils.likelihood_models.base import Likelihood, LikelihoodType
         from darts.utils.likelihood_models.torch import TorchLikelihood
 
-        bases += [TorchLikelihood, LikelihoodType]
+        bases += [Likelihood, TorchLikelihood, LikelihoodType]
+    except Exception:  # pragma: no cover
+        pass
+
+    # Darts filtering (e.g. KalmanForecaster pickles an internal KalmanFilter)
+    try:
+        from darts.models.filtering.filtering_model import FilteringModel
+
+        bases.append(FilteringModel)
+    except Exception:  # pragma: no cover
+        pass
+
+    # Foundation-model connectors and other Darts components referenced in .pt wrappers
+    try:
+        from darts.models.components.huggingface_connector import HuggingFaceConnector
+
+        bases.append(HuggingFaceConnector)
     except Exception:  # pragma: no cover
         pass
 
@@ -375,14 +414,15 @@ def is_allowed_global(
     if not qualname.startswith(TRUSTED_PREFIXES):
         return False
 
-    if obj is None:
-        return False
-
     # Safe infrastructure packages (data + training framework) contain only
     # data containers, reconstruction helpers, and framework internals — no
-    # code-execution primitives.  Trust all classes and callables.
+    # code-execution primitives.  Trust by qualname even when ``resolve_reference``
+    # failed (class may not be imported yet; pickle will import via ``find_class``).
     if qualname.startswith(_SAFE_PACKAGE_PREFIXES):
         return True
+
+    if obj is None:
+        return False
 
     if inspect.isclass(obj):
         if safe_bases and issubclass(obj, safe_bases):
