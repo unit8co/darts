@@ -2657,17 +2657,18 @@ class TimeSeries:
             raise_log(ValueError("n should be a positive integer."))
         self._raise_if_not_within(start_ts)
 
-        if isinstance(start_ts, int | np.int64):
-            return self[pd.RangeIndex(start=start_ts, stop=start_ts + n)]
-        elif isinstance(start_ts, pd.Timestamp):
+        if isinstance(start_ts, int | np.int64) and self._has_datetime_index:
+            # integers are positional indices for datetime-indexed series
+            point_index = start_ts
+        elif isinstance(start_ts, int | np.int64 | pd.Timestamp):
             # get first timestamp greater or equal to start_ts
             tss = self._get_first_timestamp_after(start_ts)
             point_index = self.get_index_at_point(tss)
-            return self[point_index : point_index + n]
         else:
             raise_log(
                 ValueError("start_ts must be an int or a pandas Timestamp."),
             )
+        return self[point_index : point_index + n]
 
     def slice_n_points_before(self, end_ts: pd.Timestamp | int, n: int) -> Self:
         """Return a slice of the series ending at `end_ts` (inclusive) and having at most `n` points.
@@ -2688,17 +2689,18 @@ class TimeSeries:
             raise_log(ValueError("n should be a positive integer."))
         self._raise_if_not_within(end_ts)
 
-        if isinstance(end_ts, int | np.int64):
-            return self[pd.RangeIndex(start=end_ts - n + 1, stop=end_ts + 1)]
-        elif isinstance(end_ts, pd.Timestamp):
-            # get last timestamp smaller or equal to start_ts
+        if isinstance(end_ts, int | np.int64) and self._has_datetime_index:
+            # integers are positional indices for datetime-indexed series
+            point_index = end_ts
+        elif isinstance(end_ts, int | np.int64 | pd.Timestamp):
+            # get last timestamp smaller or equal to end_ts
             tss = self._get_last_timestamp_before(end_ts)
             point_index = self.get_index_at_point(tss)
-            return self[max(0, point_index - n + 1) : point_index + 1]
         else:
             raise_log(
                 ValueError("start_ts must be an int or a pandas Timestamp."),
             )
+        return self[max(0, point_index - n + 1) : point_index + 1]
 
     def slice_intersect(self, other: Self) -> Self:
         """Return a slice of the series where the time index was intersected with the `other` series.
