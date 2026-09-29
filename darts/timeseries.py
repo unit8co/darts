@@ -2866,36 +2866,29 @@ class TimeSeries:
         gaps = stripped_series.gaps(mode=mode)
         if gaps.empty:
             return stripped_series
-        relevant_gaps = gaps[gaps["gap_size"] > max_gap_size]
+        relevant_gaps = gaps[gaps["gap_size"] > max_gap_size].to_dict(orient="list")
+
+        # add a dummy gap after the end of the series to be end-inclusive
+        final_gap_time = stripped_series.end_time() + self._freq
+        relevant_gaps["gap_start"].append(final_gap_time)
+        relevant_gaps["gap_end"].append(final_gap_time)
 
         curr_slice_start = stripped_series.start_time()
-        max_size = pd.Timedelta(days=0) if self._has_datetime_index else 0
-        max_slice_start = None
-        max_slice_end = None
-        for index, row in relevant_gaps.iterrows():
+        max_size = 0
+        max_slice_start = curr_slice_start
+        for gap_start, gap_end in zip(
+            relevant_gaps["gap_start"], relevant_gaps["gap_end"]
+        ):
             # evaluate size of the current slice. the slice ends one time step before row['gap_start']
-            curr_slice_end = row["gap_start"] - self.freq
-            size = curr_slice_end - curr_slice_start
-            if max_slice_start is None or size > max_size:
+            size = n_steps_between(gap_start, curr_slice_start, self.freq)
+            if size > max_size:
                 max_size = size
                 max_slice_start = curr_slice_start
-                max_slice_end = row["gap_start"] - self._freq
-            curr_slice_start = row["gap_end"] + self._freq
+            curr_slice_start = gap_end + self._freq
 
-        if (
-            max_slice_start is None
-            or stripped_series.end_time() - curr_slice_start > max_size
-        ):
-            max_slice_start = curr_slice_start
-            max_slice_end = stripped_series.end_time()
-
-        # slice by position (inclusive end), as integer slices of integer-indexed
-        # series are positional rather than label-based
-        return stripped_series[
-            stripped_series.get_index_at_point(
-                max_slice_start
-            ) : stripped_series.get_index_at_point(max_slice_end) + 1
-        ]
+        # slice by position, since integer slices are always positional
+        start_pos = stripped_series.get_index_at_point(max_slice_start)
+        return stripped_series[start_pos : start_pos + max_size]
 
     def rescale_with_value(self, value_at_first_step: float) -> Self:
         """Return a new series, which is a multiple of this series such that the first value is `value_at_first_step`.

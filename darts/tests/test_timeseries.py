@@ -2113,6 +2113,7 @@ class TestTimeSeries:
             pd.RangeIndex(9),
             pd.RangeIndex(10, 28, 2),
             pd.date_range("20130101", periods=9, freq="D"),
+            pd.date_range("20130101", periods=9, freq="2D"),
         ],
     )
     def test_longest_contiguous_slice_index_types(self, times):
