@@ -27,6 +27,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed `r2_score` returning `NaN` for a perfect forecast and `-inf` otherwise when the `actual_series` is constant. It now follows the `zero_division` convention of the other metrics, returning the best score `1.0` for a perfect forecast, `NaN` when the forecast is wrong, and raising under `zero_division="raise"`. [#3225](https://github.com/unit8co/darts/pull/3225) by [Miral Amin](https://github.com/aminmiral).
+
 - Fixed concurrent forecasting model creation (e.g. Optuna with `n_jobs>1`) raising `AttributeError: _model_call` or assigning another model's hyperparameters. [#3217](https://github.com/unit8co/darts/pull/3217) by [Ankit Dhandharia](https://github.com/ankitdhandharia).
 - Fixed dataset downloads failing with a misleading MD5 hash-check error when the source URI returned an HTTP error (e.g. 404); non-2xx responses are now reported as a `DatasetLoadingException` with the HTTP status and reason. [#3201](https://github.com/unit8co/darts/pull/3201) by [webzuweb](https://github.com/webzuweb).
 - Fixed autoregressive `TorchForecastingModel.predict()` with `roll_size < output_chunk_length` and future covariates, where the first step passed too few future covariate values to the model. [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader).
