@@ -1259,6 +1259,25 @@ class TestBacktesting:
             NaiveSeasonal.gridsearch(show_warnings=False, **kwargs)
         assert "hyperparameter combinations" not in caplog.text
 
+    def test_gridsearch_default_reduction_ignores_nan_windows(self):
+        # intermittent series: `NaiveSeasonal(K=1)` forecasts a non-zero value for the zero actuals,
+        # so the default `mape` is NaN for some (but not all) windows
+        series = TimeSeries.from_values(np.tile([5.0, 0.0, 3.0, 4.0], 15))
+        kwargs = {
+            "parameters": {"K": [1]},
+            "series": series,
+            "forecast_horizon": 1,
+            "start": 20,
+        }
+        # default `reduction=np.nanmean` scores the combination on its valid windows
+        _, best_params, score = NaiveSeasonal.gridsearch(**kwargs)
+        assert best_params == {"K": 1}
+        assert np.isfinite(score) and score > 0
+
+        # `reduction=np.mean` propagates the NaN windows, and no combination has a valid score
+        with pytest.raises(ValueError, match="resulted in a NaN `metric` score"):
+            NaiveSeasonal.gridsearch(reduction=np.mean, **kwargs)
+
     def test_gridsearch_all_nan_scores_raises(self):
         series = lt(length=50)
         with pytest.raises(ValueError, match="resulted in a NaN `metric` score"):

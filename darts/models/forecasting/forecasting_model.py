@@ -1671,7 +1671,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         val_series: TimeSeries | None = None,
         use_fitted_values: bool = False,
         metric: Callable[[TimeSeries, TimeSeries], METRIC_OUTPUT_TYPE] = metrics.mape,
-        reduction: Callable[[np.ndarray], float] = np.mean,
+        reduction: Callable[[np.ndarray], float] = np.nanmean,
         verbose=False,
         n_jobs: int = 1,
         n_random_samples: int | float | None = None,
@@ -1786,7 +1786,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             `TimeSeries` and returns the error
         reduction
             A reduction function (mapping array to float) describing how to aggregate the errors obtained
-            on the different validation series when backtesting. By default it'll compute the mean of errors.
+            on the different validation series when backtesting. By default it'll compute the mean of errors, ignoring
+            NaN values.
         verbose
             Whether to print the progress.
         n_jobs
