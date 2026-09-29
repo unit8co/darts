@@ -62,6 +62,7 @@ from darts.utils.likelihood_models.base import (
     quantile_interval_names,
     quantile_names,
 )
+from darts.utils.serialization.base import restricted_pickle_load
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,
@@ -2761,14 +2762,32 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
 
     @staticmethod
-    def load(path: str | os.PathLike | BinaryIO) -> "ForecastingModel":
+    def load(
+        path: str | os.PathLike | BinaryIO,
+        trusted: bool = False,
+        trusted_classes: list[type] | None = None,
+    ) -> "ForecastingModel":
         """
         Loads a model from a given path or file handle.
+
+        .. warning::
+            SECURITY: Only load model files from trusted sources.  A malicious file
+            can execute arbitrary code while being deserialized (CWE-502).  By default,
+            deserialization is restricted to an allow-list of known-safe classes (Darts,
+            sklearn, numpy, pandas, etc.).  Pass ``trusted=True`` only for files you
+            fully trust, or use ``trusted_classes`` to allow specific additional classes.
 
         Parameters
         ----------
         path
             Path or file handle from which to load the model.
+        trusted
+            If ``True``, falls back to unrestricted ``pickle.load``, which can execute
+            arbitrary code.  Only use for files from trusted sources.  Default: ``False``.
+        trusted_classes
+            Optional list of additional classes to allow during restricted loading.
+            Each class must be importable by its module path.  Ignored when
+            ``trusted=True``.
         """
 
         if isinstance(path, str | os.PathLike):
@@ -2776,9 +2795,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 raise_log(ValueError(f"The file {path} doesn't exist."))
 
             with open(path, "rb") as handle:
-                model = pickle.load(file=handle)
+                model = restricted_pickle_load(
+                    handle,
+                    trusted=trusted,
+                    trusted_classes=trusted_classes,
+                )
         elif isinstance(path, io.BufferedReader):
-            model = pickle.load(file=path)
+            model = restricted_pickle_load(
+                path,
+                trusted=trusted,
+                trusted_classes=trusted_classes,
+            )
         else:
             raise_log(
                 ValueError(

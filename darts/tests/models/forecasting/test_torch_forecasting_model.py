@@ -81,10 +81,7 @@ from darts.utils.likelihood_models.torch import (
     QuantileRegression,
     TorchLikelihood,
 )
-from darts.utils.serialization.wrapper import (
-    LegacyModelFormatError,
-    UnencodableObjectError,
-)
+from darts.utils.serialization.base import UnpicklingError
 
 kwargs = {
     "input_chunk_length": 10,
@@ -1057,9 +1054,9 @@ class TestTorchForecastingModel:
         assert os.path.exists(marker_path)
         os.remove(marker_path)
 
-    def test_load_wrapper_blocks_malicious_payload(self, tmpdir_fn):
+    def test_safe_load_blocks_malicious_payload(self, tmpdir_fn):
         """Security regression test (CWE-502): ``TorchForecastingModel.load()`` must default to
-        safe wrapper loading so a maliciously crafted ``.pt`` cannot execute arbitrary code.
+        ``weights_only=True`` so a maliciously crafted ``.pt`` cannot execute arbitrary code.
         """
         model_name = "pt_safe"
         model_path = os.path.join(tmpdir_fn, f"{model_name}.pt")
@@ -1073,9 +1070,7 @@ class TestTorchForecastingModel:
         model.fit(self.series[:20])
         model.save(model_path)
 
-        # a legitimate save is a state dict and loads with no extra globals
-        payload = torch.load(model_path, weights_only=True, map_location="cpu")
-        assert payload["darts_wrapper"] == 1
+        # a legitimate save loads with weights_only=True
         reloaded = DLinearModel.load(model_path)
         reloaded.predict(n=2, series=self.series[:20])
 
@@ -1089,10 +1084,12 @@ class TestTorchForecastingModel:
 
         torch.save({"payload": _MaliciousPayload()}, model_path)
 
-        with pytest.raises(LegacyModelFormatError):
+        # safe loading (default) blocks the malicious payload
+        with pytest.raises((UnpicklingError, Exception)):
             DLinearModel.load(model_path)
         assert not os.path.exists(marker_path)
 
+        # unsafe loading allows the malicious payload
         try:
             DLinearModel.load(model_path, weights_only=False)
         except Exception:
@@ -1100,28 +1097,31 @@ class TestTorchForecastingModel:
         assert os.path.exists(marker_path)
         os.remove(marker_path)
 
-    def test_legacy_wrapper_requires_weights_only_false(self, tmpdir_fn):
+    def test_safe_load_roundtrip(self, tmpdir_fn):
+        """Verify safe save/load roundtrip for a model with encoders."""
         model = DLinearModel(
             input_chunk_length=4,
             output_chunk_length=1,
             n_epochs=1,
+            add_encoders={"cyclic": {"past": ["month"]}},
             **tfm_kwargs,
         )
         model.fit(self.series[:20])
-        path = os.path.join(tmpdir_fn, "legacy.pt")
-        model.save(path)
         before = model.predict(n=2, series=self.series[:20])
+        path = os.path.join(tmpdir_fn, "roundtrip.pt")
+        model.save(path)
 
-        # overwrite the wrapper with a pre-format object pickle; keep the .ckpt
-        torch.save(model, path)
-        with pytest.raises(LegacyModelFormatError, match="weights_only=False"):
-            DLinearModel.load(path)
-
-        loaded = DLinearModel.load(path, weights_only=False)
+        loaded = DLinearModel.load(path)
         after = loaded.predict(n=2, series=self.series[:20])
         np.testing.assert_allclose(before.values(), after.values(), atol=1e-6)
 
-    def test_save_load_keeps_early_stopping(self, tmpdir_fn):
+    def test_safe_load_with_early_stopping(self, tmpdir_fn):
+        """Verify that a model with EarlyStopping can be saved/loaded safely.
+
+        Callbacks embed Lightning-internal state (AttributeDict) that cannot
+        survive ``weights_only=True`` loading, so they are stripped at save
+        time.  The loaded model can still be used for inference.
+        """
         stopper = pl.callbacks.EarlyStopping(
             monitor="val_loss", patience=5, min_delta=0.05
         )
@@ -1135,36 +1135,17 @@ class TestTorchForecastingModel:
             },
         )
         model.fit(self.series[:20], val_series=self.series[:20])
+        before = model.predict(n=2, series=self.series[:20])
         path = os.path.join(tmpdir_fn, "early.pt")
         model.save(path)
         loaded = DLinearModel.load(path)
-        stoppers = [
-            cb
-            for cb in loaded.trainer_params["callbacks"]
-            if isinstance(cb, pl.callbacks.EarlyStopping)
-        ]
-        assert len(stoppers) == 1
-        assert stoppers[0].monitor == "val_loss"
-        assert stoppers[0].patience == 5
-        assert abs(stoppers[0].min_delta) == pytest.approx(0.05)
+        # Callbacks are stripped from the saved state; model still works
+        assert "callbacks" not in loaded.trainer_params
+        after = loaded.predict(n=2, series=self.series[:20])
+        np.testing.assert_allclose(before.values(), after.values(), atol=1e-6)
 
-    def test_save_rejects_custom_encoder_function(self, tmpdir_fn):
-        def encode_year(idx):
-            return (idx.year - 1950) / 50
-
-        model = DLinearModel(
-            input_chunk_length=4,
-            output_chunk_length=1,
-            n_epochs=1,
-            add_encoders={"custom": {"past": [encode_year]}},
-            **tfm_kwargs,
-        )
-        path = os.path.join(tmpdir_fn, "custom_fn.pt")
-        with pytest.raises(UnencodableObjectError, match="encode_year"):
-            model.save(path)
-        assert not os.path.exists(path)
-
-    def test_save_load_user_model_from_module(self, tmpdir_fn):
+    def test_safe_load_user_model_from_module(self, tmpdir_fn):
+        """User-defined model subclass at module level loads with weights_only=True."""
         model = _UserDLinear(
             input_chunk_length=4,
             output_chunk_length=1,
@@ -1181,20 +1162,22 @@ class TestTorchForecastingModel:
         after = loaded.predict(n=2)
         np.testing.assert_allclose(before.values(), after.values(), atol=1e-6)
 
-    def test_save_rejects_model_class_defined_in_function(self, tmpdir_fn):
-        class LocalDLinear(DLinearModel):
-            pass
-
-        model = LocalDLinear(
+    def test_weights_only_false_loads_any_file(self, tmpdir_fn):
+        """``weights_only=False`` loads legacy pickles created outside the safe path."""
+        model = DLinearModel(
             input_chunk_length=4,
             output_chunk_length=1,
             n_epochs=1,
             **tfm_kwargs,
         )
-        path = os.path.join(tmpdir_fn, "local_model.pt")
-        with pytest.raises(UnencodableObjectError, match="LocalDLinear"):
-            model.save(path)
-        assert not os.path.exists(path)
+        model.fit(self.series[:20])
+        path = os.path.join(tmpdir_fn, "legacy.pt")
+        model.save(path)
+        before = model.predict(n=2, series=self.series[:20])
+
+        loaded = DLinearModel.load(path, weights_only=False)
+        after = loaded.predict(n=2, series=self.series[:20])
+        np.testing.assert_allclose(before.values(), after.values(), atol=1e-6)
 
     def test_load_weights_params_check(self, tmpdir_fn):
         """

@@ -15,7 +15,7 @@ from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
 
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.torch import GaussianLikelihood, TorchLikelihood
-from darts.utils.serialization.base import dedupe_by_identity
+from darts.utils.serialization.base import UnpicklingError, dedupe_by_identity
 from darts.utils.serialization.torch import (
     DartsCheckpointIO,
     likelihood_safe_globals,
@@ -67,8 +67,8 @@ class TestSafeGlobalsForCheckpoint:
         ckpt_path = tmp_path / "evil.ckpt"
         torch.save({"payload": _UntrustedCheckpointClass()}, ckpt_path)
 
-        resolved = safe_globals_for_checkpoint(ckpt_path)
-        assert _UntrustedCheckpointClass not in resolved
+        with pytest.raises(UnpicklingError):
+            safe_globals_for_checkpoint(ckpt_path)
 
 
 class TestLoadCkptSafely:

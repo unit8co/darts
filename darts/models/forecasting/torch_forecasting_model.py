@@ -71,8 +71,8 @@ from darts.utils.historical_forecasts.optimized_historical_forecasts_torch impor
     _optimized_historical_forecasts,
 )
 from darts.utils.likelihood_models.torch import TorchLikelihood
+from darts.utils.serialization.base import sanitize_for_wrapper_save
 from darts.utils.serialization.torch import DartsCheckpointIO, load_torch_safely
-from darts.utils.serialization.wrapper import load_torch_wrapper, save_torch_wrapper
 from darts.utils.timeseries_generation import _build_forecast_series_from_schema
 from darts.utils.torch import random_method
 from darts.utils.ts_utils import (
@@ -2221,7 +2221,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             path = self._default_save_path() + ".pt"
 
         # save the TorchForecastingModel (does not save the PyTorch LightningModule, and Trainer)
-        save_torch_wrapper(self if not clean else self._clean(), path)
+        with open(path, "wb") as f_out:
+            torch.save(self if not clean else self._clean(), f_out)
 
         # save the LightningModule checkpoint (weights only with `clean=True`)
         path_ptl_ckpt = path + ".ckpt"
@@ -2253,12 +2254,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         .. warning::
             SECURITY: Only load ``.pt``/``.ckpt`` files from trusted sources. A malicious
-            file can execute arbitrary code while being deserialized (CWE-502). New saves
-            store the ``.pt`` wrapper as data and rebuild the model in Darts
-            (see :func:`~darts.utils.serialization.wrapper.load_torch_wrapper`). The
-            ``.ckpt`` companion is loaded with ``weights_only=True`` and a load-scoped
-            allow-list. Wrappers saved by older Darts versions are legacy pickles: pass
-            ``weights_only=False`` only if you trust the file.
+            file can execute arbitrary code while being deserialized (CWE-502). By default,
+            both the ``.pt`` wrapper and the ``.ckpt`` companion are loaded with
+            ``weights_only=True``, restricting deserialization to a load-scoped allow-list
+            (see :func:`~darts.utils.serialization.torch.load_torch_safely`). Pass
+            ``weights_only=False`` only for files you fully trust (e.g. models with custom
+            encoders or callbacks not covered by the allow-list).
 
         Example for loading a general save from :class:`RNNModel`:
 
@@ -2302,12 +2303,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__
             for more information about the supported kwargs.
         weights_only
-            Security-relevant option (CWE-502).
-            If ``True`` (default), the wrapper is loaded from the safe state-dict format and the ``.ckpt`` is loaded
-            with a load-scoped allow-list. Legacy pickle wrappers raise an error asking you to re-save or pass
-            ``weights_only=False``.
-            If ``False``, files are fully unpickled, which can execute arbitrary code. Only use this with files you
-            trust. Default: ``True``.
+            Security-relevant option (CWE-502) controlling how the ``.pt`` wrapper and ``.ckpt``
+            companion are deserialized.
+            If ``True`` (default), both files are loaded with a load-scoped allow-list of
+            Darts/torch classes (see :func:`~darts.utils.serialization.torch.load_torch_safely`),
+            which blocks arbitrary-code execution from maliciously crafted files.
+            If ``False``, files are fully unpickled, which can execute arbitrary code — only use
+            this with files from trusted sources (e.g. models with custom classes not covered by
+            the allow-list). Default: ``True``.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one on which it was saved.
@@ -2315,8 +2318,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             common/lightning_module.html#load-from-checkpoint>`__.
         """
         # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule)
-        model: TorchForecastingModel = load_torch_wrapper(
-            path,
+        model: TorchForecastingModel = load_torch_safely(
+            load_fn=torch.load,
+            path=path,
+            scope="wrapper",
             weights_only=weights_only,
             map_location=kwargs.get("map_location", None),
         )
@@ -2359,10 +2364,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         .. warning::
             SECURITY: Only load checkpoint files from trusted sources. A malicious file can execute arbitrary
-            code while being deserialized (CWE-502). The Darts base model wrapper is loaded from the safe
-            state-dict format, and the Lightning ``.ckpt`` is loaded with ``weights_only=True`` and a
-            load-scoped allow-list. Legacy pickle wrappers need ``weights_only=False``, which can execute
-            code contained in the file.
+            code while being deserialized (CWE-502). By default, both the Lightning ``.ckpt`` and the Darts
+            base model wrapper (``_model.pth.tar``) are loaded with ``weights_only=True``, restricting
+            deserialization to a load-scoped allow-list (see
+            :func:`~darts.utils.serialization.torch.load_torch_safely`). Pass ``weights_only=False`` only
+            for files you fully trust.
 
         If you manually saved your model, consider using :meth:`load() <TorchForecastingModel.load()>`.
 
@@ -2406,12 +2412,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             If set, will retrieve the best model (according to validation loss) instead of the most recent one. Only
             is ignored when ``file_name`` is given.
         weights_only
-            Security-relevant option (CWE-502).
-            If ``True`` (default), the wrapper is loaded from the safe state-dict format and the ``.ckpt`` is loaded
-            with a load-scoped allow-list. Legacy pickle wrappers raise an error asking you to re-save or pass
-            ``weights_only=False``.
-            If ``False``, files are fully unpickled, which can execute arbitrary code. Only use this with files you
-            trust. Default: ``True``.
+            Security-relevant option (CWE-502) controlling how the Lightning ``.ckpt`` and Darts base
+            model wrapper are deserialized.
+            If ``True`` (default), both files are loaded with a load-scoped allow-list of Darts/torch
+            classes (see :func:`~darts.utils.serialization.torch.load_torch_safely`), which blocks
+            arbitrary-code execution from maliciously crafted files.
+            If ``False``, files are fully unpickled, which can execute arbitrary code — only use this with
+            checkpoints from trusted sources (e.g. when loading a checkpoint with custom classes that are
+            not covered by the allow-list). Default: ``True``.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one from which it was saved.
@@ -2439,8 +2447,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     f"Could not find base model save file `{INIT_MODEL_NAME}` in {model_dir}."
                 ),
             )
-        model: TorchForecastingModel = load_torch_wrapper(
-            base_model_path,
+        model: TorchForecastingModel = load_torch_safely(
+            load_fn=torch.load,
+            path=base_model_path,
+            scope="wrapper",
             weights_only=weights_only,
             map_location=kwargs.get("map_location"),
         )
@@ -2520,10 +2530,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         .. warning::
             SECURITY: Only load checkpoint files from trusted sources. A malicious file can execute arbitrary
-            code while being deserialized (CWE-502). By default, the Darts wrapper is loaded from the safe
-            state-dict format and the Lightning ``.ckpt`` is loaded with ``weights_only=True``. Pass
-            ``weights_only=False`` only for files you fully trust. When ``skip_checks=True``, the base model
-            wrapper is not loaded.
+            code while being deserialized (CWE-502). By default, both the Lightning ``.ckpt`` and the Darts
+            base model wrapper used for encoders / sanity checks are loaded with ``weights_only=True``
+            (restricting deserialization to a load-scoped allow-list). Pass ``weights_only=False`` only for
+            files you fully trust. When ``skip_checks=True``, the base model wrapper is not loaded.
 
         To resume an interrupted training, please consider using :meth:`load_from_checkpoint()
         <TorchForecastingModel.load_from_checkpoint()>` which also reload the trainer, optimizer and
@@ -2558,12 +2568,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             If set, will disable the loading of the encoders and the sanity checks on model parameters
             (not recommended). Cannot be used with `load_encoders=True`. Default: ``False``.
         weights_only
-            Security-relevant option (CWE-502).
-            If ``True`` (default), the wrapper is loaded from the safe state-dict format and the ``.ckpt`` is loaded
-            with a load-scoped allow-list. Legacy pickle wrappers raise an error asking you to re-save or pass
-            ``weights_only=False``.
-            If ``False``, files are fully unpickled, which can execute arbitrary code. Only use this with files you
-            trust. Default: ``True``.
+            Security-relevant option (CWE-502) controlling how the Lightning ``.ckpt`` and Darts base
+            model wrapper are deserialized.
+            If ``True`` (default), both files are loaded with a load-scoped allow-list of Darts/torch
+            classes (see :func:`~darts.utils.serialization.torch.load_torch_safely`), which blocks
+            arbitrary-code execution from maliciously crafted files.
+            If ``False``, files are fully unpickled, which can execute arbitrary code — only use this with
+            checkpoints from trusted sources. Default: ``True``.
         **kwargs
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
@@ -2608,6 +2619,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ckpt = load_torch_safely(
             load_fn=torch.load,
             path=ckpt_path,
+            scope="checkpoint",
             weights_only=weights_only,
             **kwargs,
         )
@@ -2630,8 +2642,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 )
 
             # updating model attributes before self._init_model() which create new tfm ckpt.
-            tfm_save: TorchForecastingModel = load_torch_wrapper(
-                tfm_save_file_path,
+            tfm_save: TorchForecastingModel = load_torch_safely(
+                load_fn=torch.load,
+                path=tfm_save_file_path,
+                scope="wrapper",
                 weights_only=weights_only,
                 map_location=kwargs.get("map_location", None),
             )
@@ -2672,10 +2686,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         .. warning::
             SECURITY: Only load model files from trusted sources. A malicious file can execute arbitrary code
-            while being deserialized (CWE-502). By default, the ``.pt`` wrapper is loaded from the safe
-            state-dict format and the Lightning ``.ckpt`` is loaded with ``weights_only=True``.
-            Pass ``weights_only=False`` only for files you fully trust. When ``skip_checks=True``, the
-            ``.pt`` wrapper is not loaded.
+            while being deserialized (CWE-502). By default, both the ``.pt`` and the Lightning ``.ckpt``
+            are loaded with ``weights_only=True``. Pass ``weights_only=False`` only for files you fully
+            trust. When ``skip_checks=True``, the ``.pt`` wrapper is not loaded.
 
         Parameters
         ----------
@@ -2689,12 +2702,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             If set, will disable the loading of the encoders and the sanity checks on model parameters
             (not recommended). Cannot be used with `load_encoders=True`. Default: ``False``.
         weights_only
-            Security-relevant option (CWE-502).
-            If ``True`` (default), the wrapper is loaded from the safe state-dict format and the ``.ckpt`` is loaded
-            with a load-scoped allow-list. Legacy pickle wrappers raise an error asking you to re-save or pass
-            ``weights_only=False``.
-            If ``False``, files are fully unpickled, which can execute arbitrary code. Only use this with files you
-            trust. Default: ``True``.
+            Security-relevant option (CWE-502) controlling how the Lightning ``.ckpt`` and Darts ``.pt``
+            wrapper are deserialized.
+            If ``True`` (default), both files are loaded with a load-scoped allow-list of Darts/torch
+            classes (see :func:`~darts.utils.serialization.torch.load_torch_safely`), which blocks
+            arbitrary-code execution from maliciously crafted files.
+            If ``False``, files are fully unpickled, which can execute arbitrary code — only use this with
+            checkpoints from trusted sources. Default: ``True``.
         **kwargs
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
@@ -3053,6 +3067,32 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def __getstate__(self):
         # do not pickle the PyTorch LightningModule, and Trainer
+        state = {k: v for k, v in self.__dict__.items() if k not in TFM_ATTRS_NO_PICKLE}
+        # Sanitize the entire state: convert Lightning's AttributeDict → plain
+        # dict recursively.  AttributeDict is a dict subclass that torch's
+        # ``weights_only=True`` unpickler cannot reconstruct (SETITEMS only
+        # works for dict/OrderedDict/Counter).
+        state = sanitize_for_wrapper_save(state)
+        # Strip callback instances from trainer_params and _model_params.
+        # Callbacks embed Lightning-internal state (AttributeDict, state
+        # machines, …) that cannot survive ``weights_only=True`` loading.
+        # They are re-created from the user's original kwargs when ``fit()``
+        # is called again; they are not needed for inference.
+        if "trainer_params" in state and isinstance(state["trainer_params"], dict):
+            state["trainer_params"] = {
+                k: v for k, v in state["trainer_params"].items() if k != "callbacks"
+            }
+        if "_model_params" in state and isinstance(state["_model_params"], dict):
+            pl_kwargs = state["_model_params"].get("pl_trainer_kwargs")
+            if pl_kwargs is not None and isinstance(pl_kwargs, dict):
+                state["_model_params"] = {
+                    **state["_model_params"],
+                    "pl_trainer_kwargs": {
+                        k: v for k, v in pl_kwargs.items() if k != "callbacks"
+                    },
+                }
+        return state
+
         return {k: v for k, v in self.__dict__.items() if k not in TFM_ATTRS_NO_PICKLE}
 
     def __setstate__(self, d):
