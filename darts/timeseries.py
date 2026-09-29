@@ -2657,17 +2657,18 @@ class TimeSeries:
             raise_log(ValueError("n should be a positive integer."))
         self._raise_if_not_within(start_ts)
 
-        if isinstance(start_ts, int | np.int64):
-            return self[pd.RangeIndex(start=start_ts, stop=start_ts + n)]
-        elif isinstance(start_ts, pd.Timestamp):
+        if isinstance(start_ts, int | np.int64) and self._has_datetime_index:
+            # integers are positional indices for datetime-indexed series
+            point_index = start_ts
+        elif isinstance(start_ts, int | np.int64 | pd.Timestamp):
             # get first timestamp greater or equal to start_ts
             tss = self._get_first_timestamp_after(start_ts)
             point_index = self.get_index_at_point(tss)
-            return self[point_index : point_index + n]
         else:
             raise_log(
                 ValueError("start_ts must be an int or a pandas Timestamp."),
             )
+        return self[point_index : point_index + n]
 
     def slice_n_points_before(self, end_ts: pd.Timestamp | int, n: int) -> Self:
         """Return a slice of the series ending at `end_ts` (inclusive) and having at most `n` points.
@@ -2688,17 +2689,18 @@ class TimeSeries:
             raise_log(ValueError("n should be a positive integer."))
         self._raise_if_not_within(end_ts)
 
-        if isinstance(end_ts, int | np.int64):
-            return self[pd.RangeIndex(start=end_ts - n + 1, stop=end_ts + 1)]
-        elif isinstance(end_ts, pd.Timestamp):
-            # get last timestamp smaller or equal to start_ts
+        if isinstance(end_ts, int | np.int64) and self._has_datetime_index:
+            # integers are positional indices for datetime-indexed series
+            point_index = end_ts
+        elif isinstance(end_ts, int | np.int64 | pd.Timestamp):
+            # get last timestamp smaller or equal to end_ts
             tss = self._get_last_timestamp_before(end_ts)
             point_index = self.get_index_at_point(tss)
-            return self[max(0, point_index - n + 1) : point_index + 1]
         else:
             raise_log(
                 ValueError("start_ts must be an int or a pandas Timestamp."),
             )
+        return self[max(0, point_index - n + 1) : point_index + 1]
 
     def slice_intersect(self, other: Self) -> Self:
         """Return a slice of the series where the time index was intersected with the `other` series.
@@ -2864,27 +2866,31 @@ class TimeSeries:
             return self.copy()
         stripped_series = self.strip()
         gaps = stripped_series.gaps(mode=mode)
-        relevant_gaps = gaps[gaps["gap_size"] > max_gap_size]
+        if gaps.empty:
+            return stripped_series
+        relevant_gaps = gaps[gaps["gap_size"] > max_gap_size].to_dict(orient="list")
+
+        # add a dummy gap after the end of the series to be end-inclusive
+        final_gap_time = stripped_series.end_time() + self._freq
+        relevant_gaps["gap_start"].append(final_gap_time)
+        relevant_gaps["gap_end"].append(final_gap_time)
 
         curr_slice_start = stripped_series.start_time()
-        max_size = pd.Timedelta(days=0) if self._has_datetime_index else 0
-        max_slice_start = None
-        max_slice_end = None
-        for index, row in relevant_gaps.iterrows():
+        max_size = 0
+        max_slice_start = curr_slice_start
+        for gap_start, gap_end in zip(
+            relevant_gaps["gap_start"], relevant_gaps["gap_end"]
+        ):
             # evaluate size of the current slice. the slice ends one time step before row['gap_start']
-            curr_slice_end = row["gap_start"] - self.freq
-            size = curr_slice_end - curr_slice_start
+            size = n_steps_between(gap_start, curr_slice_start, self.freq)
             if size > max_size:
                 max_size = size
                 max_slice_start = curr_slice_start
-                max_slice_end = row["gap_start"] - self._freq
-            curr_slice_start = row["gap_end"] + self._freq
+            curr_slice_start = gap_end + self._freq
 
-        if stripped_series.end_time() - curr_slice_start > max_size:
-            max_slice_start = curr_slice_start
-            max_slice_end = self.end_time()
-
-        return stripped_series[max_slice_start:max_slice_end]
+        # slice by position, since integer slices are always positional
+        start_pos = stripped_series.get_index_at_point(max_slice_start)
+        return stripped_series[start_pos : start_pos + max_size]
 
     def rescale_with_value(self, value_at_first_step: float) -> Self:
         """Return a new series, which is a multiple of this series such that the first value is `value_at_first_step`.
