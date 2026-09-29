@@ -768,6 +768,25 @@ class TestUtils:
         y_pred = sample_from_quantiles(q_pred, q, num_samples)
         assert y_pred.shape == (n_time_steps, n_columns, num_samples)
 
+    def test_a_descending_quantile_list_keeps_the_median(self):
+        """A draw at 0.5 stays on the median prediction when the levels run high to low."""
+
+        def at_median(low, high, size):
+            return np.full(size, 0.5)
+
+        values = np.array([[[30.0, 20.0, 10.0]]])
+        with patch("numpy.random.uniform", at_median):
+            descending = sample_from_quantiles(
+                values, np.array([0.9, 0.5, 0.1]), num_samples=1
+            )
+            ascending = sample_from_quantiles(
+                np.array([[[10.0, 20.0, 30.0]]]),
+                np.array([0.1, 0.5, 0.9]),
+                num_samples=1,
+            )
+        assert descending[0, 0, 0] == 20.0
+        assert ascending[0, 0, 0] == 20.0
+
     @pytest.mark.parametrize(
         "config",
         param_product([1, 2], [2, 3], [1, 2]),

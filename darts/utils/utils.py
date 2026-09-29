@@ -669,6 +669,13 @@ def sample_from_quantiles(
         )
     n_columns = vals.shape[1]
 
+    # searchsorted needs ascending levels. A descending list still passes the
+    # symmetry check, and a draw at the median then lands on another level.
+    order = np.argsort(quantiles, kind="stable")
+    if len(order) > 1 and np.any(np.diff(order) < 0):
+        quantiles = quantiles[order]
+        vals = vals[..., order]
+
     # Generate uniform random samples
     random_samples = np.random.uniform(0, 1, (n_time_steps, n_columns, num_samples))
     # Find the indices of the quantiles just below and above the random samples
