@@ -1210,6 +1210,76 @@ class TestBacktesting:
         )
         assert len(percentage_sampled_result) == 37
 
+    @staticmethod
+    def _nan_if_constant_mae(actual, pred):
+        # `NaiveSeasonal(K=1)` forecasts a constant series, which we treat as "not scorable"
+        if isinstance(pred, TimeSeries):
+            if np.ptp(pred.values()) == 0:
+                return np.nan
+            return metrics.mae(actual, pred)
+        # expanding window mode passes a sequence of series
+        return [
+            TestBacktesting._nan_if_constant_mae(a, p) for a, p in zip(actual, pred)
+        ]
+
+    @pytest.mark.parametrize("nan_first", [True, False])
+    @pytest.mark.parametrize("mode", ["split", "expanding"])
+    def test_gridsearch_nan_score_not_selected(self, mode, nan_first):
+        series = lt(length=50)
+        # K=1 scores NaN, K=3 has a finite score
+        k_values = [1, 3, 5] if nan_first else [3, 1, 5]
+        kwargs = (
+            {"series": series[:-5], "val_series": series[-5:]}
+            if mode == "split"
+            else {"series": series, "forecast_horizon": 3, "start": 40}
+        )
+        best_model, best_params, best_score = NaiveSeasonal.gridsearch(
+            parameters={"K": k_values},
+            metric=self._nan_if_constant_mae,
+            **kwargs,
+        )
+        assert best_params["K"] != 1
+        assert best_model.K == best_params["K"]
+        assert not np.isnan(best_score)
+
+    def test_gridsearch_nan_score_warning(self, caplog):
+        series = lt(length=50)
+        kwargs = {
+            "parameters": {"K": [1, 3, 5]},
+            "series": series[:-5],
+            "val_series": series[-5:],
+            "metric": self._nan_if_constant_mae,
+        }
+        with caplog.at_level(logging.WARNING):
+            NaiveSeasonal.gridsearch(**kwargs)
+        assert "1 of 3 hyperparameter combinations" in caplog.text
+
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            NaiveSeasonal.gridsearch(show_warnings=False, **kwargs)
+        assert "hyperparameter combinations" not in caplog.text
+
+    def test_gridsearch_all_nan_scores_raises(self):
+        series = lt(length=50)
+        with pytest.raises(ValueError, match="resulted in a NaN `metric` score"):
+            NaiveSeasonal.gridsearch(
+                parameters={"K": [1]},
+                series=series[:-5],
+                val_series=series[-5:],
+                metric=self._nan_if_constant_mae,
+            )
+
+    def test_gridsearch_empty_grid_raises(self):
+        series = lt(length=50)
+        # 10% of 3 combinations is rounded down to 0 combinations
+        with pytest.raises(ValueError, match="No hyperparameter combinations"):
+            NaiveSeasonal.gridsearch(
+                parameters={"K": [1, 3, 5]},
+                series=series[:-5],
+                val_series=series[-5:],
+                n_random_samples=0.1,
+            )
+
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_gridsearch_n_jobs(self):
         """
