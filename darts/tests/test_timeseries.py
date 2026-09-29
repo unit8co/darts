@@ -591,6 +591,33 @@ class TestTimeSeries:
     def test_slice(self):
         helper_test_slice(self.series1)
 
+    @pytest.mark.parametrize(
+        "times",
+        [
+            pd.RangeIndex(10),
+            pd.RangeIndex(10, 30, 2),
+            pd.date_range("20130101", periods=10, freq="D"),
+        ],
+    )
+    def test_slice_n_points_integer(self, times):
+        series = TimeSeries(times, np.arange(10))
+        # integers are labels for integer-indexed series and positions otherwise
+        idx = times if series.has_range_index else pd.RangeIndex(10)
+
+        assert series.slice_n_points_after(idx[2], 3).time_index.equals(times[2:5])
+        assert series.slice_n_points_before(idx[5], 3).time_index.equals(times[3:6])
+
+        # fewer than `n` points available
+        assert series.slice_n_points_after(idx[8], 5).time_index.equals(times[8:])
+        assert series.slice_n_points_before(idx[1], 5).time_index.equals(times[:2])
+
+    def test_slice_n_points_integer_not_in_index(self):
+        series = TimeSeries(pd.RangeIndex(10, 30, 2), np.arange(10))
+        sliced = series.slice_n_points_after(15, 2)
+        assert sliced.time_index.equals(pd.RangeIndex(16, 20, 2))
+        sliced = series.slice_n_points_before(15, 2)
+        assert sliced.time_index.equals(pd.RangeIndex(12, 16, 2))
+
     def test_split(self):
         helper_test_split(self.series1)
 
