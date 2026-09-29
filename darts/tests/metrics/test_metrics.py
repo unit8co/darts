@@ -1530,6 +1530,74 @@ class TestMetrics:
         assert "denominator" not in caplog.text
         assert not np.any(np.isnan(np.atleast_1d(result_normal)))
 
+    def test_r2_score_zero_division(self, caplog):
+        """`r2_score`'s denominator is the total sum of squares, which is zero for a
+        constant ``actual_series``. It follows the same convention as the percentage
+        and range metrics: the best score for 0/0, NaN otherwise, raise on request.
+
+        The best score of R^2 is ``1.0``, so the fill lands on the ratio rather than on
+        the metric itself."""
+        const_actual = TimeSeries.from_values(np.full((10, 1), 5.0))
+        some_pred = TimeSeries.from_values(np.ones((10, 1)))
+
+        # --- default "warn": NaN + warning ---
+        with caplog.at_level(logging.WARNING):
+            result = metrics.r2_score(const_actual, some_pred, component_reduction=None)
+        assert "denominator" in caplog.text
+        assert np.all(np.isnan(np.atleast_1d(result)))
+        caplog.clear()
+
+        # --- perfect forecast on a zero denominator: 0/0 -> best score 1.0 ---
+        with caplog.at_level(logging.WARNING):
+            perfect = metrics.r2_score(
+                const_actual, const_actual, component_reduction=None
+            )
+        assert "denominator" in caplog.text
+        assert np.all(np.atleast_1d(perfect) == 1.0)
+        caplog.clear()
+
+        # --- "raise": ValueError ---
+        with pytest.raises(ValueError, match="denominator"):
+            metrics.r2_score(const_actual, some_pred, zero_division="raise")
+
+        # --- invalid value rejected ---
+        with pytest.raises(ValueError, match="`zero_division` must be"):
+            metrics.r2_score(const_actual, some_pred, zero_division="invalid")
+
+        # --- non-constant actual: no warning, unchanged result ---
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            result_normal = metrics.r2_score(
+                self.series1, self.series2, component_reduction=None
+            )
+        assert "denominator" not in caplog.text
+        assert not np.any(np.isnan(np.atleast_1d(result_normal)))
+
+    def test_r2_score_zero_division_is_component_wise(self, caplog):
+        """A constant component must not contaminate the others.
+
+        `_safe_divide` fills element-wise, so scoring a constant component alongside a
+        varying one leaves the varying one exactly as it would be on its own."""
+        actual = TimeSeries.from_values(
+            np.stack([np.arange(10.0), np.full(10, 5.0)], axis=1)
+        )
+        pred = TimeSeries.from_values(
+            np.stack([np.arange(10.0) + 0.5, np.arange(10.0)], axis=1)
+        )
+
+        with caplog.at_level(logging.WARNING):
+            per_component = np.atleast_1d(
+                metrics.r2_score(actual, pred, component_reduction=None)
+            ).ravel()
+        assert "denominator" in caplog.text
+
+        alone = metrics.r2_score(
+            TimeSeries.from_values(np.arange(10.0).reshape(-1, 1)),
+            TimeSeries.from_values((np.arange(10.0) + 0.5).reshape(-1, 1)),
+        )
+        assert np.isclose(per_component[0], alone)
+        assert np.isnan(per_component[1])
+
     def test_ape_elementwise_mixed_zero(self, caplog):
         """`ape`'s denominator is the per-timestep actual, so zeros are handled
         element-wise: an exact prediction at a zero actual -> 0.0, a wrong one
