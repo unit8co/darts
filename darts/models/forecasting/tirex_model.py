@@ -167,6 +167,12 @@ class TiRexModel(FoundationModel):
         """
         TiRex foundation model for zero-shot time series forecasting.
 
+        .. attention::
+            TiRex-2 extends TiRex with joint multivariate and covariate capabilities and achieves better performance
+            on public benchmarks. It is now available in Darts as
+            :class:`~darts.models.forecasting.tirex2_model.TiRex2Model`. For new use cases, we recommend using TiRex-2
+            instead of TiRex.
+
         This is a Darts wrapper around the TiRex model introduced in Auer et al. (2025) [1]_. The implementation
         delegates all forecasting logic and weight loading to the optional `tirex-ts
         <https://pypi.org/project/tirex-ts>`_ package while exposing a standard :class:`TorchForecastingModel`
@@ -176,6 +182,8 @@ class TiRexModel(FoundationModel):
 
         This model supports either univariate or multivariate time series, but does not support covariates.
         For multivariate time series, the model is applied independently to each component.
+        For joint multivariate forecasting with past and future covariates, use
+        :class:`~darts.models.forecasting.tirex2_model.TiRex2Model` (TiRex-2).
 
         By default, the model is deterministic (median forecast only). To enable probabilistic forecasts, pass a
         :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the ``likelihood`` parameter.
@@ -189,12 +197,16 @@ class TiRexModel(FoundationModel):
         .. note::
             TiRex is distributed under the `NXAI Community License <https://github.com/NX-AI/tirex/blob/main/LICENSE>`_.
             You must explicitly acknowledge this license by passing ``accept_license=True`` when constructing the model.
+
         .. note::
-            Partial fine-tuning is supported via
-            ``enable_finetuning={"unfreeze": ["tirex.output_patch_embedding*", ...]}``. Fine-tuning requires
-            ``tirex_kwargs={"backend": "torch"}``; only the last sLSTM blocks and the output head are gradient-safe
-            (see notebook for recommended configurations). Full fine-tuning (``enable_finetuning=True``) is
-            **not supported** — backpropagation through the early sLSTM blocks produces NaN gradients.
+            TiRex supports partial fine-tuning of the last sLSTM blocks and the output head. To enable it, set
+            ``tirex_kwargs={"backend": "torch"}`` and select the layers to unfreeze with
+            ``enable_finetuning={"unfreeze": ["tirex.output_patch_embedding*", ...]}``.
+
+            Full fine-tuning (``enable_finetuning=True``) is **not supported** because backpropagation through
+            the early sLSTM blocks produces NaN gradients. See the `Fine-Tuning Examples
+            <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__
+            notebook for more details.
 
         Parameters
         ----------
