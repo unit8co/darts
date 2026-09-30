@@ -715,5 +715,5 @@ def _get_likelihood(
         return ClassProbabilityLikelihood(n_outputs=n_outputs)
     else:
         raise_log(
-            ValueError("Unknown `likelihood='{likelihood}'`."),
+            ValueError(f"Unknown `likelihood='{likelihood}'`."),
         )

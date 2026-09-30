@@ -35,6 +35,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed `TorchForecastingModel` last-epoch checkpoint not being saved at the end of every training epoch when validation loss stopped improving (PyTorch Lightning >= 2.6); last and best checkpoints are now updated independently. [#3212](https://github.com/unit8co/darts/pull/3212) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed `extract_subseries()` returning wrong sub-series for integer-indexed series: the last value before each gap was dropped, and series whose `RangeIndex` does not start at 0 with step 1 yielded wrong or empty sub-series. [#3215](https://github.com/unit8co/darts/pull/3215) by [Mohammad Hijjawi](https://github.com/MohammadHijjawi97).
 - Fixed `TimeSeries.longest_contiguous_slice()` returning wrong slices for integer-indexed series (the last value of the slice was dropped, and series whose `RangeIndex` does not start at 0 with step 1 yielded wrong or empty slices), and raising a `KeyError` when the series only had leading and/or trailing NaNs. [#3219](https://github.com/unit8co/darts/pull/3219) by [Mohammad Hijjawi](https://github.com/MohammadHijjawi97).
+- Fixed two error messages that showed raw placeholders: `generate_index()` printed `Observed parameters: {constructors}` instead of the parameters it received, and the fallback in `darts.utils.likelihood_models.sklearn` printed `{likelihood}`. [#3211](https://github.com/unit8co/darts/pull/3211) by [Yanze (David) Wu](https://github.com/David-Wu1119).
 
 **Dependencies**
 
