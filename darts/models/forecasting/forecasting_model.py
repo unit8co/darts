@@ -1671,7 +1671,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         val_series: TimeSeries | None = None,
         use_fitted_values: bool = False,
         metric: Callable[[TimeSeries, TimeSeries], METRIC_OUTPUT_TYPE] = metrics.mape,
-        reduction: Callable[[np.ndarray], float] = np.mean,
+        reduction: Callable[[np.ndarray], float] = np.nanmean,
         verbose=False,
         n_jobs: int = 1,
         n_random_samples: int | float | None = None,
@@ -1689,7 +1689,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         provided in the `parameters` dictionary by instantiating the `model_class` subclass
         of ForecastingModel with each combination, and returning the best-performing model with regard
         to the `metric` function. The `metric` function is expected to return an error value,
-        thus the model resulting in the smallest `metric` output will be chosen.
+        thus the model resulting in the smallest `metric` output will be chosen. Combinations with a NaN score are
+        excluded from the selection.
 
         The relationship of the training data and test data depends on the mode of operation.
 
@@ -1770,7 +1771,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Only used in expanding window mode. Whether to use the whole forecasts or only the last point of each
             forecast to compute the error.
         show_warnings
-            Only used in expanding window mode. Whether to show warnings related to the `start` parameter.
+            Whether to show warnings related to the `start` parameter (expanding window mode only), and about
+            hyperparameter combinations excluded from the selection because of a NaN `metric` score.
         val_series
             The TimeSeries instance used for validation in split mode. If provided, this series must start right after
             the end of `series`; so that a proper comparison of the forecast can be made.
@@ -1784,7 +1786,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             `TimeSeries` and returns the error
         reduction
             A reduction function (mapping array to float) describing how to aggregate the errors obtained
-            on the different validation series when backtesting. By default it'll compute the mean of errors.
+            on the different validation series when backtesting. By default it'll compute the mean of errors, ignoring
+            NaN values.
         verbose
             Whether to print the progress.
         n_jobs
@@ -2030,10 +2033,28 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             iterator, _evaluate_combination, n_jobs, {}, {}
         )
 
-        min_error = min(errors)
+        errors_arr = np.asarray(errors, dtype=float)
+        if errors_arr.size == 0:
+            raise_log(ValueError("No hyperparameter combinations to evaluate."))
+        nan_mask = np.isnan(errors_arr)
+        if nan_mask.all():
+            raise_log(
+                ValueError(
+                    "All hyperparameter combinations resulted in a NaN `metric` score."
+                )
+            )
+        if nan_mask.any() and show_warnings:
+            logger.warning(
+                f"{int(nan_mask.sum())} of {len(errors_arr)} hyperparameter combinations resulted in a "
+                "NaN `metric` score and were excluded from the selection."
+            )
+
+        # `np.nanargmin` ignores NaN scores and returns the first index in case of ties
+        best_idx = int(np.nanargmin(errors_arr))
+        min_error = float(errors_arr[best_idx])
 
         best_param_combination = dict(
-            list(zip(parameters.keys(), params_cross_product[errors.index(min_error)]))
+            zip(parameters.keys(), params_cross_product[best_idx])
         )
 
         logger.info("Chosen parameters: " + str(best_param_combination))
