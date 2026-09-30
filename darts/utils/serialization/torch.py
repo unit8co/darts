@@ -30,6 +30,7 @@ from darts.utils.serialization.base import (
     SAFE_PICKLE_FUNCTIONS,
     RestrictedUnpickler,
     UnpicklingError,
+    _normalize_qualname,
     all_imported_subclasses,
     dedupe_by_identity,
     format_unpickling_error,
@@ -136,7 +137,9 @@ def _checkpoint_safe_bases() -> tuple[type, ...]:
 # ---------------------------------------------------------------------------
 # File-inspection-driven safe globals (per scope)
 # ---------------------------------------------------------------------------
-def safe_globals_for_torch_file(path) -> list:
+def safe_globals_for_torch_file(
+    path, *, extra_allowed: frozenset[str] | None = None
+) -> list:
     """Inspect ``path`` and return referenced globals safe to allow-list for ``scope``.
 
     Uses ``torch.serialization.get_unsafe_globals_in_checkpoint`` (torch >= 2.6) to
@@ -153,12 +156,15 @@ def safe_globals_for_torch_file(path) -> list:
 
     safe_bases = _checkpoint_safe_bases()
     extra_safe_callables = _ALL_SAFE_CALLABLES
+    if extra_allowed:
+        extra_safe_callables = extra_safe_callables | extra_allowed
 
     resolved: list = []
     blocked: list[str] = []
     for name in unsafe_globals:
         if not isinstance(name, str):
             continue
+        name = _normalize_qualname(name)
 
         if is_blocked_global(name):
             raise UnpicklingError(format_unpickling_error(name, path))
@@ -183,11 +189,20 @@ def safe_globals_for_torch_file(path) -> list:
 # ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
+def _trusted_class_names(
+    trusted_classes: list[type] | None,
+) -> frozenset[str] | None:
+    if not trusted_classes:
+        return None
+    return frozenset(f"{cls.__module__}.{cls.__qualname__}" for cls in trusted_classes)
+
+
 def load_torch_safely(
     load_fn: Callable[..., Any],
     path,
     *,
     extra_globals: list | None = None,
+    trusted_classes: list[type] | None = None,
     weights_only: bool | None = True,
     **kwargs,
 ):
@@ -208,6 +223,9 @@ def load_torch_safely(
         Filesystem path to the ``.ckpt`` file.
     extra_globals
         Additional globals to allow-list for this load only.
+    trusted_classes
+        Optional classes to allow for this load only, in addition to the
+        checkpoint-driven allow-list.  Ignored when ``weights_only`` is ``False``.
     weights_only
         Security-relevant flag forwarded to ``load_fn``.  ``True`` by default.
     **kwargs
@@ -218,7 +236,11 @@ def load_torch_safely(
         return load_fn(path, weights_only=weights_only, **kwargs)
 
     allow = dedupe_by_identity(
-        (extra_globals or []) + safe_globals_for_torch_file(path)
+        (extra_globals or [])
+        + list(trusted_classes or [])
+        + safe_globals_for_torch_file(
+            path, extra_allowed=_trusted_class_names(trusted_classes)
+        )
     )
     with torch.serialization.safe_globals(allow):
         return load_fn(path, weights_only=weights_only, **kwargs)
@@ -229,8 +251,8 @@ def load_torch_safely(
 # ---------------------------------------------------------------------------
 
 
-class _RestrictedPickleModule:
-    """Module-like object injected as ``pickle_module`` into ``torch.load``.
+def _restricted_pickle_module(extra_allowed: frozenset[str] | None):
+    """Build a ``pickle_module`` whose unpickler carries ``extra_allowed``.
 
     ``torch.load(weights_only=False, pickle_module=...)`` expects the module to
     expose an ``Unpickler`` class.  Its internal ``UnpicklerWrapper`` subclasses
@@ -238,13 +260,19 @@ class _RestrictedPickleModule:
     the pickle stream passes through our :class:`RestrictedUnpickler` filter.
     """
 
-    Unpickler = RestrictedUnpickler
+    class _RestrictedPickleModule:
+        class Unpickler(RestrictedUnpickler):
+            def __init__(self, file, **unpickler_kwargs):
+                super().__init__(file, extra_allowed=extra_allowed, **unpickler_kwargs)
+
+    return _RestrictedPickleModule
 
 
 def load_wrapper_safely(
     path,
     *,
     trusted: bool = False,
+    trusted_classes: list[type] | None = None,
     **kwargs,
 ):
     """Load a Darts ``.pt`` wrapper file with CWE-502 protection.
@@ -263,6 +291,9 @@ def load_wrapper_safely(
     trusted
         If ``True``, loads with unrestricted ``pickle`` (no ``find_class``
         filtering).  Only use for files from trusted sources.
+    trusted_classes
+        Optional classes to allow during restricted loading.  Ignored when
+        ``trusted`` is ``True``.
     **kwargs
         Passed through to ``torch.load`` (e.g. ``map_location``).
     """
@@ -272,6 +303,6 @@ def load_wrapper_safely(
     return torch.load(
         path,
         weights_only=False,
-        pickle_module=_RestrictedPickleModule,
+        pickle_module=_restricted_pickle_module(_trusted_class_names(trusted_classes)),
         **kwargs,
     )

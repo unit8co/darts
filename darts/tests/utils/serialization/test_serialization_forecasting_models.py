@@ -8,6 +8,7 @@ Predictions before save must match predictions after load.
 from __future__ import annotations
 
 import contextlib
+import pickle
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal
@@ -32,6 +33,11 @@ from darts.tests.conftest import (
     TORCH_AVAILABLE,
     XGB_AVAILABLE,
     tfm_kwargs,
+)
+from darts.utils.serialization.base import (
+    is_allowed_global,
+    resolve_reference,
+    safe_base_classes,
 )
 from darts.utils.utils import NotImportedModule
 
@@ -300,6 +306,11 @@ def _model_config_specs(series: _SeriesBundle) -> list[dict[str, Any]]:
                 "id": "statsforecast_auto_arima",
                 "cls": "StatsForecastModel",
                 "kwargs": {"model": SFAutoARIMA(season_length=7)},
+            },
+            {
+                "id": "statsforecast_auto_arima",
+                "cls": "StatsForecastModel",
+                "kwargs": {"model": "Naive"},
             },
             {"id": "auto_theta", "cls": "AutoTheta", "kwargs": {"season_length": 7}},
             {
@@ -603,6 +614,76 @@ def _build_cases() -> list[SaveLoadCase]:
 SAVE_LOAD_CASES = _build_cases()
 
 
+def _qualnames_from_checkpoint(items) -> list[str]:
+    names = []
+    for item in items:
+        if isinstance(item, str):
+            names.append(item)
+        elif isinstance(item, tuple) and len(item) >= 2 and isinstance(item[0], str):
+            names.append(f"{item[0]}.{item[1]}")
+    return names
+
+
+def _globals_referenced_by(path: str, *, torch_wrapper: bool) -> set[str]:
+    """Record every global a saved model file asks ``find_class`` to import."""
+    found: set[str] = set()
+
+    class _Recording:
+        class Unpickler(pickle.Unpickler):
+            def find_class(self, module, name):
+                if module == "__builtin__":
+                    module = "builtins"
+                found.add(f"{module}.{name}")
+                return super().find_class(module, name)
+
+    if torch_wrapper:
+        import torch
+
+        torch.load(
+            path,
+            map_location="cpu",
+            weights_only=False,
+            pickle_module=_Recording,
+        )
+    else:
+        with open(path, "rb") as handle:
+            _Recording.Unpickler(handle).load()
+    return found
+
+
+def _denied_globals(names) -> list[str]:
+    bases = safe_base_classes()
+    denied = []
+    for name in sorted(set(names)):
+        if name.startswith("__builtin__."):
+            name = "builtins." + name.removeprefix("__builtin__.")
+        if not is_allowed_global(name, resolve_reference(name), safe_bases=bases):
+            denied.append(name)
+    return denied
+
+
+def _assert_saved_file_is_allowlisted(path: str, *, torch_model: bool) -> None:
+    """Fail when a saved model references a global outside the safe-load registries.
+
+    New dependency types must be classified (hierarchy, exact reconstructor, or
+    exact state class) instead of being absorbed by a package prefix.
+    """
+    denied = _denied_globals(_globals_referenced_by(path, torch_wrapper=torch_model))
+    if torch_model:
+        import os
+
+        import torch
+
+        ckpt = path + ".ckpt"
+        if os.path.exists(ckpt):
+            unsafe = torch.serialization.get_unsafe_globals_in_checkpoint(ckpt)
+            denied.extend(_denied_globals(_qualnames_from_checkpoint(unsafe)))
+    assert not denied, (
+        "Saved model references globals that are not allow-listed for safe "
+        f"loading: {sorted(set(denied))}"
+    )
+
+
 @pytest.mark.parametrize("case", SAVE_LOAD_CASES, ids=lambda c: c.id)
 def test_safe_save_load_prediction_parity(case: SaveLoadCase, tmp_path):
     """Default safe loading must reproduce pre-save forecasts."""
@@ -619,6 +700,10 @@ def test_safe_save_load_prediction_parity(case: SaveLoadCase, tmp_path):
         )
         save_path = tmp_path / f"{case.id}{ext}"
         model.save(str(save_path))
+        _assert_saved_file_is_allowlisted(
+            str(save_path),
+            torch_model=ext == ".pt",
+        )
 
         loaded = case.model_cls.load(str(save_path))
         pred_after = _predict(loaded, case.series, case.predict_n)

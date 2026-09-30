@@ -102,7 +102,23 @@ TORCH_NP_DTYPES = {
 # attributes to be ignored, and the values are the default values getting assigned upon loading
 TFM_ATTRS_NO_PICKLE = {"model": None, "trainer": None}
 
+# Bound methods Lightning copies onto callbacks during ``fit``.  They must not
+# be pickled: restoring them requires ``builtins.getattr``.
+_CALLBACK_MODULE_METHODS = ("log", "log_dict")
+
 logger = get_logger(__name__)
+
+
+def _callbacks_without_module_methods(callbacks):
+    """Return callbacks with Lightning's module logging methods removed."""
+    cleaned = []
+    for callback in callbacks:
+        if any(name in callback.__dict__ for name in _CALLBACK_MODULE_METHODS):
+            callback = copy.copy(callback)
+            for name in _CALLBACK_MODULE_METHODS:
+                callback.__dict__.pop(name, None)
+        cleaned.append(callback)
+    return cleaned
 
 
 def _get_checkpoint_folder(work_dir, model_name):
@@ -2250,6 +2266,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         path: str,
         pl_trainer_kwargs: dict | None = None,
         weights_only: bool = True,
+        trusted_classes: list[type] | None = None,
         **kwargs,
     ) -> "TorchForecastingModel":
         """
@@ -2311,6 +2328,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             ``torch.load(weights_only=True)`` using a scoped allow-list.
             If ``False``, files are fully unpickled without restriction — only use
             this with files from trusted sources. Default: ``True``.
+        trusted_classes
+            Optional classes to allow during restricted loading, in addition to the
+            built-in allow-list.  Ignored when ``weights_only`` is ``False``.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one on which it was saved.
@@ -2321,6 +2341,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model: TorchForecastingModel = load_wrapper_safely(
             path=path,
             trusted=not weights_only,
+            trusted_classes=trusted_classes,
             map_location=kwargs.get("map_location", None),
         )
 
@@ -2328,7 +2349,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         path_ptl_ckpt = path + ".ckpt"
         if os.path.exists(path_ptl_ckpt):
             model.model = model._load_from_checkpoint(
-                path_ptl_ckpt, weights_only=weights_only, **kwargs
+                path_ptl_ckpt,
+                weights_only=weights_only,
+                trusted_classes=trusted_classes,
+                **kwargs,
             )
         else:
             model._fit_called = False
@@ -2354,6 +2378,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         file_name: str | None = None,
         best: bool = True,
         weights_only: bool = True,
+        trusted_classes: list[type] | None = None,
         **kwargs,
     ) -> "TorchForecastingModel":
         """
@@ -2414,6 +2439,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             is loaded with ``torch.load(weights_only=True)`` using a scoped allow-list.
             If ``False``, files are fully unpickled without restriction — only use this with
             checkpoints from trusted sources. Default: ``True``.
+        trusted_classes
+            Optional classes to allow during restricted loading, in addition to the
+            built-in allow-list.  Ignored when ``weights_only`` is ``False``.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one from which it was saved.
@@ -2444,6 +2472,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model: TorchForecastingModel = load_wrapper_safely(
             path=base_model_path,
             trusted=not weights_only,
+            trusted_classes=trusted_classes,
             map_location=kwargs.get("map_location"),
         )
 
@@ -2456,7 +2485,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         logger.info(f"loading {file_name}")
 
         model.model = model._load_from_checkpoint(
-            file_path, weights_only=weights_only, **kwargs
+            file_path,
+            weights_only=weights_only,
+            trusted_classes=trusted_classes,
+            **kwargs,
         )
 
         # loss_fn is excluded from pl_forecasting_module ckpt, must be restored
@@ -2482,7 +2514,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             model.train_sample = _coerce_training_sample(train_sample)
         return model
 
-    def _load_from_checkpoint(self, file_path, weights_only=True, **kwargs):
+    def _load_from_checkpoint(
+        self, file_path, weights_only=True, trusted_classes=None, **kwargs
+    ):
         """Loads a checkpoint for the underlying :class:`PLForecastingModule` (PLM) model.
         The PLM object is not stored when saving a :class:`TorchForecastingModel` (TFM) to avoid saving
         the model twice. Instead, we recover the module class with the module path and class name stored
@@ -2499,6 +2533,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             load_fn=pl_module_cls.load_from_checkpoint,
             path=file_path,
             weights_only=weights_only,
+            trusted_classes=trusted_classes,
             **kwargs,
         )
 
@@ -2512,6 +2547,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         load_encoders: bool = True,
         skip_checks: bool = False,
         weights_only: bool = True,
+        trusted_classes: list[type] | None = None,
         **kwargs,
     ):
         """
@@ -2566,6 +2602,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             is loaded with ``torch.load(weights_only=True)`` using a scoped allow-list.
             If ``False``, files are fully unpickled without restriction — only use this with
             checkpoints from trusted sources. Default: ``True``.
+        trusted_classes
+            Optional classes to allow during restricted loading, in addition to the
+            built-in allow-list.  Ignored when ``weights_only`` is ``False``.
         **kwargs
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
@@ -2611,6 +2650,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             load_fn=torch.load,
             path=ckpt_path,
             weights_only=weights_only,
+            trusted_classes=trusted_classes,
             **kwargs,
         )
 
@@ -2635,6 +2675,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             tfm_save: TorchForecastingModel = load_wrapper_safely(
                 path=tfm_save_file_path,
                 trusted=not weights_only,
+                trusted_classes=trusted_classes,
                 map_location=kwargs.get("map_location", None),
             )
 
@@ -2664,6 +2705,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         load_encoders: bool = True,
         skip_checks: bool = False,
         weights_only: bool = True,
+        trusted_classes: list[type] | None = None,
         **kwargs,
     ):
         """
@@ -2696,6 +2738,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             is loaded with ``torch.load(weights_only=True)`` using a scoped allow-list.
             If ``False``, files are fully unpickled without restriction — only use this with
             checkpoints from trusted sources. Default: ``True``.
+        trusted_classes
+            Optional classes to allow during restricted loading, in addition to the
+            built-in allow-list.  Ignored when ``weights_only`` is ``False``.
         **kwargs
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
@@ -2716,6 +2761,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             load_encoders=load_encoders,
             skip_checks=skip_checks,
             weights_only=weights_only,
+            trusted_classes=trusted_classes,
             **kwargs,
         )
 
@@ -3054,7 +3100,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def __getstate__(self):
         # do not pickle the PyTorch LightningModule, and Trainer
-        return {k: v for k, v in self.__dict__.items() if k not in TFM_ATTRS_NO_PICKLE}
+        state = {k: v for k, v in self.__dict__.items() if k not in TFM_ATTRS_NO_PICKLE}
+        trainer_params = state.get("trainer_params")
+        if isinstance(trainer_params, dict) and trainer_params.get("callbacks"):
+            # Lightning attaches ``callback.log`` / ``log_dict`` to the live
+            # module during fit.  Those bound methods pickle as ``getattr`` and
+            # pull the whole module into the wrapper.  Drop them; the next
+            # trainer re-attaches them.
+            trainer_params = dict(trainer_params)
+            trainer_params["callbacks"] = _callbacks_without_module_methods(
+                trainer_params["callbacks"]
+            )
+            state["trainer_params"] = trainer_params
+        return state
 
     def __setstate__(self, d):
         self.__dict__ = d

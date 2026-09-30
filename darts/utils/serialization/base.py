@@ -22,6 +22,7 @@ import inspect
 import pickle
 from collections import OrderedDict
 from collections.abc import Sequence
+from functools import lru_cache
 from typing import Any, TypeVar
 
 from darts.logging import get_logger
@@ -67,48 +68,16 @@ BLOCKED_PREFIXES: tuple[str, ...] = (
 # Allowlist: exact class / function names
 # ---------------------------------------------------------------------------
 # Benign data-container classes that are always allowed regardless of hierarchy.
+# Pandas offsets and numpy scalar types are not listed here (covered via safe
+# bases below).
 EXACT_ALLOWED_CLASSES: frozenset[str] = frozenset({
-    # numpy
+    # numpy containers and RNGs.  Scalar dtypes are covered by numpy.generic.
+    # ``ndarray`` subclasses stay pinned: ``numpy.memmap`` opens a file.
     "numpy.dtype",
     "numpy.ndarray",
-    "numpy.float64",
-    "numpy.float32",
-    "numpy.float16",
-    "numpy.int64",
-    "numpy.int32",
-    "numpy.int16",
-    "numpy.int8",
-    "numpy.uint64",
-    "numpy.uint32",
-    "numpy.bool_",
-    "numpy.complex128",
-    "numpy.complex64",
-    "numpy.str_",
-    "numpy.bytes_",
     "numpy.random.mtrand.RandomState",
     "numpy.random._mt19937.MT19937",
-    # pandas
-    "pandas.core.frame.DataFrame",
-    "pandas.core.series.Series",
-    "pandas.core.indexes.base.Index",
-    "pandas.core.indexes.datetimes.DatetimeIndex",
-    "pandas.core.indexes.range.RangeIndex",
-    "pandas.core.indexes.period.PeriodIndex",
-    "pandas.core.indexes.timedeltas.TimedeltaIndex",
-    "pandas._libs.tslibs.timestamps.Timestamp",
-    "pandas._libs.tslibs.timedeltas.Timedelta",
-    "pandas._libs.tslibs.offsets.MonthEnd",
-    "pandas._libs.tslibs.offsets.YearEnd",
-    "pandas._libs.tslibs.offsets.QuarterEnd",
-    "pandas._libs.tslibs.offsets.Week",
-    "pandas._libs.tslibs.offsets.Day",
-    "pandas._libs.tslibs.offsets.Hour",
-    "pandas._libs.tslibs.offsets.Minute",
-    "pandas._libs.tslibs.offsets.Second",
-    "pandas._libs.tslibs.offsets.Milli",
-    "pandas._libs.tslibs.offsets.Micro",
-    "pandas._libs.tslibs.offsets.Nano",
-    "pandas._libs.tslibs.offsets.BusinessDay",
+    # pandas containers. Date offsets are covered by BaseOffset.
     "pandas.DataFrame",
     "pandas.Series",
     "pandas.Index",
@@ -147,8 +116,10 @@ EXACT_ALLOWED_CLASSES: frozenset[str] = frozenset({
     "sklearn.utils._random.MTRandState",
 })
 
-# Pickle reconstruction helpers referenced by numpy/pandas/pyarrow in serialized
-# files.  Allow-listed by exact name only; never a blanket module scan.
+# Pickle reconstruction helpers referenced by serialized model files.
+# Allow-listed by exact name only. ``builtins.getattr`` is intentionally
+# absent: it is a restricted-unpickler bypass when combined with any Python
+# function whose module dict contains ``os``.
 SAFE_PICKLE_FUNCTIONS: frozenset[str] = frozenset({
     "numpy.random._pickle.__randomstate_ctor",
     "numpy.random._pickle.__bit_generator_ctor",
@@ -157,82 +128,110 @@ SAFE_PICKLE_FUNCTIONS: frozenset[str] = frozenset({
     "numpy._core.multiarray.scalar",
     "numpy.core.multiarray.scalar",
     "pandas.core.indexes.base._new_Index",
+    "pandas.core.indexes.datetimes._new_DatetimeIndex",
     "pandas._libs.internals._unpickle_block",
-    "pandas.core.internals.blocks.new_block_2d",
-    "pandas.core.internals.blocks.new_block",
-    "pandas._libs.tslibs.offsets._unpickle_offset",
+    "pandas._libs.arrays.__pyx_unpickle_NDArrayBacked",
+    "pandas._libs.tslibs.timestamps._unpickle_timestamp",
+    "pandas._libs.tslibs.timedeltas._timedelta_unpickle",
     "pyarrow.lib._restore_array",
     "pyarrow.lib.py_buffer",
     "pyarrow.lib.type_for_alias",
-    "builtins.getattr",
+    "sklearn.metrics._dist_metrics.newObj",
+    "sklearn.neighbors._kd_tree.newObj",
+    "torch._utils._rebuild_tensor_v2",
     "copyreg._reconstructor",
     "_codecs.encode",
-    "darts.logging.execute_and_suppress_output",
 })
 
 # ---------------------------------------------------------------------------
-# Allowlist: trusted package prefixes + class hierarchy
+# Allowlist: class namespaces (classes only) + exact state classes
 # ---------------------------------------------------------------------------
-# A class under one of these prefixes is allowed if it subclasses a known-safe
-# base (see :func:`safe_base_classes`). This is NOT a blanket trust — the
-# class must pass the hierarchy check.
+# A *class* under one of these prefixes is allowed if it subclasses a known-safe
+# base (see :func:`safe_base_classes`) or is an ``enum.Enum``.  Callables never
+# pass this check.  This is not a blanket trust of the package.
 TRUSTED_PREFIXES: TrustedPrefixPolicy = (
-    "torch.",
-    "torchmetrics.",
     "darts.",
-    "neuralforecast.",
-    "pytorch_lightning.",
+    "lightgbm.",
     "lightning.",
     "lightning_fabric.",
-    "sklearn.",
+    "neuralforecast.",
     "numpy.",
     "pandas.",
-    "pyarrow.",
-    "fsspec.",
-    "statsmodels.",
+    "pytorch_lightning.",
+    "sklearn.",
     "statsforecast.",
-    "scipy.",
-    "lightgbm.",
+    "statsmodels.",
+    "torch.",
+    "torchmetrics.",
     "xgboost.",
-    "catboost.",
-    "prophet.",
-    "cmdstanpy.",
-    "stanio.",
-    "nfoursid.",
-    "pathlib.",
 )
 
-# Packages whose internal classes and callables are considered safe for
-# deserialization.  These are either pure data packages (numpy, pandas,
-# pyarrow) or training-infrastructure packages (lightning) that contain only
-# data containers, loggers, and framework helpers — no code-execution
-# primitives.  All classes and callables under these prefixes are trusted
-# without requiring a safe-base hierarchy check.
-_SAFE_PACKAGE_PREFIXES: tuple[str, ...] = (
-    "numpy.",
-    "pandas.",
-    "pyarrow.",
-    "torch.",
-    "torchmetrics.",
-    "lightning.",
-    "lightning_fabric.",
-    "pytorch_lightning.",
-    "statsmodels.",
-    "statsforecast.",
-    "neuralforecast.",
-    "scipy.",
-    "fsspec.",
-    # Trained estimators and their internal C-extension nodes (no code-exec surface).
-    "sklearn.",
-    "lightgbm.",
-    "xgboost.",
-    "catboost.",
-    "prophet.",
-    "cmdstanpy.",
-    "stanio.",
-    "nfoursid.",
-    "pathlib.",
-)
+
+# Classes that do not subclass a safe base, but are persisted model state.
+# Instantiating them does not compile code or spawn a process. CmdStan types
+# are intentionally absent: ``CmdStanModel.__init__`` compiles a Stan file.
+EXACT_STATE_CLASSES: frozenset[str] = frozenset({
+    # boosters and non-BaseEstimator estimators (estimators covered via safe base below)
+    "lightgbm.basic.Booster",
+    "lightgbm.callback._EarlyStoppingCallback",
+    "xgboost.core.Booster",
+    "catboost.core.CatBoostRegressor",
+    "catboost.core.CatBoostClassifier",
+    # sklearn; C-extension nodes (models covered via safe base below)
+    "sklearn.tree._tree.Tree",
+    "sklearn.neighbors._kd_tree.KDTree",
+    "sklearn.metrics._dist_metrics.EuclideanDistance64",
+    # scipy; optimize results stored by Holt-Winters / Theta
+    "scipy.optimize._optimize.OptimizeResult",
+    "scipy.optimize._lbfgsb_py.LbfgsInvHessProduct",
+    "numpy.poly1d",
+    # pandas; block managers
+    "pandas.core.internals.managers.BlockManager",
+    "pandas.core.internals.managers.SingleBlockManager",
+    # lightning; callback state (dict subclass; weights_only=True cannot rebuild it)
+    "lightning_fabric.utilities.data.AttributeDict",
+    # prophet; forecast state; Stan backend is stripped before pickling
+    "prophet.forecaster.Prophet",
+    # nfoursid; kalman forecaster internals
+    "nfoursid.kalman.Kalman",
+    "nfoursid.state_space.StateSpace",
+    # statsforecast; models covered via safe base below
+    "statsforecast.mfles.MFLES",
+    "statsforecast.utils.results",
+    # statsmodels; general models and results covered via safe bases below
+    "statsmodels.base.data.ModelData",
+    "statsmodels.tools.tools.Bunch",
+    "statsmodels.tsa.arima.params.SARIMAXParams",
+    "statsmodels.tsa.arima.model.ARIMAResultsWrapper",
+    "statsmodels.tsa.arima.specification.SARIMAXSpecification",
+    "statsmodels.tsa.statespace.kalman_smoother.SmootherResults",
+    "statsmodels.tsa.statespace.simulation_smoother.SimulationSmoothResults",
+    "statsmodels.tsa.statespace.simulation_smoother.SimulationSmoother",
+    "statsmodels.tsa.holtwinters.results.HoltWintersResultsWrapper",
+    "statsmodels.tsa.statespace.initialization.Initialization",
+    "statsmodels.tsa.statespace.varmax.VARMAXResultsWrapper",
+    # statsmodels; dtype-specific structs persisted by fitted statsmodels statespace models
+    "statsmodels.tsa.statespace._initialization.cInitialization",
+    "statsmodels.tsa.statespace._initialization.dInitialization",
+    "statsmodels.tsa.statespace._initialization.sInitialization",
+    "statsmodels.tsa.statespace._initialization.zInitialization",
+    "statsmodels.tsa.statespace._kalman_filter.cKalmanFilter",
+    "statsmodels.tsa.statespace._kalman_filter.dKalmanFilter",
+    "statsmodels.tsa.statespace._kalman_filter.sKalmanFilter",
+    "statsmodels.tsa.statespace._kalman_filter.zKalmanFilter",
+    "statsmodels.tsa.statespace._kalman_smoother.cKalmanSmoother",
+    "statsmodels.tsa.statespace._kalman_smoother.dKalmanSmoother",
+    "statsmodels.tsa.statespace._kalman_smoother.sKalmanSmoother",
+    "statsmodels.tsa.statespace._kalman_smoother.zKalmanSmoother",
+    "statsmodels.tsa.statespace._representation.cStatespace",
+    "statsmodels.tsa.statespace._representation.dStatespace",
+    "statsmodels.tsa.statespace._representation.sStatespace",
+    "statsmodels.tsa.statespace._representation.zStatespace",
+    "statsmodels.tsa.statespace._simulation_smoother.cSimulationSmoother",
+    "statsmodels.tsa.statespace._simulation_smoother.dSimulationSmoother",
+    "statsmodels.tsa.statespace._simulation_smoother.sSimulationSmoother",
+    "statsmodels.tsa.statespace._simulation_smoother.zSimulationSmoother",
+})
 
 
 # ---------------------------------------------------------------------------
@@ -276,24 +275,107 @@ def is_blocked_global(qualname: str) -> bool:
     return qualname.startswith(BLOCKED_PREFIXES)
 
 
-def safe_base_classes() -> tuple[type, ...]:
-    """Collect known-safe base classes for allowlist validation.
+@lru_cache(maxsize=1)
+def _pandas_allowed_bases() -> type | None:
+    """Return pandas ``BaseOffset``, or ``None`` when pandas cannot be imported."""
+    try:
+        from pandas._libs.tslibs.offsets import BaseOffset
+    except Exception:  # pragma: no cover
+        return None
+    return BaseOffset
 
-    A class that subclasses one of these bases is considered safe for
-    deserialization.  Covers the Darts ecosystem: models, encoders,
-    transformers, sklearn estimators, PyTorch modules, Lightning callbacks, etc.
-    """
-    bases: list[type] = [OrderedDict]
 
-    # sklearn
+@lru_cache(maxsize=1)
+def _numpy_allowed_bases() -> type | tuple[type, ...] | None:
+    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    try:
+        from numpy import generic
+    except Exception:  # pragma: no cover
+        return None
+    return generic
+
+
+@lru_cache(maxsize=1)
+def _statsforecast_allowed_bases() -> type | tuple[type, ...] | None:
+    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    try:
+        from statsforecast.models import _TS
+    except Exception:  # pragma: no cover
+        return None
+    return _TS
+
+
+@lru_cache(maxsize=1)
+def _neuralforecast_allowed_bases() -> type | tuple[type, ...] | None:
+    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    try:
+        from neuralforecast.common._base_model import BaseModel
+    except Exception:  # pragma: no cover
+        return None
+    return BaseModel
+
+
+@lru_cache(maxsize=1)
+def _statsmodels_allowed_bases() -> type | tuple[type, ...] | None:
+    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    try:
+        from statsmodels.base.model import Results
+        from statsmodels.tsa.base.tsa_model import TimeSeriesModel
+    except Exception:  # pragma: no cover
+        return None
+    return TimeSeriesModel, Results
+
+
+@lru_cache(maxsize=1)
+def _sklearn_allowed_bases() -> type | tuple[type, ...] | None:
+    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
     try:
         from sklearn.base import BaseEstimator
-
-        bases.append(BaseEstimator)
     except Exception:  # pragma: no cover
-        pass
+        return None
+    return BaseEstimator
 
-    # darts core
+
+@lru_cache(maxsize=1)
+def _torch_allowed_bases() -> type | tuple[type, ...] | None:
+    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    try:
+        from torch.nn import Module
+        from torch.optim import Optimizer, lr_scheduler
+
+        lr_scheduler_cls = getattr(
+            lr_scheduler,
+            "LRScheduler",
+            getattr(lr_scheduler, "_LRScheduler", Module),
+        )
+    except Exception:  # pragma: no cover
+        return None
+    return Module, Optimizer, lr_scheduler_cls
+
+
+@lru_cache(maxsize=1)
+def _torchmetrics_allowed_bases() -> type | tuple[type, ...] | None:
+    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    try:
+        from torchmetrics import Metric, MetricCollection
+    except Exception:  # pragma: no cover
+        return None
+    return Metric, MetricCollection
+
+
+@lru_cache(maxsize=1)
+def _lightning_allowed_bases() -> type | tuple[type, ...] | None:
+    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    try:
+        from pytorch_lightning import Callback
+    except Exception:  # pragma: no cover
+        return None
+    return Callback
+
+
+@lru_cache(maxsize=1)
+def _darts_core_allowed_bases() -> type | tuple[type, ...] | None:
+    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
     try:
         from darts import TimeSeries
         from darts.dataprocessing.encoders.encoder_base import (
@@ -304,75 +386,107 @@ def safe_base_classes() -> tuple[type, ...]:
         from darts.dataprocessing.transformers.base_data_transformer import (
             BaseDataTransformer,
         )
+        from darts.models.filtering.filtering_model import FilteringModel
         from darts.models.forecasting.forecasting_model import ForecastingModel
+        from darts.utils.likelihood_models.base import Likelihood, LikelihoodType
+    except Exception:  # pragma: no cover
+        return None
+    return (
+        TimeSeries,
+        CovariatesIndexGenerator,
+        Encoder,
+        SequentialEncoderTransformer,
+        BaseDataTransformer,
+        FilteringModel,
+        ForecastingModel,
+        Likelihood,
+        LikelihoodType,
+    )
+
+
+@lru_cache(maxsize=1)
+def _darts_torch_allowed_bases() -> type | tuple[type, ...] | None:
+    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    try:
         from darts.utils.data.torch_datasets.utils import TorchSample
-
-        bases += [
-            TimeSeries,
-            Encoder,
-            CovariatesIndexGenerator,
-            SequentialEncoderTransformer,
-            BaseDataTransformer,
-            ForecastingModel,
-            TorchSample,
-        ]
+        from darts.utils.likelihood_models.torch import TorchLikelihood
     except Exception:  # pragma: no cover
-        pass
+        return None
+    return TorchSample, TorchLikelihood
 
-    # PyTorch
+
+@lru_cache(maxsize=1)
+def _darts_foundation_allowed_bases() -> type | tuple[type, ...] | None:
+    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
     try:
-        from torch.nn import Module
-        from torch.optim import Optimizer, lr_scheduler
-
-        bases += [Module, Optimizer]
-        bases.append(
-            getattr(
-                lr_scheduler,
-                "LRScheduler",
-                getattr(lr_scheduler, "_LRScheduler", Module),
-            )
-        )
+        from darts.models.components.huggingface_connector import HuggingFaceConnector
     except Exception:  # pragma: no cover
-        pass
+        return None
+    return HuggingFaceConnector
 
-    # torchmetrics
-    try:
-        import torchmetrics
 
-        bases += [torchmetrics.Metric, torchmetrics.MetricCollection]
-    except Exception:  # pragma: no cover
-        pass
+def _is_fenced_allowed_subclass(qualname: str, obj: type) -> bool:
+    """Allow in-package (sub)classes that share an audited base.
 
+    For example ``pandas.`` classes that subclass ``BaseOffset`` A subclass
+    defined outside those packages does not pass: its ``__setstate__`` is
+    not part of the audit.
+    """
+    if qualname.startswith("darts.models.components.huggingface_connector."):
+        base = _darts_foundation_allowed_bases()
+    elif qualname.startswith((
+        "darts.utils.data.torch_datasets",
+        "darts.utils.likelihood_models.torch",
+    )):
+        base = _darts_torch_allowed_bases()
+    elif qualname.startswith("darts."):
+        base = _darts_core_allowed_bases()
+    elif qualname.startswith("pandas."):
+        base = _pandas_allowed_bases()
+    elif qualname.startswith("numpy."):
+        base = _numpy_allowed_bases()
+    elif qualname.startswith(("sklearn.", "lightgbm.", "xgboost.", "catboost.")):
+        base = _sklearn_allowed_bases()
+    elif qualname.startswith("statsforecast."):
+        base = _statsforecast_allowed_bases()
+    elif qualname.startswith("statsmodels."):
+        base = _statsmodels_allowed_bases()
+    elif qualname.startswith("torch."):
+        base = _torch_allowed_bases()
+    elif qualname.startswith("torchmetrics."):
+        base = _torchmetrics_allowed_bases()
+    ## TODO: remove callbacks
+    # elif qualname.startswith("lightning."):
+    #     base = _torchmetrics_allowed_bases()
+    elif qualname.startswith("neuralforecast."):
+        base = _neuralforecast_allowed_bases()
+    else:
+        base = None
+    return base is not None and issubclass(obj, base)
+
+
+def _normalize_qualname(qualname: str) -> str:
+    """Map torch's Python-2 ``__builtin__`` module name onto ``builtins``."""
+    if qualname.startswith("__builtin__."):
+        return "builtins." + qualname.removeprefix("__builtin__.")
+    return qualname
+
+
+def safe_base_classes() -> tuple[type, ...]:
+    """Collect known-safe base classes for allowlist validation.
+
+    A class that subclasses one of these bases is considered safe for
+    deserialization.  Covers the Darts ecosystem: models, encoders,
+    transformers, sklearn estimators, PyTorch modules, Lightning callbacks, etc.
+    """
+    bases: list[type] = [OrderedDict]
+
+    # TODO: remove callbacks
     # Lightning
     try:
         from pytorch_lightning.callbacks import Callback
 
         bases.append(Callback)
-    except Exception:  # pragma: no cover
-        pass
-
-    # Darts likelihoods
-    try:
-        from darts.utils.likelihood_models.base import Likelihood, LikelihoodType
-        from darts.utils.likelihood_models.torch import TorchLikelihood
-
-        bases += [Likelihood, TorchLikelihood, LikelihoodType]
-    except Exception:  # pragma: no cover
-        pass
-
-    # Darts filtering (e.g. KalmanForecaster pickles an internal KalmanFilter)
-    try:
-        from darts.models.filtering.filtering_model import FilteringModel
-
-        bases.append(FilteringModel)
-    except Exception:  # pragma: no cover
-        pass
-
-    # Foundation-model connectors and other Darts components referenced in .pt wrappers
-    try:
-        from darts.models.components.huggingface_connector import HuggingFaceConnector
-
-        bases.append(HuggingFaceConnector)
     except Exception:  # pragma: no cover
         pass
 
@@ -393,12 +507,13 @@ def is_allowed_global(
     1. **Deny** if it matches :data:`BLOCKED_PREFIXES`.
     2. **Allow** if it is in :data:`EXACT_ALLOWED_CLASSES`.
     3. **Allow** if it is in :data:`SAFE_PICKLE_FUNCTIONS` or ``extra_safe_callables``.
-    4. **Reject** if it is not under a :data:`TRUSTED_PREFIXES`.
-    5. **Allow** all classes and callables from safe infrastructure packages
-       (:data:`_SAFE_PACKAGE_PREFIXES` — numpy, pandas, pyarrow, lightning).
-    6. **Allow classes** that subclass a ``safe_bases`` entry or are an ``enum.Enum``.
+    4. **Allow** if it is in :data:`EXACT_STATE_CLASSES` and is a class.
+    5. **Allow classes** under trusted prefixes if the class subclasses one of the safe bases.
+    6. **Allow classes** under :data:`TRUSTED_PREFIXES` that subclass a ``safe_bases``
+       entry or are an ``enum.Enum``.  Callables never pass this step.
     7. **Deny** everything else.
     """
+    qualname = _normalize_qualname(qualname)
     if is_blocked_global(qualname):
         return False
 
@@ -411,29 +526,23 @@ def is_allowed_global(
     if extra_safe_callables and qualname in extra_safe_callables:
         return obj is not None and callable(obj)
 
+    if qualname in EXACT_STATE_CLASSES:
+        return obj is not None and inspect.isclass(obj)
+
+    if obj is None or not inspect.isclass(obj):
+        return False
+
     if not qualname.startswith(TRUSTED_PREFIXES):
         return False
 
-    # Safe infrastructure packages (data + training framework) contain only
-    # data containers, reconstruction helpers, and framework internals — no
-    # code-execution primitives.  Trust by qualname even when ``resolve_reference``
-    # failed (class may not be imported yet; pickle will import via ``find_class``).
-    if qualname.startswith(_SAFE_PACKAGE_PREFIXES):
+    if _is_fenced_allowed_subclass(qualname, obj):
         return True
 
-    if obj is None:
-        return False
+    if safe_bases and issubclass(obj, safe_bases):
+        return True
 
-    if inspect.isclass(obj):
-        if safe_bases and issubclass(obj, safe_bases):
-            return True
-        if issubclass(obj, enum.Enum):
-            return True
-        return False
-
-    if callable(obj) and not inspect.isclass(obj):
-        return False
-
+    if issubclass(obj, enum.Enum):
+        return True
     return False
 
 
@@ -443,8 +552,8 @@ def format_unpickling_error(qualname: str, path: str) -> str:
         f"Global `{qualname}` referenced by model file `{path}` is not allow-listed "
         f"for safe loading.  If you trust this file, reload with `weights_only=False` "
         f"(torch models) or `trusted=True` (non-torch models).  If you used custom "
-        f"encoders, callbacks, or other third-party classes, ensure they subclass a "
-        f"known base class (e.g. BaseEstimator, nn.Module) or use the opt-out flag."
+        f"encoders, callbacks, or other third-party classes, pass them via "
+        f"`trusted_classes` or use the opt-out flag."
     )
 
 

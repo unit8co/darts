@@ -703,6 +703,28 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             )
         return freq_times * days
 
+    def __getstate__(self):
+        # ``_execute_and_suppress_output`` calls an arbitrary function and its
+        # module imports ``os``.  The fitted Stan backend's ``CmdStanModel``
+        # compiles a Stan file in ``__init__``.  Neither is model state:
+        # forecasts use ``self.model.params``.
+        state = self.__dict__.copy()
+        state.pop("_execute_and_suppress_output", None)
+        model = state.get("model")
+        if model is not None:
+            stripped = object.__new__(type(model))
+            stripped.__dict__.update(model.__dict__)
+            stripped.stan_backend = None
+            stripped.stan_fit = None
+            state["model"] = stripped
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self._execute_and_suppress_output = execute_and_suppress_output
+        if getattr(self, "_model_builder", None) is None:
+            self._model_builder = prophet.Prophet
+
     @property
     def _supports_range_index(self) -> bool:
         """Prophet does not support integer range index."""

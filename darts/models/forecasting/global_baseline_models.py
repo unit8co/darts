@@ -248,16 +248,64 @@ class _NoCovariatesMixin:
         return False
 
 
+# Torch reductions safe to persist by name.  Pickling ``torch.mean`` itself is
+# ``getattr(torch._C._VariableFunctions, "mean")``, and ``builtins.getattr`` is
+# not allow-listed.  A user callable outside this set must be passed via
+# ``trusted_classes`` (or ``weights_only=False``) when loading.
+_TORCH_AGGREGATIONS: frozenset[str] = frozenset({
+    "mean",
+    "sum",
+    "median",
+    "min",
+    "max",
+    "prod",
+    "std",
+    "var",
+    "nanmean",
+    "nansum",
+    "nanmedian",
+    "amax",
+    "amin",
+})
+
+
+def _torch_aggregation_name(fn: Callable) -> str | None:
+    """Return the ``torch.<name>`` of ``fn`` when it is a known reduction."""
+    name = getattr(fn, "__name__", None)
+    if name not in _TORCH_AGGREGATIONS:
+        return None
+    if getattr(torch, name, None) is fn:
+        return name
+    return None
+
+
+def _resolve_torch_aggregation(name: str) -> Callable:
+    if name not in _TORCH_AGGREGATIONS:
+        allowed = ", ".join(sorted(_TORCH_AGGREGATIONS))
+        raise_log(
+            ValueError(f"Unknown aggregation `{name}`. Expected one of: {allowed}."),
+        )
+    return getattr(torch, name)
+
+
 class _GlobalNaiveAggregateModule(_GlobalNaiveModule):
     def __init__(
-        self, agg_fn: Callable[[torch.Tensor, int], torch.Tensor], *args, **kwargs
+        self,
+        agg_fn: str | Callable[[torch.Tensor, int], torch.Tensor],
+        *args,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
-        self.agg_fn = agg_fn
+        # Persist torch reductions as a name so the checkpoint does not contain
+        # ``builtins.getattr``.  Custom callables are stored as-is.
+        self.agg_fn = _torch_aggregation_name(agg_fn) or agg_fn
 
     def _forward(self, x_in) -> torch.Tensor:
         y_target = x_in.past_target
-        aggregate = self.agg_fn(y_target, dim=1)
+        agg_fn = self.agg_fn
+        if isinstance(agg_fn, str):
+            agg_fn = _resolve_torch_aggregation(agg_fn)
+        aggregate = agg_fn(y_target, dim=1)
         return _repeat_along_output_chunk(aggregate, self.output_chunk_length)
 
 
@@ -407,8 +455,23 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
             )
         self.agg_fn = agg_fn
 
+    def __getstate__(self):
+        state = super().__getstate__()
+        name = _torch_aggregation_name(state.get("agg_fn"))
+        if name is not None:
+            state["agg_fn"] = name
+        return state
+
+    def __setstate__(self, state):
+        super().__setstate__(state)
+        if isinstance(self.agg_fn, str):
+            self.agg_fn = _resolve_torch_aggregation(self.agg_fn)
+
     def _create_model(self, train_sample: TorchTrainingSample) -> _GlobalNaiveModule:
-        return _GlobalNaiveAggregateModule(agg_fn=self.agg_fn, **self.pl_module_params)
+        # Pass torch reductions by name so the checkpoint hyperparameters do not
+        # contain ``torch.mean`` (which pickles via ``builtins.getattr``).
+        agg_fn = _torch_aggregation_name(self.agg_fn) or self.agg_fn
+        return _GlobalNaiveAggregateModule(agg_fn=agg_fn, **self.pl_module_params)
 
 
 class _GlobalNaiveSeasonalModule(_GlobalNaiveModule):
