@@ -20,6 +20,7 @@ import pytest
 from sklearn.neighbors import KNeighborsRegressor
 
 from darts import TimeSeries
+from darts.dataprocessing.transformers import Scaler
 from darts.models import LinearRegressionModel, NaiveMean, NaiveSeasonal, SKLearnModel
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.tests.conftest import (
@@ -185,6 +186,7 @@ class SaveLoadCase:
         contextlib.nullcontext
     )
     skip_fit: bool = False
+    trusted_classes: list[str] = field(default_factory=list)
 
 
 def _predict(model, series: TimeSeries, n: int) -> TimeSeries:
@@ -214,6 +216,10 @@ def _resolve_model_cls(cls: type | str) -> type | None:
     return _model_class(cls)
 
 
+def custom_encoder(idx):
+    return idx.year
+
+
 def _model_config_specs(series: _SeriesBundle) -> list[dict[str, Any]]:
     """Flat list of save/load test configurations (optional ``when`` skips entry)."""
     uni, _, _ = series.uni, series.pos, series.mv
@@ -235,6 +241,31 @@ def _model_config_specs(series: _SeriesBundle) -> list[dict[str, Any]]:
         {
             "id": "linear_regression_quantile",
             "cls": QuantileLinearRegressionModel,
+        },
+        {
+            "id": "linear_regression_encoder_with_transformer",
+            "cls": "LinearRegressionModel",
+            "kwargs": {
+                "lags": 4,
+                "lags_future_covariates": [0],
+                "add_encoders": {
+                    "position": {"future": ["relative"]},
+                    "tz": "CET",
+                    "transformer": Scaler(),
+                },
+            },
+        },
+        {
+            "id": "linear_regression_custom_encoder",
+            "cls": "LinearRegressionModel",
+            "kwargs": {
+                "lags": 4,
+                "lags_future_covariates": [0],
+                "add_encoders": {
+                    "custom": {"future": [custom_encoder]},
+                },
+            },
+            "trusted_classes": [custom_encoder],
         },
         {
             "id": "random_forest",
@@ -598,6 +629,7 @@ def _case_from_spec(spec: dict[str, Any], bundle: _SeriesBundle) -> SaveLoadCase
         predict_n=spec.get("predict_n", PREDICT_H),
         patch_factory=patch_factory,
         skip_fit=spec.get("skip_fit", False),
+        trusted_classes=spec.get("trusted_classes", []),
     )
 
 
@@ -651,24 +683,41 @@ def _globals_referenced_by(path: str, *, torch_wrapper: bool) -> set[str]:
     return found
 
 
-def _denied_globals(names) -> list[str]:
+def _denied_globals(names, trusted_classes: list[type]) -> list[str]:
     bases = safe_base_classes()
+    extra_allowed = None
+    if trusted_classes:
+        extra_allowed = frozenset(
+            f"{cls.__module__}.{cls.__qualname__}" for cls in trusted_classes
+        )
     denied = []
     for name in sorted(set(names)):
         if name.startswith("__builtin__."):
             name = "builtins." + name.removeprefix("__builtin__.")
-        if not is_allowed_global(name, resolve_reference(name), safe_bases=bases):
+        if not is_allowed_global(
+            name,
+            resolve_reference(name),
+            safe_bases=bases,
+            extra_safe_callables=extra_allowed,
+        ):
             denied.append(name)
     return denied
 
 
-def _assert_saved_file_is_allowlisted(path: str, *, torch_model: bool) -> None:
+def _assert_saved_file_is_allowlisted(
+    path: str,
+    torch_model: bool,
+    trusted_classes: list[type],
+) -> None:
     """Fail when a saved model references a global outside the safe-load registries.
 
     New dependency types must be classified (hierarchy, exact reconstructor, or
     exact state class) instead of being absorbed by a package prefix.
     """
-    denied = _denied_globals(_globals_referenced_by(path, torch_wrapper=torch_model))
+    denied = _denied_globals(
+        _globals_referenced_by(path, torch_wrapper=torch_model),
+        trusted_classes=trusted_classes,
+    )
     if torch_model:
         import os
 
@@ -677,7 +726,11 @@ def _assert_saved_file_is_allowlisted(path: str, *, torch_model: bool) -> None:
         ckpt = path + ".ckpt"
         if os.path.exists(ckpt):
             unsafe = torch.serialization.get_unsafe_globals_in_checkpoint(ckpt)
-            denied.extend(_denied_globals(_qualnames_from_checkpoint(unsafe)))
+            denied.extend(
+                _denied_globals(
+                    _qualnames_from_checkpoint(unsafe), trusted_classes=trusted_classes
+                )
+            )
     assert not denied, (
         "Saved model references globals that are not allow-listed for safe "
         f"loading: {sorted(set(denied))}"
@@ -703,9 +756,12 @@ def test_safe_save_load_prediction_parity(case: SaveLoadCase, tmp_path):
         _assert_saved_file_is_allowlisted(
             str(save_path),
             torch_model=ext == ".pt",
+            trusted_classes=case.trusted_classes,
         )
 
-        loaded = case.model_cls.load(str(save_path))
+        loaded = case.model_cls.load(
+            str(save_path), trusted_classes=case.trusted_classes
+        )
         pred_after = _predict(loaded, case.series, case.predict_n)
 
     assert pred_after == pred_before
