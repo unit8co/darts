@@ -151,9 +151,8 @@ class TorchShapAdapter(ShapAdapter):
 
         Parameters
         ----------
-        func
-            The function wrapper that takes a numpy array of input features and outputs model predictions, to be passed
-            to the SHAP explainer.
+        model
+            The forecasting model to be explained.
         background_arr
             The background dataset in the form of a numpy array, to be passed to the SHAP explainer.
         shap_method
