@@ -165,6 +165,22 @@ class CustomCallback(Callback):
         pass
 
 
+class StatefulCallback(Callback):
+    def __init__(self):
+        self.current_epochs = []
+        self.persisted_epochs = []
+
+    def on_train_epoch_end(self, trainer, pl_module):
+        self.current_epochs.append(trainer.current_epoch)
+
+    def state_dict(self) -> dict[str, Any]:
+        return {"persisted_epochs": self.persisted_epochs + self.current_epochs}
+
+    def load_state_dict(self, state_dict: dict[str, Any]) -> None:
+        self.current_epochs = []
+        self.persisted_epochs = state_dict["persisted_epochs"]
+
+
 class _UserDLinear(DLinearModel):
     """Module-level subclass. Save/load imports it by qualname."""
 
@@ -282,8 +298,8 @@ class TestTorchForecastingModel:
         # check that the PyTorch Lightning ckpt does not exist
         assert not os.path.exists(no_training_ckpt_path + ".ckpt")
         # informative exception about `fit()` not called
+        no_train_model = model_cls.load(no_training_ckpt_path)
         with pytest.raises(ValueError) as err:
-            no_train_model = model_cls.load(no_training_ckpt_path)
             no_train_model.predict(n=4)
         assert str(err.value) == (
             "Input `series` must be provided. This is the result either from fitting on multiple series, "
@@ -1700,6 +1716,8 @@ class TestTorchForecastingModel:
     def test_load_from_checkpoint_w_metrics(self, tmpdir_fn):
         model_name = "pretraining_metrics"
         # model with one torch_metrics
+        from lightning_fabric.loggers.logger import _DummyExperiment
+
         pl_trainer_kwargs = dict(
             {"logger": DummyLogger(), "log_every_n_steps": 1},
             **tfm_kwargs["pl_trainer_kwargs"],
@@ -1727,10 +1745,71 @@ class TestTorchForecastingModel:
             tmpdir_fn,
             best=False,
             map_location="cpu",
+            trusted_classes=[DummyLogger, _DummyExperiment],
         )
         # custom loss function should be properly restored from ckpt torchmetrics.Metric
         assert isinstance(loaded_model.model.train_metrics, MetricCollection)
         assert len(loaded_model.model.train_metrics) == 1
+
+    def test_load_from_checkpoint_w_stateful_callback(self, tmpdir_fn):
+        """Loading and resuming training restores callbacks including states."""
+        model_name = "stateful_callback"
+
+        cb = StatefulCallback()
+        pl_trainer_kwargs = dict(
+            {"callbacks": [cb]},
+            **tfm_kwargs["pl_trainer_kwargs"],
+        )
+
+        def _get_fitted_callback(model_) -> StatefulCallback:
+            cb_fitted_ = None
+            for cb_ in model_.trainer.callbacks:
+                if isinstance(cb, StatefulCallback):
+                    cb_fitted_ = cb_
+                    break
+
+            assert cb_fitted_ is not None
+            return cb_fitted_
+
+        # initial training
+        model = RNNModel(
+            12,
+            "RNN",
+            5,
+            1,
+            n_epochs=1,
+            work_dir=tmpdir_fn,
+            model_name=model_name,
+            save_checkpoints=True,
+            force_reset=True,
+            pl_trainer_kwargs=pl_trainer_kwargs,
+        )
+        model.fit(self.series)
+        cb_fitted = _get_fitted_callback(model)
+        assert cb_fitted.current_epochs == [0]
+        assert cb_fitted.persisted_epochs == []
+
+        # resuming training restores the stateful callbacks
+        loaded_model = RNNModel.load_from_checkpoint(
+            model_name,
+            tmpdir_fn,
+            best=False,
+        )
+        loaded_model.fit(self.series, epochs=2)
+        cb_fitted = _get_fitted_callback(loaded_model)
+        assert cb_fitted.current_epochs == [1]
+        assert cb_fitted.persisted_epochs == [0]
+
+        # resuming another time works as well
+        loaded_model = RNNModel.load_from_checkpoint(
+            model_name,
+            tmpdir_fn,
+            best=False,
+        )
+        loaded_model.fit(self.series, epochs=4)
+        cb_fitted = _get_fitted_callback(loaded_model)
+        assert cb_fitted.current_epochs == [2, 3]
+        assert cb_fitted.persisted_epochs == [0, 1]
 
     def test_optimizers(self):
         optimizers = [

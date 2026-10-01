@@ -114,6 +114,10 @@ EXACT_ALLOWED_CLASSES: frozenset[str] = frozenset({
     "pathlib.Path",
     # sklearn helper
     "sklearn.utils._random.MTRandState",
+    # torch; dtype singletons are covered by safe instances
+    "torch.dtype",
+    "torch.device",
+    "torch.Size",
 })
 
 # Pickle reconstruction helpers referenced by serialized model files.
@@ -141,6 +145,12 @@ SAFE_PICKLE_FUNCTIONS: frozenset[str] = frozenset({
     "torch._utils._rebuild_tensor_v2",
     "copyreg._reconstructor",
     "_codecs.encode",
+    "torchmetrics.utilities.data.dim_zero_cat",
+    "torchmetrics.utilities.data.dim_zero_sum",
+    "torchmetrics.utilities.data.dim_zero_mean",
+    "torchmetrics.utilities.data.dim_zero_max",
+    "torchmetrics.utilities.data.dim_zero_min",
+    "torchmetrics.metric.jit_distributed_available",
 })
 
 # ---------------------------------------------------------------------------
@@ -465,6 +475,24 @@ def _is_fenced_allowed_subclass(qualname: str, obj: type) -> bool:
     return base is not None and issubclass(obj, base)
 
 
+@lru_cache(maxsize=1)
+def _torch_allowed_instances() -> type | tuple[type, ...] | None:
+    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    try:
+        from torch import dtype
+    except Exception:  # pragma: no cover
+        return None
+    return dtype
+
+
+def _is_fenced_allowed_instance(qualname: str, obj: type) -> bool:
+    if qualname.startswith("torch."):
+        base = _torch_allowed_instances()
+    else:
+        base = None
+    return base is not None and isinstance(obj, base)
+
+
 def _normalize_qualname(qualname: str) -> str:
     """Map torch's Python-2 ``__builtin__`` module name onto ``builtins``."""
     if qualname.startswith("__builtin__."):
@@ -508,10 +536,11 @@ def is_allowed_global(
     2. **Allow** if it is in :data:`EXACT_ALLOWED_CLASSES`.
     3. **Allow** if it is in :data:`SAFE_PICKLE_FUNCTIONS` or ``extra_safe_callables``.
     4. **Allow** if it is in :data:`EXACT_STATE_CLASSES` and is a class.
-    5. **Allow classes** under trusted prefixes if the class subclasses one of the safe bases.
-    6. **Allow classes** under :data:`TRUSTED_PREFIXES` that subclass a ``safe_bases``
+    5. **Allow** ``torch.*`` module-level :class:`torch.dtype` singletons.
+    6. **Allow classes** under trusted prefixes if the class subclasses one of the safe bases.
+    7. **Allow classes** under :data:`TRUSTED_PREFIXES` that subclass a ``safe_bases``
        entry or are an ``enum.Enum``.  Callables never pass this step.
-    7. **Deny** everything else.
+    8. **Deny** everything else.
     """
     qualname = _normalize_qualname(qualname)
     if is_blocked_global(qualname):
@@ -529,11 +558,13 @@ def is_allowed_global(
     if qualname in EXACT_STATE_CLASSES:
         return obj is not None and inspect.isclass(obj)
 
-    if obj is None or not inspect.isclass(obj):
+    if obj is None or not qualname.startswith(TRUSTED_PREFIXES):
         return False
 
-    if not qualname.startswith(TRUSTED_PREFIXES):
-        return False
+    if not inspect.isclass(obj):
+        if callable(obj):
+            return False
+        return _is_fenced_allowed_instance(qualname, obj)
 
     if _is_fenced_allowed_subclass(qualname, obj):
         return True

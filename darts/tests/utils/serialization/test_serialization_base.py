@@ -109,6 +109,17 @@ class TestIsAllowedGlobal:
         qualname = f"{cpp_load.__module__}.{cpp_load.__qualname__}"
         assert not is_allowed_global(qualname, cpp_load, safe_bases=bases)
 
+    def test_allows_torch_dtype_singletons(self, bases):
+        torch = pytest.importorskip("torch")
+
+        assert is_allowed_global("torch.float32", torch.float32, safe_bases=bases)
+        assert is_allowed_global("torch.bfloat16", torch.bfloat16, safe_bases=bases)
+
+    def test_allows_torch_size(self, bases):
+        torch = pytest.importorskip("torch")
+
+        assert is_allowed_global("torch.Size", torch.Size, safe_bases=bases)
+
 
 class TestRestrictedUnpickler:
     def test_loads_safe_objects(self):
@@ -127,6 +138,14 @@ class TestRestrictedUnpickler:
         pickle.dump(offset, buf)
         buf.seek(0)
         assert RestrictedUnpickler(buf).load() == offset
+
+    def test_loads_torch_dtype(self):
+        torch = pytest.importorskip("torch")
+
+        buf = io.BytesIO()
+        pickle.dump(torch.float32, buf)
+        buf.seek(0)
+        assert RestrictedUnpickler(buf).load() is torch.float32
 
     def test_blocks_os_system(self):
         class Evil:

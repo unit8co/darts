@@ -102,23 +102,7 @@ TORCH_NP_DTYPES = {
 # attributes to be ignored, and the values are the default values getting assigned upon loading
 TFM_ATTRS_NO_PICKLE = {"model": None, "trainer": None}
 
-# Bound methods Lightning copies onto callbacks during ``fit``.  They must not
-# be pickled: restoring them requires ``builtins.getattr``.
-_CALLBACK_MODULE_METHODS = ("log", "log_dict")
-
 logger = get_logger(__name__)
-
-
-def _callbacks_without_module_methods(callbacks):
-    """Return callbacks with Lightning's module logging methods removed."""
-    cleaned = []
-    for callback in callbacks:
-        if any(name in callback.__dict__ for name in _CALLBACK_MODULE_METHODS):
-            callback = copy.copy(callback)
-            for name in _CALLBACK_MODULE_METHODS:
-                callback.__dict__.pop(name, None)
-        cleaned.append(callback)
-    return cleaned
 
 
 def _get_checkpoint_folder(work_dir, model_name):
@@ -325,56 +309,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.model_name = model_name
         self.work_dir = work_dir
 
-        # setup model save dirs
+        # setup model checkpointing
         self.save_checkpoints = save_checkpoints
-        checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
-        log_folder = _get_logs_folder(self.work_dir, self.model_name)
-        checkpoint_exists = (
-            os.path.exists(checkpoints_folder)
-            and len(glob(os.path.join(checkpoints_folder, "*"))) > 0
+        checkpoint_callbacks = self._setup_checkpointing(
+            create_save_dirs=True, force_reset=force_reset
         )
 
-        # setup model save dirs
-        if checkpoint_exists and save_checkpoints:
-            if not force_reset:
-                raise_log(
-                    ValueError(
-                        f"Some model data already exists for `model_name` '{self.model_name}'. "
-                        f"Either load model to continue training or use `force_reset=True` to "
-                        f"initialize anyway to start training from scratch and remove all the "
-                        f"model data."
-                    ),
-                )
-            self.reset_model()
-        elif save_checkpoints:
-            self._create_save_dirs()
-        else:
-            pass
-
-        # save best epoch on val_loss and last epoch under 'darts_logs/model_name/checkpoints/'
-        if save_checkpoints:
-            best_checkpoint_callback = pl.callbacks.ModelCheckpoint(
-                dirpath=checkpoints_folder,
-                filename="best-{epoch}-{val_loss:.4f}",
-                monitor="val_loss",
-                save_last=False,
-                save_top_k=1,
-            )
-            last_checkpoint_callback = pl.callbacks.ModelCheckpoint(
-                dirpath=checkpoints_folder,
-                filename="last-{epoch}",
-                monitor=None,
-                save_last=False,
-                save_top_k=1,
-            )
-            checkpoint_callbacks = [
-                best_checkpoint_callback,
-                last_checkpoint_callback,
-            ]
-        else:
-            checkpoint_callbacks = []
-
         # save tensorboard under 'darts_logs/model_name/logs/'
+        log_folder = _get_logs_folder(self.work_dir, self.model_name)
         model_logger = (
             pl_loggers.TensorBoardLogger(save_dir=log_folder, name="", version="logs")
             if log_tensorboard
@@ -583,6 +525,56 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 param.requires_grad = make_trainable
             else:
                 param.requires_grad = not make_trainable
+
+    def _setup_checkpointing(
+        self, create_save_dirs: bool, force_reset: bool = False
+    ) -> list[pl.callbacks.Callback]:
+        """Sets up a callbacks for checkpointing and optionally creates and verifies save directories."""
+        if not self.save_checkpoints:
+            return []
+
+        checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
+
+        if create_save_dirs:
+            checkpoint_exists = (
+                os.path.exists(checkpoints_folder)
+                and len(glob(os.path.join(checkpoints_folder, "*"))) > 0
+            )
+
+            # setup model save dirs
+            if checkpoint_exists:
+                if not force_reset:
+                    raise_log(
+                        ValueError(
+                            f"Some model data already exists for `model_name` '{self.model_name}'. "
+                            f"Either load model to continue training or use `force_reset=True` to "
+                            f"initialize anyway to start training from scratch and remove all the "
+                            f"model data."
+                        ),
+                    )
+                self.reset_model()
+            else:
+                self._create_save_dirs()
+
+        # save best epoch on val_loss and last epoch under 'darts_logs/model_name/checkpoints/'
+        best_checkpoint_callback = pl.callbacks.ModelCheckpoint(
+            dirpath=checkpoints_folder,
+            filename="best-{epoch}-{val_loss:.4f}",
+            monitor="val_loss",
+            save_last=False,
+            save_top_k=1,
+        )
+        last_checkpoint_callback = pl.callbacks.ModelCheckpoint(
+            dirpath=checkpoints_folder,
+            filename="last-{epoch}",
+            monitor=None,
+            save_last=False,
+            save_top_k=1,
+        )
+        return [
+            best_checkpoint_callback,
+            last_checkpoint_callback,
+        ]
 
     def _setup_trainer(
         self,
@@ -2190,7 +2182,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # a shallow copy is enough since we are only interested in removing pointers
         model.model = copy.copy(self.model)  # keep the model for prediction
         model._model_params = copy.copy(self._model_params)
-        model._model_params["pl_trainer_kwargs"] = None
+        model._model_params.pop("pl_trainer_kwargs", None)
         model.trainer_params = {}
         return model
 
@@ -3101,17 +3093,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def __getstate__(self):
         # do not pickle the PyTorch LightningModule, and Trainer
         state = {k: v for k, v in self.__dict__.items() if k not in TFM_ATTRS_NO_PICKLE}
-        trainer_params = state.get("trainer_params")
-        if isinstance(trainer_params, dict) and trainer_params.get("callbacks"):
-            # Lightning attaches ``callback.log`` / ``log_dict`` to the live
-            # module during fit.  Those bound methods pickle as ``getattr`` and
-            # pull the whole module into the wrapper.  Drop them; the next
-            # trainer re-attaches them.
-            trainer_params = dict(trainer_params)
-            trainer_params["callbacks"] = _callbacks_without_module_methods(
-                trainer_params["callbacks"]
-            )
-            state["trainer_params"] = trainer_params
+
+        # remove callbacks from trainer params for pickling; they (untrained) objects
+        # are restored via `__setstate__` and state is loaded via lightning ckpt when
+        # resuming training
+        state["trainer_params"] = {
+            k: v for k, v in state["trainer_params"].items() if k != "callbacks"
+        }
         return state
 
     def __setstate__(self, d):
@@ -3120,6 +3108,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # default values
         for attr, default_val in TFM_ATTRS_NO_PICKLE.items():
             setattr(self, attr, default_val)
+
+        # restore (untrained) callbacks from model creation parameters
+        callbacks = self._setup_checkpointing(create_save_dirs=False)
+        trainer_params = self._model_params.get("pl_trainer_kwargs", None)
+        if (
+            trainer_params is not None
+            and "callbacks" in self._model_params["pl_trainer_kwargs"]
+        ):
+            callbacks += copy.deepcopy(trainer_params["callbacks"])
+        self.trainer_params["callbacks"] = callbacks
 
 
 def _raise_if_wrong_type(obj, exp_type, msg="expected type {}, got: {}"):
