@@ -15,12 +15,10 @@ import torch
 from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
 
 from darts.logging import execute_and_suppress_output
-from darts.utils.likelihood_models.base import LikelihoodType
-from darts.utils.likelihood_models.torch import GaussianLikelihood, TorchLikelihood
+from darts.utils.likelihood_models.torch import GaussianLikelihood
 from darts.utils.serialization.base import UnpicklingError, dedupe_by_identity
 from darts.utils.serialization.torch import (
-    DartsCheckpointIO,
-    likelihood_safe_globals,
+    _DartsCheckpointIO,
     load_torch_safely,
     load_wrapper_safely,
     safe_globals_for_torch_file,
@@ -38,20 +36,6 @@ class TestDedupeByIdentity:
 
     def test_empty_input(self):
         assert dedupe_by_identity([]) == []
-
-
-class TestDartsSafeGlobals:
-    def test_includes_likelihood_types(self):
-        globals_ = likelihood_safe_globals()
-        assert LikelihoodType in globals_
-        assert TorchLikelihood in globals_
-        assert GaussianLikelihood in globals_
-
-    def test_all_entries_are_classes(self):
-        import inspect
-
-        for obj in likelihood_safe_globals():
-            assert inspect.isclass(obj)
 
 
 class TestSafeGlobalsForCheckpoint:
@@ -91,7 +75,11 @@ class TestLoadCkptSafely:
     def test_extra_globals_are_included(self, tmp_path):
         ckpt_path = tmp_path / "dummy.ckpt"
         torch.save({"x": 1}, ckpt_path)
-        extra = [object()]
+
+        class TrustedClass:
+            pass
+
+        extra = [TrustedClass]
 
         with patch(
             "darts.utils.serialization.torch.torch.serialization.safe_globals"
@@ -99,7 +87,7 @@ class TestLoadCkptSafely:
             mock_ctx.return_value.__enter__ = MagicMock(return_value=None)
             mock_ctx.return_value.__exit__ = MagicMock(return_value=False)
             load_torch_safely(
-                lambda *args, **kwargs: None, ckpt_path, extra_globals=extra
+                lambda *args, **kwargs: None, ckpt_path, trusted_classes=extra
             )
             allow = mock_ctx.call_args[0][0]
             assert extra[0] in allow
@@ -110,7 +98,7 @@ class TestDartsCheckpointIO:
         ckpt_path = tmp_path / "test.ckpt"
         torch.save({"state": 0}, ckpt_path)
 
-        io = DartsCheckpointIO()
+        io = _DartsCheckpointIO()
         with patch.object(
             TorchCheckpointIO, "load_checkpoint", return_value={"ok": True}
         ) as mock_super:
@@ -124,7 +112,7 @@ class TestDartsCheckpointIO:
         ckpt_path = tmp_path / "test.ckpt"
         torch.save({"state": 0}, ckpt_path)
 
-        io = DartsCheckpointIO()
+        io = _DartsCheckpointIO()
         with patch.object(
             TorchCheckpointIO, "load_checkpoint", return_value={"ok": True}
         ) as mock_super:

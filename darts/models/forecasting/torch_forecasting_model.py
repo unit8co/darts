@@ -72,7 +72,7 @@ from darts.utils.historical_forecasts.optimized_historical_forecasts_torch impor
 )
 from darts.utils.likelihood_models.torch import TorchLikelihood
 from darts.utils.serialization.torch import (
-    DartsCheckpointIO,
+    _DartsCheckpointIO,
     load_torch_safely,
     load_wrapper_safely,
 )
@@ -613,12 +613,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         callbacks = trainer_params_copy.pop("callbacks", None)
 
         # ensure internal checkpoint loading (Tuner, plugin-routed loads, etc.) is
-        # safe-by-default: `DartsCheckpointIO` loads `.ckpt` files with `weights_only=True`
+        # safe-by-default: `_DartsCheckpointIO` loads `.ckpt` files with `weights_only=True`
         # (load-scoped allow-list).
         plugins = list(trainer_params_copy.pop("plugins", None) or [])
         has_checkpoint_io = any(isinstance(p, TorchCheckpointIO) for p in plugins)
         if not has_checkpoint_io:
-            plugins.append(DartsCheckpointIO())
+            plugins.append(_DartsCheckpointIO())
 
         return pl.Trainer(
             callbacks=[cb for cb in callbacks] if callbacks is not None else callbacks,

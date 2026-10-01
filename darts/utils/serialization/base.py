@@ -247,12 +247,12 @@ EXACT_STATE_CLASSES: frozenset[str] = frozenset({
 # ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
-def all_imported_subclasses(cls: type) -> set[type]:
-    """Gives all currently imported subclasses for `cls` (including `cls`)."""
-    found = {cls}
-    for sub in cls.__subclasses__():
-        found |= all_imported_subclasses(sub)
-    return found
+def _qualname_set(
+    trusted_classes: list[type] | None,
+) -> frozenset[str] | None:
+    if not trusted_classes:
+        return None
+    return frozenset(f"{cls.__module__}.{cls.__qualname__}" for cls in trusted_classes)
 
 
 def resolve_reference(reference):
@@ -466,8 +466,8 @@ def _is_fenced_allowed_subclass(qualname: str, obj: type) -> bool:
     elif qualname.startswith("torchmetrics."):
         base = _torchmetrics_allowed_bases()
     ## TODO: remove callbacks
-    # elif qualname.startswith("lightning."):
-    #     base = _torchmetrics_allowed_bases()
+    elif qualname.startswith(("pytorch_lightning.", "lightning.")):
+        base = _lightning_allowed_bases()
     elif qualname.startswith("neuralforecast."):
         base = _neuralforecast_allowed_bases()
     else:
@@ -498,27 +498,6 @@ def _normalize_qualname(qualname: str) -> str:
     if qualname.startswith("__builtin__."):
         return "builtins." + qualname.removeprefix("__builtin__.")
     return qualname
-
-
-def safe_base_classes() -> tuple[type, ...]:
-    """Collect known-safe base classes for allowlist validation.
-
-    A class that subclasses one of these bases is considered safe for
-    deserialization.  Covers the Darts ecosystem: models, encoders,
-    transformers, sklearn estimators, PyTorch modules, Lightning callbacks, etc.
-    """
-    bases: list[type] = [OrderedDict]
-
-    # TODO: remove callbacks
-    # Lightning
-    try:
-        from pytorch_lightning.callbacks import Callback
-
-        bases.append(Callback)
-    except Exception:  # pragma: no cover
-        pass
-
-    return tuple(b for b in bases if inspect.isclass(b))
 
 
 def is_allowed_global(
@@ -588,6 +567,28 @@ def format_unpickling_error(qualname: str, path: str) -> str:
     )
 
 
+# TODO: remove
+def safe_base_classes() -> tuple[type, ...]:
+    """Collect known-safe base classes for allowlist validation.
+
+    A class that subclasses one of these bases is considered safe for
+    deserialization.  Covers the Darts ecosystem: models, encoders,
+    transformers, sklearn estimators, PyTorch modules, Lightning callbacks, etc.
+    """
+    bases: list[type] = [OrderedDict]
+
+    # TODO: remove callbacks
+    # Lightning
+    try:
+        from pytorch_lightning.callbacks import Callback
+
+        bases.append(Callback)
+    except Exception:  # pragma: no cover
+        pass
+
+    return tuple(b for b in bases if inspect.isclass(b))
+
+
 # ---------------------------------------------------------------------------
 # Restricted Unpickler (for non-torch .pkl files)
 # ---------------------------------------------------------------------------
@@ -604,12 +605,12 @@ class RestrictedUnpickler(pickle.Unpickler):
         file,
         *,
         safe_bases: tuple[type, ...] | None = None,
-        extra_allowed: frozenset[str] | None = None,
+        trusted_classes: list[type] | None = None,
         **kwargs,
     ):
         super().__init__(file, **kwargs)
         self._safe_bases = safe_bases if safe_bases is not None else safe_base_classes()
-        self._extra_allowed = extra_allowed
+        self._extra_allowed = _qualname_set(trusted_classes)
 
     def find_class(self, module: str, name: str):
         # Normalize Python-2-era module name emitted by torch.save's pickle
@@ -665,15 +666,9 @@ def restricted_pickle_load(
     if trusted:
         return pickle.load(file, **kwargs)
 
-    extra_allowed = None
-    if trusted_classes:
-        extra_allowed = frozenset(
-            f"{cls.__module__}.{cls.__qualname__}" for cls in trusted_classes
-        )
-
     return RestrictedUnpickler(
         file,
-        extra_allowed=extra_allowed,
+        trusted_classes=trusted_classes,
         **kwargs,
     ).load()
 

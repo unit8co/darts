@@ -18,20 +18,18 @@ Two loading strategies, both guarded by the same
   still blocking arbitrary-code-execution (CWE-502).
 """
 
-import inspect
 from collections.abc import Callable
-from typing import Any, Literal
+from typing import Any
 
 import torch
 from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
 
 from darts.logging import get_logger
 from darts.utils.serialization.base import (
-    SAFE_PICKLE_FUNCTIONS,
     RestrictedUnpickler,
     UnpicklingError,
     _normalize_qualname,
-    all_imported_subclasses,
+    _qualname_set,
     dedupe_by_identity,
     format_unpickling_error,
     is_allowed_global,
@@ -41,29 +39,8 @@ from darts.utils.serialization.base import (
 
 logger = get_logger(__name__)
 
-LoadScope = Literal["checkpoint"]
 
-# ``torchmetrics`` metrics store references to a few of their own tensor-reduction /
-# distributed helper *functions* in their pickled state (e.g. ``dim_zero_sum``), so a
-# ``weights_only=True`` load of a metric-bearing checkpoint needs these specific
-# callables allow-listed.  Listed by EXACT qualified name (never a blanket scan) and
-# only ever added when a given checkpoint actually references them.
-TORCHMETRICS_SAFE_FUNCTIONS: frozenset[str] = frozenset({
-    "torchmetrics.utilities.data.dim_zero_cat",
-    "torchmetrics.utilities.data.dim_zero_sum",
-    "torchmetrics.utilities.data.dim_zero_mean",
-    "torchmetrics.utilities.data.dim_zero_max",
-    "torchmetrics.utilities.data.dim_zero_min",
-    "torchmetrics.metric.jit_distributed_available",
-})
-
-# All extra safe callables (torchmetrics + data-stack reconstruction helpers).
-_ALL_SAFE_CALLABLES: frozenset[str] = (
-    TORCHMETRICS_SAFE_FUNCTIONS | SAFE_PICKLE_FUNCTIONS
-)
-
-
-class DartsCheckpointIO(TorchCheckpointIO):
+class _DartsCheckpointIO(TorchCheckpointIO):
     """Custom CheckpointIO that defaults ``weights_only`` to ``True`` (safe-by-default).
 
     PyTorch >= 2.6 changed ``torch.load`` to default to ``weights_only=True`` as a
@@ -89,51 +66,6 @@ class DartsCheckpointIO(TorchCheckpointIO):
         )
 
 
-def likelihood_safe_globals() -> list:
-    """Return Darts' own (data-only) classes to allow-list for a ``weights_only=True`` load.
-
-    Only the ``TorchLikelihood`` subclasses and the ``LikelihoodType`` enum that Darts
-    stores in a checkpoint's ``hyper_parameters`` are listed.
-    """
-    out: list = []
-    try:
-        import darts.utils.likelihood_models.torch  # noqa: F401 — register subclasses
-        from darts.utils.likelihood_models.base import LikelihoodType
-        from darts.utils.likelihood_models.torch import TorchLikelihood
-
-        out = [LikelihoodType, *all_imported_subclasses(TorchLikelihood)]
-    except Exception as e:  # pragma: no cover - defensive only
-        logger.debug(f"Could not collect Darts likelihood safe globals: {e}")
-    return out
-
-
-# ---------------------------------------------------------------------------
-# Safe-base helpers by scope
-# ---------------------------------------------------------------------------
-def _checkpoint_safe_bases() -> tuple[type, ...]:
-    """Known-safe base classes for Lightning ``.ckpt`` deserialization."""
-    bases: list = []
-    try:
-        from torch.nn.modules.module import Module as _Mod
-        from torch.optim import Optimizer as _Opt
-        from torch.optim import lr_scheduler as _lrs
-
-        bases += [_Mod, _Opt]
-        bases.append(getattr(_lrs, "LRScheduler", getattr(_lrs, "_LRScheduler", _Mod)))
-    except Exception as e:  # pragma: no cover - defensive only
-        logger.debug(f"Could not collect PyTorch safe globals: {e}")
-
-    try:
-        import torchmetrics
-
-        bases += [torchmetrics.Metric, torchmetrics.MetricCollection]
-    except Exception as e:  # pragma: no cover - defensive only
-        logger.debug(f"Could not collect TorchMetrics safe globals: {e}")
-
-    bases += likelihood_safe_globals()
-    return tuple(b for b in bases if inspect.isclass(b))
-
-
 # ---------------------------------------------------------------------------
 # File-inspection-driven safe globals (per scope)
 # ---------------------------------------------------------------------------
@@ -154,11 +86,6 @@ def safe_globals_for_torch_file(
     if not unsafe_globals:
         return []
 
-    safe_bases = _checkpoint_safe_bases()
-    extra_safe_callables = _ALL_SAFE_CALLABLES
-    if extra_allowed:
-        extra_safe_callables = extra_safe_callables | extra_allowed
-
     resolved: list = []
     blocked: list[str] = []
     for name in unsafe_globals:
@@ -173,8 +100,8 @@ def safe_globals_for_torch_file(
         if is_allowed_global(
             name,
             obj,
-            safe_bases=safe_bases,
-            extra_safe_callables=extra_safe_callables,
+            safe_bases=tuple(),
+            extra_safe_callables=extra_allowed,
         ):
             resolved.append(obj)
         else:
@@ -189,19 +116,10 @@ def safe_globals_for_torch_file(
 # ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
-def _trusted_class_names(
-    trusted_classes: list[type] | None,
-) -> frozenset[str] | None:
-    if not trusted_classes:
-        return None
-    return frozenset(f"{cls.__module__}.{cls.__qualname__}" for cls in trusted_classes)
-
-
 def load_torch_safely(
     load_fn: Callable[..., Any],
     path,
     *,
-    extra_globals: list | None = None,
     trusted_classes: list[type] | None = None,
     weights_only: bool | None = True,
     **kwargs,
@@ -221,8 +139,6 @@ def load_torch_safely(
         A ``torch.load``-backed callable.
     path
         Filesystem path to the ``.ckpt`` file.
-    extra_globals
-        Additional globals to allow-list for this load only.
     trusted_classes
         Optional classes to allow for this load only, in addition to the
         checkpoint-driven allow-list.  Ignored when ``weights_only`` is ``False``.
@@ -236,10 +152,9 @@ def load_torch_safely(
         return load_fn(path, weights_only=weights_only, **kwargs)
 
     allow = dedupe_by_identity(
-        (extra_globals or [])
-        + list(trusted_classes or [])
+        list(trusted_classes or [])
         + safe_globals_for_torch_file(
-            path, extra_allowed=_trusted_class_names(trusted_classes)
+            path, extra_allowed=_qualname_set(trusted_classes)
         )
     )
     with torch.serialization.safe_globals(allow):
@@ -249,25 +164,6 @@ def load_torch_safely(
 # ---------------------------------------------------------------------------
 # Wrapper (.pt) loading via pickle_module=RestrictedUnpickler
 # ---------------------------------------------------------------------------
-
-
-def _restricted_pickle_module(extra_allowed: frozenset[str] | None):
-    """Build a ``pickle_module`` whose unpickler carries ``extra_allowed``.
-
-    ``torch.load(weights_only=False, pickle_module=...)`` expects the module to
-    expose an ``Unpickler`` class.  Its internal ``UnpicklerWrapper`` subclasses
-    that class and delegates ``find_class`` via ``super()``, so every global in
-    the pickle stream passes through our :class:`RestrictedUnpickler` filter.
-    """
-
-    class _RestrictedPickleModule:
-        class Unpickler(RestrictedUnpickler):
-            def __init__(self, file, **unpickler_kwargs):
-                super().__init__(file, extra_allowed=extra_allowed, **unpickler_kwargs)
-
-    return _RestrictedPickleModule
-
-
 def load_wrapper_safely(
     path,
     *,
@@ -300,9 +196,19 @@ def load_wrapper_safely(
     if trusted:
         return torch.load(path, weights_only=False, **kwargs)
 
+    # make ``torch.load()`` use Darts' ``RestrictedUnpickler`` for safe-loading
+    class _RestrictedPickleModule:
+        class Unpickler(RestrictedUnpickler):
+            def __init__(self, file, **unpickler_kwargs):
+                super().__init__(
+                    file,
+                    trusted_classes=trusted_classes,
+                    **unpickler_kwargs,
+                )
+
     return torch.load(
         path,
         weights_only=False,
-        pickle_module=_restricted_pickle_module(_trusted_class_names(trusted_classes)),
+        pickle_module=_RestrictedPickleModule,
         **kwargs,
     )
