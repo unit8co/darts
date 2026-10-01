@@ -507,11 +507,11 @@ class TestTiRex2Model:
         )
         model.fit(self.series)
         # predict() must be called once to trigger model loading via configure_model(), so
-        # model.model.tirex2._predict_once() can be patched for inspection
+        # model.model.tirex2._predict() can be patched for inspection
         _ = model.predict(n=4, series=self.series)
 
         with patch.object(
-            model.model.tirex2, "_predict_once", wraps=model.model.tirex2._predict_once
+            model.model.tirex2, "_predict", wraps=model.model.tirex2._predict
         ) as predict:
             _ = model.predict(n=4, series=self.series)
             predict.assert_called_once()

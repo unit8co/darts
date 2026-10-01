@@ -184,7 +184,7 @@ class _TiRex2Module(PLForecastingModule):
         predict_kwargs = self._predict_kwargs
         if x_in.stage is ModuleStage.TRAIN:
             predict_kwargs = {**predict_kwargs, "preserve_grad": True}
-        forecasts = self.tirex2._predict_once(
+        forecasts = self.tirex2._predict(
             timeseries, prediction_length=self._future_len, **predict_kwargs
         )
         # Stack and permute the forecasts: (B, S + H, C, Q)
@@ -296,7 +296,7 @@ class TiRex2Model(FoundationModel):
         tirex2_kwargs
             Additional arguments to ``tirex2.load_model()``, such as ``use_flex_attention`` and ``hf_kwargs``.
         predict_kwargs
-            Optional arguments to ``tirex2.TiRex2._predict_once()``, such as ``tta_diff``.
+            Optional arguments to ``tirex2.TiRex2._predict()``, such as ``tta_diff``.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`. Training-related options below are inherited from the
