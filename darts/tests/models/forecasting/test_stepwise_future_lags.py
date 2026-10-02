@@ -1044,13 +1044,20 @@ class TestStepwiseFutureLags:
             in str(exc.value)
         )
 
-    def test_stepwise_drops_the_last_anchors(self):
-        """Step-wise components need `output_chunk_length - 1` more covariates values than absolute ones."""
+    @pytest.mark.parametrize(
+        "lag,fc_extra",
+        list(product([-2, 0, 2], [-(OCL - 1), -1, 0, 2])),
+    )
+    def test_stepwise_drops_the_last_anchors(self, lag, fc_extra):
+        """
+        Step-wise components are read up to `output_chunk_length - 1` steps further than absolute ones. The labels
+        already span the output chunk, so samples are only dropped when the covariates end before `lag` steps after
+        the end of the target series, and at most `output_chunk_length - 1` of them.
+        """
         series = _target()
-        # bounded by the covariates rather than by the target
-        fc = _covariates(N_TARGET - (OCL - 1), ["fc0"])
+        fc = _covariates(N_TARGET + fc_extra, ["fc0"])
         common = dict(
-            lags=2, lags_future_covariates={"fc0": [0]}, output_chunk_length=OCL
+            lags=2, lags_future_covariates={"fc0": [lag]}, output_chunk_length=OCL
         )
 
         absolute = LinearRegressionModel(**common)
@@ -1060,7 +1067,8 @@ class TestStepwiseFutureLags:
 
         X_abs, _, _ = absolute._create_lagged_data([series], None, [fc], None)
         X_sw, _, _ = stepwise._create_lagged_data([series], None, [fc], None)
-        assert len(X_sw) == len(X_abs) - (OCL - 1)
+        expected_dropped = min(OCL - 1, max(0, lag - fc_extra))
+        assert len(X_abs) - len(X_sw) == expected_dropped
 
     def test_stepwise_requires_longer_future_covariates(self):
         """
