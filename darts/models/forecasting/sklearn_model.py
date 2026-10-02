@@ -114,7 +114,6 @@ def _generate_stepwise_future_lags(
     processed_component_lags: dict[str, dict[str, list[int]]],
     lags_future_covariates_stepwise: bool | dict[str, bool],
     output_chunk_length: int,
-    multi_models: bool,
 ) -> dict[str, bool] | None:
     """
     Resolves the step-wise flags of the `future_covariates` lags, modifying `processed_lags` and
@@ -123,9 +122,8 @@ def _generate_stepwise_future_lags(
     When at least one component is step-wise, the future lags are always converted into the component-wise
     representation, so that the entire downstream logic uses a single code path.
 
-    With `multi_models=False` a single estimator predicts the last step of the output chunk, so step-wise lags
-    are a constant shift of `output_chunk_length - 1` that is pre-added to the lags of the flagged components
-    (as done for `output_chunk_shift`); `None` is returned in that case.
+    The step-wise flags are returned as provided (with a boolean normalized to the 'default_lags' key): they are
+    resolved against the components of the series in `fit()`.
 
     Returns `None` when step-wise lags are inactive (no component flagged, `output_chunk_length == 1`, or no
     `lags_future_covariates`), leaving both dictionaries untouched.
@@ -162,10 +160,25 @@ def _generate_stepwise_future_lags(
             ),
         )
 
-    if multi_models:
-        return stepwise
+    return stepwise
 
-    # `multi_models=False`: a single estimator predicts the last step of the output chunk
+
+def _shift_stepwise_future_lags(
+    processed_lags: dict[str, list[int]],
+    processed_component_lags: dict[str, dict[str, list[int]]],
+    stepwise: dict[str, bool],
+    output_chunk_length: int,
+) -> None:
+    """
+    With `multi_models=False`, a single estimator predicts the last step of the output chunk, so step-wise lags are
+    a constant shift of `output_chunk_length - 1`. Adds it to the future lags of the flagged components (as done for
+    `output_chunk_shift`), modifying `processed_lags` and `processed_component_lags` in place. Nothing is step-wise
+    afterward.
+
+    `stepwise` can hold a 'default_lags' key, and flag components without dedicated lags: they get the shifted
+    default lags.
+    """
+    comp_lags = processed_component_lags["future"]
     default_stepwise = stepwise.get("default_lags", False)
     shift = output_chunk_length - 1
     shifted_lags = {}
@@ -187,7 +200,6 @@ def _generate_stepwise_future_lags(
     processed_component_lags["future"] = shifted_lags
     all_lags = [lag_ for lags_ in shifted_lags.values() for lag_ in lags_]
     processed_lags["future"] = [min(all_lags), max(all_lags)]
-    return None
 
 
 class SKLearnModel(GlobalForecastingModel):
@@ -416,7 +428,6 @@ class SKLearnModel(GlobalForecastingModel):
             lags_future_covariates_stepwise=lags_future_covariates_stepwise,
             output_chunk_shift=output_chunk_shift,
             output_chunk_length=output_chunk_length,
-            multi_models=self.multi_models,
         )
 
         # `fit()` resolves the component-wise future lags and step-wise flags against the components of its series,
@@ -436,6 +447,17 @@ class SKLearnModel(GlobalForecastingModel):
                 if self.component_lags_stepwise is None
                 else dict(self.component_lags_stepwise),
             )
+
+        # with `multi_models=False`, step-wise lags are a constant shift; it is applied again in `fit()` once the
+        # flags are resolved, and here to get the correct extreme lags before fitting
+        if not self.multi_models and self.component_lags_stepwise is not None:
+            _shift_stepwise_future_lags(
+                processed_lags=self.lags,
+                processed_component_lags=self.component_lags,
+                stepwise=self.component_lags_stepwise,
+                output_chunk_length=self.output_chunk_length,
+            )
+            self.component_lags_stepwise = None
 
         self.pred_dim = self.output_chunk_length if self.multi_models else 1
 
@@ -499,7 +521,6 @@ class SKLearnModel(GlobalForecastingModel):
         lags_future_covariates_stepwise: bool | dict[str, bool],
         output_chunk_shift: int,
         output_chunk_length: int,
-        multi_models: bool,
     ) -> tuple[
         dict[str, list[int]],
         dict[str, dict[str, list[int]]],
@@ -518,8 +539,7 @@ class SKLearnModel(GlobalForecastingModel):
 
         If some `future_covariates` components have step-wise lags, the future lags are always converted into the
         component-wise representation, and the third returned value holds the (unresolved) step-wise flags per
-        component. With `multi_models=False` the step-wise lags are a constant shift of
-        `output_chunk_length - 1`: they are pre-added to the lags and `None` is returned instead.
+        component.
         """
         processed_lags: dict[str, list[int]] = dict()
         processed_component_lags: dict[str, dict[str, list[int]]] = dict()
@@ -671,7 +691,6 @@ class SKLearnModel(GlobalForecastingModel):
             processed_component_lags=processed_component_lags,
             lags_future_covariates_stepwise=lags_future_covariates_stepwise,
             output_chunk_length=output_chunk_length,
-            multi_models=multi_models,
         )
         return processed_lags, processed_component_lags, stepwise_future
 
@@ -1460,6 +1479,16 @@ class SKLearnModel(GlobalForecastingModel):
         # single error message for all the lags arguments
         if len(component_lags_error_msg) > 0:
             raise_log(ValueError("\n".join(component_lags_error_msg)))
+
+        # with `multi_models=False`, the resolved step-wise lags are a constant shift
+        if not self.multi_models and self._uses_stepwise_future_lags:
+            _shift_stepwise_future_lags(
+                processed_lags=self.lags,
+                processed_component_lags=self.component_lags,
+                stepwise=self.component_lags_stepwise,
+                output_chunk_length=self.output_chunk_length,
+            )
+            self.component_lags_stepwise = None
 
         self._fit_model(
             series=series,

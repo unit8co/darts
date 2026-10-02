@@ -957,21 +957,30 @@ class TestStepwiseFutureLags:
                 output_chunk_length=OCL,
             )
 
-    def test_unknown_component_raises_at_fit(self):
+    @pytest.mark.parametrize("multi_models", [True, False])
+    def test_unknown_component_raises_at_fit(self, multi_models):
+        """
+        Only the step-wise flags are reported, also with `multi_models=False` where the flagged components get the
+        (shifted) default lags before fitting.
+        """
         series = _target()
         fc = _covariates(N_TARGET + 40, ["fc0"])
         model = LinearRegressionModel(
             lags=2,
             lags_future_covariates={"default_lags": [0]},
-            lags_future_covariates_stepwise={"unknown": True},
+            lags_future_covariates_stepwise={"unknown": True, "default_lags": False},
             output_chunk_length=OCL,
+            multi_models=multi_models,
         )
-        with pytest.raises(
-            ValueError, match="components that are not present in the series"
-        ):
+        with pytest.raises(ValueError) as exc:
             model.fit(series, future_covariates=fc)
+        assert str(exc.value) == (
+            "The `lags_future_covariates_stepwise` dictionary specifies flags for components that are not present "
+            "in the series : ['unknown']. They must be removed to avoid any ambiguity."
+        )
 
-    def test_missing_component_raises_at_fit(self):
+    @pytest.mark.parametrize("multi_models", [True, False])
+    def test_missing_component_raises_at_fit(self, multi_models):
         series = _target()
         fc = _covariates(N_TARGET + 40, ["fc0", "fc1"])
         model = LinearRegressionModel(
@@ -979,11 +988,37 @@ class TestStepwiseFutureLags:
             lags_future_covariates={"default_lags": [0]},
             lags_future_covariates_stepwise={"fc0": True},
             output_chunk_length=OCL,
+            multi_models=multi_models,
         )
         with pytest.raises(
             ValueError, match="is missing the flags for the following components"
         ):
             model.fit(series, future_covariates=fc)
+
+    def test_multi_models_false_resolves_the_flags_before_shifting(self):
+        """
+        With `multi_models=False`, `fit()` resolves the flags against the series like with `multi_models=True`,
+        then applies the shift: nothing is step-wise afterward.
+        """
+        series = _target()
+        fc = _covariates(N_TARGET + 40, ["fc0", "fc1", "fc2"])
+        model = LinearRegressionModel(
+            lags=2,
+            lags_future_covariates={"fc1": [-1, 1], "default_lags": [0]},
+            lags_future_covariates_stepwise={"fc2": False, "default_lags": True},
+            output_chunk_length=OCL,
+            multi_models=False,
+        )
+        model.fit(series, future_covariates=fc)
+        assert model.component_lags["future"] == {
+            "fc0": [OCL - 1],
+            "fc1": [-1 + OCL - 1, 1 + OCL - 1],
+            "fc2": [0],
+        }
+        assert model.lags["future"] == [0, OCL]
+        assert model.component_lags_stepwise is None
+        assert not model._uses_stepwise_future_lags
+        assert model.extreme_lags[4:6] == (0, OCL)
 
     @pytest.mark.parametrize(
         "lags_fc,flag",
