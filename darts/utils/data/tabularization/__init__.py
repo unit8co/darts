@@ -6,6 +6,10 @@ Functions for converting time series data into tabular format with lagged featur
 of scikit-learn compatible models for time series forecasting.
 """
 
+from darts.utils.data.tabularization.stepwise import (
+    StepwiseLaggedFeatures,
+    concatenate_lagged_features,
+)
 from darts.utils.data.tabularization.tabularization import (
     _create_lagged_data_autoregression,
     _extend_time_index,
@@ -21,6 +25,8 @@ from darts.utils.data.tabularization.tabularization import (
 )
 
 __all__ = [
+    "StepwiseLaggedFeatures",
+    "concatenate_lagged_features",
     "_create_lagged_data_autoregression",
     "_extend_time_index",
     "_get_feature_times",
