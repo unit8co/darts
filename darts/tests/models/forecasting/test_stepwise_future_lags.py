@@ -8,6 +8,7 @@ from itertools import product
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.linear_model import LinearRegression
 
 from darts import TimeSeries
 from darts.models import (
@@ -45,6 +46,13 @@ def _horizon_params(model, horizon: int, target_dim: int, n_comps: int):
         return estimator.coef_, estimator.intercept_
     idx = horizon * n_comps + target_dim
     return model.model.coef_[idx], model.model.intercept_[idx]
+
+
+class _ScaledLinearRegression(LinearRegression):
+    """Natively multi-output estimator whose `predict()` takes an extra keyword argument."""
+
+    def predict(self, X, scale: float = 1.0):
+        return scale * super().predict(X)
 
 
 def _covariates(n: int, comps: list[str], offset: float = 1000.0) -> TimeSeries:
@@ -485,6 +493,27 @@ class TestStepwiseFutureLags:
                 estimator.predict(X.horizon(0)) for estimator in model.model.estimators_
             ]),
         )
+
+    def test_wrapper_forwards_predict_kwargs(self):
+        """
+        The `**kwargs` of `predict()` reach the estimators also when the wrapper is forced for a natively
+        multi-output estimator, as they do without step-wise lags.
+        """
+        series = _target()
+        fc = _covariates(N_TARGET + 40, ["fc0"])
+        model = SKLearnModel(
+            model=_ScaledLinearRegression(),
+            lags=2,
+            lags_future_covariates=[0],
+            lags_future_covariates_stepwise=True,
+            output_chunk_length=OCL,
+        )
+        model.fit(series, future_covariates=fc)
+        assert isinstance(model.model, MultiOutputRegressor)
+
+        pred = model.predict(OCL, future_covariates=fc)
+        pred_scaled = model.predict(OCL, future_covariates=fc, scale=2.0)
+        np.testing.assert_allclose(pred_scaled.values(), 2.0 * pred.values())
 
     # ------------------------------------------------------------------ prediction
     @pytest.mark.parametrize("multi_models", [True, False])

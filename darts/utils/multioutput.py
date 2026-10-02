@@ -218,11 +218,11 @@ class MultiOutputMixin:
 
         return self
 
-    def _predict_per_horizon(self, X, method: str) -> list:
+    def _predict_per_horizon(self, X, method: str, **predict_params) -> list:
         """
         Calls `method` of each estimator on the features array of the horizon it was fit on, materializing each
-        horizon only once. Returns one entry per output, in the `[hrz0_comp0, ..., hrz1_comp0, ...]` order of
-        `estimators_`.
+        horizon only once. `predict_params` are passed to every call. Returns one entry per output, in the
+        `[hrz0_comp0, ..., hrz1_comp0, ...]` order of `estimators_`.
         """
         check_is_fitted(self)
         n_per_horizon = self._n_estimators_per_horizon(
@@ -236,17 +236,20 @@ class MultiOutputMixin:
             ]
             results.extend(
                 Parallel(n_jobs=self.n_jobs)(
-                    delayed(getattr(estimator, method))(X_horizon)
+                    delayed(getattr(estimator, method))(X_horizon, **predict_params)
                     for estimator in estimators
                 )
             )
         return results
 
-    def predict(self, X):
-        """Predicts multi-output targets, routing each horizon to the estimators fit on its features array."""
+    def predict(self, X, **predict_params):
+        """
+        Predicts multi-output targets, routing each horizon to the estimators fit on its features array.
+        `predict_params` are passed to the `predict()` method of each estimator (only with per-horizon features).
+        """
         if not isinstance(X, StepwiseLaggedFeatures):
-            return super().predict(X)
-        return np.asarray(self._predict_per_horizon(X, "predict")).T
+            return super().predict(X, **predict_params)
+        return np.asarray(self._predict_per_horizon(X, "predict", **predict_params)).T
 
     @property
     def supports_sample_weight(self) -> bool:
@@ -274,11 +277,15 @@ class MultiOutputClassifier(MultiOutputMixin, sk_MultiOutputClassifier):
         self.classes_ = [estimator.classes_ for estimator in self.estimators_]
         return self
 
-    def predict_proba(self, X):
-        """Predicts class probabilities, routing each horizon to the estimators fit on its features array."""
+    def predict_proba(self, X, **predict_params):
+        """
+        Predicts class probabilities, routing each horizon to the estimators fit on its features array.
+        `predict_params` are passed to the `predict_proba()` method of each estimator (only with per-horizon
+        features).
+        """
         if not isinstance(X, StepwiseLaggedFeatures):
-            return super().predict_proba(X)
-        return self._predict_per_horizon(X, "predict_proba")
+            return super().predict_proba(X, **predict_params)
+        return self._predict_per_horizon(X, "predict_proba", **predict_params)
 
 
 def get_multioutput_estimator_cls(model_type: ModelType) -> type[MultiOutputMixin]:
