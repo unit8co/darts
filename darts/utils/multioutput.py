@@ -6,6 +6,7 @@ Multi-Output Models for SKLearnModel
 import inspect
 
 import numpy as np
+from joblib import effective_n_jobs
 from sklearn.base import is_classifier
 from sklearn.multioutput import MultiOutputClassifier as sk_MultiOutputClassifier
 from sklearn.multioutput import MultiOutputRegressor as sk_MultiOutputRegressor
@@ -228,19 +229,27 @@ class MultiOutputMixin:
         n_per_horizon = self._n_estimators_per_horizon(
             n_outputs=len(self.estimators_), n_horizons=X.n_horizons
         )
-        results = []
-        for horizon in range(X.n_horizons):
-            X_horizon = X.horizon(horizon)
-            estimators = self.estimators_[
-                horizon * n_per_horizon : (horizon + 1) * n_per_horizon
+
+        def horizon_calls():
+            """Yields the method of every estimator with its features array, materializing each horizon once."""
+            for horizon in range(X.n_horizons):
+                X_horizon = X.horizon(horizon)
+                for estimator in self.estimators_[
+                    horizon * n_per_horizon : (horizon + 1) * n_per_horizon
+                ]:
+                    yield getattr(estimator, method), X_horizon
+
+        # sequentially, joblib's overhead is significant compared to the many small per-horizon calls
+        if effective_n_jobs(self.n_jobs) == 1:
+            return [
+                predict_fn(X_horizon, **predict_params)
+                for predict_fn, X_horizon in horizon_calls()
             ]
-            results.extend(
-                Parallel(n_jobs=self.n_jobs)(
-                    delayed(getattr(estimator, method))(X_horizon, **predict_params)
-                    for estimator in estimators
-                )
-            )
-        return results
+        # a single parallel call over all the estimators, so that the horizons are also predicted in parallel
+        return Parallel(n_jobs=self.n_jobs)(
+            delayed(predict_fn)(X_horizon, **predict_params)
+            for predict_fn, X_horizon in horizon_calls()
+        )
 
     def predict(self, X, **predict_params):
         """

@@ -458,8 +458,12 @@ class TestStepwiseFutureLags:
         assert isinstance(stepwise.model, MultiOutputRegressor)
         assert len(stepwise.model.estimators_) == OCL * series.width
 
-    def test_wrapper_routes_predictions_per_horizon(self):
-        """`MultiOutputMixin.predict()` materializes each horizon and keeps the `estimators_` output layout."""
+    @pytest.mark.parametrize("n_jobs", [None, 2])
+    def test_wrapper_routes_predictions_per_horizon(self, n_jobs):
+        """
+        `MultiOutputMixin.predict()` materializes each horizon and keeps the `estimators_` output layout, both
+        sequentially and in parallel.
+        """
         series = _target(n_comps=2)
         fc = _covariates(N_TARGET + 40, ["fc0"])
         model = LinearRegressionModel(
@@ -468,7 +472,8 @@ class TestStepwiseFutureLags:
             lags_future_covariates_stepwise=True,
             output_chunk_length=OCL,
         )
-        model.fit(series, future_covariates=fc)
+        model.fit(series, future_covariates=fc, n_jobs_multioutput_wrapper=n_jobs)
+        assert model.model.n_jobs == n_jobs
 
         X, _, _ = model._create_lagged_data(
             series=[series],
