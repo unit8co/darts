@@ -918,9 +918,11 @@ class TestStepwiseFutureLags:
             lags=2, lags_future_covariates=[0], output_chunk_length=OCL
         )
         del model.component_lags_stepwise
+        del model._stepwise_future_lags_definition
         assert model._stepwise_future_lags is None
         assert not model._uses_stepwise_future_lags
         assert model._max_stepwise_future_lag is None
+        model.fit(_target(), future_covariates=_covariates(N_TARGET + 40, ["fc0"]))
 
     # ------------------------------------------------------------------ errors
     @pytest.mark.parametrize(
@@ -978,36 +980,68 @@ class TestStepwiseFutureLags:
         ):
             model.fit(series, future_covariates=fc)
 
-    def test_refit_with_an_additional_component_requires_default_lags(self):
+    @pytest.mark.parametrize(
+        "lags_fc,flag",
+        [
+            ([0], True),
+            ({"default_lags": [0]}, {"default_lags": True}),
+            ({"fc0": [0], "default_lags": [1]}, {"fc0": True, "default_lags": False}),
+        ],
+    )
+    @pytest.mark.parametrize("multi_models", [True, False])
+    def test_refit_resolves_the_lags_against_the_new_components(
+        self, lags_fc, flag, multi_models
+    ):
         """
-        `fit()` expands both dictionaries onto the components of the series, which consumes their
-        `default_lags` entry. Re-fitting with an additional component therefore raises, exactly as it
-        already does for `lags_future_covariates` on its own.
+        `fit()` expands the step-wise flags and the future lags onto the components of its series. A later `fit()`
+        resolves them again from their definition, so the model can be re-fit on covariates with other or
+        additional components, as with absolute shared lags.
         """
         series = _target()
-        fc = _covariates(N_TARGET + 40, ["fc0", "fc1"])
         model = LinearRegressionModel(
             lags=2,
-            lags_future_covariates={"default_lags": [0]},
-            lags_future_covariates_stepwise={"default_lags": True},
+            lags_future_covariates=lags_fc,
+            lags_future_covariates_stepwise=flag,
+            output_chunk_length=OCL,
+            multi_models=multi_models,
+        )
+        model.fit(series, future_covariates=_covariates(N_TARGET + 40, ["fc0", "fc1"]))
+        assert set(model.component_lags["future"]) == {"fc0", "fc1"}
+
+        fc_new = _covariates(N_TARGET + 40, ["fc0", "fc2", "fc3"])
+        model.fit(series, future_covariates=fc_new)
+        assert list(model.component_lags["future"]) == ["fc0", "fc2", "fc3"]
+        if multi_models:
+            assert list(model.component_lags_stepwise) == ["fc0", "fc2", "fc3"]
+
+        # same model as when fitting the new covariates directly
+        reference = model.untrained_model().fit(series, future_covariates=fc_new)
+        assert model.component_lags == reference.component_lags
+        assert model.component_lags_stepwise == reference.component_lags_stepwise
+        np.testing.assert_array_equal(
+            model.predict(OCL, future_covariates=fc_new).values(),
+            reference.predict(OCL, future_covariates=fc_new).values(),
+        )
+
+    def test_refit_still_rejects_unknown_components(self):
+        """Explicitly named components must be present in the series of every `fit()`."""
+        series = _target()
+        model = LinearRegressionModel(
+            lags=2,
+            lags_future_covariates={"fc0": [0], "default_lags": [1]},
+            lags_future_covariates_stepwise={"fc0": True, "default_lags": False},
             output_chunk_length=OCL,
         )
-        model.fit(series, future_covariates=fc)
-        # the `default_lags` entry is replaced by one entry per component of the series
-        assert model.component_lags["future"] == {"fc0": [0], "fc1": [0]}
-        assert model.component_lags_stepwise == {"fc0": True, "fc1": True}
-
-        fc_extra = _covariates(N_TARGET + 40, ["fc0", "fc1", "fc2"])
+        model.fit(series, future_covariates=_covariates(N_TARGET + 40, ["fc0", "fc1"]))
         with pytest.raises(ValueError) as exc:
-            model.fit(series, future_covariates=fc_extra)
-        # both dictionaries report the missing component, in a single error message
+            model.fit(series, future_covariates=_covariates(N_TARGET + 40, ["fc1"]))
         assert (
-            "lags_future_covariates dictionary is missing the lags for the following "
-            "components present in the series: ['fc2']" in str(exc.value)
+            "specifies lags for components that are not present in the series : ['fc0']"
+            in str(exc.value)
         )
         assert (
-            "lags_future_covariates_stepwise dictionary is missing the flags for the "
-            "following components present in the series: ['fc2']" in str(exc.value)
+            "specifies flags for components that are not present in the series : ['fc0']"
+            in str(exc.value)
         )
 
     def test_stepwise_drops_the_last_anchors(self):

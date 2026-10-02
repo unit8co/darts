@@ -418,6 +418,24 @@ class SKLearnModel(GlobalForecastingModel):
             multi_models=self.multi_models,
         )
 
+        # `fit()` resolves the component-wise future lags and step-wise flags against the components of its series,
+        # replacing their 'default_lags' entry; keep their definition to resolve them again at every `fit()`
+        self._stepwise_future_lags_definition: (
+            tuple[dict[str, list[int]], dict[str, bool] | None] | None
+        ) = None
+        if _has_stepwise_future_lags(lags_future_covariates_stepwise) and (
+            "future" in self.component_lags
+        ):
+            self._stepwise_future_lags_definition = (
+                {
+                    comp_name: list(comp_lags)
+                    for comp_name, comp_lags in self.component_lags["future"].items()
+                },
+                None
+                if self.component_lags_stepwise is None
+                else dict(self.component_lags_stepwise),
+            )
+
         self.pred_dim = self.output_chunk_length if self.multi_models else 1
 
     def _validate_lags(
@@ -1358,6 +1376,17 @@ class SKLearnModel(GlobalForecastingModel):
             "past": "lags_past_covariates",
             "future": "lags_future_covariates",
         }
+
+        # with step-wise future lags, resolve them again from their definition rather than from the components of
+        # a previous `fit()` (models saved before the parameter existed don't have it)
+        definition = getattr(self, "_stepwise_future_lags_definition", None)
+        if definition is not None:
+            future_component_lags, stepwise = definition
+            self.component_lags["future"] = {
+                comp_name: list(comp_lags)
+                for comp_name, comp_lags in future_component_lags.items()
+            }
+            self.component_lags_stepwise = None if stepwise is None else dict(stepwise)
 
         # if provided, component-wise lags must be defined for all the components of the first series
         component_lags_error_msg = []
