@@ -2450,6 +2450,26 @@ class TestMetrics:
         # multiple intervals
         check_ref(q_interval=[(0.1, 0.5), (0.5, 0.8)])
 
+    def test_ic_mic_ignore_missing_values(self):
+        """Missing actual values must stay NaN in `ic` and be ignored by `mic` instead of counting as misses."""
+        np.random.seed(42)
+        y = np.array([100.0, 100.0, np.nan, np.nan, 100.0, 100.0, 100.0])
+        actual = TimeSeries.from_values(y)
+        pred_vals = np.random.normal(100.0, 1.0, size=(len(y), 1, 500))
+        pred = TimeSeries.from_values(pred_vals)
+
+        res_ic = metrics.ic(actual, pred, q_interval=(0.1, 0.9))
+        expected_ic = metric_ic(
+            y_true=actual.all_values(), y_pred=pred.all_values(), q_interval=(0.1, 0.9)
+        ).astype(float)[:, 0]
+        expected_ic[np.isnan(y)] = np.nan
+        np.testing.assert_array_equal(res_ic, expected_ic)
+        assert np.isnan(res_ic[[2, 3]]).all()
+
+        res_mic = metrics.mic(actual, pred, q_interval=(0.1, 0.9))
+        assert res_mic == pytest.approx(np.nanmean(expected_ic))
+        assert res_mic == pytest.approx(1.0)
+
     @pytest.mark.parametrize(
         "config",
         param_product(
