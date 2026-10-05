@@ -438,6 +438,31 @@ class TestMIDAS:
         # the shift introduce by the slicing operation on the transformed ts is : 2 * 3 months per quarter = 6
         assert inversed_quaterly == self.monthly_ts[6:]
 
+    @pytest.mark.parametrize("high_freq", ["MS", "ME"])
+    @pytest.mark.parametrize("low_freq", ["QS", "QE"])
+    @pytest.mark.parametrize("n_months_missing", [0, 1, 2])
+    @pytest.mark.parametrize("strip", [True, False])
+    def test_inverse_transform_time_index(
+        self, high_freq, low_freq, n_months_missing, strip
+    ):
+        """Verify that the inverse transform retrieves the original time index when the series does not start at
+        the beginning of a quarter, when the incomplete first quarter is stripped, and when the transformed series
+        is sliced."""
+        series = linear_timeseries(
+            start=pd.Timestamp("2020-01-01"), length=12, freq=high_freq
+        )[n_months_missing:]
+        midas = MIDAS(low_freq=low_freq, strip=strip)
+        series_midas = midas.fit_transform(series)
+
+        # position of the first month of the first quarter in the transformed series
+        if strip:
+            first_month = (3 - n_months_missing) % 3
+        else:
+            first_month = -n_months_missing
+        for quarter in range(len(series_midas)):
+            inversed = midas.inverse_transform(series_midas[quarter:])
+            assert inversed == series[max(first_month + 3 * quarter, 0) :]
+
     def test_multiple_ts(self):
         """
         Verify that MIDAS works as expected with multiple series of different "high" frequencies (monthly and quarterly
