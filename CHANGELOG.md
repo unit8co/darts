@@ -28,12 +28,14 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed `TimeSeries.slice_n_points_after()` and `slice_n_points_before()` raising an error when called with an integer on integer-indexed series with fewer than `n` points available, a `RangeIndex` step other than 1, or a point that is not in the index, and on datetime-indexed series (where integers are positional indices). [#3220](https://github.com/unit8co/darts/pull/3220) by [Mohammad Hijjawi](https://github.com/MohammadHijjawi97).
 - Fixed concurrent forecasting model creation (e.g. Optuna with `n_jobs>1`) raising `AttributeError: _model_call` or assigning another model's hyperparameters. [#3217](https://github.com/unit8co/darts/pull/3217) by [Ankit Dhandharia](https://github.com/ankitdhandharia).
 - Fixed dataset downloads failing with a misleading MD5 hash-check error when the source URI returned an HTTP error (e.g. 404); non-2xx responses are now reported as a `DatasetLoadingException` with the HTTP status and reason. [#3201](https://github.com/unit8co/darts/pull/3201) by [webzuweb](https://github.com/webzuweb).
 - Fixed autoregressive `TorchForecastingModel.predict()` with `roll_size < output_chunk_length` and future covariates, where the first step passed too few future covariate values to the model. [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed incorrect return type annotations for several functions in `darts.utils.statistics`. [#3185](https://github.com/unit8co/darts/pull/3185) by [Alejandro Coronado](https://github.com/AlejandroCoronadoN).
 - Fixed `TorchForecastingModel` last-epoch checkpoint not being saved at the end of every training epoch when validation loss stopped improving (PyTorch Lightning >= 2.6); last and best checkpoints are now updated independently. [#3212](https://github.com/unit8co/darts/pull/3212) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed `extract_subseries()` returning wrong sub-series for integer-indexed series: the last value before each gap was dropped, and series whose `RangeIndex` does not start at 0 with step 1 yielded wrong or empty sub-series. [#3215](https://github.com/unit8co/darts/pull/3215) by [Mohammad Hijjawi](https://github.com/MohammadHijjawi97).
+- Fixed `TimeSeries.longest_contiguous_slice()` returning wrong slices for integer-indexed series (the last value of the slice was dropped, and series whose `RangeIndex` does not start at 0 with step 1 yielded wrong or empty slices), and raising a `KeyError` when the series only had leading and/or trailing NaNs. [#3219](https://github.com/unit8co/darts/pull/3219) by [Mohammad Hijjawi](https://github.com/MohammadHijjawi97).
 
 **Dependencies**
 
