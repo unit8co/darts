@@ -251,7 +251,7 @@ class _NoCovariatesMixin:
 # Torch reductions safe to persist by name.  Pickling ``torch.mean`` itself is
 # ``getattr(torch._C._VariableFunctions, "mean")``, and ``builtins.getattr`` is
 # not allow-listed.  A user callable outside this set must be passed via
-# ``trusted_classes`` (or ``weights_only=False``) when loading.
+# ``add_safe_globals(...)`` / ``with safe_globals(...):`` or ``trusted=True`` when loading.
 _TORCH_AGGREGATIONS: frozenset[str] = frozenset({
     "mean",
     "sum",

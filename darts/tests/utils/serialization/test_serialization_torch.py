@@ -1,4 +1,3 @@
-import pickle
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -11,17 +10,21 @@ if not TORCH_AVAILABLE:
         allow_module_level=True,
     )
 
+import os
+
 import torch
 from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
+from torch.utils.cpp_extension import load as cpp_load
 
 from darts.logging import execute_and_suppress_output
 from darts.utils.likelihood_models.torch import GaussianLikelihood
-from darts.utils.serialization.base import UnpicklingError, dedupe_by_identity
+from darts.utils.serialization.base import UnpicklingError
+from darts.utils.serialization.registry import safe_globals
 from darts.utils.serialization.torch import (
     _DartsCheckpointIO,
-    load_torch_safely,
+    _safe_globals_for_torch_file,
+    load_ckpt_safely,
     load_wrapper_safely,
-    safe_globals_for_torch_file,
 )
 
 
@@ -29,33 +32,24 @@ class _UntrustedCheckpointClass:
     """Module-level stand-in for an attacker-chosen class outside trusted packages."""
 
 
-class TestDedupeByIdentity:
-    def test_removes_duplicates_preserving_order(self):
-        a, b = object(), object()
-        assert dedupe_by_identity([a, b, a, b]) == [a, b]
-
-    def test_empty_input(self):
-        assert dedupe_by_identity([]) == []
-
-
 class TestSafeGlobalsForCheckpoint:
     def test_missing_file_raises(self):
         with pytest.raises(FileNotFoundError):
-            assert safe_globals_for_torch_file("/nonexistent/path.ckpt") == []
+            _safe_globals_for_torch_file("/nonexistent/path.ckpt")
 
     def test_allow_lists_referenced_darts_likelihood(self, tmp_path):
         ckpt_path = tmp_path / "likelihood.ckpt"
         torch.save({"likelihood": GaussianLikelihood()}, ckpt_path)
 
-        resolved = safe_globals_for_torch_file(ckpt_path)
-        assert GaussianLikelihood in resolved
+        resolved = _safe_globals_for_torch_file(ckpt_path)
+        assert GaussianLikelihood in resolved.values()
 
     def test_rejects_untrusted_global(self, tmp_path):
         ckpt_path = tmp_path / "evil.ckpt"
         torch.save({"payload": _UntrustedCheckpointClass()}, ckpt_path)
 
         with pytest.raises(UnpicklingError):
-            safe_globals_for_torch_file(ckpt_path)
+            _safe_globals_for_torch_file(ckpt_path)
 
 
 class TestLoadCkptSafely:
@@ -68,7 +62,7 @@ class TestLoadCkptSafely:
             called.append(True)
             return {"loaded": True}
 
-        result = load_torch_safely(_load, ckpt_path)
+        result = load_ckpt_safely(_load, ckpt_path)
         assert called == [True]
         assert result == {"loaded": True}
 
@@ -86,11 +80,13 @@ class TestLoadCkptSafely:
         ) as mock_ctx:
             mock_ctx.return_value.__enter__ = MagicMock(return_value=None)
             mock_ctx.return_value.__exit__ = MagicMock(return_value=False)
-            load_torch_safely(
-                lambda *args, **kwargs: None, ckpt_path, trusted_classes=extra
-            )
+            with safe_globals(extra):
+                load_ckpt_safely(lambda *args, **kwargs: None, ckpt_path)
             allow = mock_ctx.call_args[0][0]
-            assert extra[0] in allow
+            assert (
+                extra[0],
+                extra[0].__module__ + "." + extra[0].__qualname__,
+            ) in allow
 
 
 class TestDartsCheckpointIO:
@@ -137,68 +133,39 @@ def _save_reduce(tmp_path, name, callable_, args=()):
 
 
 class TestBlockedCheckpointGlobals:
-    def test_blocks_getattr_rebuild_chain(self, tmp_path):
-        path = _save_reduce(
-            tmp_path,
-            "getattr.pt",
-            getattr,
-            (torch._utils._rebuild_tensor_v2, "__globals__"),
-        )
-        with pytest.raises(pickle.UnpicklingError, match="getattr"):
+    @pytest.mark.parametrize(
+        "case",
+        [
+            (getattr, (torch._utils._rebuild_tensor_v2, "__globals__")),
+            (execute_and_suppress_output, ()),
+            (cpp_load, (torch._utils._rebuild_tensor_v2, "__globals__")),
+            (os.system, ("echo pwned",)),
+        ],
+    )
+    def test_blocks_malicious_case(self, tmp_path, case: tuple):
+        path = _save_reduce(tmp_path, "getattr.pt", *case)
+        with pytest.raises(UnpicklingError, match=case[0].__qualname__):
             load_wrapper_safely(path)
-        with pytest.raises(UnpicklingError, match="getattr"):
-            safe_globals_for_torch_file(path)
+        with pytest.raises(UnpicklingError, match=case[0].__qualname__):
+            _safe_globals_for_torch_file(path)
 
-    def test_blocks_execute_and_suppress_output(self, tmp_path):
-        path = _save_reduce(
-            tmp_path,
-            "suppress.pt",
-            execute_and_suppress_output,
-            (),
-        )
-        with pytest.raises(pickle.UnpicklingError, match="execute_and_suppress_output"):
-            load_wrapper_safely(path)
-        with pytest.raises(UnpicklingError, match="execute_and_suppress_output"):
-            safe_globals_for_torch_file(path)
-
-    def test_blocks_cmdstan_model(self, tmp_path):
-        cmdstanpy = pytest.importorskip("cmdstanpy")
-        path = _save_reduce(tmp_path, "stan.pt", cmdstanpy.CmdStanModel, ())
-        with pytest.raises(pickle.UnpicklingError, match="CmdStanModel"):
-            load_wrapper_safely(path)
-        with pytest.raises(UnpicklingError, match="CmdStanModel"):
-            safe_globals_for_torch_file(path)
-
-    def test_blocks_cpp_extension_load(self, tmp_path):
-        from torch.utils.cpp_extension import load as cpp_load
-
-        path = _save_reduce(
-            tmp_path,
-            "cpp.pt",
-            cpp_load,
-            (),
-        )
-        with pytest.raises(pickle.UnpicklingError, match="cpp_extension.load"):
-            load_wrapper_safely(path)
-        with pytest.raises(UnpicklingError, match="cpp_extension.load"):
-            load_torch_safely(torch.load, path)
-
-    def test_trusted_classes_allows_one_class(self, tmp_path):
+    def test_safe_globals_allows_one_class(self, tmp_path):
         path = tmp_path / "box.pt"
         torch.save(_UntrustedCheckpointClass(), path)
-        with pytest.raises(pickle.UnpicklingError):
+        with pytest.raises(UnpicklingError):
             load_wrapper_safely(path)
-        loaded = load_wrapper_safely(path, trusted_classes=[_UntrustedCheckpointClass])
+        with safe_globals([_UntrustedCheckpointClass]):
+            loaded = load_wrapper_safely(path)
         assert isinstance(loaded, _UntrustedCheckpointClass)
 
         with pytest.raises(UnpicklingError):
-            safe_globals_for_torch_file(path)
+            _safe_globals_for_torch_file(path)
         qualname = (
             f"{_UntrustedCheckpointClass.__module__}."
             f"{_UntrustedCheckpointClass.__qualname__}"
         )
-        allowed = safe_globals_for_torch_file(
+        allowed = _safe_globals_for_torch_file(
             path,
-            extra_allowed=frozenset({qualname}),
+            extra_user_globals={qualname: _UntrustedCheckpointClass},
         )
-        assert _UntrustedCheckpointClass in allowed
+        assert _UntrustedCheckpointClass in allowed.values()

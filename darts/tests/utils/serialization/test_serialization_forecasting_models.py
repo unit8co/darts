@@ -1,7 +1,6 @@
 """Safe-by-default save/load roundtrips for forecasting models.
 
-Exercises the default restricted loading paths (``trusted=False`` for pickle-based
-models, ``weights_only=True`` for torch models) across available model flavors.
+Exercises the default restricted loading paths (``trusted=False``) across model flavors.
 Predictions before save must match predictions after load.
 """
 
@@ -35,11 +34,8 @@ from darts.tests.conftest import (
     XGB_AVAILABLE,
     tfm_kwargs,
 )
-from darts.utils.serialization.base import (
-    is_allowed_global,
-    resolve_reference,
-    safe_base_classes,
-)
+from darts.utils.serialization.base import is_allowed_global
+from darts.utils.serialization.registry import _get_user_safe_globals, safe_globals
 from darts.utils.utils import NotImportedModule
 
 if TORCH_AVAILABLE:
@@ -186,7 +182,7 @@ class SaveLoadCase:
         contextlib.nullcontext
     )
     skip_fit: bool = False
-    trusted_classes: list[str] = field(default_factory=list)
+    safe_globals: list = field(default_factory=list)
 
 
 def _predict(model, series: TimeSeries, n: int) -> TimeSeries:
@@ -265,7 +261,7 @@ def _model_config_specs(series: _SeriesBundle) -> list[dict[str, Any]]:
                     "custom": {"future": [custom_encoder]},
                 },
             },
-            "trusted_classes": [custom_encoder],
+            "safe_globals": [custom_encoder],
         },
         {
             "id": "random_forest",
@@ -447,6 +443,7 @@ def _model_config_specs(series: _SeriesBundle) -> list[dict[str, Any]]:
                     "callbacks": [_RecordEpochCallback()],
                 },
             },
+            "safe_globals": [_RecordEpochCallback],
         },
         {
             "id": "nbeats",
@@ -629,7 +626,7 @@ def _case_from_spec(spec: dict[str, Any], bundle: _SeriesBundle) -> SaveLoadCase
         predict_n=spec.get("predict_n", PREDICT_H),
         patch_factory=patch_factory,
         skip_fit=spec.get("skip_fit", False),
-        trusted_classes=spec.get("trusted_classes", []),
+        safe_globals=spec.get("safe_globals", []),
     )
 
 
@@ -683,22 +680,15 @@ def _globals_referenced_by(path: str, *, torch_wrapper: bool) -> set[str]:
     return found
 
 
-def _denied_globals(names, trusted_classes: list[type]) -> list[str]:
-    bases = safe_base_classes()
-    extra_allowed = None
-    if trusted_classes:
-        extra_allowed = frozenset(
-            f"{cls.__module__}.{cls.__qualname__}" for cls in trusted_classes
-        )
+def _denied_globals(names) -> list[str]:
+    extra_user = _get_user_safe_globals()
     denied = []
     for name in sorted(set(names)):
         if name.startswith("__builtin__."):
             name = "builtins." + name.removeprefix("__builtin__.")
         if not is_allowed_global(
             name,
-            resolve_reference(name),
-            safe_bases=bases,
-            extra_safe_callables=extra_allowed,
+            extra_user_globals=extra_user,
         ):
             denied.append(name)
     return denied
@@ -707,7 +697,6 @@ def _denied_globals(names, trusted_classes: list[type]) -> list[str]:
 def _assert_saved_file_is_allowlisted(
     path: str,
     torch_model: bool,
-    trusted_classes: list[type],
 ) -> None:
     """Fail when a saved model references a global outside the safe-load registries.
 
@@ -716,7 +705,6 @@ def _assert_saved_file_is_allowlisted(
     """
     denied = _denied_globals(
         _globals_referenced_by(path, torch_wrapper=torch_model),
-        trusted_classes=trusted_classes,
     )
     if torch_model:
         import os
@@ -726,11 +714,7 @@ def _assert_saved_file_is_allowlisted(
         ckpt = path + ".ckpt"
         if os.path.exists(ckpt):
             unsafe = torch.serialization.get_unsafe_globals_in_checkpoint(ckpt)
-            denied.extend(
-                _denied_globals(
-                    _qualnames_from_checkpoint(unsafe), trusted_classes=trusted_classes
-                )
-            )
+            denied.extend(_denied_globals(_qualnames_from_checkpoint(unsafe)))
     assert not denied, (
         "Saved model references globals that are not allow-listed for safe "
         f"loading: {sorted(set(denied))}"
@@ -753,15 +737,12 @@ def test_safe_save_load_prediction_parity(case: SaveLoadCase, tmp_path):
         )
         save_path = tmp_path / f"{case.id}{ext}"
         model.save(str(save_path))
-        _assert_saved_file_is_allowlisted(
-            str(save_path),
-            torch_model=ext == ".pt",
-            trusted_classes=case.trusted_classes,
-        )
-
-        loaded = case.model_cls.load(
-            str(save_path), trusted_classes=case.trusted_classes
-        )
+        with safe_globals(case.safe_globals):
+            _assert_saved_file_is_allowlisted(
+                str(save_path),
+                torch_model=ext == ".pt",
+            )
+            loaded = case.model_cls.load(str(save_path))
         pred_after = _predict(loaded, case.series, case.predict_n)
 
     assert pred_after == pred_before

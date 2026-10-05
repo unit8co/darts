@@ -62,7 +62,9 @@ from darts.utils.likelihood_models.base import (
     quantile_interval_names,
     quantile_names,
 )
-from darts.utils.serialization.base import restricted_pickle_load
+from darts.utils.serialization.base import (
+    restricted_pickle_load,
+)
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,
@@ -2765,29 +2767,23 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def load(
         path: str | os.PathLike | BinaryIO,
         trusted: bool = False,
-        trusted_classes: list[type] | None = None,
     ) -> "ForecastingModel":
         """
         Loads a model from a given path or file handle.
 
         .. warning::
-            SECURITY: Only load model files from trusted sources.  A malicious file
-            can execute arbitrary code while being deserialized (CWE-502).  By default,
-            deserialization is restricted to an allow-list of known-safe classes (Darts,
-            sklearn, numpy, pandas, etc.).  Pass ``trusted=True`` only for files you
-            fully trust, or use ``trusted_classes`` to allow specific additional classes.
+            Loading uses unpickling under the hood. Never load data from an untrusted source.
+            By default, Darts uses safe loading via a restricted unpickler. See the `user guide
+            <https://unit8co.github.io/darts/userguide/safe_model_loading.html>`__ on safe model loading for
+            allow-listing custom classes and functions. Only pass `trusted=True` for files you fully trust.
 
         Parameters
         ----------
         path
             Path or file handle from which to load the model.
         trusted
-            If ``True``, falls back to unrestricted ``pickle.load``, which can execute
-            arbitrary code.  Only use for files from trusted sources.  Default: ``False``.
-        trusted_classes
-            Optional list of additional classes to allow during restricted loading.
-            Each class must be importable by its module path.  Ignored when
-            ``trusted=True``.
+            If ``True``, disables safe-loading restrictions and fully unpickles the file (CWE-502 opt-out). Only use
+            for files from trusted sources. Default: ``False``.
         """
 
         if isinstance(path, str | os.PathLike):
@@ -2798,13 +2794,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 model = restricted_pickle_load(
                     handle,
                     trusted=trusted,
-                    trusted_classes=trusted_classes,
                 )
         elif isinstance(path, io.BufferedReader):
             model = restricted_pickle_load(
                 path,
                 trusted=trusted,
-                trusted_classes=trusted_classes,
             )
         else:
             raise_log(

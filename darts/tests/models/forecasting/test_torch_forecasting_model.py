@@ -21,6 +21,7 @@ import pandas as pd
 import pytest
 import pytorch_lightning as pl
 import torch
+from lightning_fabric.loggers.logger import _DummyExperiment
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from pytorch_lightning.loggers.logger import DummyLogger
@@ -81,6 +82,7 @@ from darts.utils.likelihood_models.torch import (
     QuantileRegression,
     TorchLikelihood,
 )
+from darts.utils.serialization import safe_globals
 from darts.utils.serialization.base import UnpicklingError
 
 kwargs = {
@@ -383,12 +385,13 @@ class TestTorchForecastingModel:
             assert model_manual_save.predict(n=4) == model_auto_save.predict(n=4)
 
         # load automatically saved model with manual load() and load_from_checkpoint()
-        model_auto_save1 = model_cls.load_from_checkpoint(
-            model_name=auto_name,
-            work_dir=tmpdir_fn,
-            best=False,
-            map_location="cpu",
-        )
+        with safe_globals([CustomCallback]):
+            model_auto_save1 = model_cls.load_from_checkpoint(
+                model_name=auto_name,
+                work_dir=tmpdir_fn,
+                best=False,
+                map_location="cpu",
+            )
         model_auto_save1.to_cpu()
         # compare loaded checkpoint with manual save
         assert model_manual_save.predict(
@@ -405,12 +408,13 @@ class TestTorchForecastingModel:
         model_path_manual_ckpt_2 = os.path.join(
             checkpoint_path_manual, checkpoint_file_name_cpkt_2
         )
-        model_auto_save2 = model_cls.load_from_checkpoint(
-            model_name=auto_name,
-            work_dir=tmpdir_fn,
-            best=False,
-            map_location="cpu",
-        )
+        with safe_globals([CustomCallback]):
+            model_auto_save2 = model_cls.load_from_checkpoint(
+                model_name=auto_name,
+                work_dir=tmpdir_fn,
+                best=False,
+                map_location="cpu",
+            )
         # save model directly after loading, model has no trainer
         model_auto_save2.save(model_path_manual_2, clean=clean)
 
@@ -1019,11 +1023,11 @@ class TestTorchForecastingModel:
         assert np.isfinite(prediction.all_values()).all()
         assert prediction.n_components == len(quantiles)
 
-    def test_load_checkpoint_weights_blocks_malicious_payload(self, tmpdir_fn):
+    def test_load_blocks_malicious_payload(self, tmpdir_fn):
         """Security regression test (CWE-502): the checkpoint loading paths must default to
         ``weights_only=True`` so that a maliciously crafted ``.ckpt`` cannot execute arbitrary
         code, while still (a) loading legitimate models and (b) allowing an explicit
-        ``weights_only=False`` opt-out for trusted files.
+        ``trusted=True`` opt-out for trusted files.
         """
         # 1) a normally-saved model still loads with the safe default -------------------
         model_name = "wo_safe"
@@ -1059,77 +1063,22 @@ class TestTorchForecastingModel:
         real_ckpt["cwe502_payload"] = _MaliciousPayload()
         torch.save(real_ckpt, ckpt_path + ".ckpt")
 
-        # SAFE default (`weights_only=True`) must REFUSE the payload -> marker NOT created
+        # SAFE default (`trusted=False` & `weights_only=True`) must REFUSE the payload -> marker NOT created
         with pytest.raises(Exception):
             reloaded.load_weights(ckpt_path)
-        assert not os.path.exists(marker_path)
-
-        # explicit opt-out (`weights_only=False`) still loads (and here executes) the
-        # payload, confirming the opt-out path is preserved
-        reloaded.load_weights(ckpt_path, weights_only=False)
-        assert os.path.exists(marker_path)
-        os.remove(marker_path)
-
-    def test_safe_load_blocks_malicious_payload(self, tmpdir_fn):
-        """Security regression test (CWE-502): ``TorchForecastingModel.load()`` must default to
-        ``weights_only=True`` so a maliciously crafted ``.pt`` cannot execute arbitrary code.
-        """
-        model_name = "pt_safe"
-        model_path = os.path.join(tmpdir_fn, f"{model_name}.pt")
-        model_kwargs = dict(
-            input_chunk_length=4,
-            output_chunk_length=1,
-            n_epochs=1,
-            **tfm_kwargs,
-        )
-        model = DLinearModel(**model_kwargs)
-        model.fit(self.series[:20])
-        model.save(model_path)
-
-        # a legitimate save loads with weights_only=True
-        reloaded = DLinearModel.load(model_path)
-        reloaded.predict(n=2, series=self.series[:20])
-
-        marker_path = os.path.join(tmpdir_fn, "cwe502_pt_marker.txt")
-        if os.path.exists(marker_path):
-            os.remove(marker_path)
-
-        class _MaliciousPayload:
-            def __reduce__(self):
-                return os.system, (f'echo pwned > "{marker_path}"',)
-
-        torch.save({"payload": _MaliciousPayload()}, model_path)
-
-        # safe loading (default) blocks the malicious payload
         with pytest.raises((UnpicklingError, Exception)):
-            DLinearModel.load(model_path)
+            DLinearModel.load(ckpt_path)
         assert not os.path.exists(marker_path)
 
-        # unsafe loading allows the malicious payload
-        try:
-            DLinearModel.load(model_path, weights_only=False)
-        except Exception:
-            pass
+        # explicit opt-out (`trusted=True`) still loads (and here executes) the
+        # payload, confirming the opt-out path is preserved
+        reloaded.load_weights(ckpt_path, trusted=True)
         assert os.path.exists(marker_path)
         os.remove(marker_path)
 
-    def test_safe_load_roundtrip(self, tmpdir_fn):
-        """Verify safe save/load roundtrip for a model with encoders."""
-        model = DLinearModel(
-            input_chunk_length=4,
-            output_chunk_length=1,
-            n_epochs=1,
-            add_encoders={"cyclic": {"past": ["month"]}},
-            **tfm_kwargs,
-        )
-        model.fit(self.series[:20])
-        before = model.predict(n=2, series=self.series[:20])
-        path = os.path.join(tmpdir_fn, "roundtrip.pt")
-        model.save(path)
-
-        loaded = DLinearModel.load(path)
-        after = loaded.predict(n=2, series=self.series[:20])
-        np.testing.assert_allclose(before.values(), after.values(), atol=1e-6)
+        DLinearModel.load(ckpt_path, trusted=True)
+        assert os.path.exists(marker_path)
+        os.remove(marker_path)
 
     def test_safe_load_with_early_stopping(self, tmpdir_fn):
         """Verify callbacks survive the safe save/load roundtrip."""
@@ -1180,23 +1129,6 @@ class TestTorchForecastingModel:
         loaded = _UserDLinear.load(path)
         assert type(loaded) is _UserDLinear
         after = loaded.predict(n=2)
-        np.testing.assert_allclose(before.values(), after.values(), atol=1e-6)
-
-    def test_weights_only_false_loads_any_file(self, tmpdir_fn):
-        """``weights_only=False`` loads legacy pickles created outside the safe path."""
-        model = DLinearModel(
-            input_chunk_length=4,
-            output_chunk_length=1,
-            n_epochs=1,
-            **tfm_kwargs,
-        )
-        model.fit(self.series[:20])
-        path = os.path.join(tmpdir_fn, "legacy.pt")
-        model.save(path)
-        before = model.predict(n=2, series=self.series[:20])
-
-        loaded = DLinearModel.load(path, weights_only=False)
-        after = loaded.predict(n=2, series=self.series[:20])
         np.testing.assert_allclose(before.values(), after.values(), atol=1e-6)
 
     def test_load_weights_params_check(self, tmpdir_fn):
@@ -1546,7 +1478,6 @@ class TestTorchForecastingModel:
             model_name=original_model_name,
             work_dir=tmpdir_fn,
             best=False,
-            weights_only=True,
             map_location="cpu",
         )
         assert model_wo._fit_called
@@ -1716,8 +1647,6 @@ class TestTorchForecastingModel:
     def test_load_from_checkpoint_w_metrics(self, tmpdir_fn):
         model_name = "pretraining_metrics"
         # model with one torch_metrics
-        from lightning_fabric.loggers.logger import _DummyExperiment
-
         pl_trainer_kwargs = dict(
             {"logger": DummyLogger(), "log_every_n_steps": 1},
             **tfm_kwargs["pl_trainer_kwargs"],
@@ -1740,13 +1669,13 @@ class TestTorchForecastingModel:
         assert isinstance(model.model.train_metrics, MetricCollection)
         assert len(model.model.train_metrics) == 1
 
-        loaded_model = RNNModel.load_from_checkpoint(
-            model_name,
-            tmpdir_fn,
-            best=False,
-            map_location="cpu",
-            trusted_classes=[DummyLogger, _DummyExperiment],
-        )
+        with safe_globals([DummyLogger, _DummyExperiment]):
+            loaded_model = RNNModel.load_from_checkpoint(
+                model_name,
+                tmpdir_fn,
+                best=False,
+                map_location="cpu",
+            )
         # custom loss function should be properly restored from ckpt torchmetrics.Metric
         assert isinstance(loaded_model.model.train_metrics, MetricCollection)
         assert len(loaded_model.model.train_metrics) == 1
@@ -1790,22 +1719,24 @@ class TestTorchForecastingModel:
         assert cb_fitted.persisted_epochs == []
 
         # resuming training restores the stateful callbacks
-        loaded_model = RNNModel.load_from_checkpoint(
-            model_name,
-            tmpdir_fn,
-            best=False,
-        )
+        with safe_globals([StatefulCallback]):
+            loaded_model = RNNModel.load_from_checkpoint(
+                model_name,
+                tmpdir_fn,
+                best=False,
+            )
         loaded_model.fit(self.series, epochs=2)
         cb_fitted = _get_fitted_callback(loaded_model)
         assert cb_fitted.current_epochs == [1]
         assert cb_fitted.persisted_epochs == [0]
 
         # resuming another time works as well
-        loaded_model = RNNModel.load_from_checkpoint(
-            model_name,
-            tmpdir_fn,
-            best=False,
-        )
+        with safe_globals([StatefulCallback]):
+            loaded_model = RNNModel.load_from_checkpoint(
+                model_name,
+                tmpdir_fn,
+                best=False,
+            )
         loaded_model.fit(self.series, epochs=4)
         cb_fitted = _get_fitted_callback(loaded_model)
         assert cb_fitted.current_epochs == [2, 3]

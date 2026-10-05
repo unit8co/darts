@@ -6,26 +6,28 @@ Shared helpers for Darts model persistence.
 
 Security model:
 
-- Prefer **scoped** allow-lists applied only around a single load call, not process-wide
-  registration at import time.
-- When an inspection API exists, derive the allow-list **from the specific artifact** being
-  loaded (checkpoint-driven registration) rather than pre-registering entire libraries.
-- Use class-hierarchy-based allowlisting: allow classes that subclass known-safe bases
-  rather than blanket-trusting entire package prefixes.
-- For non-torch models, use a :class:`RestrictedUnpickler` with ``find_class`` filtering
-  that shares the same allowlist logic.
+- Prefer **scoped** allow-lists applied around each load call; optional process-wide or context-scoped extras via
+  :mod:`darts.utils.serialization.registry` (explicit user opt-in).
+- When an inspection API exists, derive the allow-list **from the specific artifact** being loaded (checkpoint-driven
+  registration) rather than pre-registering entire libraries.
+- Use class-hierarchy-based allowlisting: allow classes that subclass known-safe bases rather than blanket-trusting
+  entire package prefixes.
+- For non-torch models, use a :class:`RestrictedUnpickler` with ``find_class`` filtering that shares the same allowlist
+  logic.
 """
 
 import enum
-import importlib
 import inspect
 import pickle
-from collections import OrderedDict
-from collections.abc import Sequence
 from functools import lru_cache
-from typing import Any, TypeVar
+from typing import NoReturn, TypeVar
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_log
+from darts.utils.serialization.registry import (
+    UserSafeGlobals,
+    _normalize_qualname,
+    _resolve_allowed_global,
+)
 
 logger = get_logger(__name__)
 
@@ -157,7 +159,7 @@ SAFE_PICKLE_FUNCTIONS: frozenset[str] = frozenset({
 # Allowlist: class namespaces (classes only) + exact state classes
 # ---------------------------------------------------------------------------
 # A *class* under one of these prefixes is allowed if it subclasses a known-safe
-# base (see :func:`safe_base_classes`) or is an ``enum.Enum``.  Callables never
+# base (fenced hierarchy checks) or is an ``enum.Enum``.  Callables never
 # pass this check.  This is not a blanket trust of the package.
 TRUSTED_PREFIXES: TrustedPrefixPolicy = (
     "darts.",
@@ -245,39 +247,6 @@ EXACT_STATE_CLASSES: frozenset[str] = frozenset({
 
 
 # ---------------------------------------------------------------------------
-# Shared helpers
-# ---------------------------------------------------------------------------
-def _qualname_set(
-    trusted_classes: list[type] | None,
-) -> frozenset[str] | None:
-    if not trusted_classes:
-        return None
-    return frozenset(f"{cls.__module__}.{cls.__qualname__}" for cls in trusted_classes)
-
-
-def resolve_reference(reference):
-    """Try to resolve a reference."""
-    mod_name, _, attr = reference.rpartition(".")
-    try:
-        return getattr(importlib.import_module(mod_name), attr, None)
-    except Exception as e:  # pragma: no cover - defensive only
-        logger.debug(f"Could not resolve reference {reference}: {e}")
-        return None
-
-
-def dedupe_by_identity(objects: Sequence[T]) -> list[T]:
-    """Return ``objects`` with duplicate entries removed (by ``id``, preserving order)."""
-    seen: set[int] = set()
-    out: list[T] = []
-    for obj in objects:
-        obj_id = id(obj)
-        if obj_id not in seen:
-            seen.add(obj_id)
-            out.append(obj)
-    return out
-
-
-# ---------------------------------------------------------------------------
 # Security helpers
 # ---------------------------------------------------------------------------
 def is_blocked_global(qualname: str) -> bool:
@@ -307,7 +276,7 @@ def _numpy_allowed_bases() -> type | tuple[type, ...] | None:
 
 @lru_cache(maxsize=1)
 def _statsforecast_allowed_bases() -> type | tuple[type, ...] | None:
-    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    """Return statsforecast ``_TS``, or ``None`` when statsforecast cannot be imported."""
     try:
         from statsforecast.models import _TS
     except Exception:  # pragma: no cover
@@ -317,7 +286,7 @@ def _statsforecast_allowed_bases() -> type | tuple[type, ...] | None:
 
 @lru_cache(maxsize=1)
 def _neuralforecast_allowed_bases() -> type | tuple[type, ...] | None:
-    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    """Return neuralforecast ``BaseModel``, or ``None`` when neuralforecast cannot be imported."""
     try:
         from neuralforecast.common._base_model import BaseModel
     except Exception:  # pragma: no cover
@@ -327,7 +296,7 @@ def _neuralforecast_allowed_bases() -> type | tuple[type, ...] | None:
 
 @lru_cache(maxsize=1)
 def _statsmodels_allowed_bases() -> type | tuple[type, ...] | None:
-    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    """Return statsmodels ``TimeSeriesModel`` and ``Results``, or ``None`` when statsmodels cannot be imported."""
     try:
         from statsmodels.base.model import Results
         from statsmodels.tsa.base.tsa_model import TimeSeriesModel
@@ -338,7 +307,7 @@ def _statsmodels_allowed_bases() -> type | tuple[type, ...] | None:
 
 @lru_cache(maxsize=1)
 def _sklearn_allowed_bases() -> type | tuple[type, ...] | None:
-    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    """Return sklearn ``BaseEstimator``, or ``None`` when sklearn cannot be imported."""
     try:
         from sklearn.base import BaseEstimator
     except Exception:  # pragma: no cover
@@ -348,7 +317,7 @@ def _sklearn_allowed_bases() -> type | tuple[type, ...] | None:
 
 @lru_cache(maxsize=1)
 def _torch_allowed_bases() -> type | tuple[type, ...] | None:
-    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    """Return torch ``Module``, ``Optimizer``, and LR scheduler bases, or ``None`` when torch cannot be imported."""
     try:
         from torch.nn import Module
         from torch.optim import Optimizer, lr_scheduler
@@ -365,7 +334,7 @@ def _torch_allowed_bases() -> type | tuple[type, ...] | None:
 
 @lru_cache(maxsize=1)
 def _torchmetrics_allowed_bases() -> type | tuple[type, ...] | None:
-    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    """Return torchmetrics ``Metric`` and ``MetricCollection``, or ``None`` when torchmetrics cannot be imported."""
     try:
         from torchmetrics import Metric, MetricCollection
     except Exception:  # pragma: no cover
@@ -375,7 +344,7 @@ def _torchmetrics_allowed_bases() -> type | tuple[type, ...] | None:
 
 @lru_cache(maxsize=1)
 def _lightning_allowed_bases() -> type | tuple[type, ...] | None:
-    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    """Return PyTorch Lightning ``Callback``, or ``None`` when pytorch_lightning cannot be imported."""
     try:
         from pytorch_lightning import Callback
     except Exception:  # pragma: no cover
@@ -385,7 +354,7 @@ def _lightning_allowed_bases() -> type | tuple[type, ...] | None:
 
 @lru_cache(maxsize=1)
 def _darts_core_allowed_bases() -> type | tuple[type, ...] | None:
-    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    """Return audited Darts core base types, or ``None`` when imports fail."""
     try:
         from darts import TimeSeries
         from darts.dataprocessing.encoders.encoder_base import (
@@ -398,10 +367,12 @@ def _darts_core_allowed_bases() -> type | tuple[type, ...] | None:
         )
         from darts.models.filtering.filtering_model import FilteringModel
         from darts.models.forecasting.forecasting_model import ForecastingModel
+        from darts.models.forecasting.sklearn_model import _QuantileModelContainer
         from darts.utils.likelihood_models.base import Likelihood, LikelihoodType
     except Exception:  # pragma: no cover
         return None
     return (
+        _QuantileModelContainer,
         TimeSeries,
         CovariatesIndexGenerator,
         Encoder,
@@ -416,18 +387,22 @@ def _darts_core_allowed_bases() -> type | tuple[type, ...] | None:
 
 @lru_cache(maxsize=1)
 def _darts_torch_allowed_bases() -> type | tuple[type, ...] | None:
-    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    """Return audited Darts torch-related base types, or ``None`` when imports fail."""
     try:
+        from darts.utils.callbacks import (
+            PyTorchLightningPruningCallback,
+            TFMProgressBar,
+        )
         from darts.utils.data.torch_datasets.utils import TorchSample
         from darts.utils.likelihood_models.torch import TorchLikelihood
     except Exception:  # pragma: no cover
         return None
-    return TorchSample, TorchLikelihood
+    return TorchSample, TorchLikelihood, TFMProgressBar, PyTorchLightningPruningCallback
 
 
 @lru_cache(maxsize=1)
 def _darts_foundation_allowed_bases() -> type | tuple[type, ...] | None:
-    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    """Return ``HuggingFaceConnector``, or ``None`` when the connector cannot be imported."""
     try:
         from darts.models.components.huggingface_connector import HuggingFaceConnector
     except Exception:  # pragma: no cover
@@ -438,7 +413,7 @@ def _darts_foundation_allowed_bases() -> type | tuple[type, ...] | None:
 def _is_fenced_allowed_subclass(qualname: str, obj: type) -> bool:
     """Allow in-package (sub)classes that share an audited base.
 
-    For example ``pandas.`` classes that subclass ``BaseOffset`` A subclass
+    For example, ``pandas.*`` classes that subclass ``BaseOffset``. A subclass
     defined outside those packages does not pass: its ``__setstate__`` is
     not part of the audit.
     """
@@ -447,6 +422,9 @@ def _is_fenced_allowed_subclass(qualname: str, obj: type) -> bool:
     elif qualname.startswith((
         "darts.utils.data.torch_datasets",
         "darts.utils.likelihood_models.torch",
+        "darts.utils.callbacks",
+        "darts.utils.losses",
+        "darts.utils.torch",
     )):
         base = _darts_torch_allowed_bases()
     elif qualname.startswith("darts."):
@@ -465,8 +443,7 @@ def _is_fenced_allowed_subclass(qualname: str, obj: type) -> bool:
         base = _torch_allowed_bases()
     elif qualname.startswith("torchmetrics."):
         base = _torchmetrics_allowed_bases()
-    ## TODO: remove callbacks
-    elif qualname.startswith(("pytorch_lightning.", "lightning.")):
+    elif qualname.startswith(("pytorch_lightning.", "lightning.", "lightning_fabric.")):
         base = _lightning_allowed_bases()
     elif qualname.startswith("neuralforecast."):
         base = _neuralforecast_allowed_bases()
@@ -477,7 +454,7 @@ def _is_fenced_allowed_subclass(qualname: str, obj: type) -> bool:
 
 @lru_cache(maxsize=1)
 def _torch_allowed_instances() -> type | tuple[type, ...] | None:
-    """Return ``numpy.generic``, or ``None`` when numpy cannot be imported."""
+    """Return ``torch.dtype``, or ``None`` when torch cannot be imported."""
     try:
         from torch import dtype
     except Exception:  # pragma: no cover
@@ -493,51 +470,52 @@ def _is_fenced_allowed_instance(qualname: str, obj: type) -> bool:
     return base is not None and isinstance(obj, base)
 
 
-def _normalize_qualname(qualname: str) -> str:
-    """Map torch's Python-2 ``__builtin__`` module name onto ``builtins``."""
-    if qualname.startswith("__builtin__."):
-        return "builtins." + qualname.removeprefix("__builtin__.")
-    return qualname
-
-
 def is_allowed_global(
     qualname: str,
-    obj: Any,
-    *,
-    safe_bases: tuple[type, ...],
     extra_safe_callables: frozenset[str] | None = None,
+    extra_user_globals: UserSafeGlobals | None = None,
 ) -> bool:
-    """Return whether ``qualname`` / ``obj`` may be allow-listed for safe loading.
+    """Return whether ``qualname`` may be allow-listed for safe loading.
 
     Checks (in order):
 
-    1. **Deny** if it matches :data:`BLOCKED_PREFIXES`.
-    2. **Allow** if it is in :data:`EXACT_ALLOWED_CLASSES`.
-    3. **Allow** if it is in :data:`SAFE_PICKLE_FUNCTIONS` or ``extra_safe_callables``.
-    4. **Allow** if it is in :data:`EXACT_STATE_CLASSES` and is a class.
-    5. **Allow** ``torch.*`` module-level :class:`torch.dtype` singletons.
-    6. **Allow classes** under trusted prefixes if the class subclasses one of the safe bases.
-    7. **Allow classes** under :data:`TRUSTED_PREFIXES` that subclass a ``safe_bases``
-       entry or are an ``enum.Enum``.  Callables never pass this step.
-    8. **Deny** everything else.
+    1. **Allow** if it is in ``extra_user_globals`` (explicit user opt-in qualname → object map).
+    2. **Deny** if it matches :data:`BLOCKED_PREFIXES`.
+    3. **Allow** if it is in :data:`EXACT_ALLOWED_CLASSES`.
+    4. **Allow** if it is in :data:`SAFE_PICKLE_FUNCTIONS` or ``extra_safe_callables``.
+    5. **Allow** if it is in :data:`EXACT_STATE_CLASSES` and is a class.
+    6. **Allow** ``torch.*`` module-level :class:`torch.dtype` singletons (non-callable instances).
+    7. **Allow classes** under :data:`TRUSTED_PREFIXES` if the class subclasses one of the safe bases.
+    8. **Allow classes** under :data:`TRUSTED_PREFIXES` that are ``enum.Enum`` subclasses.
+    9. **Deny** everything else.
     """
     qualname = _normalize_qualname(qualname)
+    if extra_user_globals and qualname in extra_user_globals:
+        return True
+
     if is_blocked_global(qualname):
-        return False
+        raise_log(
+            UnpicklingError(f"Blocked unsafe global `{qualname}` for model loading.")
+        )
 
     if qualname in EXACT_ALLOWED_CLASSES:
-        return obj is not None
+        return True
 
     if qualname in SAFE_PICKLE_FUNCTIONS:
-        return obj is not None and callable(obj)
+        return callable(_resolve_allowed_global(qualname, extra_user_globals))
 
     if extra_safe_callables and qualname in extra_safe_callables:
-        return obj is not None and callable(obj)
+        return callable(_resolve_allowed_global(qualname, extra_user_globals))
 
     if qualname in EXACT_STATE_CLASSES:
-        return obj is not None and inspect.isclass(obj)
+        return inspect.isclass(_resolve_allowed_global(qualname, extra_user_globals))
 
-    if obj is None or not qualname.startswith(TRUSTED_PREFIXES):
+    if not qualname.startswith(TRUSTED_PREFIXES):
+        return False
+
+    # only resolve qualname from trusted prefixes
+    obj = _resolve_allowed_global(qualname, extra_user_globals)
+    if obj is None:
         return False
 
     if not inspect.isclass(obj):
@@ -548,45 +526,9 @@ def is_allowed_global(
     if _is_fenced_allowed_subclass(qualname, obj):
         return True
 
-    if safe_bases and issubclass(obj, safe_bases):
-        return True
-
     if issubclass(obj, enum.Enum):
         return True
     return False
-
-
-def format_unpickling_error(qualname: str, path: str) -> str:
-    """Build an actionable error message for a blocked global during safe loading."""
-    return (
-        f"Global `{qualname}` referenced by model file `{path}` is not allow-listed "
-        f"for safe loading.  If you trust this file, reload with `weights_only=False` "
-        f"(torch models) or `trusted=True` (non-torch models).  If you used custom "
-        f"encoders, callbacks, or other third-party classes, pass them via "
-        f"`trusted_classes` or use the opt-out flag."
-    )
-
-
-# TODO: remove
-def safe_base_classes() -> tuple[type, ...]:
-    """Collect known-safe base classes for allowlist validation.
-
-    A class that subclasses one of these bases is considered safe for
-    deserialization.  Covers the Darts ecosystem: models, encoders,
-    transformers, sklearn estimators, PyTorch modules, Lightning callbacks, etc.
-    """
-    bases: list[type] = [OrderedDict]
-
-    # TODO: remove callbacks
-    # Lightning
-    try:
-        from pytorch_lightning.callbacks import Callback
-
-        bases.append(Callback)
-    except Exception:  # pragma: no cover
-        pass
-
-    return tuple(b for b in bases if inspect.isclass(b))
 
 
 # ---------------------------------------------------------------------------
@@ -604,13 +546,11 @@ class RestrictedUnpickler(pickle.Unpickler):
         self,
         file,
         *,
-        safe_bases: tuple[type, ...] | None = None,
-        trusted_classes: list[type] | None = None,
+        extra_user_globals: UserSafeGlobals | None = None,
         **kwargs,
     ):
         super().__init__(file, **kwargs)
-        self._safe_bases = safe_bases if safe_bases is not None else safe_base_classes()
-        self._extra_allowed = _qualname_set(trusted_classes)
+        self._extra_user_globals = dict(extra_user_globals or {})
 
     def find_class(self, module: str, name: str):
         # Normalize Python-2-era module name emitted by torch.save's pickle
@@ -618,36 +558,20 @@ class RestrictedUnpickler(pickle.Unpickler):
         # allowlists.
         if module == "__builtin__":
             module = "builtins"
-        qualname = f"{module}.{name}"
-
-        if is_blocked_global(qualname):
-            raise pickle.UnpicklingError(
-                f"Blocked unsafe global `{qualname}` during model loading. "
-                "If you trust this file, reload with `trusted=True`."
-            )
-
-        obj = resolve_reference(qualname)
+        qualname = _normalize_qualname(f"{module}.{name}")
         if is_allowed_global(
-            qualname,
-            obj,
-            safe_bases=self._safe_bases,
-            extra_safe_callables=self._extra_allowed,
+            qualname=qualname,
+            extra_user_globals=self._extra_user_globals,
         ):
             return super().find_class(module, name)
 
-        raise pickle.UnpicklingError(
-            f"Global `{qualname}` is not allow-listed for safe model loading. "
-            "If you trust this file, reload with `trusted=True`. "
-            "If you used custom classes, ensure they subclass a known Darts or "
-            "sklearn base class, or pass `trusted=True`."
-        )
+        _raise_unsafe_global(qualname)
 
 
 def restricted_pickle_load(
     file,
     *,
     trusted: bool = False,
-    trusted_classes: list[type] | None = None,
     **kwargs,
 ):
     """Load a pickle file with restricted deserialization by default.
@@ -657,21 +581,36 @@ def restricted_pickle_load(
     file
         A readable binary file object.
     trusted
-        If ``True``, falls back to unrestricted ``pickle.load``.  Only use for
-        files from trusted sources.  Default: ``False``.
-    trusted_classes
-        Optional list of additional classes to allow during restricted loading.
-        Each class must be importable by its module path.
+        If ``True``, disables safe-loading restrictions and fully unpickles the file (CWE-502 opt-out). Only use
+        for files from trusted sources. Default: ``False``.
     """
     if trusted:
         return pickle.load(file, **kwargs)
 
+    from darts.utils.serialization.registry import _get_user_safe_globals
+
+    user_globals = _get_user_safe_globals()
     return RestrictedUnpickler(
         file,
-        trusted_classes=trusted_classes,
+        extra_user_globals=user_globals,
         **kwargs,
     ).load()
 
 
 class UnpicklingError(RuntimeError):
-    """Raised when a global referenced by a serialized file is not allow-listed."""
+    """Raised when unpickling failed."""
+
+
+def _raise_unsafe_global(qualname: str) -> NoReturn:
+    raise_log(
+        UnpicklingError(
+            f"Safe loading failed as global `{qualname}` is not allow-listed for safe loading. "
+            f"The file can still be loaded with one of these options (see the user guide for "
+            f"detailed information (https://unit8co.github.io/darts/userguide/safe_model_loading.html):"
+            f"\n- If you fully trust this file, you can load with `trusted=True`. This will likely "
+            f"succeed, but it can result in arbitrary code execution."
+            f"\n- If you trust this global, you can register it as safe before loading with "
+            f"`darts.utils.serialization.add_safe_globals([{qualname}])` or the "
+            f"`darts.utils.serialization.safe_globals([{qualname}])` context manager."
+        )
+    )
