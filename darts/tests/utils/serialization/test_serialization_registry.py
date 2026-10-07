@@ -37,9 +37,25 @@ class TestParseSafeGlobal:
         assert obj is _UserClass
         assert qn == "legacy.module.OldName"
 
-    def test_rejects_non_callable(self):
-        with pytest.raises(TypeError, match="callables"):
-            _parse_safe_global(42)  # type: ignore[arg-type]
+    def test_rejections(self):
+        # not a callable
+        with pytest.raises(ValueError, match="callables"):
+            _parse_safe_global(42)
+
+        # tuple wrong length
+        with pytest.raises(ValueError, match="(callable, qualname_str)"):
+            _parse_safe_global((42,))
+
+        # tuple first element not a callable
+        with pytest.raises(ValueError, match="callables"):
+            _parse_safe_global((42, "foo"))
+
+        # tuple second element not a string
+        def func():
+            pass
+
+        with pytest.raises(ValueError, match="str"):
+            _parse_safe_global((func, 42))
 
 
 class TestRegistryLifecycle:

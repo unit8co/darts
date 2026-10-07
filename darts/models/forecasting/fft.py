@@ -318,7 +318,7 @@ class FFT(LocalForecastingModel):
     def __setstate__(self, state):
         self.__dict__.update(state)
 
-        if "trend_coefficients" not in state:
+        if "trend_coefficients" not in state:  # pragma: no cover
             return
 
         # rebuild ``trend_function``

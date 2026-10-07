@@ -172,14 +172,14 @@ def _parse_safe_global(entry: SafeGlobal) -> tuple[Callable[..., object], str]:
         obj, qualname = entry
         if not callable(obj):
             raise_log(
-                TypeError(
+                ValueError(
                     "Safe globals must be callables (classes or functions), "
                     f"got {type(obj).__name__}."
                 ),
             )
         if not isinstance(qualname, str):
             raise_log(
-                TypeError(
+                ValueError(
                     "Safe-global tuple second element must be str, "
                     f"got {type(qualname).__name__}."
                 ),
@@ -188,7 +188,7 @@ def _parse_safe_global(entry: SafeGlobal) -> tuple[Callable[..., object], str]:
         obj = entry
         if not callable(obj):
             raise_log(
-                TypeError(
+                ValueError(
                     "Safe globals must be callables (classes or functions), "
                     f"got {type(obj).__name__}."
                 ),
@@ -214,7 +214,7 @@ def _get_user_safe_globals() -> UserSafeGlobals:
 
 def _normalize_qualname(qualname: str) -> str:
     """Map torch's Python-2 ``__builtin__`` module name onto ``builtins``."""
-    if qualname.startswith("__builtin__."):
+    if qualname.startswith("__builtin__."):  # pragma: no cover
         return "builtins." + qualname.removeprefix("__builtin__.")
     return qualname
 

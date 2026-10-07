@@ -230,7 +230,21 @@ def _model_config_specs(series: _SeriesBundle) -> list[dict[str, Any]]:
         },
         {"id": "arima", "cls": "ARIMA", "init_args": (1, 0, 0)},
         {"id": "exp_smoothing", "cls": "ExponentialSmoothing", "kwargs": {}},
-        {"id": "fft", "cls": "FFT", "kwargs": {"nr_freqs_to_keep": 6}},
+        {
+            "id": "fft_poly",
+            "cls": "FFT",
+            "kwargs": {"nr_freqs_to_keep": 6, "trend": "poly"},
+        },
+        {
+            "id": "fft_exp",
+            "cls": "FFT",
+            "kwargs": {"nr_freqs_to_keep": 6, "trend": "exp"},
+        },
+        {
+            "id": "fft_none",
+            "cls": "FFT",
+            "kwargs": {"nr_freqs_to_keep": 6, "trend": None},
+        },
         {"id": "theta", "cls": "Theta", "init_args": (1,)},
         {"id": "four_theta", "cls": "FourTheta", "init_args": (1,)},
         {"id": "kalman", "cls": "KalmanForecaster", "kwargs": {"dim_x": 3}},

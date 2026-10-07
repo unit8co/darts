@@ -447,7 +447,7 @@ def _is_fenced_allowed_subclass(qualname: str, obj: type) -> bool:
         base = _lightning_allowed_bases()
     elif qualname.startswith("neuralforecast."):
         base = _neuralforecast_allowed_bases()
-    else:
+    else:  # pragma: no cover
         base = None
     return base is not None and issubclass(obj, base)
 
@@ -465,14 +465,13 @@ def _torch_allowed_instances() -> type | tuple[type, ...] | None:
 def _is_fenced_allowed_instance(qualname: str, obj: type) -> bool:
     if qualname.startswith("torch."):
         base = _torch_allowed_instances()
-    else:
+    else:  # pragma: no cover
         base = None
     return base is not None and isinstance(obj, base)
 
 
 def is_allowed_global(
     qualname: str,
-    extra_safe_callables: frozenset[str] | None = None,
     extra_user_globals: UserSafeGlobals | None = None,
 ) -> bool:
     """Return whether ``qualname`` may be allow-listed for safe loading.
@@ -482,7 +481,7 @@ def is_allowed_global(
     1. **Allow** if it is in ``extra_user_globals`` (explicit user opt-in qualname → object map).
     2. **Deny** if it matches :data:`BLOCKED_PREFIXES`.
     3. **Allow** if it is in :data:`EXACT_ALLOWED_CLASSES`.
-    4. **Allow** if it is in :data:`SAFE_PICKLE_FUNCTIONS` or ``extra_safe_callables``.
+    4. **Allow** if it is in :data:`SAFE_PICKLE_FUNCTIONS`.
     5. **Allow** if it is in :data:`EXACT_STATE_CLASSES` and is a class.
     6. **Allow** ``torch.*`` module-level :class:`torch.dtype` singletons (non-callable instances).
     7. **Allow classes** under :data:`TRUSTED_PREFIXES` if the class subclasses one of the safe bases.
@@ -502,9 +501,6 @@ def is_allowed_global(
         return True
 
     if qualname in SAFE_PICKLE_FUNCTIONS:
-        return callable(_resolve_allowed_global(qualname, extra_user_globals))
-
-    if extra_safe_callables and qualname in extra_safe_callables:
         return callable(_resolve_allowed_global(qualname, extra_user_globals))
 
     if qualname in EXACT_STATE_CLASSES:
