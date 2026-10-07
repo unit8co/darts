@@ -851,6 +851,11 @@ class TestProbabilisticModels:
                 ),
                 (PoissonLikelihood(), [5], ["dummy_0_lambda", "dummy_1_lambda"]),
                 (
+                    NegativeBinomialLikelihood(),
+                    [2, 0.5],
+                    ["dummy_0_r", "dummy_0_p", "dummy_1_r", "dummy_1_p"],
+                ),
+                (
                     QuantileRegression([0.05, 0.5, 0.95]),
                     [-1.67, 0, 1.67],
                     [
