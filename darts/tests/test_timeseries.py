@@ -1894,6 +1894,20 @@ class TestTimeSeries:
 
         assert data_darts1 == data_darts2
 
+    def test_json_roundtrip_keeps_float_precision(self):
+        values = np.array([
+            [0.1234567890123456, 1 / 3],
+            [123456.78901234567, 1e-12],
+            [np.nan, -2.5e-8],
+        ])
+        series = TimeSeries.from_times_and_values(
+            pd.date_range("20200101", periods=3, freq="D"), values
+        )
+        restored = TimeSeries.from_json(series.to_json())
+        np.testing.assert_array_equal(restored.values(), series.values())
+        assert restored.time_index.equals(series.time_index)
+        assert restored.components.equals(series.components)
+
     def test_index_creation(self):
         times = pd.date_range(start="20210312", periods=15, freq="MS")
         values1 = np.random.uniform(low=-10, high=10, size=len(times))

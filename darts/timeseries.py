@@ -1503,7 +1503,9 @@ class TimeSeries:
         if metadata is None:
             metadata = metadata_
 
-        df = pd.read_json(StringIO(json.dumps(parsed)), orient="split")
+        df = pd.read_json(
+            StringIO(json.dumps(parsed)), orient="split", precise_float=True
+        )
         return cls.from_dataframe(
             df=df,
             static_covariates=static_covariates,
@@ -4372,9 +4374,11 @@ class TimeSeries:
         --------
         TimeSeries.from_json : Create a TimeSeries from a JSON string.
         """
-        result = json.loads(
-            self.to_dataframe().to_json(orient="split", date_format="iso")
-        )
+        df = self.to_dataframe()
+        result = json.loads(df.to_json(orient="split", date_format="iso"))
+        # pandas rounds floats to 10 decimals in JSON, so store the values at full precision
+        values = df.to_numpy()
+        result["data"] = np.where(np.isnan(values), None, values).tolist()
         if self.static_covariates is not None:
             result["static_covariates"] = json.loads(
                 self.static_covariates.to_json(orient="split")
