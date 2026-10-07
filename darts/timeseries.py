@@ -4020,8 +4020,9 @@ class TimeSeries:
             ----------
             transformation
                 The transformation dictionary.
-            builtins
-                The built-in transformations read from the WindowTransformer class.
+            forecasting_safe
+                Whether the transformation must not use future values at the current
+                timestep. When True, ``"center"`` is required to be False.
 
             Returns
             -------
