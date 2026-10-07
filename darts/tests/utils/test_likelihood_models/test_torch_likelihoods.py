@@ -123,6 +123,45 @@ class TestTorchLikelihoodModel:
         ])
         assert torch.allclose(loss, loss_per_sample.mean())
 
+    @pytest.mark.parametrize(
+        "likelihood",
+        [
+            BernoulliLikelihood(),
+            BetaLikelihood(),
+            CauchyLikelihood(),
+            ContinuousBernoulliLikelihood(),
+            ExponentialLikelihood(),
+            GammaLikelihood(),
+            GaussianLikelihood(),
+            GeometricLikelihood(),
+            GumbelLikelihood(),
+            HalfNormalLikelihood(),
+            LaplaceLikelihood(),
+            LogNormalLikelihood(),
+            NegativeBinomialLikelihood(),
+            PoissonLikelihood(),
+            QuantileRegression([0.1, 0.5, 0.9]),
+            WeibullLikelihood(),
+        ],
+    )
+    def test_predict_likelihood_parameters_component_order(self, likelihood):
+        # parameters must be grouped by component, in the same order as `component_names()`
+        # (<comp_0>_<param_0>, <comp_0>_<param_1>, ..., <comp_1>_<param_0>, ...)
+        torch.manual_seed(42)
+        n_components = 3
+        model_output = torch.randn(2, 4, n_components, likelihood.num_parameters)
+
+        params = likelihood.predict_likelihood_parameters(model_output)
+        params_per_component = torch.cat(
+            [
+                likelihood.predict_likelihood_parameters(model_output[:, :, i : i + 1])
+                for i in range(n_components)
+            ],
+            dim=-1,
+        )
+        assert params.shape == (2, 4, n_components * likelihood.num_parameters)
+        assert torch.allclose(params, params_per_component)
+
 
 class TestTorchLikelihoodInputValidation:
     def test_gaussian_negative_prior_mu(self):
