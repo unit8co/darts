@@ -490,6 +490,7 @@ def _model_config_specs(series: _SeriesBundle) -> list[dict[str, Any]]:
             "id": "global_naive_aggregate",
             "cls": "GlobalNaiveAggregate",
             "torch_base": True,
+            "safe_globals": [getattr, torch._C._VariableFunctionsClass],
         },
         {"id": "global_naive_drift", "cls": "GlobalNaiveDrift", "torch_base": True},
         {
