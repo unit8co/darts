@@ -408,7 +408,13 @@ class NegativeBinomialLikelihood(TorchLikelihood):
         """Overwrite the parent since the parameters are extracted in two steps."""
         mu, alpha = self._params_from_output(model_output)
         r, p = NegativeBinomialLikelihood._get_r_and_p_from_mu_and_alpha(mu, alpha)
-        return torch.cat([r, p], dim=-1)
+        # interleave the parameters to group them by input series component
+        num_samples, n_times, n_components, n_params = model_output.shape
+        return torch.stack([r, p], dim=3).reshape((
+            num_samples,
+            n_times,
+            n_components * n_params,
+        ))
 
     def _params_from_output(self, model_output):
         mu = self.softplus(model_output[:, :, :, 0])
