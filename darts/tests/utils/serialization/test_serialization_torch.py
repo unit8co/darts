@@ -88,9 +88,20 @@ class TestLoadCkptSafely:
                 extra[0].__module__ + "." + extra[0].__qualname__,
             ) in allow
 
+    def test_rejects_weights_only_kwarg(self, tmp_path):
+        ckpt_path = tmp_path / "dummy.ckpt"
+        torch.save({"x": 1}, ckpt_path)
+
+        with pytest.raises(ValueError, match="weights_only"):
+            load_ckpt_safely(
+                lambda *args, **kwargs: None,
+                ckpt_path,
+                weights_only=False,
+            )
+
 
 class TestDartsCheckpointIO:
-    def test_defaults_weights_only_to_true(self, tmp_path):
+    def test_safe_default_passes_weights_only_true_to_pl(self, tmp_path):
         ckpt_path = tmp_path / "test.ckpt"
         torch.save({"state": 0}, ckpt_path)
 
@@ -104,7 +115,8 @@ class TestDartsCheckpointIO:
         mock_super.assert_called_once()
         assert mock_super.call_args.kwargs["weights_only"] is True
 
-    def test_weights_only_false_skips_safe_wrapper(self, tmp_path):
+    def test_pl_weights_only_false_skips_safe_wrapper(self, tmp_path):
+        """Lightning may pass ``weights_only=False`` on CheckpointIO; maps to full unpickle."""
         ckpt_path = tmp_path / "test.ckpt"
         torch.save({"state": 0}, ckpt_path)
 

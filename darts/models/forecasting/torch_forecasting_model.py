@@ -613,8 +613,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         callbacks = trainer_params_copy.pop("callbacks", None)
 
         # ensure internal checkpoint loading (Tuner, plugin-routed loads, etc.) is
-        # safe-by-default: `_DartsCheckpointIO` loads `.ckpt` files with `weights_only=True`
-        # (load-scoped allow-list).
+        # safe-by-default via `_DartsCheckpointIO` / `load_ckpt_safely` (load-scoped allow-list).
         plugins = list(trainer_params_copy.pop("plugins", None) or [])
         has_checkpoint_io = any(isinstance(p, TorchCheckpointIO) for p in plugins)
         if not has_checkpoint_io:
@@ -2316,6 +2315,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one on which it was saved.
+            ``weights_only`` is not supported; use ``trusted`` instead.
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
             common/lightning_module.html#load-from-checkpoint>`__.
         """
@@ -2417,6 +2417,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one from which it was saved.
+            ``weights_only`` is not supported; use ``trusted`` instead.
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
             common/lightning_module.html#load-from-checkpoint>`__.
 
@@ -2563,6 +2564,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         **kwargs
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
+            ``weights_only`` is not supported; use ``trusted`` instead.
             For more information, read the `official documentation <https://pytorch.org/docs/stable/generated/
             torch.load.html>`__.
         """
@@ -2687,6 +2689,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         **kwargs
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
+            ``weights_only`` is not supported; use ``trusted`` instead.
             For more information, read the `official documentation <https://pytorch.org/docs/stable/generated/
             torch.load.html>`__.
 

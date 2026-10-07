@@ -21,7 +21,7 @@ from typing import Any
 import torch
 from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_log
 from darts.utils.serialization.base import (
     RestrictedUnpickler,
     _raise_unsafe_global,
@@ -60,8 +60,10 @@ def load_wrapper_safely(
         If ``True``, disables safe-loading restrictions and fully unpickles the file (CWE-502 opt-out) with
         `weights_only=False`. Only use for files from trusted sources. Default: ``False``.
     **kwargs
-        Passed through to ``torch.load`` (e.g. ``map_location``).
+        Passed through to ``torch.load`` (e.g. ``map_location``). ``weights_only`` is not
+        supported; use the ``trusted`` parameter instead.
     """
+    _reject_weights_only_kwarg(kwargs)
     if trusted:
         return torch.load(path, weights_only=False, **kwargs)
 
@@ -92,7 +94,6 @@ def load_ckpt_safely(
     path,
     *,
     trusted: bool = False,
-    weights_only: bool | None = None,
     **kwargs,
 ):
     """Run ``load_fn`` inside a *scoped* ``torch.serialization.safe_globals`` context.
@@ -109,17 +110,11 @@ def load_ckpt_safely(
     trusted
         If ``True``, disables safe-loading restrictions and fully unpickles the file (CWE-502 opt-out) with
         `weights_only=False`. Only use for files from trusted sources. Default: ``False``.
-    weights_only
-        Internal override forwarded to ``load_fn`` when set explicitly by PyTorch Lightning (``None`` means safe
-        loading unless ``trusted`` is ``True``).
     **kwargs
-        Passed through to ``load_fn``.
+        Passed through to ``load_fn``. ``weights_only`` is not supported; use ``trusted`` instead.
     """
+    _reject_weights_only_kwarg(kwargs)
     if trusted:
-        return load_fn(path, weights_only=False, **kwargs)
-
-    use_weights_only = True if weights_only is None else weights_only
-    if not use_weights_only:
         return load_fn(path, weights_only=False, **kwargs)
 
     registry = _get_user_safe_globals()
@@ -141,17 +136,17 @@ class _DartsCheckpointIO(TorchCheckpointIO):
     itself (see :func:`load_ckpt_safely`), not registered process-wide at import.
 
     By injecting this plugin into the Trainer, internal checkpoint-loading paths that go through the CheckpointIO
-    plugin inherit the safe default. Unsafe full unpickling is only used when ``load_ckpt_safely`` is called with
-    ``trusted=True``.
+    plugin inherit the safe default. PyTorch Lightning may pass ``weights_only=False`` on this method; that is mapped
+    to ``trusted=True`` inside :func:`load_ckpt_safely`. User-facing Darts loaders must use ``trusted``, not
+    ``weights_only``.
     """
 
     def load_checkpoint(self, path, map_location=None, weights_only=None, **kwargs):
-        trusted = False if weights_only is None else not weights_only
+        trusted = weights_only is False
         return load_ckpt_safely(
             load_fn=super().load_checkpoint,
             path=path,
             trusted=trusted,
-            weights_only=weights_only,
             map_location=map_location,
             **kwargs,
         )
@@ -189,3 +184,18 @@ def _safe_globals_for_torch_file(
             _raise_unsafe_global(qualname)
 
     return resolved
+
+
+def _reject_weights_only_kwarg(kwargs: dict) -> None:
+    """Reject legacy ``weights_only`` passed via user-facing load APIs."""
+    if "weights_only" not in kwargs:
+        return
+
+    raise_log(
+        ValueError(
+            "The `weights_only` argument is not supported on Darts model loaders. "
+            "Use `trusted=False` instead of `weights_only=True` for safe-loading. "
+            "Use `trusted=True` instead of `weights_only=False` for full unpickling "
+            "only if you trust the file."
+        )
+    )

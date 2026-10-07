@@ -980,8 +980,8 @@ class TestTorchForecastingModel:
 
     def test_resume_from_checkpoint_optimizer_state(self, tmpdir_fn):
         """Resuming from a checkpoint reloads optimizer/scheduler *state* (not just the
-        allow-listed classes). After flipping the internal ``weights_only`` default to True,
-        the trusted resume path must keep full unpickling and continue training successfully.
+        allow-listed classes). Safe default loading (``trusted=False``) must deserialize
+        optimizer state; internal resume uses ``trusted=True`` where full unpickling is required.
         """
         model_name = "resume_optstate"
         epochs_partial = 2
@@ -1011,7 +1011,7 @@ class TestTorchForecastingModel:
         # epochs default after loading
         assert model.epochs_trained == 2
 
-        # loading the `.ckpt` under `weights_only=True` must also deserialize the optimizer,
+        # safe default (``trusted=False``) must also deserialize the optimizer,
         # lr-scheduler *state*, likelihood objects, ...
         loaded.fit(self.series[:20], epochs=epochs_partial + epochs_resume)
         assert loaded.epochs_trained == epochs_partial + epochs_resume
@@ -1024,10 +1024,10 @@ class TestTorchForecastingModel:
         assert prediction.n_components == len(quantiles)
 
     def test_load_blocks_malicious_payload(self, tmpdir_fn):
-        """Security regression test (CWE-502): the checkpoint loading paths must default to
-        ``weights_only=True`` so that a maliciously crafted ``.ckpt`` cannot execute arbitrary
-        code, while still (a) loading legitimate models and (b) allowing an explicit
-        ``trusted=True`` opt-out for trusted files.
+        """Security regression test (CWE-502): the checkpoint loading paths must use safe
+        loading by default (``trusted=False``) so that a maliciously crafted ``.ckpt`` cannot
+        execute arbitrary code, while still (a) loading legitimate models and (b) allowing an
+        explicit ``trusted=True`` opt-out for trusted files.
         """
         # 1) a normally-saved model still loads with the safe default -------------------
         model_name = "wo_safe"
@@ -1042,8 +1042,7 @@ class TestTorchForecastingModel:
         model.fit(self.series[:20])
         model.save(ckpt_path)
 
-        # default `load_weights` uses `weights_only=True` and must succeed via the
-        # registered safe globals
+        # default ``load_weights`` (``trusted=False``) must succeed via the registered safe globals
         reloaded = DLinearModel(**model_kwargs)
         reloaded.load_weights(ckpt_path)
         reloaded.predict(n=2, series=self.series[:20])
@@ -1063,7 +1062,7 @@ class TestTorchForecastingModel:
         real_ckpt["cwe502_payload"] = _MaliciousPayload()
         torch.save(real_ckpt, ckpt_path + ".ckpt")
 
-        # SAFE default (`trusted=False` & `weights_only=True`) must REFUSE the payload -> marker NOT created
+        # SAFE default (``trusted=False``) must REFUSE the payload -> marker NOT created
         with pytest.raises(Exception):
             reloaded.load_weights(ckpt_path)
         with pytest.raises((UnpicklingError, Exception)):
@@ -1079,6 +1078,40 @@ class TestTorchForecastingModel:
         DLinearModel.load(ckpt_path, trusted=True)
         assert os.path.exists(marker_path)
         os.remove(marker_path)
+
+    def test_rejects_weights_only_kwarg(self, tmpdir_fn):
+        model_name = "reject_wo"
+        ckpt_path = os.path.join(tmpdir_fn, f"{model_name}.pt")
+        model = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            n_epochs=1,
+            model_name=model_name,
+            work_dir=tmpdir_fn,
+            save_checkpoints=True,
+            **tfm_kwargs,
+        )
+        model.fit(self.series[:20])
+        model.save(ckpt_path)
+
+        with pytest.raises(ValueError, match="weights_only"):
+            DLinearModel.load(ckpt_path, weights_only=False)
+        with pytest.raises(ValueError, match="weights_only"):
+            DLinearModel.load_from_checkpoint(
+                model_name=model_name,
+                work_dir=tmpdir_fn,
+                weights_only=True,
+                best=False,
+            )
+        with pytest.raises(ValueError, match="weights_only"):
+            model.load_weights(ckpt_path, weights_only=False)
+        with pytest.raises(ValueError, match="weights_only"):
+            model.load_weights_from_checkpoint(
+                model_name=model_name,
+                work_dir=tmpdir_fn,
+                weights_only=True,
+                best=False,
+            )
 
     def test_safe_load_with_early_stopping(self, tmpdir_fn):
         """Verify callbacks survive the safe save/load roundtrip."""
@@ -1114,7 +1147,7 @@ class TestTorchForecastingModel:
         np.testing.assert_allclose(before.values(), after.values(), atol=1e-6)
 
     def test_safe_load_user_model_from_module(self, tmpdir_fn):
-        """User-defined model subclass at module level loads with weights_only=True."""
+        """User-defined model subclass at module level loads with safe default (``trusted=False``)."""
         model = _UserDLinear(
             input_chunk_length=4,
             output_chunk_length=1,
@@ -1470,9 +1503,8 @@ class TestTorchForecastingModel:
                 map_location="cpu",
             )
 
-        # `weights_only=True` is now the safe DEFAULT and must SUCCEED on a legitimate
-        # checkpoint via the load-scoped allow-list (the old block expected a ValueError; that
-        # guard was removed, so an explicit `weights_only=True` now loads the real checkpoint).
+        # safe default (``trusted=False``) must SUCCEED on a legitimate checkpoint via the
+        # load-scoped allow-list (the old block expected a ValueError; that guard was removed).
         model_wo = RNNModel(12, "RNN", 5, 1, **tfm_kwargs)
         model_wo.load_weights_from_checkpoint(
             model_name=original_model_name,
