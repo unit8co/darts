@@ -438,10 +438,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.pl_module_params["train_sample_shape"] = self.train_sample.sample_shapes()
         # the tensors have shape (chunk_length, nr_dimensions)
         model = self._create_model(self.train_sample)
-        self._module_name = model.__class__.__name__
         # The forecasting subclass may live in the user's module while the
         # Lightning module class lives next to the base model. Store the class
         # that `_create_model` actually returned.
+        self._module_name = model.__class__.__name__
         self._module_path = model.__class__.__module__
 
         # we should determine the precision based on time series data type

@@ -62,9 +62,7 @@ from darts.utils.likelihood_models.base import (
     quantile_interval_names,
     quantile_names,
 )
-from darts.utils.serialization.base import (
-    restricted_pickle_load,
-)
+from darts.utils.serialization.base import restricted_pickle_load
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,

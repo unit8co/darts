@@ -1444,7 +1444,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
             <https://unit8co.github.io/darts/userguide/safe_model_loading.html>`__ on safe model loading for
             allow-listing custom classes and functions. Only pass `trusted=True` for files you fully trust.
 
-
         Parameters
         ----------
         path

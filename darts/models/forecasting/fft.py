@@ -308,29 +308,26 @@ class FFT(LocalForecastingModel):
         """Helper function, used to make FFT model pickable."""
         return 0
 
-    def _restore_trend_function(self) -> None:
-        """Rebuild ``trend_function`` without pickling a bound method.
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # remove ``trend_function`` from pickling; bound methods serialize as ``builtins.getattr``,
+        # which is an allow-list bypass; restore the function at load time
+        state.pop("trend_function", None)
+        return state
 
-        Bound methods serialize as ``builtins.getattr``, which is an
-        allow-list bypass.  The trend kind and coefficients are enough to
-        restore the function after load.
-        """
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
+        if "trend_coefficients" not in state:
+            return
+
+        # rebuild ``trend_function``
         if self.trend == "poly":
             self.trend_function = self._poly_trend(self.trend_coefficients)
         elif self.trend == "exp":
             self.trend_function = self._exp_trend
         else:
             self.trend_function = self._null_trend
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        state.pop("trend_function", None)
-        return state
-
-    def __setstate__(self, state):
-        self.__dict__.update(state)
-        if "trend_coefficients" in state:
-            self._restore_trend_function()
 
     def fit(self, series: TimeSeries, verbose: bool | None = None):
         series = fill_missing_values(series)
