@@ -14,7 +14,10 @@ from numpy.lib.stride_tricks import sliding_window_view
 from darts import TimeSeries
 from darts.typing import TimeSeriesLike
 from darts.utils import _build_tqdm_iterator
-from darts.utils.data.tabularization import create_lagged_prediction_data
+from darts.utils.data.tabularization import (
+    StepwiseLaggedFeatures,
+    create_lagged_prediction_data,
+)
 from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
 from darts.utils.ts_utils import get_single_series
 from darts.utils.utils import generate_index
@@ -163,7 +166,8 @@ def _optimized_historical_forecasts_regression(
             series_adjusted = None
 
         # extract lagged features;
-        # X shape: (n_forecasts, n_lagged_features, n_samples = 1)
+        # X shape: (n_forecasts, n_lagged_features, n_samples = 1); with step-wise future
+        # covariates lags, each series' features are returned as a `StepwiseLaggedFeatures`
         X, _ = create_lagged_prediction_data(
             target_series=series_adjusted,
             past_covariates=(
@@ -186,9 +190,12 @@ def _optimized_historical_forecasts_regression(
             use_moving_windows=True,
             concatenate=False,
             show_warnings=False,
+            lags_future_covariates_stepwise=model._stepwise_future_lags,
+            output_chunk_length=output_chunk_length,
         )
 
-        # -> (n_forecasts, n_lags)
+        # -> (n_forecasts, n_lags), or a `StepwiseLaggedFeatures` holding the features of
+        # every horizon of the output chunk
         X = X[0][:, :, 0]
 
         # get forecast iterations and their forecast end times
@@ -228,7 +235,10 @@ def _optimized_historical_forecasts_regression(
 
             # generate `num_samples` examples for probabilistic predictions
             # -> (n_forecasts * n_samples, n_lags)
-            current_X = np.repeat(current_X, num_samples, axis=0)
+            if isinstance(current_X, StepwiseLaggedFeatures):
+                current_X = current_X.repeat(num_samples, axis=0)
+            else:
+                current_X = np.repeat(current_X, num_samples, axis=0)
 
             if pred_idx > 0:
                 # auto-regression requires updating current X with previous predictions;
@@ -245,6 +255,14 @@ def _optimized_historical_forecasts_regression(
                     for step in range(forecast_length)
                 }
 
+                # with step-wise features only `base` is updated: the auto-regression writes
+                # target columns, which are shared by all the horizons
+                updated_X = (
+                    current_X.base
+                    if isinstance(current_X, StepwiseLaggedFeatures)
+                    else current_X
+                )
+
                 # find matches between forecasted components and component-specific lags of the
                 # future iteration
                 for comp_idx, comp_lags in enumerate(target_lags):
@@ -260,7 +278,7 @@ def _optimized_historical_forecasts_regression(
 
                     # update X with matched predictions (move around axes for correct reshaping
                     # of samples)
-                    current_X[:, update_x_indices] = np.moveaxis(
+                    updated_X[:, update_x_indices] = np.moveaxis(
                         predictions[:, take_y_indices, comp_idx], 1, -1
                     ).reshape(len(current_X), -1)
 
