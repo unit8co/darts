@@ -79,16 +79,13 @@ all = ["darts[torch,notorch]"]
 [tool.uv]
 # Cooldown period for PyPI releases to mitigate supply chain attacks.
 exclude-newer = "7 days"
-exclude-newer-package = {}
+exclude-newer-package = { neuralforecast = "0 days" }
 # Must resolve dependencies for major platforms in uv.lock
 required-environments = [
     "sys_platform == 'darwin'",
     "sys_platform == 'linux'",
     "sys_platform == 'win32'",
 ]
-# TODO: remove once neuralforecast>3.2.2 is released
-# override neuralforecast's (v3.2.2) lightning cap
-override-dependencies = ["pytorch-lightning>=2.6.6"]
 
 [tool.uv.pip]
 # Use only binary dependency wheels to prevent arbitrary code execution

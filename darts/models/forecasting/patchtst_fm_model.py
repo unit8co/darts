@@ -675,7 +675,6 @@ class PatchTSTFMModel(FoundationModel):
                     ),
                 )
 
-        self.hf_connector = hf_connector
         super().__init__(**kwargs)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
