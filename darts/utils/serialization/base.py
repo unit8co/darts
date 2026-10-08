@@ -98,9 +98,6 @@ EXACT_ALLOWED_CLASSES: frozenset[str] = frozenset({
     "builtins.range",
     "builtins.slice",
     "types.SimpleNamespace",
-    "pathlib.PosixPath",
-    "pathlib.WindowsPath",
-    "pathlib.Path",
     # sklearn helper
     "sklearn.utils._random.MTRandState",
     # torch; dtype singletons are covered by safe instances
@@ -390,16 +387,6 @@ def _darts_torch_allowed_bases() -> type | tuple[type, ...] | None:
     return TorchSample, TorchLikelihood, TFMProgressBar, PyTorchLightningPruningCallback
 
 
-@lru_cache(maxsize=1)
-def _darts_foundation_allowed_bases() -> type | tuple[type, ...] | None:
-    """Return ``HuggingFaceConnector``, or ``None`` when the connector cannot be imported."""
-    try:
-        from darts.models.components.huggingface_connector import HuggingFaceConnector
-    except Exception:  # pragma: no cover
-        return None
-    return HuggingFaceConnector
-
-
 def _is_fenced_allowed_subclass(qualname: str, obj: type) -> bool:
     """Allow in-package (sub)classes that share an audited base.
 
@@ -407,9 +394,7 @@ def _is_fenced_allowed_subclass(qualname: str, obj: type) -> bool:
     defined outside those packages does not pass: its ``__setstate__`` is
     not part of the audit.
     """
-    if qualname.startswith("darts.models.components.huggingface_connector."):
-        base = _darts_foundation_allowed_bases()
-    elif qualname.startswith((
+    if qualname.startswith((
         "darts.utils.data.torch_datasets",
         "darts.utils.likelihood_models.torch",
         "darts.utils.callbacks",

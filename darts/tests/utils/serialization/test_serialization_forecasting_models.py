@@ -610,14 +610,14 @@ def _model_config_specs(series: _SeriesBundle) -> list[dict[str, Any]]:
         (
             "patchtst_fm",
             "PatchTSTFMModel",
-            {"local_dir": PATCHTST_FM_TINY_DIR},
+            {"local_dir": str(PATCHTST_FM_TINY_DIR)},
             contextlib.nullcontext,
         ),
         ("timesfm2p5", "TimesFM2p5Model", {}, timesfm2p5_tiny_context),
         (
             "timesfm3",
             "TimesFM3Model",
-            {"accept_license": True, "local_dir": TIMESFM3_TINY_DIR},
+            {"accept_license": True, "local_dir": str(TIMESFM3_TINY_DIR)},
             contextlib.nullcontext,
         ),
     ]

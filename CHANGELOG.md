@@ -44,6 +44,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Dependencies**
 
 - 🔴 Python version update: Removed support for Python 3.10. The new minimum Python version is 3.11. [#3206](https://github.com/unit8co/darts/pull/3206) by [Dennis Bader](https://github.com/dennisbader).
+- Bumped minimum supported PyTorch version to `torch>=2.6.0` and minimum supported PyTorch-Lightning version to `pytorch_lightning>=2.6.6` for safe-loading. [#3183](https://github.com/unit8co/darts/pull/3183) by [hackchang](https://github.com/hackchang) and [Dennis Bader](https://github.com/dennisbader).
 
 ### For developers of the library:
 
