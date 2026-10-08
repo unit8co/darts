@@ -62,6 +62,7 @@ from darts.utils.likelihood_models.base import (
     quantile_interval_names,
     quantile_names,
 )
+from darts.utils.serialization.base import restricted_pickle_load
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,
@@ -2761,14 +2762,26 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
 
     @staticmethod
-    def load(path: str | os.PathLike | BinaryIO) -> "ForecastingModel":
+    def load(
+        path: str | os.PathLike | BinaryIO,
+        trusted: bool = False,
+    ) -> "ForecastingModel":
         """
         Loads a model from a given path or file handle.
+
+        .. warning::
+            Loading uses unpickling under the hood. Never load data from an untrusted source.
+            By default, Darts uses safe loading via a restricted unpickler. See the `user guide
+            <https://unit8co.github.io/darts/userguide/safe_model_loading.html>`__ on safe model loading for
+            allow-listing custom classes and functions. Only pass `trusted=True` for files you fully trust.
 
         Parameters
         ----------
         path
             Path or file handle from which to load the model.
+        trusted
+            If ``True``, disables safe-loading restrictions and fully unpickles the file (CWE-502 opt-out). Only use
+            for files from trusted sources. Default: ``False``.
         """
 
         if isinstance(path, str | os.PathLike):
@@ -2776,9 +2789,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 raise_log(ValueError(f"The file {path} doesn't exist."))
 
             with open(path, "rb") as handle:
-                model = pickle.load(file=handle)
+                model = restricted_pickle_load(
+                    handle,
+                    trusted=trusted,
+                )
         elif isinstance(path, io.BufferedReader):
-            model = pickle.load(file=path)
+            model = restricted_pickle_load(
+                path,
+                trusted=trusted,
+            )
         else:
             raise_log(
                 ValueError(
