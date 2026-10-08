@@ -256,9 +256,11 @@ prediction = model.predict(n=n,
 ## Advanced Functionnalities
 ### Saving and Loading Model States
 
-❗ Warning ❗ At this stage of Darts development, we are not (yet) ensuring backward compatibility, so it might not always be possible to load a model saved by an older version of the library.
+Darts offers several ways for saving and loading TFMs. Two artifacts are stored on every save: a Darts `.pt` wrapper and a PyTorch (Lightning) `.ckpt` checkpoint containing the internal model's state dict and states of other objects.
 
-For models trained on GPU with versions of Darts <= 0.22.0 that need to be loaded on CPU with a version of Darts >= 0.23.0, please look at the code snipped provided in this [issue](https://github.com/unit8co/darts/issues/1245).
+**Security:** Loading uses safe-by-default deserialization to mitigate malicious pickle files (CWE-502). Use `trusted=True` only for files you fully trust, or register custom classes/functions via `add_safe_globals` / `with safe_globals(...)`. See the [safe model loading guide](safe_model_loading.md) for details.
+
+**Note:** Backward compatibility is not always guaranteed. Loading a model saved by an older Darts version might fail.
 
 #### Automatic checkpointing
 
@@ -294,21 +296,22 @@ You can load a model to CPU that was trained and saved on GPU (see detailed [doc
 
 ```python
 # define a model using gpu as accelerator
-model = SomeTorchForecastingModel(...,
-                                  model_name='my_model',
-                                  save_checkpoints=True,
-                                  pl_trainer_kwargs={
-                                                     "accelerator":"gpu",
-                                                     "devices": -1,
-                                                     })
+model = SomeTorchForecastingModel(
+    ...,
+    model_name='my_model',
+    save_checkpoints=True,
+    pl_trainer_kwargs={"accelerator":"gpu", "devices": -1},
+)
 
 # train the model, automatic checkpoints will be created
 model.fit(...)
 
 # specify the device to which the model should be loaded
-loaded_model = SomeTorchForecastingModel.load_from_checkpoint(model_name='my_model',
-                                                              best=True,
-                                                              map_location="cpu")
+loaded_model = SomeTorchForecastingModel.load_from_checkpoint(
+    model_name='my_model',
+    best=True,
+    map_location="cpu",
+)
 loaded_model.to_cpu()
 
 # run inference
@@ -329,9 +332,11 @@ To re-train or fine-tune a model using a different optimizer and/or learning rat
 
 ```python
 # model with identical architecture but different optimizer (default: torch.optim.Adam)
-model_finetune = SomeTorchForecastingModel(...,  # use identical parameters & values as in original model
-                                           optimizer_cls=torch.optim.SGD,
-                                           optimizer_kwargs={"lr": 0.001})
+model_finetune = SomeTorchForecastingModel(
+    ...,  # use identical parameters & values as in original model
+    optimizer_cls=torch.optim.SGD,
+    optimizer_kwargs={"lr": 0.001},
+)
 
 # load the weights from a checkpoint
 model_finetune.load_weights_from_checkpoint(model_name='my_model', best=True)
@@ -343,9 +348,11 @@ and similarly for manual saves and the learning rate scheduler:
 
 ```python
 # model with identical architecture but different lr scheduler (default: None)
-model_finetune = SomeTorchForecastingModel(...,  # use identical parameters & values as in original model
-                                           lr_scheduler_cls=torch.optim.lr_scheduler.ExponentialLR,
-                                           lr_scheduler_kwargs={"gamma": 0.09})
+model_finetune = SomeTorchForecastingModel(
+    ...,  # use identical parameters & values as in original model
+    lr_scheduler_cls=torch.optim.lr_scheduler.ExponentialLR,
+    lr_scheduler_kwargs={"gamma": 0.09}
+)
 
 # load the weights from a manual save
 model_finetune.load_weights("/your/path/to/save/model.pt")
