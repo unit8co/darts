@@ -271,13 +271,16 @@ class TestDiff:
         vals_expected = vals.copy()
         for lag in lags:
             vals_expected = vals_expected[lag:] - vals_expected[:-lag]
+
+        vals_actual = series_tf.values()
         if dropna:
             assert series_tf.time_index.equals(times[sum(lags) :])
-            np.testing.assert_array_almost_equal(series_tf.values(), vals_expected)
+            np.testing.assert_array_almost_equal(vals_actual, vals_expected)
         else:
             assert series_tf.time_index.equals(times)
+            np.testing.assert_array_almost_equal(vals_actual[: sum(lags)], np.nan)
             np.testing.assert_array_almost_equal(
-                series_tf.values()[sum(lags) :], vals_expected
+                vals_actual[sum(lags) :], vals_expected
             )
 
         # inverse transform must recover the original series
