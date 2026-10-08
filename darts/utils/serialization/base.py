@@ -79,24 +79,11 @@ EXACT_ALLOWED_CLASSES: frozenset[str] = frozenset({
     "numpy.ndarray",
     "numpy.random.mtrand.RandomState",
     "numpy.random._mt19937.MT19937",
-    # pandas containers. Date offsets are covered by BaseOffset.
+    # pandas containers. Arrays, Indexes, Dtypes, Date offsets are safe bases.
     "pandas.DataFrame",
     "pandas.Series",
-    "pandas.Index",
-    "pandas.RangeIndex",
-    "pandas.DatetimeIndex",
-    "pandas.PeriodIndex",
-    "pandas.TimedeltaIndex",
-    "pandas.CategoricalIndex",
-    "pandas.MultiIndex",
     "pandas.Timestamp",
     "pandas.Timedelta",
-    "pandas.StringDtype",
-    "pandas.arrays.ArrowStringArray",
-    "pandas.arrays.DatetimeArray",
-    "pandas.arrays.TimedeltaArray",
-    "pandas.arrays.PeriodArray",
-    "pandas.arrays.CategoricalArray",
     # stdlib
     "datetime.datetime",
     "datetime.timedelta",
@@ -255,13 +242,16 @@ def is_blocked_global(qualname: str) -> bool:
 
 
 @lru_cache(maxsize=1)
-def _pandas_allowed_bases() -> type | None:
+def _pandas_allowed_bases() -> type | tuple[type, ...] | None:
     """Return pandas ``BaseOffset``, or ``None`` when pandas cannot be imported."""
     try:
         from pandas._libs.tslibs.offsets import BaseOffset
+        from pandas.core.arrays.base import ExtensionArray
+        from pandas.core.dtypes.base import ExtensionDtype
+        from pandas.core.indexes.base import Index
     except Exception:  # pragma: no cover
         return None
-    return BaseOffset
+    return ExtensionArray, ExtensionDtype, Index, BaseOffset
 
 
 @lru_cache(maxsize=1)

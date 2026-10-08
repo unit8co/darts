@@ -126,6 +126,9 @@ class _SeriesBundle:
     uni: TimeSeries
     pos: TimeSeries
     mv: TimeSeries
+    sc: TimeSeries
+    hier: TimeSeries
+    md: TimeSeries
     foundation: TimeSeries
 
 
@@ -138,6 +141,21 @@ def _univariate_series(index_len: int = SERIES_LENGTH) -> TimeSeries:
     return TimeSeries.from_series(
         pd.Series(np.arange(index_len, dtype=np.float64), index=idx)
     )
+
+
+def _static_covariates_series(index_len: int = SERIES_LENGTH) -> TimeSeries:
+    series = _univariate_series(index_len)
+    return series.with_static_covariates(
+        pd.DataFrame({
+            "sc_int": [1],
+            "sc_float": [0.5],
+        }).astype({"sc_int": int, "sc_float": float})
+    )
+
+
+def _metadata_series(index_len: int = SERIES_LENGTH) -> TimeSeries:
+    series = _univariate_series(index_len)
+    return series.with_metadata({"string_id": "ABC123", "float_val": 0.1, "int_val": 1})
 
 
 def _positive_series(index_len: int = SERIES_LENGTH) -> TimeSeries:
@@ -159,6 +177,11 @@ def _multivariate_series(index_len: int = SERIES_LENGTH) -> TimeSeries:
     return TimeSeries.from_dataframe(df)
 
 
+def _hierarchy_series(index_len: int = SERIES_LENGTH) -> TimeSeries:
+    series = _multivariate_series(index_len)
+    return series.with_hierarchy({"a": ["b"]})
+
+
 def _series_bundle() -> _SeriesBundle:
     from darts.utils.timeseries_generation import linear_timeseries
 
@@ -166,6 +189,9 @@ def _series_bundle() -> _SeriesBundle:
         uni=_univariate_series(),
         pos=_positive_series(),
         mv=_multivariate_series(),
+        sc=_static_covariates_series(),
+        hier=_hierarchy_series(),
+        md=_metadata_series(),
         foundation=linear_timeseries(length=18, dtype=np.float32, column_name="y"),
     )
 
@@ -251,6 +277,24 @@ def _model_config_specs(series: _SeriesBundle) -> list[dict[str, Any]]:
         {
             "id": "linear_regression_quantile",
             "cls": QuantileLinearRegressionModel,
+        },
+        {
+            "id": "linear_regression_static_covariates",
+            "cls": "LinearRegressionModel",
+            "kwargs": {"lags": 4, "use_static_covariates": True},
+            "series_key": "sc",
+        },
+        {
+            "id": "linear_regression_hierarchy",
+            "cls": "LinearRegressionModel",
+            "kwargs": {"lags": 4},
+            "series_key": "hier",
+        },
+        {
+            "id": "linear_regression_metadata",
+            "cls": "LinearRegressionModel",
+            "kwargs": {"lags": 4},
+            "series_key": "md",
         },
         {
             "id": "linear_regression_encoder_with_transformer",
