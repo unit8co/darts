@@ -2034,19 +2034,19 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             iterator, _evaluate_combination, n_jobs, {}, {}
         )
 
-        errors_arr = np.asarray(errors, dtype=float)
+        errors_arr = np.asarray(errors, dtype=series.dtype)
         if errors_arr.size == 0:
             raise_log(ValueError("No hyperparameter combinations to evaluate."))
-        nan_mask = np.isnan(errors_arr)
-        if nan_mask.all():
+        nan_count = np.isnan(errors_arr).sum()
+        if nan_count == errors_arr.size:
             raise_log(
                 ValueError(
                     "All hyperparameter combinations resulted in a NaN `metric` score."
                 )
             )
-        if nan_mask.any() and show_warnings:
+        elif nan_count > 0 and show_warnings:
             logger.warning(
-                f"{int(nan_mask.sum())} of {len(errors_arr)} hyperparameter combinations resulted in a "
+                f"{int(nan_count)} of {errors_arr.size} hyperparameter combinations resulted in a "
                 "NaN `metric` score and were excluded from the selection."
             )
 

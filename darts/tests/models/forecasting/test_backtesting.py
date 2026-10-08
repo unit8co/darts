@@ -1225,13 +1225,13 @@ class TestBacktesting:
     @pytest.mark.parametrize("nan_first", [True, False])
     @pytest.mark.parametrize("mode", ["split", "expanding"])
     def test_gridsearch_nan_score_not_selected(self, mode, nan_first):
-        series = lt(length=50)
+        series = lt(length=10)
         # K=1 scores NaN, K=3 has a finite score
         k_values = [1, 3, 5] if nan_first else [3, 1, 5]
         kwargs = (
             {"series": series[:-5], "val_series": series[-5:]}
             if mode == "split"
-            else {"series": series, "forecast_horizon": 3, "start": 40}
+            else {"series": series, "forecast_horizon": 3, "start": 5}
         )
         best_model, best_params, best_score = NaiveSeasonal.gridsearch(
             parameters={"K": k_values},
@@ -1243,7 +1243,7 @@ class TestBacktesting:
         assert not np.isnan(best_score)
 
     def test_gridsearch_nan_score_warning(self, caplog):
-        series = lt(length=50)
+        series = lt(length=10)
         kwargs = {
             "parameters": {"K": [1, 3, 5]},
             "series": series[:-5],
