@@ -59,6 +59,7 @@ Foundation Models (`GlobalForecastingModel <https://unit8co.github.io/darts/user
     - :class:`~darts.models.forecasting.timesfm2p5_model.TimesFM2p5Model`
     - :class:`~darts.models.forecasting.timesfm3_model.TimesFM3Model`
     - :class:`~darts.models.forecasting.tirex_model.TiRexModel`
+    - :class:`~darts.models.forecasting.tirex2_model.TiRex2Model`
     - :class:`~darts.models.forecasting.patchtst_fm_model.PatchTSTFMModel`
     - :class:`~darts.models.forecasting.t0_model.T0Model`
 Ensemble Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`__)

@@ -5,7 +5,7 @@ Models
 A comprehensive collection of forecasting and filtering models, including baseline models
 (NaiveSeasonal, NaiveMovingAverage, ...), statistical models (ARIMA, exponential smoothing, ...),
 machine learning models (LightGBM, CatBoost, sklearn-based, ...), neural network models (RNN,
-N-BEATS, TiDE...), and foundation models (Chronos-2, TimesFM 2.5, TiRex).
+N-BEATS, TiDE...), and foundation models (Chronos-2, TimesFM 2.5, TiRex, TiRex-2).
 """
 
 from typing import TYPE_CHECKING
@@ -118,6 +118,7 @@ if TYPE_CHECKING:
     from darts.models.forecasting.timesfm3_model import (
         TimesFM3Model as TimesFM3Model,
     )
+    from darts.models.forecasting.tirex2_model import TiRex2Model as TiRex2Model
     from darts.models.forecasting.tirex_model import TiRexModel as TiRexModel
     from darts.models.forecasting.transformer_model import (
         TransformerModel as TransformerModel,
@@ -195,6 +196,10 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     "PatchTSTFMModel": ("darts.models.forecasting.patchtst_fm_model", "(Py)Torch"),
     "TimesFM2p5Model": ("darts.models.forecasting.timesfm2p5_model", "(Py)Torch"),
     "TimesFM3Model": ("darts.models.forecasting.timesfm3_model", "(Py)Torch"),
+    "TiRex2Model": (
+        "darts.models.forecasting.tirex2_model",
+        "(Py)Torch and/or TiRex-2",
+    ),
     "TiRexModel": ("darts.models.forecasting.tirex_model", "(Py)Torch and/or TiRex-TS"),
     "T0Model": ("darts.models.forecasting.t0_model", "(Py)Torch and/or tfc-t0"),
     # --- Forecasting: NeuralForecast ---
