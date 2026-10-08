@@ -2518,7 +2518,7 @@ def r2_score(
     ss_tot = np.nansum((y_true - y_hat) ** 2, axis=TIME_AX)
     # `ss_tot` is zero for a constant `actual_series`. The fill applies to the ratio
     # rather than to the metric, so `zero_fill=0.0` is what gives R^2 = 1.0 for the
-    # 0/0 case, the best score, as agreed in #3132.
+    # 0/0 case, the best score
     return 1 - _safe_divide(
         ss_errors,
         ss_tot,
