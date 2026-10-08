@@ -45,6 +45,8 @@ Furthermore, we define the following types of time series consumed by the models
 If you wish to save a particular model and use it elsewhere or at a later point in time, darts can achieve that. It leverages pickle and in the case of Torch models relies on saving PyTorch Lightning trainer checkpoints.
 All forecasting models support saving the model on the filesystem, by calling the `save()` function, which saves that particular `ForecastingModel` object instance. When the model is to be used again, the method `load()` can be used. Please note that the methods `save_model()` and `load_model()` are deprecated.
 
+**Security:** Loading uses safe-by-default deserialization to mitigate malicious pickle files (CWE-502). Use `trusted=True` only for files you fully trust, or register custom classes/functions via `add_safe_globals` / `with safe_globals(...)`. See the [safe model loading guide](safe_model_loading.md) for details.
+
 **Example:**
 ```python
 from darts.models import SKLearnModel

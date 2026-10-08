@@ -121,7 +121,7 @@ def objective(trial):
     )
 
     # reload best model over course of training
-    model = TCNModel.load_from_checkpoint("tcn_model")
+    model = TCNModel.load_from_checkpoint("tcn_model", best=True, trusted=True)
 
     # Evaluate how good it is on the validation set, using sMAPE
     preds = model.predict(series=train, n=VAL_LEN)
