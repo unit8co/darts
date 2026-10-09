@@ -325,7 +325,8 @@ When calling `predict(n, num_samples=k)` with `k > 1`, the returned `TimeSeries`
 
 The distinction primarily depends on whether the forecast is generated **autoregressively** or via **direct multi-step chunks**:
 
-#### 1. Autoregressive Rollouts (Scenario Generation)
+#### 1. Purely Autoregressive Rollouts (Scenario Generation)
+
 For models operating purely autoregressively (e.g. global forecasting models with `output_chunk_length = 1`):
 - Forecasts are generated step-by-step into the future.
 - At time step $t$, a sample is drawn from the predicted distribution for each sample index $i \in \{1, \dots, k\}$.
@@ -334,6 +335,7 @@ For models operating purely autoregressively (e.g. global forecasting models wit
 - **Cross-component correlation:** The random noise/innovations injected at each step are sampled independently across components. However, cross-component interactions in the conditional mean are captured and propagated over time through the lagged features.
 
 #### 2. Direct Multi-Step / Chunk Forecasting (Marginal Sampling)
+
 For direct multi-step models (e.g. global forecasting models with `output_chunk_length > 1`):
 - The model outputs the parameters of the distributions (or quantiles) for the entire output chunk simultaneously.
 - When generating `num_samples` forecasts, samples are drawn **independently across all time steps and components** within the chunk.
