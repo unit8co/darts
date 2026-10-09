@@ -190,7 +190,7 @@ release = [
     "ipython-genutils==0.2.0",
     "ipywidgets==8.1.8",
     "jinja2==3.1.6",
-    "jupyterlab==4.6.2",
+    "jupyterlab==4.6.4",
     "lxml-html-clean==0.4.5",
     "myst-parser==5.0.0",
     "nbsphinx==0.9.7",
