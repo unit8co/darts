@@ -1478,25 +1478,28 @@ class TestMetrics:
         caplog.clear()
 
     @pytest.mark.parametrize(
-        "metric",
+        "metric,make_zero_value,best_score",
         [
-            metrics.ape,
-            metrics.mape,
-            metrics.wmape,
-            metrics.ope,
-            metrics.arre,
-            metrics.marre,
-            metrics.coefficient_of_variation,
+            (metrics.ape, 0.0, 0.0),
+            (metrics.mape, 0.0, 0.0),
+            (metrics.wmape, 0.0, 0.0),
+            (metrics.ope, 0.0, 0.0),
+            (metrics.arre, 0.0, 0.0),
+            (metrics.marre, 0.0, 0.0),
+            (metrics.coefficient_of_variation, 0.0, 0.0),
+            (metrics.r2_score, 5.0, 1.0),
         ],
     )
-    def test_pct_metrics_zero_division(self, metric, caplog):
+    def test_pct_metrics_zero_division(
+        self, metric, make_zero_value, best_score, caplog
+    ):
         """Percentage / range-based metrics handle exact zero denominators
         under the default ``zero_division="warn"`` and raise under
         ``zero_division="raise"``.
 
         A constant all-zero ``actual_series`` triggers every denominator
         these metrics use (sum of absolutes, sum, mean, max-min)."""
-        zero_actual = TimeSeries.from_values(np.zeros((10, 1)))
+        zero_actual = TimeSeries.from_values(np.full((10, 1), make_zero_value))
         some_pred = TimeSeries.from_values(np.ones((10, 1)))
 
         # --- default "warn": NaN + warning ---
@@ -1506,11 +1509,11 @@ class TestMetrics:
         assert np.all(np.isnan(np.atleast_1d(result)))
         caplog.clear()
 
-        # --- perfect forecast on a zero denominator: 0/0 -> 0.0 ---
+        # --- perfect forecast on a zero denominator: 0/0 -> best_score ---
         with caplog.at_level(logging.WARNING):
             perfect = metric(zero_actual, zero_actual, component_reduction=None)
         assert "denominator" in caplog.text
-        assert np.all(np.atleast_1d(perfect) == 0.0)
+        assert np.all(np.atleast_1d(perfect) == best_score)
         caplog.clear()
 
         # --- "raise": ValueError ---
@@ -1529,6 +1532,7 @@ class TestMetrics:
             )
         assert "denominator" not in caplog.text
         assert not np.any(np.isnan(np.atleast_1d(result_normal)))
+        caplog.clear()
 
     def test_ape_elementwise_mixed_zero(self, caplog):
         """`ape`'s denominator is the per-timestep actual, so zeros are handled

@@ -2421,6 +2421,7 @@ def r2_score(
     intersect: bool = True,
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
+    zero_division: str = "warn",
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
@@ -2453,6 +2454,13 @@ def r2_score(
         will consider the values only over their common time interval (intersection in time).
     q
         Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    zero_division
+        Controls behavior when the denominator :math:`\\sum_{t=1}^T{(y_t - \\bar{y})^2}` is zero, which
+        happens when ``actual_series`` is constant over the evaluated time steps.
+
+        * ``"warn"`` (default) – returns ``1.0`` for a perfect forecast (numerator also zero) and ``np.nan``
+          otherwise, and emits a warning.
+        * ``"raise"`` – raises a ``ValueError``.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -2508,7 +2516,17 @@ def r2_score(
     ss_errors = np.nansum((y_true - y_pred) ** 2, axis=TIME_AX)
     y_hat = np.nanmean(y_true, axis=TIME_AX)
     ss_tot = np.nansum((y_true - y_hat) ** 2, axis=TIME_AX)
-    return 1 - ss_errors / ss_tot
+    # `ss_tot` is zero for a constant `actual_series`. The fill applies to the ratio
+    # rather than to the metric, so `zero_fill=0.0` is what gives R^2 = 1.0 for the
+    # 0/0 case, the best score
+    return 1 - _safe_divide(
+        ss_errors,
+        ss_tot,
+        zero_division=zero_division,
+        zero_fill=0.0,
+        strict_zero=True,
+        metric_type="percentage",
+    )
 
 
 @multi_ts_support

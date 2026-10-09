@@ -197,7 +197,7 @@ class TestTimeSeries:
             df = pl.DataFrame(data)
             if date_type != "str":
                 # we must first convert to Date before optional Datetime
-                df = df.cast({"time": pl.Date})
+                df = df.with_columns(pl.col("time").str.to_date())
                 if date_type == "datetime":
                     df = df.cast({"time": pl.Datetime})
 

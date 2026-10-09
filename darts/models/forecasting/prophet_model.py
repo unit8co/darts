@@ -3,6 +3,7 @@ Facebook Prophet
 ----------------
 """
 
+import copy
 import logging
 import re
 from collections.abc import Callable, Sequence
@@ -195,9 +196,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         self.model = None
         self.suppress_stdout_stderr = suppress_stdout_stderror
 
-        self._execute_and_suppress_output = execute_and_suppress_output
-        self._model_builder = prophet.Prophet
-
         self._cap = cap
         self._floor = floor
         self.is_logistic = (
@@ -235,7 +233,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         if self.is_logistic:
             fit_df = self._add_capacities_to_df(fit_df)
 
-        self.model = self._model_builder(**self.prophet_kwargs)
+        self.model = prophet.Prophet(**self.prophet_kwargs)
 
         # add user defined seasonalities (from model creation and/or pre-fit self.add_seasonalities())
         interval_length = self._freq_to_days(series.freq_str)
@@ -285,9 +283,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             self.model.add_country_holidays(self.country_holidays)
 
         if self.suppress_stdout_stderr:
-            self._execute_and_suppress_output(
-                self.model.fit, logger, logging.WARNING, fit_df
-            )
+            execute_and_suppress_output(self.model.fit, logger, logging.WARNING, fit_df)
         else:
             self.model.fit(fit_df)
 
@@ -702,6 +698,18 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 ),
             )
         return freq_times * days
+
+    def __getstate__(self):
+        # the fitted Stan backend's ``CmdStanModel`` compiles a Stan file in
+        # ``__init__``.  Neither is model state: forecasts use ``self.model.params``.
+        state = self.__dict__.copy()
+        model = state.get("model")
+        if model is not None:
+            stripped = copy.deepcopy(model)
+            stripped.stan_backend = None
+            stripped.stan_fit = None
+            state["model"] = stripped
+        return state
 
     @property
     def _supports_range_index(self) -> bool:
