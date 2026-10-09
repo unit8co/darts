@@ -1911,10 +1911,14 @@ class TestTimeSeries:
         if with_nan:
             values[3, 0] = np.nan
 
+        static_covariates = pd.DataFrame({"num": [1 / 3], "cat": ["abc"]})
+
         start = "20200101" if isinstance(freq, str) else 1
         series = TimeSeries.from_times_and_values(
             times=generate_index(start=start, freq=freq, length=len(values)),
             values=values,
+            static_covariates=static_covariates,
+            columns=["a", "b", "c"],
         )
         restored = TimeSeries.from_json(series.to_json())
         assert restored == series

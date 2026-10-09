@@ -1489,7 +1489,7 @@ class TimeSeries:
 
         static_covariates_ = parsed.get("static_covariates")
         if static_covariates_ is not None and static_covariates is None:
-            static_covariates = pd.DataFrame(**static_covariates_)
+            static_covariates = pd.DataFrame(**static_covariates_, copy=False)
 
         hierarchy_ = parsed.get("hierarchy")
         if hierarchy is None:
@@ -1502,16 +1502,20 @@ class TimeSeries:
         times = parsed.get("index")
         if times is None:
             times = generate_index(
-                start=parsed.pop("time_start"),
-                freq=parsed.pop("time_freq"),
+                start=parsed["time_start"],
+                freq=parsed["time_freq"],
                 length=len(parsed["data"]),
-                name=parsed.pop("time_name"),
+                name=parsed["time_name"],
             )
-        dtype = parsed.pop("dtype", "float64")
-        values = np.array(parsed["data"], dtype=dtype)
+        dtype = parsed.get("dtype", "float64")
+        values = np.array(
+            parsed["data"],
+            dtype=dtype,
+        )
         return cls.from_times_and_values(
             times=times,
             values=values,
+            columns=parsed["columns"],
             static_covariates=static_covariates,
             hierarchy=hierarchy,
             metadata=metadata,
