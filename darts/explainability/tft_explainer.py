@@ -537,7 +537,7 @@ class TFTExplainer(_ForecastingModelExplainer):
 
         Parameters
         ----------
-        weights
+        weight
             The weights of the encoder or decoder of the trained TFT model.
         names
             The encoder or decoder names saved in the TFT model class.

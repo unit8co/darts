@@ -709,7 +709,7 @@ def _mode(vals: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    arr
+    vals
         A numpy array representing the predicted samples of a specific time step and component.
     """
     vals, cnts = np.unique(vals, return_counts=True)
