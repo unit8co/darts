@@ -45,7 +45,6 @@ import itertools
 import json
 import math
 import pickle
-import re
 from collections import defaultdict
 from collections.abc import Callable, Sequence
 from copy import deepcopy
@@ -4210,13 +4209,12 @@ class TimeSeries:
             else:
                 comps_to_transform = original_components
 
-            df_cols = ts_df.columns
-
             if not self.is_deterministic:
+                # stochastic DataFrame columns are named `{component}_s{sample}`
                 filter_df_columns = [
-                    df_col
-                    for df_col in df_cols
-                    if re.sub("_s.*$", "", df_col) in comps_to_transform
+                    f"{comp_name}_s{sample_id}"
+                    for comp_name in comps_to_transform
+                    for sample_id in range(n_samples)
                 ]
 
             else:
