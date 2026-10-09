@@ -29,6 +29,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - 🔴 `TorchForecastingModel` load methods no longer accept `weights_only`; use `trusted=False` instead of `weights_only=True`.
   - See the [user guide on safe model loading](https://unit8co.github.io/darts/userguide/safe_model_loading.html) for examples and details.
 - `NeuralForecastModel` now supports the `exclude_insample_y` parameter to ignore the past target values and only use covariate data. [#3216](https://github.com/unit8co/darts/pull/3216) by [Pranav Negi](https://github.com/825pranav).
+- Improved the documentation of multi-step probabilistic forecasts for scenarios vs marginal distributions. [#3234](https://github.com/unit8co/darts/pull/3234) by [Shyam Sharma](https://github.com/shyamsharmas124-commits).
 
 **Fixed**
 
