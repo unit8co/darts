@@ -16,6 +16,7 @@ from darts.utils.likelihood_models.torch import (
     CauchyLikelihood,
     ExponentialLikelihood,
     GaussianLikelihood,
+    NegativeBinomialLikelihood,
     PoissonLikelihood,
     QuantileRegression,
     WeibullLikelihood,
@@ -65,6 +66,22 @@ class TestTorchLikelihoodModel:
                 likelihood_models[first_model_name][0]
                 != likelihood_models[second_model_name][0]
             )
+
+    def test_negative_binomial_predict_likelihood_parameters_multivariate(self):
+        lkl = NegativeBinomialLikelihood()
+        # raw model output: (num_samples, n_timesteps, n_components, n_params)
+        out = torch.tensor([[[[1.0, 2.0], [10.0, 20.0]]]])
+
+        # multivariate prediction
+        params_multi = lkl.predict_likelihood_parameters(out)
+
+        # per-component univariate predictions
+        params_a = lkl.predict_likelihood_parameters(out[:, :, :1])
+        params_b = lkl.predict_likelihood_parameters(out[:, :, 1:])
+
+        # expected interleaved order: [a_r, a_p, b_r, b_p]
+        expected = torch.cat([params_a, params_b], dim=-1)
+        assert torch.allclose(params_multi, expected)
 
 
 class TestTorchLikelihoodInputValidation:
