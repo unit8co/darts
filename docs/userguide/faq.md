@@ -31,6 +31,4 @@
 
 - *Can I use probabilistic forecast samples as realistic simulated scenarios over time?*
 
-  It depends on how the forecasts are produced:
-  - If using **autoregressive models** (such as `RegressionModel` with `output_chunk_length=1` or `multi_models=False`, or `RNNModel` with `output_chunk_length=1`), the samples along the `samples` dimension are generated step-by-step with sampled values fed back into future inputs. This preserves autocorrelation over time, allowing individual sample paths to be used as realistic temporal scenarios.
-  - If using **direct multi-step models** with `output_chunk_length > 1` (such as `NBEATSModel`, `TFTModel`, or regression models with `multi_models=True`), samples within the output chunk are drawn independently across time steps and components. In this case, individual trajectories do not represent realistic dynamic paths; instead, the samples represent pointwise draws from the marginal distributions at each horizon step. See the [overview on probabilistic forecasts](https://unit8co.github.io/darts/userguide/forecasting_overview.html#multi-step-forecasts-scenarios-vs-marginal-distributions) for more details.
+  See the [overview on probabilistic forecasts](https://unit8co.github.io/darts/userguide/forecasting_overview.html#multi-step-probabilistic-forecasts-scenarios-vs-marginal-distributions) for more details.

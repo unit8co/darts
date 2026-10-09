@@ -1775,12 +1775,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             (and optionally future covariates) back into the model. If this parameter is not provided,
             it will be set ``output_chunk_length`` by default.
         num_samples
-            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
-            For direct multi-step models (``output_chunk_length > 1``), samples within each chunk are drawn
-            independently across time steps and components from the predicted marginal distributions. For
-            autoregressive step-by-step models (``output_chunk_length = 1``), simulated values at step ``t`` are
-            fed back into the model for step ``t + 1``, preserving temporal autocorrelation along each sample
-            trajectory.
+            Number of times a prediction is sampled from a probabilistic model. Must be set to 1 for deterministic
+            models. When ``num_samples > 1``, predictions within each output chunk are sampled
+            independently across output steps and components. When `n > output_chunk_length`, each sample trajectory
+            is generated autoregressively across output chunks, by feeding sampled values of a previous chunk as
+            input to forecast the distribution of the next chunk.
         dataloader_kwargs
             Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instance for the
             inference/prediction dataset. For more information on `DataLoader`, check out `this link
