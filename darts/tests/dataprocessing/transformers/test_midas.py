@@ -463,6 +463,28 @@ class TestMIDAS:
             inversed = midas.inverse_transform(series_midas[quarter:])
             assert inversed == series[max(first_month + 3 * quarter, 0) :]
 
+    def test_inverse_transform_low_freq_period_before_fitted_start(self):
+        """Inverse transform uses the quarter label when it is not on the fitted high frequency grid."""
+        monthly = linear_timeseries(
+            start=pd.Timestamp("2020-02-01"), length=9, freq="MS"
+        )
+        midas = MIDAS(low_freq="QS", strip=False)
+        quarterly = midas.fit_transform(monthly)
+
+        # quarter label before the fitted monthly series (not produced by transform on `monthly`)
+        quarterly_before_fit = TimeSeries.from_times_and_values(
+            times=pd.DatetimeIndex([pd.Timestamp("2019-07-01")], freq="QS-JAN"),
+            values=np.array([[1.0, 2.0, 3.0]]),
+            columns=quarterly.components,
+        )
+        inversed = midas.inverse_transform(quarterly_before_fit)
+        expected = TimeSeries.from_times_and_values(
+            times=pd.date_range("2019-07-01", periods=3, freq="MS"),
+            values=np.array([[1.0], [2.0], [3.0]]),
+            columns=monthly.components,
+        )
+        assert inversed == expected
+
     def test_multiple_ts(self):
         """
         Verify that MIDAS works as expected with multiple series of different "high" frequencies (monthly and quarterly
