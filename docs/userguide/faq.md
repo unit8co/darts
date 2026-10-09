@@ -28,3 +28,7 @@
 - *My forecasting models give bad results, can you help?*
 
   Getting good forecasts is about more than just calling the `fit()`/`predict()` functions, and always involves some data science work to understand which approaches are appropriate. We cannot give general answers, however if you have important forecasting problems or need help to industrialize your forecasts, Unit8 provides technical consulting. <a href="mailto:info@unit8.co">Feel free to contact us</a>.
+
+- *Can I use probabilistic forecast samples as realistic simulated scenarios over time?*
+
+  See the [overview on probabilistic forecasts](https://unit8co.github.io/darts/userguide/forecasting_overview.html#multi-step-probabilistic-forecasts-scenarios-vs-marginal-distributions) for more details.

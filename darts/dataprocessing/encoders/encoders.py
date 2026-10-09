@@ -1531,8 +1531,10 @@ class SequentialEncoder(Encoder):
                     else:
                         future_encoders.append((encoder_id, attr))
 
-                    if isinstance(attr, Callable) and attr.__name__ == "<lambda>":
-                        lambda_func_encoders.add(enc)
+                    if isinstance(attr, Callable):
+                        name = getattr(attr, "__name__", "")
+                        if name == "<lambda>":
+                            lambda_func_encoders.add(enc)
 
         if len(lambda_func_encoders) > 0:
             raise_log(
