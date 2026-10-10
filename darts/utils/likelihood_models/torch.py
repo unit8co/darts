@@ -1353,8 +1353,7 @@ class _ZeroInflatedDistribution(torch.distributions.Distribution):
             log_prob_base = self.base_distr.log_prob(value)
             log_prob_zero = torch.logaddexp(log_gate, log_not_gate + log_prob_base)
         else:
-            # zero can lie outside the support of the base distribution (e.g. Gamma or LogNormal); evaluate it at a
-            # value inside its support instead, so that the unused branch stays finite and gradients are not NaN
+            # keep the unused branch finite when zero is outside the base support (e.g. Gamma or LogNormal)
             fill = torch.nan_to_num(
                 self.base_distr.mean.detach(), nan=1.0, posinf=1.0, neginf=1.0
             )
@@ -1375,11 +1374,11 @@ class ZeroInflatedLikelihood(TorchLikelihood):
 
         - For discrete distributions (e.g. ``PoissonLikelihood``, ``NegativeBinomialLikelihood``), zeros can come
           from both components: :math:`P(y = 0) = \\pi + (1 - \\pi) P_{base}(0)` and
-          :math:`P(y) = (1 - \\pi) P_{base}(y)` for :math:`y > 0`.
+          :math:`P(y) = (1 - \\pi) P_{base}(y)` for :math:`y > 0`. The target must contain integer values only.
         - For continuous distributions (e.g. ``GammaLikelihood``, ``LogNormalLikelihood``), zeros only come from the
           zero-inflation component (hurdle model): :math:`P(y = 0) = \\pi` and the density is
-          :math:`(1 - \\pi) f_{base}(y)` for :math:`y \\neq 0`. This allows using strictly positive distributions
-          for targets that contain zeros.
+          :math:`(1 - \\pi) f_{base}(y)` for :math:`y \\neq 0`, so strictly positive distributions can be
+          used for targets that contain zeros.
         - Parameters: the parameters of the wrapped likelihood, and the zero-inflation probability
           :math:`\\pi \\in (0, 1)` (named ``zi_p``).
 
@@ -1417,8 +1416,8 @@ class ZeroInflatedLikelihood(TorchLikelihood):
         ):
             raise_log(
                 ValueError(
-                    f"`ZeroInflatedLikelihood` does not support `{likelihood.__class__.__name__}`. "
-                    f"It requires a univariate torch likelihood other than `QuantileRegression`, "
+                    f"`ZeroInflatedLikelihood` does not support `{likelihood!r}`. "
+                    f"It requires a univariate torch likelihood instance other than `QuantileRegression`, "
                     f"`DirichletLikelihood`, `BernoulliLikelihood`, `ContinuousBernoulliLikelihood` "
                     f"or `ZeroInflatedLikelihood`."
                 )
@@ -1430,7 +1429,7 @@ class ZeroInflatedLikelihood(TorchLikelihood):
                     "`ZeroInflatedLikelihood` does not support likelihoods with priors."
                 )
             )
-        if getattr(likelihood, "beta_nll", 0.0) > 0.0:
+        if isinstance(likelihood, GaussianLikelihood) and likelihood.beta_nll > 0.0:
             raise_log(
                 ValueError(
                     "`ZeroInflatedLikelihood` does not support `GaussianLikelihood` with `beta_nll > 0`."
