@@ -306,22 +306,22 @@ class TestOnnx:
         )
         self._assert_forecasts_equal(onnx_pred, pred)
 
-    @pytest.mark.parametrize("start,freq", [(0, 1), (10, 2)])
+    @pytest.mark.parametrize("start,freq", [(0, 1), (9, 2)])
     def test_onnx_range_index(self, tmpdir_fn, start, freq):
         """Inputs of integer-indexed series must be sliced by time index, not position."""
-        model = self._make_model(TiDEModel)
         series = tg.linear_timeseries(
-            start_value=0, end_value=100, start=start, freq=freq, length=30
-        ).astype("float32")
-        past_cov = tg.constant_timeseries(
-            value=123.4, start=start, freq=freq, length=40
-        ).astype("float32")
-        future_cov = tg.sine_timeseries(start=start, freq=freq, length=40).astype(
-            "float32"
+            start=start, freq=freq, length=15, dtype="float32"
         )
-        model.fit(series=series, past_covariates=past_cov, future_covariates=future_cov)
+        past_cov = tg.constant_timeseries(
+            start=start, freq=freq, length=20, dtype="float32"
+        )
+        future_cov = tg.sine_timeseries(
+            start=start, freq=freq, length=20, dtype="float32"
+        )
 
         n = 5
+        model = self._make_model(NLinearModel)
+        model.fit(series=series, past_covariates=past_cov, future_covariates=future_cov)
         pred = model.predict(
             n=n,
             series=series,

@@ -163,31 +163,28 @@ def prepare_onnx_inputs(
     dtype = series.dtype
 
     if "past_target" in spec.feature_input_names:
-        inputs["past_target"] = np.expand_dims(
-            _values_between(series, past_start, past_end), axis=0
-        ).astype(dtype)
+        inputs["past_target"] = _values_between(series, past_start, past_end, dtype)
 
     if spec.uses_past_covariates and past_covariates is not None:
         if "past_covariates" in spec.feature_input_names:
-            inputs["past_covariates"] = np.expand_dims(
-                _values_between(past_covariates, past_start, past_end), axis=0
-            ).astype(dtype)
+            inputs["past_covariates"] = _values_between(
+                past_covariates, past_start, past_end, dtype
+            )
             if min_n > ocl:
                 future_past_end = future_start + (min_n - ocl - 1) * freq
-                inputs["future_past_covariates"] = np.expand_dims(
-                    _values_between(past_covariates, future_start, future_past_end),
-                    axis=0,
-                ).astype(dtype)
+                inputs["future_past_covariates"] = _values_between(
+                    past_covariates, future_start, future_past_end, dtype
+                )
 
     if spec.uses_future_covariates and future_covariates is not None:
         if "historic_future_covariates" in spec.feature_input_names:
-            inputs["historic_future_covariates"] = np.expand_dims(
-                _values_between(future_covariates, past_start, past_end), axis=0
-            ).astype(dtype)
+            inputs["historic_future_covariates"] = _values_between(
+                future_covariates, past_start, past_end, dtype
+            )
         if "future_covariates" in spec.feature_input_names:
-            inputs["future_covariates"] = np.expand_dims(
-                _values_between(future_covariates, future_start, future_end), axis=0
-            ).astype(dtype)
+            inputs["future_covariates"] = _values_between(
+                future_covariates, future_start, future_end, dtype
+            )
 
     if spec.uses_static_covariates and series.has_static_covariates:
         if "static_covariates" in spec.feature_input_names:
@@ -199,15 +196,17 @@ def prepare_onnx_inputs(
 
 
 def _values_between(
-    series: TimeSeries, start: pd.Timestamp | int, end: pd.Timestamp | int
+    series: TimeSeries,
+    start: pd.Timestamp | int,
+    end: pd.Timestamp | int,
+    dtype,
 ) -> np.ndarray:
-    """Return the values of `series` with time index between `start` and `end` (inclusive).
-
-    Selects by time index for both datetime- and integer-indexed series (integer slices
-    on a ``TimeSeries`` are positional).
-    """
-    time_index = series.time_index
-    return series.values(copy=False)[(time_index >= start) & (time_index <= end)]
+    """Return the values of `series` between `start` and `end` (inclusive)."""
+    start_idx = series.get_index_at_point(start)
+    end_idx = series.get_index_at_point(end)
+    return np.expand_dims(
+        series.values(copy=False)[start_idx : end_idx + 1], axis=0
+    ).astype(dtype)
 
 
 def run_onnx_prediction(
