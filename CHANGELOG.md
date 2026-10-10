@@ -31,6 +31,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - `NeuralForecastModel` now supports the `exclude_insample_y` parameter to ignore the past target values and only use covariate data. [#3216](https://github.com/unit8co/darts/pull/3216) by [Pranav Negi](https://github.com/825pranav).
 - Improved the documentation of multi-step probabilistic forecasts for scenarios vs marginal distributions. [#3234](https://github.com/unit8co/darts/pull/3234) by [Shyam Sharma](https://github.com/shyamsharmas124-commits).
 - `TimeSeries.to_json()` and `from_json()` now properly support serializing and deserializing stochastic series. [#3237](https://github.com/unit8co/darts/pull/3237) by [Raashish Aggarwal](https://github.com/raashish1601) and [Dennis Bader](https://github.com/dennisbader).
+- Added `ZeroInflatedLikelihood` for `TorchForecastingModel`: it wraps any univariate torch likelihood and adds a zero-inflation probability per component, e.g. a zero-inflated Poisson or negative binomial for intermittent demand, or a hurdle model with a continuous likelihood such as `GammaLikelihood` for targets that contain zeros. [#3245](https://github.com/unit8co/darts/pull/3245) by [Abhay Juloori](https://github.com/AbhayJuloori).
 
 **Fixed**
 
@@ -48,6 +49,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed `TimeSeries.window_transform()` and `WindowTransformer` on stochastic series raising an error when a component name contained "_s", and assigning transformed values to the wrong components when `components` was given in a different order than the series' components. [#3230](https://github.com/unit8co/darts/pull/3230) by [Mohammad Hijjawi](https://github.com/MohammadHijjawi97).
 - Fixed `MIDAS.inverse_transform()` returning a series with a shifted time index (values assigned to the wrong time steps) when the incomplete first low frequency period was stripped (`strip=True`, the default) from a series not starting at the beginning of a low frequency period, when the transformed series was sliced, or with a low frequency anchored at the period end (e.g. `"QE"`). [#3233](https://github.com/unit8co/darts/pull/3233) by [Mohammad Hijjawi](https://github.com/MohammadHijjawi97).
 - Fixed `TimeSeries.to_json()` and `TimeSeries.from_json()` rounding the series values to 10 decimal places (small values became 0). Values now round-trip at correct precision. [#3237](https://github.com/unit8co/darts/pull/3237) by [Raashish Aggarwal](https://github.com/raashish1601) and [Dennis Bader](https://github.com/dennisbader).
+- Fixed `NegativeBinomialLikelihood` returning the distribution parameters in the wrong order with `predict_likelihood_parameters=True` on multivariate series; parameters are now grouped by component, matching the component names. [#3243](https://github.com/unit8co/darts/pull/3243) by [Abhay Juloori](https://github.com/AbhayJuloori).
 
 **Dependencies**
 

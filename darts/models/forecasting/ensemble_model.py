@@ -769,7 +769,11 @@ class EnsembleModel(GlobalForecastingModel):
         for m in self.forecasting_models:
             likelihood = m.likelihood
             lkl_type = likelihood.type
-            models_likelihood.add(lkl_type)
+            if lkl_type is LikelihoodType.ZeroInflated:
+                # zero-inflated likelihoods must also wrap the same distribution
+                models_likelihood.add((lkl_type, likelihood.likelihood.type))
+            else:
+                models_likelihood.add(lkl_type)
 
             # check the quantiles
             if lkl_type is LikelihoodType.Quantile:

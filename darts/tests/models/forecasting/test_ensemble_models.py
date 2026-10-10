@@ -28,7 +28,12 @@ else:
 
 if TORCH_AVAILABLE:
     from darts.models import DLinearModel, NBEATSModel, RNNModel, TCNModel
-    from darts.utils.likelihood_models.torch import QuantileRegression
+    from darts.utils.likelihood_models.torch import (
+        GammaLikelihood,
+        PoissonLikelihood,
+        QuantileRegression,
+        ZeroInflatedLikelihood,
+    )
 
 
 def _make_ts(start_value=0, n=100):
@@ -383,6 +388,28 @@ class TestEnsembleModels:
         naive_ensemble.fit(self.series1 + self.series2)
         with pytest.raises(ValueError):
             naive_ensemble.predict(n=4, predict_likelihood_parameters=True)
+
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
+    def test_same_likelihood_zero_inflated(self):
+        def model(likelihood):
+            return DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                likelihood=likelihood,
+                **tfm_kwargs,
+            )
+
+        # zero-inflated likelihoods must also wrap the same distribution
+        ensemble = NaiveEnsembleModel([
+            model(ZeroInflatedLikelihood(PoissonLikelihood())),
+            model(ZeroInflatedLikelihood(PoissonLikelihood())),
+        ])
+        assert ensemble.supports_likelihood_parameter_prediction
+        ensemble = NaiveEnsembleModel([
+            model(ZeroInflatedLikelihood(PoissonLikelihood())),
+            model(ZeroInflatedLikelihood(GammaLikelihood())),
+        ])
+        assert not ensemble.supports_likelihood_parameter_prediction
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_predict_likelihood_parameters_univariate_naive_ensemble(self):

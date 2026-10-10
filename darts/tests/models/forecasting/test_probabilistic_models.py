@@ -70,6 +70,7 @@ if TORCH_AVAILABLE:
         PoissonLikelihood,
         QuantileRegression,
         WeibullLikelihood,
+        ZeroInflatedLikelihood,
     )
 
 np.random.seed(0)
@@ -704,6 +705,10 @@ class TestProbabilisticModels:
         )
         bounded_series = TimeSeries.from_values(np.random.beta(2, 5, size=(100, 2)))
         simplex_series = bounded_series["0"].stack(1.0 - bounded_series["0"])
+        zero_inflated_series = TimeSeries.from_values(
+            np.random.randint(low=1, high=11, size=(100, 2))
+            * np.random.binomial(n=1, p=0.5, size=(100, 2))
+        )
 
         lkl_series = [
             (GaussianLikelihood(), real_series, 0.17, 3),
@@ -723,6 +728,18 @@ class TestProbabilisticModels:
             (LogNormalLikelihood(), real_pos_series, 0.3, 1),
             (WeibullLikelihood(), real_pos_series, 0.2, 2.5),
             (QuantileRegression(), real_series, 0.2, 1),
+            (
+                ZeroInflatedLikelihood(PoissonLikelihood()),
+                zero_inflated_series,
+                1.0,
+                1.0,
+            ),
+            (
+                ZeroInflatedLikelihood(NegativeBinomialLikelihood()),
+                zero_inflated_series,
+                0.5,
+                0.5,
+            ),
         ]
 
         @pytest.mark.parametrize("lkl_config", lkl_series)
@@ -778,6 +795,7 @@ class TestProbabilisticModels:
                 (HalfNormalLikelihood(), [1]),
                 (LogNormalLikelihood(), [0, 0.25]),
                 (WeibullLikelihood(), [1, 1.5]),
+                (ZeroInflatedLikelihood(PoissonLikelihood()), [5, 0.5]),
             ]
             + ([(CauchyLikelihood(), [0, 1])] if not runs_on_m1 else []),
         )
@@ -851,6 +869,11 @@ class TestProbabilisticModels:
                 ),
                 (PoissonLikelihood(), [5], ["dummy_0_lambda", "dummy_1_lambda"]),
                 (
+                    NegativeBinomialLikelihood(),
+                    [2, 0.5],
+                    ["dummy_0_r", "dummy_0_p", "dummy_1_r", "dummy_1_p"],
+                ),
+                (
                     QuantileRegression([0.05, 0.5, 0.95]),
                     [-1.67, 0, 1.67],
                     [
@@ -860,6 +883,16 @@ class TestProbabilisticModels:
                         "dummy_1_q0.050",
                         "dummy_1_q0.500",
                         "dummy_1_q0.950",
+                    ],
+                ),
+                (
+                    ZeroInflatedLikelihood(PoissonLikelihood()),
+                    [5, 0.5],
+                    [
+                        "dummy_0_lambda",
+                        "dummy_0_zi_p",
+                        "dummy_1_lambda",
+                        "dummy_1_zi_p",
                     ],
                 ),
             ],
@@ -946,6 +979,62 @@ class TestProbabilisticModels:
             with pytest.raises(ValueError):
                 model.predict(n=5, num_samples=1, predict_likelihood_parameters=True)
             model.predict(n=4, num_samples=1, predict_likelihood_parameters=True)
+
+        def test_zero_inflated_likelihood_recovers_zero_probability(self):
+            # zero-inflated Poisson target with zero-inflation probability 0.6 and rate 5
+            rng = np.random.default_rng(42)
+            n = 600
+            values = rng.poisson(5.0, size=n) * rng.binomial(1, 0.4, size=n)
+            series = TimeSeries.from_values(values.astype(np.float32))
+            model = DLinearModel(
+                input_chunk_length=12,
+                output_chunk_length=1,
+                likelihood=ZeroInflatedLikelihood(PoissonLikelihood()),
+                n_epochs=30,
+                random_state=42,
+                **tfm_kwargs,
+            )
+            model.fit(series)
+            # average over many forecasts, a single forecast is too noisy
+            params = model.historical_forecasts(
+                series,
+                start=0.5,
+                forecast_horizon=1,
+                retrain=False,
+                predict_likelihood_parameters=True,
+            )
+            assert list(params.components) == ["0_lambda", "0_zi_p"]
+            lmbda, zi_p = params.values()[:, 0], params.values()[:, 1]
+            assert abs(zi_p.mean() - 0.6) < 0.1
+            # the implied probability of zero and mean must match the data
+            prob_zero = zi_p + (1 - zi_p) * np.exp(-lmbda)
+            assert abs(prob_zero.mean() - np.mean(values == 0)) < 0.05
+            assert abs(((1 - zi_p) * lmbda).mean() - values.mean()) < 0.3
+
+        def test_zero_inflated_likelihood_save_load(self, tmpdir_fn):
+            series = TimeSeries.from_values(
+                (
+                    np.random.poisson(5.0, size=100)
+                    * np.random.binomial(1, 0.5, size=100)
+                ).astype(np.float32)
+            )
+            model = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                likelihood=ZeroInflatedLikelihood(NegativeBinomialLikelihood()),
+                n_epochs=1,
+                random_state=42,
+                **tfm_kwargs,
+            )
+            model.fit(series)
+            model.save("zi_model.pt")
+            loaded = DLinearModel.load("zi_model.pt")
+            assert loaded.likelihood == model.likelihood
+            pred = model.predict(n=1, num_samples=1, predict_likelihood_parameters=True)
+            pred_loaded = loaded.predict(
+                n=1, num_samples=1, predict_likelihood_parameters=True
+            )
+            np.testing.assert_allclose(pred.values(), pred_loaded.values())
 
         def test_stochastic_inputs(self):
             model = RNNModel(input_chunk_length=5, **tfm_kwargs)
