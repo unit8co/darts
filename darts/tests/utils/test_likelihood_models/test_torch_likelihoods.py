@@ -315,7 +315,6 @@ class TestZeroInflatedLikelihood:
             QuantileRegression(),
             DirichletLikelihood(),
             BernoulliLikelihood(),
-            ContinuousBernoulliLikelihood(),
             ZeroInflatedLikelihood(PoissonLikelihood()),
             PoissonLikelihood(prior_lambda=2.0),
             GaussianLikelihood(prior_mu=0.0),
@@ -377,6 +376,7 @@ class TestZeroInflatedLikelihood:
         [
             BetaLikelihood(),
             CauchyLikelihood(),
+            ContinuousBernoulliLikelihood(),
             ExponentialLikelihood(),
             GammaLikelihood(),
             GaussianLikelihood(),

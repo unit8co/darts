@@ -1392,8 +1392,8 @@ class ZeroInflatedLikelihood(TorchLikelihood):
         Parameters
         ----------
         likelihood
-            The univariate torch likelihood to zero-inflate. ``QuantileRegression``, ``DirichletLikelihood``,
-            ``BernoulliLikelihood`` and ``ContinuousBernoulliLikelihood`` are not supported.
+            The univariate torch likelihood to zero-inflate. ``QuantileRegression``, ``DirichletLikelihood`` and
+            ``BernoulliLikelihood`` (already a distribution over zeros and ones) are not supported.
 
         Examples
         --------
@@ -1412,7 +1412,6 @@ class ZeroInflatedLikelihood(TorchLikelihood):
             QuantileRegression,
             DirichletLikelihood,
             BernoulliLikelihood,
-            ContinuousBernoulliLikelihood,
             ZeroInflatedLikelihood,
         )
         if not isinstance(likelihood, TorchLikelihood) or isinstance(
@@ -1420,10 +1419,10 @@ class ZeroInflatedLikelihood(TorchLikelihood):
         ):
             raise_log(
                 ValueError(
-                    f"`ZeroInflatedLikelihood` does not support `{likelihood!r}`. "
+                    f"`ZeroInflatedLikelihood` does not support "
+                    f"`{getattr(likelihood, '__name__', type(likelihood).__name__)}`. "
                     f"It requires a univariate torch likelihood instance other than `QuantileRegression`, "
-                    f"`DirichletLikelihood`, `BernoulliLikelihood`, `ContinuousBernoulliLikelihood` "
-                    f"or `ZeroInflatedLikelihood`."
+                    f"`DirichletLikelihood`, `BernoulliLikelihood` or `ZeroInflatedLikelihood`."
                 )
             )
         prior_params = likelihood._prior_params
