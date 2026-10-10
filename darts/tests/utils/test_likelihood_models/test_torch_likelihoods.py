@@ -12,10 +12,20 @@ if not TORCH_AVAILABLE:
 import torch
 
 from darts.utils.likelihood_models.torch import (
+    BernoulliLikelihood,
     BetaLikelihood,
     CauchyLikelihood,
+    ContinuousBernoulliLikelihood,
+    DirichletLikelihood,
     ExponentialLikelihood,
+    GammaLikelihood,
     GaussianLikelihood,
+    GeometricLikelihood,
+    GumbelLikelihood,
+    HalfNormalLikelihood,
+    LaplaceLikelihood,
+    LogNormalLikelihood,
+    NegativeBinomialLikelihood,
     PoissonLikelihood,
     QuantileRegression,
     WeibullLikelihood,
@@ -65,6 +75,53 @@ class TestTorchLikelihoodModel:
                 likelihood_models[first_model_name][0]
                 != likelihood_models[second_model_name][0]
             )
+
+    @pytest.mark.parametrize(
+        "likelihood",
+        [
+            BernoulliLikelihood(),
+            BernoulliLikelihood(prior_p=0.5),
+            BetaLikelihood(),
+            CauchyLikelihood(),
+            ContinuousBernoulliLikelihood(),
+            DirichletLikelihood(),
+            DirichletLikelihood(prior_alphas=[1.0, 2.0]),
+            ExponentialLikelihood(),
+            ExponentialLikelihood(prior_lambda=0.5),
+            GammaLikelihood(),
+            GaussianLikelihood(),
+            GaussianLikelihood(prior_mu=0.0, prior_sigma=1.0),
+            GeometricLikelihood(),
+            GumbelLikelihood(),
+            HalfNormalLikelihood(),
+            LaplaceLikelihood(),
+            LogNormalLikelihood(),
+            NegativeBinomialLikelihood(),
+            PoissonLikelihood(),
+            PoissonLikelihood(prior_lambda=2.0),
+            QuantileRegression([0.1, 0.5, 0.9]),
+            WeibullLikelihood(),
+        ],
+    )
+    def test_compute_loss_uses_all_samples(self, likelihood):
+        # the loss of a batch must be the average of the losses of its individual samples
+        torch.manual_seed(42)
+        batch_size, n_times, n_components = 4, 3, 2
+        model_output = torch.randn(
+            batch_size, n_times, n_components, likelihood.num_parameters
+        )
+        if isinstance(likelihood, QuantileRegression):
+            target = torch.randn(batch_size, n_times, n_components)
+        else:
+            params = likelihood._as_tuple(likelihood._params_from_output(model_output))
+            target = likelihood._distr_from_params(params).sample()
+
+        loss = likelihood.compute_loss(model_output, target, None)
+        loss_per_sample = torch.stack([
+            likelihood.compute_loss(model_output[i : i + 1], target[i : i + 1], None)
+            for i in range(batch_size)
+        ])
+        assert torch.allclose(loss, loss_per_sample.mean())
 
 
 class TestTorchLikelihoodInputValidation:
