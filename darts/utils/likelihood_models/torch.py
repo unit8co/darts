@@ -137,6 +137,7 @@ class TorchLikelihood(Likelihood, ABC):
             p is not None for p in prior_params
         )
         if use_prior:
+            params_out = self._as_tuple(params_out)
             out_distr = self._distr_from_params(params_out)
             device = params_out[0].device
             prior_params = tuple(
@@ -162,11 +163,22 @@ class TorchLikelihood(Likelihood, ABC):
         This is the basic way to compute the NLL loss. It can be overwritten by likelihoods for which
         PyTorch proposes a numerically better NLL loss.
         """
-        out_distr = self._distr_from_params(params_out)
+        out_distr = self._distr_from_params(self._as_tuple(params_out))
         loss = -out_distr.log_prob(target)
         if sample_weight is not None:
             loss = loss * sample_weight
         return loss.mean()
+
+    @staticmethod
+    def _as_tuple(
+        params: torch.Tensor | tuple[torch.Tensor, ...],
+    ) -> tuple[torch.Tensor, ...]:
+        """Wraps the output of `_params_from_output()` into a tuple, as expected by `_distr_from_params()`.
+
+        Single-parameter likelihoods return a tensor instead of a tuple, and indexing that tensor would select
+        the first sample of the batch instead of the first parameter.
+        """
+        return (params,) if isinstance(params, torch.Tensor) else params
 
     @property
     def _prior_params(self):
