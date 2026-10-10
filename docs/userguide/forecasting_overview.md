@@ -159,7 +159,7 @@ In addition, you can have a look at [this article on covariates](https://medium.
 
 ## Probabilistic forecasts
 
-Some of the models in Darts can produce probabilistic forecasts. For these models, the `TimeSeries` returned by `predict()` will be probabilistic, and contain a certain number of Monte Carlo samples describing the joint distribution over time and components. The number of samples can be directly determined by the argument `num_samples` of the `predict()` function (leaving `num_samples=1` will return a deterministic `TimeSeries`).
+Most models in Darts can produce probabilistic forecasts. For these models, the `TimeSeries` returned by `predict()` will be probabilistic, and contain a certain number of Monte Carlo samples representing the forecasted distribution over time and components. The number of samples can be directly determined by the argument `num_samples` of the `predict()` function (leaving `num_samples=1` will return a deterministic `TimeSeries`).
 
 Models supporting probabilistic forecasts are indicated with a "✅" in the `Probabilistic` column on the [model list](https://github.com/unit8co/darts#forecasting-models).
 The actual probabilistic distribution of the forecasts depends on the model.
@@ -318,6 +318,31 @@ pred.plot(label='forecast')
 ```
 
 ![quantile linear regression](./images/probabilistic/example_linreg_quantile.png)
+
+### Multi-step probabilistic forecasts: Scenarios vs Marginal Distributions
+
+When calling `predict(n, num_samples=k)` with `k > 1`, the returned `TimeSeries` has shape `(time, components, samples)`. A common question is whether the individual sample trajectories along the `samples` dimension can be interpreted as **realistic, coherent temporal scenarios** (accounting for autocorrelation over time and cross-dimensional correlations), or whether they only represent **independent pointwise marginal distributions** at each time step.
+
+The distinction primarily depends on whether the forecast is generated **autoregressively** or via **direct multi-step chunks**:
+
+#### 1. Purely Autoregressive Rollouts (Scenario Generation)
+
+For models operating purely autoregressively (e.g. global forecasting models with `output_chunk_length = 1`):
+- Forecasts are generated step-by-step into the future.
+- At time step $t$, a sample is drawn from the predicted distribution for each sample index $i \in \{1, \dots, k\}$.
+- For each scenario $i$, the sampled value at $t$ is fed back into the model as "historic" input to forecast the distribution at $t+1$.
+- **Temporal correlation:** Because each trajectory's future is conditioned on its own simulated past values, **autocorrelation is preserved across time**. The individual sample paths $i$ function as realistic Monte Carlo simulated scenarios.
+- **Cross-component correlation:** The random noise/innovations injected at each step are sampled independently across components. However, cross-component interactions in the conditional mean are captured and propagated over time through the lagged features.
+
+#### 2. Direct Multi-Step / Chunk Forecasting (Marginal Sampling)
+
+For direct multi-step models (e.g. global forecasting models with `output_chunk_length > 1`):
+- The model outputs the parameters of the distributions (or quantiles) for the entire output chunk simultaneously.
+- When generating `num_samples` forecasts, samples are drawn **independently across all time steps and components** within the chunk.
+- **Temporal correlation:** Within the output chunk, there is no modeled joint covariance or temporal correlation in the sampled noise. Consequently, individual sample trajectories do **not** represent realistic dynamic scenarios; rather, the collection of samples at each time step $t$ provides a Monte Carlo estimate of the **marginal distribution** at that specific point in time.
+- **Beyond the output chunk length (`n > output_chunk_length`):** Models apply chunk-level autoregression, feeding the previously sampled chunk back into the model for the next chunk.
+
+> **Tip:** If your use case requires realistic simulated paths over time (e.g., for downstream simulation, risk analysis, or optimization under uncertainty), prefer autoregressive models with `output_chunk_length=1` (or `multi_models=False` in regression models). If you primarily need accurate pointwise prediction intervals or quantiles, direct multi-step models are often faster and avoid compounding autoregressive errors.
 
 
 [1] Yarin Gal, Zoubin Ghahramani, ["Dropout as a Bayesian Approximation: Representing Model Uncertainty in Deep Learning"](https://arxiv.org/abs/1506.02142)

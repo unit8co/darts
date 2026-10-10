@@ -301,6 +301,8 @@ class QuantileRegression(SKLearnLikelihood):
         # model_output is of shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
         # sample uniformly between [0, 1] (for each batch example) and return the
         # linear interpolation between the fitted quantiles closest to the sampled value.
+        # Note: Samples are drawn independently across both the time dimension (output_chunk_length)
+        # and component dimension (n_components).
         k, n_times, n_components, n_quantiles = model_output.shape
 
         # obtain samples
