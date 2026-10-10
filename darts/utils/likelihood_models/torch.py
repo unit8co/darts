@@ -1276,6 +1276,121 @@ class _ZeroInflatedDistribution(torch.distributions.Distribution):
         return torch.where(is_zero, log_prob_zero, log_not_gate + log_prob_base)
 
 
+class ZeroInflatedLikelihood(TorchLikelihood):
+    def __init__(self, likelihood: TorchLikelihood):
+        """
+        Zero-inflated version of a univariate likelihood.
+
+        https://en.wikipedia.org/wiki/Zero-inflated_model
+
+        Adds a zero-inflation probability :math:`\\pi` per target component to the wrapped `likelihood`.
+        With probability :math:`\\pi` the target is zero, otherwise it follows the wrapped distribution.
+
+        - For discrete distributions (e.g. ``PoissonLikelihood``, ``NegativeBinomialLikelihood``), zeros can come
+          from both components: :math:`P(y = 0) = \\pi + (1 - \\pi) P_{base}(0)` and
+          :math:`P(y) = (1 - \\pi) P_{base}(y)` for :math:`y > 0`.
+        - For continuous distributions (e.g. ``GammaLikelihood``, ``LogNormalLikelihood``), zeros only come from the
+          zero-inflation component (hurdle model): :math:`P(y = 0) = \\pi` and the density is
+          :math:`(1 - \\pi) f_{base}(y)` for :math:`y \\neq 0`. This allows using strictly positive distributions
+          for targets that contain zeros.
+        - Parameters: the parameters of the wrapped likelihood, and the zero-inflation probability
+          :math:`\\pi \\in (0, 1)` (named ``zi_p``).
+
+        Priors are not supported (the KL divergence between zero-inflated distributions has no closed form), so the
+        wrapped likelihood must be created without priors.
+
+        Parameters
+        ----------
+        likelihood
+            The univariate torch likelihood to zero-inflate. ``QuantileRegression``, ``DirichletLikelihood``,
+            ``BernoulliLikelihood`` and ``ContinuousBernoulliLikelihood`` are not supported.
+
+        Examples
+        --------
+        >>> from darts.models import TiDEModel
+        >>> from darts.utils.likelihood_models import (
+        ...     NegativeBinomialLikelihood,
+        ...     ZeroInflatedLikelihood,
+        ... )
+        >>> model = TiDEModel(
+        ...     input_chunk_length=12,
+        ...     output_chunk_length=6,
+        ...     likelihood=ZeroInflatedLikelihood(NegativeBinomialLikelihood()),
+        ... )
+        """
+        unsupported = (
+            QuantileRegression,
+            DirichletLikelihood,
+            BernoulliLikelihood,
+            ContinuousBernoulliLikelihood,
+            ZeroInflatedLikelihood,
+        )
+        if not isinstance(likelihood, TorchLikelihood) or isinstance(
+            likelihood, unsupported
+        ):
+            raise_log(
+                ValueError(
+                    f"`ZeroInflatedLikelihood` does not support `{likelihood.__class__.__name__}`. "
+                    f"It requires a univariate torch likelihood other than `QuantileRegression`, "
+                    f"`DirichletLikelihood`, `BernoulliLikelihood`, `ContinuousBernoulliLikelihood` "
+                    f"or `ZeroInflatedLikelihood`."
+                )
+            )
+        prior_params = likelihood._prior_params
+        if prior_params is not None and any(p is not None for p in prior_params):
+            raise_log(
+                ValueError(
+                    "`ZeroInflatedLikelihood` does not support likelihoods with priors."
+                )
+            )
+        if getattr(likelihood, "beta_nll", 0.0) > 0.0:
+            raise_log(
+                ValueError(
+                    "`ZeroInflatedLikelihood` does not support `GaussianLikelihood` with `beta_nll > 0`."
+                )
+            )
+
+        self.likelihood = likelihood
+        super().__init__(
+            likelihood_type=LikelihoodType.ZeroInflated,
+            parameter_names=likelihood.parameter_names + ["zi_p"],
+        )
+
+    def _params_from_output(self, model_output: torch.Tensor):
+        params = self.likelihood._params_from_output(model_output[:, :, :, :-1])
+        if isinstance(params, torch.Tensor):
+            params = (params,)
+        gate = torch.sigmoid(model_output[:, :, :, -1])
+        return *params, gate
+
+    def _distr_from_params(self, params: tuple) -> _ZeroInflatedDistribution:
+        *base_params, gate = params
+        base_distr = self.likelihood._distr_from_params(tuple(base_params))
+        return _ZeroInflatedDistribution(base_distr, gate)
+
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        base_sample = self.likelihood.sample(model_output[:, :, :, :-1])
+        gate = torch.sigmoid(model_output[:, :, :, -1])
+        is_zero = torch.bernoulli(gate).bool()
+        return torch.where(is_zero, torch.zeros_like(base_sample), base_sample)
+
+    def predict_likelihood_parameters(self, model_output: torch.Tensor) -> torch.Tensor:
+        num_samples, n_times, n_components, n_params = model_output.shape
+        base_params = self.likelihood.predict_likelihood_parameters(
+            model_output[:, :, :, :-1]
+        )
+        gate = torch.sigmoid(model_output[:, :, :, -1:])
+        # interleave the parameters to group them by input series component
+        params = torch.cat(
+            [
+                base_params.reshape((num_samples, n_times, n_components, n_params - 1)),
+                gate,
+            ],
+            dim=3,
+        )
+        return params.reshape((num_samples, n_times, n_components * n_params))
+
+
 """ TODO
 To make it work, we'll have to change our models so they optionally accept an absolute
 number of parameters, instead of num_parameters per component.
