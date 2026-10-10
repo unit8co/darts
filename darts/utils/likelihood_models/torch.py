@@ -20,6 +20,9 @@ in which case they are applied to model each component of multivariate series in
 Some other distributions (such as ``DirichletLikelihood``) are multivariate,
 in which case they will model all components of multivariate time series jointly.
 
+Univariate likelihoods can be wrapped with ``ZeroInflatedLikelihood`` to model targets with excess zeros
+(e.g. intermittent demand), such as a zero-inflated Poisson or negative binomial distribution.
+
 Univariate likelihoods accept either scalar or array-like values for the optional prior parameters.
 If a scalar is provided, it is used as a prior for all components of the series. If an array-like is provided,
 the i-th value will be used as a prior for the i-th component of the series. Multivariate likelihoods
