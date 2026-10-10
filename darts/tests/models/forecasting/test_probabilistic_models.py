@@ -1,5 +1,4 @@
 import copy
-import os
 import platform
 
 import numpy as np
@@ -738,8 +737,8 @@ class TestProbabilisticModels:
             (
                 ZeroInflatedLikelihood(NegativeBinomialLikelihood()),
                 zero_inflated_series,
-                1.0,
-                1.0,
+                0.5,
+                0.5,
             ),
         ]
 
@@ -996,15 +995,23 @@ class TestProbabilisticModels:
                 **tfm_kwargs,
             )
             model.fit(series)
-            params = model.predict(
-                n=1, num_samples=1, predict_likelihood_parameters=True
+            # average over many forecasts, a single forecast is too noisy
+            params = model.historical_forecasts(
+                series,
+                start=0.5,
+                forecast_horizon=1,
+                retrain=False,
+                predict_likelihood_parameters=True,
             )
             assert list(params.components) == ["0_lambda", "0_zi_p"]
-            lmbda, zi_p = params.values()[0]
-            assert abs(zi_p - 0.6) < 0.1
-            assert abs(lmbda - 5.0) < 1.0
+            lmbda, zi_p = params.values()[:, 0], params.values()[:, 1]
+            assert abs(zi_p.mean() - 0.6) < 0.1
+            # the implied probability of zero and mean must match the data
+            prob_zero = zi_p + (1 - zi_p) * np.exp(-lmbda)
+            assert abs(prob_zero.mean() - np.mean(values == 0)) < 0.05
+            assert abs(((1 - zi_p) * lmbda).mean() - values.mean()) < 0.3
 
-        def test_zero_inflated_likelihood_save_load(self, tmpdir):
+        def test_zero_inflated_likelihood_save_load(self, tmpdir_fn):
             series = TimeSeries.from_values(
                 (
                     np.random.poisson(5.0, size=100)
@@ -1020,9 +1027,8 @@ class TestProbabilisticModels:
                 **tfm_kwargs,
             )
             model.fit(series)
-            path = os.path.join(tmpdir, "zi_model.pt")
-            model.save(path)
-            loaded = DLinearModel.load(path)
+            model.save("zi_model.pt")
+            loaded = DLinearModel.load("zi_model.pt")
             assert loaded.likelihood == model.likelihood
             pred = model.predict(n=1, num_samples=1, predict_likelihood_parameters=True)
             pred_loaded = loaded.predict(
