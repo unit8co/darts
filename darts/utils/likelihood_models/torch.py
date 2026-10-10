@@ -1225,6 +1225,57 @@ class QuantileRegression(TorchLikelihood):
         return None
 
 
+class _ZeroInflatedDistribution(torch.distributions.Distribution):
+    arg_constraints = {}
+    has_rsample = False
+
+    def __init__(
+        self,
+        base_distr: torch.distributions.Distribution,
+        gate: torch.Tensor | float,
+    ):
+        """Zero-inflated version of a univariate distribution `base_distr`.
+
+        With probability `gate`, the value is zero, otherwise it is drawn from `base_distr`. For discrete
+        distributions, zeros can come from both components. For continuous distributions, zeros only come from
+        the gate (hurdle model), and `log_prob()` combines the probability mass at zero with the density elsewhere.
+        """
+        gate = torch.as_tensor(gate, device=base_distr.mean.device)
+        if not gate.is_floating_point():
+            gate = gate.to(torch.get_default_dtype())
+        eps = torch.finfo(gate.dtype).eps
+        self.base_distr = base_distr
+        self.gate = gate.clamp(eps, 1.0 - eps)
+        super().__init__(batch_shape=base_distr.batch_shape, validate_args=False)
+
+    @property
+    def mean(self) -> torch.Tensor:
+        return (1.0 - self.gate) * self.base_distr.mean
+
+    def sample(self, sample_shape=torch.Size()) -> torch.Tensor:
+        with torch.no_grad():
+            base_sample = self.base_distr.sample(sample_shape)
+            is_zero = torch.bernoulli(self.gate.expand(base_sample.shape)).bool()
+            return torch.where(is_zero, torch.zeros_like(base_sample), base_sample)
+
+    def log_prob(self, value: torch.Tensor) -> torch.Tensor:
+        log_gate = torch.log(self.gate)
+        log_not_gate = torch.log1p(-self.gate)
+        is_zero = value == 0
+        if self.base_distr.support.is_discrete:
+            log_prob_base = self.base_distr.log_prob(value)
+            log_prob_zero = torch.logaddexp(log_gate, log_not_gate + log_prob_base)
+        else:
+            # zero can lie outside the support of the base distribution (e.g. Gamma or LogNormal); evaluate it at a
+            # value inside its support instead, so that the unused branch stays finite and gradients are not NaN
+            fill = torch.nan_to_num(
+                self.base_distr.mean.detach(), nan=1.0, posinf=1.0, neginf=1.0
+            )
+            log_prob_base = self.base_distr.log_prob(torch.where(is_zero, fill, value))
+            log_prob_zero = log_gate
+        return torch.where(is_zero, log_prob_zero, log_not_gate + log_prob_base)
+
+
 """ TODO
 To make it work, we'll have to change our models so they optionally accept an absolute
 number of parameters, instead of num_parameters per component.

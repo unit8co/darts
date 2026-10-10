@@ -9,7 +9,9 @@ if not TORCH_AVAILABLE:
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+import numpy as np
 import torch
+from scipy import stats
 
 from darts.utils.likelihood_models.torch import (
     BernoulliLikelihood,
@@ -28,6 +30,7 @@ from darts.utils.likelihood_models.torch import (
     PoissonLikelihood,
     QuantileRegression,
     WeibullLikelihood,
+    _ZeroInflatedDistribution,
 )
 
 # equality between likelihoods is only dependent on the main distribution parameters
@@ -157,3 +160,75 @@ class TestTorchLikelihoodInputValidation:
                 target=torch.zeros(target_shape),
                 sample_weight=torch.zeros(target_shape),
             )
+
+
+def _float64(value):
+    return torch.tensor(value, dtype=torch.float64)
+
+
+class TestZeroInflatedDistribution:
+    @pytest.mark.parametrize(
+        "base_distr,ref_log_prob,values",
+        [
+            (
+                torch.distributions.Poisson(_float64(2.5)),
+                lambda y: stats.poisson.logpmf(y, 2.5),
+                [0.0, 1.0, 3.0, 7.0],
+            ),
+            (
+                # torch's `probs` is the success probability; scipy's `p` is the failure probability
+                torch.distributions.NegativeBinomial(_float64(2.0), _float64(0.4)),
+                lambda y: stats.nbinom.logpmf(y, 2.0, 0.6),
+                [0.0, 1.0, 3.0, 7.0],
+            ),
+            (
+                torch.distributions.Gamma(_float64(2.0), _float64(1.5)),
+                lambda y: stats.gamma.logpdf(y, 2.0, scale=1 / 1.5),
+                [0.0, 0.3, 1.0, 4.0],
+            ),
+            (
+                torch.distributions.LogNormal(_float64(0.5), _float64(0.8)),
+                lambda y: stats.lognorm.logpdf(y, 0.8, scale=np.exp(0.5)),
+                [0.0, 0.3, 1.0, 4.0],
+            ),
+            (
+                torch.distributions.Normal(_float64(1.0), _float64(2.0)),
+                lambda y: stats.norm.logpdf(y, 1.0, 2.0),
+                [0.0, -1.5, 0.3, 4.0],
+            ),
+        ],
+    )
+    def test_log_prob(self, base_distr, ref_log_prob, values):
+        gate = 0.3
+        distr = _ZeroInflatedDistribution(base_distr, _float64(gate))
+        expected = []
+        for y in values:
+            if y != 0:
+                expected.append(np.log(1 - gate) + ref_log_prob(y))
+            elif base_distr.support.is_discrete:
+                expected.append(np.log(gate + (1 - gate) * np.exp(ref_log_prob(0.0))))
+            else:
+                expected.append(np.log(gate))
+        np.testing.assert_allclose(
+            distr.log_prob(_float64(values)).numpy(), expected, rtol=1e-6
+        )
+
+    def test_mean(self):
+        base = torch.distributions.Poisson(torch.tensor([2.0, 5.0]))
+        distr = _ZeroInflatedDistribution(base, torch.tensor([0.25, 0.5]))
+        assert torch.allclose(distr.mean, torch.tensor([1.5, 2.5]))
+
+    def test_sample_zero_fraction(self):
+        torch.manual_seed(42)
+        rate = torch.full((20000,), 3.0)
+        distr = _ZeroInflatedDistribution(
+            torch.distributions.Poisson(rate), torch.full((20000,), 0.5)
+        )
+        zero_fraction = (distr.sample() == 0).float().mean()
+        expected = 0.5 + 0.5 * torch.exp(torch.tensor(-3.0))
+        assert abs(zero_fraction - expected) < 0.01
+
+    def test_accepts_python_float_gate(self):
+        # used by the model tests, which build distributions from plain parameter values
+        distr = _ZeroInflatedDistribution(torch.distributions.Poisson(5.0), 0.5)
+        assert distr.sample((3, 2)).shape == (3, 2)
