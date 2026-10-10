@@ -1589,6 +1589,25 @@ class ConformalModel(GlobalForecastingModel, ABC):
         return self._likelihood
 
 
+def _conformal_quantile(residuals: np.ndarray, q: np.ndarray) -> np.ndarray:
+    """Finite-sample conformal quantiles of the non-conformity scores along the last axis.
+
+    With `n` calibration scores, the split conformal quantile at level `q` is the `ceil((n + 1) * q)`-th smallest
+    score, which guarantees a coverage of at least `q` for exchangeable scores. The empirical quantile at level `q`
+    can pick a lower rank and under-cover for small `n`. When `ceil((n + 1) * q)` exceeds `n`, the largest score
+    is used.
+
+    Returns an array of shape `(len(q),) + residuals.shape[:-1]`.
+    """
+    n = residuals.shape[-1]
+    # rounding guards against `(n + 1) * q` landing just above an integer
+    rank = np.minimum(np.ceil(np.round((n + 1) * np.asarray(q), 8)), n)
+    # the position `rank - 1` is an integer, so "nearest" selects exactly that order statistic
+    return np.quantile(
+        residuals, q=(rank - 1) / max(n - 1, 1), method="nearest", axis=-1
+    )
+
+
 class ConformalNaiveModel(ConformalModel):
     def __init__(
         self,
@@ -1688,12 +1707,8 @@ class ConformalNaiveModel(ConformalModel):
     ) -> tuple[np.ndarray, np.ndarray]:
         def q_hat_from_residuals(residuals_):
             # compute quantiles of shape (forecast horizon, n components, n quantile intervals)
-            return np.quantile(
-                residuals_,
-                q=self.interval_range_sym,
-                method="higher",
-                axis=2,
-            ).transpose((1, 2, 0))
+            q_hat_ = _conformal_quantile(residuals_, self.interval_range_sym)
+            return q_hat_.transpose((1, 2, 0))
 
         # residuals shape (horizon, n components, n past forecasts)
         if self.symmetric:
@@ -1839,8 +1854,8 @@ class ConformalQRModel(ConformalModel):
             # TODO: is there a more efficient way?
             # compute quantiles with shape (horizon, n components, n quantile intervals)
             # over all past residuals
-            q_hat_tmp = np.quantile(
-                residuals_, q=self.interval_range_sym, method="higher", axis=2
+            q_hat_tmp = _conformal_quantile(
+                residuals_, self.interval_range_sym
             ).transpose((1, 2, 0))
             q_hat_ = np.empty((len(residuals_), n_comps, n_intervals))
             for i in range(n_intervals):
