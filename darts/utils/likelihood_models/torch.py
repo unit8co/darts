@@ -1288,7 +1288,7 @@ class ZeroInflatedLikelihood(TorchLikelihood):
 
         - For discrete distributions (e.g. ``PoissonLikelihood``, ``NegativeBinomialLikelihood``), zeros can come
           from both components: :math:`P(y = 0) = \\pi + (1 - \\pi) P_{base}(0)` and
-          :math:`P(y) = (1 - \\pi) P_{base}(y)` for :math:`y > 0`.
+          :math:`P(y) = (1 - \\pi) P_{base}(y)` for :math:`y > 0`. The target must contain integer values only.
         - For continuous distributions (e.g. ``GammaLikelihood``, ``LogNormalLikelihood``), zeros only come from the
           zero-inflation component (hurdle model): :math:`P(y = 0) = \\pi` and the density is
           :math:`(1 - \\pi) f_{base}(y)` for :math:`y \\neq 0`. This allows using strictly positive distributions
@@ -1330,8 +1330,8 @@ class ZeroInflatedLikelihood(TorchLikelihood):
         ):
             raise_log(
                 ValueError(
-                    f"`ZeroInflatedLikelihood` does not support `{likelihood.__class__.__name__}`. "
-                    f"It requires a univariate torch likelihood other than `QuantileRegression`, "
+                    f"`ZeroInflatedLikelihood` does not support `{likelihood!r}`. "
+                    f"It requires a univariate torch likelihood instance other than `QuantileRegression`, "
                     f"`DirichletLikelihood`, `BernoulliLikelihood`, `ContinuousBernoulliLikelihood` "
                     f"or `ZeroInflatedLikelihood`."
                 )
@@ -1343,7 +1343,7 @@ class ZeroInflatedLikelihood(TorchLikelihood):
                     "`ZeroInflatedLikelihood` does not support likelihoods with priors."
                 )
             )
-        if getattr(likelihood, "beta_nll", 0.0) > 0.0:
+        if isinstance(likelihood, GaussianLikelihood) and likelihood.beta_nll > 0.0:
             raise_log(
                 ValueError(
                     "`ZeroInflatedLikelihood` does not support `GaussianLikelihood` with `beta_nll > 0`."
