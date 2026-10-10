@@ -31,6 +31,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - `NeuralForecastModel` now supports the `exclude_insample_y` parameter to ignore the past target values and only use covariate data. [#3216](https://github.com/unit8co/darts/pull/3216) by [Pranav Negi](https://github.com/825pranav).
 - Improved the documentation of multi-step probabilistic forecasts for scenarios vs marginal distributions. [#3234](https://github.com/unit8co/darts/pull/3234) by [Shyam Sharma](https://github.com/shyamsharmas124-commits).
 - `TimeSeries.to_json()` and `from_json()` now properly support serializing and deserializing stochastic series. [#3237](https://github.com/unit8co/darts/pull/3237) by [Raashish Aggarwal](https://github.com/raashish1601) and [Dennis Bader](https://github.com/dennisbader).
+- Added `ZeroInflatedLikelihood` for `TorchForecastingModel`: it wraps any univariate torch likelihood and adds a zero-inflation probability per component, e.g. a zero-inflated Poisson or negative binomial for intermittent demand, or a hurdle model with a continuous likelihood such as `GammaLikelihood` for targets that contain zeros. [#3245](https://github.com/unit8co/darts/pull/3245) by [Abhay Juloori](https://github.com/AbhayJuloori).
 
 **Fixed**
 
