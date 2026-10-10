@@ -13,6 +13,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed `NegativeBinomialLikelihood` returning the distribution parameters in the wrong order with `predict_likelihood_parameters=True` on multivariate series; parameters are now grouped by component, matching the component names. [#3243](https://github.com/unit8co/darts/pull/3243) by [Abhay Juloori](https://github.com/AbhayJuloori).
+
 **Dependencies**
 
 ### For developers of the library:
