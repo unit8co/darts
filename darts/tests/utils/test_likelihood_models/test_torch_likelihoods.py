@@ -303,7 +303,6 @@ class TestZeroInflatedDistribution:
         assert abs(zero_fraction - expected) < 0.01
 
     def test_accepts_python_float_gate(self):
-        # used by the model tests, which build distributions from plain parameter values
         distr = _ZeroInflatedDistribution(torch.distributions.Poisson(5.0), 0.5)
         assert distr.sample((3, 2)).shape == (3, 2)
 
